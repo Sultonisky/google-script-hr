@@ -1,0 +1,1807 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <title>HR Dashboard — ATS</title>
+
+  <style>
+    :root{
+      --color-primary:#005BAC;
+      --color-primary-dark:#00437e;
+      --color-navy:#0B2540;
+      --color-navy-soft:#122F52;
+      --color-accent:#FDB913;
+      --color-bg:#F5F7FA;
+      --color-surface:#ffffff;
+      --color-text:#1F2937;
+      --color-text-soft:#6b7280;
+      --color-border:#E5E7EB;
+      --sidebar-w:260px;
+      --drawer-w:520px;
+    }
+
+    [data-theme="dark"]{
+      --color-bg:#0F1720;
+      --color-surface:#17212C;
+      --color-text:#E7ECF2;
+      --color-text-soft:#93A2B4;
+      --color-border:#26313D;
+    }
+
+    *{ box-sizing:border-box; }
+
+    body{
+      background:var(--color-bg);
+      font-family:'Inter',sans-serif;
+      color:var(--color-text);
+      -webkit-font-smoothing:antialiased;
+      transition:background-color .2s ease, color .2s ease;
+    }
+
+    /* ============== SIDEBAR ============== */
+    .sidebar{
+      position:fixed; top:0; left:0; bottom:0;
+      width:var(--sidebar-w);
+      background:linear-gradient(180deg,var(--color-navy) 0%, var(--color-navy-soft) 100%);
+      color:#fff;
+      z-index:1040;
+      display:flex; flex-direction:column;
+      transition:transform .25s ease;
+    }
+
+    .sidebar-brand{
+      display:flex; align-items:center; gap:12px;
+      padding:24px 22px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+    }
+
+    .sidebar-brand .logo-box{
+      width:38px; height:38px; border-radius:10px;
+      background:var(--color-accent);
+      display:flex; align-items:center; justify-content:center;
+      color:#3a2e00; font-weight:800; font-size:16px; flex-shrink:0;
+    }
+
+    .sidebar-brand .brand-text small{
+      display:block; font-size:11px; color:rgba(255,255,255,.55);
+      font-weight:500; letter-spacing:.03em; text-transform:uppercase;
+    }
+
+    .sidebar-brand .brand-text strong{ font-size:14.5px; font-weight:700; line-height:1.3; }
+
+    .sidebar-nav{ flex:1; overflow-y:auto; padding:18px 14px; }
+
+    .nav-section-label{
+      font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+      color:rgba(255,255,255,.38); padding:14px 12px 8px;
+    }
+
+    .nav-item{
+      display:flex; align-items:center; gap:12px;
+      padding:11px 14px; border-radius:10px;
+      color:rgba(255,255,255,.75); font-size:14px; font-weight:500;
+      text-decoration:none; margin-bottom:2px;
+      transition:background-color .15s ease, color .15s ease;
+      cursor:pointer; border:none; background:transparent; width:100%; text-align:left;
+    }
+
+    .nav-item i{ font-size:17px; width:20px; text-align:center; flex-shrink:0; }
+    .nav-item:hover{ background:rgba(255,255,255,.06); color:#fff; }
+    .nav-item.active{ background:var(--color-primary); color:#fff; box-shadow:0 6px 16px -4px rgba(0,91,172,.55); }
+
+    .nav-item .badge-count{
+      margin-left:auto; background:rgba(255,255,255,.14); color:#fff;
+      font-size:11px; font-weight:700; padding:2px 8px; border-radius:100px;
+    }
+    .nav-item.active .badge-count{ background:rgba(255,255,255,.25); }
+
+    .sidebar-footer{
+      padding:16px 20px 20px; border-top:1px solid rgba(255,255,255,.08);
+      display:flex; align-items:center; gap:10px;
+    }
+
+    .sidebar-footer .avatar{
+      width:36px; height:36px; border-radius:50%; background:var(--color-primary);
+      display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex-shrink:0;
+    }
+    .sidebar-footer .user-meta small{ display:block; color:rgba(255,255,255,.5); font-size:11.5px; }
+    .sidebar-footer .user-meta strong{ font-size:13.5px; display:block; line-height:1.3; }
+
+    /* ============== TOPBAR ============== */
+    .topbar{
+      position:sticky; top:0; z-index:1020;
+      background:var(--color-surface); border-bottom:1px solid var(--color-border);
+      padding:14px 28px; display:flex; align-items:center; gap:16px;
+    }
+
+    .btn-burger{
+      display:none; border:1.5px solid var(--color-border); background:var(--color-surface);
+      width:40px; height:40px; border-radius:10px; align-items:center; justify-content:center;
+      font-size:18px; color:var(--color-text); flex-shrink:0;
+    }
+
+    .topbar .page-title h5{ font-weight:700; margin-bottom:1px; font-size:17px; }
+    .topbar .page-title small{ color:var(--color-text-soft); font-size:12.5px; }
+
+    .topbar-search{ flex:1; max-width:380px; position:relative; }
+    .topbar-search input{
+      height:42px; border-radius:10px; border:1.5px solid var(--color-border);
+      padding-left:40px; font-size:13.5px; width:100%; background:var(--color-surface); color:var(--color-text);
+    }
+    .topbar-search input:focus{ outline:none; border-color:var(--color-primary); box-shadow:0 0 0 .2rem rgba(0,91,172,.14); }
+    .topbar-search i{ position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--color-text-soft); }
+
+    .topbar-actions{ margin-left:auto; display:flex; align-items:center; gap:14px; }
+
+    .icon-btn{
+      width:42px; height:42px; border-radius:10px; border:1.5px solid var(--color-border); background:var(--color-surface);
+      display:flex; align-items:center; justify-content:center; color:var(--color-text-soft); font-size:17px;
+      position:relative; flex-shrink:0; cursor:pointer;
+    }
+    .icon-btn .dot{
+      position:absolute; top:8px; right:8px; width:7px; height:7px; border-radius:50%;
+      background:var(--color-accent); border:1.5px solid var(--color-surface);
+    }
+    .icon-btn.active{ color:var(--color-primary); border-color:var(--color-primary); }
+
+    /* ============== MAIN ============== */
+    .main-content{ margin-left:var(--sidebar-w); min-height:100vh; }
+    .content-wrap{ padding:26px 28px 60px; }
+    .page-section{ display:none; }
+    .page-section.active{ display:block; }
+
+    @media (min-width:1200px){ .col-xl-2p4{ flex:0 0 20%; max-width:20%; } }
+
+    /* ============== STAT CARDS ============== */
+    .stat-card{
+      background:var(--color-surface); border-radius:16px; border:1px solid var(--color-border);
+      padding:18px 20px; display:flex; align-items:flex-start; gap:14px; height:100%;
+      transition:box-shadow .2s ease, transform .2s ease;
+    }
+    .stat-card:hover{ box-shadow:0 14px 30px -12px rgba(15,35,60,.14); transform:translateY(-2px); }
+
+    .stat-icon{
+      width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+      font-size:18px; flex-shrink:0;
+    }
+    .stat-icon.bg-blue{ background:rgba(0,91,172,.10); color:var(--color-primary); }
+    .stat-icon.bg-gold{ background:rgba(253,185,19,.16); color:#8a6100; }
+    .stat-icon.bg-green{ background:rgba(22,163,74,.10); color:#166534; }
+    .stat-icon.bg-navy{ background:rgba(11,37,64,.08); color:var(--color-navy); }
+    .stat-icon.bg-red{ background:rgba(220,38,38,.10); color:#b91c1c; }
+    .stat-icon.bg-purple{ background:rgba(124,58,237,.10); color:#6d28d9; }
+    .stat-icon.bg-cyan{ background:rgba(8,145,178,.10); color:#0e7490; }
+
+    .stat-card .stat-label{
+      font-size:11.5px; font-weight:600; color:var(--color-text-soft);
+      text-transform:uppercase; letter-spacing:.03em; margin-bottom:5px;
+    }
+    .stat-card .stat-value{ font-size:22px; font-weight:800; line-height:1.1; }
+
+    /* ============== CHART CARDS ============== */
+    .chart-card{
+      background:var(--color-surface); border-radius:16px; border:1px solid var(--color-border);
+      padding:20px 20px 12px; height:100%;
+    }
+    .chart-card h6{ font-weight:700; font-size:14px; margin-bottom:14px; }
+    .chart-canvas-wrap{ position:relative; height:230px; }
+
+    /* ============== PANEL ============== */
+    .panel{ background:var(--color-surface); border-radius:16px; border:1px solid var(--color-border); overflow:hidden; }
+
+    .panel-header{
+      display:flex; align-items:center; flex-wrap:wrap; gap:12px;
+      padding:20px 22px; border-bottom:1px solid var(--color-border);
+    }
+    .panel-header h6{ font-weight:700; font-size:15.5px; margin:0; }
+    .panel-header .panel-subtitle{ font-size:12.5px; color:var(--color-text-soft); margin-top:2px; }
+
+    .export-btns{ margin-left:auto; display:flex; gap:8px; flex-wrap:wrap; }
+    .btn-export{
+      height:38px; border-radius:10px; border:1.5px solid var(--color-border); background:var(--color-surface);
+      font-size:12.5px; font-weight:600; padding:0 14px; display:flex; align-items:center; gap:6px;
+      color:var(--color-text); cursor:pointer;
+    }
+    .btn-export:hover{ border-color:var(--color-primary); color:var(--color-primary); }
+    .btn-export.csv i{ color:#166534; } .btn-export.xlsx i{ color:#166534; } .btn-export.pdf i{ color:#b91c1c; }
+
+    /* ============== FILTER BAR (collapsible) ============== */
+    .filter-bar{
+      display:flex; flex-wrap:wrap; gap:10px;
+      padding:18px 22px; border-bottom:1px solid var(--color-border); background:var(--color-bg);
+    }
+    .filter-bar .table-search{ position:relative; flex:1 1 240px; min-width:200px; }
+    .filter-bar .table-search input{
+      height:40px; border-radius:10px; border:1.5px solid var(--color-border);
+      padding-left:36px; font-size:13.5px; width:100%; background:var(--color-surface); color:var(--color-text);
+    }
+    .filter-bar .table-search input:focus{ outline:none; border-color:var(--color-primary); box-shadow:0 0 0 .2rem rgba(0,91,172,.14); }
+    .filter-bar .table-search i{ position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--color-text-soft); font-size:14px; }
+
+    .filter-select, .filter-date, .filter-number{
+      height:40px; border-radius:10px; border:1.5px solid var(--color-border);
+      font-size:13px; padding:0 10px; color:var(--color-text); background:var(--color-surface); flex:1 1 130px; min-width:110px;
+    }
+    .filter-select:focus, .filter-date:focus, .filter-number:focus{ outline:none; border-color:var(--color-primary); }
+    .filter-range-group{ display:flex; align-items:center; gap:6px; flex:1 1 220px; }
+    .filter-range-group .filter-number{ min-width:0; }
+    .filter-range-group span{ color:var(--color-text-soft); font-size:12px; flex-shrink:0; }
+
+    .btn-refresh, .btn-toggle-more{
+      height:40px; width:40px; border-radius:10px; border:1.5px solid var(--color-border); background:var(--color-surface);
+      display:flex; align-items:center; justify-content:center; color:var(--color-primary); font-size:15px; flex-shrink:0; cursor:pointer;
+    }
+    .btn-toggle-more{ width:auto; padding:0 12px; color:var(--color-text-soft); font-size:12.5px; font-weight:600; gap:6px; }
+
+    .btn-reset-filter{
+      height:40px; border-radius:10px; border:1.5px solid var(--color-border); background:var(--color-surface);
+      display:flex; align-items:center; justify-content:center; gap:6px; color:var(--color-text-soft);
+      font-size:13px; font-weight:600; padding:0 14px; flex-shrink:0; cursor:pointer; white-space:nowrap;
+    }
+    .btn-reset-filter:hover{ color:var(--color-text); border-color:#c9cfd8; }
+
+    .filter-bar-collapse{ display:none; }
+    .filter-bar-collapse.show{ display:flex; }
+
+    .btn-refresh.spinning i{ animation:spin .8s linear infinite; }
+    @keyframes spin{ from{ transform:rotate(0deg);} to{ transform:rotate(360deg);} }
+
+    /* Table */
+    .table-responsive{ max-height:640px; }
+    table.hr-table{ margin:0; font-size:13px; min-width:1600px; }
+
+    table.hr-table thead th{
+      position:sticky; top:0; background:var(--color-bg); color:var(--color-text-soft);
+      font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.03em;
+      border-bottom:1px solid var(--color-border); padding:12px 14px; white-space:nowrap; z-index:5;
+      cursor:pointer; user-select:none;
+    }
+    table.hr-table thead th:hover{ color:var(--color-primary); }
+    table.hr-table thead th i{ font-size:10px; margin-left:3px; }
+
+    table.hr-table tbody td{
+      padding:13px 14px; vertical-align:middle; border-bottom:1px solid var(--color-border);
+      color:var(--color-text); white-space:nowrap;
+    }
+    table.hr-table tbody tr:last-child td{ border-bottom:none; }
+    table.hr-table tbody tr:hover{ background:var(--color-bg); }
+
+    .cand-name{ font-weight:600; color:var(--color-text); white-space:normal; }
+    .cand-sub{ font-size:11.5px; color:var(--color-text-soft); margin-top:1px; white-space:normal; }
+
+    .avatar-sm{
+      width:34px; height:34px; border-radius:50%; background:rgba(0,91,172,.10); color:var(--color-primary);
+      display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12.5px; flex-shrink:0;
+    }
+    .avatar-lg{
+      width:76px; height:76px; border-radius:20px; background:rgba(255,255,255,.18); color:#fff;
+      display:flex; align-items:center; justify-content:center; font-weight:800; font-size:26px; flex-shrink:0;
+      border:2px solid rgba(255,255,255,.35);
+    }
+
+    .badge-status{
+      display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:100px;
+      font-size:11px; font-weight:700; letter-spacing:.01em;
+    }
+    .badge-status::before{ content:""; width:6px; height:6px; border-radius:50%; background:currentColor; }
+    .badge-status.pending{ background:#fff8e6; color:#8a6100; }
+    .badge-status.accepted{ background:#ecfdf3; color:#166534; }
+    .badge-status.hold{ background:#eef6ff; color:#0b4a86; }
+    .badge-status.blacklist{ background:#fef2f2; color:#991b1b; }
+    .badge-status.lg{ padding:7px 16px; font-size:12.5px; }
+
+    .id-mono{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; color:var(--color-text-soft); }
+
+    .btn-action{
+      width:32px; height:32px; border-radius:8px; border:1.5px solid var(--color-border); background:var(--color-surface);
+      display:flex; align-items:center; justify-content:center; font-size:14px; cursor:pointer; flex-shrink:0;
+      color:var(--color-primary);
+    }
+    .btn-action:hover{ background:rgba(0,91,172,.08); border-color:var(--color-primary); }
+
+    .panel-footer{
+      display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;
+      padding:16px 22px; border-top:1px solid var(--color-border); font-size:12.5px; color:var(--color-text-soft);
+    }
+
+    .pagination-ui{ display:flex; align-items:center; gap:6px; margin:0; }
+    .page-btn{
+      min-width:34px; height:34px; border-radius:8px; border:1.5px solid var(--color-border); background:var(--color-surface);
+      display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:600;
+      color:var(--color-text-soft); cursor:pointer; padding:0 8px;
+    }
+    .page-btn.active{ background:var(--color-primary); border-color:var(--color-primary); color:#fff; }
+    .page-btn:hover:not(.active):not(:disabled){ border-color:var(--color-primary); color:var(--color-primary); }
+    .page-btn:disabled{ opacity:.45; cursor:not-allowed; }
+
+    .table-loading, .table-empty{ padding:60px 20px; text-align:center; color:var(--color-text-soft); }
+    .table-loading .spinner-border{ width:2rem; height:2rem; color:var(--color-primary); }
+    .table-loading p, .table-empty p{ margin-top:14px; font-size:13.5px; }
+    .table-empty i{ font-size:34px; color:var(--color-border); }
+
+    /* ============== DRAWER (Candidate Profile) ============== */
+    .drawer-overlay{
+      position:fixed; inset:0; background:rgba(11,37,64,.5);
+      z-index:1800; opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s ease;
+    }
+    .drawer-overlay.show{ opacity:1; visibility:visible; }
+
+    .drawer-panel{
+      position:fixed; top:0; right:0; bottom:0;
+      width:var(--drawer-w); max-width:100%;
+      background:var(--color-surface); z-index:1900;
+      display:flex; flex-direction:column;
+      transform:translateX(100%);
+      transition:transform .3s cubic-bezier(.22,.9,.28,1);
+      box-shadow:-12px 0 40px -10px rgba(0,0,0,.25);
+    }
+    .drawer-panel.show{ transform:translateX(0); }
+
+    @media (max-width:991.98px){ .drawer-panel{ width:100%; } }
+
+    .drawer-header{
+      background:linear-gradient(135deg,var(--color-primary) 0%,var(--color-primary-dark) 100%);
+      color:#fff; padding:24px 22px; flex-shrink:0;
+    }
+    .drawer-header-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+    .drawer-header-top .drawer-actions{ display:flex; gap:8px; }
+    .drawer-icon-btn{
+      width:36px; height:36px; border-radius:9px; border:1.5px solid rgba(255,255,255,.35);
+      background:rgba(255,255,255,.08); color:#fff; display:flex; align-items:center; justify-content:center;
+      font-size:15px; cursor:pointer;
+    }
+    .drawer-icon-btn:hover{ background:rgba(255,255,255,.18); }
+
+    .drawer-id-meta{ display:flex; gap:14px; flex-wrap:wrap; margin-top:14px; font-size:12px; opacity:.9; }
+    .drawer-id-meta span strong{ display:block; font-size:13px; opacity:1; }
+
+    .drawer-body{ flex:1; overflow-y:auto; padding:20px 22px; }
+    .drawer-footer{
+      flex-shrink:0; border-top:1px solid var(--color-border); padding:14px 18px;
+      display:flex; gap:8px; flex-wrap:wrap; background:var(--color-surface);
+    }
+
+    .cv-section-card{
+      border:1px solid var(--color-border); border-radius:14px; padding:18px 20px; margin-bottom:16px; background:var(--color-surface);
+    }
+    .cv-section-card h6{
+      display:flex; align-items:center; gap:8px; font-weight:700; font-size:13.5px;
+      color:var(--color-primary); margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--color-border);
+    }
+    .cv-field{ margin-bottom:11px; }
+    .cv-field .cv-label{ font-size:11px; color:var(--color-text-soft); text-transform:uppercase; letter-spacing:.03em; font-weight:600; }
+    .cv-field .cv-value{ font-size:13.5px; font-weight:600; color:var(--color-text); word-break:break-word; }
+    .cv-grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:0 14px; }
+
+    .notes-toolbar{ display:flex; align-items:center; justify-content:space-between; margin-top:8px; font-size:11.5px; color:var(--color-text-soft); }
+    .notes-save-state{ display:flex; align-items:center; gap:6px; }
+    .notes-save-state.saving{ color:#8a6100; }
+    .notes-save-state.saved{ color:#166534; }
+
+    /* Timeline */
+    .timeline{ position:relative; padding-left:28px; }
+    .timeline::before{ content:""; position:absolute; left:8px; top:4px; bottom:4px; width:2px; background:var(--color-border); }
+    .timeline-item{ position:relative; padding-bottom:20px; }
+    .timeline-item:last-child{ padding-bottom:0; }
+    .timeline-dot{
+      position:absolute; left:-28px; top:0; width:20px; height:20px; border-radius:50%;
+      background:var(--color-primary); color:#fff; display:flex; align-items:center; justify-content:center; font-size:10px;
+      border:3px solid var(--color-surface); box-shadow:0 0 0 1px var(--color-border);
+    }
+    .timeline-dot.created{ background:#0e7490; }
+    .timeline-dot.accepted{ background:#166534; }
+    .timeline-dot.hold{ background:#0b4a86; }
+    .timeline-dot.blacklist{ background:#991b1b; }
+    .timeline-dot.pending{ background:#8a6100; }
+    .timeline-title{ font-size:13px; font-weight:700; color:var(--color-text); }
+    .timeline-desc{ font-size:12px; color:var(--color-text-soft); margin-top:2px; }
+    .timeline-time{ font-size:11px; color:var(--color-text-soft); margin-top:3px; }
+    .timeline-empty{ font-size:12.5px; color:var(--color-text-soft); text-align:center; padding:16px 0; }
+
+    /* Documents */
+    .doc-card{
+      border:1.5px dashed var(--color-border); border-radius:12px; padding:16px; text-align:center;
+      display:flex; flex-direction:column; align-items:center; gap:8px; height:100%;
+    }
+    .doc-card i{ font-size:26px; color:var(--color-text-soft); }
+    .doc-card .doc-name{ font-size:12.5px; font-weight:700; }
+    .doc-card .doc-state{ font-size:11px; color:var(--color-text-soft); }
+    .doc-card.has-doc{ border-style:solid; border-color:var(--color-primary); }
+    .doc-card.has-doc i{ color:var(--color-primary); }
+
+    .status-action-group{ display:flex; flex-wrap:wrap; gap:10px; }
+    .btn-status{
+      flex:1 1 130px; height:44px; border-radius:10px; border:1.5px solid var(--color-border); background:var(--color-surface);
+      font-weight:700; font-size:13px; display:flex; align-items:center; justify-content:center; gap:8px;
+      cursor:pointer; transition:all .15s ease; color:var(--color-text);
+    }
+    .btn-status.accept{ color:#166534; } .btn-status.accept:hover{ background:#ecfdf3; border-color:#166534; }
+    .btn-status.hold{ color:#0b4a86; } .btn-status.hold:hover{ background:#eef6ff; border-color:#0b4a86; }
+    .btn-status.blacklist{ color:#991b1b; } .btn-status.blacklist:hover{ background:#fef2f2; border-color:#991b1b; }
+    .btn-status.pending{ color:#8a6100; } .btn-status.pending:hover{ background:#fff8e6; border-color:#8a6100; }
+    .btn-status.print{ color:var(--color-primary); } .btn-status.print:hover{ background:rgba(0,91,172,.08); border-color:var(--color-primary); }
+    .btn-status.current{ box-shadow:0 0 0 2px currentColor inset; }
+    .btn-status:disabled{ opacity:.55; cursor:not-allowed; }
+
+    /* ============== TOASTS ============== */
+    .toast-container{ z-index:2000; }
+    .toast-custom{ min-width:300px; }
+
+    /* ============== FAB SPEED DIAL ============== */
+    .fab-wrap{ position:fixed; right:26px; bottom:26px; z-index:1500; display:flex; flex-direction:column-reverse; align-items:flex-end; gap:12px; }
+    .fab-main{
+      width:58px; height:58px; border-radius:50%; border:none; background:var(--color-primary); color:#fff;
+      font-size:22px; box-shadow:0 10px 24px -6px rgba(0,91,172,.55); cursor:pointer;
+      display:flex; align-items:center; justify-content:center; transition:transform .25s ease, background .2s ease;
+    }
+    .fab-main:hover{ background:var(--color-primary-dark); }
+    .fab-main.open{ transform:rotate(45deg); }
+    .fab-actions{ display:flex; flex-direction:column-reverse; gap:10px; align-items:flex-end; margin-bottom:6px; }
+    .fab-actions.d-none{ display:none !important; }
+    .fab-action{
+      display:flex; align-items:center; gap:10px; background:var(--color-surface); border:1px solid var(--color-border);
+      border-radius:100px; padding:8px 8px 8px 16px; box-shadow:0 8px 20px -8px rgba(0,0,0,.2);
+      cursor:pointer; font-size:12.5px; font-weight:600; color:var(--color-text); white-space:nowrap;
+    }
+    .fab-action i{ width:34px; height:34px; border-radius:50%; background:rgba(0,91,172,.1); color:var(--color-primary);
+      display:flex; align-items:center; justify-content:center; font-size:15px; }
+    .fab-action:hover{ border-color:var(--color-primary); }
+
+    /* ============== SETTINGS ============== */
+    .settings-card{ max-width:640px; }
+    .settings-row{
+      display:flex; align-items:center; justify-content:space-between; gap:16px;
+      padding:16px 0; border-bottom:1px solid var(--color-border);
+    }
+    .settings-row:last-child{ border-bottom:none; }
+    .settings-row .settings-label{ font-weight:600; font-size:13.5px; }
+    .settings-row .settings-desc{ font-size:12px; color:var(--color-text-soft); margin-top:2px; }
+    .settings-row select, .settings-row input[type=number]{
+      height:40px; border-radius:10px; border:1.5px solid var(--color-border); background:var(--color-surface);
+      color:var(--color-text); padding:0 12px; font-size:13px; min-width:150px;
+    }
+
+    /* ============== MOBILE ============== */
+    .sidebar-overlay{ display:none; position:fixed; inset:0; background:rgba(11,37,64,.45); z-index:1030; }
+
+    @media (max-width:991.98px){
+      .sidebar{ transform:translateX(-100%); }
+      .sidebar.show{ transform:translateX(0); }
+      .sidebar-overlay.show{ display:block; }
+      .main-content{ margin-left:0; }
+      .btn-burger{ display:flex; }
+      .topbar-search{ display:none; }
+    }
+
+    @media (max-width:576px){
+      .content-wrap{ padding:18px 14px 40px; }
+      .topbar{ padding:12px 16px; }
+      .filter-bar{ flex-direction:column; align-items:stretch; }
+      .filter-bar .table-search, .filter-select, .filter-date, .filter-number{ width:100%; }
+      .export-btns{ width:100%; }
+      .btn-export{ flex:1; justify-content:center; }
+      .cv-grid-2{ grid-template-columns:1fr; }
+      .fab-wrap{ right:16px; bottom:16px; }
+    }
+
+    @media print{
+      .sidebar, .topbar, .fab-wrap, .drawer-footer, .drawer-header-top .drawer-actions .drawer-icon-btn:not(.print-only-hide), .filter-bar, .panel-header .export-btns, .btn-refresh { display:none !important; }
+      .drawer-overlay, .drawer-panel{ position:static; box-shadow:none; transform:none; width:100%; }
+      body{ background:#fff; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ============== SIDEBAR ============== -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="logo-box">MS</div>
+      <div class="brand-text">
+        <strong>Mahakarya HRIS</strong>
+        <small>Applicant Tracking System</small>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <button class="nav-item active" type="button" data-page="pageDashboard"><i class="bi bi-grid-1x2-fill"></i> Dashboard</button>
+      <button class="nav-item" type="button" data-page="pageDashboard" data-scroll="tablePanel"><i class="bi bi-people-fill"></i> Recruitment <span class="badge-count" id="navRecruitmentCount">0</span></button>
+      <button class="nav-item" type="button" data-external="employee"><i class="bi bi-person-badge-fill"></i> Master Data</button>
+
+      <div class="nav-section-label">Candidate Status</div>
+      <button class="nav-item" type="button" data-page="pageDashboard" data-status="Hold"><i class="bi bi-pause-circle-fill"></i> Hold</button>
+      <button class="nav-item" type="button" data-page="pageDashboard" data-status="Blacklist"><i class="bi bi-slash-circle-fill"></i> Blacklist</button>
+
+      <div class="nav-section-label">System</div>
+      <button class="nav-item" type="button" data-page="pageDashboard" data-scroll="tablePanel"><i class="bi bi-clock-history"></i> Audit Log</button>
+      <button class="nav-item" type="button" data-page="pageSettings"><i class="bi bi-gear-fill"></i> Settings</button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="avatar">HR</div>
+      <div class="user-meta"><strong>HR Team</strong><small>Mahakarya Sukses Indonesia</small></div>
+    </div>
+  </aside>
+
+  <!-- ============== MAIN ============== -->
+  <div class="main-content">
+
+    <div class="content-wrap">
+
+      <!-- ============== PAGE: DASHBOARD ============== -->
+      <section class="page-section active" id="pageDashboard">
+
+        <!-- STAT CARDS -->
+        <div class="row g-3 mb-4">
+          <div class="col-6 col-md-4 col-xl-2p4">
+            <div class="stat-card"><div class="stat-icon bg-blue"><i class="bi bi-people-fill"></i></div>
+              <div><div class="stat-label">Total Kandidat</div><div class="stat-value" data-counter id="statTotal">0</div></div></div>
+          </div>
+          <div class="col-6 col-md-4 col-xl-2p4">
+            <div class="stat-card"><div class="stat-icon bg-gold"><i class="bi bi-hourglass-split"></i></div>
+              <div><div class="stat-label">Pending</div><div class="stat-value" data-counter id="statPending">0</div></div></div>
+          </div>
+          <div class="col-6 col-md-4 col-xl-2p4">
+            <div class="stat-card"><div class="stat-icon bg-green"><i class="bi bi-check-circle-fill"></i></div>
+              <div><div class="stat-label">Accepted</div><div class="stat-value" data-counter id="statAccepted">0</div></div></div>
+          </div>
+          <div class="col-6 col-md-4 col-xl-2p4">
+            <div class="stat-card"><div class="stat-icon bg-navy"><i class="bi bi-pause-circle-fill"></i></div>
+              <div><div class="stat-label">Hold</div><div class="stat-value" data-counter id="statHold">0</div></div></div>
+          </div>
+          <div class="col-6 col-md-4 col-xl-2p4">
+            <div class="stat-card"><div class="stat-icon bg-red"><i class="bi bi-slash-circle-fill"></i></div>
+              <div><div class="stat-label">Blacklist</div><div class="stat-value" data-counter id="statBlacklist">0</div></div></div>
+          </div>
+        </div>
+
+        <!-- CHARTS -->
+        <div class="row g-3 mb-4">
+          <div class="col-md-6 col-xl-4">
+            <div class="chart-card"><h6><i class="bi bi-graph-up me-1"></i> Pelamar per Bulan</h6>
+              <div class="chart-canvas-wrap"><canvas id="chartMonthly"></canvas></div></div>
+          </div>
+        </div>
+
+        <!-- RECRUITMENT TABLE PANEL -->
+        <div class="panel" id="tablePanel">
+          <div class="panel-header">
+            <div>
+              <h6>Data Kandidat</h6>
+              <div class="panel-subtitle" id="panelSubtitle">Memuat data...</div>
+            </div>
+            <div class="export-btns">
+              <button class="btn-export csv" id="btnExportCsv" type="button"><i class="bi bi-filetype-csv"></i> CSV</button>
+              <button class="btn-export xlsx" id="btnExportXlsx" type="button"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+              <button class="btn-export pdf" id="btnExportPdf" type="button"><i class="bi bi-file-earmark-pdf"></i> PDF</button>
+            </div>
+          </div>
+
+          <!-- FILTER BAR (utama) -->
+          <div class="filter-bar">
+            <div class="table-search">
+              <i class="bi bi-search"></i>
+              <input type="text" id="searchInput" placeholder="Cari ID, nama, HP, email, posisi, kota...">
+            </div>
+
+            <select class="filter-select" id="statusFilter">
+              <option value="">Semua Status</option>
+              <option>Pending</option><option>Accepted</option><option>Hold</option><option>Blacklist</option>
+            </select>
+
+            <select class="filter-select" id="positionFilter"><option value="">Semua Posisi</option></select>
+            <select class="filter-select" id="sortSelect">
+              <option value="newest">Terbaru</option>
+              <option value="oldest">Terlama</option>
+              <option value="name_asc">Nama A-Z</option>
+              <option value="name_desc">Nama Z-A</option>
+              <option value="age_desc">Usia Tertinggi</option>
+              <option value="age_asc">Usia Terendah</option>
+              <option value="salary_desc">Gaji Tertinggi</option>
+              <option value="salary_asc">Gaji Terendah</option>
+            </select>
+
+            <button class="btn-toggle-more" id="btnToggleMore" type="button"><i class="bi bi-sliders"></i> Filter Lanjutan</button>
+            <button class="btn-reset-filter" type="button" id="btnResetFilter"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+            <button class="btn-refresh" id="btnRefresh" type="button" title="Muat ulang data"><i class="bi bi-arrow-clockwise"></i></button>
+          </div>
+
+          <!-- FILTER BAR (lanjutan / collapsible) -->
+          <div class="filter-bar filter-bar-collapse" id="filterBarMore">
+            <select class="filter-select" id="genderFilter">
+              <option value="">Semua Gender</option><option value="Male">Laki-laki</option><option value="Female">Perempuan</option>
+            </select>
+            <select class="filter-select" id="educationFilter"><option value="">Semua Pendidikan</option></select>
+            <select class="filter-select" id="experienceFilter"><option value="">Semua Pengalaman</option></select>
+            <select class="filter-select" id="cityFilter"><option value="">Semua Kota</option></select>
+            <select class="filter-select" id="sourceFilter"><option value="">Semua Sumber</option></select>
+            <select class="filter-select" id="employmentStatusFilter"><option value="">Semua Status Kerja</option></select>
+
+            <div class="filter-range-group">
+              <input type="number" class="filter-number" id="salaryMinFilter" placeholder="Gaji min">
+              <span>&ndash;</span>
+              <input type="number" class="filter-number" id="salaryMaxFilter" placeholder="Gaji max">
+            </div>
+            <div class="filter-range-group">
+              <input type="number" class="filter-number" id="ageMinFilter" placeholder="Usia min">
+              <span>&ndash;</span>
+              <input type="number" class="filter-number" id="ageMaxFilter" placeholder="Usia max">
+            </div>
+            <input type="date" class="filter-date" id="dateFromFilter" title="Dari tanggal">
+            <input type="date" class="filter-date" id="dateToFilter" title="Sampai tanggal">
+            <button class="btn-reset-filter" type="button" id="btnApplyMoreFilter"><i class="bi bi-check2"></i> Terapkan</button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table hr-table">
+              <thead>
+                <tr>
+                  <th>Avatar</th>
+                  <th>Recruitment ID</th>
+                  <th>Kandidat</th>
+                  <th>Usia</th>
+                  <th>Gender</th>
+                  <th>Posisi</th>
+                  <th>Pendidikan</th>
+                  <th>Ekspektasi Gaji</th>
+                  <th>Sumber</th>
+                  <th>Status</th>
+                  <th>Tanggal Daftar</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="tableBody"></tbody>
+            </table>
+
+            <div class="table-loading" id="tableLoading">
+              <div class="spinner-border" role="status"></div>
+              <p>Mengambil data dari spreadsheet...</p>
+            </div>
+            <div class="table-empty d-none" id="tableEmpty">
+              <i class="bi bi-inbox"></i><p>Belum ada data kandidat.</p>
+            </div>
+          </div>
+
+          <div class="panel-footer">
+            <span id="footerCount">Menampilkan 0 data</span>
+            <nav class="pagination-ui" id="paginationUi" aria-label="Pagination"></nav>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== PAGE: SETTINGS ============== -->
+      <section class="page-section" id="pageSettings">
+        <div class="panel settings-card">
+          <div class="panel-header"><h6>Pengaturan Dashboard</h6></div>
+          <div class="p-3 p-md-4">
+            <div class="settings-row">
+              <div><div class="settings-label">Tema</div><div class="settings-desc">Pilih tampilan terang atau gelap.</div></div>
+              <select id="settingTheme"><option value="light">Terang</option><option value="dark">Gelap</option></select>
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-label">Item per Halaman</div><div class="settings-desc">Jumlah baris tabel per halaman.</div></div>
+              <select id="settingPageSize"><option value="10">10</option><option value="25">25</option><option value="50">50</option><option value="100">100</option></select>
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-label">Status Default</div><div class="settings-desc">Filter status saat dashboard dibuka.</div></div>
+              <select id="settingDefaultStatus">
+                <option value="">Semua Status</option><option>Pending</option><option>Accepted</option><option>Hold</option><option>Blacklist</option>
+              </select>
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-label">Auto Refresh</div><div class="settings-desc">Muat ulang data secara otomatis di latar belakang.</div></div>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" role="switch" id="settingAutoRefresh" style="width:44px;height:24px;">
+              </div>
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-label">Interval Refresh (detik)</div><div class="settings-desc">Seberapa sering dashboard menyegarkan data.</div></div>
+              <input type="number" id="settingRefreshInterval" min="15" step="5" style="width:110px;">
+            </div>
+            <div class="settings-row">
+              <div></div>
+              <button class="btn-reset-filter" id="btnSaveSettings" type="button"><i class="bi bi-check2-circle"></i> Simpan Pengaturan</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- ============== DRAWER: CANDIDATE PROFILE ============== -->
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <div class="drawer-panel" id="drawerPanel">
+    <div class="drawer-header">
+      <div class="drawer-header-top">
+        <div class="d-flex align-items-center gap-3">
+          <div class="avatar-lg" id="drawerAvatar">?</div>
+          <div>
+            <h5 class="mb-1" id="drawerCandidateName" style="font-weight:700;">Nama Kandidat</h5>
+            <div style="font-size:12.5px;opacity:.9;" id="drawerPosition">Posisi</div>
+            <div class="mt-2" id="drawerStatusBadgeWrap"></div>
+          </div>
+        </div>
+        <div class="drawer-actions">
+          <button class="drawer-icon-btn" id="btnDrawerPrint" title="Print"><i class="bi bi-printer-fill"></i></button>
+          <button class="drawer-icon-btn" id="btnDrawerClose" title="Close"><i class="bi bi-x-lg"></i></button>
+        </div>
+      </div>
+      <div class="drawer-id-meta">
+        <span>Recruitment ID<strong id="drawerRecId">-</strong></span>
+        <span>Tanggal Daftar<strong id="drawerCreatedDate">-</strong></span>
+      </div>
+    </div>
+
+    <div class="drawer-body">
+
+      <!-- SECTION 1: PERSONAL INFORMATION -->
+      <div class="cv-section-card">
+        <h6><i class="bi bi-person-fill"></i> Informasi Pribadi</h6>
+        <div class="cv-grid-2">
+          <div class="cv-field"><div class="cv-label">Nama Lengkap</div><div class="cv-value" id="cvFullName">-</div></div>
+          <div class="cv-field"><div class="cv-label">Tanggal Lahir</div><div class="cv-value" id="cvBirthDate">-</div></div>
+          <div class="cv-field"><div class="cv-label">Usia</div><div class="cv-value" id="cvAge">-</div></div>
+          <div class="cv-field"><div class="cv-label">Jenis Kelamin</div><div class="cv-value" id="cvGender">-</div></div>
+          <div class="cv-field"><div class="cv-label">Status Pernikahan</div><div class="cv-value" id="cvMaritalStatus">-</div></div>
+          <div class="cv-field"><div class="cv-label">NIK</div><div class="cv-value" id="cvNik">-</div></div>
+          <div class="cv-field"><div class="cv-label">Email</div><div class="cv-value" id="cvEmail">-</div></div>
+          <div class="cv-field"><div class="cv-label">No. HP</div><div class="cv-value" id="cvPhone">-</div></div>
+          <div class="cv-field"><div class="cv-label">Kota</div><div class="cv-value" id="cvCity">-</div></div>
+        </div>
+        <div class="cv-field mb-0"><div class="cv-label">Alamat</div><div class="cv-value" id="cvAddress">-</div></div>
+      </div>
+
+      <!-- SECTION 2: JOB INFORMATION -->
+      <div class="cv-section-card">
+        <h6><i class="bi bi-briefcase-fill"></i> Informasi Pekerjaan</h6>
+        <div class="cv-grid-2">
+          <div class="cv-field"><div class="cv-label">Posisi Dilamar</div><div class="cv-value" id="cvPosition">-</div></div>
+          <div class="cv-field"><div class="cv-label">Pendidikan</div><div class="cv-value" id="cvEducation">-</div></div>
+          <div class="cv-field"><div class="cv-label">Pengalaman Kerja</div><div class="cv-value" id="cvExperience">-</div></div>
+          <div class="cv-field"><div class="cv-label">Perusahaan Terakhir</div><div class="cv-value" id="cvLastCompany">-</div></div>
+          <div class="cv-field"><div class="cv-label">Status Bekerja Saat Ini</div><div class="cv-value" id="cvEmploymentStatus">-</div></div>
+          <div class="cv-field"><div class="cv-label">Kesediaan Bergabung</div><div class="cv-value" id="cvAvailability">-</div></div>
+          <div class="cv-field"><div class="cv-label">Ekspektasi Gaji</div><div class="cv-value" id="cvSalary">-</div></div>
+          <div class="cv-field"><div class="cv-label">Sumber Rekrutmen</div><div class="cv-value" id="cvSource">-</div></div>
+        </div>
+      </div>
+
+      <!-- SECTION 3: HR NOTES -->
+      <div class="cv-section-card">
+        <h6><i class="bi bi-chat-square-text-fill"></i> Catatan HR</h6>
+        <textarea class="form-control" id="cvHrNotes" rows="5" maxlength="2000"
+          placeholder="Contoh: Komunikasi baik, perlu interview kedua, negosiasi gaji, ditolak karena..."></textarea>
+        <div class="notes-toolbar">
+          <span id="notesCharCounter">0 / 2000 karakter</span>
+          <div class="d-flex align-items-center gap-2">
+            <span class="notes-save-state" id="notesSaveState">Tersimpan otomatis</span>
+            <button class="btn-reset-filter" id="btnSaveNotesManual" type="button" style="height:32px;padding:0 12px;font-size:12px;">
+              <i class="bi bi-save2"></i> Simpan
+            </button>
+          </div>
+        </div>
+        <div class="mt-1" style="font-size:11px;color:var(--color-text-soft);">Terakhir diperbarui: <span id="notesLastUpdated">-</span></div>
+      </div>
+
+      <!-- SECTION 4: ACTIVITY TIMELINE -->
+      <div class="cv-section-card">
+        <h6><i class="bi bi-clock-history"></i> Riwayat Aktivitas</h6>
+        <div class="timeline" id="drawerTimeline">
+          <div class="timeline-empty">Memuat riwayat...</div>
+        </div>
+      </div>
+
+      <!-- SECTION 5: DOCUMENTS -->
+      <div class="cv-section-card mb-0">
+        <h6><i class="bi bi-folder-fill"></i> Dokumen</h6>
+        <div class="row g-2">
+          <div class="col-6 col-md-3">
+            <div class="doc-card" id="docCardCv"><i class="bi bi-file-earmark-text"></i><div class="doc-name">CV</div><div class="doc-state">No Document Uploaded</div></div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="doc-card"><i class="bi bi-briefcase"></i><div class="doc-name">Portfolio</div><div class="doc-state">No Document Uploaded</div></div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="doc-card"><i class="bi bi-patch-check"></i><div class="doc-name">Certificate</div><div class="doc-state">No Document Uploaded</div></div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="doc-card"><i class="bi bi-person-bounding-box"></i><div class="doc-name">Photo</div><div class="doc-state">No Document Uploaded</div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- STICKY FOOTER ACTIONS -->
+    <div class="drawer-footer">
+      <div class="status-action-group">
+        <button class="btn-status accept" id="btnAccept" type="button" data-status="Accepted"><i class="bi bi-check-lg"></i> Accept</button>
+        <button class="btn-status hold" id="btnHold" type="button" data-status="Hold"><i class="bi bi-pause-fill"></i> Hold</button>
+        <button class="btn-status blacklist" id="btnBlacklist" type="button" data-status="Blacklist"><i class="bi bi-slash-circle"></i> Blacklist</button>
+        <button class="btn-status pending" id="btnPending" type="button" data-status="Pending"><i class="bi bi-hourglass-split"></i> Pending</button>
+        <button class="btn-status print" id="btnFooterPrint" type="button"><i class="bi bi-printer-fill"></i> Print</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============== MODAL: HOLD REASON ============== -->
+  <div class="modal fade" id="holdModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="border-radius:16px;">
+        <div class="modal-header"><h6 class="modal-title mb-0">Tahan Kandidat (Hold)</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <label class="form-label fw-semibold" style="font-size:13px;">Alasan Hold</label>
+          <textarea class="form-control mb-3" id="holdReasonInput" rows="3" placeholder="Contoh: Menunggu keputusan user department..."></textarea>
+          <label class="form-label fw-semibold" style="font-size:13px;">Tanggal Follow Up</label>
+          <input type="date" class="form-control" id="holdFollowUpInput">
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+          <button class="btn text-white" style="background:var(--color-primary);" id="btnConfirmHold">Simpan &amp; Hold</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============== MODAL: BLACKLIST REASON ============== -->
+  <div class="modal fade" id="blacklistModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="border-radius:16px;">
+        <div class="modal-header"><h6 class="modal-title mb-0">Blacklist Kandidat</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <label class="form-label fw-semibold" style="font-size:13px;">Alasan Blacklist</label>
+          <textarea class="form-control" id="blacklistReasonInput" rows="3" placeholder="Contoh: Melanggar kode etik, referensi negatif..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+          <button class="btn btn-danger" id="btnConfirmBlacklist">Simpan &amp; Blacklist</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============== MODAL: ACCEPT CONFIRM ============== -->
+  <div class="modal fade" id="acceptModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="border-radius:16px;">
+        <div class="modal-header"><h6 class="modal-title mb-0">Terima Kandidat</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <p style="font-size:13.5px;">Kandidat akan dipindahkan ke <strong>Master Data Employee</strong> dan Employee ID akan dibuat otomatis. Riwayat tetap tersimpan di Recruitment.</p>
+          <p style="font-size:13.5px;margin-bottom:0;">Lanjutkan proses accept?</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+          <button class="btn btn-success" id="btnConfirmAccept">Ya, Terima &amp; Buat Employee</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============== TOAST CONTAINER ============== -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer"></div>
+
+  <!-- ============== FAB SPEED DIAL ============== -->
+  <div class="fab-wrap">
+    <div class="fab-actions d-none" id="fabActions">
+      <div class="fab-action" id="fabRecruitmentForm"><i class="bi bi-file-earmark-plus"></i> Recruitment Form</div>
+      <div class="fab-action" id="fabMasterEmployee"><i class="bi bi-person-badge"></i> Master Employee</div>
+      <div class="fab-action" id="fabPrint"><i class="bi bi-printer"></i> Print</div>
+      <div class="fab-action" id="fabExport"><i class="bi bi-download"></i> Export</div>
+      <div class="fab-action" id="fabRefresh"><i class="bi bi-arrow-clockwise"></i> Refresh</div>
+    </div>
+    <button class="fab-main" id="fabMain" type="button"><i class="bi bi-plus-lg"></i></button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <script>
+    // ============================================================
+    // 0. SETTINGS (localStorage) + DARK MODE
+    // ============================================================
+    var DEFAULT_SETTINGS = {
+      theme: 'light',
+      pageSize: 10,
+      defaultStatus: '',
+      autoRefresh: true,
+      refreshInterval: 60
+    };
+
+    function loadSettings(){
+      try{
+        var raw = localStorage.getItem('ats_settings');
+        if (!raw) return Object.assign({}, DEFAULT_SETTINGS);
+        return Object.assign({}, DEFAULT_SETTINGS, JSON.parse(raw));
+      }catch(e){ return Object.assign({}, DEFAULT_SETTINGS); }
+    }
+
+    function saveSettingsToStorage(settings){
+      localStorage.setItem('ats_settings', JSON.stringify(settings));
+    }
+
+    var appSettings = loadSettings();
+    var pageSize = Number(appSettings.pageSize) || 10;
+    var autoRefreshTimer = null;
+
+    function applyTheme(theme){
+      document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'dark' : 'light');
+      var icon = document.querySelector('#btnDarkModeToggle i');
+      if (icon) icon.className = theme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+      document.getElementById('btnDarkModeToggle').classList.toggle('active', theme === 'dark');
+    }
+
+    applyTheme(appSettings.theme);
+
+    document.getElementById('btnDarkModeToggle').addEventListener('click', function(){
+      appSettings.theme = appSettings.theme === 'dark' ? 'light' : 'dark';
+      applyTheme(appSettings.theme);
+      saveSettingsToStorage(appSettings);
+      document.getElementById('settingTheme').value = appSettings.theme;
+    });
+
+    function hydrateSettingsForm(){
+      document.getElementById('settingTheme').value = appSettings.theme;
+      document.getElementById('settingPageSize').value = String(appSettings.pageSize);
+      document.getElementById('settingDefaultStatus').value = appSettings.defaultStatus;
+      document.getElementById('settingAutoRefresh').checked = !!appSettings.autoRefresh;
+      document.getElementById('settingRefreshInterval').value = appSettings.refreshInterval;
+    }
+    hydrateSettingsForm();
+
+    document.getElementById('btnSaveSettings').addEventListener('click', function(){
+      appSettings.theme = document.getElementById('settingTheme').value;
+      appSettings.pageSize = Number(document.getElementById('settingPageSize').value) || 10;
+      appSettings.defaultStatus = document.getElementById('settingDefaultStatus').value;
+      appSettings.autoRefresh = document.getElementById('settingAutoRefresh').checked;
+      appSettings.refreshInterval = Math.max(15, Number(document.getElementById('settingRefreshInterval').value) || 60);
+
+      saveSettingsToStorage(appSettings);
+      applyTheme(appSettings.theme);
+      pageSize = appSettings.pageSize;
+      document.getElementById('statusFilter').value = appSettings.defaultStatus;
+
+      setupAutoRefresh();
+      applyFilters();
+      showToast('Pengaturan berhasil disimpan.', 'success');
+    });
+
+    // ============================================================
+    // 0b. SIDEBAR / NAVIGATION
+    // ============================================================
+    var sidebar = document.getElementById('sidebar');
+    var overlay = document.getElementById('sidebarOverlay');
+    var btnBurger = document.getElementById('btnBurger');
+
+    function openSidebar(){ sidebar.classList.add('show'); overlay.classList.add('show'); }
+    function closeSidebar(){ sidebar.classList.remove('show'); overlay.classList.remove('show'); }
+    btnBurger.addEventListener('click', openSidebar);
+    overlay.addEventListener('click', closeSidebar);
+
+    var pageTitles = {
+      pageDashboard: ['Dashboard', 'Ringkasan rekrutmen & data kandidat'],
+      pageSettings: ['Settings', 'Preferensi tampilan & perilaku dashboard']
+    };
+
+    function showPage(pageId){
+      document.querySelectorAll('.page-section').forEach(function(s){ s.classList.remove('active'); });
+      var target = document.getElementById(pageId);
+      if (target) target.classList.add('active');
+      var meta = pageTitles[pageId] || ['Dashboard', ''];
+      document.getElementById('pageTitleText').innerText = meta[0];
+      document.getElementById('pageSubtitleText').innerText = meta[1];
+    }
+
+    document.querySelectorAll('.nav-item').forEach(function(item){
+      item.addEventListener('click', function(){
+        document.querySelectorAll('.nav-item').forEach(function(i){ i.classList.remove('active'); });
+        item.classList.add('active');
+
+        if (item.dataset.external === 'employee'){
+          showToast('Buka sheet "Employee" di spreadsheet untuk melihat Master Data karyawan.', 'success');
+        } else if (item.dataset.page){
+          showPage(item.dataset.page);
+          if (item.dataset.status){
+            document.getElementById('statusFilter').value = item.dataset.status;
+            applyFilters();
+          }
+          if (item.dataset.scroll){
+            setTimeout(function(){
+              var el = document.getElementById(item.dataset.scroll);
+              if (el) el.scrollIntoView({ behavior:'smooth', block:'start' });
+            }, 50);
+          }
+        }
+
+        if (window.innerWidth < 992) closeSidebar();
+      });
+    });
+
+    document.getElementById('btnToggleMore').addEventListener('click', function(){
+      document.getElementById('filterBarMore').classList.toggle('show');
+    });
+    document.getElementById('btnApplyMoreFilter').addEventListener('click', applyFilters);
+
+    // ============================================================
+    // 1. STATE
+    // ============================================================
+    var allCandidates = [];
+    var filteredCandidates = [];
+    var currentPage = 1;
+    var chartInstances = {};
+    var activeCandidateId = null;
+    var notesAutoSaveTimer = null;
+
+    // ============================================================
+    // 2. HELPERS
+    // ============================================================
+    function statusBadgeClass(status){
+      var s = (status || '').toLowerCase();
+      if (s === 'accepted') return 'accepted';
+      if (s === 'hold') return 'hold';
+      if (s === 'blacklist') return 'blacklist';
+      return 'pending';
+    }
+
+    function initials(name){
+      if (!name) return '?';
+      var parts = name.trim().split(/\s+/);
+      var first = parts[0] ? parts[0][0] : '';
+      var second = parts.length > 1 ? parts[1][0] : '';
+      return (first + second).toUpperCase();
+    }
+
+    function escapeHtml(str){
+      if (str === null || str === undefined) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function formatRupiah(num){
+      var n = Number(num) || 0;
+      return 'Rp ' + new Intl.NumberFormat('id-ID').format(n);
+    }
+
+    function parseDdMmYyyy(dateStr){
+      if (!dateStr) return null;
+      var datePart = dateStr.split(' ')[0];
+      var segs = datePart.split('/');
+      if (segs.length !== 3) return null;
+      return new Date(Number(segs[2]), Number(segs[1]) - 1, Number(segs[0]));
+    }
+
+    function showToast(message, type){
+      type = type || 'success';
+      var iconMap = { success: 'bi-check-circle-fill', warning: 'bi-exclamation-triangle-fill', error: 'bi-x-circle-fill' };
+      var colorMap = { success: '#166534', warning: '#8a6100', error: '#991b1b' };
+      var bgMap = { success: '#ecfdf3', warning: '#fff8e6', error: '#fef2f2' };
+
+      var toastEl = document.createElement('div');
+      toastEl.className = 'toast toast-custom align-items-center border-0';
+      toastEl.style.background = bgMap[type];
+      toastEl.style.color = colorMap[type];
+      toastEl.setAttribute('role', 'alert');
+      toastEl.innerHTML =
+        '<div class="d-flex">' +
+          '<div class="toast-body"><i class="bi ' + iconMap[type] + ' me-2"></i>' + escapeHtml(message) + '</div>' +
+          '<button type="button" class="btn-close btn-close-sm me-2 m-auto" data-bs-dismiss="toast"></button>' +
+        '</div>';
+
+      document.getElementById('toastContainer').appendChild(toastEl);
+      var toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+      toast.show();
+      toastEl.addEventListener('hidden.bs.toast', function(){ toastEl.remove(); });
+    }
+
+    // Simple animated counter (Section 4 - Dashboard Cards)
+    function animateCounter(el, toValue){
+      var fromValue = Number(el.getAttribute('data-current') || 0);
+      var duration = 600;
+      var startTime = null;
+
+      function step(ts){
+        if (!startTime) startTime = ts;
+        var progress = Math.min(1, (ts - startTime) / duration);
+        var eased = 1 - Math.pow(1 - progress, 3);
+        var value = Math.round(fromValue + (toValue - fromValue) * eased);
+        el.innerText = value;
+        if (progress < 1) requestAnimationFrame(step);
+        else el.setAttribute('data-current', toValue);
+      }
+      requestAnimationFrame(step);
+    }
+
+    // ============================================================
+    // 3. STATS CARDS
+    // ============================================================
+    function updateStats(data){
+      var total = data.length;
+      var count = function(fn){ return data.filter(fn).length; };
+      var pending = count(function(r){ return (r.status||'Pending').toLowerCase() === 'pending'; });
+      var accepted = count(function(r){ return (r.status||'').toLowerCase() === 'accepted'; });
+      var hold = count(function(r){ return (r.status||'').toLowerCase() === 'hold'; });
+      var blacklist = count(function(r){ return (r.status||'').toLowerCase() === 'blacklist'; });
+
+      animateCounter(document.getElementById('statTotal'), total);
+      animateCounter(document.getElementById('statPending'), pending);
+      animateCounter(document.getElementById('statAccepted'), accepted);
+      animateCounter(document.getElementById('statHold'), hold);
+      animateCounter(document.getElementById('statBlacklist'), blacklist);
+      document.getElementById('navRecruitmentCount').innerText = total;
+    }
+
+    // ============================================================
+    // 4. CHARTS
+    // ============================================================
+    function tallyBy(data, keyFn, topN){
+      var map = {};
+      data.forEach(function(r){
+        var k = keyFn(r) || 'Tidak diketahui';
+        map[k] = (map[k] || 0) + 1;
+      });
+      var entries = Object.keys(map).map(function(k){ return [k, map[k]]; }).sort(function(a,b){ return b[1]-a[1]; });
+      if (topN) entries = entries.slice(0, topN);
+      return { labels: entries.map(function(e){ return e[0]; }), values: entries.map(function(e){ return e[1]; }) };
+    }
+
+    function buildOrUpdateChart(canvasId, type, labels, values, colors){
+      var ctx = document.getElementById(canvasId).getContext('2d');
+      if (chartInstances[canvasId]) chartInstances[canvasId].destroy();
+      var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      chartInstances[canvasId] = new Chart(ctx, {
+        type: type,
+        data: {
+          labels: labels,
+          datasets: [{ data: values, backgroundColor: colors, borderWidth: type === 'line' ? 2 : 0, borderColor: '#005BAC', tension: .35, fill: type === 'line' }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: (type === 'pie' || type === 'doughnut'), position: 'bottom', labels: { boxWidth: 10, font: { size: 11 }, color: isDark ? '#E7ECF2' : '#1F2937' } } },
+          scales: (type === 'bar' || type === 'line') ? {
+            y: { beginAtZero: true, ticks: { precision: 0, color: isDark ? '#93A2B4' : '#6b7280' }, grid: { color: isDark ? '#26313D' : '#E5E7EB' } },
+            x: { ticks: { color: isDark ? '#93A2B4' : '#6b7280' }, grid: { display:false } }
+          } : {}
+        }
+      });
+    }
+
+    var palette = ['#005BAC','#FDB913','#166534','#0b4a86','#991b1b','#6d28d9','#0e7490','#8a6100','#4b5563','#c2410c'];
+
+    function renderCharts(data){
+      var monthMap = {};
+      data.forEach(function(r){
+        var d = parseDdMmYyyy(r.createdDate);
+        if (!d) return;
+        var key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+        monthMap[key] = (monthMap[key] || 0) + 1;
+      });
+      var monthKeys = Object.keys(monthMap).sort();
+      var monthLabels = monthKeys.map(function(k){
+        var parts = k.split('-');
+        var names = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+        return names[Number(parts[1])-1] + ' ' + parts[0];
+      });
+      buildOrUpdateChart('chartMonthly', 'line', monthLabels, monthKeys.map(function(k){ return monthMap[k]; }), palette[0]);
+    }
+
+    // ============================================================
+    // 5. DROPDOWN OPTIONS (built from live data)
+    // ============================================================
+    function populateDropdown(selectEl, values, placeholder){
+      var current = selectEl.value;
+      var unique = Array.from(new Set(values.filter(Boolean))).sort();
+      selectEl.innerHTML = '<option value="">' + placeholder + '</option>' +
+        unique.map(function(v){ return '<option value="' + escapeHtml(v) + '">' + escapeHtml(v) + '</option>'; }).join('');
+      if (unique.indexOf(current) !== -1) selectEl.value = current;
+    }
+
+    function populateAllDropdowns(data){
+      populateDropdown(document.getElementById('positionFilter'), data.map(function(r){ return r.positionApplied; }), 'Semua Posisi');
+      populateDropdown(document.getElementById('educationFilter'), data.map(function(r){ return r.education; }), 'Semua Pendidikan');
+      populateDropdown(document.getElementById('sourceFilter'), data.map(function(r){ return r.recruitmentSource; }), 'Semua Sumber');
+      populateDropdown(document.getElementById('employmentStatusFilter'), data.map(function(r){ return r.currentEmploymentStatus; }), 'Semua Status Kerja');
+      populateDropdown(document.getElementById('cityFilter'), data.map(function(r){ return r.city; }), 'Semua Kota');
+      populateDropdown(document.getElementById('experienceFilter'), data.map(function(r){ return r.workExperience; }), 'Semua Pengalaman');
+    }
+
+    // ============================================================
+    // 6. FILTER + SORT
+    // ============================================================
+    function applyFilters(){
+      var keyword = (document.getElementById('searchInput').value || document.getElementById('topbarSearchInput').value || '').trim().toLowerCase();
+      var statusVal = document.getElementById('statusFilter').value;
+      var positionVal = document.getElementById('positionFilter').value;
+      var educationVal = document.getElementById('educationFilter').value;
+      var genderVal = document.getElementById('genderFilter').value;
+      var sourceVal = document.getElementById('sourceFilter').value;
+      var employmentVal = document.getElementById('employmentStatusFilter').value;
+      var cityVal = document.getElementById('cityFilter').value;
+      var experienceVal = document.getElementById('experienceFilter').value;
+      var dateFrom = document.getElementById('dateFromFilter').value;
+      var dateTo = document.getElementById('dateToFilter').value;
+      var salaryMin = document.getElementById('salaryMinFilter').value;
+      var salaryMax = document.getElementById('salaryMaxFilter').value;
+      var ageMin = document.getElementById('ageMinFilter').value;
+      var ageMax = document.getElementById('ageMaxFilter').value;
+
+      filteredCandidates = allCandidates.filter(function(row){
+        var matchesKeyword = !keyword ||
+          (row.recruitmentId||'').toLowerCase().indexOf(keyword) !== -1 ||
+          (row.fullName||'').toLowerCase().indexOf(keyword) !== -1 ||
+          (row.phone||'').toLowerCase().indexOf(keyword) !== -1 ||
+          (row.email||'').toLowerCase().indexOf(keyword) !== -1 ||
+          (row.positionApplied||'').toLowerCase().indexOf(keyword) !== -1 ||
+          (row.city||'').toLowerCase().indexOf(keyword) !== -1;
+
+        var matchesStatus = !statusVal || (row.status||'Pending').toLowerCase() === statusVal.toLowerCase();
+        var matchesPosition = !positionVal || row.positionApplied === positionVal;
+        var matchesEducation = !educationVal || row.education === educationVal;
+        var matchesGender = !genderVal || row.gender === genderVal;
+        var matchesSource = !sourceVal || row.recruitmentSource === sourceVal;
+        var matchesEmployment = !employmentVal || row.currentEmploymentStatus === employmentVal;
+        var matchesCity = !cityVal || row.city === cityVal;
+        var matchesExperience = !experienceVal || row.workExperience === experienceVal;
+
+        var matchesSalary = true;
+        if (salaryMin) matchesSalary = matchesSalary && (Number(row.expectedSalary)||0) >= Number(salaryMin);
+        if (salaryMax) matchesSalary = matchesSalary && (Number(row.expectedSalary)||0) <= Number(salaryMax);
+
+        var matchesAge = true;
+        if (ageMin) matchesAge = matchesAge && (Number(row.age)||0) >= Number(ageMin);
+        if (ageMax) matchesAge = matchesAge && (Number(row.age)||0) <= Number(ageMax);
+
+        var matchesDateRange = true;
+        var rowDate = parseDdMmYyyy(row.createdDate);
+        if (dateFrom && rowDate){ matchesDateRange = matchesDateRange && (rowDate >= new Date(dateFrom)); }
+        if (dateTo && rowDate){ var toDate = new Date(dateTo); toDate.setHours(23,59,59,999); matchesDateRange = matchesDateRange && (rowDate <= toDate); }
+
+        return matchesKeyword && matchesStatus && matchesPosition && matchesEducation && matchesGender &&
+               matchesSource && matchesEmployment && matchesCity && matchesExperience &&
+               matchesSalary && matchesAge && matchesDateRange;
+      });
+
+      sortFilteredCandidates();
+      currentPage = 1;
+      renderTable();
+      renderCharts(filteredCandidates);
+    }
+
+    function sortFilteredCandidates(){
+      var sortVal = document.getElementById('sortSelect').value;
+      filteredCandidates.sort(function(a, b){
+        switch(sortVal){
+          case 'oldest': return (parseDdMmYyyy(a.createdDate) || 0) - (parseDdMmYyyy(b.createdDate) || 0);
+          case 'name_asc': return (a.fullName||'').localeCompare(b.fullName||'');
+          case 'name_desc': return (b.fullName||'').localeCompare(a.fullName||'');
+          case 'age_desc': return (Number(b.age)||0) - (Number(a.age)||0);
+          case 'age_asc': return (Number(a.age)||0) - (Number(b.age)||0);
+          case 'salary_desc': return (Number(b.expectedSalary)||0) - (Number(a.expectedSalary)||0);
+          case 'salary_asc': return (Number(a.expectedSalary)||0) - (Number(b.expectedSalary)||0);
+          case 'newest': default: return (parseDdMmYyyy(b.createdDate) || 0) - (parseDdMmYyyy(a.createdDate) || 0);
+        }
+      });
+    }
+
+    ['searchInput','topbarSearchInput'].forEach(function(id){
+      document.getElementById(id).addEventListener('input', applyFilters);
+    });
+    ['statusFilter','positionFilter','sortSelect','educationFilter','genderFilter','sourceFilter',
+     'employmentStatusFilter','cityFilter','experienceFilter']
+      .forEach(function(id){ document.getElementById(id).addEventListener('change', applyFilters); });
+
+    document.getElementById('btnResetFilter').addEventListener('click', function(){
+      ['searchInput','topbarSearchInput'].forEach(function(id){ document.getElementById(id).value = ''; });
+      ['statusFilter','positionFilter','educationFilter','genderFilter','sourceFilter',
+       'employmentStatusFilter','cityFilter','experienceFilter']
+        .forEach(function(id){ document.getElementById(id).value = ''; });
+      ['salaryMinFilter','salaryMaxFilter','ageMinFilter','ageMaxFilter','dateFromFilter','dateToFilter']
+        .forEach(function(id){ document.getElementById(id).value = ''; });
+      document.getElementById('sortSelect').value = 'newest';
+      applyFilters();
+    });
+
+    // ============================================================
+    // 7. RENDER TABLE (paginated)
+    // ============================================================
+    function renderTable(){
+      var tbody = document.getElementById('tableBody');
+      var loading = document.getElementById('tableLoading');
+      var empty = document.getElementById('tableEmpty');
+      loading.classList.add('d-none');
+
+      if (!filteredCandidates || filteredCandidates.length === 0){
+        tbody.innerHTML = '';
+        empty.classList.remove('d-none');
+        document.getElementById('footerCount').innerText = 'Menampilkan 0 dari ' + allCandidates.length + ' data';
+        renderPagination();
+        return;
+      }
+      empty.classList.add('d-none');
+
+      var totalPages = Math.max(1, Math.ceil(filteredCandidates.length / pageSize));
+      if (currentPage > totalPages) currentPage = totalPages;
+      var start = (currentPage - 1) * pageSize;
+      var pageData = filteredCandidates.slice(start, start + pageSize);
+
+      tbody.innerHTML = pageData.map(function(row){
+        return '' +
+          '<tr>' +
+            '<td><div class="avatar-sm">' + escapeHtml(initials(row.fullName)) + '</div></td>' +
+            '<td><span class="id-mono">' + escapeHtml(row.recruitmentId) + '</span></td>' +
+            '<td><div class="cand-name">' + escapeHtml(row.fullName) + '</div><div class="cand-sub">' + escapeHtml(row.email) + '</div></td>' +
+            '<td>' + escapeHtml(row.age) + ' Th</td>' +
+            '<td>' + escapeHtml(row.gender === 'Male' ? 'Laki-laki' : (row.gender === 'Female' ? 'Perempuan' : row.gender)) + '</td>' +
+            '<td>' + escapeHtml(row.positionApplied) + '</td>' +
+            '<td>' + escapeHtml(row.education) + '</td>' +
+            '<td>' + formatRupiah(row.expectedSalary) + '</td>' +
+            '<td>' + escapeHtml(row.recruitmentSource) + '</td>' +
+            '<td><span class="badge-status ' + statusBadgeClass(row.status) + '">' + escapeHtml(row.status || 'Pending') + '</span></td>' +
+            '<td>' + escapeHtml(row.createdDate) + '</td>' +
+            '<td><button class="btn-action" title="Lihat detail" data-id="' + escapeHtml(row.recruitmentId) + '"><i class="bi bi-eye"></i></button></td>' +
+          '</tr>';
+      }).join('');
+
+      var shownStart = filteredCandidates.length === 0 ? 0 : start + 1;
+      var shownEnd = Math.min(start + pageSize, filteredCandidates.length);
+      document.getElementById('footerCount').innerText =
+        'Menampilkan ' + shownStart + '\u2013' + shownEnd + ' dari ' + filteredCandidates.length + ' data (total ' + allCandidates.length + ')';
+
+      renderPagination();
+      attachViewHandlers();
+    }
+
+    function renderPagination(){
+      var nav = document.getElementById('paginationUi');
+      var totalPages = Math.max(1, Math.ceil(filteredCandidates.length / pageSize));
+      var html = '<button class="page-btn" type="button" id="pagePrev" ' + (currentPage === 1 ? 'disabled' : '') + '><i class="bi bi-chevron-left"></i></button>';
+
+      var maxButtons = 5;
+      var startPage = Math.max(1, currentPage - Math.floor(maxButtons/2));
+      var endPage = Math.min(totalPages, startPage + maxButtons - 1);
+      startPage = Math.max(1, endPage - maxButtons + 1);
+
+      if (startPage > 1){
+        html += '<button class="page-btn" type="button" data-page="1">1</button>';
+        if (startPage > 2) html += '<span class="page-btn" style="border:none;background:transparent;cursor:default;">&hellip;</span>';
+      }
+      for (var p = startPage; p <= endPage; p++){
+        html += '<button class="page-btn ' + (p === currentPage ? 'active' : '') + '" type="button" data-page="' + p + '">' + p + '</button>';
+      }
+      if (endPage < totalPages){
+        if (endPage < totalPages - 1) html += '<span class="page-btn" style="border:none;background:transparent;cursor:default;">&hellip;</span>';
+        html += '<button class="page-btn" type="button" data-page="' + totalPages + '">' + totalPages + '</button>';
+      }
+      html += '<button class="page-btn" type="button" id="pageNext" ' + (currentPage === totalPages ? 'disabled' : '') + '><i class="bi bi-chevron-right"></i></button>';
+
+      nav.innerHTML = html;
+      nav.querySelectorAll('button[data-page]').forEach(function(btn){
+        btn.addEventListener('click', function(){ currentPage = parseInt(btn.getAttribute('data-page'), 10); renderTable(); });
+      });
+      var prevBtn = document.getElementById('pagePrev');
+      var nextBtn = document.getElementById('pageNext');
+      if (prevBtn) prevBtn.addEventListener('click', function(){ if (currentPage > 1){ currentPage--; renderTable(); } });
+      if (nextBtn) nextBtn.addEventListener('click', function(){ if (currentPage < totalPages){ currentPage++; renderTable(); } });
+    }
+
+    document.querySelectorAll('table.hr-table thead th').forEach(function(th, idx){
+      var sortKeyMap = { 2: 'name', 3: 'age', 7: 'salary', 10: 'date' };
+      if (!(idx in sortKeyMap)) return;
+      th.addEventListener('click', function(){
+        var key = sortKeyMap[idx];
+        var sel = document.getElementById('sortSelect');
+        if (key === 'name') sel.value = sel.value === 'name_asc' ? 'name_desc' : 'name_asc';
+        else if (key === 'age') sel.value = sel.value === 'age_desc' ? 'age_asc' : 'age_desc';
+        else if (key === 'salary') sel.value = sel.value === 'salary_desc' ? 'salary_asc' : 'salary_desc';
+        else if (key === 'date') sel.value = sel.value === 'newest' ? 'oldest' : 'newest';
+        applyFilters();
+      });
+    });
+
+    // ============================================================
+    // 8. DRAWER — OPEN / CLOSE / RENDER
+    // ============================================================
+    var drawerOverlay = document.getElementById('drawerOverlay');
+    var drawerPanel = document.getElementById('drawerPanel');
+
+    function openDrawer(){ drawerOverlay.classList.add('show'); drawerPanel.classList.add('show'); document.body.style.overflow = 'hidden'; }
+    function closeDrawer(){ drawerOverlay.classList.remove('show'); drawerPanel.classList.remove('show'); document.body.style.overflow = ''; }
+    document.getElementById('btnDrawerClose').addEventListener('click', closeDrawer);
+    drawerOverlay.addEventListener('click', closeDrawer);
+
+    function attachViewHandlers(){
+      document.querySelectorAll('.btn-action').forEach(function(btn){
+        btn.addEventListener('click', function(){ openCandidateDrawer(btn.getAttribute('data-id')); });
+      });
+    }
+
+    function renderTimeline(items, fallbackCreatedDate){
+      var wrap = document.getElementById('drawerTimeline');
+      if (!items || items.length === 0){
+        wrap.innerHTML = '<div class="timeline-empty">Belum ada riwayat aktivitas selain pendaftaran (' + escapeHtml(fallbackCreatedDate || '-') + ').</div>';
+        return;
+      }
+      var iconMap = { 'Created':'bi-plus-circle-fill', 'Update Status':'bi-arrow-repeat', 'Hold':'bi-pause-fill', 'Blacklist':'bi-slash-circle-fill', 'Accepted':'bi-check-lg' };
+      var dotClassMap = { 'Created':'created', 'Accepted':'accepted', 'Hold':'hold', 'Blacklist':'blacklist' };
+
+      wrap.innerHTML = items.map(function(ev){
+        var dotClass = dotClassMap[ev.action] || 'pending';
+        var icon = iconMap[ev.action] || 'bi-dot';
+        return '' +
+          '<div class="timeline-item">' +
+            '<div class="timeline-dot ' + dotClass + '"><i class="bi ' + icon + '"></i></div>' +
+            '<div class="timeline-title">' + escapeHtml(ev.action) + '</div>' +
+            '<div class="timeline-desc">' + escapeHtml(ev.oldValue) + ' &rarr; ' + escapeHtml(ev.newValue) + '</div>' +
+            '<div class="timeline-time"><i class="bi bi-clock"></i> ' + escapeHtml(ev.timestamp) + ' &middot; ' + escapeHtml(ev.user) + '</div>' +
+          '</div>';
+      }).join('');
+    }
+
+    function openCandidateDrawer(id){
+      var c = allCandidates.find(function(x){ return x.recruitmentId === id; });
+      if (!c) return;
+      activeCandidateId = id;
+
+      document.getElementById('drawerAvatar').innerText = initials(c.fullName);
+      document.getElementById('drawerCandidateName').innerText = c.fullName || '-';
+      document.getElementById('drawerPosition').innerText = c.positionApplied || '-';
+      document.getElementById('drawerRecId').innerText = c.recruitmentId || '-';
+      document.getElementById('drawerCreatedDate').innerText = c.createdDate || '-';
+      document.getElementById('drawerStatusBadgeWrap').innerHTML =
+        '<span class="badge-status lg ' + statusBadgeClass(c.status) + '">' + escapeHtml(c.status || 'Pending') + '</span>' +
+        (c.employeeId ? ' <span class="badge-status lg accepted" style="margin-left:6px;">Employee ID: ' + escapeHtml(c.employeeId) + '</span>' : '');
+
+      document.getElementById('cvFullName').innerText = c.fullName || '-';
+      document.getElementById('cvBirthDate').innerText = c.birthDate || '-';
+      document.getElementById('cvAge').innerText = c.age ? c.age + ' Tahun' : '-';
+      document.getElementById('cvGender').innerText = c.gender === 'Male' ? 'Laki-laki' : (c.gender === 'Female' ? 'Perempuan' : (c.gender || '-'));
+      document.getElementById('cvMaritalStatus').innerText = c.maritalStatus || '-';
+      document.getElementById('cvNik').innerText = c.nik || '-';
+      document.getElementById('cvPhone').innerText = c.phone || '-';
+      document.getElementById('cvEmail').innerText = c.email || '-';
+      document.getElementById('cvAddress').innerText = c.address || '-';
+      document.getElementById('cvCity').innerText = c.city || '-';
+
+      document.getElementById('cvPosition').innerText = c.positionApplied || '-';
+      document.getElementById('cvEducation').innerText = c.education || '-';
+      document.getElementById('cvExperience').innerText = c.workExperience || '-';
+      document.getElementById('cvLastCompany').innerText = c.lastCompany || '-';
+      document.getElementById('cvEmploymentStatus').innerText = c.currentEmploymentStatus || '-';
+      document.getElementById('cvAvailability').innerText = c.availableToJoin || '-';
+      document.getElementById('cvSalary').innerText = formatRupiah(c.expectedSalary);
+      document.getElementById('cvSource').innerText = c.recruitmentSource || '-';
+
+      var notesEl = document.getElementById('cvHrNotes');
+      notesEl.value = c.hrNotes || '';
+      document.getElementById('notesCharCounter').innerText = (c.hrNotes || '').length + ' / 2000 karakter';
+      document.getElementById('notesLastUpdated').innerText = c.updatedAt || '-';
+      document.getElementById('notesSaveState').innerText = 'Tersimpan otomatis';
+      document.getElementById('notesSaveState').className = 'notes-save-state';
+
+      var docCard = document.getElementById('docCardCv');
+      if (c.cvLink){
+        docCard.classList.add('has-doc');
+        docCard.querySelector('.doc-state').innerText = 'Dokumen tersedia';
+      } else {
+        docCard.classList.remove('has-doc');
+        docCard.querySelector('.doc-state').innerText = 'No Document Uploaded';
+      }
+
+      updateStatusButtonsUI(c.status || 'Pending');
+
+      document.getElementById('drawerTimeline').innerHTML = '<div class="timeline-empty">Memuat riwayat...</div>';
+      google.script.run
+        .withSuccessHandler(function(events){ renderTimeline(events, c.createdDate); })
+        .withFailureHandler(function(){ renderTimeline([], c.createdDate); })
+        .getAuditLogForCandidate(id);
+
+      openDrawer();
+    }
+
+    function updateStatusButtonsUI(currentStatus){
+      var map = { accept: 'Accepted', hold: 'Hold', blacklist: 'Blacklist', pending: 'Pending' };
+      Object.keys(map).forEach(function(key){
+        var btn = document.getElementById('btn' + key.charAt(0).toUpperCase() + key.slice(1));
+        if (!btn) return;
+        btn.classList.toggle('current', map[key].toLowerCase() === (currentStatus || '').toLowerCase());
+      });
+    }
+
+    // ============================================================
+    // 9. HR NOTES — AUTO SAVE
+    // ============================================================
+    var cvHrNotesEl = document.getElementById('cvHrNotes');
+    cvHrNotesEl.addEventListener('input', function(){
+      document.getElementById('notesCharCounter').innerText = cvHrNotesEl.value.length + ' / 2000 karakter';
+      var stateEl = document.getElementById('notesSaveState');
+      stateEl.innerText = 'Menyimpan...';
+      stateEl.className = 'notes-save-state saving';
+
+      clearTimeout(notesAutoSaveTimer);
+      notesAutoSaveTimer = setTimeout(function(){ persistHrNotes(); }, 1200);
+    });
+
+    document.getElementById('btnSaveNotesManual').addEventListener('click', function(){
+      clearTimeout(notesAutoSaveTimer);
+      persistHrNotes();
+    });
+
+    function persistHrNotes(){
+      if (!activeCandidateId) return;
+      var value = cvHrNotesEl.value;
+      var stateEl = document.getElementById('notesSaveState');
+
+      google.script.run
+        .withSuccessHandler(function(result){
+          if (result && result.success){
+            var target = allCandidates.find(function(c){ return c.recruitmentId === activeCandidateId; });
+            if (target){ target.hrNotes = value; target.updatedAt = result.updatedAt; }
+            document.getElementById('notesLastUpdated').innerText = result.updatedAt;
+            stateEl.innerText = 'Tersimpan otomatis';
+            stateEl.className = 'notes-save-state saved';
+          } else {
+            stateEl.innerText = 'Gagal menyimpan';
+            stateEl.className = 'notes-save-state';
+          }
+        })
+        .withFailureHandler(function(){
+          stateEl.innerText = 'Gagal menyimpan';
+          stateEl.className = 'notes-save-state';
+        })
+        .saveHrNotes(activeCandidateId, value);
+    }
+
+    // ============================================================
+    // 10. STATUS ACTIONS — Accept / Hold / Blacklist / Pending
+    // ============================================================
+    var acceptModal = new bootstrap.Modal(document.getElementById('acceptModal'));
+    var holdModal = new bootstrap.Modal(document.getElementById('holdModal'));
+    var blacklistModal = new bootstrap.Modal(document.getElementById('blacklistModal'));
+
+    function lockStatusButtons(lock){
+      document.querySelectorAll('.btn-status').forEach(function(b){ b.disabled = lock; });
+    }
+
+    function onStatusUpdateSuccess(result, successMessage){
+      lockStatusButtons(false);
+      if (result && result.success){
+        var target = allCandidates.find(function(c){ return c.recruitmentId === activeCandidateId; });
+        if (target){
+          target.status = result.newStatus;
+          if (result.employeeId) target.employeeId = result.employeeId;
+        }
+        showToast(successMessage, 'success');
+        closeDrawer();
+        populateAllDropdowns(allCandidates);
+        updateStats(allCandidates);
+        applyFilters();
+      } else {
+        showToast('Gagal memperbarui status: ' + (result ? result.message : 'Unknown error'), 'error');
+      }
+    }
+
+    function onStatusUpdateFailure(error){
+      lockStatusButtons(false);
+      showToast('Terjadi kesalahan: ' + error.message, 'error');
+    }
+
+    document.getElementById('btnAccept').addEventListener('click', function(){ acceptModal.show(); });
+    document.getElementById('btnConfirmAccept').addEventListener('click', function(){
+      if (!activeCandidateId) return;
+      acceptModal.hide();
+      lockStatusButtons(true);
+      var notes = cvHrNotesEl.value;
+      google.script.run
+        .withSuccessHandler(function(result){ onStatusUpdateSuccess(result, 'Kandidat diterima. Employee ID: ' + (result && result.employeeId ? result.employeeId : '-')); })
+        .withFailureHandler(onStatusUpdateFailure)
+        .acceptCandidateToEmployee(activeCandidateId, notes);
+    });
+
+    document.getElementById('btnHold').addEventListener('click', function(){
+      document.getElementById('holdReasonInput').value = '';
+      document.getElementById('holdFollowUpInput').value = '';
+      holdModal.show();
+    });
+    document.getElementById('btnConfirmHold').addEventListener('click', function(){
+      if (!activeCandidateId) return;
+      var reason = document.getElementById('holdReasonInput').value;
+      var followUp = document.getElementById('holdFollowUpInput').value;
+      holdModal.hide();
+      lockStatusButtons(true);
+      var notes = cvHrNotesEl.value;
+      google.script.run
+        .withSuccessHandler(function(result){ onStatusUpdateSuccess(result, 'Kandidat di-hold. Follow up: ' + (followUp || '-')); })
+        .withFailureHandler(onStatusUpdateFailure)
+        .holdCandidate(activeCandidateId, reason, followUp, notes);
+    });
+
+    document.getElementById('btnBlacklist').addEventListener('click', function(){
+      document.getElementById('blacklistReasonInput').value = '';
+      blacklistModal.show();
+    });
+    document.getElementById('btnConfirmBlacklist').addEventListener('click', function(){
+      if (!activeCandidateId) return;
+      var reason = document.getElementById('blacklistReasonInput').value;
+      blacklistModal.hide();
+      lockStatusButtons(true);
+      var notes = cvHrNotesEl.value;
+      google.script.run
+        .withSuccessHandler(function(result){ onStatusUpdateSuccess(result, 'Kandidat berhasil di-blacklist.'); })
+        .withFailureHandler(onStatusUpdateFailure)
+        .blacklistCandidate(activeCandidateId, reason, notes);
+    });
+
+    document.getElementById('btnPending').addEventListener('click', function(){
+      if (!activeCandidateId) return;
+      lockStatusButtons(true);
+      var notes = cvHrNotesEl.value;
+      google.script.run
+        .withSuccessHandler(function(result){ onStatusUpdateSuccess(result, 'Status kandidat dikembalikan ke Pending.'); })
+        .withFailureHandler(onStatusUpdateFailure)
+        .updateCandidateStatus(activeCandidateId, 'Pending', notes);
+    });
+
+    // Print (drawer)
+    function printDrawer(){ window.print(); }
+    document.getElementById('btnDrawerPrint').addEventListener('click', printDrawer);
+    document.getElementById('btnFooterPrint').addEventListener('click', printDrawer);
+
+    // ============================================================
+    // 11. EXPORT (CSV / Excel / PDF) — data terfilter saja
+    // ============================================================
+    function getExportRows(){
+      return filteredCandidates.map(function(r){
+        return {
+          'Recruitment ID': r.recruitmentId, 'Nama Lengkap': r.fullName, 'Usia': r.age,
+          'Gender': r.gender, 'Kota': r.city, 'Posisi Dilamar': r.positionApplied,
+          'Pendidikan': r.education, 'Pengalaman': r.workExperience, 'Ekspektasi Gaji': r.expectedSalary,
+          'Sumber': r.recruitmentSource, 'Status': r.status, 'Tanggal Daftar': r.createdDate,
+          'Email': r.email, 'No. HP': r.phone, 'Employee ID': r.employeeId || ''
+        };
+      });
+    }
+
+    document.getElementById('btnExportCsv').addEventListener('click', function(){
+      var rows = getExportRows();
+      if (rows.length === 0){ showToast('Tidak ada data untuk diexport.', 'warning'); return; }
+      var headers = Object.keys(rows[0]);
+      var csv = headers.join(',') + '\n' + rows.map(function(row){
+        return headers.map(function(h){ return '"' + String(row[h] ?? '').replace(/"/g, '""') + '"'; }).join(',');
+      }).join('\n');
+      var blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+      var link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'data-kandidat-' + new Date().toISOString().slice(0,10) + '.csv';
+      link.click();
+      showToast('Data berhasil diexport ke CSV (data terfilter).', 'success');
+    });
+
+    document.getElementById('btnExportXlsx').addEventListener('click', function(){
+      var rows = getExportRows();
+      if (rows.length === 0){ showToast('Tidak ada data untuk diexport.', 'warning'); return; }
+      var ws = XLSX.utils.json_to_sheet(rows);
+      var wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Kandidat');
+      XLSX.writeFile(wb, 'data-kandidat-' + new Date().toISOString().slice(0,10) + '.xlsx');
+      showToast('Data berhasil diexport ke Excel (data terfilter).', 'success');
+    });
+
+    document.getElementById('btnExportPdf').addEventListener('click', function(){
+      var rows = getExportRows();
+      if (rows.length === 0){ showToast('Tidak ada data untuk diexport.', 'warning'); return; }
+      var headers = Object.keys(rows[0]);
+      var win = window.open('', '_blank');
+      var html = '<html><head><title>Data Kandidat</title><style>' +
+        'body{font-family:Arial,sans-serif;padding:20px;} h3{margin-bottom:14px;}' +
+        'table{width:100%;border-collapse:collapse;font-size:11px;} th,td{border:1px solid #ccc;padding:6px 8px;text-align:left;}' +
+        'th{background:#005BAC;color:#fff;}' +
+        '</style></head><body>' +
+        '<h3>Data Kandidat &mdash; ' + new Date().toLocaleDateString('id-ID') + '</h3>' +
+        '<table><thead><tr>' + headers.map(function(h){ return '<th>' + h + '</th>'; }).join('') + '</tr></thead><tbody>' +
+        rows.map(function(row){ return '<tr>' + headers.map(function(h){ return '<td>' + escapeHtml(row[h]) + '</td>'; }).join('') + '</tr>'; }).join('') +
+        '</tbody></table></body></html>';
+      win.document.write(html);
+      win.document.close();
+      win.focus();
+      setTimeout(function(){ win.print(); }, 400);
+    });
+
+    // ============================================================
+    // 12. FAB SPEED DIAL
+    // ============================================================
+    var fabMain = document.getElementById('fabMain');
+    var fabActions = document.getElementById('fabActions');
+    fabMain.addEventListener('click', function(){
+      fabMain.classList.toggle('open');
+      fabActions.classList.toggle('d-none');
+    });
+    function closeFab(){ fabMain.classList.remove('open'); fabActions.classList.add('d-none'); }
+
+    document.getElementById('fabRefresh').addEventListener('click', function(){ closeFab(); loadCandidates(); });
+    document.getElementById('fabExport').addEventListener('click', function(){ closeFab(); document.getElementById('btnExportXlsx').click(); });
+    document.getElementById('fabPrint').addEventListener('click', function(){ closeFab(); window.print(); });
+    document.getElementById('fabRecruitmentForm').addEventListener('click', function(){
+      closeFab();
+      window.open(window.location.href.split('?')[0] + '?type=kandidat', '_blank');
+    });
+    document.getElementById('fabMasterEmployee').addEventListener('click', function(){
+      closeFab();
+      showToast('Buka sheet "Employee" di spreadsheet untuk melihat Master Data karyawan.', 'success');
+    });
+
+    // ============================================================
+    // 13. LOAD DATA FROM APPS SCRIPT (load sekali, filter di client)
+    // ============================================================
+    function loadCandidates(silent){
+      var btnRefresh = document.getElementById('btnRefresh');
+      var loading = document.getElementById('tableLoading');
+      var empty = document.getElementById('tableEmpty');
+      var subtitle = document.getElementById('panelSubtitle');
+
+      btnRefresh.classList.add('spinning');
+      if (!silent){
+        loading.classList.remove('d-none');
+        empty.classList.add('d-none');
+        document.getElementById('tableBody').innerHTML = '';
+        subtitle.innerText = 'Memuat data...';
+      }
+      btnRefresh.disabled = true;
+
+      google.script.run
+        .withSuccessHandler(function(response){
+          btnRefresh.classList.remove('spinning');
+          btnRefresh.disabled = false;
+          allCandidates = response || [];
+          subtitle.innerText = 'Terakhir dimuat: ' + new Date().toLocaleString('id-ID');
+          populateAllDropdowns(allCandidates);
+          updateStats(allCandidates);
+          applyFilters();
+          if (!silent) showToast('Data kandidat berhasil dimuat (' + allCandidates.length + ' data).', 'success');
+        })
+        .withFailureHandler(function(error){
+          btnRefresh.classList.remove('spinning');
+          btnRefresh.disabled = false;
+          if (!silent){
+            document.getElementById('tableLoading').classList.add('d-none');
+            document.getElementById('tableEmpty').classList.remove('d-none');
+            document.getElementById('tableEmpty').innerHTML =
+              '<i class="bi bi-exclamation-triangle"></i><p>Gagal memuat data: ' + escapeHtml(error.message) + '</p>';
+            subtitle.innerText = 'Gagal memuat data';
+            showToast('Gagal memuat data: ' + error.message, 'error');
+          }
+        })
+        .getRecruitmentList();
+    }
+
+    document.getElementById('btnRefresh').addEventListener('click', function(){ loadCandidates(false); });
+
+    // ============================================================
+    // 14. AUTO REFRESH (silent, every N seconds)
+    // ============================================================
+    function setupAutoRefresh(){
+      if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+      if (!appSettings.autoRefresh) return;
+      var intervalMs = Math.max(15, Number(appSettings.refreshInterval) || 60) * 1000;
+      autoRefreshTimer = setInterval(function(){ loadCandidates(true); }, intervalMs);
+    }
+
+    // ============================================================
+    // 15. INIT
+    // ============================================================
+    document.addEventListener('DOMContentLoaded', function(){
+      if (appSettings.defaultStatus) document.getElementById('statusFilter').value = appSettings.defaultStatus;
+      loadCandidates(false);
+      setupAutoRefresh();
+    });
+  </script>
+
+</body>
+</html>
