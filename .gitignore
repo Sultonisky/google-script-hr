@@ -21,3 +21,7 @@ Desktop.ini
 .env
 .env.local
 .env.*.local
+
+# Orphan files (not part of Apps Script format)
+*.js
+*.css
