@@ -1,0 +1,256 @@
+<script>
+  // ============================================================
+  // js/outsourceDashboard.html — OUTSOURCE DATA IN DASHBOARD
+  // Depends on: helpers.html, settings.html
+  // ============================================================
+
+  var allOutsource      = [];
+  var osFiltered        = [];
+  var osCurrentPage     = 1;
+
+  // ---- Load data from backend ----
+  function loadOutsourceData(silent) {
+    var btnR    = document.getElementById('osBtnRefresh');
+    var loading = document.getElementById('osTableLoading');
+    var empty   = document.getElementById('osTableEmpty');
+    var subtitle = document.getElementById('osPanelSubtitle');
+
+    if (btnR) btnR.classList.add('spinning');
+    if (!silent) {
+      if (loading) loading.classList.remove('d-none');
+      if (empty)   empty.classList.add('d-none');
+      var tbody = document.getElementById('osTableBody');
+      if (tbody) tbody.innerHTML = '';
+    }
+    if (btnR) btnR.disabled = true;
+
+    google.script.run
+      .withSuccessHandler(function(data) {
+        if (btnR) { btnR.classList.remove('spinning'); btnR.disabled = false; }
+        allOutsource = data || [];
+
+        // Show panels only when data exists or when explicitly loaded
+        var statsEl = document.getElementById('outsourceStats');
+        var panelEl = document.getElementById('outsourcePanel');
+        if (statsEl) statsEl.style.removeProperty('display');
+        if (panelEl) panelEl.style.display = 'block';
+
+        if (subtitle) subtitle.innerText = 'Terakhir dimuat: ' + new Date().toLocaleString('id-ID');
+        populateOsDropdowns(allOutsource);
+        applyOsFilters();
+        if (!silent) showToast('Data outsource dimuat (' + allOutsource.length + ' data).', 'success');
+      })
+      .withFailureHandler(function(err) {
+        if (btnR) { btnR.classList.remove('spinning'); btnR.disabled = false; }
+        if (!silent) showToast('Gagal memuat data outsource: ' + err.message, 'error');
+      })
+      .getOutsourceList();
+  }
+
+  // ---- Stat cards ----
+  function updateOsStats(data) {
+    var ct = function(fn) { return data.filter(fn).length; };
+    var m = {
+      osStatTotal:      data.length,
+      osStatPending:    ct(function(r){ return (r.employmentStatus||r.status||'').toLowerCase() === 'probation'; }),
+      osStatActive:     ct(function(r){ return (r.employmentStatus||r.status||'').toLowerCase() === 'active'; }),
+      osStatTerminated: ct(function(r){ return (r.employmentStatus||r.status||'').toLowerCase() === 'terminated'; })
+    };
+    Object.keys(m).forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) animateCounter(el, m[id]);
+    });
+  }
+
+  // ---- Populate vendor dropdown ----
+  function populateOsDropdowns(data) {
+    var el = document.getElementById('osVendorFilter');
+    if (!el) return;
+    var cur    = el.value;
+    var unique = Array.from(new Set(data.map(function(r){ return r.outsourceVendor || r.vendorCompany; }).filter(Boolean))).sort();
+    el.innerHTML = '<option value="">Semua Vendor</option>' +
+      unique.map(function(v){ return '<option value="' + escapeHtml(v) + '">' + escapeHtml(v) + '</option>'; }).join('');
+    if (unique.indexOf(cur) !== -1) el.value = cur;
+  }
+
+  // ---- Filter + sort ----
+  function applyOsFilters() {
+    var siEl  = document.getElementById('osSearchInput');
+    var sfEl  = document.getElementById('osStatusFilter');
+    var vfEl  = document.getElementById('osVendorFilter');
+    var ssEl  = document.getElementById('osSortSelect');
+    if (!siEl) return;
+
+    var kw     = siEl.value.trim().toLowerCase();
+    var status = sfEl ? sfEl.value.toLowerCase() : '';
+    var vendor = vfEl ? vfEl.value : '';
+    var sort   = ssEl ? ssEl.value : 'newest';
+
+    osFiltered = allOutsource.filter(function(r) {
+      var empStatus = (r.employmentStatus || r.status || '').toLowerCase();
+      var mk = !kw ||
+        (r.employeeId||'').toLowerCase().indexOf(kw) !== -1 ||
+        (r.fullName||'').toLowerCase().indexOf(kw) !== -1 ||
+        (r.nik||'').toLowerCase().indexOf(kw) !== -1 ||
+        (r.position||'').toLowerCase().indexOf(kw) !== -1 ||
+        (r.outsourceVendor||r.vendorCompany||'').toLowerCase().indexOf(kw) !== -1 ||
+        (r.employeeType||'').toLowerCase().indexOf(kw) !== -1;
+      var ms = !status || empStatus === status;
+      var mv = !vendor || (r.outsourceVendor || r.vendorCompany) === vendor;
+      return mk && ms && mv;
+    });
+
+    osFiltered.sort(function(a, b) {
+      switch (sort) {
+        case 'oldest':    return (parseDdMmYyyy(a.createdDate)||0) - (parseDdMmYyyy(b.createdDate)||0);
+        case 'name_asc':  return (a.fullName||'').localeCompare(b.fullName||'');
+        case 'name_desc': return (b.fullName||'').localeCompare(a.fullName||'');
+        default:          return (parseDdMmYyyy(b.createdDate)||0) - (parseDdMmYyyy(a.createdDate)||0);
+      }
+    });
+
+    osCurrentPage = 1;
+    renderOsTable();
+    updateOsStats(osFiltered);
+  }
+
+  // ---- Render table ----
+  function renderOsTable() {
+    var tbody   = document.getElementById('osTableBody');
+    var loading = document.getElementById('osTableLoading');
+    var empty   = document.getElementById('osTableEmpty');
+    var ps      = Number(appSettings.pageSize) || 10;
+
+    if (loading) loading.classList.add('d-none');
+
+    if (!osFiltered || osFiltered.length === 0) {
+      if (tbody) tbody.innerHTML = '';
+      if (empty) empty.classList.remove('d-none');
+      var fc = document.getElementById('osFooterCount');
+      if (fc) fc.innerText = 'Menampilkan 0 dari ' + allOutsource.length + ' data';
+      renderOsPagination(ps);
+      return;
+    }
+    if (empty) empty.classList.add('d-none');
+
+    var total = Math.max(1, Math.ceil(osFiltered.length / ps));
+    if (osCurrentPage > total) osCurrentPage = total;
+    var start    = (osCurrentPage - 1) * ps;
+    var pageData = osFiltered.slice(start, start + ps);
+
+    if (tbody) tbody.innerHTML = pageData.map(function(r) {
+      var empStatus    = r.employmentStatus || r.status || 'Active';
+      var statusClass  = empStatus === 'Active' ? 'accepted' : empStatus === 'Terminated' ? 'blacklist' : 'pending';
+      var vendor       = r.outsourceVendor || r.vendorCompany || '-';
+      var typeLabel    = r.employeeType || '-';
+      return '<tr>' +
+        '<td><div class="avatar-sm" style="background:rgba(8,145,178,0.1);color:#0e7490;">' + escapeHtml(initials(r.fullName)) + '</div></td>' +
+        '<td><span class="id-mono">' + escapeHtml(r.employeeId || r.outsourceId) + '</span></td>' +
+        '<td>' +
+          '<div class="cand-name" style="font-weight:600;">' + escapeHtml(r.fullName) + '</div>' +
+          '<div class="cand-sub">' + escapeHtml(r.email) + '</div>' +
+        '</td>' +
+        '<td>' +
+          '<div style="font-weight:600;font-size:13px;">' + escapeHtml(r.position) + '</div>' +
+          '<div class="cand-sub">' + escapeHtml(r.department || '-') + '</div>' +
+        '</td>' +
+        '<td><span class="badge-status ' + (typeLabel === 'Outsource' ? 'hold' : typeLabel === 'PKWT' ? 'pending' : typeLabel === 'Intern' ? 'blacklist' : 'accepted') + '" style="font-size:10.5px;">' + escapeHtml(typeLabel) + '</span></td>' +
+        '<td>' + escapeHtml(vendor) + '</td>' +
+        '<td>' + escapeHtml(r.joinDate || '-') + '</td>' +
+        '<td><span class="badge-status ' + statusClass + '">' + escapeHtml(empStatus) + '</span></td>' +
+        '<td>' +
+          '<button class="btn-action os-view-btn" title="Lihat detail" data-id="' + escapeHtml(r.employeeId || r.outsourceId) + '">' +
+            '<i class="bi bi-eye-fill"></i>' +
+          '</button>' +
+        '</td>' +
+        '</tr>';
+    }).join('');
+
+    var sStart = start + 1, sEnd = Math.min(start + ps, osFiltered.length);
+    var fc2 = document.getElementById('osFooterCount');
+    if (fc2) fc2.innerText = 'Menampilkan ' + sStart + '\u2013' + sEnd + ' dari ' + osFiltered.length + ' data (total ' + allOutsource.length + ')';
+
+    renderOsPagination(ps);
+  }
+
+  // ---- Pagination ----
+  function renderOsPagination(ps) {
+    var nav   = document.getElementById('osPaginationUi');
+    if (!nav) return;
+    var total = Math.max(1, Math.ceil(osFiltered.length / ps));
+    var html  = '<button class="page-btn" type="button" id="osPrev" ' + (osCurrentPage===1?'disabled':'') + '><i class="bi bi-chevron-left"></i></button>';
+    var mb=5, sp=Math.max(1, osCurrentPage-Math.floor(mb/2)), ep=Math.min(total, sp+mb-1);
+    sp=Math.max(1, ep-mb+1);
+    if(sp>1){ html+='<button class="page-btn" type="button" data-opg="1">1</button>'; if(sp>2) html+='<span class="page-btn" style="border:none;background:transparent;cursor:default">&hellip;</span>'; }
+    for(var p=sp;p<=ep;p++) html+='<button class="page-btn'+(p===osCurrentPage?' active':'')+'" type="button" data-opg="'+p+'">'+p+'</button>';
+    if(ep<total){ if(ep<total-1) html+='<span class="page-btn" style="border:none;background:transparent;cursor:default">&hellip;</span>'; html+='<button class="page-btn" type="button" data-opg="'+total+'">'+total+'</button>'; }
+    html+='<button class="page-btn" type="button" id="osNext" '+(osCurrentPage===total?'disabled':'')+'>'+
+          '<i class="bi bi-chevron-right"></i></button>';
+    nav.innerHTML = html;
+    nav.querySelectorAll('button[data-opg]').forEach(function(b) {
+      b.addEventListener('click', function(){ osCurrentPage=parseInt(b.getAttribute('data-opg'),10); renderOsTable(); });
+    });
+    var prev=document.getElementById('osPrev'), next=document.getElementById('osNext');
+    if(prev) prev.addEventListener('click', function(){ if(osCurrentPage>1){ osCurrentPage--; renderOsTable(); } });
+    if(next) next.addEventListener('click', function(){ if(osCurrentPage<total){ osCurrentPage++; renderOsTable(); } });
+  }
+
+  // ---- Export ----
+  function getOsExportRows() {
+    return osFiltered.map(function(r) {
+      return {
+        'Outsource ID':     r.outsourceId,
+        'Nama Lengkap':     r.fullName,
+        'NIK':              r.nik,
+        'Email':            r.email,
+        'Posisi':           r.position,
+        'Vendor / Agency':  r.vendorCompany,
+        'Durasi Kontrak':   r.contractDuration,
+        'Tanggal Join':     r.joinDate,
+        'Status':           r.status,
+        'Tanggal Daftar':   r.createdDate
+      };
+    });
+  }
+
+  // ---- Init ----
+  function initOutsourceDashboard() {
+    var si = document.getElementById('osSearchInput');
+    if (si) si.addEventListener('input', applyOsFilters);
+
+    ['osStatusFilter','osVendorFilter','osSortSelect'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('change', applyOsFilters);
+    });
+
+    var btnReset = document.getElementById('osBtnResetFilter');
+    if (btnReset) btnReset.addEventListener('click', function() {
+      if (si) si.value = '';
+      ['osStatusFilter','osVendorFilter'].forEach(function(id){ var e=document.getElementById(id); if(e) e.value=''; });
+      document.getElementById('osSortSelect').value = 'newest';
+      applyOsFilters();
+    });
+
+    var btnRef = document.getElementById('osBtnRefresh');
+    if (btnRef) btnRef.addEventListener('click', function(){ loadOutsourceData(false); });
+
+    var today = new Date().toISOString().slice(0,10);
+    var btnCsv  = document.getElementById('osBtnExportCsv');
+    var btnXlsx = document.getElementById('osBtnExportXlsx');
+    if (btnCsv) btnCsv.addEventListener('click', function() {
+      var rows = getOsExportRows();
+      if (!rows.length) { showToast('Tidak ada data.', 'warning'); return; }
+      exportCsv(rows, 'outsource-' + today + '.csv');
+      showToast('Export CSV berhasil (' + rows.length + ' data).', 'success');
+    });
+    if (btnXlsx) btnXlsx.addEventListener('click', function() {
+      var rows = getOsExportRows();
+      if (!rows.length) { showToast('Tidak ada data.', 'warning'); return; }
+      exportXlsx(rows, 'Outsource', 'outsource-' + today + '.xlsx');
+      showToast('Export Excel berhasil (' + rows.length + ' data).', 'success');
+    });
+
+    // Load data on init
+    loadOutsourceData(false);
+  }
+</script>

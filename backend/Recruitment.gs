@@ -231,17 +231,38 @@ function acceptCandidateToEmployee(recruitmentId, hrNotes) {
 
     if (!existingEmpId) {
       var empSheet = getOrCreateEmployeeSheet_();
+      var createdAt = Utilities.formatDate(now, 'GMT+7', 'yyyy-MM-dd HH:mm:ss');
       empSheet.appendRow([
-        employeeId,
-        recruitmentId,
-        found.values[found.colIndex['Full Name']],
-        found.values[found.colIndex['Position Applied']],
-        found.values[found.colIndex['Email']],
-        found.values[found.colIndex['Phone']],
-        Utilities.formatDate(now, 'GMT+7', 'yyyy-MM-dd'),
-        'Active',
-        hrNotes || '',
-        Utilities.formatDate(now, 'GMT+7', 'yyyy-MM-dd HH:mm:ss')
+        employeeId,                                              // Employee ID
+        'PT Mahakarya Sukses Indonesia',                         // Company Entity
+        'PKWTT',                                                 // Employee Type (default organik, HR dapat edit)
+        found.values[found.colIndex['Full Name']],               // Full Name
+        found.values[found.colIndex['NIK']],                     // NIK
+        found.values[found.colIndex['Birth Date']],              // Birth Date
+        found.values[found.colIndex['Age']],                     // Age
+        found.values[found.colIndex['Gender']],                  // Gender
+        found.values[found.colIndex['Marital Status']],          // Marital Status
+        found.values[found.colIndex['Email']],                   // Email
+        found.values[found.colIndex['Phone']],                   // Phone
+        found.values[found.colIndex['Address']],                 // Address
+        found.values[found.colIndex['City']],                    // City
+        found.values[found.colIndex['Education']],               // Education
+        found.values[found.colIndex['Work Experience']],         // Work Experience
+        '',                                                      // Department (HR isi manual)
+        found.values[found.colIndex['Position Applied']],        // Position
+        Utilities.formatDate(now, 'GMT+7', 'yyyy-MM-dd'),        // Join Date
+        '',                                                      // Contract Start
+        '',                                                      // Contract End
+        '',                                                      // Contract Duration
+        'Active',                                                // Employment Status
+        found.values[found.colIndex['Expected Salary']],         // Salary
+        'Monthly',                                               // Salary Type
+        '',                                                      // Outsource Vendor
+        recruitmentId,                                           // Recruitment ID
+        found.values[found.colIndex['Recruitment Source']],      // Recruitment Source
+        hrNotes || '',                                           // HR Notes
+        'System',                                                // Created By
+        createdAt                                                // Updated At
       ]);
     }
 

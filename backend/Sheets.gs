@@ -51,7 +51,7 @@ function getDashboardSheet_() {
   return sheet;
 }
 
-// Ambil atau buat sheet Employee
+// Ambil atau buat sheet Employee dengan header baru
 function getOrCreateEmployeeSheet_() {
   var ss    = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(EMPLOYEE_SHEET_NAME);
@@ -64,13 +64,32 @@ function getOrCreateEmployeeSheet_() {
          .setBackground('#005BAC')
          .setFontColor('#FFFFFF');
     sheet.setFrozenRows(1);
+    sheet.autoResizeColumns(1, EMPLOYEE_HEADERS.length);
+  } else {
+    ensureEmployeeHeaders_(sheet);
   }
 
   return sheet;
+}
+
+// Pastikan Employee sheet punya semua header terbaru (aman untuk data lama)
+function ensureEmployeeHeaders_(sheet) {
+  var lastCol   = sheet.getLastColumn();
+  var headerRow = sheet.getRange(1, 1, 1, lastCol).getValues()[0]
+                       .map(function(h){ return String(h).trim(); });
+  var missing = EMPLOYEE_HEADERS.filter(function(h){ return headerRow.indexOf(h) === -1; });
+  if (missing.length === 0) return;
+  var startCol = lastCol + 1;
+  sheet.getRange(1, startCol, 1, missing.length).setValues([missing]);
+  sheet.getRange(1, startCol, 1, missing.length)
+       .setFontWeight('bold')
+       .setBackground('#005BAC')
+       .setFontColor('#FFFFFF');
 }
 
 // Jalankan sekali dari editor untuk setup awal spreadsheet
 function setupSpreadsheet() {
   getOrCreateSheet_();
   getOrCreateEmployeeSheet_();
+  if (typeof getOrCreateOutsourceSheet_ === 'function') getOrCreateOutsourceSheet_();
 }

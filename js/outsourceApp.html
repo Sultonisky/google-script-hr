@@ -29,11 +29,15 @@
   var progressMessage      = document.getElementById('progressMessage');
   var phoneInput           = document.getElementById('phone');
   var salaryInput          = document.getElementById('salary');
+  var employeeTypeSelect   = document.getElementById('employee_type');
+  var vendorSection        = document.getElementById('vendorSection');
+  var vendorInput          = document.getElementById('outsource_vendor');
+  var contractDurationSel  = document.getElementById('contract_duration');
 
-  var nikDebounceTimer     = null;
-  var nikCheckTimer        = null;
+  var nikDebounceTimer       = null;
+  var nikCheckTimer          = null;
   var manualBirthDateChanged = false;
-  var isSubmitting         = false;
+  var isSubmitting           = false;
 
   // Duplicate NIK warning element
   var nikDuplicateWarning = document.createElement('div');
@@ -52,9 +56,52 @@
     var sp = document.getElementById('successPage');
     sp.classList.add('show');
     var msg = sp.querySelector('.success-message');
-    if(msg) msg.innerHTML = 'Anda telah mengirimkan data registrasi pada sesi ini.<br><br>Apabila ada pertanyaan, silakan hubungi tim HR PT Mahakarya Sukses Indonesia.';
+    if(msg) msg.innerHTML = 'Data Anda telah terdaftar pada sesi ini.<br><br>Hubungi HR apabila ada pertanyaan.';
   }
   if(isAlreadySubmitted()){ showAlreadySubmittedPage(); }
+
+  // ============================================================
+  // EMPLOYEE TYPE — show/hide vendor section & contract required
+  // ============================================================
+  function handleEmployeeTypeChange() {
+    var type = employeeTypeSelect ? employeeTypeSelect.value : '';
+    var isOutsource   = type === 'Outsource';
+    var needsContract = type === 'Outsource' || type === 'PKWT' || type === 'Intern';
+
+    // Vendor section: show only for Outsource
+    if (vendorSection) vendorSection.style.display = isOutsource ? 'block' : 'none';
+
+    // Vendor field: required only for Outsource
+    if (vendorInput) {
+      vendorInput.required = isOutsource;
+      var vr = document.getElementById('vendorRequired');
+      if (vr) vr.style.display = isOutsource ? 'inline' : 'none';
+    }
+
+    // Contract duration: required for Outsource & PKWT
+    if (contractDurationSel) {
+      contractDurationSel.required = (type === 'Outsource' || type === 'PKWT');
+      var cr = document.getElementById('contractDurationRequired');
+      if (cr) cr.style.display = (type === 'Outsource' || type === 'PKWT') ? 'inline' : 'none';
+    }
+
+    // Contract date fields: show for time-limited contracts
+    var csg = document.getElementById('contractStartGroup');
+    var ceg = document.getElementById('contractEndGroup');
+    var cdg = document.getElementById('contractDurationGroup');
+    if (csg) csg.style.display = needsContract ? 'block' : 'none';
+    if (ceg) ceg.style.display = needsContract ? 'block' : 'none';
+    if (cdg) cdg.style.display = needsContract ? 'block' : 'none';
+
+    updateProgress();
+  }
+
+  if (employeeTypeSelect) {
+    employeeTypeSelect.addEventListener('change', function() {
+      validateField(this);
+      handleEmployeeTypeChange();
+    });
+  }
 
   // ============================================================
   // FIELD VALIDATION HELPER
@@ -79,13 +126,13 @@
   // ============================================================
   // PROGRESS TRACKER
   // ============================================================
-  var requiredFields = [
+  var coreRequiredFields = [
     'full_name','nik','birth_date','age','gender','marital_status',
     'email','phone','province','city','address',
-    'position','join_date','education',
-    'vendor_company','contract_duration','salary','agreement'
+    'company_entity','employee_type','position',
+    'employment_status','join_date','salary','salary_type','agreement'
   ];
-  var TOTAL_WITH_DISTRICT = requiredFields.length + 1; // +1 district
+  var TOTAL_FIELDS = coreRequiredFields.length + 1; // +1 district
 
   var progressMessages = [
     {min:0,  text:'Mulai mengisi formulir...'},
@@ -97,7 +144,7 @@
 
   function updateProgress(){
     var validCount = 0;
-    requiredFields.forEach(function(id){
+    coreRequiredFields.forEach(function(id){
       var el = document.getElementById(id);
       if(!el) return;
       if(el.type === 'checkbox'){ if(el.checked) validCount++; }
@@ -106,16 +153,16 @@
     var districtOk = (!districtInput.disabled && districtInput.value && districtInput.value.trim() !== '') ||
       (districtManualWrap && districtManualWrap.style.display !== 'none' && districtManualInput && districtManualInput.value.trim() !== '');
     if(districtOk) validCount++;
-    var percent = Math.round((validCount / TOTAL_WITH_DISTRICT) * 100);
+    var percent = Math.min(100, Math.round((validCount / TOTAL_FIELDS) * 100));
     progressFill.style.width = percent + '%';
-    progressCount.textContent = validCount + ' dari ' + TOTAL_WITH_DISTRICT + ' data telah lengkap';
+    progressCount.textContent = validCount + ' dari ' + TOTAL_FIELDS + ' data telah lengkap';
     var msg = progressMessages[0].text;
     for(var i = progressMessages.length-1; i >= 0; i--){ if(percent >= progressMessages[i].min){ msg = progressMessages[i].text; break; } }
     progressMessage.textContent = msg;
   }
 
   // ============================================================
-  // BIRTH DATE
+  // BIRTH DATE — auto-slash + strict validation
   // ============================================================
   birthDateInput.addEventListener('input', function(){
     manualBirthDateChanged = true;
@@ -125,7 +172,7 @@
     this.value = f;
     calculateAge();
     if(f.length === 10) validateBirthDate();
-    else { this.classList.remove('is-valid','is-invalid'); }
+    else this.classList.remove('is-valid','is-invalid');
     updateProgress();
   });
   birthDateInput.addEventListener('blur', function(){ if(this.value.trim().length > 0) validateBirthDate(); updateProgress(); });
@@ -140,31 +187,31 @@
     if(!val||val.length<10){ setInvalid('Tanggal lahir wajib diisi dengan format DD/MM/YYYY.'); return false; }
     var p=val.split('/');
     if(p.length!==3||p[0].length!==2||p[1].length!==2||p[2].length!==4){ setInvalid('Format tidak valid. Gunakan DD/MM/YYYY.'); return false; }
-    var day=parseInt(p[0],10), month=parseInt(p[1],10), year=parseInt(p[2],10), curYear=new Date().getFullYear();
+    var day=parseInt(p[0],10),month=parseInt(p[1],10),year=parseInt(p[2],10),curYear=new Date().getFullYear();
     if(isNaN(day)||isNaN(month)||isNaN(year)){ setInvalid('Tanggal lahir mengandung karakter tidak valid.'); return false; }
     if(month<1||month>12){ setInvalid('Bulan tidak valid (01–12).'); return false; }
     if(day<1||day>31){ setInvalid('Tanggal tidak valid (01–31).'); return false; }
-    if(year<1900||year>curYear){ setInvalid('Tahun lahir tidak valid (1900–'+curYear+').'); return false; }
-    var d = new Date(year,month-1,day);
+    if(year<1900||year>curYear){ setInvalid('Tahun lahir tidak valid.'); return false; }
+    var d=new Date(year,month-1,day);
     if(d.getFullYear()!==year||d.getMonth()!==month-1||d.getDate()!==day){ setInvalid('Tanggal tidak ada dalam kalender.'); return false; }
     var today=new Date(); today.setHours(0,0,0,0);
     if(d>today){ setInvalid('Tanggal lahir tidak boleh tanggal yang akan datang.'); return false; }
-    var age=today.getFullYear()-year, mDiff=today.getMonth()-(month-1);
+    var age=today.getFullYear()-year,mDiff=today.getMonth()-(month-1);
     if(mDiff<0||(mDiff===0&&today.getDate()<day)) age--;
     if(age<17){ setInvalid('Usia minimal 17 tahun.'); return false; }
     setValid(); return true;
   }
 
   function calculateAge(){
-    var val = birthDateInput.value.trim();
+    var val=birthDateInput.value.trim();
     if(!val||val.length<10){ ageInput.value=''; return; }
     var p=val.split('/'); if(p.length!==3) return;
-    var day=parseInt(p[0],10), month=parseInt(p[1],10), year=parseInt(p[2],10);
+    var day=parseInt(p[0],10),month=parseInt(p[1],10),year=parseInt(p[2],10);
     if(!day||!month||!year||month<1||month>12||day<1||day>31) return;
-    var bd=new Date(year,month-1,day), today=new Date();
-    var age=today.getFullYear()-bd.getFullYear(), m=today.getMonth()-bd.getMonth();
+    var bd=new Date(year,month-1,day),today=new Date();
+    var age=today.getFullYear()-bd.getFullYear(),m=today.getMonth()-bd.getMonth();
     if(m<0||(m===0&&today.getDate()<bd.getDate())) age--;
-    ageInput.value = (age>=0&&age<=120) ? age : '';
+    ageInput.value=(age>=0&&age<=120)?age:'';
     validateField(ageInput);
   }
 
@@ -173,63 +220,63 @@
   // ============================================================
   function parseNIK(nik){
     if(!nik||nik.length!==16||!/^[0-9]{16}$/.test(nik)) return null;
-    var day=parseInt(nik.substring(6,8),10), gender=(day>40)?'Female':'Male';
+    var day=parseInt(nik.substring(6,8),10),gender=(day>40)?'Female':'Male';
     if(day>40) day-=40;
-    var month=parseInt(nik.substring(8,10),10), year=parseInt(nik.substring(10,12),10);
+    var month=parseInt(nik.substring(8,10),10),year=parseInt(nik.substring(10,12),10);
     var fullYear=(year<=24)?2000+year:1900+year;
     if(month<1||month>12||day<1||day>31) return null;
-    return { birthDate:{day:day,month:month,year:fullYear,formatted:('0'+day).slice(-2)+'/'+('0'+month).slice(-2)+'/'+fullYear}, gender:gender, provinceCode:nik.substring(0,2), cityCode:nik.substring(0,4) };
+    return {birthDate:{day:day,month:month,year:fullYear,formatted:('0'+day).slice(-2)+'/'+('0'+month).slice(-2)+'/'+fullYear},gender:gender,provinceCode:nik.substring(0,2),cityCode:nik.substring(0,4)};
   }
 
   nikInput.addEventListener('input', function(){
-    this.value = this.value.replace(/[^0-9]/g,'').substring(0,16);
+    this.value=this.value.replace(/[^0-9]/g,'').substring(0,16);
     clearTimeout(nikDebounceTimer);
     if(this.value.length===16) processNIK(this.value);
-    else nikDebounceTimer = setTimeout(function(){ if(nikInput.value.length===16) processNIK(nikInput.value); }, 400);
+    else nikDebounceTimer=setTimeout(function(){ if(nikInput.value.length===16) processNIK(nikInput.value); },400);
     validateField(this); updateProgress();
   });
 
   nikInput.addEventListener('blur', function(){
-    var nik = this.value.trim();
+    var nik=this.value.trim();
     if(nik.length!==16) return;
     if(isAlreadySubmitted()){ showAlreadySubmittedPage(); return; }
     clearTimeout(nikCheckTimer);
-    nikCheckTimer = setTimeout(function(){
+    nikCheckTimer=setTimeout(function(){
       google.script.run
         .withSuccessHandler(function(list){
-          var isDup = list && list.some(function(c){ return String(c.nik||'').replace(/'/g,'').trim()===nik; });
+          var isDup=list&&list.some(function(c){ return String(c.nik||'').replace(/'/g,'').trim()===nik; });
           if(isDup){
             nikDuplicateWarning.classList.add('show');
-            nikDuplicateWarning.innerHTML = '<div class="alert alert-warning" style="margin-top:10px;"><i class="bi bi-exclamation-triangle-fill"></i> <strong>NIK ini sudah pernah didaftarkan.</strong><br>Hubungi HR apabila ini adalah kesalahan.</div>';
+            nikDuplicateWarning.innerHTML='<div class="alert alert-warning" style="margin-top:10px;"><i class="bi bi-exclamation-triangle-fill"></i> <strong>NIK ini sudah terdaftar dalam sistem.</strong><br>Hubungi HR apabila ini adalah kesalahan.</div>';
             nikInput.classList.add('is-invalid'); nikInput.classList.remove('is-valid');
           }
         })
         .withFailureHandler(function(){})
         .getOutsourceList();
-    }, 600);
+    },600);
   });
 
   function processNIK(nik){
-    var r = parseNIK(nik);
+    var r=parseNIK(nik);
     if(!r){ showNIKFeedback(false); return; }
     if(!manualBirthDateChanged){ birthDateInput.value=r.birthDate.formatted; calculateAge(); validateBirthDate(); }
-    genderSelect.value = r.gender; validateField(genderSelect);
+    genderSelect.value=r.gender; validateField(genderSelect);
     if(REGIONS.provinces[r.provinceCode]){
       provinceSelect.value=r.provinceCode; validateField(provinceSelect); populateCities(r.provinceCode);
       if(REGIONS.cities[r.cityCode]){ citySelect.value=r.cityCode; validateField(citySelect); loadDistricts(r.cityCode); }
     }
-    showNIKFeedback(true, r); updateProgress();
+    showNIKFeedback(true,r); updateProgress();
   }
 
-  function showNIKFeedback(success, r){
+  function showNIKFeedback(success,r){
     nikFeedback.classList.add('show');
     if(success){
-      var det = ['Tanggal Lahir: '+r.birthDate.formatted,'Jenis Kelamin: '+(r.gender==='Male'?'Laki-laki':'Perempuan')];
+      var det=['Tanggal Lahir: '+r.birthDate.formatted,'Jenis Kelamin: '+(r.gender==='Male'?'Laki-laki':'Perempuan')];
       if(REGIONS.provinces[r.provinceCode]) det.push('Provinsi: '+REGIONS.provinces[r.provinceCode]);
       if(REGIONS.cities[r.cityCode]) det.push('Kab/Kota: '+REGIONS.cities[r.cityCode]);
-      nikFeedback.innerHTML = '<div class="alert alert-success"><i class="bi bi-check-circle-fill"></i> <strong>Data berhasil dikenali</strong><ul>'+det.map(function(d){return '<li>'+d+'</li>';}).join('')+'</ul></div>';
+      nikFeedback.innerHTML='<div class="alert alert-success"><i class="bi bi-check-circle-fill"></i> <strong>Data berhasil dikenali</strong><ul>'+det.map(function(d){return '<li>'+d+'</li>';}).join('')+'</ul></div>';
     } else {
-      nikFeedback.innerHTML = '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle-fill"></i> <strong>NIK tidak valid.</strong></div>';
+      nikFeedback.innerHTML='<div class="alert alert-warning"><i class="bi bi-exclamation-triangle-fill"></i> <strong>NIK tidak valid.</strong></div>';
     }
   }
 
@@ -237,59 +284,59 @@
   // REGION DROPDOWNS
   // ============================================================
   function populateProvinces(){
-    var html = '<option value="">-- Pilih Provinsi --</option>';
-    Object.keys(REGIONS.provinces).sort().forEach(function(c){ html += '<option value="'+c+'">'+REGIONS.provinces[c]+'</option>'; });
-    provinceSelect.innerHTML = html;
+    var html='<option value="">-- Pilih Provinsi --</option>';
+    Object.keys(REGIONS.provinces).sort().forEach(function(c){ html+='<option value="'+c+'">'+REGIONS.provinces[c]+'</option>'; });
+    provinceSelect.innerHTML=html;
   }
   function populateCities(pCode){
-    citySelect.innerHTML = '<option value="">-- Pilih Kota/Kabupaten --</option>';
+    citySelect.innerHTML='<option value="">-- Pilih Kota/Kabupaten --</option>';
     resetDistrict();
     if(!pCode) return;
     Object.keys(REGIONS.cities).filter(function(c){ return c.substring(0,2)===pCode; }).sort()
-      .forEach(function(c){ citySelect.innerHTML += '<option value="'+c+'">'+REGIONS.cities[c]+'</option>'; });
+      .forEach(function(c){ citySelect.innerHTML+='<option value="'+c+'">'+REGIONS.cities[c]+'</option>'; });
   }
   function resetDistrict(){
-    districtInput.innerHTML = '<option value="">-- Pilih Kota dahulu --</option>';
-    districtInput.disabled = true; districtInput.value = '';
+    districtInput.innerHTML='<option value="">-- Pilih Kota dahulu --</option>';
+    districtInput.disabled=true; districtInput.value='';
     districtInput.classList.remove('is-valid','is-invalid');
-    districtLoading.style.display = 'none';
-    districtManualWrap.style.display = 'none';
-    districtManualInput.value = ''; districtManualInput.required = false;
-    districtInput.required = true;
+    districtLoading.style.display='none';
+    districtManualWrap.style.display='none';
+    districtManualInput.value=''; districtManualInput.required=false;
+    districtInput.required=true;
   }
   function loadDistricts(cityCode){
     if(!cityCode){ resetDistrict(); return; }
     if(REGIONS.districts[cityCode]){
       populateDistrictOptions(REGIONS.districts[cityCode].map(function(n){ return {id:n,nama:n}; })); return;
     }
-    districtInput.innerHTML = '<option value="">Memuat kecamatan...</option>';
-    districtInput.disabled = true; districtLoading.style.display = 'block';
-    districtManualWrap.style.display = 'none'; districtManualInput.required = false; districtInput.required = true;
+    districtInput.innerHTML='<option value="">Memuat kecamatan...</option>';
+    districtInput.disabled=true; districtLoading.style.display='block';
+    districtManualWrap.style.display='none'; districtManualInput.required=false; districtInput.required=true;
     google.script.run
       .withSuccessHandler(function(list){ districtLoading.style.display='none'; if(list&&list.length>0) populateDistrictOptions(list); else showDistrictManual(); })
       .withFailureHandler(function(){ districtLoading.style.display='none'; showDistrictManual(); })
       .getKecamatan(cityCode);
   }
   function populateDistrictOptions(list){
-    var html = '<option value="">-- Pilih Kecamatan --</option>';
-    list.forEach(function(item){ html += '<option value="'+item.nama+'">'+item.nama+'</option>'; });
-    districtInput.innerHTML = html; districtInput.disabled = false; districtInput.required = true;
-    districtManualWrap.style.display = 'none'; districtManualInput.required = false;
+    var html='<option value="">-- Pilih Kecamatan --</option>';
+    list.forEach(function(item){ html+='<option value="'+item.nama+'">'+item.nama+'</option>'; });
+    districtInput.innerHTML=html; districtInput.disabled=false; districtInput.required=true;
+    districtManualWrap.style.display='none'; districtManualInput.required=false;
   }
   function showDistrictManual(){
-    districtInput.innerHTML = '<option value="">-</option>'; districtInput.disabled = true; districtInput.required = false;
-    districtManualWrap.style.display = 'block'; districtManualInput.required = true; districtManualInput.focus();
+    districtInput.innerHTML='<option value="">-</option>'; districtInput.disabled=true; districtInput.required=false;
+    districtManualWrap.style.display='block'; districtManualInput.required=true; districtManualInput.focus();
   }
 
-  provinceSelect.addEventListener('change', function(){ populateCities(this.value); validateField(this); updateProgress(); });
-  citySelect.addEventListener('change',     function(){ validateField(this); loadDistricts(this.value); updateProgress(); });
-  districtInput.addEventListener('change',  function(){ validateField(this); updateProgress(); });
-  districtManualInput.addEventListener('input', function(){
-    this.classList.toggle('is-valid', this.value.trim()!=='');
+  provinceSelect.addEventListener('change',function(){ populateCities(this.value); validateField(this); updateProgress(); });
+  citySelect.addEventListener('change',    function(){ validateField(this); loadDistricts(this.value); updateProgress(); });
+  districtInput.addEventListener('change', function(){ validateField(this); updateProgress(); });
+  districtManualInput.addEventListener('input',function(){
+    this.classList.toggle('is-valid',this.value.trim()!=='');
     if(this.value.trim()!=='') this.classList.remove('is-invalid');
     updateProgress();
   });
-  districtManualInput.addEventListener('blur', function(){
+  districtManualInput.addEventListener('blur',function(){
     if(this.value.trim()!=='') this.classList.add('is-valid');
     else if(this.required) this.classList.add('is-invalid');
   });
@@ -297,37 +344,35 @@
   // ============================================================
   // PHONE & SALARY FORMATTING
   // ============================================================
-  phoneInput.addEventListener('input', function(){
-    this.value = this.value.replace(/[^0-9]/g,'').substring(0,13);
+  phoneInput.addEventListener('input',function(){
+    this.value=this.value.replace(/[^0-9]/g,'').substring(0,13);
     validateField(this); updateProgress();
   });
-  salaryInput.addEventListener('input', function(){
-    var raw = this.value.replace(/[^0-9]/g,'');
-    this.value = raw.length > 0 ? parseInt(raw,10).toLocaleString('id-ID') : '';
+  salaryInput.addEventListener('input',function(){
+    var raw=this.value.replace(/[^0-9]/g,'');
+    this.value=raw.length>0?parseInt(raw,10).toLocaleString('id-ID'):'';
     validateField(this); updateProgress();
   });
 
   // ============================================================
   // EMAIL TYPO DETECTION
   // ============================================================
-  var commonTypos = {'gmial.com':'gmail.com','gmai.com':'gmail.com','gmail.con':'gmail.com','hotnail.com':'hotmail.com','outlok.com':'outlook.com'};
-  emailInput.addEventListener('blur', function(){
-    var email = this.value.trim();
+  var commonTypos={'gmial.com':'gmail.com','gmai.com':'gmail.com','gmail.con':'gmail.com','hotnail.com':'hotmail.com','outlok.com':'outlook.com'};
+  emailInput.addEventListener('blur',function(){
+    var email=this.value.trim();
     if(!email){ emailValidation.style.display='none'; return; }
-    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
-      emailValidation.className='email-validation invalid'; emailValidation.innerHTML='<i class="bi bi-x-circle-fill"></i> Format email tidak valid'; emailValidation.style.display='flex'; return;
-    }
-    var domain = email.split('@')[1];
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ emailValidation.className='email-validation invalid'; emailValidation.innerHTML='<i class="bi bi-x-circle-fill"></i> Format email tidak valid'; emailValidation.style.display='flex'; return; }
+    var domain=email.split('@')[1];
     if(commonTypos[domain]){ emailValidation.className='email-validation suggestion'; emailValidation.innerHTML='<i class="bi bi-lightbulb-fill"></i> Apakah maksud Anda: <strong>'+email.split('@')[0]+'@'+commonTypos[domain]+'</strong>?'; emailValidation.style.display='flex'; }
     else { emailValidation.className='email-validation valid'; emailValidation.innerHTML='<i class="bi bi-check-circle-fill"></i> Format email valid'; emailValidation.style.display='flex'; }
   });
-  emailInput.addEventListener('input', function(){ if(emailValidation.style.display==='flex') emailValidation.style.display='none'; validateField(this); updateProgress(); });
+  emailInput.addEventListener('input',function(){ if(emailValidation.style.display==='flex') emailValidation.style.display='none'; validateField(this); updateProgress(); });
 
   // ============================================================
   // AGREEMENT
   // ============================================================
-  agreementCheckbox.addEventListener('change', function(){
-    submitBtn.disabled = !this.checked;
+  agreementCheckbox.addEventListener('change',function(){
+    submitBtn.disabled=!this.checked;
     if(this.checked){ agreementError.style.display='none'; this.classList.add('is-valid'); this.classList.remove('is-invalid'); }
     else { this.classList.remove('is-valid'); }
     updateProgress();
@@ -336,16 +381,16 @@
   // ============================================================
   // FORM SUBMISSION
   // ============================================================
-  form.addEventListener('submit', function(e){
+  form.addEventListener('submit',function(e){
     e.preventDefault();
     if(isSubmitting) return;
     if(isAlreadySubmitted()){ showAlreadySubmittedPage(); return; }
     if(!agreementCheckbox.checked){ agreementError.style.display='flex'; agreementCheckbox.classList.add('is-invalid'); return; }
-    agreementError.style.display = 'none';
+    agreementError.style.display='none';
     if(!form.checkValidity()||!validateBirthDate()){ form.classList.add('was-validated'); return; }
 
-    isSubmitting = true; submitBtn.disabled = true;
-    submitSpinner.classList.remove('d-none'); submitText.textContent = 'Memeriksa...';
+    isSubmitting=true; submitBtn.disabled=true;
+    submitSpinner.classList.remove('d-none'); submitText.textContent='Memeriksa...';
     loadingOverlay.classList.add('show');
 
     var enteredNIK   = nikInput.value.trim();
@@ -366,44 +411,49 @@
       phone:              '62' + phoneVal,
       address:            document.getElementById('address').value.trim(),
       city:               cityName + (districtValue ? ', Kec. ' + districtValue : ''),
-      position:           document.getElementById('position').value.trim(),
-      department:         document.getElementById('department').value.trim(),
-      join_date:          document.getElementById('join_date').value,
       education:          document.getElementById('education').value,
       work_experience:    document.getElementById('work_experience').value,
-      vendor_company:     document.getElementById('vendor_company').value.trim(),
-      contract_number:    document.getElementById('contract_number').value.trim(),
-      contract_duration:  document.getElementById('contract_duration').value,
+      company_entity:     document.getElementById('company_entity').value,
+      employee_type:      document.getElementById('employee_type').value,
+      department:         document.getElementById('department').value.trim(),
+      position:           document.getElementById('position').value.trim(),
+      employment_status:  document.getElementById('employment_status').value,
+      join_date:          document.getElementById('join_date').value,
+      contract_start:     document.getElementById('contract_start') ? document.getElementById('contract_start').value : '',
+      contract_end:       document.getElementById('contract_end')   ? document.getElementById('contract_end').value   : '',
+      contract_duration:  document.getElementById('contract_duration') ? document.getElementById('contract_duration').value : '',
       salary:             salaryVal,
+      salary_type:        document.getElementById('salary_type').value,
+      outsource_vendor:   document.getElementById('outsource_vendor') ? document.getElementById('outsource_vendor').value.trim() : '',
       recruitment_source: document.getElementById('recruitment_source') ? document.getElementById('recruitment_source').value : ''
     };
 
     function doSubmit(){
-      submitText.textContent = 'Mengirim...';
+      submitText.textContent='Mengirim...';
       google.script.run
         .withSuccessHandler(function(response){
           loadingOverlay.classList.remove('show'); submitSpinner.classList.add('d-none');
-          submitText.textContent = 'Kirim Data'; isSubmitting = false;
+          submitText.textContent='Kirim Data'; isSubmitting=false;
           if(response==='Sukses'){ markSubmitted(enteredNIK); document.getElementById('registrationForm').style.display='none'; document.getElementById('successPage').classList.add('show'); }
-          else { alert('Error: '+response); submitBtn.disabled = false; }
+          else { alert('Error: '+response); submitBtn.disabled=false; }
         })
         .withFailureHandler(function(err){
           loadingOverlay.classList.remove('show'); submitSpinner.classList.add('d-none');
-          submitText.textContent = 'Kirim Data'; isSubmitting = false;
-          alert('Gagal mengirim data: '+err.message); submitBtn.disabled = false;
+          submitText.textContent='Kirim Data'; isSubmitting=false;
+          alert('Gagal mengirim data: '+err.message); submitBtn.disabled=false;
         })
         .simpanDataOutsource(formData);
     }
 
-    // Duplicate NIK check
+    // Duplicate NIK check against Employee sheet
     google.script.run
       .withSuccessHandler(function(list){
-        var isDup = list && list.some(function(c){ return String(c.nik||'').replace(/'/g,'').trim()===enteredNIK; });
+        var isDup=list&&list.some(function(c){ return String(c.nik||'').replace(/'/g,'').trim()===enteredNIK; });
         if(isDup){
           loadingOverlay.classList.remove('show'); submitSpinner.classList.add('d-none');
-          submitText.textContent = 'Kirim Data'; isSubmitting = false; submitBtn.disabled = false;
+          submitText.textContent='Kirim Data'; isSubmitting=false; submitBtn.disabled=false;
           nikDuplicateWarning.classList.add('show');
-          nikDuplicateWarning.innerHTML = '<div class="alert alert-warning" style="margin-top:10px;"><i class="bi bi-exclamation-triangle-fill"></i> <strong>NIK sudah terdaftar dalam sistem.</strong><br>Hubungi HR apabila ini adalah kesalahan.</div>';
+          nikDuplicateWarning.innerHTML='<div class="alert alert-warning" style="margin-top:10px;"><i class="bi bi-exclamation-triangle-fill"></i> <strong>NIK sudah terdaftar dalam sistem Employee.</strong><br>Hubungi HR apabila ini adalah kesalahan.</div>';
           nikInput.scrollIntoView({behavior:'smooth',block:'center'}); nikInput.focus();
         } else { doSubmit(); }
       })
@@ -414,7 +464,7 @@
   // ============================================================
   // REAL-TIME VALIDATION
   // ============================================================
-  var inputs = form.querySelectorAll('input[required],select[required],textarea[required]');
+  var inputs=form.querySelectorAll('input[required],select[required],textarea[required]');
   inputs.forEach(function(input){
     if(input.id==='birth_date') return;
     input.addEventListener('blur',   function(){ validateField(this); updateProgress(); });
@@ -426,5 +476,6 @@
   // INIT
   // ============================================================
   populateProvinces();
+  handleEmployeeTypeChange(); // set initial state (vendor hidden, contract optional)
   updateProgress();
 </script>

@@ -51,13 +51,33 @@ var EXTRA_HEADERS = [
 
 var EMPLOYEE_HEADERS = [
   'Employee ID',
-  'Recruitment ID',
+  'Company Entity',
+  'Employee Type',       // Outsource | PKWT | PKWTT | Intern
   'Full Name',
-  'Position',
+  'NIK',
+  'Birth Date',
+  'Age',
+  'Gender',
+  'Marital Status',
   'Email',
   'Phone',
+  'Address',
+  'City',
+  'Education',
+  'Work Experience',     // durasi, misal "3 Tahun"
+  'Department',
+  'Position',
   'Join Date',
-  'Status',
-  'Notes',
-  'Created At'
+  'Contract Start',
+  'Contract End',
+  'Contract Duration',   // "6 Bulan", "1 Tahun", dll — kosong jika PKWTT
+  'Employment Status',   // Active | Resigned | Terminated | On Leave
+  'Salary',
+  'Salary Type',         // Monthly | Daily | Project-Based
+  'Outsource Vendor',    // kosong jika bukan outsource
+  'Recruitment ID',      // link ke raw_kandidat jika dari pipeline
+  'Recruitment Source',
+  'HR Notes',
+  'Created By',
+  'Updated At'
 ];

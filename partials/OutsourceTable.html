@@ -1,0 +1,122 @@
+<!-- partials/OutsourceTable.html — OUTSOURCE DATA PANEL -->
+
+<!-- Outsource Stat Cards -->
+<div class="row g-3 mb-3 mt-2" id="outsourceStats" style="display:none!important;">
+  <div class="col-12">
+    <div style="font-size:13px;font-weight:700;color:var(--color-text-soft);text-transform:uppercase;letter-spacing:.05em;padding:4px 0 8px;">
+      <i class="bi bi-building-fill me-2" style="color:var(--color-primary)"></i>Data Karyawan Outsource
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="stat-icon bg-cyan"><i class="bi bi-people-fill"></i></div>
+      <div>
+        <div class="stat-label">Total OS</div>
+        <div class="stat-value" data-current="0" id="osStatTotal">0</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="stat-icon bg-gold"><i class="bi bi-hourglass-split"></i></div>
+      <div>
+        <div class="stat-label">Probation</div>
+        <div class="stat-value" data-current="0" id="osStatPending">0</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="stat-icon bg-green"><i class="bi bi-check-circle-fill"></i></div>
+      <div>
+        <div class="stat-label">Active</div>
+        <div class="stat-value" data-current="0" id="osStatActive">0</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="stat-icon bg-red"><i class="bi bi-x-circle-fill"></i></div>
+      <div>
+        <div class="stat-label">Terminated</div>
+        <div class="stat-value" data-current="0" id="osStatTerminated">0</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Outsource Table Panel -->
+<div class="panel mt-2" id="outsourcePanel" style="display:none;">
+  <div class="panel-header">
+    <div>
+      <h6>Data Karyawan Outsource</h6>
+      <div class="panel-subtitle" id="osPanelSubtitle">Memuat data...</div>
+    </div>
+    <div class="export-btns">
+      <button class="btn-export csv"  id="osBtnExportCsv"  type="button"><i class="bi bi-filetype-csv"></i> CSV</button>
+      <button class="btn-export xlsx" id="osBtnExportXlsx" type="button"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+    </div>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <div class="table-search">
+      <i class="bi bi-search"></i>
+      <input type="text" id="osSearchInput" placeholder="Cari nama, NIK, posisi, vendor..." />
+    </div>
+    <select class="filter-select" id="osStatusFilter">
+      <option value="">Semua Status</option>
+      <option value="Pending Review">Pending Review</option>
+      <option value="Active">Active</option>
+      <option value="Terminated">Terminated</option>
+    </select>
+    <select class="filter-select" id="osVendorFilter">
+      <option value="">Semua Vendor</option>
+    </select>
+    <select class="filter-select" id="osSortSelect">
+      <option value="newest">Terbaru</option>
+      <option value="oldest">Terlama</option>
+      <option value="name_asc">Nama A-Z</option>
+      <option value="name_desc">Nama Z-A</option>
+    </select>
+    <button class="btn-reset-filter" type="button" id="osBtnResetFilter">
+      <i class="bi bi-arrow-counterclockwise"></i> Reset
+    </button>
+    <button class="btn-refresh" id="osBtnRefresh" type="button" title="Muat ulang data outsource">
+      <i class="bi bi-arrow-clockwise"></i>
+    </button>
+  </div>
+
+  <!-- Table -->
+  <div class="table-responsive">
+    <table class="table hr-table">
+      <thead>
+        <tr>
+          <th>Avatar</th>
+          <th>Employee ID</th>
+          <th>Nama</th>
+          <th>Posisi / Dept</th>
+          <th>Tipe</th>
+          <th>Outsource Vendor</th>
+          <th>Tanggal Join</th>
+          <th>Status</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="osTableBody"></tbody>
+    </table>
+    <div class="table-loading" id="osTableLoading">
+      <div class="spinner-border" role="status"></div>
+      <p>Mengambil data outsource...</p>
+    </div>
+    <div class="table-empty d-none" id="osTableEmpty">
+      <i class="bi bi-inbox"></i>
+      <p>Belum ada data karyawan outsource.</p>
+    </div>
+  </div>
+
+  <div class="panel-footer">
+    <span id="osFooterCount">Menampilkan 0 data</span>
+    <nav class="pagination-ui" id="osPaginationUi" aria-label="Outsource Pagination"></nav>
+  </div>
+</div>

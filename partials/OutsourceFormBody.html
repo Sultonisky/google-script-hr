@@ -152,8 +152,27 @@
           <div class="form-section-body">
             <div class="row g-3">
               <div class="col-md-6">
-                <label class="form-label" for="position">Posisi / Jabatan Saat Ini <span class="required">*</span></label>
-                <input type="text" class="form-control" id="position" name="position" required placeholder="Contoh: Operator Produksi, Security, Cleaning Service">
+                <label class="form-label" for="company_entity">Entitas Perusahaan <span class="required">*</span></label>
+                <select class="form-select" id="company_entity" name="company_entity" required>
+                  <option value="">-- Pilih Entitas --</option>
+                  <option value="PT Mahakarya Sukses Indonesia">PT Mahakarya Sukses Indonesia</option>
+                </select>
+                <div class="invalid-feedback">Entitas perusahaan wajib dipilih.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="employee_type">Tipe Karyawan <span class="required">*</span></label>
+                <select class="form-select" id="employee_type" name="employee_type" required>
+                  <option value="">-- Pilih Tipe --</option>
+                  <option value="Outsource">Outsource</option>
+                  <option value="PKWT">PKWT (Kontrak)</option>
+                  <option value="PKWTT">PKWTT (Organik / Tetap)</option>
+                  <option value="Intern">Intern / Magang</option>
+                </select>
+                <div class="invalid-feedback">Tipe karyawan wajib dipilih.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="position">Posisi / Jabatan <span class="required">*</span></label>
+                <input type="text" class="form-control" id="position" name="position" required placeholder="Contoh: Operator Produksi, Security, Admin">
                 <div class="invalid-feedback">Posisi/jabatan wajib diisi.</div>
               </div>
               <div class="col-md-6">
@@ -161,42 +180,31 @@
                 <input type="text" class="form-control" id="department" name="department" placeholder="Contoh: Produksi, HRGA, Warehouse">
               </div>
               <div class="col-md-6">
+                <label class="form-label" for="employment_status">Status Kepegawaian <span class="required">*</span></label>
+                <select class="form-select" id="employment_status" name="employment_status" required>
+                  <option value="">-- Pilih Status --</option>
+                  <option value="Active">Active</option>
+                  <option value="On Leave">On Leave</option>
+                  <option value="Probation">Probation</option>
+                </select>
+                <div class="invalid-feedback">Status kepegawaian wajib dipilih.</div>
+              </div>
+              <div class="col-md-6">
                 <label class="form-label" for="join_date">Tanggal Mulai Kerja <span class="required">*</span></label>
                 <input type="date" class="form-control" id="join_date" name="join_date" required>
                 <div class="invalid-feedback">Tanggal mulai kerja wajib diisi.</div>
               </div>
-              <div class="col-md-6">
-                <label class="form-label" for="salary">Gaji / Upah <span class="required">*</span></label>
-                <div class="input-group-prefix">
-                  <span class="input-prefix">Rp</span>
-                  <input type="text" class="form-control" id="salary" name="salary" required inputmode="numeric" placeholder="5.000.000">
-                </div>
-                <div class="invalid-feedback">Gaji wajib diisi dengan angka.</div>
+              <div class="col-md-4" id="contractStartGroup">
+                <label class="form-label" for="contract_start">Tanggal Mulai Kontrak</label>
+                <input type="date" class="form-control" id="contract_start" name="contract_start">
               </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- SECTION 4: VENDOR / OUTSOURCE INFO -->
-        <div class="form-section">
-          <div class="form-section-header">
-            <i class="bi bi-building-fill"></i>
-            <div><h5>Informasi Vendor / Outsource</h5><p>Data perusahaan vendor dan kontrak outsource</p></div>
-          </div>
-          <div class="form-section-body">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label" for="vendor_company">Nama Perusahaan Vendor / Agency <span class="required">*</span></label>
-                <input type="text" class="form-control" id="vendor_company" name="vendor_company" required placeholder="Contoh: PT. Mitra Karya Utama">
-                <div class="invalid-feedback">Nama perusahaan vendor wajib diisi.</div>
+              <div class="col-md-4" id="contractEndGroup">
+                <label class="form-label" for="contract_end">Tanggal Akhir Kontrak</label>
+                <input type="date" class="form-control" id="contract_end" name="contract_end">
               </div>
-              <div class="col-md-6">
-                <label class="form-label" for="contract_number">Nomor Kontrak</label>
-                <input type="text" class="form-control" id="contract_number" name="contract_number" placeholder="Contoh: PKS/2025/001 (opsional)">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label" for="contract_duration">Durasi Kontrak <span class="required">*</span></label>
-                <select class="form-select" id="contract_duration" name="contract_duration" required>
+              <div class="col-md-4" id="contractDurationGroup">
+                <label class="form-label" for="contract_duration">Durasi Kontrak <span class="required" id="contractDurationRequired" style="display:none">*</span></label>
+                <select class="form-select" id="contract_duration" name="contract_duration">
                   <option value="">-- Pilih Durasi --</option>
                   <option value="1 Bulan">1 Bulan</option>
                   <option value="3 Bulan">3 Bulan</option>
@@ -210,7 +218,46 @@
                 <div class="invalid-feedback">Durasi kontrak wajib dipilih.</div>
               </div>
               <div class="col-md-6">
-                <label class="form-label" for="recruitment_source">Sumber Informasi</label>
+                <label class="form-label" for="salary">Gaji / Upah <span class="required">*</span></label>
+                <div class="input-group-prefix">
+                  <span class="input-prefix">Rp</span>
+                  <input type="text" class="form-control" id="salary" name="salary" required inputmode="numeric" placeholder="5.000.000">
+                </div>
+                <div class="invalid-feedback">Gaji wajib diisi dengan angka.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="salary_type">Tipe Gaji <span class="required">*</span></label>
+                <select class="form-select" id="salary_type" name="salary_type" required>
+                  <option value="">-- Pilih Tipe --</option>
+                  <option value="Monthly">Monthly (Bulanan)</option>
+                  <option value="Daily">Daily (Harian)</option>
+                  <option value="Project-Based">Project-Based</option>
+                </select>
+                <div class="invalid-feedback">Tipe gaji wajib dipilih.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 4: VENDOR / OUTSOURCE INFO -->
+        <div class="form-section" id="vendorSection">
+          <div class="form-section-header">
+            <i class="bi bi-building-fill"></i>
+            <div><h5>Informasi Vendor Outsource</h5><p>Diisi jika tipe karyawan adalah Outsource</p></div>
+          </div>
+          <div class="form-section-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" for="outsource_vendor">Nama Outsource Vendor <span class="required" id="vendorRequired">*</span></label>
+                <input type="text" class="form-control" id="outsource_vendor" name="outsource_vendor" placeholder="Contoh: PT. Mitra Karya Utama">
+                <div class="invalid-feedback">Nama outsource vendor wajib diisi untuk tipe Outsource.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="contract_number">Nomor Kontrak / PKS</label>
+                <input type="text" class="form-control" id="contract_number" name="contract_number" placeholder="Contoh: PKS/2025/001 (opsional)">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="recruitment_source">Sumber Penempatan</label>
                 <select class="form-select" id="recruitment_source" name="recruitment_source">
                   <option value="">-- Pilih Sumber (opsional) --</option>
                   <option value="Vendor Referral">Vendor Referral</option>

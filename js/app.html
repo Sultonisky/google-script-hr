@@ -121,5 +121,7 @@
 
     loadCandidates(false);
     setupAutoRefresh();
+    if (typeof initRecruitmentPage === 'function') initRecruitmentPage();
+    if (typeof initOutsourceDashboard === 'function') initOutsourceDashboard();
   });
 </script>
