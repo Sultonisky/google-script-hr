@@ -54,8 +54,15 @@ function doGet(e) {
         .addMetaTag('viewport', 'width=device-width, initial-scale=1');
   }
 
-  // --- Default: Formulir Pendaftaran ---
-  // FormPendaftaran tetap di root (self-contained, file besar)
+  // --- Form Outsource ---
+  if (type === 'outsource') {
+    return HtmlService.createTemplateFromFile('OutsourceForm').evaluate()
+        .setTitle('Registrasi Karyawan Outsource — Mahakarya HRIS')
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+        .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  }
+
+  // --- Default: Formulir Pendaftaran Kandidat ---
   var template = HtmlService.createTemplateFromFile('FormPendaftaran');
   template.tipePendaftar = type;
   return template.evaluate()

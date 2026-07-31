@@ -1,0 +1,270 @@
+<!-- partials/OutsourceFormBody.html — OUTSOURCE REGISTRATION FORM SECTIONS -->
+<div class="content-wrap">
+  <div class="container">
+    <div id="registrationForm">
+      <form id="formOutsource" novalidate>
+
+        <!-- SECTION 1: PERSONAL INFORMATION -->
+        <div class="form-section">
+          <div class="form-section-header">
+            <i class="bi bi-person-fill"></i>
+            <div><h5>Informasi Pribadi</h5><p>Data identitas dan informasi personal Anda</p></div>
+          </div>
+          <div class="form-section-body">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label" for="nik">NIK (Nomor Induk Kependudukan) <span class="required">*</span></label>
+                <input type="text" class="form-control" id="nik" name="nik" required maxlength="16" pattern="[0-9]{16}" autocomplete="off" inputmode="numeric">
+                <div class="invalid-feedback">NIK harus tepat 16 digit angka.</div>
+                <div class="nik-info"><i class="bi bi-info-circle-fill"></i><div>Sistem akan mengisi beberapa informasi secara otomatis berdasarkan struktur NIK. Pastikan data sudah sesuai sebelum mengirim.</div></div>
+                <div class="nik-feedback" id="nikFeedback"></div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="full_name">Nama Lengkap <span class="required">*</span></label>
+                <input type="text" class="form-control" id="full_name" name="full_name" required minlength="3" autocomplete="name">
+                <div class="invalid-feedback">Nama lengkap wajib diisi (minimal 3 karakter).</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="birth_date">Tanggal Lahir <span class="required">*</span></label>
+                <input type="text" class="form-control" id="birth_date" name="birth_date" required placeholder="DD/MM/YYYY" maxlength="10" autocomplete="off" inputmode="numeric">
+                <div class="invalid-feedback">Tanggal lahir wajib diisi dengan format DD/MM/YYYY.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="age">Usia <span class="required">*</span></label>
+                <input type="number" class="form-control" id="age" name="age" required min="17" max="100" readonly style="background-color:#f8f9fa;cursor:default;" placeholder="Otomatis dari Tanggal Lahir">
+                <div class="invalid-feedback">Usia minimal 17 tahun.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="gender">Jenis Kelamin <span class="required">*</span></label>
+                <select class="form-select" id="gender" name="gender" required>
+                  <option value="">-- Pilih Jenis Kelamin --</option>
+                  <option value="Male">Laki-laki</option>
+                  <option value="Female">Perempuan</option>
+                </select>
+                <div class="invalid-feedback">Jenis kelamin wajib dipilih.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="marital_status">Status Pernikahan <span class="required">*</span></label>
+                <select class="form-select" id="marital_status" name="marital_status" required>
+                  <option value="">-- Pilih Status --</option>
+                  <option value="Single">Belum Menikah</option>
+                  <option value="Married">Menikah</option>
+                  <option value="Divorced">Cerai</option>
+                  <option value="Widowed">Janda/Duda</option>
+                </select>
+                <div class="invalid-feedback">Status pernikahan wajib dipilih.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="education">Pendidikan Terakhir <span class="required">*</span></label>
+                <select class="form-select" id="education" name="education" required>
+                  <option value="">-- Pilih Pendidikan --</option>
+                  <option value="Elementary School">Sekolah Dasar (SD)</option>
+                  <option value="Junior High School">Sekolah Menengah Pertama (SMP)</option>
+                  <option value="Senior High School">Sekolah Menengah Atas (SMA)</option>
+                  <option value="Vocational High School">Sekolah Menengah Kejuruan (SMK)</option>
+                  <option value="Diploma I">Diploma I (D1)</option>
+                  <option value="Diploma II">Diploma II (D2)</option>
+                  <option value="Diploma III">Diploma III (D3)</option>
+                  <option value="Bachelor Degree">Sarjana (S1)</option>
+                  <option value="Master Degree">Magister (S2)</option>
+                  <option value="Doctoral Degree">Doktoral (S3)</option>
+                  <option value="Other">Lainnya</option>
+                </select>
+                <div class="invalid-feedback">Pendidikan terakhir wajib dipilih.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="work_experience">Pengalaman Kerja</label>
+                <select class="form-select" id="work_experience" name="work_experience">
+                  <option value="">-- Pilih Pengalaman --</option>
+                  <option value="Less than 1 Year">Kurang dari 1 Tahun</option>
+                  <option value="1-2 Years">1-2 Tahun</option>
+                  <option value="2-3 Years">2-3 Tahun</option>
+                  <option value="3-5 Years">3-5 Tahun</option>
+                  <option value="5-10 Years">5-10 Tahun</option>
+                  <option value="More than 10 Years">Lebih dari 10 Tahun</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 2: CONTACT & ADDRESS -->
+        <div class="form-section">
+          <div class="form-section-header">
+            <i class="bi bi-envelope-fill"></i>
+            <div><h5>Informasi Kontak</h5><p>Data komunikasi dan alamat domisili</p></div>
+          </div>
+          <div class="form-section-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" for="email">Alamat Email <span class="required">*</span></label>
+                <input type="email" class="form-control" id="email" name="email" required autocomplete="email">
+                <div class="invalid-feedback">Format alamat email tidak valid.</div>
+                <div id="emailValidation" class="email-validation" style="display:none;"></div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="phone">Nomor HP <span class="required">*</span></label>
+                <div class="input-group-prefix">
+                  <span class="input-prefix">+62</span>
+                  <input type="tel" class="form-control" id="phone" name="phone" required maxlength="13" pattern="8[0-9]{6,12}" autocomplete="tel" inputmode="numeric" placeholder="81234567890">
+                </div>
+                <div class="invalid-feedback">Nomor HP tidak valid. Gunakan format 8xxxxxxxxxx.</div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="province">Provinsi <span class="required">*</span></label>
+                <select class="form-select" id="province" name="province" required><option value="">-- Pilih Provinsi --</option></select>
+                <div class="invalid-feedback">Provinsi wajib dipilih.</div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="city">Kota/Kabupaten <span class="required">*</span></label>
+                <select class="form-select" id="city" name="city" required><option value="">-- Pilih Kota/Kabupaten --</option></select>
+                <div class="invalid-feedback">Kota/Kabupaten wajib dipilih.</div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="district">Kecamatan <span class="required">*</span></label>
+                <div id="districtWrap">
+                  <select class="form-select" id="district" name="district" required disabled><option value="">-- Pilih Kota dahulu --</option></select>
+                </div>
+                <div class="invalid-feedback">Kecamatan wajib dipilih.</div>
+                <div id="districtLoading" style="display:none;font-size:12px;color:var(--color-text-soft);margin-top:5px;">
+                  <span class="spinner-border spinner-border-sm me-1" role="status"></span> Memuat kecamatan...
+                </div>
+                <div id="districtManualWrap" style="display:none;margin-top:6px;">
+                  <input type="text" class="form-control" id="districtManual" placeholder="Ketik nama kecamatan manual">
+                  <div class="form-text">Data tidak tersedia, isi manual.</div>
+                </div>
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="address">Detail Alamat <span class="required">*</span></label>
+                <textarea class="form-control" id="address" name="address" rows="3" required placeholder="Nama jalan, nomor rumah, RT/RW, dll."></textarea>
+                <div class="invalid-feedback">Detail alamat wajib diisi.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 3: EMPLOYMENT AT MAHAKARYA -->
+        <div class="form-section">
+          <div class="form-section-header">
+            <i class="bi bi-briefcase-fill"></i>
+            <div><h5>Data Penempatan</h5><p>Informasi posisi dan penempatan di PT Mahakarya Sukses Indonesia</p></div>
+          </div>
+          <div class="form-section-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" for="position">Posisi / Jabatan Saat Ini <span class="required">*</span></label>
+                <input type="text" class="form-control" id="position" name="position" required placeholder="Contoh: Operator Produksi, Security, Cleaning Service">
+                <div class="invalid-feedback">Posisi/jabatan wajib diisi.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="department">Departemen / Unit</label>
+                <input type="text" class="form-control" id="department" name="department" placeholder="Contoh: Produksi, HRGA, Warehouse">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="join_date">Tanggal Mulai Kerja <span class="required">*</span></label>
+                <input type="date" class="form-control" id="join_date" name="join_date" required>
+                <div class="invalid-feedback">Tanggal mulai kerja wajib diisi.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="salary">Gaji / Upah <span class="required">*</span></label>
+                <div class="input-group-prefix">
+                  <span class="input-prefix">Rp</span>
+                  <input type="text" class="form-control" id="salary" name="salary" required inputmode="numeric" placeholder="5.000.000">
+                </div>
+                <div class="invalid-feedback">Gaji wajib diisi dengan angka.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 4: VENDOR / OUTSOURCE INFO -->
+        <div class="form-section">
+          <div class="form-section-header">
+            <i class="bi bi-building-fill"></i>
+            <div><h5>Informasi Vendor / Outsource</h5><p>Data perusahaan vendor dan kontrak outsource</p></div>
+          </div>
+          <div class="form-section-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" for="vendor_company">Nama Perusahaan Vendor / Agency <span class="required">*</span></label>
+                <input type="text" class="form-control" id="vendor_company" name="vendor_company" required placeholder="Contoh: PT. Mitra Karya Utama">
+                <div class="invalid-feedback">Nama perusahaan vendor wajib diisi.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="contract_number">Nomor Kontrak</label>
+                <input type="text" class="form-control" id="contract_number" name="contract_number" placeholder="Contoh: PKS/2025/001 (opsional)">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="contract_duration">Durasi Kontrak <span class="required">*</span></label>
+                <select class="form-select" id="contract_duration" name="contract_duration" required>
+                  <option value="">-- Pilih Durasi --</option>
+                  <option value="1 Bulan">1 Bulan</option>
+                  <option value="3 Bulan">3 Bulan</option>
+                  <option value="6 Bulan">6 Bulan</option>
+                  <option value="1 Tahun">1 Tahun</option>
+                  <option value="2 Tahun">2 Tahun</option>
+                  <option value="3 Tahun">3 Tahun</option>
+                  <option value="Tidak Terbatas">Tidak Terbatas</option>
+                  <option value="Lainnya">Lainnya</option>
+                </select>
+                <div class="invalid-feedback">Durasi kontrak wajib dipilih.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="recruitment_source">Sumber Informasi</label>
+                <select class="form-select" id="recruitment_source" name="recruitment_source">
+                  <option value="">-- Pilih Sumber (opsional) --</option>
+                  <option value="Vendor Referral">Vendor Referral</option>
+                  <option value="Internal Referral">Internal Referral</option>
+                  <option value="Job Fair">Job Fair</option>
+                  <option value="Walk In">Walk In</option>
+                  <option value="Agency">Agency</option>
+                  <option value="Other">Lainnya</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DECLARATION -->
+        <div class="agreement-section">
+          <div class="agreement-checkbox">
+            <input class="form-check-input" type="checkbox" id="agreement" name="agreement" required>
+            <label class="form-check-label" for="agreement">
+              Saya menyatakan bahwa seluruh data yang saya isi adalah benar dan dapat dipertanggungjawabkan. Saya menyetujui pendataan diri saya ke dalam sistem HRIS PT Mahakarya Sukses Indonesia.
+            </label>
+          </div>
+          <div class="invalid-feedback" id="agreementError">Anda harus menyetujui pernyataan di atas untuk melanjutkan.</div>
+          <div class="agreement-info">
+            <ul>
+              <li>Data digunakan untuk keperluan administrasi HR dan pengelolaan tenaga kerja outsource.</li>
+              <li>Data hanya dapat diakses oleh pihak Human Resources yang berwenang.</li>
+              <li>Perusahaan berhak melakukan verifikasi atas seluruh data yang diberikan.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- SUBMIT -->
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+          <button type="submit" class="btn-submit" id="submitBtn" disabled>
+            <span class="spinner-border spinner-border-sm d-none" id="submitSpinner"></span>
+            <span id="submitText">Kirim Data</span>
+          </button>
+        </div>
+
+      </form>
+    </div>
+
+    <!-- SUCCESS PAGE -->
+    <div class="success-page" id="successPage">
+      <div class="success-icon"><i class="bi bi-check-circle-fill"></i></div>
+      <h2 class="success-title">Registrasi Berhasil</h2>
+      <p class="success-message">
+        Terima kasih, data Anda telah berhasil kami terima.<br><br>
+        Data outsource Anda akan diproses oleh tim Human Resources PT Mahakarya Sukses Indonesia untuk keperluan administrasi HRIS.<br><br>
+        Apabila ada pertanyaan, silakan menghubungi tim HR.
+      </p>
+      <p style="font-size:13px;color:var(--color-text-soft);">Anda dapat menutup halaman ini.</p>
+    </div>
+
+  </div>
+</div>
