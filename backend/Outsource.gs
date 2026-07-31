@@ -183,6 +183,7 @@ function getOutsourceList() {
       position:    String(row[colIndex['Position']]     || ''),
       vendorCompany: String(row[colIndex['Vendor Company']] || ''),
       status:      String(row[colIndex['Status']]       || '')
+    });
   }
   return result;
 }
