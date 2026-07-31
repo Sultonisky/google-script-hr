@@ -821,3 +821,45 @@ function getAuditLogForCandidate(recruitmentId) {
 
   return result;
 }
+
+// ============================================================
+// 14. KECAMATAN — Lazy load per kab/kota (Opsi A)
+//     Sumber: ibnux/data-indonesia via UrlFetchApp
+//     Cache: CacheService (6 jam) agar tidak fetch ulang berulang
+// ============================================================
+function getKecamatan(cityCode) {
+  if (!cityCode || String(cityCode).length < 4) return [];
+
+  var cacheKey = 'kec_' + String(cityCode);
+
+  try {
+    // Cek cache dulu
+    var cache = CacheService.getScriptCache();
+    var cached = cache.get(cacheKey);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+
+    // Fetch dari sumber publik
+    var url = 'https://raw.githubusercontent.com/ibnux/data-indonesia/master/kecamatan/' + cityCode + '.json';
+    var response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+
+    if (response.getResponseCode() !== 200) return [];
+
+    var raw = JSON.parse(response.getContentText());
+    var result = raw.map(function(item) {
+      return { id: String(item.id), nama: String(item.nama) };
+    });
+
+    // Simpan ke cache selama 6 jam (21600 detik)
+    cache.put(cacheKey, JSON.stringify(result), 21600);
+
+    return result;
+
+  } catch (e) {
+    // Jika fetch gagal (misal mode offline/pembatasan), kembalikan array kosong
+    // agar form tetap bisa submit dengan input manual
+    Logger.log('getKecamatan error for ' + cityCode + ': ' + e.toString());
+    return [];
+  }
+}
