@@ -43,6 +43,129 @@
         --color-border: #26313d;
       }
 
+      /* ============== DARK MODE — Bootstrap table overrides ============== */
+      [data-theme="dark"] table.hr-table {
+        --bs-table-bg: transparent;
+        --bs-table-striped-bg: transparent;
+        --bs-table-hover-bg: var(--color-bg);
+        --bs-table-border-color: var(--color-border);
+        --bs-table-color: var(--color-text);
+        color: var(--color-text);
+        border-color: var(--color-border);
+      }
+      [data-theme="dark"] table.hr-table thead th {
+        background: var(--color-bg);
+        color: var(--color-text-soft);
+        border-bottom-color: var(--color-border);
+      }
+      [data-theme="dark"] table.hr-table tbody td {
+        border-bottom-color: var(--color-border);
+        background: var(--color-surface);
+        color: var(--color-text);
+      }
+      [data-theme="dark"] table.hr-table tbody tr:hover td {
+        background: var(--color-bg);
+      }
+
+      /* Filter bar inputs & selects in dark mode */
+      [data-theme="dark"] .filter-bar .table-search input,
+      [data-theme="dark"] .filter-select,
+      [data-theme="dark"] .filter-date,
+      [data-theme="dark"] .filter-number {
+        background: var(--color-surface);
+        color: var(--color-text);
+        border-color: var(--color-border);
+        color-scheme: dark;
+      }
+      [data-theme="dark"] .filter-bar .table-search input::placeholder,
+      [data-theme="dark"] .filter-number::placeholder {
+        color: var(--color-text-soft);
+      }
+      [data-theme="dark"] .filter-select option {
+        background: var(--color-surface);
+        color: var(--color-text);
+      }
+
+      /* Panel & stat cards in dark mode */
+      [data-theme="dark"] .stat-card,
+      [data-theme="dark"] .chart-card,
+      [data-theme="dark"] .panel,
+      [data-theme="dark"] .cv-section-card,
+      [data-theme="dark"] .drawer-footer,
+      [data-theme="dark"] .settings-card {
+        background: var(--color-surface);
+        border-color: var(--color-border);
+      }
+      [data-theme="dark"] .panel-header,
+      [data-theme="dark"] .panel-footer {
+        border-color: var(--color-border);
+      }
+
+      /* Topbar in dark mode */
+      [data-theme="dark"] .topbar {
+        background: var(--color-surface);
+        border-bottom-color: var(--color-border);
+      }
+      [data-theme="dark"] .icon-btn,
+      [data-theme="dark"] .btn-burger {
+        background: var(--color-surface);
+        border-color: var(--color-border);
+        color: var(--color-text-soft);
+      }
+
+      /* Buttons in dark mode */
+      [data-theme="dark"] .btn-export,
+      [data-theme="dark"] .btn-refresh,
+      [data-theme="dark"] .btn-toggle-more,
+      [data-theme="dark"] .btn-reset-filter,
+      [data-theme="dark"] .btn-action,
+      [data-theme="dark"] .btn-status,
+      [data-theme="dark"] .page-btn {
+        background: var(--color-surface);
+        border-color: var(--color-border);
+        color: var(--color-text);
+      }
+      [data-theme="dark"] .page-btn.active {
+        background: var(--color-primary);
+        border-color: var(--color-primary);
+        color: #fff;
+      }
+
+      /* Modal in dark mode */
+      [data-theme="dark"] .modal-content {
+        background: var(--color-surface);
+        color: var(--color-text);
+        border-color: var(--color-border);
+      }
+      [data-theme="dark"] .modal-header,
+      [data-theme="dark"] .modal-footer {
+        border-color: var(--color-border);
+      }
+      [data-theme="dark"] .form-control {
+        background: var(--color-bg);
+        color: var(--color-text);
+        border-color: var(--color-border);
+      }
+      [data-theme="dark"] .form-control:focus {
+        background: var(--color-bg);
+        color: var(--color-text);
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 0.2rem rgba(0, 91, 172, 0.25);
+      }
+      [data-theme="dark"] .form-control::placeholder {
+        color: var(--color-text-soft);
+      }
+      [data-theme="dark"] .btn-close {
+        filter: invert(1);
+      }
+
+      /* FAB actions in dark mode */
+      [data-theme="dark"] .fab-action {
+        background: var(--color-surface);
+        border-color: var(--color-border);
+        color: var(--color-text);
+      }
+
       * {
         box-sizing: border-box;
       }
@@ -628,7 +751,7 @@
       table.hr-table {
         margin: 0;
         font-size: 13px;
-        min-width: 1600px;
+        min-width: 900px;
       }
 
       table.hr-table thead th {
@@ -673,6 +796,16 @@
         font-weight: 600;
         color: var(--color-text);
         white-space: normal;
+      }
+      .cand-name-link {
+        font-weight: 600;
+        white-space: normal;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+        transition: opacity 0.15s ease;
+      }
+      .cand-name-link:hover {
+        opacity: 0.75;
       }
       .cand-sub {
         font-size: 11.5px;
@@ -1116,11 +1249,14 @@
 
       .status-action-group {
         display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        gap: 8px;
+        width: 100%;
       }
       .btn-status {
-        flex: 1 1 130px;
+        flex: 1 1 0;
+        min-width: 0;
         height: 44px;
         border-radius: 10px;
         border: 1.5px solid var(--color-border);
@@ -1134,6 +1270,7 @@
         cursor: pointer;
         transition: all 0.15s ease;
         color: var(--color-text);
+        white-space: nowrap;
       }
       .btn-status.accept {
         color: #166534;
@@ -1178,7 +1315,13 @@
         cursor: not-allowed;
       }
 
-      /* ============== TOASTS ============== */
+      /* ============== MODAL z-index — harus di atas drawer (1900) ============== */
+      .modal { z-index: 2100 !important; }
+      .modal-backdrop { z-index: 2050 !important; }
+
+      /* Drawer turun saat modal aktif */
+      .drawer-panel.modal-open { z-index: 1700; }
+      .drawer-overlay.modal-open { z-index: 1650; }
       .toast-container {
         z-index: 2000;
       }
@@ -1456,8 +1599,24 @@
       </div>
     </aside>
 
-    <!-- ============== MAIN ============== -->
+    <!-- ============== TOPBAR ============== -->
     <div class="main-content">
+      <header class="topbar">
+        <button class="btn-burger" id="btnBurger" type="button" aria-label="Menu">
+          <i class="bi bi-list"></i>
+        </button>
+        <div class="page-title">
+          <h5 id="pageTitleText">Dashboard</h5>
+          <small id="pageSubtitleText">Ringkasan rekrutmen &amp; data kandidat</small>
+        </div>
+        <div class="topbar-actions">
+          <button class="icon-btn" id="btnDarkModeToggle" title="Toggle tema">
+            <i class="bi bi-moon-fill"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- ============== MAIN ============== -->
       <div class="content-wrap">
         <!-- ============== PAGE: DASHBOARD ============== -->
         <section class="page-section active" id="pageDashboard">
@@ -1524,7 +1683,7 @@
 
           <!-- CHARTS -->
           <div class="row g-3 mb-4">
-            <div class="col-md-6 col-xl-4">
+            <div class="col-md-6 col-xl-12">
               <div class="chart-card">
                 <h6><i class="bi bi-graph-up me-1"></i> Pelamar per Bulan</h6>
                 <div class="chart-canvas-wrap">
@@ -1697,12 +1856,9 @@
                     <th>Usia</th>
                     <th>Gender</th>
                     <th>Posisi</th>
-                    <th>Pendidikan</th>
-                    <th>Ekspektasi Gaji</th>
-                    <th>Sumber</th>
                     <th>Status</th>
                     <th>Tanggal Daftar</th>
-                    <th>Aksi</th>
+
                   </tr>
                 </thead>
                 <tbody id="tableBody"></tbody>
@@ -2051,17 +2207,7 @@
           >
             <i class="bi bi-slash-circle"></i> Blacklist
           </button>
-          <button
-            class="btn-status pending"
-            id="btnPending"
-            type="button"
-            data-status="Pending"
-          >
-            <i class="bi bi-hourglass-split"></i> Pending
-          </button>
-          <button class="btn-status print" id="btnFooterPrint" type="button">
-            <i class="bi bi-printer-fill"></i> Print
-          </button>
+
         </div>
       </div>
     </div>
@@ -2088,10 +2234,7 @@
               rows="3"
               placeholder="Contoh: Menunggu keputusan user department..."
             ></textarea>
-            <label class="form-label fw-semibold" style="font-size: 13px"
-              >Tanggal Follow Up</label
-            >
-            <input type="date" class="form-control" id="holdFollowUpInput" />
+
           </div>
           <div class="modal-footer">
             <button class="btn btn-outline-secondary" data-bs-dismiss="modal">
@@ -2219,6 +2362,28 @@
 
     <script>
       // ============================================================
+      // POLYFILL: google.script.run (hanya aktif di luar Apps Script)
+      // Mencegah crash saat preview lokal; di Apps Script nyata ini diabaikan.
+      // ============================================================
+      if (typeof google === 'undefined' || typeof google.script === 'undefined') {
+        window.google = window.google || {};
+        google.script = {
+          run: new Proxy({}, {
+            get: function(_, fnName) {
+              return function() {
+                return {
+                  withSuccessHandler: function(fn) { return this; },
+                  withFailureHandler: function(fn) {
+                    console.warn('[Dev Mode] google.script.run.' + fnName + '() — tidak tersedia di luar Apps Script.');
+                    return this;
+                  }
+                };
+              };
+            }
+          })
+        };
+      }
+      // ============================================================
       // 0. SETTINGS (localStorage) + DARK MODE
       // ============================================================
       var DEFAULT_SETTINGS = {
@@ -2256,21 +2421,16 @@
         if (icon)
           icon.className =
             theme === "dark" ? "bi bi-sun-fill" : "bi bi-moon-fill";
-        document
-          .getElementById("btnDarkModeToggle")
-          .classList.toggle("active", theme === "dark");
+        var toggleBtn = document.getElementById("btnDarkModeToggle");
+        if (toggleBtn)
+          toggleBtn.classList.toggle("active", theme === "dark");
       }
 
-      applyTheme(appSettings.theme);
-
-      document
-        .getElementById("btnDarkModeToggle")
-        .addEventListener("click", function () {
-          appSettings.theme = appSettings.theme === "dark" ? "light" : "dark";
-          applyTheme(appSettings.theme);
-          saveSettingsToStorage(appSettings);
-          document.getElementById("settingTheme").value = appSettings.theme;
-        });
+      // Apply theme early (only touches documentElement, safe before DOM ready)
+      document.documentElement.setAttribute(
+        "data-theme",
+        appSettings.theme === "dark" ? "dark" : "light",
+      );
 
       function hydrateSettingsForm() {
         document.getElementById("settingTheme").value = appSettings.theme;
@@ -2284,7 +2444,6 @@
         document.getElementById("settingRefreshInterval").value =
           appSettings.refreshInterval;
       }
-      hydrateSettingsForm();
 
       document
         .getElementById("btnSaveSettings")
@@ -2317,20 +2476,16 @@
       // ============================================================
       // 0b. SIDEBAR / NAVIGATION
       // ============================================================
-      var sidebar = document.getElementById("sidebar");
-      var overlay = document.getElementById("sidebarOverlay");
-      var btnBurger = document.getElementById("btnBurger");
+      var sidebar, overlay, btnBurger;
 
       function openSidebar() {
-        sidebar.classList.add("show");
-        overlay.classList.add("show");
+        if (sidebar) sidebar.classList.add("show");
+        if (overlay) overlay.classList.add("show");
       }
       function closeSidebar() {
-        sidebar.classList.remove("show");
-        overlay.classList.remove("show");
+        if (sidebar) sidebar.classList.remove("show");
+        if (overlay) overlay.classList.remove("show");
       }
-      btnBurger.addEventListener("click", openSidebar);
-      overlay.addEventListener("click", closeSidebar);
 
       var pageTitles = {
         pageDashboard: ["Dashboard", "Ringkasan rekrutmen & data kandidat"],
@@ -2939,7 +3094,6 @@
         tbody.innerHTML = pageData
           .map(function (row) {
             return (
-              "" +
               "<tr>" +
               '<td><div class="avatar-sm">' +
               escapeHtml(initials(row.fullName)) +
@@ -2947,7 +3101,9 @@
               '<td><span class="id-mono">' +
               escapeHtml(row.recruitmentId) +
               "</span></td>" +
-              '<td><div class="cand-name">' +
+              '<td><div class="cand-name cand-name-link" style="cursor:pointer;color:var(--color-primary);" data-id="' +
+              escapeHtml(row.recruitmentId) +
+              '">' +
               escapeHtml(row.fullName) +
               '</div><div class="cand-sub">' +
               escapeHtml(row.email) +
@@ -2967,15 +3123,6 @@
               "<td>" +
               escapeHtml(row.positionApplied) +
               "</td>" +
-              "<td>" +
-              escapeHtml(row.education) +
-              "</td>" +
-              "<td>" +
-              formatRupiah(row.expectedSalary) +
-              "</td>" +
-              "<td>" +
-              escapeHtml(row.recruitmentSource) +
-              "</td>" +
               '<td><span class="badge-status ' +
               statusBadgeClass(row.status) +
               '">' +
@@ -2984,9 +3131,6 @@
               "<td>" +
               escapeHtml(row.createdDate) +
               "</td>" +
-              '<td><button class="btn-action" title="Lihat detail" data-id="' +
-              escapeHtml(row.recruitmentId) +
-              '"><i class="bi bi-eye"></i></button></td>' +
               "</tr>"
             );
           })
@@ -3086,7 +3230,7 @@
       document
         .querySelectorAll("table.hr-table thead th")
         .forEach(function (th, idx) {
-          var sortKeyMap = { 2: "name", 3: "age", 7: "salary", 10: "date" };
+          var sortKeyMap = { 2: "name", 3: "age", 7: "date" };
           if (!(idx in sortKeyMap)) return;
           th.addEventListener("click", function () {
             var key = sortKeyMap[idx];
@@ -3126,9 +3270,9 @@
       drawerOverlay.addEventListener("click", closeDrawer);
 
       function attachViewHandlers() {
-        document.querySelectorAll(".btn-action").forEach(function (btn) {
-          btn.addEventListener("click", function () {
-            openCandidateDrawer(btn.getAttribute("data-id"));
+        document.querySelectorAll(".cand-name-link").forEach(function (el) {
+          el.addEventListener("click", function () {
+            openCandidateDrawer(el.getAttribute("data-id"));
           });
         });
       }
@@ -3375,6 +3519,19 @@
         document.getElementById("blacklistModal"),
       );
 
+      // Turunkan drawer saat modal terbuka, naikkan kembali saat modal tertutup
+      ['acceptModal', 'holdModal', 'blacklistModal'].forEach(function (modalId) {
+        var el = document.getElementById(modalId);
+        el.addEventListener('show.bs.modal', function () {
+          drawerPanel.classList.add('modal-open');
+          drawerOverlay.classList.add('modal-open');
+        });
+        el.addEventListener('hidden.bs.modal', function () {
+          drawerPanel.classList.remove('modal-open');
+          drawerOverlay.classList.remove('modal-open');
+        });
+      });
+
       function lockStatusButtons(lock) {
         document.querySelectorAll(".btn-status").forEach(function (b) {
           b.disabled = lock;
@@ -3436,7 +3593,6 @@
 
       document.getElementById("btnHold").addEventListener("click", function () {
         document.getElementById("holdReasonInput").value = "";
-        document.getElementById("holdFollowUpInput").value = "";
         holdModal.show();
       });
       document
@@ -3444,19 +3600,15 @@
         .addEventListener("click", function () {
           if (!activeCandidateId) return;
           var reason = document.getElementById("holdReasonInput").value;
-          var followUp = document.getElementById("holdFollowUpInput").value;
           holdModal.hide();
           lockStatusButtons(true);
           var notes = cvHrNotesEl.value;
           google.script.run
             .withSuccessHandler(function (result) {
-              onStatusUpdateSuccess(
-                result,
-                "Kandidat di-hold. Follow up: " + (followUp || "-"),
-              );
+              onStatusUpdateSuccess(result, "Kandidat di-hold.");
             })
             .withFailureHandler(onStatusUpdateFailure)
-            .holdCandidate(activeCandidateId, reason, followUp, notes);
+            .holdCandidate(activeCandidateId, reason, "", notes);
         });
 
       document
@@ -3481,32 +3633,12 @@
             .blacklistCandidate(activeCandidateId, reason, notes);
         });
 
-      document
-        .getElementById("btnPending")
-        .addEventListener("click", function () {
-          if (!activeCandidateId) return;
-          lockStatusButtons(true);
-          var notes = cvHrNotesEl.value;
-          google.script.run
-            .withSuccessHandler(function (result) {
-              onStatusUpdateSuccess(
-                result,
-                "Status kandidat dikembalikan ke Pending.",
-              );
-            })
-            .withFailureHandler(onStatusUpdateFailure)
-            .updateCandidateStatus(activeCandidateId, "Pending", notes);
-        });
-
       // Print (drawer)
       function printDrawer() {
         window.print();
       }
       document
         .getElementById("btnDrawerPrint")
-        .addEventListener("click", printDrawer);
-      document
-        .getElementById("btnFooterPrint")
         .addEventListener("click", printDrawer);
 
       // ============================================================
@@ -3765,9 +3897,35 @@
       // 15. INIT
       // ============================================================
       document.addEventListener("DOMContentLoaded", function () {
+        // Wire up elements that require DOM to be ready
+        sidebar  = document.getElementById("sidebar");
+        overlay  = document.getElementById("sidebarOverlay");
+        btnBurger = document.getElementById("btnBurger");
+
+        if (btnBurger) btnBurger.addEventListener("click", openSidebar);
+        if (overlay)   overlay.addEventListener("click", closeSidebar);
+
+        // Dark-mode toggle
+        var darkBtn = document.getElementById("btnDarkModeToggle");
+        if (darkBtn) {
+          darkBtn.addEventListener("click", function () {
+            appSettings.theme = appSettings.theme === "dark" ? "light" : "dark";
+            applyTheme(appSettings.theme);
+            saveSettingsToStorage(appSettings);
+            var settingThemeEl = document.getElementById("settingTheme");
+            if (settingThemeEl) settingThemeEl.value = appSettings.theme;
+            // Rebuild charts so axis/legend colors update
+            if (filteredCandidates.length > 0) renderCharts(filteredCandidates);
+          });
+        }
+
+        // Apply saved theme (now DOM is ready for icon + button update)
+        applyTheme(appSettings.theme);
+        hydrateSettingsForm();
+
         if (appSettings.defaultStatus)
-          document.getElementById("statusFilter").value =
-            appSettings.defaultStatus;
+          document.getElementById("statusFilter").value = appSettings.defaultStatus;
+
         loadCandidates(false);
         setupAutoRefresh();
       });
