@@ -91,20 +91,6 @@
     var stateEl = document.getElementById('notesSaveState');
     if (stateEl) { stateEl.innerText = 'Tersimpan otomatis'; stateEl.className = 'notes-save-state'; }
 
-    // CV doc card
-    var docCard = document.getElementById('docCardCv');
-    if (docCard) {
-      if (c.cvLink) {
-        docCard.classList.add('has-doc');
-        var ds = docCard.querySelector('.doc-state');
-        if (ds) ds.innerText = 'Dokumen tersedia';
-      } else {
-        docCard.classList.remove('has-doc');
-        var ds2 = docCard.querySelector('.doc-state');
-        if (ds2) ds2.innerText = 'No Document Uploaded';
-      }
-    }
-
     updateStatusButtonsUI(c.status || 'Pending');
 
     // Timeline
