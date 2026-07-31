@@ -33,9 +33,13 @@
   }
 
   function applyFilters() {
-    var kw      = (document.getElementById('searchInput').value || '').trim().toLowerCase();
-    var status  = document.getElementById('statusFilter').value;
-    var pos     = document.getElementById('positionFilter').value;
+    var siEl    = document.getElementById('searchInput');
+    var sfEl    = document.getElementById('statusFilter');
+    var pfEl    = document.getElementById('positionFilter');
+    if (!siEl || !sfEl || !pfEl) return; // DOM not ready
+    var kw      = (siEl.value || '').trim().toLowerCase();
+    var status  = sfEl.value;
+    var pos     = pfEl.value;
     var edu     = document.getElementById('educationFilter') ? document.getElementById('educationFilter').value : '';
     var gender  = document.getElementById('genderFilter') ? document.getElementById('genderFilter').value : '';
     var src     = document.getElementById('sourceFilter') ? document.getElementById('sourceFilter').value : '';
@@ -85,7 +89,8 @@
   }
 
   function sortFilteredCandidates() {
-    var sv = document.getElementById('sortSelect').value;
+    var selEl = document.getElementById('sortSelect');
+    var sv = selEl ? selEl.value : 'newest';
     filteredCandidates.sort(function(a, b) {
       switch (sv) {
         case 'oldest':      return (parseDdMmYyyy(a.createdDate)||0) - (parseDdMmYyyy(b.createdDate)||0);
