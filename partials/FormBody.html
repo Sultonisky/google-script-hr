@@ -1,0 +1,290 @@
+<!-- partials/FormBody.html — FORM SECTIONS HTML -->
+<div class="content-wrap">
+  <div class="container">
+    <div id="registrationForm">
+      <form id="formPendaftaran" novalidate>
+
+        <!-- SECTION 1: PERSONAL INFORMATION -->
+        <div class="form-section">
+          <div class="form-section-header">
+            <i class="bi bi-person-fill"></i>
+            <div><h5>Informasi Pribadi</h5><p>Data identitas dan informasi personal Anda</p></div>
+          </div>
+          <div class="form-section-body">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label" for="nik">NIK (Nomor Induk Kependudukan) <span class="required">*</span></label>
+                <input type="text" class="form-control" id="nik" name="nik" required maxlength="16" pattern="[0-9]{16}" autocomplete="off" inputmode="numeric">
+                <div class="invalid-feedback">NIK harus tepat 16 digit angka.</div>
+                <div class="nik-info"><i class="bi bi-info-circle-fill"></i><div>Sistem akan mengisi beberapa informasi secara otomatis berdasarkan struktur NIK. Pastikan seluruh data yang ditampilkan sudah sesuai sebelum mengirim lamaran.</div></div>
+                <div class="nik-feedback" id="nikFeedback"></div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="full_name">Nama Lengkap <span class="required">*</span></label>
+                <input type="text" class="form-control" id="full_name" name="full_name" required minlength="3" autocomplete="name">
+                <div class="invalid-feedback">Nama lengkap wajib diisi (minimal 3 karakter).</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="birth_date">Tanggal Lahir <span class="required">*</span></label>
+                <input type="text" class="form-control" id="birth_date" name="birth_date" required placeholder="DD/MM/YYYY" maxlength="10" autocomplete="off" inputmode="numeric">
+                <div class="invalid-feedback">Tanggal lahir wajib diisi dengan format DD/MM/YYYY.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="age">Usia <span class="required">*</span></label>
+                <input type="number" class="form-control" id="age" name="age" required min="17" max="100" readonly style="background-color:#f8f9fa;cursor:default;" placeholder="Otomatis dari Tanggal Lahir">
+                <div class="invalid-feedback">Usia minimal 17 tahun untuk mendaftar.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="gender">Jenis Kelamin <span class="required">*</span></label>
+                <select class="form-select" id="gender" name="gender" required>
+                  <option value="">-- Pilih Jenis Kelamin --</option>
+                  <option value="Male">Laki-laki</option>
+                  <option value="Female">Perempuan</option>
+                </select>
+                <div class="invalid-feedback">Jenis kelamin wajib dipilih.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="marital_status">Status Pernikahan <span class="required">*</span></label>
+                <select class="form-select" id="marital_status" name="marital_status" required>
+                  <option value="">-- Pilih Status --</option>
+                  <option value="Single">Belum Menikah</option>
+                  <option value="Married">Menikah</option>
+                  <option value="Divorced">Cerai</option>
+                  <option value="Widowed">Janda/Duda</option>
+                </select>
+                <div class="invalid-feedback">Status pernikahan wajib dipilih.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 2: CONTACT INFORMATION -->
+        <div class="form-section">
+          <div class="form-section-header">
+            <i class="bi bi-envelope-fill"></i>
+            <div><h5>Informasi Kontak</h5><p>Data komunikasi dan alamat Anda</p></div>
+          </div>
+          <div class="form-section-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" for="email">Alamat Email <span class="required">*</span></label>
+                <input type="email" class="form-control" id="email" name="email" required autocomplete="email">
+                <div class="invalid-feedback">Format alamat email tidak valid.</div>
+                <div id="emailValidation" class="email-validation" style="display:none;"></div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="phone">Nomor HP <span class="required">*</span></label>
+                <div class="input-group-prefix">
+                  <span class="input-prefix">+62</span>
+                  <input type="tel" class="form-control" id="phone" name="phone" required maxlength="13" pattern="8[0-9]{6,12}" autocomplete="tel" inputmode="numeric" placeholder="81234567890">
+                </div>
+                <div class="invalid-feedback">Nomor HP tidak valid. Gunakan format 8xxxxxxxxxx.</div>
+                <div class="form-text">Contoh: 81234567890</div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="province">Provinsi <span class="required">*</span></label>
+                <select class="form-select" id="province" name="province" required><option value="">-- Pilih Provinsi --</option></select>
+                <div class="invalid-feedback">Provinsi wajib dipilih.</div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="city">Kota/Kabupaten <span class="required">*</span></label>
+                <select class="form-select" id="city" name="city" required><option value="">-- Pilih Kota/Kabupaten --</option></select>
+                <div class="invalid-feedback">Kota/Kabupaten wajib dipilih.</div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="district">Kecamatan <span class="required">*</span></label>
+                <div id="districtWrap">
+                  <select class="form-select" id="district" name="district" required disabled><option value="">-- Pilih Kota dahulu --</option></select>
+                </div>
+                <div class="invalid-feedback">Kecamatan wajib dipilih.</div>
+                <div id="districtLoading" style="display:none;font-size:12px;color:var(--color-text-soft);margin-top:5px;">
+                  <span class="spinner-border spinner-border-sm me-1" role="status"></span> Memuat daftar kecamatan...
+                </div>
+                <div id="districtManualWrap" style="display:none;margin-top:6px;">
+                  <input type="text" class="form-control" id="districtManual" placeholder="Ketik nama kecamatan manual">
+                  <div class="form-text">Data kecamatan tidak tersedia, isi manual.</div>
+                </div>
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="address">Detail Alamat <span class="required">*</span></label>
+                <textarea class="form-control" id="address" name="address" rows="3" required placeholder="Nama jalan, nomor rumah, RT/RW, dll."></textarea>
+                <div class="invalid-feedback">Detail alamat wajib diisi.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 3: EMPLOYMENT INFORMATION -->
+        <div class="form-section">
+          <div class="form-section-header">
+            <i class="bi bi-briefcase-fill"></i>
+            <div><h5>Informasi Pekerjaan</h5><p>Pengalaman dan ekspektasi karir Anda</p></div>
+          </div>
+          <div class="form-section-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" for="position_applied">Posisi yang Dilamar <span class="required">*</span></label>
+                <select class="form-select" id="position_applied" name="position_applied" required>
+                  <option value="">-- Pilih Posisi --</option>
+                  <option value="Administration">Administration</option><option value="Accounting">Accounting</option>
+                  <option value="Finance">Finance</option><option value="Tax">Tax</option>
+                  <option value="HR">HR</option><option value="HRGA">HRGA</option>
+                  <option value="Recruitment">Recruitment</option><option value="Payroll">Payroll</option>
+                  <option value="Legal">Legal</option><option value="Purchasing">Purchasing</option>
+                  <option value="Procurement">Procurement</option><option value="Warehouse">Warehouse</option>
+                  <option value="Inventory">Inventory</option><option value="PPIC">PPIC</option>
+                  <option value="Production">Production</option><option value="Operator">Operator</option>
+                  <option value="QC">QC</option><option value="QA">QA</option>
+                  <option value="Engineering">Engineering</option><option value="Maintenance">Maintenance</option>
+                  <option value="IT Support">IT Support</option><option value="Network Engineer">Network Engineer</option>
+                  <option value="System Administrator">System Administrator</option><option value="Software Developer">Software Developer</option>
+                  <option value="Backend Developer">Backend Developer</option><option value="Frontend Developer">Frontend Developer</option>
+                  <option value="Full Stack Developer">Full Stack Developer</option><option value="Mobile Developer">Mobile Developer</option>
+                  <option value="UI UX Designer">UI UX Designer</option><option value="Graphic Designer">Graphic Designer</option>
+                  <option value="Digital Marketing">Digital Marketing</option><option value="Content Creator">Content Creator</option>
+                  <option value="Sales">Sales</option><option value="Sales Executive">Sales Executive</option>
+                  <option value="Business Development">Business Development</option><option value="Customer Service">Customer Service</option>
+                  <option value="Call Center">Call Center</option><option value="Supervisor">Supervisor</option>
+                  <option value="Coordinator">Coordinator</option><option value="Manager">Manager</option>
+                  <option value="Internship">Internship</option><option value="Fresh Graduate Program">Fresh Graduate Program</option>
+                  <option value="Other">Other</option>
+                </select>
+                <div class="invalid-feedback">Posisi yang dilamar wajib dipilih.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="education">Pendidikan Terakhir <span class="required">*</span></label>
+                <select class="form-select" id="education" name="education" required>
+                  <option value="">-- Pilih Pendidikan --</option>
+                  <option value="Elementary School">Sekolah Dasar (SD)</option>
+                  <option value="Junior High School">Sekolah Menengah Pertama (SMP)</option>
+                  <option value="Senior High School">Sekolah Menengah Atas (SMA)</option>
+                  <option value="Vocational High School">Sekolah Menengah Kejuruan (SMK)</option>
+                  <option value="Diploma I">Diploma I (D1)</option><option value="Diploma II">Diploma II (D2)</option>
+                  <option value="Diploma III">Diploma III (D3)</option>
+                  <option value="Bachelor Degree">Sarjana (S1)</option>
+                  <option value="Professional Degree">Profesi (Prof.)</option>
+                  <option value="Master Degree">Magister (S2)</option>
+                  <option value="Doctoral Degree">Doktoral (S3)</option>
+                  <option value="Other">Lainnya</option>
+                </select>
+                <div class="invalid-feedback">Pendidikan terakhir wajib dipilih.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="work_experience">Pengalaman Kerja <span class="required">*</span></label>
+                <select class="form-select" id="work_experience" name="work_experience" required>
+                  <option value="">-- Pilih Pengalaman --</option>
+                  <option value="No Experience">Belum Punya Pengalaman</option>
+                  <option value="Less than 1 Year">Kurang dari 1 Tahun</option>
+                  <option value="1-2 Years">1-2 Tahun</option><option value="2-3 Years">2-3 Tahun</option>
+                  <option value="3-5 Years">3-5 Tahun</option><option value="5-10 Years">5-10 Tahun</option>
+                  <option value="More than 10 Years">Lebih dari 10 Tahun</option>
+                </select>
+                <div class="invalid-feedback">Pengalaman kerja wajib dipilih.</div>
+              </div>
+              <div class="col-md-6" id="lastCompanyGroup" style="display:none;">
+                <label class="form-label" for="last_company">Perusahaan Terakhir</label>
+                <input type="text" class="form-control" id="last_company" name="last_company" autocomplete="organization" disabled>
+                <div class="invalid-feedback">Nama perusahaan wajib diisi.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="current_employment_status">Status Bekerja Saat Ini <span class="required">*</span></label>
+                <select class="form-select" id="current_employment_status" name="current_employment_status" required>
+                  <option value="">-- Pilih Status --</option>
+                  <option value="Employed Full Time">Bekerja Full Time</option>
+                  <option value="Employed Contract">Bekerja Kontrak</option>
+                  <option value="Part Time">Part Time</option><option value="Freelance">Freelance</option>
+                  <option value="Internship">Internship</option><option value="Fresh Graduate">Fresh Graduate</option>
+                  <option value="Unemployed">Belum Bekerja</option><option value="Resigned">Resign</option>
+                  <option value="Available Immediately">Tersedia Segera</option><option value="Other">Lainnya</option>
+                </select>
+                <div class="invalid-feedback">Status bekerja saat ini wajib dipilih.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="available_to_join">Kesediaan Bergabung <span class="required">*</span></label>
+                <select class="form-select" id="available_to_join" name="available_to_join" required>
+                  <option value="">-- Pilih Kesediaan --</option>
+                  <option value="Immediately">Segera</option>
+                  <option value="Within 3 Days">Dalam 3 Hari</option>
+                  <option value="Within 1 Week">Dalam 1 Minggu</option>
+                  <option value="Within 2 Weeks">Dalam 2 Minggu</option>
+                  <option value="Within 30 Days">Dalam 30 Hari</option>
+                  <option value="Within 45 Days">Dalam 45 Hari</option>
+                  <option value="Within 60 Days">Dalam 60 Hari</option>
+                  <option value="Within 90 Days">Dalam 90 Hari</option>
+                  <option value="Negotiable">Dapat Dinegosiasikan</option>
+                  <option value="Other">Lainnya</option>
+                </select>
+                <div class="invalid-feedback">Kesediaan bergabung wajib dipilih.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="expected_salary">Ekspektasi Gaji <span class="required">*</span></label>
+                <div class="input-group-prefix">
+                  <span class="input-prefix">Rp</span>
+                  <input type="text" class="form-control" id="expected_salary" name="expected_salary" required inputmode="numeric" placeholder="10.000.000">
+                </div>
+                <div class="invalid-feedback">Ekspektasi gaji wajib diisi dengan angka.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="recruitment_source">Sumber Informasi Lowongan <span class="required">*</span></label>
+                <select class="form-select" id="recruitment_source" name="recruitment_source" required>
+                  <option value="">-- Pilih Sumber --</option>
+                  <option value="Company Website">Website Perusahaan</option><option value="LinkedIn">LinkedIn</option>
+                  <option value="Jobstreet">Jobstreet</option><option value="Glints">Glints</option>
+                  <option value="Kalibrr">Kalibrr</option><option value="Indeed">Indeed</option>
+                  <option value="Instagram">Instagram</option><option value="Facebook">Facebook</option>
+                  <option value="TikTok">TikTok</option><option value="Google Search">Google Search</option>
+                  <option value="Employee Referral">Employee Referral</option>
+                  <option value="Campus Hiring">Campus Hiring</option>
+                  <option value="Job Fair">Job Fair</option><option value="Walk In">Walk In</option>
+                  <option value="Recruitment Agency">Recruitment Agency</option>
+                  <option value="Other">Lainnya</option>
+                </select>
+                <div class="invalid-feedback">Sumber informasi lowongan wajib dipilih.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DECLARATION -->
+        <div class="agreement-section">
+          <div class="agreement-checkbox">
+            <input class="form-check-input" type="checkbox" id="agreement" name="agreement" required>
+            <label class="form-check-label" for="agreement">
+              Saya menyatakan bahwa seluruh data yang saya isi adalah benar dan dapat dipertanggungjawabkan. Saya bersedia mengikuti seluruh proses rekrutmen PT Mahakarya Sukses Indonesia apabila memenuhi kualifikasi.
+            </label>
+          </div>
+          <div class="invalid-feedback" id="agreementError">Anda harus menyetujui pernyataan di atas untuk melanjutkan.</div>
+          <div class="agreement-info">
+            <ul>
+              <li>Data hanya digunakan untuk kebutuhan proses rekrutmen PT Mahakarya Sukses Indonesia.</li>
+              <li>Data hanya dapat diakses oleh pihak Human Resources yang berwenang.</li>
+              <li>Perusahaan berhak melakukan verifikasi atas seluruh data yang diberikan.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- SUBMIT -->
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+          <button type="submit" class="btn-submit" id="submitBtn" disabled>
+            <span class="spinner-border spinner-border-sm d-none" id="submitSpinner"></span>
+            <span id="submitText">Kirim Pendaftaran</span>
+          </button>
+        </div>
+
+      </form>
+    </div>
+
+    <!-- SUCCESS PAGE -->
+    <div class="success-page" id="successPage">
+      <div class="success-icon"><i class="bi bi-check-circle-fill"></i></div>
+      <h2 class="success-title">Pendaftaran Berhasil</h2>
+      <p class="success-message">
+        Terima kasih telah mengirimkan lamaran Anda.<br><br>
+        Data Anda telah berhasil kami terima dan akan diproses oleh tim Human Resources PT Mahakarya Sukses Indonesia.<br><br>
+        Apabila profil Anda sesuai dengan kebutuhan perusahaan, kami akan menghubungi Anda melalui email atau nomor telepon yang telah didaftarkan.
+      </p>
+      <p style="font-size:13px;color:var(--color-text-soft);">Anda dapat menutup halaman ini.</p>
+    </div>
+
+  </div>
+</div>
