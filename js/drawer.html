@@ -62,8 +62,7 @@
 
     var badgeWrap = document.getElementById('drawerStatusBadgeWrap');
     if (badgeWrap) badgeWrap.innerHTML =
-      '<span class="badge-status lg ' + statusBadgeClass(c.status) + '">' + escapeHtml(c.status || 'Pending') + '</span>' +
-      (c.employeeId ? ' <span class="badge-status lg accepted" style="margin-left:6px;">Employee ID: ' + escapeHtml(c.employeeId) + '</span>' : '');
+      '<span class="badge-status lg ' + statusBadgeClass(c.status) + '">' + escapeHtml(c.status || 'Pending') + '</span>';
 
     // Personal fields
     var fields = {
