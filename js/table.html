@@ -1,0 +1,115 @@
+<script>
+  // ============================================================
+  // js/table.html — TABLE RENDER & PAGINATION
+  // Depends on: helpers.html, settings.html, filters.html
+  // ============================================================
+
+  function renderTable() {
+    var tbody   = document.getElementById('tableBody');
+    var loading = document.getElementById('tableLoading');
+    var empty   = document.getElementById('tableEmpty');
+    var ps      = Number(appSettings.pageSize) || 10;
+
+    if (loading) loading.classList.add('d-none');
+
+    if (!filteredCandidates || filteredCandidates.length === 0) {
+      if (tbody) tbody.innerHTML = '';
+      if (empty) empty.classList.remove('d-none');
+      var fc = document.getElementById('footerCount');
+      if (fc) fc.innerText = 'Menampilkan 0 dari ' + allCandidates.length + ' data';
+      renderPagination(ps);
+      return;
+    }
+    if (empty) empty.classList.add('d-none');
+
+    var totalPages = Math.max(1, Math.ceil(filteredCandidates.length / ps));
+    if (currentPage > totalPages) currentPage = totalPages;
+    var start    = (currentPage - 1) * ps;
+    var pageData = filteredCandidates.slice(start, start + ps);
+
+    if (tbody) tbody.innerHTML = pageData.map(function(row) {
+      return '<tr>' +
+        '<td><div class="avatar-sm">' + escapeHtml(initials(row.fullName)) + '</div></td>' +
+        '<td><span class="id-mono">' + escapeHtml(row.recruitmentId) + '</span></td>' +
+        '<td><div class="cand-name cand-name-link" style="cursor:pointer;color:var(--color-primary);" data-id="' + escapeHtml(row.recruitmentId) + '">' +
+          escapeHtml(row.fullName) + '</div><div class="cand-sub">' + escapeHtml(row.email) + '</div></td>' +
+        '<td>' + escapeHtml(row.age) + ' Th</td>' +
+        '<td>' + escapeHtml(row.gender === 'Male' ? 'Laki-laki' : row.gender === 'Female' ? 'Perempuan' : row.gender) + '</td>' +
+        '<td>' + escapeHtml(row.positionApplied) + '</td>' +
+        '<td><span class="badge-status ' + statusBadgeClass(row.status) + '">' + escapeHtml(row.status || 'Pending') + '</span></td>' +
+        '<td>' + escapeHtml(row.createdDate) + '</td>' +
+        '</tr>';
+    }).join('');
+
+    var shownStart = start + 1;
+    var shownEnd   = Math.min(start + ps, filteredCandidates.length);
+    var fc2 = document.getElementById('footerCount');
+    if (fc2) fc2.innerText = 'Menampilkan ' + shownStart + '\u2013' + shownEnd +
+      ' dari ' + filteredCandidates.length + ' data (total ' + allCandidates.length + ')';
+
+    renderPagination(ps);
+    attachViewHandlers();
+  }
+
+  function renderPagination(ps) {
+    var nav   = document.getElementById('paginationUi');
+    if (!nav) return;
+    var total = Math.max(1, Math.ceil(filteredCandidates.length / ps));
+    var html  = '<button class="page-btn" type="button" id="pagePrev" ' + (currentPage===1?'disabled':'') + '><i class="bi bi-chevron-left"></i></button>';
+    var mb = 5, sp = Math.max(1, currentPage - Math.floor(mb/2)), ep = Math.min(total, sp + mb - 1);
+    sp = Math.max(1, ep - mb + 1);
+    if (sp > 1) { html += '<button class="page-btn" type="button" data-page="1">1</button>'; if (sp > 2) html += '<span class="page-btn" style="border:none;background:transparent;cursor:default">&hellip;</span>'; }
+    for (var p = sp; p <= ep; p++) html += '<button class="page-btn' + (p===currentPage?' active':'') + '" type="button" data-page="' + p + '">' + p + '</button>';
+    if (ep < total) { if (ep < total-1) html += '<span class="page-btn" style="border:none;background:transparent;cursor:default">&hellip;</span>'; html += '<button class="page-btn" type="button" data-page="' + total + '">' + total + '</button>'; }
+    html += '<button class="page-btn" type="button" id="pageNext" ' + (currentPage===total?'disabled':'') + '><i class="bi bi-chevron-right"></i></button>';
+    nav.innerHTML = html;
+    nav.querySelectorAll('button[data-page]').forEach(function(b) {
+      b.addEventListener('click', function() { currentPage = parseInt(b.getAttribute('data-page'), 10); renderTable(); });
+    });
+    var prev = document.getElementById('pagePrev');
+    var next = document.getElementById('pageNext');
+    if (prev) prev.addEventListener('click', function() { if (currentPage > 1) { currentPage--; renderTable(); } });
+    if (next) next.addEventListener('click', function() { if (currentPage < total) { currentPage++; renderTable(); } });
+  }
+
+  function attachViewHandlers() {
+    document.querySelectorAll('.cand-name-link').forEach(function(el) {
+      el.addEventListener('click', function() {
+        openCandidateDrawer(el.getAttribute('data-id'));
+      });
+    });
+  }
+
+  function updateStats(data) {
+    function ct(fn) { return data.filter(fn).length; }
+    var elems = {
+      statTotal:     data.length,
+      statPending:   ct(function(r){ return (r.status||'Pending').toLowerCase() === 'pending'; }),
+      statAccepted:  ct(function(r){ return (r.status||'').toLowerCase() === 'accepted'; }),
+      statHold:      ct(function(r){ return (r.status||'').toLowerCase() === 'hold'; }),
+      statBlacklist: ct(function(r){ return (r.status||'').toLowerCase() === 'blacklist'; })
+    };
+    Object.keys(elems).forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) animateCounter(el, elems[id]);
+    });
+    var navCount = document.getElementById('navRecruitmentCount');
+    if (navCount) navCount.innerText = data.length;
+  }
+
+  function initTableSortHeaders() {
+    document.querySelectorAll('table.hr-table thead th').forEach(function(th, idx) {
+      var sortKeyMap = { 2: 'name', 3: 'age', 7: 'date' };
+      if (!(idx in sortKeyMap)) return;
+      th.addEventListener('click', function() {
+        var key = sortKeyMap[idx];
+        var sel = document.getElementById('sortSelect');
+        if (!sel) return;
+        if (key === 'name')  sel.value = sel.value === 'name_asc'  ? 'name_desc'  : 'name_asc';
+        if (key === 'age')   sel.value = sel.value === 'age_desc'  ? 'age_asc'    : 'age_desc';
+        if (key === 'date')  sel.value = sel.value === 'newest'    ? 'oldest'     : 'newest';
+        applyFilters();
+      });
+    });
+  }
+</script>

@@ -1,0 +1,37 @@
+// ============================================================
+// backend/IdGenerator.gs — GENERATOR ID (Recruitment & Employee)
+// ============================================================
+
+// REC-YYYYMMDD-000001 (counter reset harian)
+function generateRecruitmentId_(timestamp) {
+  var datePart = Utilities.formatDate(timestamp, 'GMT+7', 'yyyyMMdd');
+  var props    = PropertiesService.getScriptProperties();
+  var key      = 'REC_COUNTER_' + datePart;
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var counter    = Number(props.getProperty(key) || '0') + 1;
+    props.setProperty(key, String(counter));
+    return 'REC-' + datePart + '-' + ('000000' + counter).slice(-6);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// EMP-YYYY-0001 (counter reset per tahun)
+function generateEmployeeId_(timestamp) {
+  var datePart = Utilities.formatDate(timestamp, 'GMT+7', 'yyyy');
+  var props    = PropertiesService.getScriptProperties();
+  var key      = 'EMP_COUNTER_' + datePart;
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var counter = Number(props.getProperty(key) || '0') + 1;
+    props.setProperty(key, String(counter));
+    return 'EMP-' + datePart + '-' + ('0000' + counter).slice(-4);
+  } finally {
+    lock.releaseLock();
+  }
+}

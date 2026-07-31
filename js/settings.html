@@ -1,0 +1,78 @@
+<script>
+  // ============================================================
+  // js/settings.html — APP SETTINGS (localStorage)
+  // Depends on: helpers.html
+  // ============================================================
+
+  var DEFAULT_SETTINGS = {
+    theme: 'light',
+    pageSize: 10,
+    defaultStatus: '',
+    autoRefresh: true,
+    refreshInterval: 60
+  };
+
+  function loadSettings() {
+    try {
+      var raw = localStorage.getItem('ats_settings');
+      if (!raw) return Object.assign({}, DEFAULT_SETTINGS);
+      return Object.assign({}, DEFAULT_SETTINGS, JSON.parse(raw));
+    } catch (e) {
+      return Object.assign({}, DEFAULT_SETTINGS);
+    }
+  }
+
+  function saveSettingsToStorage(s) {
+    localStorage.setItem('ats_settings', JSON.stringify(s));
+  }
+
+  var appSettings = loadSettings();
+  var pageSize    = Number(appSettings.pageSize) || 10;
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'dark' : 'light');
+    var icon = document.querySelector('#btnDarkModeToggle i');
+    if (icon) icon.className = theme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+    var btn = document.getElementById('btnDarkModeToggle');
+    if (btn) btn.classList.toggle('active', theme === 'dark');
+  }
+
+  // Apply theme early (before DOM ready) to prevent flash
+  document.documentElement.setAttribute('data-theme', appSettings.theme === 'dark' ? 'dark' : 'light');
+
+  function hydrateSettingsForm() {
+    var t  = document.getElementById('settingTheme');
+    var ps = document.getElementById('settingPageSize');
+    var ds = document.getElementById('settingDefaultStatus');
+    var ar = document.getElementById('settingAutoRefresh');
+    var ri = document.getElementById('settingRefreshInterval');
+    if (t)  t.value   = appSettings.theme;
+    if (ps) ps.value  = String(appSettings.pageSize);
+    if (ds) ds.value  = appSettings.defaultStatus;
+    if (ar) ar.checked = !!appSettings.autoRefresh;
+    if (ri) ri.value  = appSettings.refreshInterval;
+  }
+
+  function initSettingsPanel() {
+    var btn = document.getElementById('btnSaveSettings');
+    if (!btn) return;
+    btn.addEventListener('click', function() {
+      appSettings.theme             = document.getElementById('settingTheme').value;
+      appSettings.pageSize          = Number(document.getElementById('settingPageSize').value) || 10;
+      appSettings.defaultStatus     = document.getElementById('settingDefaultStatus').value;
+      appSettings.autoRefresh       = document.getElementById('settingAutoRefresh').checked;
+      appSettings.refreshInterval   = Math.max(15, Number(document.getElementById('settingRefreshInterval').value) || 60);
+
+      saveSettingsToStorage(appSettings);
+      applyTheme(appSettings.theme);
+      pageSize = appSettings.pageSize;
+
+      var sf = document.getElementById('statusFilter');
+      if (sf) sf.value = appSettings.defaultStatus;
+
+      setupAutoRefresh();
+      applyFilters();
+      showToast('Pengaturan berhasil disimpan.', 'success');
+    });
+  }
+</script>

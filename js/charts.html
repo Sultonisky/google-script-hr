@@ -1,0 +1,74 @@
+<script>
+  // ============================================================
+  // js/charts.html — CHART.JS RENDERING
+  // Depends on: helpers.html
+  // Requires: Chart.js CDN loaded before this script
+  // ============================================================
+
+  var chartInstances = {};
+
+  var palette = [
+    '#005BAC','#FDB913','#166534','#0b4a86','#991b1b',
+    '#6d28d9','#0e7490','#8a6100','#4b5563','#c2410c'
+  ];
+
+  function buildOrUpdateChart(canvasId, type, labels, values, colors) {
+    var canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    var ctx    = canvas.getContext('2d');
+    if (chartInstances[canvasId]) chartInstances[canvasId].destroy();
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+    chartInstances[canvasId] = new Chart(ctx, {
+      type: type,
+      data: {
+        labels: labels,
+        datasets: [{
+          data: values,
+          backgroundColor: colors,
+          borderWidth: type === 'line' ? 2 : 0,
+          borderColor: '#005BAC',
+          tension: 0.35,
+          fill: type === 'line'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: type === 'pie' || type === 'doughnut',
+            position: 'bottom',
+            labels: { boxWidth: 10, font: { size: 11 }, color: isDark ? '#E7ECF2' : '#1F2937' }
+          }
+        },
+        scales: (type === 'bar' || type === 'line') ? {
+          y: {
+            beginAtZero: true,
+            ticks: { precision: 0, color: isDark ? '#93A2B4' : '#6b7280' },
+            grid: { color: isDark ? '#26313D' : '#E5E7EB' }
+          },
+          x: {
+            ticks: { color: isDark ? '#93A2B4' : '#6b7280' },
+            grid: { display: false }
+          }
+        } : {}
+      }
+    });
+  }
+
+  function renderCharts(data) {
+    var monthMap = {};
+    data.forEach(function(r) {
+      var d = parseDdMmYyyy(r.createdDate);
+      if (!d) return;
+      var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+      monthMap[key] = (monthMap[key] || 0) + 1;
+    });
+    var keys    = Object.keys(monthMap).sort();
+    var names   = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+    var labels  = keys.map(function(k) { var p = k.split('-'); return names[Number(p[1])-1] + ' ' + p[0]; });
+    var values  = keys.map(function(k) { return monthMap[k]; });
+    buildOrUpdateChart('chartMonthly', 'line', labels, values, palette[0]);
+  }
+</script>

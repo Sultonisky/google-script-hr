@@ -1,0 +1,69 @@
+<!-- partials/Modals.html — STATUS ACTION MODALS -->
+
+<!-- Hold Modal -->
+<div class="modal fade" id="holdModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px">
+      <div class="modal-header">
+        <h6 class="modal-title mb-0">Tahan Kandidat (Hold)</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <label class="form-label fw-semibold" style="font-size:13px">Alasan Hold</label>
+        <textarea class="form-control" id="holdReasonInput" rows="3"
+          placeholder="Contoh: Menunggu keputusan user department..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+        <button class="btn text-white" style="background:var(--color-primary)" id="btnConfirmHold">Simpan &amp; Hold</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Blacklist Modal -->
+<div class="modal fade" id="blacklistModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px">
+      <div class="modal-header">
+        <h6 class="modal-title mb-0">Blacklist Kandidat</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <label class="form-label fw-semibold" style="font-size:13px">Alasan Blacklist</label>
+        <textarea class="form-control" id="blacklistReasonInput" rows="3"
+          placeholder="Contoh: Melanggar kode etik, referensi negatif..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+        <button class="btn btn-danger" id="btnConfirmBlacklist">Simpan &amp; Blacklist</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Accept Modal -->
+<div class="modal fade" id="acceptModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px">
+      <div class="modal-header">
+        <h6 class="modal-title mb-0">Terima Kandidat</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:13.5px">
+          Kandidat akan dipindahkan ke <strong>Master Data Employee</strong> dan Employee ID akan dibuat otomatis.
+          Riwayat tetap tersimpan di Recruitment.
+        </p>
+        <p style="font-size:13.5px;margin-bottom:0">Lanjutkan proses accept?</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+        <button class="btn btn-success" id="btnConfirmAccept">Ya, Terima &amp; Buat Employee</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer"></div>

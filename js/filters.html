@@ -1,0 +1,137 @@
+<script>
+  // ============================================================
+  // js/filters.html — FILTER, SORT, DROPDOWN POPULATION
+  // Depends on: helpers.html, settings.html
+  // ============================================================
+
+  var filteredCandidates = [];
+  var currentPage        = 1;
+
+  function populateDropdown(selectEl, values, placeholder) {
+    var current = selectEl.value;
+    var unique  = Array.from(new Set(values.filter(Boolean))).sort();
+    selectEl.innerHTML = '<option value="">' + placeholder + '</option>' +
+      unique.map(function(v) {
+        return '<option value="' + escapeHtml(v) + '">' + escapeHtml(v) + '</option>';
+      }).join('');
+    if (unique.indexOf(current) !== -1) selectEl.value = current;
+  }
+
+  function populateAllDropdowns(data) {
+    var map = [
+      ['positionFilter',        'positionApplied',         'Semua Posisi'],
+      ['educationFilter',       'education',               'Semua Pendidikan'],
+      ['experienceFilter',      'workExperience',          'Semua Pengalaman'],
+      ['cityFilter',            'city',                    'Semua Kota'],
+      ['sourceFilter',          'recruitmentSource',       'Semua Sumber'],
+      ['employmentStatusFilter','currentEmploymentStatus', 'Semua Status Kerja']
+    ];
+    map.forEach(function(m) {
+      var el = document.getElementById(m[0]);
+      if (el) populateDropdown(el, data.map(function(r) { return r[m[1]]; }), m[2]);
+    });
+  }
+
+  function applyFilters() {
+    var kw      = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+    var status  = document.getElementById('statusFilter').value;
+    var pos     = document.getElementById('positionFilter').value;
+    var edu     = document.getElementById('educationFilter') ? document.getElementById('educationFilter').value : '';
+    var gender  = document.getElementById('genderFilter') ? document.getElementById('genderFilter').value : '';
+    var src     = document.getElementById('sourceFilter') ? document.getElementById('sourceFilter').value : '';
+    var emp     = document.getElementById('employmentStatusFilter') ? document.getElementById('employmentStatusFilter').value : '';
+    var city    = document.getElementById('cityFilter') ? document.getElementById('cityFilter').value : '';
+    var exp     = document.getElementById('experienceFilter') ? document.getElementById('experienceFilter').value : '';
+    var dfrom   = document.getElementById('dateFromFilter') ? document.getElementById('dateFromFilter').value : '';
+    var dto     = document.getElementById('dateToFilter') ? document.getElementById('dateToFilter').value : '';
+    var salMin  = document.getElementById('salaryMinFilter') ? document.getElementById('salaryMinFilter').value : '';
+    var salMax  = document.getElementById('salaryMaxFilter') ? document.getElementById('salaryMaxFilter').value : '';
+    var ageMin  = document.getElementById('ageMinFilter') ? document.getElementById('ageMinFilter').value : '';
+    var ageMax  = document.getElementById('ageMaxFilter') ? document.getElementById('ageMaxFilter').value : '';
+
+    filteredCandidates = allCandidates.filter(function(r) {
+      var mk = !kw ||
+        (r.recruitmentId||'').toLowerCase().indexOf(kw) !== -1 ||
+        (r.fullName||'').toLowerCase().indexOf(kw) !== -1 ||
+        (r.phone||'').toLowerCase().indexOf(kw) !== -1 ||
+        (r.email||'').toLowerCase().indexOf(kw) !== -1 ||
+        (r.positionApplied||'').toLowerCase().indexOf(kw) !== -1 ||
+        (r.city||'').toLowerCase().indexOf(kw) !== -1;
+      var ms  = !status || (r.status||'Pending').toLowerCase() === status.toLowerCase();
+      var mp  = !pos    || r.positionApplied === pos;
+      var me  = !edu    || r.education === edu;
+      var mg  = !gender || r.gender === gender;
+      var msr = !src    || r.recruitmentSource === src;
+      var mem = !emp    || r.currentEmploymentStatus === emp;
+      var mc  = !city   || r.city === city;
+      var mx  = !exp    || r.workExperience === exp;
+      var msal = true;
+      if (salMin) msal = msal && (Number(r.expectedSalary)||0) >= Number(salMin);
+      if (salMax) msal = msal && (Number(r.expectedSalary)||0) <= Number(salMax);
+      var ma = true;
+      if (ageMin) ma = ma && (Number(r.age)||0) >= Number(ageMin);
+      if (ageMax) ma = ma && (Number(r.age)||0) <= Number(ageMax);
+      var md = true;
+      var rd = parseDdMmYyyy(r.createdDate);
+      if (dfrom && rd) md = md && rd >= new Date(dfrom);
+      if (dto   && rd) { var td2 = new Date(dto); td2.setHours(23,59,59,999); md = md && rd <= td2; }
+      return mk && ms && mp && me && mg && msr && mem && mc && mx && msal && ma && md;
+    });
+
+    sortFilteredCandidates();
+    currentPage = 1;
+    renderTable();
+    if (typeof renderCharts === 'function') renderCharts(filteredCandidates);
+  }
+
+  function sortFilteredCandidates() {
+    var sv = document.getElementById('sortSelect').value;
+    filteredCandidates.sort(function(a, b) {
+      switch (sv) {
+        case 'oldest':      return (parseDdMmYyyy(a.createdDate)||0) - (parseDdMmYyyy(b.createdDate)||0);
+        case 'name_asc':    return (a.fullName||'').localeCompare(b.fullName||'');
+        case 'name_desc':   return (b.fullName||'').localeCompare(a.fullName||'');
+        case 'age_desc':    return (Number(b.age)||0) - (Number(a.age)||0);
+        case 'age_asc':     return (Number(a.age)||0) - (Number(b.age)||0);
+        case 'salary_desc': return (Number(b.expectedSalary)||0) - (Number(a.expectedSalary)||0);
+        case 'salary_asc':  return (Number(a.expectedSalary)||0) - (Number(b.expectedSalary)||0);
+        default:            return (parseDdMmYyyy(b.createdDate)||0) - (parseDdMmYyyy(a.createdDate)||0);
+      }
+    });
+  }
+
+  function initFilters() {
+    var si = document.getElementById('searchInput');
+    if (si) si.addEventListener('input', applyFilters);
+
+    ['statusFilter','positionFilter','educationFilter','genderFilter','sourceFilter','sortSelect'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('change', applyFilters);
+    });
+
+    var btnMore = document.getElementById('btnToggleMore');
+    if (btnMore) btnMore.addEventListener('click', function() {
+      document.getElementById('filterBarMore').classList.toggle('show');
+    });
+
+    var btnApply = document.getElementById('btnApplyMoreFilter');
+    if (btnApply) btnApply.addEventListener('click', applyFilters);
+
+    var btnReset = document.getElementById('btnResetFilter');
+    if (btnReset) btnReset.addEventListener('click', function() {
+      if (si) si.value = '';
+      ['statusFilter','positionFilter','educationFilter','genderFilter',
+       'sourceFilter','employmentStatusFilter','cityFilter','experienceFilter'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      ['salaryMinFilter','salaryMaxFilter','ageMinFilter','ageMaxFilter',
+       'dateFromFilter','dateToFilter'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      document.getElementById('sortSelect').value = 'newest';
+      applyFilters();
+    });
+  }
+</script>

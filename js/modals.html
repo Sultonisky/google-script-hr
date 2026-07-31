@@ -1,0 +1,116 @@
+<script>
+  // ============================================================
+  // js/modals.html — STATUS ACTION MODALS (Accept / Hold / Blacklist)
+  // Depends on: helpers.html, drawer.html, filters.html
+  // ============================================================
+
+  function initStatusModals() {
+    var acceptModalEl    = document.getElementById('acceptModal');
+    var holdModalEl      = document.getElementById('holdModal');
+    var blacklistModalEl = document.getElementById('blacklistModal');
+    if (!acceptModalEl || !holdModalEl || !blacklistModalEl) return;
+
+    var acceptModal    = new bootstrap.Modal(acceptModalEl);
+    var holdModal      = new bootstrap.Modal(holdModalEl);
+    var blacklistModal = new bootstrap.Modal(blacklistModalEl);
+
+    // Lower drawer z-index while modal is open
+    [acceptModalEl, holdModalEl, blacklistModalEl].forEach(function(el) {
+      el.addEventListener('show.bs.modal', function() {
+        if (drawerPanel)   drawerPanel.classList.add('modal-open');
+        if (drawerOverlay) drawerOverlay.classList.add('modal-open');
+      });
+      el.addEventListener('hidden.bs.modal', function() {
+        if (drawerPanel)   drawerPanel.classList.remove('modal-open');
+        if (drawerOverlay) drawerOverlay.classList.remove('modal-open');
+      });
+    });
+
+    function lockStatusButtons(lock) {
+      document.querySelectorAll('.btn-status').forEach(function(b) { b.disabled = lock; });
+    }
+
+    function onStatusUpdateSuccess(result, successMessage) {
+      lockStatusButtons(false);
+      if (result && result.success) {
+        var target = allCandidates.find(function(c) { return c.recruitmentId === activeCandidateId; });
+        if (target) {
+          target.status = result.newStatus;
+          if (result.employeeId) target.employeeId = result.employeeId;
+        }
+        showToast(successMessage, 'success');
+        closeDrawer();
+        populateAllDropdowns(allCandidates);
+        updateStats(allCandidates);
+        applyFilters();
+      } else {
+        showToast('Gagal memperbarui status: ' + (result ? result.message : 'Unknown error'), 'error');
+      }
+    }
+
+    function onStatusUpdateFailure(error) {
+      lockStatusButtons(false);
+      showToast('Terjadi kesalahan: ' + error.message, 'error');
+    }
+
+    // Accept
+    var btnAccept = document.getElementById('btnAccept');
+    if (btnAccept) btnAccept.addEventListener('click', function() { acceptModal.show(); });
+    var btnConfirmAccept = document.getElementById('btnConfirmAccept');
+    if (btnConfirmAccept) btnConfirmAccept.addEventListener('click', function() {
+      if (!activeCandidateId) return;
+      acceptModal.hide();
+      lockStatusButtons(true);
+      var notesEl = document.getElementById('cvHrNotes');
+      var notes   = notesEl ? notesEl.value : '';
+      google.script.run
+        .withSuccessHandler(function(result) {
+          onStatusUpdateSuccess(result, 'Kandidat diterima. Employee ID: ' + (result && result.employeeId ? result.employeeId : '-'));
+        })
+        .withFailureHandler(onStatusUpdateFailure)
+        .acceptCandidateToEmployee(activeCandidateId, notes);
+    });
+
+    // Hold
+    var btnHold = document.getElementById('btnHold');
+    if (btnHold) btnHold.addEventListener('click', function() {
+      var ri = document.getElementById('holdReasonInput');
+      if (ri) ri.value = '';
+      holdModal.show();
+    });
+    var btnConfirmHold = document.getElementById('btnConfirmHold');
+    if (btnConfirmHold) btnConfirmHold.addEventListener('click', function() {
+      if (!activeCandidateId) return;
+      var reason  = document.getElementById('holdReasonInput').value;
+      holdModal.hide();
+      lockStatusButtons(true);
+      var notesEl = document.getElementById('cvHrNotes');
+      var notes   = notesEl ? notesEl.value : '';
+      google.script.run
+        .withSuccessHandler(function(result) { onStatusUpdateSuccess(result, 'Kandidat di-hold.'); })
+        .withFailureHandler(onStatusUpdateFailure)
+        .holdCandidate(activeCandidateId, reason, '', notes);
+    });
+
+    // Blacklist
+    var btnBlacklist = document.getElementById('btnBlacklist');
+    if (btnBlacklist) btnBlacklist.addEventListener('click', function() {
+      var ri = document.getElementById('blacklistReasonInput');
+      if (ri) ri.value = '';
+      blacklistModal.show();
+    });
+    var btnConfirmBlacklist = document.getElementById('btnConfirmBlacklist');
+    if (btnConfirmBlacklist) btnConfirmBlacklist.addEventListener('click', function() {
+      if (!activeCandidateId) return;
+      var reason  = document.getElementById('blacklistReasonInput').value;
+      blacklistModal.hide();
+      lockStatusButtons(true);
+      var notesEl = document.getElementById('cvHrNotes');
+      var notes   = notesEl ? notesEl.value : '';
+      google.script.run
+        .withSuccessHandler(function(result) { onStatusUpdateSuccess(result, 'Kandidat berhasil di-blacklist.'); })
+        .withFailureHandler(onStatusUpdateFailure)
+        .blacklistCandidate(activeCandidateId, reason, notes);
+    });
+  }
+</script>

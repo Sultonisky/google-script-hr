@@ -1,0 +1,47 @@
+<!-- partials/CandidateTable.html — CANDIDATE TABLE PANEL -->
+<div class="panel" id="tablePanel">
+  <div class="panel-header">
+    <div>
+      <h6>Data Kandidat</h6>
+      <div class="panel-subtitle" id="panelSubtitle">Memuat data...</div>
+    </div>
+    <div class="export-btns">
+      <button class="btn-export csv"  id="btnExportCsv"  type="button"><i class="bi bi-filetype-csv"></i> CSV</button>
+      <button class="btn-export xlsx" id="btnExportXlsx" type="button"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+      <button class="btn-export pdf"  id="btnExportPdf"  type="button"><i class="bi bi-file-earmark-pdf"></i> PDF</button>
+    </div>
+  </div>
+
+  <?!= include('partials/FilterBar'); ?>
+
+  <div class="table-responsive">
+    <table class="table hr-table">
+      <thead>
+        <tr>
+          <th>Avatar</th>
+          <th>Recruitment ID</th>
+          <th>Kandidat</th>
+          <th>Usia</th>
+          <th>Gender</th>
+          <th>Posisi</th>
+          <th>Status</th>
+          <th>Tanggal Daftar</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+    <div class="table-loading" id="tableLoading">
+      <div class="spinner-border" role="status"></div>
+      <p>Mengambil data dari spreadsheet...</p>
+    </div>
+    <div class="table-empty d-none" id="tableEmpty">
+      <i class="bi bi-inbox"></i>
+      <p>Belum ada data kandidat.</p>
+    </div>
+  </div>
+
+  <div class="panel-footer">
+    <span id="footerCount">Menampilkan 0 data</span>
+    <nav class="pagination-ui" id="paginationUi" aria-label="Pagination"></nav>
+  </div>
+</div>

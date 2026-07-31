@@ -1,0 +1,125 @@
+<script>
+  // ============================================================
+  // js/app.html — MAIN APP INIT & SIDEBAR / PAGE NAVIGATION
+  // Depends on: ALL other js/* modules
+  // Must be included LAST in the HTML file.
+  // ============================================================
+
+  var pageTitles = {
+    pageDashboard:   ['Dashboard',   'Ringkasan rekrutmen & data kandidat'],
+    pageRecruitment: ['Recruitment', 'Daftar lengkap semua kandidat'],
+    pageSettings:    ['Settings',    'Preferensi tampilan & perilaku dashboard']
+  };
+
+  function showPage(pageId) {
+    document.querySelectorAll('.page-section').forEach(function(s) { s.classList.remove('active'); });
+    var target = document.getElementById(pageId);
+    if (target) target.classList.add('active');
+    var meta = pageTitles[pageId] || ['Dashboard', ''];
+    var titleEl    = document.getElementById('pageTitleText');
+    var subtitleEl = document.getElementById('pageSubtitleText');
+    if (titleEl)    titleEl.innerText    = meta[0];
+    if (subtitleEl) subtitleEl.innerText = meta[1];
+  }
+
+  function initSidebar() {
+    var sidebar   = document.getElementById('sidebar');
+    var overlay   = document.getElementById('sidebarOverlay');
+    var btnBurger = document.getElementById('btnBurger');
+
+    function openSidebar()  { if (sidebar) sidebar.classList.add('show');    if (overlay) overlay.classList.add('show'); }
+    function closeSidebar() { if (sidebar) sidebar.classList.remove('show'); if (overlay) overlay.classList.remove('show'); }
+
+    if (btnBurger) btnBurger.addEventListener('click', openSidebar);
+    if (overlay)   overlay.addEventListener('click',   closeSidebar);
+
+    document.querySelectorAll('.nav-item').forEach(function(item) {
+      item.addEventListener('click', function() {
+        document.querySelectorAll('.nav-item').forEach(function(i) { i.classList.remove('active'); });
+        item.classList.add('active');
+
+        if (item.dataset.external === 'employee') {
+          showToast('Buka sheet "Employee" di spreadsheet untuk melihat Master Data karyawan.', 'success');
+        } else if (item.dataset.external === 'recruitment') {
+          window.location.href = window.location.href.split('?')[0] + '?page=recruitment';
+        } else if (item.dataset.page) {
+          showPage(item.dataset.page);
+          if (item.dataset.status) {
+            var sf = document.getElementById('statusFilter');
+            if (sf) { sf.value = item.dataset.status; applyFilters(); }
+          }
+          if (item.dataset.scroll) {
+            setTimeout(function() {
+              var el = document.getElementById(item.dataset.scroll);
+              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 50);
+          }
+        }
+        if (window.innerWidth < 992) closeSidebar();
+      });
+    });
+  }
+
+  function initDarkModeToggle() {
+    var darkBtn = document.getElementById('btnDarkModeToggle');
+    if (!darkBtn) return;
+    darkBtn.addEventListener('click', function() {
+      appSettings.theme = appSettings.theme === 'dark' ? 'light' : 'dark';
+      applyTheme(appSettings.theme);
+      saveSettingsToStorage(appSettings);
+      var stEl = document.getElementById('settingTheme');
+      if (stEl) stEl.value = appSettings.theme;
+      if (filteredCandidates.length > 0) renderCharts(filteredCandidates);
+    });
+  }
+
+  function initFab() {
+    var fabMain    = document.getElementById('fabMain');
+    var fabActions = document.getElementById('fabActions');
+    if (!fabMain) return;
+    fabMain.addEventListener('click', function() {
+      fabMain.classList.toggle('open');
+      fabActions.classList.toggle('d-none');
+    });
+    function closeFab() { fabMain.classList.remove('open'); fabActions.classList.add('d-none'); }
+
+    var fabRefresh = document.getElementById('fabRefresh');
+    var fabExport  = document.getElementById('fabExport');
+    var fabPrint   = document.getElementById('fabPrint');
+    var fabForm    = document.getElementById('fabRecruitmentForm');
+    var fabEmp     = document.getElementById('fabMasterEmployee');
+
+    if (fabRefresh) fabRefresh.addEventListener('click', function() { closeFab(); loadCandidates(false); });
+    if (fabExport)  fabExport.addEventListener('click',  function() { closeFab(); document.getElementById('btnExportXlsx').click(); });
+    if (fabPrint)   fabPrint.addEventListener('click',   function() { closeFab(); window.print(); });
+    if (fabForm)    fabForm.addEventListener('click',    function() { closeFab(); window.open(window.location.href.split('?')[0] + '?type=kandidat', '_blank'); });
+    if (fabEmp)     fabEmp.addEventListener('click',     function() { closeFab(); showToast('Buka sheet "Employee" di spreadsheet untuk melihat Master Data karyawan.', 'success'); });
+  }
+
+  function initRefreshButton() {
+    var btnRefresh = document.getElementById('btnRefresh');
+    if (btnRefresh) btnRefresh.addEventListener('click', function() { loadCandidates(false); });
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    initSidebar();
+    initDarkModeToggle();
+    initDrawer();
+    initStatusModals();
+    initFilters();
+    initTableSortHeaders();
+    initExportButtons();
+    initSettingsPanel();
+    initFab();
+    initRefreshButton();
+
+    applyTheme(appSettings.theme);
+    hydrateSettingsForm();
+
+    var sf = document.getElementById('statusFilter');
+    if (sf && appSettings.defaultStatus) sf.value = appSettings.defaultStatus;
+
+    loadCandidates(false);
+    setupAutoRefresh();
+  });
+</script>

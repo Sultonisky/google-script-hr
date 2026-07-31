@@ -1,0 +1,54 @@
+<script>
+  // ============================================================
+  // js/api.html — GOOGLE APPS SCRIPT API CALLS
+  // Depends on: helpers.html, settings.html
+  // ============================================================
+
+  var allCandidates     = [];
+  var autoRefreshTimer  = null;
+
+  function loadCandidates(silent) {
+    var btnRefresh = document.getElementById('btnRefresh');
+    var loading    = document.getElementById('tableLoading');
+    var empty      = document.getElementById('tableEmpty');
+    var subtitle   = document.getElementById('panelSubtitle');
+
+    if (btnRefresh) btnRefresh.classList.add('spinning');
+    if (!silent) {
+      if (loading)  loading.classList.remove('d-none');
+      if (empty)    empty.classList.add('d-none');
+      var tbody = document.getElementById('tableBody');
+      if (tbody) tbody.innerHTML = '';
+      if (subtitle) subtitle.innerText = 'Memuat data...';
+    }
+    if (btnRefresh) btnRefresh.disabled = true;
+
+    google.script.run
+      .withSuccessHandler(function(response) {
+        if (btnRefresh) { btnRefresh.classList.remove('spinning'); btnRefresh.disabled = false; }
+        allCandidates = response || [];
+        if (subtitle) subtitle.innerText = 'Terakhir dimuat: ' + new Date().toLocaleString('id-ID');
+        populateAllDropdowns(allCandidates);
+        updateStats(allCandidates);
+        applyFilters();
+        if (!silent) showToast('Data kandidat berhasil dimuat (' + allCandidates.length + ' data).', 'success');
+      })
+      .withFailureHandler(function(error) {
+        if (btnRefresh) { btnRefresh.classList.remove('spinning'); btnRefresh.disabled = false; }
+        if (!silent) {
+          if (loading) loading.classList.add('d-none');
+          if (empty)   { empty.classList.remove('d-none'); empty.innerHTML = '<i class="bi bi-exclamation-triangle"></i><p>Gagal memuat data: ' + escapeHtml(error.message) + '</p>'; }
+          if (subtitle) subtitle.innerText = 'Gagal memuat data';
+          showToast('Gagal memuat data: ' + error.message, 'error');
+        }
+      })
+      .getRecruitmentList();
+  }
+
+  function setupAutoRefresh() {
+    if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+    if (!appSettings.autoRefresh) return;
+    var ms = Math.max(15, Number(appSettings.refreshInterval) || 60) * 1000;
+    autoRefreshTimer = setInterval(function() { loadCandidates(true); }, ms);
+  }
+</script>

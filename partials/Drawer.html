@@ -1,0 +1,113 @@
+<!-- partials/Drawer.html — CANDIDATE PROFILE DRAWER -->
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<div class="drawer-panel" id="drawerPanel">
+
+  <!-- Header -->
+  <div class="drawer-header">
+    <div class="drawer-header-top">
+      <div class="d-flex align-items-center gap-3">
+        <div class="avatar-lg" id="drawerAvatar">?</div>
+        <div>
+          <h5 class="mb-1" id="drawerCandidateName" style="font-weight:700">Nama Kandidat</h5>
+          <div style="font-size:12.5px;opacity:0.9" id="drawerPosition">Posisi</div>
+          <div class="mt-2" id="drawerStatusBadgeWrap"></div>
+        </div>
+      </div>
+      <div class="drawer-actions">
+        <button class="drawer-icon-btn" id="btnDrawerPrint" title="Print"><i class="bi bi-printer-fill"></i></button>
+        <button class="drawer-icon-btn" id="btnDrawerClose" title="Tutup"><i class="bi bi-x-lg"></i></button>
+      </div>
+    </div>
+    <div class="drawer-id-meta">
+      <span>Recruitment ID<strong id="drawerRecId">-</strong></span>
+      <span>Tanggal Daftar<strong id="drawerCreatedDate">-</strong></span>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="drawer-body">
+
+    <!-- Informasi Pribadi -->
+    <div class="cv-section-card">
+      <h6><i class="bi bi-person-fill"></i> Informasi Pribadi</h6>
+      <div class="cv-grid-2">
+        <div class="cv-field"><div class="cv-label">Nama Lengkap</div><div class="cv-value" id="cvFullName">-</div></div>
+        <div class="cv-field"><div class="cv-label">Tanggal Lahir</div><div class="cv-value" id="cvBirthDate">-</div></div>
+        <div class="cv-field"><div class="cv-label">Usia</div><div class="cv-value" id="cvAge">-</div></div>
+        <div class="cv-field"><div class="cv-label">Jenis Kelamin</div><div class="cv-value" id="cvGender">-</div></div>
+        <div class="cv-field"><div class="cv-label">Status Pernikahan</div><div class="cv-value" id="cvMaritalStatus">-</div></div>
+        <div class="cv-field"><div class="cv-label">NIK</div><div class="cv-value" id="cvNik">-</div></div>
+        <div class="cv-field"><div class="cv-label">Email</div><div class="cv-value" id="cvEmail">-</div></div>
+        <div class="cv-field"><div class="cv-label">No. HP</div><div class="cv-value" id="cvPhone">-</div></div>
+        <div class="cv-field"><div class="cv-label">Kota</div><div class="cv-value" id="cvCity">-</div></div>
+      </div>
+      <div class="cv-field mb-0"><div class="cv-label">Alamat</div><div class="cv-value" id="cvAddress">-</div></div>
+    </div>
+
+    <!-- Informasi Pekerjaan -->
+    <div class="cv-section-card">
+      <h6><i class="bi bi-briefcase-fill"></i> Informasi Pekerjaan</h6>
+      <div class="cv-grid-2">
+        <div class="cv-field"><div class="cv-label">Posisi Dilamar</div><div class="cv-value" id="cvPosition">-</div></div>
+        <div class="cv-field"><div class="cv-label">Pendidikan</div><div class="cv-value" id="cvEducation">-</div></div>
+        <div class="cv-field"><div class="cv-label">Pengalaman Kerja</div><div class="cv-value" id="cvExperience">-</div></div>
+        <div class="cv-field"><div class="cv-label">Perusahaan Terakhir</div><div class="cv-value" id="cvLastCompany">-</div></div>
+        <div class="cv-field"><div class="cv-label">Status Bekerja</div><div class="cv-value" id="cvEmploymentStatus">-</div></div>
+        <div class="cv-field"><div class="cv-label">Kesediaan Bergabung</div><div class="cv-value" id="cvAvailability">-</div></div>
+        <div class="cv-field"><div class="cv-label">Ekspektasi Gaji</div><div class="cv-value" id="cvSalary">-</div></div>
+        <div class="cv-field"><div class="cv-label">Sumber Rekrutmen</div><div class="cv-value" id="cvSource">-</div></div>
+      </div>
+    </div>
+
+    <!-- Dokumen -->
+    <div class="cv-section-card">
+      <h6><i class="bi bi-folder-fill"></i> Dokumen</h6>
+      <div class="row g-2">
+        <div class="col-6">
+          <div class="doc-card" id="docCardCv">
+            <i class="bi bi-file-earmark-person"></i>
+            <div class="doc-name">CV / Resume</div>
+            <div class="doc-state">No Document Uploaded</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Catatan HR -->
+    <div class="cv-section-card">
+      <h6><i class="bi bi-chat-square-text-fill"></i> Catatan HR</h6>
+      <textarea class="form-control" id="cvHrNotes" rows="5" maxlength="2000"
+        placeholder="Contoh: Komunikasi baik, perlu interview kedua, negosiasi gaji..."></textarea>
+      <div class="notes-toolbar">
+        <span id="notesCharCounter">0 / 2000 karakter</span>
+        <div class="d-flex align-items-center gap-2">
+          <span class="notes-save-state" id="notesSaveState">Tersimpan otomatis</span>
+          <button class="btn-reset-filter" id="btnSaveNotesManual" type="button"
+            style="height:32px;padding:0 12px;font-size:12px">
+            <i class="bi bi-save2"></i> Simpan
+          </button>
+        </div>
+      </div>
+      <div class="mt-1" style="font-size:11px;color:var(--color-text-soft)">
+        Terakhir diperbarui: <span id="notesLastUpdated">-</span>
+      </div>
+    </div>
+
+    <!-- Riwayat Aktivitas -->
+    <div class="cv-section-card mb-0">
+      <h6><i class="bi bi-clock-history"></i> Riwayat Aktivitas</h6>
+      <div class="timeline" id="drawerTimeline">
+        <div class="timeline-empty">Memuat riwayat...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer actions -->
+  <div class="drawer-footer">
+    <div class="status-action-group">
+      <button class="btn-status accept"    id="btnAccept"    type="button"><i class="bi bi-check-lg"></i> Accept</button>
+      <button class="btn-status hold"      id="btnHold"      type="button"><i class="bi bi-pause-fill"></i> Hold</button>
+      <button class="btn-status blacklist" id="btnBlacklist" type="button"><i class="bi bi-slash-circle"></i> Blacklist</button>
+    </div>
+  </div>
+</div>

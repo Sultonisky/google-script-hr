@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
@@ -1546,12 +1546,7 @@
         <button class="nav-item active" type="button" data-page="pageDashboard">
           <i class="bi bi-grid-1x2-fill"></i> Dashboard
         </button>
-        <button
-          class="nav-item"
-          type="button"
-          data-page="pageDashboard"
-          data-scroll="tablePanel"
-        >
+        <button class="nav-item" type="button" data-external="recruitment">
           <i class="bi bi-people-fill"></i> Recruitment
           <span class="badge-count" id="navRecruitmentCount">0</span>
         </button>
@@ -1976,6 +1971,156 @@
             </div>
           </div>
         </section>
+        <!-- ============== PAGE: RECRUITMENT ============== -->
+        <section class="page-section" id="pageRecruitment">
+          <!-- MINI STAT CARDS -->
+          <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+              <div class="stat-card">
+                <div class="stat-icon bg-blue"><i class="bi bi-people-fill"></i></div>
+                <div>
+                  <div class="stat-label">Total</div>
+                  <div class="stat-value" id="recStatTotal">0</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="stat-card">
+                <div class="stat-icon bg-gold"><i class="bi bi-hourglass-split"></i></div>
+                <div>
+                  <div class="stat-label">Pending</div>
+                  <div class="stat-value" id="recStatPending">0</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="stat-card">
+                <div class="stat-icon bg-green"><i class="bi bi-check-circle-fill"></i></div>
+                <div>
+                  <div class="stat-label">Accepted</div>
+                  <div class="stat-value" id="recStatAccepted">0</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="stat-card">
+                <div class="stat-icon bg-red"><i class="bi bi-slash-circle-fill"></i></div>
+                <div>
+                  <div class="stat-label">Blacklist</div>
+                  <div class="stat-value" id="recStatBlacklist">0</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RECRUITMENT TABLE PANEL -->
+          <div class="panel" id="recTablePanel">
+            <div class="panel-header">
+              <div>
+                <h6>Data Recruitment</h6>
+                <div class="panel-subtitle" id="recPanelSubtitle">Memuat data...</div>
+              </div>
+              <div class="export-btns">
+                <button class="btn-export csv" id="recBtnExportCsv" type="button"><i class="bi bi-filetype-csv"></i> CSV</button>
+                <button class="btn-export xlsx" id="recBtnExportXlsx" type="button"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+                <button class="btn-export pdf" id="recBtnExportPdf" type="button"><i class="bi bi-file-earmark-pdf"></i> PDF</button>
+              </div>
+            </div>
+
+            <!-- FILTER BAR utama -->
+            <div class="filter-bar">
+              <div class="table-search">
+                <i class="bi bi-search"></i>
+                <input type="text" id="recSearchInput" placeholder="Cari ID, nama, NIK, HP, email, posisi, kota..." />
+              </div>
+              <select class="filter-select" id="recStatusFilter">
+                <option value="">Semua Status</option>
+                <option>Pending</option>
+                <option>Accepted</option>
+                <option>Hold</option>
+                <option>Blacklist</option>
+              </select>
+              <select class="filter-select" id="recPositionFilter"><option value="">Semua Posisi</option></select>
+              <select class="filter-select" id="recGenderFilter">
+                <option value="">Semua Gender</option>
+                <option value="Male">Laki-laki</option>
+                <option value="Female">Perempuan</option>
+              </select>
+              <select class="filter-select" id="recSortSelect">
+                <option value="newest">Terbaru</option>
+                <option value="oldest">Terlama</option>
+                <option value="name_asc">Nama A-Z</option>
+                <option value="name_desc">Nama Z-A</option>
+                <option value="age_desc">Usia Tertinggi</option>
+                <option value="age_asc">Usia Terendah</option>
+                <option value="salary_desc">Gaji Tertinggi</option>
+                <option value="salary_asc">Gaji Terendah</option>
+              </select>
+              <button class="btn-toggle-more" id="recBtnToggleMore" type="button"><i class="bi bi-sliders"></i> Filter Lanjutan</button>
+              <button class="btn-reset-filter" type="button" id="recBtnResetFilter"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+              <button class="btn-refresh" id="recBtnRefresh" type="button" title="Muat ulang data"><i class="bi bi-arrow-clockwise"></i></button>
+            </div>
+
+            <!-- FILTER BAR lanjutan -->
+            <div class="filter-bar filter-bar-collapse" id="recFilterBarMore">
+              <select class="filter-select" id="recEducationFilter"><option value="">Semua Pendidikan</option></select>
+              <select class="filter-select" id="recExperienceFilter"><option value="">Semua Pengalaman</option></select>
+              <select class="filter-select" id="recCityFilter"><option value="">Semua Kota</option></select>
+              <select class="filter-select" id="recSourceFilter"><option value="">Semua Sumber</option></select>
+              <select class="filter-select" id="recEmploymentStatusFilter"><option value="">Semua Status Kerja</option></select>
+              <div class="filter-range-group">
+                <input type="number" class="filter-number" id="recSalaryMinFilter" placeholder="Gaji min" />
+                <span>&ndash;</span>
+                <input type="number" class="filter-number" id="recSalaryMaxFilter" placeholder="Gaji max" />
+              </div>
+              <div class="filter-range-group">
+                <input type="number" class="filter-number" id="recAgeMinFilter" placeholder="Usia min" />
+                <span>&ndash;</span>
+                <input type="number" class="filter-number" id="recAgeMaxFilter" placeholder="Usia max" />
+              </div>
+              <input type="date" class="filter-date" id="recDateFromFilter" title="Dari tanggal" />
+              <input type="date" class="filter-date" id="recDateToFilter" title="Sampai tanggal" />
+              <button class="btn-reset-filter" type="button" id="recBtnApplyMoreFilter"><i class="bi bi-check2"></i> Terapkan</button>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table hr-table">
+                <thead>
+                  <tr>
+                    <th>Avatar</th>
+                    <th data-rec-sort="id">Recruitment ID</th>
+                    <th data-rec-sort="name">Kandidat</th>
+                    <th data-rec-sort="age">Usia</th>
+                    <th>Gender</th>
+                    <th>Posisi</th>
+                    <th>Pendidikan</th>
+                    <th>Pengalaman</th>
+                    <th data-rec-sort="salary">Exp. Gaji</th>
+                    <th>Sumber</th>
+                    <th>Status</th>
+                    <th data-rec-sort="date">Tanggal Daftar</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="recTableBody"></tbody>
+              </table>
+              <div class="table-loading" id="recTableLoading">
+                <div class="spinner-border" role="status"></div>
+                <p>Mengambil data dari spreadsheet...</p>
+              </div>
+              <div class="table-empty d-none" id="recTableEmpty">
+                <i class="bi bi-inbox"></i>
+                <p>Belum ada data kandidat.</p>
+              </div>
+            </div>
+
+            <div class="panel-footer">
+              <span id="recFooterCount">Menampilkan 0 data</span>
+              <nav class="pagination-ui" id="recPaginationUi" aria-label="Pagination"></nav>
+            </div>
+          </div>
+        </section>
+
       </div>
     </div>
 
@@ -2488,8 +2633,9 @@
       }
 
       var pageTitles = {
-        pageDashboard: ["Dashboard", "Ringkasan rekrutmen & data kandidat"],
-        pageSettings: ["Settings", "Preferensi tampilan & perilaku dashboard"],
+        pageDashboard:   ['Dashboard', 'Ringkasan rekrutmen & data kandidat'],
+        pageRecruitment: ['Recruitment', 'Daftar lengkap semua kandidat'],
+        pageSettings:    ['Settings', 'Preferensi tampilan & perilaku dashboard'],
       };
 
       function showPage(pageId) {
@@ -2510,11 +2656,13 @@
           });
           item.classList.add("active");
 
-          if (item.dataset.external === "employee") {
+          if (item.dataset.external === 'employee') {
             showToast(
               'Buka sheet "Employee" di spreadsheet untuk melihat Master Data karyawan.',
-              "success",
+              'success',
             );
+          } else if (item.dataset.external === 'recruitment') {
+            window.location.href = window.location.href.split('?')[0] + '?page=recruitment';
           } else if (item.dataset.page) {
             showPage(item.dataset.page);
             if (item.dataset.status) {
@@ -3682,7 +3830,7 @@
               .map(function (row) {
                 return headers
                   .map(function (h) {
-                    return '"' + String(row[h] ?? "").replace(/"/g, '""') + '"';
+                    return '"' + String(row[h] !== null && row[h] !== undefined ? row[h] : "").replace(/"/g, '""') + '"';
                   })
                   .join(",");
               })
@@ -3928,7 +4076,377 @@
 
         loadCandidates(false);
         setupAutoRefresh();
+        initRecruitmentPage();
       });
+
+      // ============================================================
+      // 16. RECRUITMENT PAGE — State
+      // ============================================================
+      var recFilteredCandidates = [];
+      var recCurrentPage = 1;
+
+      function getRecPageSize() {
+        return Number(appSettings.pageSize) || 10;
+      }
+
+      // ============================================================
+      // 16b. RECRUITMENT PAGE — Stat cards & Dropdowns
+      // ============================================================
+      function updateRecStats(data) {
+        var total     = data.length;
+        var pending   = data.filter(function(r){ return (r.status||'Pending').toLowerCase() === 'pending'; }).length;
+        var accepted  = data.filter(function(r){ return (r.status||'').toLowerCase() === 'accepted'; }).length;
+        var blacklist = data.filter(function(r){ return (r.status||'').toLowerCase() === 'blacklist'; }).length;
+        document.getElementById('recStatTotal').innerText     = total;
+        document.getElementById('recStatPending').innerText   = pending;
+        document.getElementById('recStatAccepted').innerText  = accepted;
+        document.getElementById('recStatBlacklist').innerText = blacklist;
+      }
+
+      function populateRecDropdowns(data) {
+        function populate(selectId, values, placeholder) {
+          var el = document.getElementById(selectId);
+          if (!el) return;
+          var current = el.value;
+          var unique  = Array.from(new Set(values.filter(Boolean))).sort();
+          el.innerHTML = '<option value="">' + placeholder + '</option>' +
+            unique.map(function(v){ return '<option value="' + escapeHtml(v) + '">' + escapeHtml(v) + '</option>'; }).join('');
+          if (unique.indexOf(current) !== -1) el.value = current;
+        }
+        populate('recPositionFilter',        data.map(function(r){ return r.positionApplied; }),         'Semua Posisi');
+        populate('recEducationFilter',        data.map(function(r){ return r.education; }),               'Semua Pendidikan');
+        populate('recSourceFilter',           data.map(function(r){ return r.recruitmentSource; }),       'Semua Sumber');
+        populate('recEmploymentStatusFilter', data.map(function(r){ return r.currentEmploymentStatus; }), 'Semua Status Kerja');
+        populate('recCityFilter',             data.map(function(r){ return r.city; }),                    'Semua Kota');
+        populate('recExperienceFilter',       data.map(function(r){ return r.workExperience; }),          'Semua Pengalaman');
+      }
+
+      // ============================================================
+      // 17. RECRUITMENT PAGE — Filter & Sort
+      // ============================================================
+      function applyRecFilters() {
+        var keyword     = (document.getElementById('recSearchInput').value || '').trim().toLowerCase();
+        var statusVal   = document.getElementById('recStatusFilter').value;
+        var positionVal = document.getElementById('recPositionFilter').value;
+        var educationVal= document.getElementById('recEducationFilter').value;
+        var genderVal   = document.getElementById('recGenderFilter').value;
+        var sourceVal   = document.getElementById('recSourceFilter').value;
+        var empVal      = document.getElementById('recEmploymentStatusFilter').value;
+        var cityVal     = document.getElementById('recCityFilter').value;
+        var expVal      = document.getElementById('recExperienceFilter').value;
+        var dateFrom    = document.getElementById('recDateFromFilter').value;
+        var dateTo      = document.getElementById('recDateToFilter').value;
+        var salMin      = document.getElementById('recSalaryMinFilter').value;
+        var salMax      = document.getElementById('recSalaryMaxFilter').value;
+        var ageMin      = document.getElementById('recAgeMinFilter').value;
+        var ageMax      = document.getElementById('recAgeMaxFilter').value;
+
+        recFilteredCandidates = allCandidates.filter(function(row) {
+          var mk = !keyword ||
+            (row.recruitmentId||'').toLowerCase().indexOf(keyword) !== -1 ||
+            (row.fullName||'').toLowerCase().indexOf(keyword) !== -1 ||
+            (row.phone||'').toLowerCase().indexOf(keyword) !== -1 ||
+            (row.email||'').toLowerCase().indexOf(keyword) !== -1 ||
+            (row.positionApplied||'').toLowerCase().indexOf(keyword) !== -1 ||
+            (row.city||'').toLowerCase().indexOf(keyword) !== -1 ||
+            (row.nik||'').toLowerCase().indexOf(keyword) !== -1;
+
+          var ms  = !statusVal   || (row.status||'Pending').toLowerCase() === statusVal.toLowerCase();
+          var mp  = !positionVal || row.positionApplied === positionVal;
+          var me  = !educationVal|| row.education === educationVal;
+          var mg  = !genderVal   || row.gender === genderVal;
+          var mso = !sourceVal   || row.recruitmentSource === sourceVal;
+          var mem = !empVal      || row.currentEmploymentStatus === empVal;
+          var mc  = !cityVal     || row.city === cityVal;
+          var mx  = !expVal      || row.workExperience === expVal;
+
+          var msal = true;
+          if (salMin) msal = msal && (Number(row.expectedSalary)||0) >= Number(salMin);
+          if (salMax) msal = msal && (Number(row.expectedSalary)||0) <= Number(salMax);
+
+          var ma = true;
+          if (ageMin) ma = ma && (Number(row.age)||0) >= Number(ageMin);
+          if (ageMax) ma = ma && (Number(row.age)||0) <= Number(ageMax);
+
+          var md = true;
+          var rd = parseDdMmYyyy(row.createdDate);
+          if (dateFrom && rd) md = md && rd >= new Date(dateFrom);
+          if (dateTo   && rd) { var td2 = new Date(dateTo); td2.setHours(23,59,59,999); md = md && rd <= td2; }
+
+          return mk && ms && mp && me && mg && mso && mem && mc && mx && msal && ma && md;
+        });
+
+        sortRecCandidates();
+        recCurrentPage = 1;
+        renderRecTable();
+        updateRecStats(recFilteredCandidates);
+      }
+
+      function sortRecCandidates() {
+        var sv = document.getElementById('recSortSelect').value;
+        recFilteredCandidates.sort(function(a, b) {
+          switch(sv) {
+            case 'oldest':      return (parseDdMmYyyy(a.createdDate)||0) - (parseDdMmYyyy(b.createdDate)||0);
+            case 'name_asc':    return (a.fullName||'').localeCompare(b.fullName||'');
+            case 'name_desc':   return (b.fullName||'').localeCompare(a.fullName||'');
+            case 'age_desc':    return (Number(b.age)||0) - (Number(a.age)||0);
+            case 'age_asc':     return (Number(a.age)||0) - (Number(b.age)||0);
+            case 'salary_desc': return (Number(b.expectedSalary)||0) - (Number(a.expectedSalary)||0);
+            case 'salary_asc':  return (Number(a.expectedSalary)||0) - (Number(b.expectedSalary)||0);
+            default:            return (parseDdMmYyyy(b.createdDate)||0) - (parseDdMmYyyy(a.createdDate)||0);
+          }
+        });
+      }
+
+      // ============================================================
+      // 18. RECRUITMENT PAGE — Render Table + Pagination
+      // ============================================================
+      function renderRecTable() {
+        var tbody   = document.getElementById('recTableBody');
+        var loading = document.getElementById('recTableLoading');
+        var empty   = document.getElementById('recTableEmpty');
+        var ps      = getRecPageSize();
+
+        loading.classList.add('d-none');
+
+        if (!recFilteredCandidates || recFilteredCandidates.length === 0) {
+          tbody.innerHTML = '';
+          empty.classList.remove('d-none');
+          document.getElementById('recFooterCount').innerText =
+            'Menampilkan 0 dari ' + allCandidates.length + ' data';
+          renderRecPagination(ps);
+          return;
+        }
+        empty.classList.add('d-none');
+
+        var totalPages = Math.max(1, Math.ceil(recFilteredCandidates.length / ps));
+        if (recCurrentPage > totalPages) recCurrentPage = totalPages;
+        var start    = (recCurrentPage - 1) * ps;
+        var pageData = recFilteredCandidates.slice(start, start + ps);
+
+        tbody.innerHTML = pageData.map(function(row) {
+          var genderLabel = row.gender === 'Male' ? 'Laki-laki' : row.gender === 'Female' ? 'Perempuan' : (row.gender || '-');
+          return '<tr>' +
+            '<td><div class="avatar-sm">' + escapeHtml(initials(row.fullName)) + '</div></td>' +
+            '<td><span class="id-mono">' + escapeHtml(row.recruitmentId) + '</span></td>' +
+            '<td>' +
+              '<div class="cand-name cand-name-link" style="cursor:pointer;color:var(--color-primary);" data-id="' + escapeHtml(row.recruitmentId) + '">' + escapeHtml(row.fullName) + '</div>' +
+              '<div class="cand-sub">' + escapeHtml(row.email) + '</div>' +
+              '<div class="cand-sub"><i class="bi bi-telephone me-1"></i>' + escapeHtml(row.phone) + '</div>' +
+            '</td>' +
+            '<td>' + escapeHtml(row.age) + ' Th</td>' +
+            '<td>' + escapeHtml(genderLabel) + '</td>' +
+            '<td>' + escapeHtml(row.positionApplied) + '</td>' +
+            '<td>' + escapeHtml(row.education) + '</td>' +
+            '<td>' + escapeHtml(row.workExperience) + '</td>' +
+            '<td>' + escapeHtml(formatRupiah(row.expectedSalary)) + '</td>' +
+            '<td>' + escapeHtml(row.recruitmentSource) + '</td>' +
+            '<td><span class="badge-status ' + statusBadgeClass(row.status) + '">' + escapeHtml(row.status || 'Pending') + '</span></td>' +
+            '<td>' + escapeHtml(row.createdDate) + '</td>' +
+            '<td>' +
+              '<button class="btn-action rec-view-btn" title="Lihat profil" data-id="' + escapeHtml(row.recruitmentId) + '">' +
+                '<i class="bi bi-eye-fill"></i>' +
+              '</button>' +
+            '</td>' +
+          '</tr>';
+        }).join('');
+
+        var shownStart = start + 1;
+        var shownEnd   = Math.min(start + ps, recFilteredCandidates.length);
+        document.getElementById('recFooterCount').innerText =
+          'Menampilkan ' + shownStart + '\u2013' + shownEnd +
+          ' dari ' + recFilteredCandidates.length + ' data (total ' + allCandidates.length + ')';
+
+        renderRecPagination(ps);
+        attachRecViewHandlers();
+      }
+
+      function renderRecPagination(ps) {
+        var nav        = document.getElementById('recPaginationUi');
+        var totalPages = Math.max(1, Math.ceil(recFilteredCandidates.length / ps));
+        var html = '<button class="page-btn" type="button" id="recPagePrev" ' + (recCurrentPage===1?'disabled':'') + '><i class="bi bi-chevron-left"></i></button>';
+
+        var maxBtns = 5;
+        var startPg = Math.max(1, recCurrentPage - Math.floor(maxBtns/2));
+        var endPg   = Math.min(totalPages, startPg + maxBtns - 1);
+        startPg     = Math.max(1, endPg - maxBtns + 1);
+
+        if (startPg > 1) {
+          html += '<button class="page-btn" type="button" data-pg="1">1</button>';
+          if (startPg > 2) html += '<span class="page-btn" style="border:none;background:transparent;cursor:default;">&hellip;</span>';
+        }
+        for (var p = startPg; p <= endPg; p++) {
+          html += '<button class="page-btn ' + (p===recCurrentPage?'active':'') + '" type="button" data-pg="' + p + '">' + p + '</button>';
+        }
+        if (endPg < totalPages) {
+          if (endPg < totalPages - 1) html += '<span class="page-btn" style="border:none;background:transparent;cursor:default;">&hellip;</span>';
+          html += '<button class="page-btn" type="button" data-pg="' + totalPages + '">' + totalPages + '</button>';
+        }
+        html += '<button class="page-btn" type="button" id="recPageNext" ' + (recCurrentPage===totalPages?'disabled':'') + '><i class="bi bi-chevron-right"></i></button>';
+
+        nav.innerHTML = html;
+        nav.querySelectorAll('button[data-pg]').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            recCurrentPage = parseInt(btn.getAttribute('data-pg'), 10);
+            renderRecTable();
+          });
+        });
+        var prev = document.getElementById('recPagePrev');
+        var next = document.getElementById('recPageNext');
+        if (prev) prev.addEventListener('click', function() { if (recCurrentPage > 1) { recCurrentPage--; renderRecTable(); } });
+        if (next) next.addEventListener('click', function() { if (recCurrentPage < totalPages) { recCurrentPage++; renderRecTable(); } });
+      }
+
+      function attachRecViewHandlers() {
+        document.querySelectorAll('#recTableBody .cand-name-link, #recTableBody .rec-view-btn').forEach(function(el) {
+          el.addEventListener('click', function() {
+            openCandidateDrawer(el.getAttribute('data-id'));
+          });
+        });
+      }
+
+      // ============================================================
+      // 19. RECRUITMENT PAGE — Export
+      // ============================================================
+      function getRecExportRows() {
+        return recFilteredCandidates.map(function(r) {
+          return {
+            'Recruitment ID':      r.recruitmentId,
+            'Nama Lengkap':        r.fullName,
+            'NIK':                 r.nik,
+            'Tanggal Lahir':       r.birthDate,
+            'Usia':                r.age,
+            'Gender':              r.gender,
+            'Status Pernikahan':   r.maritalStatus,
+            'Email':               r.email,
+            'No. HP':              r.phone,
+            'Kota':                r.city,
+            'Posisi Dilamar':      r.positionApplied,
+            'Pendidikan':          r.education,
+            'Pengalaman':          r.workExperience,
+            'Perusahaan Terakhir': r.lastCompany,
+            'Status Kerja':        r.currentEmploymentStatus,
+            'Kesediaan Join':      r.availableToJoin,
+            'Ekspektasi Gaji':     r.expectedSalary,
+            'Sumber':              r.recruitmentSource,
+            'Status':              r.status,
+            'Alasan Hold':         r.holdReason,
+            'Alasan Blacklist':    r.blacklistReason,
+            'Employee ID':         r.employeeId || '',
+            'Tanggal Daftar':      r.createdDate,
+            'Terakhir Diupdate':   r.updatedAt
+          };
+        });
+      }
+
+      document.getElementById('recBtnExportCsv').addEventListener('click', function() {
+        var rows = getRecExportRows();
+        if (!rows.length) { showToast('Tidak ada data untuk diexport.', 'warning'); return; }
+        var headers = Object.keys(rows[0]);
+        var csv = headers.join(',') + '\n' + rows.map(function(row) {
+          return headers.map(function(h){ return '"' + String(row[h] !== null && row[h] !== undefined ? row[h] : '').replace(/"/g, '""') + '"'; }).join(',');
+        }).join('\n');
+        var blob = new Blob(['\uFEFF' + csv], {type: 'text/csv;charset=utf-8;'});
+        var link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'recruitment-' + new Date().toISOString().slice(0, 10) + '.csv';
+        link.click();
+        showToast('Export CSV berhasil (' + rows.length + ' data).', 'success');
+      });
+
+      document.getElementById('recBtnExportXlsx').addEventListener('click', function() {
+        var rows = getRecExportRows();
+        if (!rows.length) { showToast('Tidak ada data untuk diexport.', 'warning'); return; }
+        var ws = XLSX.utils.json_to_sheet(rows);
+        var wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Recruitment');
+        XLSX.writeFile(wb, 'recruitment-' + new Date().toISOString().slice(0, 10) + '.xlsx');
+        showToast('Export Excel berhasil (' + rows.length + ' data).', 'success');
+      });
+
+      document.getElementById('recBtnExportPdf').addEventListener('click', function() {
+        var rows = getRecExportRows();
+        if (!rows.length) { showToast('Tidak ada data untuk diexport.', 'warning'); return; }
+        var headers = Object.keys(rows[0]);
+        var win = window.open('', '_blank');
+        var html = '<html><head><title>Data Recruitment</title><style>' +
+          'body{font-family:Arial,sans-serif;padding:20px;} h3{margin-bottom:14px;}' +
+          'table{width:100%;border-collapse:collapse;font-size:10px;} th,td{border:1px solid #ccc;padding:5px 7px;text-align:left;}' +
+          'th{background:#005BAC;color:#fff;}' +
+          '</style></head><body>' +
+          '<h3>Data Recruitment &mdash; ' + new Date().toLocaleDateString('id-ID') + '</h3>' +
+          '<table><thead><tr>' + headers.map(function(h){ return '<th>' + h + '</th>'; }).join('') + '</tr></thead><tbody>' +
+          rows.map(function(row){
+            return '<tr>' + headers.map(function(h){ return '<td>' + escapeHtml(row[h]) + '</td>'; }).join('') + '</tr>';
+          }).join('') +
+          '</tbody></table></body></html>';
+        win.document.write(html);
+        win.document.close();
+        win.focus();
+        setTimeout(function(){ win.print(); }, 400);
+      });
+
+      // ============================================================
+      // 20. RECRUITMENT PAGE — Init (wire up events)
+      // ============================================================
+      function initRecruitmentPage() {
+        document.getElementById('recSearchInput').addEventListener('input', applyRecFilters);
+        ['recStatusFilter', 'recPositionFilter', 'recGenderFilter', 'recSortSelect'].forEach(function(id) {
+          document.getElementById(id).addEventListener('change', applyRecFilters);
+        });
+
+        document.getElementById('recBtnToggleMore').addEventListener('click', function() {
+          document.getElementById('recFilterBarMore').classList.toggle('show');
+        });
+        document.getElementById('recBtnApplyMoreFilter').addEventListener('click', applyRecFilters);
+
+        document.getElementById('recBtnResetFilter').addEventListener('click', function() {
+          document.getElementById('recSearchInput').value = '';
+          ['recStatusFilter', 'recPositionFilter', 'recEducationFilter', 'recGenderFilter',
+           'recSourceFilter', 'recEmploymentStatusFilter', 'recCityFilter', 'recExperienceFilter'].forEach(function(id){
+            document.getElementById(id).value = '';
+          });
+          ['recSalaryMinFilter', 'recSalaryMaxFilter', 'recAgeMinFilter', 'recAgeMaxFilter',
+           'recDateFromFilter', 'recDateToFilter'].forEach(function(id){
+            document.getElementById(id).value = '';
+          });
+          document.getElementById('recSortSelect').value = 'newest';
+          applyRecFilters();
+        });
+
+        document.getElementById('recBtnRefresh').addEventListener('click', function() {
+          loadCandidates(false);
+        });
+
+        document.querySelectorAll('table.hr-table thead th[data-rec-sort]').forEach(function(th) {
+          th.addEventListener('click', function() {
+            var key = th.getAttribute('data-rec-sort');
+            var sel = document.getElementById('recSortSelect');
+            if (key === 'name')        sel.value = sel.value === 'name_asc'    ? 'name_desc'   : 'name_asc';
+            else if (key === 'age')    sel.value = sel.value === 'age_desc'    ? 'age_asc'     : 'age_desc';
+            else if (key === 'salary') sel.value = sel.value === 'salary_desc' ? 'salary_asc'  : 'salary_desc';
+            else if (key === 'date')   sel.value = sel.value === 'newest'      ? 'oldest'      : 'newest';
+            applyRecFilters();
+          });
+        });
+      }
+
+      // ============================================================
+      // 21. SYNC: setelah loadCandidates selesai, refresh rec page juga
+      // ============================================================
+      // Hook ke success handler loadCandidates: setiap kali applyFilters
+      // dipanggil oleh loadCandidates, sync Recruitment page juga.
+      var _origApplyFilters = applyFilters;
+      applyFilters = function() {
+        _origApplyFilters();
+        var btnRef = document.getElementById('recBtnRefresh');
+        if (btnRef) btnRef.classList.remove('spinning');
+        populateRecDropdowns(allCandidates);
+        applyRecFilters();
+        var recSubtitle = document.getElementById('recPanelSubtitle');
+        var dashSubtitle = document.getElementById('panelSubtitle');
+        if (recSubtitle && dashSubtitle) recSubtitle.innerText = dashSubtitle.innerText;
+      };
     </script>
   </body>
 </html>

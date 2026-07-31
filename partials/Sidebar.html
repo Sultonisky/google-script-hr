@@ -1,0 +1,49 @@
+<!-- partials/Sidebar.html — SHARED SIDEBAR -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="logo-box">MS</div>
+    <div class="brand-text">
+      <strong>Mahakarya HRIS</strong>
+      <small>Applicant Tracking System</small>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main</div>
+    <button class="nav-item active" type="button" data-page="pageDashboard">
+      <i class="bi bi-grid-1x2-fill"></i> Dashboard
+    </button>
+    <button class="nav-item" type="button" data-external="recruitment">
+      <i class="bi bi-people-fill"></i> Recruitment
+      <span class="badge-count" id="navRecruitmentCount">0</span>
+    </button>
+    <button class="nav-item" type="button" data-external="employee">
+      <i class="bi bi-person-badge-fill"></i> Master Data
+    </button>
+
+    <div class="nav-section-label">Candidate Status</div>
+    <button class="nav-item" type="button" data-page="pageDashboard" data-status="Hold">
+      <i class="bi bi-pause-circle-fill"></i> Hold
+    </button>
+    <button class="nav-item" type="button" data-page="pageDashboard" data-status="Blacklist">
+      <i class="bi bi-slash-circle-fill"></i> Blacklist
+    </button>
+
+    <div class="nav-section-label">System</div>
+    <button class="nav-item" type="button" data-page="pageDashboard" data-scroll="tablePanel">
+      <i class="bi bi-clock-history"></i> Audit Log
+    </button>
+    <button class="nav-item" type="button" data-page="pageSettings">
+      <i class="bi bi-gear-fill"></i> Settings
+    </button>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="avatar">HR</div>
+    <div class="user-meta">
+      <strong>HR Team</strong>
+      <small>Mahakarya Sukses Indonesia</small>
+    </div>
+  </div>
+</aside>

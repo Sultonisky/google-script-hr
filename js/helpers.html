@@ -1,0 +1,92 @@
+<script>
+  // ============================================================
+  // js/helpers.html — UTILITY FUNCTIONS
+  // Depends on: nothing
+  // ============================================================
+
+  // Polyfill google.script.run untuk dev preview lokal
+  if (typeof google === 'undefined' || typeof google.script === 'undefined') {
+    window.google = window.google || {};
+    google.script = {
+      run: new Proxy({}, {
+        get: function(_, fnName) {
+          return function() {
+            return {
+              withSuccessHandler: function(fn) { return this; },
+              withFailureHandler: function(fn) {
+                console.warn('[Dev] google.script.run.' + fnName + '() — tidak tersedia di luar Apps Script.');
+                return this;
+              }
+            };
+          };
+        }
+      })
+    };
+  }
+
+  function statusBadgeClass(status) {
+    var s = (status || '').toLowerCase();
+    if (s === 'accepted') return 'accepted';
+    if (s === 'hold')     return 'hold';
+    if (s === 'blacklist') return 'blacklist';
+    return 'pending';
+  }
+
+  function initials(name) {
+    if (!name) return '?';
+    var parts = name.trim().split(/\s+/);
+    return ((parts[0] || '')[0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+  }
+
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function formatRupiah(num) {
+    return 'Rp ' + new Intl.NumberFormat('id-ID').format(Number(num) || 0);
+  }
+
+  function parseDdMmYyyy(dateStr) {
+    if (!dateStr) return null;
+    var d = dateStr.split(' ')[0].split('/');
+    if (d.length !== 3) return null;
+    return new Date(Number(d[2]), Number(d[1]) - 1, Number(d[0]));
+  }
+
+  function showToast(message, type) {
+    type = type || 'success';
+    var iconMap  = { success: 'bi-check-circle-fill', warning: 'bi-exclamation-triangle-fill', error: 'bi-x-circle-fill' };
+    var colorMap = { success: '#166534', warning: '#8a6100', error: '#991b1b' };
+    var bgMap    = { success: '#ecfdf3', warning: '#fff8e6', error: '#fef2f2' };
+    var el = document.createElement('div');
+    el.className = 'toast toast-custom align-items-center border-0';
+    el.style.background = bgMap[type];
+    el.style.color = colorMap[type];
+    el.setAttribute('role', 'alert');
+    el.innerHTML = '<div class="d-flex"><div class="toast-body"><i class="bi ' + iconMap[type] + ' me-2"></i>' +
+      escapeHtml(message) + '</div>' +
+      '<button type="button" class="btn-close btn-close-sm me-2 m-auto" data-bs-dismiss="toast"></button></div>';
+    document.getElementById('toastContainer').appendChild(el);
+    var t = new bootstrap.Toast(el, { delay: 4000 });
+    t.show();
+    el.addEventListener('hidden.bs.toast', function() { el.remove(); });
+  }
+
+  function animateCounter(el, toValue) {
+    var fromValue = Number(el.getAttribute('data-current') || 0);
+    var startTime = null;
+    function step(ts) {
+      if (!startTime) startTime = ts;
+      var progress = Math.min(1, (ts - startTime) / 600);
+      var eased    = 1 - Math.pow(1 - progress, 3);
+      el.innerText = Math.round(fromValue + (toValue - fromValue) * eased);
+      if (progress < 1) requestAnimationFrame(step);
+      else el.setAttribute('data-current', toValue);
+    }
+    requestAnimationFrame(step);
+  }
+</script>

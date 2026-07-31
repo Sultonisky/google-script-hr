@@ -1,0 +1,66 @@
+<!-- partials/FilterBar.html — FILTER BAR (basic + advanced) -->
+<!-- Basic filters -->
+<div class="filter-bar">
+  <div class="table-search">
+    <i class="bi bi-search"></i>
+    <input type="text" id="searchInput" placeholder="Cari ID, nama, HP, email, posisi, kota..." />
+  </div>
+  <select class="filter-select" id="statusFilter">
+    <option value="">Semua Status</option>
+    <option>Pending</option>
+    <option>Accepted</option>
+    <option>Hold</option>
+    <option>Blacklist</option>
+  </select>
+  <select class="filter-select" id="positionFilter">
+    <option value="">Semua Posisi</option>
+  </select>
+  <select class="filter-select" id="sortSelect">
+    <option value="newest">Terbaru</option>
+    <option value="oldest">Terlama</option>
+    <option value="name_asc">Nama A-Z</option>
+    <option value="name_desc">Nama Z-A</option>
+    <option value="age_desc">Usia Tertinggi</option>
+    <option value="age_asc">Usia Terendah</option>
+    <option value="salary_desc">Gaji Tertinggi</option>
+    <option value="salary_asc">Gaji Terendah</option>
+  </select>
+  <button class="btn-toggle-more" id="btnToggleMore" type="button">
+    <i class="bi bi-sliders"></i> Filter Lanjutan
+  </button>
+  <button class="btn-reset-filter" type="button" id="btnResetFilter">
+    <i class="bi bi-arrow-counterclockwise"></i> Reset
+  </button>
+  <button class="btn-refresh" id="btnRefresh" type="button" title="Muat ulang data">
+    <i class="bi bi-arrow-clockwise"></i>
+  </button>
+</div>
+
+<!-- Advanced filters (collapsible) -->
+<div class="filter-bar filter-bar-collapse" id="filterBarMore">
+  <select class="filter-select" id="genderFilter">
+    <option value="">Semua Gender</option>
+    <option value="Male">Laki-laki</option>
+    <option value="Female">Perempuan</option>
+  </select>
+  <select class="filter-select" id="educationFilter"><option value="">Semua Pendidikan</option></select>
+  <select class="filter-select" id="experienceFilter"><option value="">Semua Pengalaman</option></select>
+  <select class="filter-select" id="cityFilter"><option value="">Semua Kota</option></select>
+  <select class="filter-select" id="sourceFilter"><option value="">Semua Sumber</option></select>
+  <select class="filter-select" id="employmentStatusFilter"><option value="">Semua Status Kerja</option></select>
+  <div class="filter-range-group">
+    <input type="number" class="filter-number" id="salaryMinFilter" placeholder="Gaji min" />
+    <span>&ndash;</span>
+    <input type="number" class="filter-number" id="salaryMaxFilter" placeholder="Gaji max" />
+  </div>
+  <div class="filter-range-group">
+    <input type="number" class="filter-number" id="ageMinFilter" placeholder="Usia min" />
+    <span>&ndash;</span>
+    <input type="number" class="filter-number" id="ageMaxFilter" placeholder="Usia max" />
+  </div>
+  <input type="date" class="filter-date" id="dateFromFilter" title="Dari tanggal" />
+  <input type="date" class="filter-date" id="dateToFilter"   title="Sampai tanggal" />
+  <button class="btn-reset-filter" type="button" id="btnApplyMoreFilter">
+    <i class="bi bi-check2"></i> Terapkan
+  </button>
+</div>

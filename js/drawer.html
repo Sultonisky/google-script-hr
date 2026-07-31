@@ -1,0 +1,182 @@
+<script>
+  // ============================================================
+  // js/drawer.html — CANDIDATE PROFILE DRAWER
+  // Depends on: helpers.html, filters.html, api.html
+  // ============================================================
+
+  var activeCandidateId  = null;
+  var notesAutoSaveTimer = null;
+
+  var drawerOverlay = null;
+  var drawerPanel   = null;
+
+  function openDrawer() {
+    if (drawerOverlay) drawerOverlay.classList.add('show');
+    if (drawerPanel)   drawerPanel.classList.add('show');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeDrawer() {
+    if (drawerOverlay) drawerOverlay.classList.remove('show');
+    if (drawerPanel)   drawerPanel.classList.remove('show');
+    document.body.style.overflow = '';
+  }
+
+  function renderTimeline(items, fallbackCreatedDate) {
+    var wrap = document.getElementById('drawerTimeline');
+    if (!wrap) return;
+    if (!items || items.length === 0) {
+      wrap.innerHTML = '<div class="timeline-empty">Belum ada riwayat aktivitas selain pendaftaran (' + escapeHtml(fallbackCreatedDate || '-') + ').</div>';
+      return;
+    }
+    var iconMap    = { 'Created':'bi-plus-circle-fill','Update Status':'bi-arrow-repeat','Hold':'bi-pause-fill','Blacklist':'bi-slash-circle-fill','Accepted':'bi-check-lg' };
+    var dotClassMap = { 'Created':'created','Accepted':'accepted','Hold':'hold','Blacklist':'blacklist' };
+    wrap.innerHTML = items.map(function(ev) {
+      var dotClass = dotClassMap[ev.action] || 'pending';
+      var icon     = iconMap[ev.action]     || 'bi-dot';
+      return '<div class="timeline-item">' +
+        '<div class="timeline-dot ' + dotClass + '"><i class="bi ' + icon + '"></i></div>' +
+        '<div class="timeline-title">' + escapeHtml(ev.action) + '</div>' +
+        '<div class="timeline-desc">'  + escapeHtml(ev.oldValue) + ' &rarr; ' + escapeHtml(ev.newValue) + '</div>' +
+        '<div class="timeline-time"><i class="bi bi-clock"></i> ' + escapeHtml(ev.timestamp) + ' &middot; ' + escapeHtml(ev.user) + '</div>' +
+        '</div>';
+    }).join('');
+  }
+
+  function openCandidateDrawer(id) {
+    var c = allCandidates.find(function(x) { return x.recruitmentId === id; });
+    if (!c) return;
+    activeCandidateId = id;
+
+    // Header
+    var avatarEl = document.getElementById('drawerAvatar');
+    if (avatarEl) avatarEl.innerText = initials(c.fullName);
+    var nameEl = document.getElementById('drawerCandidateName');
+    if (nameEl) nameEl.innerText = c.fullName || '-';
+    var posEl = document.getElementById('drawerPosition');
+    if (posEl) posEl.innerText = c.positionApplied || '-';
+    var recIdEl = document.getElementById('drawerRecId');
+    if (recIdEl) recIdEl.innerText = c.recruitmentId || '-';
+    var dateEl = document.getElementById('drawerCreatedDate');
+    if (dateEl) dateEl.innerText = c.createdDate || '-';
+
+    var badgeWrap = document.getElementById('drawerStatusBadgeWrap');
+    if (badgeWrap) badgeWrap.innerHTML =
+      '<span class="badge-status lg ' + statusBadgeClass(c.status) + '">' + escapeHtml(c.status || 'Pending') + '</span>' +
+      (c.employeeId ? ' <span class="badge-status lg accepted" style="margin-left:6px;">Employee ID: ' + escapeHtml(c.employeeId) + '</span>' : '');
+
+    // Personal fields
+    var fields = {
+      cvFullName: c.fullName, cvBirthDate: c.birthDate,
+      cvAge:      c.age ? c.age + ' Tahun' : '-',
+      cvGender:   c.gender === 'Male' ? 'Laki-laki' : c.gender === 'Female' ? 'Perempuan' : (c.gender || '-'),
+      cvMaritalStatus: c.maritalStatus, cvNik: c.nik,
+      cvPhone: c.phone, cvEmail: c.email, cvAddress: c.address, cvCity: c.city,
+      cvPosition: c.positionApplied, cvEducation: c.education,
+      cvExperience: c.workExperience, cvLastCompany: c.lastCompany,
+      cvEmploymentStatus: c.currentEmploymentStatus, cvAvailability: c.availableToJoin,
+      cvSalary: formatRupiah(c.expectedSalary), cvSource: c.recruitmentSource
+    };
+    Object.keys(fields).forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.innerText = fields[id] || '-';
+    });
+
+    // HR Notes
+    var notesEl = document.getElementById('cvHrNotes');
+    if (notesEl) notesEl.value = c.hrNotes || '';
+    var charEl = document.getElementById('notesCharCounter');
+    if (charEl) charEl.innerText = (c.hrNotes || '').length + ' / 2000 karakter';
+    var lastEl = document.getElementById('notesLastUpdated');
+    if (lastEl) lastEl.innerText = c.updatedAt || '-';
+    var stateEl = document.getElementById('notesSaveState');
+    if (stateEl) { stateEl.innerText = 'Tersimpan otomatis'; stateEl.className = 'notes-save-state'; }
+
+    // CV doc card
+    var docCard = document.getElementById('docCardCv');
+    if (docCard) {
+      if (c.cvLink) {
+        docCard.classList.add('has-doc');
+        var ds = docCard.querySelector('.doc-state');
+        if (ds) ds.innerText = 'Dokumen tersedia';
+      } else {
+        docCard.classList.remove('has-doc');
+        var ds2 = docCard.querySelector('.doc-state');
+        if (ds2) ds2.innerText = 'No Document Uploaded';
+      }
+    }
+
+    updateStatusButtonsUI(c.status || 'Pending');
+
+    // Timeline
+    var tl = document.getElementById('drawerTimeline');
+    if (tl) tl.innerHTML = '<div class="timeline-empty">Memuat riwayat...</div>';
+    google.script.run
+      .withSuccessHandler(function(events) { renderTimeline(events, c.createdDate); })
+      .withFailureHandler(function()       { renderTimeline([], c.createdDate); })
+      .getAuditLogForCandidate(id);
+
+    openDrawer();
+  }
+
+  function updateStatusButtonsUI(currentStatus) {
+    var map = { accept:'Accepted', hold:'Hold', blacklist:'Blacklist', pending:'Pending' };
+    Object.keys(map).forEach(function(key) {
+      var btn = document.getElementById('btn' + key.charAt(0).toUpperCase() + key.slice(1));
+      if (!btn) return;
+      btn.classList.toggle('current', map[key].toLowerCase() === (currentStatus||'').toLowerCase());
+    });
+  }
+
+  function initDrawer() {
+    drawerOverlay = document.getElementById('drawerOverlay');
+    drawerPanel   = document.getElementById('drawerPanel');
+
+    var closeBtn = document.getElementById('btnDrawerClose');
+    if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
+    if (drawerOverlay) drawerOverlay.addEventListener('click', closeDrawer);
+
+    // Print
+    var printBtn = document.getElementById('btnDrawerPrint');
+    if (printBtn) printBtn.addEventListener('click', function() { window.print(); });
+
+    // HR Notes auto-save
+    var notesEl = document.getElementById('cvHrNotes');
+    if (notesEl) {
+      notesEl.addEventListener('input', function() {
+        var charEl  = document.getElementById('notesCharCounter');
+        var stateEl = document.getElementById('notesSaveState');
+        if (charEl)  charEl.innerText = notesEl.value.length + ' / 2000 karakter';
+        if (stateEl) { stateEl.innerText = 'Menyimpan...'; stateEl.className = 'notes-save-state saving'; }
+        clearTimeout(notesAutoSaveTimer);
+        notesAutoSaveTimer = setTimeout(persistHrNotes, 1200);
+      });
+    }
+
+    var saveBtn = document.getElementById('btnSaveNotesManual');
+    if (saveBtn) saveBtn.addEventListener('click', function() { clearTimeout(notesAutoSaveTimer); persistHrNotes(); });
+  }
+
+  function persistHrNotes() {
+    if (!activeCandidateId) return;
+    var notesEl = document.getElementById('cvHrNotes');
+    var stateEl = document.getElementById('notesSaveState');
+    var value   = notesEl ? notesEl.value : '';
+    google.script.run
+      .withSuccessHandler(function(result) {
+        if (result && result.success) {
+          var target = allCandidates.find(function(c) { return c.recruitmentId === activeCandidateId; });
+          if (target) { target.hrNotes = value; target.updatedAt = result.updatedAt; }
+          var lastEl = document.getElementById('notesLastUpdated');
+          if (lastEl) lastEl.innerText = result.updatedAt;
+          if (stateEl) { stateEl.innerText = 'Tersimpan otomatis'; stateEl.className = 'notes-save-state saved'; }
+        } else {
+          if (stateEl) { stateEl.innerText = 'Gagal menyimpan'; stateEl.className = 'notes-save-state'; }
+        }
+      })
+      .withFailureHandler(function() {
+        if (stateEl) { stateEl.innerText = 'Gagal menyimpan'; stateEl.className = 'notes-save-state'; }
+      })
+      .saveHrNotes(activeCandidateId, value);
+  }
+</script>
