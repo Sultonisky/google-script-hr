@@ -353,7 +353,6 @@
     var salaryVal    = salaryInput.value.replace(/[^0-9]/g,'');
     var cityCode     = citySelect.value;
     var cityName     = REGIONS.cities[cityCode] || cityCode;
-    var provName     = REGIONS.provinces[provinceSelect.value] || provinceSelect.value;
     var districtValue = districtInput.disabled ? districtManualInput.value.trim() : districtInput.value.trim();
 
     var formData = {
@@ -367,7 +366,6 @@
       phone:              '62' + phoneVal,
       address:            document.getElementById('address').value.trim(),
       city:               cityName + (districtValue ? ', Kec. ' + districtValue : ''),
-      province:           provName,
       position:           document.getElementById('position').value.trim(),
       department:         document.getElementById('department').value.trim(),
       join_date:          document.getElementById('join_date').value,

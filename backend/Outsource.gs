@@ -7,7 +7,7 @@
 var OUTSOURCE_SHEET_NAME = 'raw_outsource';
 
 var OUTSOURCE_HEADERS = [
-  'Outsource ID',      // OSC-YYYYMMDD-000001
+  'Outsource ID',
   'Created Date',
   'Full Name',
   'NIK',
@@ -19,22 +19,18 @@ var OUTSOURCE_HEADERS = [
   'Phone',
   'Address',
   'City',
-  'Province',
-  // Pekerjaan
   'Position',
   'Department',
-  'Join Date',
   'Education',
   'Work Experience',
-  // Outsource spesifik
-  'Vendor Company',    // nama perusahaan vendor/agency
-  'Contract Number',   // nomor kontrak (opsional)
-  'Contract Duration', // misal "6 Bulan", "1 Tahun"
+  'Join Date',
   'Salary',
+  'Vendor Company',
+  'Contract Number',
+  'Contract Duration',
   'Recruitment Source',
-  // HRIS meta
-  'Status',            // Pending Review / Active
-  'Notes',
+  'Status',
+  'HR Notes',
   'Created By',
   'Updated At'
 ];
@@ -139,19 +135,18 @@ function simpanDataOutsource(formObject) {
       "'" + formObject.phone,
       formObject.address,
       formObject.city,
-      formObject.province || '',
       formObject.position,
       formObject.department || '',
-      formObject.join_date,
       formObject.education,
       formObject.work_experience || '',
+      formObject.join_date,
+      Number(formObject.salary) || 0,
       formObject.vendor_company,
       formObject.contract_number || '',
       formObject.contract_duration,
-      Number(formObject.salary) || 0,
       formObject.recruitment_source || '',
       'Pending Review',
-      '',        // Notes
+      '',        // HR Notes
       'System',
       createdDate
     ]);
@@ -188,7 +183,6 @@ function getOutsourceList() {
       position:    String(row[colIndex['Position']]     || ''),
       vendorCompany: String(row[colIndex['Vendor Company']] || ''),
       status:      String(row[colIndex['Status']]       || '')
-    });
   }
   return result;
 }
