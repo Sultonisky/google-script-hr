@@ -114,15 +114,16 @@ function buildDummyRecords_() {
     'Tangerang', 'Bekasi', 'Depok', 'Bogor', 'Banten'
   ];
   
-  // Education levels
+  // Education levels — must match form values in FormPendaftaran & backend validation
   var educationLevels = [
-    'SMA/SMK', 'D3', 'D4', 'S1', 'S2'
+    'Senior High School', 'Vocational High School',
+    'Diploma III', 'Bachelor Degree', 'Master Degree'
   ];
   
-  // Work experiences
+  // Work experiences — must match form option values
   var workExperiences = [
-    'Fresh Graduate', '1 Tahun', '2 Tahun', '3 Tahun', '4 Tahun',
-    '5 Tahun', '6 Tahun', '7 Tahun', '8 Tahun', '10 Tahun'
+    'No Experience', 'Less than 1 Year', '1-2 Years', '2-3 Years',
+    '3-5 Years', '5-10 Years', 'More than 10 Years'
   ];
   
   // Companies
@@ -140,9 +141,10 @@ function buildDummyRecords_() {
     'PT Bukalapak', 'PT Blibli.com'
   ];
   
-  // Employment statuses
+  // Employment statuses — must match form option values
   var empStatuses = [
-    'Bekerja', 'Tidak Bekerja', 'Kontrak Selesai', 'Freelance'
+    'Employed Full Time', 'Employed Contract', 'Part Time',
+    'Freelance', 'Unemployed', 'Resigned', 'Fresh Graduate'
   ];
   
   // Available to join options
@@ -229,8 +231,8 @@ function buildDummyRecords_() {
     'Hukum', 'Sastra Inggris', 'Pendidikan'
   ];
   
-  // Marital statuses
-  var maritalStatuses = ['Single', 'Menikah', 'Cerai'];
+  // Marital statuses — must match form values
+  var maritalStatuses = ['Single', 'Married', 'Divorced', 'Widowed'];
   
   // Hold reasons
   var holdReasons = [
@@ -267,11 +269,18 @@ function buildDummyRecords_() {
     
     // Age based on experience
     var age;
-    if (workExp === 'Fresh Graduate') {
-      age = randomInt_(21, 24);
+    if (workExp === 'No Experience' || workExp === 'Less than 1 Year') {
+      age = randomInt_(20, 25);
+    } else if (workExp === '1-2 Years') {
+      age = randomInt_(22, 28);
+    } else if (workExp === '2-3 Years') {
+      age = randomInt_(24, 30);
+    } else if (workExp === '3-5 Years') {
+      age = randomInt_(26, 33);
+    } else if (workExp === '5-10 Years') {
+      age = randomInt_(28, 38);
     } else {
-      var years = parseInt(workExp) || 1;
-      age = randomInt_(23 + years, 28 + years);
+      age = randomInt_(32, 50);
     }
     if (age > 50) age = 50;
     
@@ -310,7 +319,7 @@ function buildDummyRecords_() {
       educationDisplay = education + ' ' + major;
     }
     
-    var company = workExp === 'Fresh Graduate' ? '-' : pickRandom_(companies);
+    var company = (workExp === 'No Experience') ? '-' : pickRandom_(companies);
     var empStatus = pickRandom_(empStatuses);
     var joinDate = pickRandom_(availableToJoin);
     var source = pickRandom_(recruitmentSources);
@@ -369,7 +378,7 @@ function buildDummyRecords_() {
       "'" + randomDigits_(16),         // NIK (16-digit Indonesian national ID)
       birthDate,                       // Birth Date
       age,                             // Age
-      isMale ? 'Laki-laki' : 'Perempuan', // Gender
+      isMale ? 'Male' : 'Female',           // Gender (matches backend: Male/Female)
       maritalStatus,                   // Marital Status
       email,                           // Email
       "'" + phone,                     // Phone
