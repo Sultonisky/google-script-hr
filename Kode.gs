@@ -81,6 +81,30 @@ function doGet(e) {
         .addMetaTag('viewport', 'width=device-width, initial-scale=1');
   }
 
+  // --- Portal Settings ---
+  if (page === 'settings') {
+    return HtmlService.createTemplateFromFile('views/Settings').evaluate()
+        .setTitle('Pengaturan Portal — Mahakarya HRIS')
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+        .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  }
+
+  // --- Master Data ---
+  if (page === 'master-data') {
+    return HtmlService.createTemplateFromFile('views/MasterData').evaluate()
+        .setTitle('Master Data — Mahakarya HRIS')
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+        .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  }
+
+  // --- Employee Management ---
+  if (page === 'employee') {
+    return HtmlService.createTemplateFromFile('views/Employee').evaluate()
+        .setTitle('Manajemen Karyawan — Mahakarya HRIS')
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+        .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  }
+
   // --- Login Page ---
   if (page === 'login') {
     return HtmlService.createTemplateFromFile('views/Login').evaluate()
