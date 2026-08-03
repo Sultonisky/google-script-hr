@@ -85,4 +85,40 @@
     padding: 0 12px; font-size: 13px; min-width: 150px;
   }
   [data-theme="dark"] .settings-card { background: var(--color-surface); border-color: var(--color-border); }
+
+  /* Settings group titles */
+  .settings-group-title {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 700; color: var(--color-primary);
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 12px 0 4px 0; margin-top: 12px;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .settings-group-title i { font-size: 14px; }
+  .settings-group-title:first-child { margin-top: 0; }
+
+  /* Settings text inputs */
+  .settings-row input[type="text"],
+  .settings-row input[type="email"],
+  .settings-row input[type="url"] {
+    height: 40px; border-radius: 10px; border: 1.5px solid var(--color-border);
+    background: var(--color-surface); color: var(--color-text);
+    padding: 0 12px; font-size: 13px; min-width: 220px;
+  }
+  .settings-row input:focus,
+  .settings-row select:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 0.2rem rgba(0,91,172,0.15);
+    outline: none;
+  }
+
+  /* Settings flex column for mobile */
+  @media (max-width: 767.98px) {
+    .settings-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .settings-row input[type="text"],
+    .settings-row input[type="email"],
+    .settings-row input[type="url"],
+    .settings-row select,
+    .settings-row input[type="number"] { min-width: 100%; width: 100%; }
+  }
 </style>

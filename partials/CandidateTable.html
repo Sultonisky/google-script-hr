@@ -8,6 +8,7 @@
       <div class="panel-subtitle" id="panelSubtitle">Memuat data...</div>
     </div>
     <div class="export-btns">
+      <button class="btn-export" style="background:var(--color-primary);color:#fff;border:1px solid var(--color-primary)" type="button" onclick="openImportModal()"><i class="bi bi-upload"></i> Import</button>
       <button class="btn-export csv"  id="btnExportCsv"  type="button"><i class="bi bi-filetype-csv"></i> CSV</button>
       <button class="btn-export xlsx" id="btnExportXlsx" type="button"><i class="bi bi-file-earmark-excel"></i> Excel</button>
       <button class="btn-export pdf"  id="btnExportPdf"  type="button"><i class="bi bi-file-earmark-pdf"></i> PDF</button>
@@ -80,11 +81,45 @@
     </button>
   </div>
 
+  <!-- BULK ACTION BAR -->
+  <div class="bulk-action-bar d-none" id="bulkActionBar">
+    <div class="bulk-action-info">
+      <span id="bulkSelectedCount">0</span> kandidat dipilih
+    </div>
+    <div class="bulk-action-buttons">
+      <div class="dropdown">
+        <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button"
+          data-bs-toggle="dropdown" data-bs-auto-close="outside">
+          <i class="bi bi-arrow-repeat"></i> Ubah Status
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><a class="dropdown-item bulk-status-btn" href="#" data-status="Pending">
+            <i class="bi bi-hourglass-split text-warning"></i> Pending</a></li>
+          <li><a class="dropdown-item bulk-status-btn" href="#" data-status="Accepted">
+            <i class="bi bi-check-circle text-success"></i> Accepted</a></li>
+          <li><a class="dropdown-item bulk-status-btn" href="#" data-status="Hold">
+            <i class="bi bi-pause-circle text-primary"></i> Hold</a></li>
+          <li><a class="dropdown-item bulk-status-btn" href="#" data-status="Blacklist">
+            <i class="bi bi-x-circle text-danger"></i> Blacklist</a></li>
+        </ul>
+      </div>
+      <button class="btn btn-sm btn-outline-danger" id="bulkDeleteBtn" type="button">
+        <i class="bi bi-trash"></i> Hapus
+      </button>
+      <button class="btn btn-sm btn-outline-secondary" id="bulkDeselectBtn" type="button">
+        <i class="bi bi-x-lg"></i> Batal Pilih
+      </button>
+    </div>
+  </div>
+
   <!-- TABLE -->
   <div class="table-responsive">
     <table class="table hr-table">
       <thead>
         <tr>
+          <th class="col-check">
+            <input type="checkbox" class="form-check-input" id="selectAll" title="Pilih semua" />
+          </th>
           <th>Avatar</th>
           <th>Recruitment ID</th>
           <th>Kandidat</th>

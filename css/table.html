@@ -179,4 +179,34 @@
   [data-theme="dark"] .btn-status,
   [data-theme="dark"] .page-btn { background: var(--color-surface); border-color: var(--color-border); color: var(--color-text); }
   [data-theme="dark"] .page-btn.active { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
+
+  /* Checkbox column */
+  .col-check { width: 42px; text-align: center; }
+  .col-check .form-check-input { margin: 0; cursor: pointer; }
+  table.hr-table tbody td:first-child { text-align: center; vertical-align: middle; }
+
+  /* Bulk action bar */
+  .bulk-action-bar {
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+    padding: 12px 22px; background: rgba(0,91,172,0.06);
+    border-bottom: 2px solid var(--color-primary);
+  }
+  .bulk-action-bar.d-none { display: none !important; }
+  .bulk-action-info {
+    font-size: 13.5px; font-weight: 700; color: var(--color-primary);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .bulk-action-info::before {
+    content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--color-primary);
+  }
+  .bulk-action-buttons { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+  /* Dark mode bulk action */
+  [data-theme="dark"] .bulk-action-bar { background: rgba(0,91,172,0.12); border-bottom-color: var(--color-primary); }
+  [data-theme="dark"] .bulk-action-info { color: var(--color-primary); }
+
+  @media (max-width: 767.98px) {
+    .bulk-action-bar { flex-direction: column; align-items: stretch; }
+    .bulk-action-buttons { justify-content: flex-end; }
+  }
 </style>

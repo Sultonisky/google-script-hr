@@ -88,6 +88,8 @@ function simpanDataOutsource(formObject) {
       Number(formObject.salary) || 0,                // Salary
       formObject.salary_type || 'Monthly',           // Salary Type
       formObject.outsource_vendor || '',             // Outsource Vendor
+      formObject.contract_number || '',              // Contract Number (PKS)
+      formObject.district || '',                     // District/Kecamatan
       '',                                            // Recruitment ID (kosong — bukan dari pipeline)
       formObject.recruitment_source || '',           // Recruitment Source
       '',                                            // HR Notes

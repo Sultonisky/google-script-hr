@@ -75,6 +75,8 @@ var EMPLOYEE_HEADERS = [
   'Salary',
   'Salary Type',         // Monthly | Daily | Project-Based
   'Outsource Vendor',    // kosong jika bukan outsource
+  'Contract Number',     // Nomor Kontrak/PKS vendor
+  'District',            // Kecamatan
   'Recruitment ID',      // link ke raw_kandidat jika dari pipeline
   'Recruitment Source',
   'HR Notes',

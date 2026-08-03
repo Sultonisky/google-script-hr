@@ -257,6 +257,8 @@ function acceptCandidateToEmployee(recruitmentId, hrNotes) {
         found.values[found.colIndex['Expected Salary']],         // Salary
         'Monthly',                                               // Salary Type
         '',                                                      // Outsource Vendor
+        '',                                                      // Contract Number (N/A for pipeline)
+        '',                                                      // District (N/A for pipeline)
         recruitmentId,                                           // Recruitment ID
         found.values[found.colIndex['Recruitment Source']],      // Recruitment Source
         hrNotes || '',                                           // HR Notes

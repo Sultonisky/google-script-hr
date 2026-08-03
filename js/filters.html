@@ -33,6 +33,7 @@
   }
 
   function applyFilters() {
+    clearBulkSelection(); // reset bulk selection when filters change
     var siEl    = document.getElementById('searchInput');
     var sfEl    = document.getElementById('statusFilter');
     var pfEl    = document.getElementById('positionFilter');
