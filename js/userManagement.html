@@ -12,6 +12,7 @@
      */
     load: function() {
       var tbody = document.getElementById('usersTableBody');
+      var sessionToken = typeof getAuthSessionToken === 'function' ? getAuthSessionToken() : '';
       if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">Memuat data pengguna...</p></td></tr>';
 
       google.script.run
@@ -26,7 +27,7 @@
         .withFailureHandler(function(err) {
           tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4">Error: ' + err.message + '</td></tr>';
         })
-        .getAllUsers();
+        .getAllUsers(sessionToken);
     },
 
     /**
@@ -119,6 +120,7 @@
      * Save user (create or update)
      */
     save: function() {
+      var sessionToken = typeof getAuthSessionToken === 'function' ? getAuthSessionToken() : '';
       var email = document.getElementById('userEmail').value.trim().toLowerCase();
       var fullName = document.getElementById('userFullName').value.trim();
       var role = document.getElementById('userRole').value;
@@ -145,7 +147,7 @@
             saveBtn.innerHTML = '<i class="bi bi-check-lg"></i> Simpan';
             showToast('Error: ' + err.message, 'danger');
           })
-          .updateUser(UserManagement.editingEmail, { fullName: fullName, role: role });
+          .updateUser(UserManagement.editingEmail, { fullName: fullName, role: role }, sessionToken);
       } else {
         // Create
         google.script.run
@@ -165,7 +167,7 @@
             saveBtn.innerHTML = '<i class="bi bi-check-lg"></i> Simpan';
             showToast('Error: ' + err.message, 'danger');
           })
-          .addUser({ email: email, fullName: fullName, role: role });
+          .addUser({ email: email, fullName: fullName, role: role }, sessionToken);
       }
     },
 
@@ -173,6 +175,7 @@
      * Confirm and delete user
      */
     confirmDelete: function(email, name) {
+      var sessionToken = typeof getAuthSessionToken === 'function' ? getAuthSessionToken() : '';
       if (!confirm('Apakah Anda yakin ingin menghapus pengguna "' + name + '" (' + email + ')?')) return;
       google.script.run
         .withSuccessHandler(function(result) {
@@ -186,7 +189,7 @@
         .withFailureHandler(function(err) {
           showToast('Error: ' + err.message, 'danger');
         })
-        .deleteUser(email);
+        .deleteUser(email, sessionToken);
     }
   };
 </script>

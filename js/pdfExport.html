@@ -27,11 +27,16 @@
       var softTextColor = [107, 114, 128];  // #6B7280
       var accentColor = [253, 185, 19];     // #FDB913
 
+      // Helper: setTextColor accepts r,g,b separately, not an array
+      function applyTextColor(color) {
+        doc.setTextColor(color[0], color[1], color[2]);
+      }
+
       // Helper functions
       function addText(text, x, y, options) {
         options = options || {};
         doc.setFontSize(options.fontSize || 10);
-        doc.setTextColor(options.color || textColor);
+        applyTextColor(options.color || textColor);
         if (options.bold) doc.setFont(undefined, 'bold');
         else doc.setFont(undefined, 'normal');
         doc.text(String(text || '-'), x, y);
@@ -50,13 +55,13 @@
 
       function addField(label, value, x, width) {
         doc.setFontSize(8);
-        doc.setTextColor(softTextColor);
+        applyTextColor(softTextColor);
         doc.setFont(undefined, 'bold');
         doc.text(String(label || ''), x, yPos);
         
         yPos += 5;
         doc.setFontSize(10);
-        doc.setTextColor(textColor);
+        applyTextColor(textColor);
         doc.setFont(undefined, 'normal');
         
         var lines = doc.splitTextToSize(String(value || '-'), width - 5);
@@ -95,13 +100,13 @@
       // CANDIDATE INFO HEADER
       // ============================
       doc.setFontSize(16);
-      doc.setTextColor(textColor);
+      applyTextColor(textColor);
       doc.setFont(undefined, 'bold');
       doc.text(c.fullName || '-', margin, yPos);
       yPos += 8;
 
       doc.setFontSize(11);
-      doc.setTextColor(primaryColor);
+      applyTextColor(primaryColor);
       doc.setFont(undefined, 'normal');
       doc.text(c.positionApplied || '-', margin, yPos);
       yPos += 7;
@@ -124,7 +129,7 @@
 
       // Meta info
       doc.setFontSize(9);
-      doc.setTextColor(softTextColor);
+      applyTextColor(softTextColor);
       doc.setFont(undefined, 'normal');
       doc.text('Recruitment ID: ' + (c.recruitmentId || '-'), margin, yPos);
       doc.text('Tanggal Daftar: ' + (c.createdDate || '-'), pageWidth - margin - 60, yPos);
@@ -223,7 +228,7 @@
         addSection('Catatan HR', 'chat');
         
         doc.setFontSize(10);
-        doc.setTextColor(textColor);
+        applyTextColor(textColor);
         doc.setFont(undefined, 'normal');
         var notesLines = doc.splitTextToSize(c.hrNotes, pageWidth - 2 * margin - 10);
         
@@ -235,7 +240,7 @@
 
         yPos += 5;
         doc.setFontSize(8);
-        doc.setTextColor(softTextColor);
+        applyTextColor(softTextColor);
         doc.text('Terakhir diperbarui: ' + (c.updatedAt || '-'), margin + 5, yPos);
         yPos += 10;
       }
@@ -247,7 +252,7 @@
       for (var i = 1; i <= totalPages; i++) {
         doc.setPage(i);
         doc.setFontSize(8);
-        doc.setTextColor(softTextColor);
+        applyTextColor(softTextColor);
         doc.setFont(undefined, 'normal');
         
         var footerText = 'Generated on ' + new Date().toLocaleString('id-ID') + ' — Page ' + i + ' of ' + totalPages;

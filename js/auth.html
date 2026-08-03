@@ -6,9 +6,64 @@
   // ============================================================
   // SESSION STATE
   // ============================================================
+  var AUTH_SESSION_STORAGE_KEY = 'mahakarya_hris_session';
   var _currentUser = null;
   var _sessionLoaded = false;
   var _sessionCallbacks = [];
+
+  function bootstrapSessionTokenFromUrl_() {
+    try {
+      var url = new URL(window.location.href);
+      var token = String(url.searchParams.get('sessionToken') || '').trim();
+      if (!token) return;
+
+      setStoredSessionToken_(token);
+      url.searchParams.delete('sessionToken');
+      window.history.replaceState({}, document.title, url.toString());
+    } catch (e) {}
+  }
+
+  function getStoredSessionToken_() {
+    try {
+      return localStorage.getItem(AUTH_SESSION_STORAGE_KEY) || sessionStorage.getItem(AUTH_SESSION_STORAGE_KEY) || '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function setStoredSessionToken_(token) {
+    try {
+      localStorage.setItem(AUTH_SESSION_STORAGE_KEY, token);
+      sessionStorage.setItem(AUTH_SESSION_STORAGE_KEY, token);
+    } catch (e) {}
+  }
+
+  function clearStoredSessionToken_() {
+    try { localStorage.removeItem(AUTH_SESSION_STORAGE_KEY); } catch (e) {}
+    try { sessionStorage.removeItem(AUTH_SESSION_STORAGE_KEY); } catch (e) {}
+  }
+
+  bootstrapSessionTokenFromUrl_();
+
+  window.getAuthSessionToken = function() {
+    return getStoredSessionToken_();
+  };
+
+  window.setAuthSessionToken = function(token) {
+    setStoredSessionToken_(String(token || '').trim());
+  };
+
+  window.clearAuthSessionToken = function() {
+    var sessionToken = getStoredSessionToken_();
+    clearStoredSessionToken_();
+    _currentUser = null;
+    _sessionLoaded = false;
+    if (sessionToken) {
+      try {
+        google.script.run.clearUserSession(sessionToken);
+      } catch (e) {}
+    }
+  };
 
   /**
    * Returns a promise that resolves with the current user session.
@@ -25,8 +80,12 @@
         return;
       }
       _sessionCallbacks.push(resolve);
+      var sessionToken = getStoredSessionToken_();
       google.script.run
         .withSuccessHandler(function(user) {
+          if (!user || !user.isLoggedIn) {
+            clearStoredSessionToken_();
+          }
           _currentUser = user;
           _sessionLoaded = true;
           _sessionCallbacks.forEach(function(cb) { cb(user); });
@@ -38,7 +97,7 @@
           _sessionCallbacks.forEach(function(cb) { cb(null); });
           _sessionCallbacks = [];
         })
-        .getCurrentUser();
+        .getCurrentUser(sessionToken);
     });
   };
 
@@ -50,7 +109,8 @@
   window.requireAuth = function(requiredPermission) {
     return getUserSession().then(function(user) {
       if (!user || !user.isLoggedIn) {
-        window.location.href = '?page=login';
+        var nextUrl = encodeURIComponent((window.location.search || '?page=dashboard') + (window.location.hash || ''));
+        window.location.href = '?page=login&next=' + nextUrl;
         return null;
       }
       if (requiredPermission && user.permissions && user.permissions.indexOf(requiredPermission) === -1) {
@@ -269,8 +329,7 @@
     var logoutBtn = document.getElementById('btnDropdownLogout');
     if (logoutBtn) {
       logoutBtn.addEventListener('click', function() {
-        try { sessionStorage.clear(); } catch(e) {}
-        try { localStorage.clear(); } catch(e) {}
+        clearAuthSessionToken();
         window.location.href = '?page=login';
       });
     }

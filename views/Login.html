@@ -1,347 +1,461 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Login — Mahakarya HRIS</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Inter', 'Segoe UI', sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      background: linear-gradient(135deg, #005BAC 0%, #0B2540 100%);
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Login — Mahakarya HRIS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        background: linear-gradient(135deg, #005bac 0%, #0b2540 100%);
+      }
 
-    /* Main Content */
-    .login-main {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 40px 24px;
-    }
+      .login-main {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 24px;
+      }
 
-    .login-card {
-      width: 100%;
-      max-width: 420px;
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 8px 40px rgba(0,0,0,0.15);
-      padding: 48px 40px;
-      text-align: center;
-    }
+      .login-card {
+        width: 100%;
+        max-width: 420px;
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+        padding: 48px 40px;
+        text-align: center;
+      }
 
-    .login-logo {
-      width: 72px;
-      height: 72px;
-      background: linear-gradient(135deg, #005BAC, #0B2540);
-      border-radius: 18px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-      font-weight: 800;
-      color: #FDB913;
-      margin-bottom: 24px;
-    }
-    .login-logo img {
-      max-width: 44px;
-      max-height: 44px;
-      border-radius: 10px;
-    }
+      .login-logo {
+        width: 72px;
+        height: 72px;
+        background: linear-gradient(135deg, #005bac, #0b2540);
+        border-radius: 18px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: 800;
+        color: #fdb913;
+        margin-bottom: 24px;
+      }
+      .login-logo img {
+        max-width: 44px;
+        max-height: 44px;
+        border-radius: 10px;
+      }
 
-    .login-card h1 {
-      font-size: 24px;
-      font-weight: 700;
-      color: #1a1a2e;
-      margin-bottom: 4px;
-    }
+      .login-card h1 {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1a1a2e;
+        margin-bottom: 4px;
+      }
+      .login-hris-title {
+        font-size: 13px;
+        color: #005bac;
+        font-weight: 600;
+        margin-bottom: 8px;
+        letter-spacing: 0.5px;
+      }
+      .login-subtitle {
+        font-size: 14px;
+        color: #6b7280;
+        margin-bottom: 32px;
+        line-height: 1.5;
+      }
 
-    .login-card .login-subtitle {
-      font-size: 14px;
-      color: #6b7280;
-      margin-bottom: 8px;
-      line-height: 1.5;
-    }
+      .login-error {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin-bottom: 20px;
+        display: none;
+      }
+      .login-error.show {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      .login-error i { color: #991b1b; font-size: 18px; margin-top: 1px; }
+      .login-error .error-text { font-size: 13px; color: #991b1b; line-height: 1.5; text-align: left; }
 
-    .login-card .login-hris-title {
-      font-size: 13px;
-      color: #005BAC;
-      font-weight: 600;
-      margin-bottom: 32px;
-      letter-spacing: 0.5px;
-    }
+      .login-info {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin-bottom: 20px;
+        display: none;
+      }
+      .login-info.show {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      .login-info i { color: #1d4ed8; font-size: 18px; margin-top: 1px; }
+      .login-info .info-text { font-size: 13px; color: #1e40af; line-height: 1.5; text-align: left; }
 
-    /* Error State */
-    .login-error {
-      background: #FEF2F2;
-      border: 1px solid #FECACA;
-      border-radius: 10px;
-      padding: 14px 16px;
-      margin-bottom: 20px;
-      display: none;
-    }
-    .login-error.show { display: flex; align-items: flex-start; gap: 10px; }
-    .login-error i { color: #991B1B; font-size: 18px; margin-top: 1px; }
-    .login-error .error-text { font-size: 13px; color: #991B1B; line-height: 1.5; text-align: left; }
+      .btn-google {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        width: 100%;
+        padding: 14px 24px;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        background: #fff;
+        font-size: 15px;
+        font-weight: 600;
+        color: #374151;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+      }
+      .btn-google:hover { border-color: #005bac; background: #f8f9ff; box-shadow: 0 2px 12px rgba(0,91,172,0.1); }
+      .btn-google:active { transform: scale(0.98); }
+      .btn-google svg { width: 20px; height: 20px; }
 
-    /* Info box */
-    .login-info {
-      background: #EFF6FF;
-      border: 1px solid #BFDBFE;
-      border-radius: 10px;
-      padding: 14px 16px;
-      margin-bottom: 20px;
-      display: none;
-    }
-    .login-info.show { display: flex; align-items: flex-start; gap: 10px; }
-    .login-info i { color: #1D4ED8; font-size: 18px; margin-top: 1px; }
-    .login-info .info-text { font-size: 13px; color: #1E40AF; line-height: 1.5; text-align: left; }
+      .login-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+        padding: 24px 0;
+      }
+      .login-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid #e5e7eb;
+        border-top-color: #005bac;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .login-loading p { font-size: 14px; color: #6b7280; }
 
-    /* Google Button */
-    .btn-google {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      width: 100%;
-      padding: 14px 24px;
-      border: 2px solid #e5e7eb;
-      border-radius: 12px;
-      background: #fff;
-      font-size: 15px;
-      font-weight: 600;
-      color: #374151;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      text-decoration: none;
-    }
-    .btn-google:hover {
-      border-color: #005BAC;
-      background: #f8f9ff;
-      box-shadow: 0 2px 12px rgba(0,91,172,0.1);
-    }
-    .btn-google:active { transform: scale(0.98); }
-    .btn-google svg { width: 20px; height: 20px; }
+      .first-run-box {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin-top: 24px;
+        margin-bottom: 12px;
+        display: none;
+      }
+      .first-run-box.show { display: block; }
+      .first-run-box .fr-content { display: flex; align-items: flex-start; gap: 10px; }
+      .first-run-box i { color: #166534; font-size: 16px; margin-top: 2px; flex-shrink: 0; }
+      .first-run-box .fr-text { font-size: 13px; color: #166534; line-height: 1.5; text-align: left; }
 
-    /* Loading State */
-    .login-loading {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-      padding: 24px 0;
-    }
-    .login-spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid #e5e7eb;
-      border-top-color: #005BAC;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .login-loading p { font-size: 14px; color: #6b7280; }
+      .btn-admin {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        width: 100%;
+        padding: 12px 20px;
+        border: 2px solid #166534;
+        border-radius: 10px;
+        background: #fff;
+        font-size: 14px;
+        font-weight: 600;
+        color: #166534;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin-top: 8px;
+      }
+      .btn-admin:hover { background: #f0fdf4; }
+      .btn-admin i { font-size: 18px; }
 
-    /* First Run */
-    .first-run-box {
-      background: #F0FDF4;
-      border: 1px solid #BBF7D0;
-      border-radius: 10px;
-      padding: 14px 16px;
-      margin-bottom: 16px;
-      margin-top: 24px;
-      display: none;
-    }
-    .first-run-box.show { display: block; }
-    .first-run-box .fr-content {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-    }
-    .first-run-box i { color: #166534; font-size: 16px; margin-top: 2px; }
-    .first-run-box .fr-text { font-size: 13px; color: #166534; line-height: 1.5; text-align: left; }
+      .login-footer {
+        background: #fff;
+        border-top: 1px solid #e5e7eb;
+        padding: 20px 24px;
+        text-align: center;
+      }
+      .login-footer p { font-size: 12px; color: #9ca3af; margin: 0; line-height: 1.8; }
+      .footer-brand { font-weight: 600; color: #6b7280; }
+      .footer-tagline { font-style: italic; color: #9ca3af; }
+      .version-badge {
+        display: inline-block;
+        background: #f3f4f6;
+        color: #6b7280;
+        padding: 2px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        margin-top: 6px;
+      }
 
-    .btn-admin {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      width: 100%;
-      padding: 12px 20px;
-      border: 2px solid #166534;
-      border-radius: 10px;
-      background: #fff;
-      font-size: 14px;
-      font-weight: 600;
-      color: #166534;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    .btn-admin:hover { background: #F0FDF4; }
-    .btn-admin i { font-size: 18px; }
+      @media (max-width: 480px) {
+        .login-card { padding: 36px 24px; }
+        .login-card h1 { font-size: 20px; }
+      }
+    </style>
+  </head>
+  <body>
 
-    /* Footer */
-    .login-footer {
-      background: #fff;
-      border-top: 1px solid #e5e7eb;
-      padding: 20px 24px;
-      text-align: center;
-    }
-    .login-footer p {
-      font-size: 12px;
-      color: #9ca3af;
-      margin: 0;
-      line-height: 1.8;
-    }
-    .login-footer .footer-brand {
-      font-weight: 600;
-      color: #6b7280;
-    }
-    .login-footer .footer-tagline {
-      font-style: italic;
-      color: #9ca3af;
-    }
-    .login-footer .version-badge {
-      display: inline-block;
-      background: #f3f4f6;
-      color: #6b7280;
-      padding: 2px 10px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 600;
-      margin-top: 6px;
-    }
+    <div class="login-main">
+      <div class="login-card">
 
-    /* Responsive */
-    @media (max-width: 480px) {
-      .login-card { padding: 36px 24px; }
-      .login-card h1 { font-size: 20px; }
-    }
-  </style>
-</head>
-<body>
+        <div class="login-logo" id="loginLogo">MH</div>
+        <h1 id="loginCompanyName">Mahakarya HRIS</h1>
+        <div class="login-hris-title">Human Resource Information System</div>
+        <p class="login-subtitle">Masuk ke panel HR menggunakan akun Google Workspace Anda</p>
 
-  <!-- Main Login Area -->
-  <div class="login-main">
-    <div class="login-card">
-      <!-- Logo -->
-      <div class="login-logo" id="loginLogo">MH</div>
+        <!-- Error Alert -->
+        <div class="login-error" id="loginError">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+          <div class="error-text" id="loginErrorText"></div>
+        </div>
 
-      <!-- Company Name -->
-      <h1 id="loginCompanyName">Mahakarya HRIS</h1>
+        <!-- Info Alert -->
+        <div class="login-info" id="loginInfo">
+          <i class="bi bi-info-circle-fill"></i>
+          <div class="info-text" id="loginInfoText"></div>
+        </div>
 
-      <!-- HRIS Title -->
-      <div class="login-hris-title">Human Resource Information System</div>
+        <!-- Loading State -->
+        <div class="login-loading" id="loginLoading" style="display:none;">
+          <div class="login-spinner"></div>
+          <p id="loginLoadingText">Memverifikasi sesi Anda...</p>
+        </div>
 
-      <!-- Subtitle -->
-      <p class="login-subtitle">Masuk ke panel HR menggunakan akun Google Workspace Anda</p>
+        <!-- Google Sign-In Button -->
+        <button class="btn-google" id="btnGoogleLogin" type="button">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+          </svg>
+          Lanjutkan dengan Google
+        </button>
 
-      <!-- Error Alert -->
-      <div class="login-error" id="loginError">
-        <i class="bi bi-exclamation-triangle-fill"></i>
-        <div class="error-text" id="loginErrorText"></div>
-      </div>
-
-      <!-- Info Alert -->
-      <div class="login-info" id="loginInfo">
-        <i class="bi bi-info-circle-fill"></i>
-        <div class="info-text" id="loginInfoText"></div>
-      </div>
-
-      <!-- Loading State -->
-      <div class="login-loading" id="loginLoading" style="display:none;">
-        <div class="login-spinner"></div>
-        <p>Memverifikasi sesi Anda...</p>
-      </div>
-
-      <!-- Google Sign-In Button -->
-      <button class="btn-google" id="btnGoogleLogin" type="button">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
-          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-        </svg>
-        Lanjutkan dengan Google
-      </button>
-
-      <!-- First Run: Auto-create Super Admin -->
-      <div class="first-run-box" id="firstRunSection">
-        <div class="fr-content">
-          <i class="bi bi-star-fill"></i>
-          <div class="fr-text">
-            <strong>Pengaturan Pertama</strong><br>
-            Sistem belum memiliki pengguna. Akun Google Anda akan didaftarkan sebagai <strong>Super Admin</strong>.
+        <!-- First Run Box -->
+        <div class="first-run-box" id="firstRunSection">
+          <div class="fr-content">
+            <i class="bi bi-star-fill"></i>
+            <div class="fr-text">
+              <strong>Pengaturan Pertama</strong><br />
+              Sistem belum memiliki pengguna. Akun Google Anda akan didaftarkan sebagai <strong>Super Admin</strong>.
+            </div>
           </div>
         </div>
+        <button class="btn-admin" id="btnFirstAdmin" type="button">
+          <i class="bi bi-person-check-fill"></i>
+          Daftarkan Saya sebagai Super Admin
+        </button>
+
       </div>
-      <button class="btn-admin" id="btnFirstAdmin" type="button" style="display:none;">
-        <i class="bi bi-person-check-fill"></i>
-        Daftarkan Saya sebagai Super Admin
-      </button>
     </div>
-  </div>
 
-  <!-- Footer -->
-  <div class="login-footer">
-    <p>
-      <span class="footer-brand" id="loginFooterBrand">Mahakarya HRIS</span> &copy; 2026<br>
-      <span class="footer-tagline">Crafted for Modern Human Resources</span>
-    </p>
-    <span class="version-badge" id="loginFooterVersion">v2.0.0</span>
-  </div>
+    <!-- Footer -->
+    <div class="login-footer">
+      <p>
+        <span class="footer-brand" id="loginFooterBrand">Mahakarya HRIS</span> &copy; 2026<br />
+        <span class="footer-tagline">Crafted for Modern Human Resources</span>
+      </p>
+      <span class="version-badge" id="loginFooterVersion">v2.0.0</span>
+    </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    // ============================================================
-    // Login Page Logic
-    // ============================================================
-    (function() {
-      var loginError = document.getElementById('loginError');
-      var loginErrorText = document.getElementById('loginErrorText');
-      var loginInfo = document.getElementById('loginInfo');
-      var loginInfoText = document.getElementById('loginInfoText');
-      var loginLoading = document.getElementById('loginLoading');
-      var btnGoogleLogin = document.getElementById('btnGoogleLogin');
-      var btnFirstAdmin = document.getElementById('btnFirstAdmin');
-      var firstRunSection = document.getElementById('firstRunSection');
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      (function () {
+        'use strict';
 
-      function showError(msg) {
-        loginError.classList.add('show');
-        loginErrorText.textContent = msg;
-        loginLoading.style.display = 'none';
-        btnGoogleLogin.style.display = '';
-        if (firstRunSection) firstRunSection.style.display = 'none';
-        if (btnFirstAdmin) btnFirstAdmin.style.display = 'none';
-      }
+        // ============================================================
+        // CONSTANTS & STATE
+        // ============================================================
+        var APP_BASE_URL = '<?!= appBaseUrl ?>' || window.location.href.split('?')[0];
+        var AUTH_SESSION_STORAGE_KEY = 'mahakarya_hris_session';
+        var authConfig = null;
 
-      function showInfo(msg) {
-        loginInfo.classList.add('show');
-        loginInfoText.textContent = msg;
-      }
+        // DOM refs
+        var loginError      = document.getElementById('loginError');
+        var loginErrorText  = document.getElementById('loginErrorText');
+        var loginInfo       = document.getElementById('loginInfo');
+        var loginInfoText   = document.getElementById('loginInfoText');
+        var loginLoading    = document.getElementById('loginLoading');
+        var loadingText     = document.getElementById('loginLoadingText');
+        var btnGoogleLogin  = document.getElementById('btnGoogleLogin');
+        var btnFirstAdmin   = document.getElementById('btnFirstAdmin');
+        var firstRunSection = document.getElementById('firstRunSection');
 
-      function showLoading() {
-        loginLoading.style.display = 'flex';
-        btnGoogleLogin.style.display = 'none';
-        loginError.classList.remove('show');
-        loginInfo.classList.remove('show');
-        if (firstRunSection) firstRunSection.style.display = 'none';
-        if (btnFirstAdmin) btnFirstAdmin.style.display = 'none';
-      }
+        // ============================================================
+        // UI HELPERS
+        // ============================================================
+        function showError(msg) {
+          loginError.classList.add('show');
+          loginErrorText.textContent = msg;
+          loginLoading.style.display = 'none';
+          btnGoogleLogin.style.display = '';
+          firstRunSection.classList.remove('show');
+          btnFirstAdmin.style.display = 'none';
+        }
 
-      // Load portal settings for branding
-      google.script.run
-        .withSuccessHandler(function(settings) {
-          if (settings) {
+        function showInfo(msg) {
+          loginInfo.classList.add('show');
+          loginInfoText.textContent = msg;
+        }
+
+        function showLoading(msg) {
+          loginLoading.style.display = 'flex';
+          if (msg && loadingText) loadingText.textContent = msg;
+          btnGoogleLogin.style.display = 'none';
+          loginError.classList.remove('show');
+          loginInfo.classList.remove('show');
+          firstRunSection.classList.remove('show');
+          btnFirstAdmin.style.display = 'none';
+        }
+
+        function hideLoading() {
+          loginLoading.style.display = 'none';
+          btnGoogleLogin.style.display = '';
+        }
+
+        // ============================================================
+        // SESSION HELPERS
+        // ============================================================
+        function getSessionToken() {
+          try {
+            return localStorage.getItem(AUTH_SESSION_STORAGE_KEY)
+              || sessionStorage.getItem(AUTH_SESSION_STORAGE_KEY) || '';
+          } catch (e) { return ''; }
+        }
+
+        function saveSessionToken(token) {
+          try { localStorage.setItem(AUTH_SESSION_STORAGE_KEY, token); } catch (e) {}
+          try { sessionStorage.setItem(AUTH_SESSION_STORAGE_KEY, token); } catch (e) {}
+        }
+
+        function clearSessionToken() {
+          try { localStorage.removeItem(AUTH_SESSION_STORAGE_KEY); } catch (e) {}
+          try { sessionStorage.removeItem(AUTH_SESSION_STORAGE_KEY); } catch (e) {}
+        }
+
+        // ============================================================
+        // REDIRECT
+        // ============================================================
+        function getPostLoginUrl(sessionToken) {
+          var params = new URLSearchParams(window.location.search || '');
+          var next = String(params.get('next') || '').trim();
+          var target = APP_BASE_URL + '?page=dashboard';
+
+          if (next) {
+            try {
+              var decoded = decodeURIComponent(next);
+              if (/^https?:\/\//i.test(decoded)) {
+                if (decoded.indexOf(APP_BASE_URL) === 0 || decoded.indexOf(window.location.origin) === 0) {
+                  target = decoded;
+                }
+              } else if (decoded.charAt(0) === '?') {
+                target = APP_BASE_URL + decoded;
+              } else if (decoded.charAt(0) === '/') {
+                target = window.location.origin + decoded;
+              }
+            } catch (e) {}
+          }
+
+          try {
+            var url = new URL(target, window.location.origin);
+            if (sessionToken) url.searchParams.set('sessionToken', sessionToken);
+            return url.toString();
+          } catch (e) {
+            return APP_BASE_URL + '?page=dashboard'
+              + (sessionToken ? '&sessionToken=' + encodeURIComponent(sessionToken) : '');
+          }
+        }
+
+        function redirectToDashboard(sessionToken) {
+          var targetUrl = getPostLoginUrl(sessionToken);
+          try {
+            window.top.location.replace(targetUrl);
+          } catch (e1) {
+            try {
+              window.top.location.assign(targetUrl);
+            } catch (e2) {
+              window.location.replace(targetUrl);
+            }
+          }
+        }
+
+        // ============================================================
+        // AUTH CONFIG & GIS TOKEN
+        // ============================================================
+        function ensureAuthConfig(callback) {
+          if (authConfig) { callback(authConfig); return; }
+          google.script.run
+            .withSuccessHandler(function (result) {
+              authConfig = result || {};
+              callback(authConfig);
+            })
+            .withFailureHandler(function () { callback(null); })
+            .getAuthConfig();
+        }
+
+        function requestGoogleAccessToken(onSuccess) {
+          ensureAuthConfig(function (config) {
+            if (!config || !config.googleClientId) {
+              showError('Google Client ID belum diset di Script Properties. Isi properti GOOGLE_CLIENT_ID terlebih dahulu.');
+              return;
+            }
+            if (!window.google || !google.accounts || !google.accounts.oauth2) {
+              showError('Google Identity Services belum siap. Muat ulang halaman lalu coba lagi.');
+              return;
+            }
+            var tokenClient = google.accounts.oauth2.initTokenClient({
+              client_id: config.googleClientId,
+              scope: 'openid email profile',
+              prompt: 'select_account',
+              callback: function (response) {
+                if (!response || !response.access_token) {
+                  showError('Google tidak mengembalikan access token.');
+                  return;
+                }
+                onSuccess(response.access_token);
+              }
+            });
+            tokenClient.requestAccessToken();
+          });
+        }
+
+        // ============================================================
+        // LOGIN RESULT HANDLER
+        // ============================================================
+        function handleLoginResult(result) {
+          if (result && result.success && result.sessionToken) {
+            saveSessionToken(result.sessionToken);
+            showInfo((result.message || 'Login berhasil.') + ' Mengalihkan ke dashboard...');
+            setTimeout(function () { redirectToDashboard(result.sessionToken); }, 500);
+            return;
+          }
+          clearSessionToken();
+          showError(result && result.error ? result.error : 'Login gagal. Silakan coba lagi.');
+        }
+
+        // ============================================================
+        // INIT: Load branding
+        // ============================================================
+        google.script.run
+          .withSuccessHandler(function (settings) {
+            if (!settings) return;
             if (settings.companyName) {
               document.getElementById('loginCompanyName').textContent = settings.companyName;
-              document.title = 'Login — ' + settings.companyName;
+              document.title = 'Login \u2014 ' + settings.companyName;
               document.getElementById('loginFooterBrand').textContent = settings.companyName;
             }
             if (settings.systemVersion) {
@@ -349,80 +463,86 @@
             }
             var logoEl = document.getElementById('loginLogo');
             if (settings.companyLogo && logoEl) {
-              logoEl.innerHTML = '<img src="' + settings.companyLogo + '" alt="Logo" style="max-width:44px;max-height:44px;border-radius:10px;">';
+              logoEl.innerHTML = '<img src="' + settings.companyLogo + '" alt="Logo" />';
             }
-          }
-        })
-        .withFailureHandler(function() {})
-        .getPortalSettingsForLogin();
+          })
+          .withFailureHandler(function () {})
+          .getPortalSettingsForLogin();
 
-      // Check if this is a first-run (empty Users sheet)
-      google.script.run
-        .withSuccessHandler(function(result) {
-          if (result && result.isEmpty) {
-            firstRunSection.style.display = 'block';
-            btnFirstAdmin.style.display = 'flex';
-          }
-        })
-        .withFailureHandler(function() {})
-        .isUsersSheetEmpty();
-
-      // Check current session
-      showLoading();
-      google.script.run
-        .withSuccessHandler(function(user) {
-          if (user && user.isLoggedIn) {
-            window.location.href = '?page=dashboard';
-            return;
-          }
-          loginLoading.style.display = 'none';
-          btnGoogleLogin.style.display = '';
-
-          if (user && user.email) {
-            if (user.reason === 'inactive') {
-              showError('Akun Anda (' + user.email + ') tidak aktif. Hubungi administrator untuk mengaktifkan akun Anda.');
-            } else {
-              showError('Akun ' + user.email + ' belum terdaftar di sistem. Hubungi administrator atau daftarkan diri Anda sebagai Super Admin jika ini adalah pengaturan pertama.');
+        // ============================================================
+        // INIT: Check first-run
+        // ============================================================
+        google.script.run
+          .withSuccessHandler(function (result) {
+            if (result && result.isEmpty) {
+              firstRunSection.classList.add('show');
+              btnFirstAdmin.style.display = 'flex';
             }
-          }
-        })
-        .withFailureHandler(function() {
-          loginLoading.style.display = 'none';
-          btnGoogleLogin.style.display = '';
-        })
-        .getCurrentUser();
+          })
+          .withFailureHandler(function () {})
+          .isUsersSheetEmpty();
 
-      // Continue with Google button
-      btnGoogleLogin.addEventListener('click', function() {
-        showLoading();
-        loginLoading.querySelector('p').textContent = 'Mengarahkan ke Google...';
-        window.location.reload();
-      });
-
-      // First Admin button
-      if (btnFirstAdmin) {
-        btnFirstAdmin.addEventListener('click', function() {
-          showLoading();
-          loginLoading.querySelector('p').textContent = 'Mendaftarkan akun Super Admin...';
-
-          google.script.run
-            .withSuccessHandler(function(result) {
-              if (result && result.success) {
-                showInfo(result.message + ' Mengalihkan ke dashboard...');
-                setTimeout(function() {
-                  window.location.href = '?page=dashboard';
-                }, 1500);
-              } else {
-                showError(result ? result.error : 'Gagal mendaftarkan akun.');
+        // ============================================================
+        // INIT: Check existing session
+        // ============================================================
+        showLoading('Memverifikasi sesi Anda...');
+        var existingToken = getSessionToken();
+        google.script.run
+          .withSuccessHandler(function (user) {
+            if (user && user.isLoggedIn) {
+              // Pass the existing token so dashboard can bootstrap the session
+              redirectToDashboard(existingToken);
+              return;
+            }
+            clearSessionToken();
+            hideLoading();
+            if (user && user.email) {
+              if (user.reason === 'inactive') {
+                showError('Akun Anda (' + user.email + ') tidak aktif. Hubungi administrator untuk mengaktifkan akun Anda.');
+              } else if (user.reason === 'session_expired') {
+                showInfo('Sesi Anda sudah berakhir. Silakan login kembali.');
               }
-            })
-            .withFailureHandler(function(err) {
-              showError('Gagal: ' + (err.message || err));
-            })
-            .autoCreateFirstAdmin();
+            }
+          })
+          .withFailureHandler(function () {
+            clearSessionToken();
+            hideLoading();
+          })
+          .getCurrentUser(existingToken);
+
+        // ============================================================
+        // EVENT: Login with Google
+        // ============================================================
+        btnGoogleLogin.addEventListener('click', function () {
+          showLoading('Membuka autentikasi Google...');
+          requestGoogleAccessToken(function (accessToken) {
+            if (loadingText) loadingText.textContent = 'Memverifikasi akun Google...';
+            google.script.run
+              .withSuccessHandler(handleLoginResult)
+              .withFailureHandler(function (err) {
+                showError('Gagal: ' + (err && err.message ? err.message : String(err)));
+              })
+              .signInWithGoogle(accessToken);
+          });
         });
-      }
-    })();
-  </script>
-</body>
+
+        // ============================================================
+        // EVENT: Register as Super Admin (first run only)
+        // ============================================================
+        btnFirstAdmin.addEventListener('click', function () {
+          showLoading('Memverifikasi akun Google...');
+          requestGoogleAccessToken(function (accessToken) {
+            if (loadingText) loadingText.textContent = 'Mendaftarkan akun Super Admin...';
+            google.script.run
+              .withSuccessHandler(handleLoginResult)
+              .withFailureHandler(function (err) {
+                showError('Gagal: ' + (err && err.message ? err.message : String(err)));
+              })
+              .autoCreateFirstAdmin(accessToken);
+          });
+        });
+
+      })();
+    </script>
+  </body>
 </html>
