@@ -2,51 +2,54 @@
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-brand">
-    <div class="logo-box">MS</div>
+    <div class="logo-box" id="sidebarLogoBox">MS</div>
     <div class="brand-text">
-      <strong>Mahakarya HRIS</strong>
-      <small>Applicant Tracking System</small>
+      <strong id="sidebarBrandName">Mahakarya HRIS</strong>
+      <small id="sidebarBrandTagline">Applicant Tracking System</small>
     </div>
   </div>
 
-  <nav class="sidebar-nav">
-    <div class="nav-section-label">Main</div>
-    <button class="nav-item active" type="button" data-page="pageDashboard">
+  <nav class="sidebar-nav" id="sidebarNav">
+    <div class="nav-section-label" data-permission="view_dashboard">Main</div>
+    <button class="nav-item active" type="button" data-page="pageDashboard" data-permission="view_dashboard">
       <i class="bi bi-grid-1x2-fill"></i> Dashboard
     </button>
-    <button class="nav-item" type="button" data-external="recruitment">
+    <button class="nav-item" type="button" data-external="recruitment" data-permission="view_recruitment">
       <i class="bi bi-people-fill"></i> Recruitment
       <span class="badge-count" id="navRecruitmentCount">0</span>
     </button>
-    <button class="nav-item" type="button" data-external="employee">
+    <button class="nav-item" type="button" data-external="employee" data-permission="view_employee">
       <i class="bi bi-person-badge-fill"></i> Master Data
     </button>
 
-    <div class="nav-section-label">Candidate Status</div>
-    <button class="nav-item" type="button" data-page="pageDashboard" data-status="Hold">
+    <div class="nav-section-label" data-permission="view_recruitment">Candidate Status</div>
+    <button class="nav-item" type="button" data-page="pageDashboard" data-status="Hold" data-permission="view_recruitment">
       <i class="bi bi-pause-circle-fill"></i> Hold
     </button>
-    <button class="nav-item" type="button" data-page="pageDashboard" data-status="Blacklist">
+    <button class="nav-item" type="button" data-page="pageDashboard" data-status="Blacklist" data-permission="view_recruitment">
       <i class="bi bi-slash-circle-fill"></i> Blacklist
     </button>
 
     <div class="nav-section-label">System</div>
-    <button class="nav-item" type="button" data-page="pageDashboard" data-scroll="tablePanel">
+    <button class="nav-item" type="button" data-page="pageDashboard" data-scroll="tablePanel" data-permission="view_audit_log">
       <i class="bi bi-clock-history"></i> Audit Log
     </button>
-    <button class="nav-item" type="button" data-page="pageSettings">
+    <button class="nav-item" type="button" data-page="pageSettings" data-permission="manage_settings">
       <i class="bi bi-gear-fill"></i> Settings
     </button>
-    <button class="nav-item nav-item-external" type="button" onclick="window.open('?page=user-management','_self')" id="navUserManagement" style="display:none;">
+    <button class="nav-item nav-item-external" type="button" onclick="window.open('?page=user-management','_self')" id="navUserManagement" data-permission="manage_users" style="display:none;">
       <i class="bi bi-people-fill"></i> Manajemen Pengguna
     </button>
   </nav>
 
+  <!-- Sidebar User Profile Footer -->
   <div class="sidebar-footer" id="sidebarFooter">
-    <div class="avatar" id="sidebarAvatar">HR</div>
-    <div class="user-meta">
-      <strong id="sidebarUserName">HR Team</strong>
-      <small id="sidebarUserOrg">Mahakarya Sukses Indonesia</small>
+    <div class="sidebar-user-area" id="sidebarUserArea">
+      <div class="avatar" id="sidebarAvatar">HR</div>
+      <div class="user-meta">
+        <strong id="sidebarUserName">HR Team</strong>
+        <small id="sidebarUserRole" class="sidebar-role-badge">-</small>
+      </div>
     </div>
   </div>
 </aside>

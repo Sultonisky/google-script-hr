@@ -129,23 +129,11 @@
     if (typeof initRecruitmentPage === 'function') initRecruitmentPage();
     if (typeof initOutsourceDashboard === 'function') initOutsourceDashboard();
 
-    // --- Auth initialization ---
-    if (typeof Auth !== 'undefined') {
-      Auth.init(function(user) {
-        if (!user) {
-          window.location.href = '?page=access-denied';
-          return;
-        }
-        // Update sidebar user info
-        var sidebarName = document.getElementById('sidebarUserName');
-        var sidebarAvatar = document.getElementById('sidebarAvatar');
-        if (sidebarName) sidebarName.textContent = user.fullName || user.email;
-        if (sidebarAvatar) sidebarAvatar.textContent = Auth.getInitials(user.fullName || user.email);
-        // Show user management link if allowed
-        if (Auth.hasPermission('manage_users')) {
-          var navUM = document.getElementById('navUserManagement');
-          if (navUM) navUM.style.display = '';
-        }
+    // --- Auth initialization (uses js/auth.html session system) ---
+    if (typeof requireAuth === 'function') {
+      requireAuth().then(function(user) {
+        if (!user) return; // redirect already happened
+        populateUserUI(user);
       });
     }
   });

@@ -339,3 +339,79 @@ function promoteToSuperAdmin(email) {
 function checkPermission(permission) {
   return requirePermission(permission);
 }
+
+// ============================================================
+// LOGIN PAGE HELPERS
+// ============================================================
+
+/**
+ * Checks if the Users sheet is empty (no users registered).
+ * Used by the Login page to show first-run Super Admin setup.
+ * @returns {Object} { isEmpty: boolean }
+ */
+function isUsersSheetEmpty() {
+  var sheet = getUsersSheet_();
+  var lastRow = sheet.getLastRow();
+  return { isEmpty: lastRow <= 1 };
+}
+
+/**
+ * Auto-creates the first Super Admin from the current Google account.
+ * Only works if Users sheet is empty.
+ * @returns {Object} { success, message, error }
+ */
+function autoCreateFirstAdmin() {
+  var email = Session.getActiveUser().getEmail();
+  if (!email || email === '') {
+    return { success: false, error: 'Tidak dapat mendeteksi akun Google. Pastikan Anda login ke akun Google yang benar.' };
+  }
+
+  var sheet = getUsersSheet_();
+  var lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    return { success: false, error: 'Sistem sudah memiliki pengguna. Tidak dapat membuat Super Admin otomatis.' };
+  }
+
+  var fullName = email.split('@')[0];
+  // Try to use proper name from email (capitalize parts)
+  var nameParts = fullName.replace(/[._-]/g, ' ').split(' ');
+  fullName = nameParts.map(function(part) {
+    return part.charAt(0).toUpperCase() + part.slice(1);
+  }).join(' ');
+
+  var now = Utilities.formatDate(new Date(), 'GMT+7', 'yyyy-MM-dd HH:mm:ss');
+  var lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000);
+    // Double-check after acquiring lock
+    sheet = getUsersSheet_();
+    lastRow = sheet.getLastRow();
+    if (lastRow > 1) {
+      return { success: false, error: 'Sistem sudah memiliki pengguna.' };
+    }
+    sheet.appendRow([email.toLowerCase(), fullName, SUPER_ADMIN_ROLE, 'Active', now, now, now, 'auto-setup']);
+    return { success: true, message: 'Super Admin berhasil dibuat: ' + fullName + ' (' + email + ')' };
+  } catch (e) {
+    return { success: false, error: 'Gagal membuat Super Admin: ' + e.message };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/**
+ * Gets portal settings for the Login page (safe, no auth required).
+ * Returns only branding-related fields.
+ * @returns {Object} { companyName, companyLogo, companyTagline }
+ */
+function getPortalSettingsForLogin() {
+  try {
+    var settings = getPortalSettings();
+    return {
+      companyName: settings.companyName || 'Mahakarya HRIS',
+      companyLogo: settings.companyLogo || '',
+      companyTagline: settings.companyTagline || 'Sistem Manajemen Sumber Daya Manusia & Pelacakan Penerimaan Karyawan'
+    };
+  } catch (e) {
+    return { companyName: 'Mahakarya HRIS', companyLogo: '', companyTagline: 'Sistem Manajemen Sumber Daya Manusia & Pelacakan Penerimaan Karyawan' };
+  }
+}
