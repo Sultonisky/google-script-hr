@@ -3,8 +3,7 @@
 // ============================================================
 
 function bulkUpdateStatus(recruitmentIds, newStatus) {
-  var allowed = ['Pending','Accepted','Hold','Blacklist','Applied','Screening',
-                 'HR Interview','User Interview','Offering','Hired','Rejected'];
+  var allowed = ['Pending','Accepted','Hold','Blacklist'];
   if (allowed.indexOf(newStatus) === -1)
     return { success: false, message: 'Status tidak valid: ' + newStatus, updated: 0, failed: 0 };
   if (!recruitmentIds || !Array.isArray(recruitmentIds) || recruitmentIds.length === 0)

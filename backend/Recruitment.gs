@@ -125,8 +125,7 @@ function getRecruitmentList() {
 
 // ---- Update status (generik) ----
 function updateCandidateStatus(recruitmentId, newStatus, hrNotes) {
-  var allowed = ['Pending','Accepted','Hold','Blacklist','Applied','Screening',
-                 'HR Interview','User Interview','Offering','Hired','Rejected'];
+  var allowed = ['Pending','Accepted','Hold','Blacklist'];
   if (allowed.indexOf(newStatus) === -1)
     return { success: false, message: 'Status tidak valid: ' + newStatus };
 
