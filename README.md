@@ -261,9 +261,9 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ## 👨‍💻 Author
 
-**Shohibul Anwar**
-- GitHub: [@your-username](https://github.com/your-username)
-- Email: [your.email@example.com](mailto:your.email@example.com)
+**Muhammad Sultotni Powered by NOTO**
+- GitHub: (https://github.com/Sultonisky)
+- Email: (muhsultonipml111@gmail.com)
 
 ---
 
