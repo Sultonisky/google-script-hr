@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <base target="_top" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <title>Manajemen Pengguna — Mahakarya HRIS</title>
+
+  <?!= include('css/theme'); ?>
+  <style>
+    body { background: #f0f2f5; font-family: 'Inter', sans-serif; margin: 0; }
+    .um-container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    .um-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+    .um-header h4 { font-weight: 700; color: #1a1a2e; margin: 0; }
+    .um-card { background: #fff; border-radius: 12px; box-shadow: 0 1px 8px rgba(0,0,0,0.06); }
+    .um-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #e5e7eb; flex-wrap: wrap; gap: 12px; }
+    .um-table { width: 100%; }
+    .um-table th { font-weight: 600; color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-top: none; background: #f9fafb; }
+    .um-table td { vertical-align: middle; border-color: #f0f0f0; }
+    .role-badge { font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 600; }
+    .btn-back { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 13px; background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; transition: all 0.2s; }
+    .btn-back:hover { background: #e5e7eb; color: #1a1a2e; text-decoration: none; }
+    .info-card { background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 10px; padding: 16px 20px; margin-bottom: 20px; }
+    .info-card i { color: #005BAC; font-size: 18px; }
+    .info-card p { margin: 4px 0 0 0; color: #1e40af; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="um-container">
+    <!-- Back navigation -->
+    <div style="margin-bottom: 16px;">
+      <a href="?page=dashboard" class="btn-back"><i class="bi bi-arrow-left"></i> Kembali ke Dashboard</a>
+    </div>
+
+    <!-- Header -->
+    <div class="um-header">
+      <div>
+        <h4><i class="bi bi-people-fill me-2"></i>Manajemen Pengguna</h4>
+        <small class="text-muted">Kelola akun pengguna dan hak akses sistem</small>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span id="userCount" class="text-muted small"></span>
+        <button class="btn btn-primary" onclick="UserManagement.openAddModal()" id="addUserBtn" style="display:none;">
+          <i class="bi bi-plus-lg"></i> Tambah Pengguna
+        </button>
+      </div>
+    </div>
+
+    <!-- Info card -->
+    <div class="info-card" id="roleInfoCard" style="display:none;">
+      <div class="d-flex align-items-start gap-2">
+        <i class="bi bi-info-circle mt-1"></i>
+        <div>
+          <strong>Role Aktif: <span id="currentRoleDisplay"></span></strong>
+          <p>Hanya <strong>Super Admin</strong> yang dapat mengelola pengguna dan mengubah role.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table Card -->
+    <div class="um-card">
+      <div class="um-toolbar">
+        <div class="input-group" style="max-width: 320px;">
+          <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+          <input type="text" class="form-control border-start-0" id="userSearch" placeholder="Cari nama atau email..." oninput="UserManagement.filterTable()" />
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table um-table mb-0">
+          <thead>
+            <tr>
+              <th>Pengguna</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Login Terakhir</th>
+              <th class="text-end">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody">
+            <tr><td colspan="5" class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit User Modal -->
+  <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header border-0">
+          <h5 class="modal-title fw-bold" id="userModalLabel">Tambah Pengguna</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="userEmail" class="form-label fw-semibold">Email Google <span class="text-danger">*</span></label>
+            <input type="email" class="form-control" id="userEmail" placeholder="contoh@google.com" required />
+            <div class="form-text">Gunakan alamat email Google aktif pengguna.</div>
+          </div>
+          <div class="mb-3">
+            <label for="userFullName" class="form-label fw-semibold">Nama Lengkap <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="userFullName" placeholder="Nama lengkap pengguna" required />
+          </div>
+          <div class="mb-3">
+            <label for="userRole" class="form-label fw-semibold">Role</label>
+            <select class="form-select" id="userRole">
+              <option value="Viewer">Viewer — Hanya melihat data</option>
+              <option value="Manager">Manager — Melihat & export data</option>
+              <option value="Recruiter">Recruiter — Kelola kandidat</option>
+              <option value="HR Admin">HR Admin — Akses penuh (kecuali user)</option>
+              <option value="Super Admin">Super Admin — Akses penuh termasuk user</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-primary" id="saveUserBtn" onclick="UserManagement.save()">
+            <i class="bi bi-check-lg"></i> Simpan
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999;">
+    <div id="toastNotif" class="toast align-items-center border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body" id="toastBody"></div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Tutup"></button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Toast helper -->
+  <script>
+    function showToast(message, type) {
+      var toast = document.getElementById('toastNotif');
+      var body = document.getElementById('toastBody');
+      body.textContent = message;
+      toast.className = 'toast align-items-center border-0 shadow text-bg-' + (type || 'primary');
+      var bsToast = new bootstrap.Toast(toast, { delay: 3500 });
+      bsToast.show();
+    }
+  </script>
+
+  <?!= include('js/auth'); ?>
+  <?!= include('js/userManagement'); ?>
+
+  <script>
+    // === AUTH GUARD: Only Super Admin can manage users ===
+    Auth.check('manage_users', function(user) {
+      document.getElementById('addUserBtn').style.display = '';
+      document.getElementById('roleInfoCard').style.display = '';
+      document.getElementById('currentRoleDisplay').textContent = user.role;
+      Auth.renderUserBadge('userBadge');
+      UserManagement.load();
+    });
+  </script>
+</body>
+</html>

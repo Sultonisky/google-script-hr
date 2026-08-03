@@ -37,13 +37,16 @@
     <button class="nav-item" type="button" data-page="pageSettings">
       <i class="bi bi-gear-fill"></i> Settings
     </button>
+    <button class="nav-item nav-item-external" type="button" onclick="window.open('?page=user-management','_self')" id="navUserManagement" style="display:none;">
+      <i class="bi bi-people-fill"></i> Manajemen Pengguna
+    </button>
   </nav>
 
-  <div class="sidebar-footer">
-    <div class="avatar">HR</div>
+  <div class="sidebar-footer" id="sidebarFooter">
+    <div class="avatar" id="sidebarAvatar">HR</div>
     <div class="user-meta">
-      <strong>HR Team</strong>
-      <small>Mahakarya Sukses Indonesia</small>
+      <strong id="sidebarUserName">HR Team</strong>
+      <small id="sidebarUserOrg">Mahakarya Sukses Indonesia</small>
     </div>
   </div>
 </aside>

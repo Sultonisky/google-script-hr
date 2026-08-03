@@ -1,0 +1,153 @@
+<!-- js/auth.html — Client-side authentication & authorization -->
+<script>
+  // ============================================================
+  // Authentication State
+  // ============================================================
+  var Auth = {
+    currentUser: null,
+    isLoaded: false,
+
+    /**
+     * Checks current session and redirects to AccessDenied if not authorized.
+     * Call this at the top of every protected page (dashboard views).
+     * @param {string} requiredPermission - e.g. 'view_dashboard'
+     * @param {function} callback - Called with (user) if authorized
+     */
+    check: function(requiredPermission, callback) {
+      google.script.run
+        .withSuccessHandler(function(user) {
+          Auth.currentUser = user;
+          Auth.isLoaded = true;
+
+          if (!user.isLoggedIn) {
+            if (user.reason === 'inactive') {
+              Auth.showBlocked('Akun Anda tidak aktif. Hubungi administrator.');
+            } else if (!user.email) {
+              Auth.showBlocked('Tidak dapat mendeteksi akun Google. Pastikan Anda login ke akun Google yang benar.');
+            } else {
+              Auth.showBlocked('Akun Anda belum terdaftar di sistem. Hubungi administrator untuk mendapatkan akses.');
+            }
+            return;
+          }
+
+          if (requiredPermission && user.permissions.indexOf(requiredPermission) === -1) {
+            Auth.showAccessDenied();
+            return;
+          }
+
+          if (callback) callback(user);
+        })
+        .withFailureHandler(function(err) {
+          Auth.showBlocked('Gagal memverifikasi sesi: ' + (err.message || err));
+        })
+        .getCurrentUser();
+    },
+
+    /**
+     * Shorthand: checks if user has a specific permission.
+     * @param {string} permission
+     * @returns {boolean}
+     */
+    hasPermission: function(permission) {
+      if (!Auth.currentUser || !Auth.currentUser.isLoggedIn) return false;
+      return Auth.currentUser.permissions.indexOf(permission) !== -1;
+    },
+
+    /**
+     * Shorthand: checks if user has at least a specific role.
+     * @param {string} minRole - e.g. 'HR Admin'
+     * @returns {boolean}
+     */
+    hasRole: function(minRole) {
+      if (!Auth.currentUser || !Auth.currentUser.isLoggedIn) return false;
+      var roles = ['Super Admin', 'HR Admin', 'Recruiter', 'Manager', 'Viewer'];
+      var userLevel = roles.indexOf(Auth.currentUser.role);
+      var requiredLevel = roles.indexOf(minRole);
+      if (userLevel === -1 || requiredLevel === -1) return false;
+      return userLevel <= requiredLevel;
+    },
+
+    /**
+     * Gets the current user's display name.
+     */
+    getDisplayName: function() {
+      return Auth.currentUser ? (Auth.currentUser.fullName || Auth.currentUser.email) : '';
+    },
+
+    /**
+     * Gets the current user's role.
+     */
+    getRole: function() {
+      return Auth.currentUser ? Auth.currentUser.role : '';
+    },
+
+    /**
+     * Redirects to the AccessDenied page.
+     */
+    showAccessDenied: function() {
+      window.location.href = window.location.href.split('?')[0] + '?page=access-denied';
+    },
+
+    /**
+     * Initializes authentication on the dashboard.
+     * Calls getCurrentUser, redirects if not logged in, or invokes callback with user.
+     * @param {function} callback - Called with (user) if authorized, (null) if not
+     */
+    init: function(callback) {
+      google.script.run
+        .withSuccessHandler(function(user) {
+          Auth.currentUser = user;
+          Auth.isLoaded = true;
+          if (!user || !user.isLoggedIn) {
+            if (callback) callback(null);
+            return;
+          }
+          if (callback) callback(user);
+        })
+        .withFailureHandler(function() {
+          if (callback) callback(null);
+        })
+        .getCurrentUser();
+    },
+
+    /**
+     * Returns initials from a name or email for the avatar.
+     * @param {string} name
+     * @returns {string}
+     */
+    getInitials: function(name) {
+      if (!name) return 'U';
+      var parts = name.replace(/@.*/, '').split(/[\s._-]+/);
+      if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+      return name.substring(0, 2).toUpperCase();
+    },
+
+    /**
+     * Shows a blocking overlay with an error message.
+     */
+    showBlocked: function(message) {
+      document.body.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:Segoe UI,sans-serif;background:#f0f2f5;"><div style="background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.08);padding:48px 36px;text-align:center;max-width:420px;"><div style="width:72px;height:72px;background:#FEE2E2;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:20px;"><i class="bi bi-shield-lock" style="font-size:32px;color:#991B1B;"></i></div><h3 style="font-weight:700;color:#1a1a2e;margin-bottom:12px;">Akses Ditolak</h3><p style="color:#6b7280;font-size:14px;line-height:1.6;">' + message + '</p><p style="margin-top:16px;"><a href="javascript:history.back()" style="display:inline-flex;align-items:center;gap:6px;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;background:#005BAC;color:#fff;">Kembali</a></p></div></div>';
+    },
+
+    /**
+     * Renders user badge in the topbar. Call after Auth.check succeeds.
+     */
+    renderUserBadge: function(containerId) {
+      var el = document.getElementById(containerId);
+      if (!el || !Auth.currentUser) return;
+      var u = Auth.currentUser;
+      var roleBadge = '';
+      if (u.role === 'Super Admin') roleBadge = '<span class="badge bg-danger">Super Admin</span>';
+      else if (u.role === 'HR Admin') roleBadge = '<span class="badge bg-primary">HR Admin</span>';
+      else if (u.role === 'Recruiter') roleBadge = '<span class="badge bg-info text-dark">Recruiter</span>';
+      else if (u.role === 'Manager') roleBadge = '<span class="badge bg-secondary">Manager</span>';
+      else if (u.role === 'Viewer') roleBadge = '<span class="badge bg-light text-dark">Viewer</span>';
+
+      el.innerHTML = '<div class="d-flex align-items-center gap-2">' +
+        '<i class="bi bi-person-circle"></i>' +
+        '<span>' + (u.fullName || u.email) + '</span>' +
+        roleBadge +
+        '</div>';
+    }
+  };
+</script>

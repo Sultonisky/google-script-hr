@@ -13,7 +13,10 @@
 //   backend/BulkActions.gs — Bulk update & delete
 //   backend/IdGenerator.gs — Generator ID rekrutmen & karyawan
 //   backend/Export.gs      — Placeholder ekspor server-side
-//   backend/Settings.gs    — getKecamatan & pengaturan server
+//   backend/Settings.gs       — getKecamatan & pengaturan server
+//   backend/PortalSettings.gs — Portal settings CRUD
+//   backend/Outsource.gs      — Registrasi karyawan outsource
+//   backend/Auth.gs           — Autentikasi & otorisasi pengguna
 // ============================================================
 
 // ============================================================
@@ -58,6 +61,22 @@ function doGet(e) {
   if (type === 'outsource') {
     return HtmlService.createTemplateFromFile('OutsourceForm').evaluate()
         .setTitle('Registrasi Karyawan Outsource — Mahakarya HRIS')
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+        .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  }
+
+  // --- Access Denied page ---
+  if (page === 'access-denied') {
+    return HtmlService.createTemplateFromFile('views/AccessDenied').evaluate()
+        .setTitle('Akses Ditolak — Mahakarya HRIS')
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+        .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  }
+
+  // --- User Management ---
+  if (page === 'user-management') {
+    return HtmlService.createTemplateFromFile('views/UserManagement').evaluate()
+        .setTitle('Manajemen Pengguna — Mahakarya HRIS')
         .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
         .addMetaTag('viewport', 'width=device-width, initial-scale=1');
   }
