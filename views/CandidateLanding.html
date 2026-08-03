@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Informasi Rekrutmen — Mahakarya HRIS</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      background: #f0f2f5;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ============================================================
+       HEADER
+       ============================================================ */
+    .candidate-header {
+      background: linear-gradient(135deg, #005BAC 0%, #0B2540 100%);
+      color: #fff;
+      padding: 40px 24px 48px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .candidate-header::before {
+      content: '';
+      position: absolute;
+      top: -40%;
+      right: -20%;
+      width: 500px;
+      height: 500px;
+      background: rgba(255,255,255,0.025);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .candidate-header::after {
+      content: '';
+      position: absolute;
+      bottom: -30%;
+      left: -15%;
+      width: 400px;
+      height: 400px;
+      background: rgba(253,185,19,0.04);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .header-content {
+      position: relative;
+      z-index: 1;
+      max-width: 650px;
+      margin: 0 auto;
+      animation: fadeInUp 0.6s ease-out;
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .header-logo {
+      width: 72px;
+      height: 72px;
+      background: rgba(255,255,255,0.12);
+      border-radius: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 800;
+      color: #FDB913;
+      margin-bottom: 20px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .header-logo img {
+      max-width: 44px;
+      max-height: 44px;
+      border-radius: 10px;
+    }
+    .header-content h1 {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 10px;
+      letter-spacing: -0.5px;
+    }
+    .header-content .header-subtitle {
+      font-size: 14px;
+      color: #FDB913;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .header-content p {
+      font-size: 15px;
+      opacity: 0.85;
+      line-height: 1.7;
+      max-width: 540px;
+      margin: 0 auto;
+    }
+
+    /* ============================================================
+       MAIN CONTENT
+       ============================================================ */
+    .candidate-body {
+      flex: 1;
+      padding: 40px 24px 48px;
+    }
+    .body-container {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    /* Section Card */
+    .info-section {
+      background: #fff;
+      border-radius: 14px;
+      padding: 32px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+      border: 1px solid #f0f0f0;
+      animation: fadeInUp 0.6s ease-out both;
+    }
+    .info-section:nth-child(2) { animation-delay: 0.1s; }
+    .info-section:nth-child(3) { animation-delay: 0.15s; }
+    .info-section:nth-child(4) { animation-delay: 0.2s; }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .section-icon {
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+    .section-icon.green { background: #F0FDF4; color: #166534; }
+    .section-icon.amber { background: #FFFBEB; color: #92400E; }
+    .section-icon.red { background: #FEF2F2; color: #991B1B; }
+
+    .section-header h2 {
+      font-size: 17px;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin: 0;
+    }
+
+    .info-section p,
+    .info-section li {
+      font-size: 14px;
+      color: #4b5563;
+      line-height: 1.75;
+    }
+    .info-section ul {
+      padding-left: 20px;
+      margin: 0;
+    }
+    .info-section ul li {
+      margin-bottom: 6px;
+    }
+
+    /* Process Steps */
+    .process-steps {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      counter-reset: step;
+    }
+    .process-steps li {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 14px;
+      counter-increment: step;
+    }
+    .process-steps li:last-child { margin-bottom: 0; }
+    .step-number {
+      width: 32px;
+      height: 32px;
+      min-width: 32px;
+      background: #005BAC;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      position: relative;
+      z-index: 1;
+    }
+    .step-text {
+      padding-top: 5px;
+      font-size: 14px;
+      color: #4b5563;
+      line-height: 1.5;
+    }
+    .step-text strong {
+      color: #1a1a2e;
+    }
+
+    /* Checkbox */
+    .declaration-check {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 16px;
+      background: #F8FAFC;
+      border: 2px solid #e5e7eb;
+      border-radius: 10px;
+      margin-top: 16px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .declaration-check:hover { border-color: #005BAC; }
+    .declaration-check.checked { border-color: #005BAC; background: #EFF6FF; }
+    .declaration-check input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin-top: 2px;
+      accent-color: #005BAC;
+      cursor: pointer;
+    }
+    .declaration-check label {
+      font-size: 13px;
+      color: #4b5563;
+      line-height: 1.6;
+      cursor: pointer;
+      margin: 0;
+    }
+
+    /* Start Button */
+    .action-section {
+      text-align: center;
+      padding: 8px 0 0;
+    }
+    .btn-start {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 40px;
+      background: linear-gradient(135deg, #005BAC 0%, #00437e 100%);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      text-decoration: none;
+      box-shadow: 0 4px 16px rgba(0,91,172,0.25);
+    }
+    .btn-start:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(0,91,172,0.35);
+      color: #fff;
+    }
+    .btn-start:active {
+      transform: translateY(0);
+    }
+    .btn-start:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    .btn-start i {
+      font-size: 18px;
+    }
+
+    /* Back link */
+    .back-link {
+      text-align: center;
+      margin-top: 24px;
+    }
+    .back-link a {
+      font-size: 13px;
+      color: #6b7280;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: color 0.2s;
+    }
+    .back-link a:hover { color: #005BAC; }
+
+    /* ============================================================
+       FOOTER
+       ============================================================ */
+    .candidate-footer {
+      background: #fff;
+      border-top: 1px solid #e5e7eb;
+      padding: 20px 24px;
+      text-align: center;
+    }
+    .candidate-footer p {
+      font-size: 12px;
+      color: #9ca3af;
+      margin: 0;
+    }
+
+    /* ============================================================
+       RESPONSIVE
+       ============================================================ */
+    @media (max-width: 767.98px) {
+      .candidate-header { padding: 32px 20px 36px; }
+      .header-content h1 { font-size: 22px; }
+      .candidate-body { padding: 24px 16px 32px; }
+      .info-section { padding: 24px 20px; }
+      .header-logo { width: 60px; height: 60px; font-size: 18px; }
+      .header-logo img { max-width: 36px; max-height: 36px; }
+    }
+    @media (max-width: 480px) {
+      .header-content h1 { font-size: 20px; }
+      .info-section { padding: 20px 16px; }
+      .btn-start { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="candidate-header">
+    <div class="header-content">
+      <div class="header-logo" id="headerLogo">MH</div>
+      <div class="header-subtitle">Human Resources Department</div>
+      <h1 id="recruitTitle">Informasi Rekrutmen</h1>
+      <p id="recruitDescription">Temukan peluang karir Anda bersama kami. Silakan membaca informasi rekrutmen di bawah ini sebelum memulai pendaftaran.</p>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="candidate-body">
+    <div class="body-container">
+
+      <!-- Recruitment Process -->
+      <div class="info-section" id="sectionProcess">
+        <div class="section-header">
+          <div class="section-icon green"><i class="bi bi-diagram-3"></i></div>
+          <h2>Tahapan Rekrutmen</h2>
+        </div>
+        <ul class="process-steps">
+          <li>
+            <div class="step-number">1</div>
+            <div class="step-text">Pengisian Formulir Pendaftaran Online</div>
+          </li>
+          <li>
+            <div class="step-number">2</div>
+            <div class="step-text">Verifikasi Berkas & Screening Awal</div>
+          </li>
+          <li>
+            <div class="step-number">3</div>
+            <div class="step-text">Tes Wawancara (Online / Offline)</div>
+          </li>
+          <li>
+            <div class="step-number">4</div>
+            <div class="step-text">Psikotes & Penilaian</div>
+          </li>
+          <li>
+            <div class="step-number">5</div>
+            <div class="step-text">Interview dengan User / Hiring Manager</div>
+          </li>
+          <li>
+            <div class="step-number">6</div>
+            <div class="step-text">Keputusan Akhir & Penawaran Kerja</div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Privacy Notice -->
+      <div class="info-section" id="sectionPrivacy">
+        <div class="section-header">
+          <div class="section-icon amber"><i class="bi bi-shield-lock"></i></div>
+          <h2>Kebijakan Privasi</h2>
+        </div>
+        <p>Data pribadi yang Anda kumpulkan akan digunakan semata-mata untuk keperluan proses rekrutmen. Data Anda akan disimpan secara aman dan tidak akan dibagikan kepada pihak ketiga tanpa persetujuan Anda. Data yang tidak diperlukan akan dihapus setelah masa retensi berakhir sesuai kebijakan perusahaan.</p>
+      </div>
+
+      <!-- Important Notes -->
+      <div class="info-section" id="sectionNotes">
+        <div class="section-header">
+          <div class="section-icon red"><i class="bi bi-exclamation-circle"></i></div>
+          <h2>Catatan Penting</h2>
+        </div>
+        <ul>
+          <li>Perusahaan tidak memungut biaya apapun dalam proses rekrutmen.</li>
+          <li>Hati-hati terhadap penipuan yang mengatasnamakan perusahaan.</li>
+          <li>Seluruh informasi yang diberikan harus benar dan dapat diverifikasi.</li>
+          <li>Keputusan perusahaan dalam proses rekrutmen bersifat mutlak.</li>
+        </ul>
+      </div>
+
+      <!-- Declaration & Start -->
+      <div class="info-section" id="sectionDeclaration">
+        <div class="section-header">
+          <div class="section-icon green"><i class="bi bi-person-check"></i></div>
+          <h2>Pernyataan & Mulai Pendaftaran</h2>
+        </div>
+        <div class="declaration-check" id="declarationBox">
+          <input type="checkbox" id="declarationCheck" />
+          <label for="declarationCheck">Saya telah membaca, memahami, dan menyetujui seluruh informasi di atas. Saya ingin melanjutkan pendaftaran.</label>
+        </div>
+
+        <div class="action-section">
+          <a href="?type=kandidat" class="btn-start" id="btnStart" style="pointer-events:none;">
+            <i class="bi bi-pencil-square"></i>
+            Mulai Pendaftaran
+          </a>
+        </div>
+      </div>
+
+      <!-- Back to landing -->
+      <div class="back-link">
+        <a href="?page=landing">
+          <i class="bi bi-arrow-left"></i>
+          Kembali ke Halaman Utama
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="candidate-footer">
+    <p id="footerText">Mahakarya Sukses Indonesia &copy; 2026</p>
+  </div>
+
+  <script>
+    // ============================================================
+    // Candidate Landing Page Logic
+    // ============================================================
+    (function() {
+      var checkbox = document.getElementById('declarationCheck');
+      var btnStart = document.getElementById('btnStart');
+      var declarationBox = document.getElementById('declarationBox');
+
+      checkbox.addEventListener('change', function() {
+        if (checkbox.checked) {
+          btnStart.style.pointerEvents = '';
+          btnStart.style.opacity = '1';
+          declarationBox.classList.add('checked');
+        } else {
+          btnStart.style.pointerEvents = 'none';
+          btnStart.style.opacity = '0.5';
+          declarationBox.classList.remove('checked');
+        }
+      });
+
+      // Set initial state
+      btnStart.style.opacity = '0.5';
+
+      // Load portal settings for branding
+      google.script.run
+        .withSuccessHandler(function(settings) {
+          if (settings) {
+            if (settings.companyName) {
+              document.getElementById('footerText').innerHTML = settings.companyName + ' &copy; 2026';
+              document.title = 'Informasi Rekrutmen — ' + settings.companyName;
+            }
+            if (settings.companyLogo) {
+              document.getElementById('headerLogo').innerHTML = '<img src="' + settings.companyLogo + '" alt="Logo">';
+            }
+          }
+        })
+        .withFailureHandler(function() {})
+        .getPortalSettingsForLogin();
+    })();
+  </script>
+</body>
+</html>
