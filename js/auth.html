@@ -71,12 +71,13 @@
    */
   window.getUserSession = function() {
     return new Promise(function(resolve) {
-      if (_sessionLoaded && _currentUser) {
+      if (_sessionLoaded) {
         resolve(_currentUser);
         return;
       }
-      if (_sessionLoaded) {
-        resolve(null);
+      // Already loading — queue the callback
+      if (_sessionCallbacks.length > 0) {
+        _sessionCallbacks.push(resolve);
         return;
       }
       _sessionCallbacks.push(resolve);
@@ -85,17 +86,21 @@
         .withSuccessHandler(function(user) {
           if (!user || !user.isLoggedIn) {
             clearStoredSessionToken_();
+            _currentUser = null;
+          } else {
+            _currentUser = user;
           }
-          _currentUser = user;
           _sessionLoaded = true;
-          _sessionCallbacks.forEach(function(cb) { cb(user); });
+          var cbs = _sessionCallbacks.slice();
           _sessionCallbacks = [];
+          cbs.forEach(function(cb) { cb(_currentUser); });
         })
         .withFailureHandler(function() {
-          _currentUser = { isLoggedIn: false, email: '', fullName: '', role: '', permissions: [] };
+          _currentUser = null;
           _sessionLoaded = true;
-          _sessionCallbacks.forEach(function(cb) { cb(null); });
+          var cbs = _sessionCallbacks.slice();
           _sessionCallbacks = [];
+          cbs.forEach(function(cb) { cb(null); });
         })
         .getCurrentUser(sessionToken);
     });
