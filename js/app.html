@@ -20,6 +20,13 @@
     var subtitleEl = document.getElementById('pageSubtitleText');
     if (titleEl)    titleEl.innerText    = meta[0];
     if (subtitleEl) subtitleEl.innerText = meta[1];
+    
+    // Update recruitment page data when switching to it
+    if (pageId === 'pageRecruitment' && allCandidates && allCandidates.length > 0) {
+      updateRecStats(allCandidates);
+      populateRecDropdowns(allCandidates);
+      applyRecFilters();
+    }
   }
 
   function initSidebar() {
@@ -40,8 +47,6 @@
 
         if (item.dataset.external === 'employee') {
           showToast('Buka sheet "Employee" di spreadsheet untuk melihat Master Data karyawan.', 'success');
-        } else if (item.dataset.external === 'recruitment') {
-          window.location.href = window.location.href.split('?')[0] + '?page=recruitment';
         } else if (item.dataset.page) {
           showPage(item.dataset.page);
           if (item.dataset.status) {

@@ -1,0 +1,272 @@
+<script>
+  // ============================================================
+  // js/pdfExport.html — PDF EXPORT FOR CANDIDATE PROFILE
+  // Depends on: helpers.html, jsPDF library
+  // ============================================================
+
+  function exportCandidatePDF(candidateId) {
+    var c = allCandidates.find(function(x) { return x.recruitmentId === candidateId; });
+    if (!c) {
+      showToast('Data kandidat tidak ditemukan.', 'error');
+      return;
+    }
+
+    try {
+      var { jsPDF } = window.jspdf;
+      var doc = new jsPDF();
+      
+      var pageWidth = doc.internal.pageSize.getWidth();
+      var pageHeight = doc.internal.pageSize.getHeight();
+      var margin = 20;
+      var yPos = margin;
+      var lineHeight = 7;
+
+      // Colors
+      var primaryColor = [0, 91, 172];      // #005BAC
+      var textColor = [31, 41, 55];         // #1F2937
+      var softTextColor = [107, 114, 128];  // #6B7280
+      var accentColor = [253, 185, 19];     // #FDB913
+
+      // Helper functions
+      function addText(text, x, y, options) {
+        options = options || {};
+        doc.setFontSize(options.fontSize || 10);
+        doc.setTextColor(options.color || textColor);
+        if (options.bold) doc.setFont(undefined, 'bold');
+        else doc.setFont(undefined, 'normal');
+        doc.text(String(text || '-'), x, y);
+      }
+
+      function addSection(title, icon) {
+        yPos += 5;
+        // Section background
+        doc.setFillColor(245, 247, 250);
+        doc.rect(margin, yPos - 5, pageWidth - 2 * margin, 10, 'F');
+        
+        // Section title
+        addText(title, margin + 2, yPos, { fontSize: 12, bold: true, color: primaryColor });
+        yPos += 10;
+      }
+
+      function addField(label, value, x, width) {
+        doc.setFontSize(8);
+        doc.setTextColor(softTextColor);
+        doc.setFont(undefined, 'bold');
+        doc.text(String(label || ''), x, yPos);
+        
+        yPos += 5;
+        doc.setFontSize(10);
+        doc.setTextColor(textColor);
+        doc.setFont(undefined, 'normal');
+        
+        var lines = doc.splitTextToSize(String(value || '-'), width - 5);
+        doc.text(lines, x, yPos);
+        
+        yPos += lines.length * lineHeight;
+      }
+
+      function checkPageBreak(requiredSpace) {
+        if (yPos + requiredSpace > pageHeight - margin) {
+          doc.addPage();
+          yPos = margin;
+          return true;
+        }
+        return false;
+      }
+
+      // ============================
+      // HEADER
+      // ============================
+      doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.rect(0, 0, pageWidth, 35, 'F');
+      
+      doc.setFontSize(18);
+      doc.setTextColor(255, 255, 255);
+      doc.setFont(undefined, 'bold');
+      doc.text('CANDIDATE PROFILE', margin, 15);
+      
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      doc.text('Mahakarya HRIS — Applicant Tracking System', margin, 23);
+
+      yPos = 45;
+
+      // ============================
+      // CANDIDATE INFO HEADER
+      // ============================
+      doc.setFontSize(16);
+      doc.setTextColor(textColor);
+      doc.setFont(undefined, 'bold');
+      doc.text(c.fullName || '-', margin, yPos);
+      yPos += 8;
+
+      doc.setFontSize(11);
+      doc.setTextColor(primaryColor);
+      doc.setFont(undefined, 'normal');
+      doc.text(c.positionApplied || '-', margin, yPos);
+      yPos += 7;
+
+      // Status badge
+      var statusText = c.status || 'Pending';
+      var statusColor = [138, 97, 0]; // pending yellow
+      if (statusText.toLowerCase() === 'accepted') statusColor = [22, 101, 52]; // green
+      else if (statusText.toLowerCase() === 'hold') statusColor = [11, 74, 134]; // blue
+      else if (statusText.toLowerCase() === 'blacklist') statusColor = [153, 27, 27]; // red
+      
+      doc.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
+      doc.roundedRect(margin, yPos - 4, 30, 7, 2, 2, 'F');
+      doc.setFontSize(9);
+      doc.setTextColor(255, 255, 255);
+      doc.setFont(undefined, 'bold');
+      doc.text(statusText, margin + 15, yPos, { align: 'center' });
+      
+      yPos += 10;
+
+      // Meta info
+      doc.setFontSize(9);
+      doc.setTextColor(softTextColor);
+      doc.setFont(undefined, 'normal');
+      doc.text('Recruitment ID: ' + (c.recruitmentId || '-'), margin, yPos);
+      doc.text('Tanggal Daftar: ' + (c.createdDate || '-'), pageWidth - margin - 60, yPos);
+      yPos += 5;
+
+      doc.setDrawColor(229, 231, 235);
+      doc.line(margin, yPos, pageWidth - margin, yPos);
+      yPos += 5;
+
+      // ============================
+      // INFORMASI PRIBADI
+      // ============================
+      addSection('Informasi Pribadi', 'person');
+      
+      var col1X = margin + 5;
+      var col2X = pageWidth / 2 + 5;
+      var colWidth = pageWidth / 2 - margin - 10;
+      var startY = yPos;
+
+      addField('Nama Lengkap', c.fullName, col1X, colWidth);
+      var tempY = yPos;
+      yPos = startY;
+      addField('NIK', c.nik, col2X, colWidth);
+      yPos = Math.max(yPos, tempY);
+
+      startY = yPos;
+      addField('Tanggal Lahir', c.birthDate, col1X, colWidth);
+      tempY = yPos;
+      yPos = startY;
+      addField('Usia', c.age ? c.age + ' Tahun' : '-', col2X, colWidth);
+      yPos = Math.max(yPos, tempY);
+
+      startY = yPos;
+      var genderText = c.gender === 'Male' ? 'Laki-laki' : c.gender === 'Female' ? 'Perempuan' : (c.gender || '-');
+      addField('Jenis Kelamin', genderText, col1X, colWidth);
+      tempY = yPos;
+      yPos = startY;
+      addField('Status Pernikahan', c.maritalStatus, col2X, colWidth);
+      yPos = Math.max(yPos, tempY);
+
+      startY = yPos;
+      addField('Email', c.email, col1X, colWidth);
+      tempY = yPos;
+      yPos = startY;
+      addField('No. HP', c.phone, col2X, colWidth);
+      yPos = Math.max(yPos, tempY);
+
+      startY = yPos;
+      addField('Kota', c.city, col1X, colWidth);
+      tempY = yPos;
+      yPos = startY;
+      addField('Alamat', c.address, col2X, colWidth);
+      yPos = Math.max(yPos, tempY);
+
+      checkPageBreak(50);
+
+      // ============================
+      // INFORMASI PEKERJAAN
+      // ============================
+      addSection('Informasi Pekerjaan', 'briefcase');
+
+      startY = yPos;
+      addField('Posisi Dilamar', c.positionApplied, col1X, colWidth);
+      tempY = yPos;
+      yPos = startY;
+      addField('Pendidikan', c.education, col2X, colWidth);
+      yPos = Math.max(yPos, tempY);
+
+      startY = yPos;
+      addField('Pengalaman Kerja', c.workExperience, col1X, colWidth);
+      tempY = yPos;
+      yPos = startY;
+      addField('Perusahaan Terakhir', c.lastCompany, col2X, colWidth);
+      yPos = Math.max(yPos, tempY);
+
+      startY = yPos;
+      addField('Status Bekerja Saat Ini', c.currentEmploymentStatus, col1X, colWidth);
+      tempY = yPos;
+      yPos = startY;
+      addField('Kesediaan Bergabung', c.availableToJoin, col2X, colWidth);
+      yPos = Math.max(yPos, tempY);
+
+      startY = yPos;
+      addField('Ekspektasi Gaji', formatRupiah(c.expectedSalary), col1X, colWidth);
+      tempY = yPos;
+      yPos = startY;
+      addField('Sumber Rekrutmen', c.recruitmentSource, col2X, colWidth);
+      yPos = Math.max(yPos, tempY);
+
+      checkPageBreak(50);
+
+      // ============================
+      // CATATAN HR
+      // ============================
+      if (c.hrNotes && c.hrNotes.trim()) {
+        addSection('Catatan HR', 'chat');
+        
+        doc.setFontSize(10);
+        doc.setTextColor(textColor);
+        doc.setFont(undefined, 'normal');
+        var notesLines = doc.splitTextToSize(c.hrNotes, pageWidth - 2 * margin - 10);
+        
+        notesLines.forEach(function(line) {
+          checkPageBreak(10);
+          doc.text(line, margin + 5, yPos);
+          yPos += lineHeight;
+        });
+
+        yPos += 5;
+        doc.setFontSize(8);
+        doc.setTextColor(softTextColor);
+        doc.text('Terakhir diperbarui: ' + (c.updatedAt || '-'), margin + 5, yPos);
+        yPos += 10;
+      }
+
+      // ============================
+      // FOOTER
+      // ============================
+      var totalPages = doc.internal.getNumberOfPages();
+      for (var i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(softTextColor);
+        doc.setFont(undefined, 'normal');
+        
+        var footerText = 'Generated on ' + new Date().toLocaleString('id-ID') + ' — Page ' + i + ' of ' + totalPages;
+        doc.text(footerText, pageWidth / 2, pageHeight - 10, { align: 'center' });
+        
+        doc.setDrawColor(229, 231, 235);
+        doc.line(margin, pageHeight - 15, pageWidth - margin, pageHeight - 15);
+      }
+
+      // ============================
+      // SAVE PDF
+      // ============================
+      var fileName = 'Kandidat_' + (c.recruitmentId || 'Unknown').replace(/[^a-zA-Z0-9-]/g, '_') + '.pdf';
+      doc.save(fileName);
+      
+      showToast('PDF berhasil diunduh: ' + fileName, 'success');
+    } catch (error) {
+      console.error('PDF Export Error:', error);
+      showToast('Gagal membuat PDF: ' + error.message, 'error');
+    }
+  }
+</script>
