@@ -161,12 +161,8 @@
               </div>
               <div class="col-md-6">
                 <label class="form-label" for="employee_type">Tipe Karyawan <span class="required">*</span></label>
-                <select class="form-select" id="employee_type" name="employee_type" required>
+                <select class="form-select" id="employee_type" name="employee_type" required data-master="employee_type">
                   <option value="">-- Pilih Tipe --</option>
-                  <option value="Outsource">Outsource</option>
-                  <option value="PKWT">PKWT (Kontrak)</option>
-                  <option value="PKWTT">PKWTT (Organik / Tetap)</option>
-                  <option value="Intern">Intern / Magang</option>
                 </select>
                 <div class="invalid-feedback">Tipe karyawan wajib dipilih.</div>
               </div>
@@ -177,7 +173,9 @@
               </div>
               <div class="col-md-6">
                 <label class="form-label" for="department">Departemen / Unit</label>
-                <input type="text" class="form-control" id="department" name="department" placeholder="Contoh: Produksi, HRGA, Warehouse">
+                <select class="form-select" id="department" name="department" data-master="department">
+                  <option value="">-- Pilih Departemen --</option>
+                </select>
               </div>
               <div class="col-md-6">
                 <label class="form-label" for="employment_status">Status Kepegawaian <span class="required">*</span></label>

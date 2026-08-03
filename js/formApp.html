@@ -59,6 +59,37 @@
   if(isAlreadySubmitted()){ showAlreadySubmittedPage(); }
 
   // ============================================================
+  // MASTER DATA — DYNAMIC DROPDOWNS
+  // ============================================================
+  (function loadMasterDataDropdowns(){
+    var selects = document.querySelectorAll('select[data-master]');
+    if(selects.length === 0) return;
+    var cats = [];
+    selects.forEach(function(sel){ cats.push(sel.getAttribute('data-master')); });
+    google.script.run
+      .withSuccessHandler(function(result){
+        if(!result || !result.success || !result.data) return;
+        selects.forEach(function(sel){
+          var key  = sel.getAttribute('data-master');
+          var cats = result.data[key];
+          if(!cats || !cats.items || cats.items.length === 0) return;
+          // Remove the placeholder <option> — keep it as the first option
+          var placeholder = sel.querySelector('option[value=""]');
+          sel.innerHTML = '';
+          if(placeholder) sel.appendChild(placeholder);
+          cats.items.forEach(function(item){
+            var opt = document.createElement('option');
+            opt.value       = item.name;
+            opt.textContent = item.displayName;
+            sel.appendChild(opt);
+          });
+        });
+      })
+      .withFailureHandler(function(){})
+      .getMasterDataForCategories(cats);
+  })();
+
+  // ============================================================
   // FIELD VALIDATION HELPER
   // ============================================================
   function validateField(el){

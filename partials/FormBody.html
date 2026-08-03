@@ -36,21 +36,15 @@
               </div>
               <div class="col-md-6">
                 <label class="form-label" for="gender">Jenis Kelamin <span class="required">*</span></label>
-                <select class="form-select" id="gender" name="gender" required>
+                <select class="form-select" id="gender" name="gender" required data-master="gender" data-placeholder="-- Pilih Jenis Kelamin --">
                   <option value="">-- Pilih Jenis Kelamin --</option>
-                  <option value="Male">Laki-laki</option>
-                  <option value="Female">Perempuan</option>
                 </select>
                 <div class="invalid-feedback">Jenis kelamin wajib dipilih.</div>
               </div>
               <div class="col-md-6">
                 <label class="form-label" for="marital_status">Status Pernikahan <span class="required">*</span></label>
-                <select class="form-select" id="marital_status" name="marital_status" required>
+                <select class="form-select" id="marital_status" name="marital_status" required data-master="marital_status" data-placeholder="-- Pilih Status --">
                   <option value="">-- Pilih Status --</option>
-                  <option value="Single">Belum Menikah</option>
-                  <option value="Married">Menikah</option>
-                  <option value="Divorced">Cerai</option>
-                  <option value="Widowed">Janda/Duda</option>
                 </select>
                 <div class="invalid-feedback">Status pernikahan wajib dipilih.</div>
               </div>
@@ -124,60 +118,22 @@
             <div class="row g-3">
               <div class="col-md-6">
                 <label class="form-label" for="position_applied">Posisi yang Dilamar <span class="required">*</span></label>
-                <select class="form-select" id="position_applied" name="position_applied" required>
+                <select class="form-select" id="position_applied" name="position_applied" required data-master="position" data-placeholder="-- Pilih Posisi --">
                   <option value="">-- Pilih Posisi --</option>
-                  <option value="Administration">Administration</option><option value="Accounting">Accounting</option>
-                  <option value="Finance">Finance</option><option value="Tax">Tax</option>
-                  <option value="HR">HR</option><option value="HRGA">HRGA</option>
-                  <option value="Recruitment">Recruitment</option><option value="Payroll">Payroll</option>
-                  <option value="Legal">Legal</option><option value="Purchasing">Purchasing</option>
-                  <option value="Procurement">Procurement</option><option value="Warehouse">Warehouse</option>
-                  <option value="Inventory">Inventory</option><option value="PPIC">PPIC</option>
-                  <option value="Production">Production</option><option value="Operator">Operator</option>
-                  <option value="QC">QC</option><option value="QA">QA</option>
-                  <option value="Engineering">Engineering</option><option value="Maintenance">Maintenance</option>
-                  <option value="IT Support">IT Support</option><option value="Network Engineer">Network Engineer</option>
-                  <option value="System Administrator">System Administrator</option><option value="Software Developer">Software Developer</option>
-                  <option value="Backend Developer">Backend Developer</option><option value="Frontend Developer">Frontend Developer</option>
-                  <option value="Full Stack Developer">Full Stack Developer</option><option value="Mobile Developer">Mobile Developer</option>
-                  <option value="UI UX Designer">UI UX Designer</option><option value="Graphic Designer">Graphic Designer</option>
-                  <option value="Digital Marketing">Digital Marketing</option><option value="Content Creator">Content Creator</option>
-                  <option value="Sales">Sales</option><option value="Sales Executive">Sales Executive</option>
-                  <option value="Business Development">Business Development</option><option value="Customer Service">Customer Service</option>
-                  <option value="Call Center">Call Center</option><option value="Supervisor">Supervisor</option>
-                  <option value="Coordinator">Coordinator</option><option value="Manager">Manager</option>
-                  <option value="Internship">Internship</option><option value="Fresh Graduate Program">Fresh Graduate Program</option>
-                  <option value="Other">Other</option>
                 </select>
                 <div class="invalid-feedback">Posisi yang dilamar wajib dipilih.</div>
               </div>
               <div class="col-md-6">
                 <label class="form-label" for="education">Pendidikan Terakhir <span class="required">*</span></label>
-                <select class="form-select" id="education" name="education" required>
+                <select class="form-select" id="education" name="education" required data-master="education" data-placeholder="-- Pilih Pendidikan --">
                   <option value="">-- Pilih Pendidikan --</option>
-                  <option value="Elementary School">Sekolah Dasar (SD)</option>
-                  <option value="Junior High School">Sekolah Menengah Pertama (SMP)</option>
-                  <option value="Senior High School">Sekolah Menengah Atas (SMA)</option>
-                  <option value="Vocational High School">Sekolah Menengah Kejuruan (SMK)</option>
-                  <option value="Diploma I">Diploma I (D1)</option><option value="Diploma II">Diploma II (D2)</option>
-                  <option value="Diploma III">Diploma III (D3)</option>
-                  <option value="Bachelor Degree">Sarjana (S1)</option>
-                  <option value="Professional Degree">Profesi (Prof.)</option>
-                  <option value="Master Degree">Magister (S2)</option>
-                  <option value="Doctoral Degree">Doktoral (S3)</option>
-                  <option value="Other">Lainnya</option>
                 </select>
                 <div class="invalid-feedback">Pendidikan terakhir wajib dipilih.</div>
               </div>
               <div class="col-md-6">
                 <label class="form-label" for="work_experience">Pengalaman Kerja <span class="required">*</span></label>
-                <select class="form-select" id="work_experience" name="work_experience" required>
+                <select class="form-select" id="work_experience" name="work_experience" required data-master="work_experience" data-placeholder="-- Pilih Pengalaman --">
                   <option value="">-- Pilih Pengalaman --</option>
-                  <option value="No Experience">Belum Punya Pengalaman</option>
-                  <option value="Less than 1 Year">Kurang dari 1 Tahun</option>
-                  <option value="1-2 Years">1-2 Tahun</option><option value="2-3 Years">2-3 Tahun</option>
-                  <option value="3-5 Years">3-5 Tahun</option><option value="5-10 Years">5-10 Tahun</option>
-                  <option value="More than 10 Years">Lebih dari 10 Tahun</option>
                 </select>
                 <div class="invalid-feedback">Pengalaman kerja wajib dipilih.</div>
               </div>
@@ -188,31 +144,15 @@
               </div>
               <div class="col-md-6">
                 <label class="form-label" for="current_employment_status">Status Bekerja Saat Ini <span class="required">*</span></label>
-                <select class="form-select" id="current_employment_status" name="current_employment_status" required>
+                <select class="form-select" id="current_employment_status" name="current_employment_status" required data-master="current_employment_status" data-placeholder="-- Pilih Status --">
                   <option value="">-- Pilih Status --</option>
-                  <option value="Employed Full Time">Bekerja Full Time</option>
-                  <option value="Employed Contract">Bekerja Kontrak</option>
-                  <option value="Part Time">Part Time</option><option value="Freelance">Freelance</option>
-                  <option value="Internship">Internship</option><option value="Fresh Graduate">Fresh Graduate</option>
-                  <option value="Unemployed">Belum Bekerja</option><option value="Resigned">Resign</option>
-                  <option value="Available Immediately">Tersedia Segera</option><option value="Other">Lainnya</option>
                 </select>
                 <div class="invalid-feedback">Status bekerja saat ini wajib dipilih.</div>
               </div>
               <div class="col-md-6">
                 <label class="form-label" for="available_to_join">Kesediaan Bergabung <span class="required">*</span></label>
-                <select class="form-select" id="available_to_join" name="available_to_join" required>
+                <select class="form-select" id="available_to_join" name="available_to_join" required data-master="available_to_join" data-placeholder="-- Pilih Kesediaan --">
                   <option value="">-- Pilih Kesediaan --</option>
-                  <option value="Immediately">Segera</option>
-                  <option value="Within 3 Days">Dalam 3 Hari</option>
-                  <option value="Within 1 Week">Dalam 1 Minggu</option>
-                  <option value="Within 2 Weeks">Dalam 2 Minggu</option>
-                  <option value="Within 30 Days">Dalam 30 Hari</option>
-                  <option value="Within 45 Days">Dalam 45 Hari</option>
-                  <option value="Within 60 Days">Dalam 60 Hari</option>
-                  <option value="Within 90 Days">Dalam 90 Hari</option>
-                  <option value="Negotiable">Dapat Dinegosiasikan</option>
-                  <option value="Other">Lainnya</option>
                 </select>
                 <div class="invalid-feedback">Kesediaan bergabung wajib dipilih.</div>
               </div>
@@ -226,18 +166,8 @@
               </div>
               <div class="col-md-6">
                 <label class="form-label" for="recruitment_source">Sumber Informasi Lowongan <span class="required">*</span></label>
-                <select class="form-select" id="recruitment_source" name="recruitment_source" required>
+                <select class="form-select" id="recruitment_source" name="recruitment_source" required data-master="recruitment_source" data-placeholder="-- Pilih Sumber --">
                   <option value="">-- Pilih Sumber --</option>
-                  <option value="Company Website">Website Perusahaan</option><option value="LinkedIn">LinkedIn</option>
-                  <option value="Jobstreet">Jobstreet</option><option value="Glints">Glints</option>
-                  <option value="Kalibrr">Kalibrr</option><option value="Indeed">Indeed</option>
-                  <option value="Instagram">Instagram</option><option value="Facebook">Facebook</option>
-                  <option value="TikTok">TikTok</option><option value="Google Search">Google Search</option>
-                  <option value="Employee Referral">Employee Referral</option>
-                  <option value="Campus Hiring">Campus Hiring</option>
-                  <option value="Job Fair">Job Fair</option><option value="Walk In">Walk In</option>
-                  <option value="Recruitment Agency">Recruitment Agency</option>
-                  <option value="Other">Lainnya</option>
                 </select>
                 <div class="invalid-feedback">Sumber informasi lowongan wajib dipilih.</div>
               </div>

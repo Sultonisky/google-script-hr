@@ -1,28 +1,64 @@
-# Google Apps Script - local development files
-node_modules/
-*.log
+# ============================================
+# Google Apps Script - Clasp Development
+# ============================================
 
+# Clasp configuration (contains script ID - DO NOT commit)
+.clasp.json
+clasp.json
+
+# Clasp local credentials
+.clasp/
+
+# Node modules (clasp dependencies)
+node_modules/
+
+# Lock files (if clasp deps are installed)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ============================================
+# Documentation images (generated locally)
+# ============================================
+docs/images/*.png
+docs/images/*.jpg
+
+# ============================================
 # IDE / Editor
+# ============================================
 .vscode/
+!.vscode/settings.json
+!.vscode/extensions.json
 .idea/
 *.swp
 *.swo
 *~
+*.sublime-project
+*.sublime-workspace
 
+# ============================================
 # OS files
+# ============================================
 .DS_Store
 Thumbs.db
 desktop.ini
+ehthumbs.db
 
+# ============================================
 # Environment
+# ============================================
 .env
 .env.local
 
-# Documentation images (generated locally)
-docs/images/*.png
-docs/images/*.jpg
-
+# ============================================
 # Temporary files
+# ============================================
 tmp/
 temp/
 *.tmp
+
+# ============================================
+# Logs
+# ============================================
+*.log
+npm-debug.log*

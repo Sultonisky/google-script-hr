@@ -1,13 +1,76 @@
 # ROADMAP.md — Development Roadmap
 
-## Current Status: Phase 1 Complete ✅
+## Current Status: v0.6.0 Stabilization Phase 🔧
 
-**Version**: 1.0.0  
-**Last Updated**: 2026-07-30
+**Version**: 0.6.0  
+**Last Updated**: 2026-08-03
+
+### Version History
+
+| Version | Date | Milestone |
+|---------|------|-----------|
+| v0.1.0 | 2026-07-28 | Phase 1: Foundation & Recruitment Portal |
+| v0.2.0 | 2026-07-29 | Phase 2: Advanced Dashboard & Analytics |
+| v0.3.0 | 2026-07-29 | Phase 2.5: Modularization |
+| v0.4.0 | 2026-07-30 | Phase 3: Multi-Module Expansion |
+| v0.5.0 | 2026-07-30 | Phase 4: UI Polish & Deployment Readiness |
+| v0.6.0 | 2026-08-03 | Stabilization: Documentation, Versioning, Testing |
 
 ---
 
-## Phase 1: Foundation & Recruitment Portal ✅ COMPLETE
+## v0.6.0 — Stabilization Phase 🔧 CURRENT
+
+**Status**: In Progress  
+**Objective**: Stabilize the existing codebase, add documentation, set up proper versioning, and prepare for production deployment
+
+### Stabilization Tasks
+
+#### Documentation
+- [x] Create docs/ directory structure
+- [x] Create ARCHITECTURE.md — system architecture documentation
+- [x] Create CONTRIBUTING.md — developer guide
+- [ ] Update ROADMAP.md for v0.6.0
+- [ ] Update CHANGELOG.md for v0.6.0
+
+#### Versioning
+- [ ] Set up package.json (if applicable)
+- [ ] Initialize .gitignore
+- [ ] Tag v0.6.0
+
+#### Master Data Foundation
+- [ ] Ensure master data categories are properly seeded
+- [ ] Validate dropdown data integrity across modules
+- [ ] Test master data CRUD operations
+
+#### Employee Foundation
+- [ ] Validate employee sheet schema (32 columns)
+- [ ] Test employee CRUD operations
+- [ ] Test outsource employee registration
+- [ ] Verify employee ID generation (EMP-YYYY-NNNN)
+
+#### Code Quality
+- [ ] Review backend module boundaries
+- [ ] Ensure consistent error handling across all modules
+- [ ] Verify audit logging for all status changes
+- [ ] Test RBAC permissions for all roles
+
+#### Deployment Readiness
+- [ ] Document deployment steps
+- [ ] Create .gitignore
+- [ ] Verify OAuth scopes
+- [ ] Test public pages (landing, registration, candidate landing)
+- [ ] Test authenticated pages (dashboard, employee, master data, settings, user management)
+
+### Deliverables
+- ARCHITECTURE.md
+- CONTRIBUTING.md
+- Updated CHANGELOG.md
+- Updated ROADMAP.md
+- .gitignore
+
+---
+
+## Phase 1: Foundation & Recruitment Portal ✅ COMPLETE (v0.1.0)
 
 **Status**: Implemented  
 **Duration**: Completed  
@@ -545,4 +608,4 @@
 ---
 
 ## Last Updated
-2026-07-30 - Initial roadmap based on current codebase analysis
+2026-08-03 - Updated for v0.6.0 Stabilization Phase

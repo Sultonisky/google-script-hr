@@ -28,13 +28,11 @@
       <i class="bi bi-people-fill"></i> Recruitment
       <span class="badge-count" id="navRecruitmentCount">0</span>
     </button>
-    <button
-      class="nav-item"
-      type="button"
-      data-external="employee"
-      data-permission="view_employee"
-    >
-      <i class="bi bi-person-badge-fill"></i> Master Data
+    <button class="nav-item nav-item-external" type="button" onclick="window.open('?page=master-data','_self')" data-permission="view_employee">
+      <i class="bi bi-database-fill"></i> Master Data
+    </button>
+    <button class="nav-item nav-item-external" type="button" onclick="window.open('?page=employee','_self')" data-permission="view_employee">
+      <i class="bi bi-person-badge-fill"></i> Karyawan
     </button>
 
     <div class="nav-section-label" data-permission="view_recruitment">
@@ -69,12 +67,7 @@
     >
       <i class="bi bi-clock-history"></i> Audit Log
     </button>
-    <button
-      class="nav-item"
-      type="button"
-      data-page="pageSettings"
-      data-permission="manage_settings"
-    >
+    <button class="nav-item nav-item-external" type="button" onclick="window.open('?page=settings','_self')" data-permission="manage_settings">
       <i class="bi bi-gear-fill"></i> Settings
     </button>
     <button

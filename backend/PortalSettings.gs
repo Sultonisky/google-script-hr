@@ -6,21 +6,37 @@
 
 // ---- Default portal settings ----
 var PORTAL_SETTINGS_DEFAULTS = {
+  // Company Information
   companyName:        'PT Mahakarya Sukses Indonesia',
   companyLogo:        '',
-  sidebarLogo:        '',
-  themeColor:         '#005BAC',
-  portalTitle:        'Mahakarya HRIS',
-  portalSubtitle:     'Applicant Tracking System',
-  footer:             '© 2026 PT Mahakarya Sukses Indonesia — HRIS Portal',
   companyAddress:     'Jakarta, Indonesia',
   companyPhone:       '',
   companyEmail:       '',
   website:            '',
+  // Branding
+  sidebarLogo:        '',
+  loginLogo:          '',
+  portalTitle:        'Mahakarya HRIS',
+  portalSubtitle:     'Applicant Tracking System',
+  footer:             '© 2026 PT Mahakarya Sukses Indonesia — HRIS Portal',
+  systemVersion:      '2.0.0',
+  // Theme
+  primaryColor:       '#005BAC',
+  themeColor:         '#005BAC',
+  secondaryColor:     '#6c757d',
+  darkModeDefault:    'light',
+  sidebarStyle:       'dark',
+  // Dashboard
   refreshInterval:    60,
   defaultStatus:      '',
   defaultSource:      '',
-  defaultPageSize:    10
+  defaultSort:        'created_desc',
+  defaultPageSize:    10,
+  // Recruitment
+  defaultCandidateStatus:  'Pending',
+  defaultRecruitmentSource: '',
+  publicFormEnabled:  true,
+  maintenanceMode:    false
 };
 
 // ---- Get all portal settings ----

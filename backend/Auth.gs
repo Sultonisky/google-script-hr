@@ -57,17 +57,19 @@ var ROLE_PERMISSIONS = {
 function getCurrentUser() {
   try {
     var email = Session.getActiveUser().getEmail();
+    var photoUrl = '';
+    try { photoUrl = Session.getActiveUser().getPhotoUrl() || ''; } catch(ex) {}
     if (!email || email === '') {
-      return { isLoggedIn: false, email: '', fullName: '', role: '', permissions: [] };
+      return { isLoggedIn: false, email: '', fullName: '', role: '', permissions: [], photoUrl: '' };
     }
 
     var user = findUserByEmail_(email);
     if (!user) {
-      return { isLoggedIn: false, email: email, fullName: '', role: '', permissions: [] };
+      return { isLoggedIn: false, email: email, fullName: '', role: '', permissions: [], photoUrl: photoUrl };
     }
 
     if (user.status !== 'Active') {
-      return { isLoggedIn: false, email: email, fullName: user.fullName, role: user.role, permissions: [], reason: 'inactive' };
+      return { isLoggedIn: false, email: email, fullName: user.fullName, role: user.role, permissions: [], reason: 'inactive', photoUrl: photoUrl };
     }
 
     // Update last login
@@ -78,11 +80,12 @@ function getCurrentUser() {
       email: email,
       fullName: user.fullName,
       role: user.role,
-      permissions: ROLE_PERMISSIONS[user.role] || []
+      permissions: ROLE_PERMISSIONS[user.role] || [],
+      photoUrl: photoUrl
     };
   } catch (e) {
     Logger.log('getCurrentUser error: ' + e.message);
-    return { isLoggedIn: false, email: '', fullName: '', role: '', permissions: [] };
+    return { isLoggedIn: false, email: '', fullName: '', role: '', permissions: [], photoUrl: '' };
   }
 }
 

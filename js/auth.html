@@ -74,6 +74,21 @@
   };
 
   /**
+   * Sets avatar content: Google photo if available, otherwise initials.
+   */
+  function setAvatarContent(el, initials, photoUrl) {
+    if (!el) return;
+    if (photoUrl) {
+      el.textContent = '';
+      el.style.backgroundImage = 'url(' + photoUrl + ')';
+      el.style.backgroundSize = 'cover';
+      el.style.backgroundPosition = 'center';
+    } else {
+      el.textContent = initials;
+    }
+  }
+
+  /**
    * Returns a CSS class for the role badge color.
    */
   window.getRoleBadgeClass = function(role) {
@@ -97,22 +112,24 @@
     var displayName = user.fullName || user.email;
     var roleLabel = user.role || '-';
 
+    var photoUrl = user.photoUrl || '';
+
     // Sidebar
     var el;
     el = document.getElementById('sidebarUserName'); if (el) el.textContent = displayName;
     el = document.getElementById('sidebarUserRole'); if (el) { el.textContent = roleLabel; el.className = 'sidebar-role-badge ' + getRoleBadgeClass(user.role); }
-    el = document.getElementById('sidebarAvatar'); if (el) el.textContent = initials;
+    setAvatarContent(document.getElementById('sidebarAvatar'), initials, photoUrl);
 
     // Topbar
     el = document.getElementById('topbarUserName'); if (el) el.textContent = displayName;
     el = document.getElementById('topbarUserRole'); if (el) { el.textContent = roleLabel; el.className = 'topbar-user-role sidebar-role-badge ' + getRoleBadgeClass(user.role); }
-    el = document.getElementById('topbarAvatar'); if (el) el.textContent = initials;
+    setAvatarContent(document.getElementById('topbarAvatar'), initials, photoUrl);
 
     // Dropdown
     el = document.getElementById('dropdownUserName'); if (el) el.textContent = displayName;
     el = document.getElementById('dropdownUserEmail'); if (el) el.textContent = user.email;
     el = document.getElementById('dropdownUserRole'); if (el) { el.textContent = roleLabel; el.className = 'sidebar-role-badge ' + getRoleBadgeClass(user.role); }
-    el = document.getElementById('dropdownAvatar'); if (el) el.textContent = initials;
+    setAvatarContent(document.getElementById('dropdownAvatar'), initials, photoUrl);
 
     // Show/hide permission-based nav items
     applyPermissionsToNav(user.permissions || []);

@@ -473,8 +473,40 @@
   });
 
   // ============================================================
+  // MASTER DATA LOADING
+  // ============================================================
+  function populateMasterDropdowns() {
+    google.script.run
+      .withSuccessHandler(function(result) {
+        if (result && result.success && result.data) {
+          var data = result.data;
+          var cats = ['department', 'employee_type'];
+          var ids  = ['department', 'employee_type'];
+          for (var c = 0; c < cats.length; c++) {
+            var sel = document.getElementById(ids[c]);
+            if (!sel) continue;
+            var items = data[cats[c]] || [];
+            var cur = sel.value;
+            var opts = '<option value="">';
+            if (ids[c] === 'department') opts += '-- Pilih Departemen --';
+            else if (ids[c] === 'employee_type') opts += '-- Pilih Tipe --';
+            opts += '</option>';
+            items.forEach(function(name) {
+              var val = typeof name === 'object' ? name.name : name;
+              opts += '<option value="' + val + '"' + (cur === val ? ' selected' : '') + '>' + val + '</option>';
+            });
+            sel.innerHTML = opts;
+          }
+        }
+      })
+      .withFailureHandler(function() {})
+      .getMasterDataGrouped();
+  }
+
+  // ============================================================
   // INIT
   // ============================================================
+  populateMasterDropdowns();
   populateProvinces();
   handleEmployeeTypeChange(); // set initial state (vendor hidden, contract optional)
   updateProgress();
