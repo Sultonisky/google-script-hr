@@ -38,7 +38,7 @@
         }
       })
       .withFailureHandler(function(err) {})
-      .getMasterDataByCategory();
+      .getMasterDataGrouped();
   }
 
   // ============ STATS ============
@@ -179,15 +179,16 @@
 
   // ============ FORM MODAL ============
   function empPopulateFormSelects() {
-    var cats = ['departemen', 'posisi', 'lokasi_kerja', 'tipe_karyawan'];
+    var cats = ['department', 'position', 'work_location', 'employee_type'];
     var ids  = ['efDept', 'efPos', 'efLoc', 'efType'];
     for (var c = 0; c < cats.length; c++) {
       var sel = document.getElementById(ids[c]);
       var items = EMP.masterData[cats[c]] || [];
       var cur = sel.value;
       sel.innerHTML = '<option value="">— Pilih —</option>';
-      items.forEach(function(item) {
-        sel.innerHTML += '<option value="' + empEsc(item.name) + '"' + (cur === item.name ? ' selected' : '') + '>' + empEsc(item.name) + '</option>';
+      items.forEach(function(name) {
+        var val = typeof name === 'object' ? name.name : name;
+        sel.innerHTML += '<option value="' + empEsc(val) + '"' + (cur === val ? ' selected' : '') + '>' + empEsc(val) + '</option>';
       });
     }
   }

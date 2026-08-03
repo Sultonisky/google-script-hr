@@ -288,13 +288,21 @@
     .landing-footer {
       background: #fff;
       border-top: 1px solid #e5e7eb;
-      padding: 24px;
+      padding: 20px 24px;
       text-align: center;
     }
     .landing-footer p {
       font-size: 12px;
       color: #9ca3af;
       margin: 0;
+      line-height: 1.8;
+    }
+    .landing-footer .footer-brand {
+      font-weight: 600;
+      color: #6b7280;
+    }
+    .landing-footer .footer-tagline {
+      font-style: italic;
     }
     .landing-footer .version-badge {
       display: inline-block;
@@ -383,7 +391,10 @@
 
   <!-- Footer -->
   <div class="landing-footer">
-    <p id="footerText">Mahakarya Sukses Indonesia &copy; 2026</p>
+    <p>
+      <span class="footer-brand" id="footerBrand">Mahakarya HRIS</span> &copy; 2026<br>
+      <span class="footer-tagline">Crafted for Modern Human Resources</span>
+    </p>
     <span class="version-badge" id="footerVersion">v2.0.0</span>
   </div>
 
@@ -402,7 +413,7 @@
             if (result.companyName) {
               document.getElementById('heroCompanyName').textContent = result.companyName;
               document.title = result.companyName + ' — HRIS';
-              document.getElementById('footerText').innerHTML = result.companyName + ' &copy; 2026';
+              document.getElementById('footerBrand').textContent = result.companyName;
             }
             // Tagline
             if (result.companyTagline) {

@@ -13,203 +13,68 @@
       font-family: 'Inter', 'Segoe UI', sans-serif;
       min-height: 100vh;
       display: flex;
-      background: #f0f2f5;
+      flex-direction: column;
+      background: linear-gradient(135deg, #005BAC 0%, #0B2540 100%);
     }
 
-    /* Left Panel */
-    .login-left {
+    /* Main Content */
+    .login-main {
       flex: 1;
-      background: linear-gradient(135deg, #005BAC 0%, #0B2540 100%);
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 48px;
-      color: #fff;
-      position: relative;
-      overflow: hidden;
+      padding: 40px 24px;
     }
-    .login-left::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      right: -30%;
-      width: 600px;
-      height: 600px;
-      background: rgba(255,255,255,0.03);
-      border-radius: 50%;
-    }
-    .login-left::after {
-      content: '';
-      position: absolute;
-      bottom: -40%;
-      left: -20%;
-      width: 500px;
-      height: 500px;
-      background: rgba(253,185,19,0.06);
-      border-radius: 50%;
-    }
-    .login-brand {
-      position: relative;
-      z-index: 1;
+
+    .login-card {
+      width: 100%;
+      max-width: 420px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+      padding: 48px 40px;
       text-align: center;
-      max-width: 400px;
     }
-    .login-brand .logo-box {
-      width: 80px;
-      height: 80px;
-      background: rgba(255,255,255,0.15);
-      border-radius: 20px;
+
+    .login-logo {
+      width: 72px;
+      height: 72px;
+      background: linear-gradient(135deg, #005BAC, #0B2540);
+      border-radius: 18px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 28px;
+      font-size: 24px;
       font-weight: 800;
       color: #FDB913;
       margin-bottom: 24px;
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,255,255,0.1);
     }
-    .login-brand h1 {
-      font-size: 28px;
-      font-weight: 800;
-      margin-bottom: 8px;
-      letter-spacing: -0.5px;
-    }
-    .login-brand .tagline {
-      font-size: 15px;
-      opacity: 0.8;
-      line-height: 1.6;
-      margin-bottom: 32px;
-    }
-    .login-features {
-      position: relative;
-      z-index: 1;
-      text-align: left;
-      max-width: 360px;
-    }
-    .login-features .feature-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-    .login-features .feature-icon {
-      width: 36px;
-      height: 36px;
-      min-width: 36px;
-      background: rgba(255,255,255,0.1);
+    .login-logo img {
+      max-width: 44px;
+      max-height: 44px;
       border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px;
-    }
-    .login-features .feature-text strong {
-      display: block;
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 2px;
-    }
-    .login-features .feature-text small {
-      font-size: 12px;
-      opacity: 0.7;
     }
 
-    /* Right Panel */
-    .login-right {
-      width: 480px;
-      min-width: 400px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 48px;
-      background: #fff;
-      position: relative;
-    }
-    .login-card {
-      width: 100%;
-      max-width: 380px;
-      text-align: center;
-    }
-    .login-card .mobile-logo {
-      display: none;
-      width: 56px;
-      height: 56px;
-      background: linear-gradient(135deg, #005BAC, #0B2540);
-      border-radius: 14px;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      font-weight: 800;
-      color: #FDB913;
-      margin: 0 auto 20px;
-    }
-    .login-card h2 {
-      font-size: 22px;
+    .login-card h1 {
+      font-size: 24px;
       font-weight: 700;
       color: #1a1a2e;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
     }
-    .login-card .subtitle {
+
+    .login-card .login-subtitle {
       font-size: 14px;
       color: #6b7280;
-      margin-bottom: 32px;
+      margin-bottom: 8px;
       line-height: 1.5;
     }
 
-    /* Google Button */
-    .btn-google {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      width: 100%;
-      padding: 14px 24px;
-      border: 2px solid #e5e7eb;
-      border-radius: 12px;
-      background: #fff;
-      font-size: 15px;
+    .login-card .login-hris-title {
+      font-size: 13px;
+      color: #005BAC;
       font-weight: 600;
-      color: #374151;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      text-decoration: none;
-    }
-    .btn-google:hover {
-      border-color: #005BAC;
-      background: #f8f9ff;
-      box-shadow: 0 2px 12px rgba(0,91,172,0.1);
-    }
-    .btn-google:active {
-      transform: scale(0.98);
-    }
-    .btn-google svg {
-      width: 20px;
-      height: 20px;
-    }
-
-    /* Loading State */
-    .login-loading {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-      padding: 24px 0;
-    }
-    .login-spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid #e5e7eb;
-      border-top-color: #005BAC;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .login-loading p {
-      font-size: 14px;
-      color: #6b7280;
+      margin-bottom: 32px;
+      letter-spacing: 0.5px;
     }
 
     /* Error State */
@@ -238,76 +103,144 @@
     .login-info i { color: #1D4ED8; font-size: 18px; margin-top: 1px; }
     .login-info .info-text { font-size: 13px; color: #1E40AF; line-height: 1.5; text-align: left; }
 
-    /* Footer */
-    .login-footer {
-      position: absolute;
-      bottom: 24px;
-      left: 0;
-      right: 0;
-      text-align: center;
-      font-size: 12px;
-      color: #9ca3af;
-    }
-    .login-footer a {
-      color: #6b7280;
+    /* Google Button */
+    .btn-google {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      width: 100%;
+      padding: 14px 24px;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      background: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      color: #374151;
+      cursor: pointer;
+      transition: all 0.2s ease;
       text-decoration: none;
     }
-
-    /* Mobile */
-    @media (max-width: 991.98px) {
-      body { flex-direction: column; }
-      .login-left { display: none; }
-      .login-right {
-        width: 100%;
-        min-width: unset;
-        padding: 32px 24px;
-      }
-      .login-card .mobile-logo { display: flex; }
+    .btn-google:hover {
+      border-color: #005BAC;
+      background: #f8f9ff;
+      box-shadow: 0 2px 12px rgba(0,91,172,0.1);
     }
+    .btn-google:active { transform: scale(0.98); }
+    .btn-google svg { width: 20px; height: 20px; }
+
+    /* Loading State */
+    .login-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      padding: 24px 0;
+    }
+    .login-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #e5e7eb;
+      border-top-color: #005BAC;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .login-loading p { font-size: 14px; color: #6b7280; }
+
+    /* First Run */
+    .first-run-box {
+      background: #F0FDF4;
+      border: 1px solid #BBF7D0;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      margin-top: 24px;
+      display: none;
+    }
+    .first-run-box.show { display: block; }
+    .first-run-box .fr-content {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .first-run-box i { color: #166534; font-size: 16px; margin-top: 2px; }
+    .first-run-box .fr-text { font-size: 13px; color: #166534; line-height: 1.5; text-align: left; }
+
+    .btn-admin {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 12px 20px;
+      border: 2px solid #166534;
+      border-radius: 10px;
+      background: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      color: #166534;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-admin:hover { background: #F0FDF4; }
+    .btn-admin i { font-size: 18px; }
+
+    /* Footer */
+    .login-footer {
+      background: #fff;
+      border-top: 1px solid #e5e7eb;
+      padding: 20px 24px;
+      text-align: center;
+    }
+    .login-footer p {
+      font-size: 12px;
+      color: #9ca3af;
+      margin: 0;
+      line-height: 1.8;
+    }
+    .login-footer .footer-brand {
+      font-weight: 600;
+      color: #6b7280;
+    }
+    .login-footer .footer-tagline {
+      font-style: italic;
+      color: #9ca3af;
+    }
+    .login-footer .version-badge {
+      display: inline-block;
+      background: #f3f4f6;
+      color: #6b7280;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 6px;
+    }
+
+    /* Responsive */
     @media (max-width: 480px) {
-      .login-right { padding: 24px 16px; }
+      .login-card { padding: 36px 24px; }
+      .login-card h1 { font-size: 20px; }
     }
   </style>
 </head>
 <body>
-  <!-- Left Panel: Branding -->
-  <div class="login-left">
-    <div class="login-brand">
-      <div class="logo-box" id="loginLogo">MS</div>
-      <h1 id="loginCompanyName">Mahakarya HRIS</h1>
-      <p class="tagline" id="loginTagline">Sistem Manajemen Sumber Daya Manusia & Pelacakan Penerimaan Karyawan</p>
-    </div>
-    <div class="login-features">
-      <div class="feature-item">
-        <div class="feature-icon"><i class="bi bi-people-fill"></i></div>
-        <div class="feature-text">
-          <strong>Manajemen Rekrutmen</strong>
-          <small>Kelola kandidat dari lamaran hingga onboarding</small>
-        </div>
-      </div>
-      <div class="feature-item">
-        <div class="feature-icon"><i class="bi bi-graph-up-arrow"></i></div>
-        <div class="feature-text">
-          <strong>Dashboard Analitik</strong>
-          <small>Wawasan real-time tentang proses rekrutmen</small>
-        </div>
-      </div>
-      <div class="feature-item">
-        <div class="feature-icon"><i class="bi bi-shield-check"></i></div>
-        <div class="feature-text">
-          <strong>Keamanan Terjamin</strong>
-          <small>Autentikasi Google Workspace SSO</small>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- Right Panel: Login Form -->
-  <div class="login-right">
+  <!-- Main Login Area -->
+  <div class="login-main">
     <div class="login-card">
-      <div class="mobile-logo" id="loginMobileLogo">MS</div>
-      <h2>Selamat Datang</h2>
-      <p class="subtitle">Masuk ke panel HR menggunakan akun Google Workspace Anda</p>
+      <!-- Logo -->
+      <div class="login-logo" id="loginLogo">MH</div>
+
+      <!-- Company Name -->
+      <h1 id="loginCompanyName">Mahakarya HRIS</h1>
+
+      <!-- HRIS Title -->
+      <div class="login-hris-title">Human Resource Information System</div>
+
+      <!-- Subtitle -->
+      <p class="login-subtitle">Masuk ke panel HR menggunakan akun Google Workspace Anda</p>
 
       <!-- Error Alert -->
       <div class="login-error" id="loginError">
@@ -339,29 +272,32 @@
       </button>
 
       <!-- First Run: Auto-create Super Admin -->
-      <div id="firstRunSection" style="display:none; margin-top: 24px;">
-        <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;padding:14px 16px;margin-bottom:16px;">
-          <div style="display:flex;align-items:flex-start;gap:10px;">
-            <i class="bi bi-star-fill" style="color:#166534;font-size:16px;margin-top:2px;"></i>
-            <div style="font-size:13px;color:#166534;line-height:1.5;text-align:left;">
-              <strong>Pengaturan Pertama</strong><br>
-              Sistem belum memiliki pengguna. Akun Google Anda akan didaftarkan sebagai <strong>Super Admin</strong>.
-            </div>
+      <div class="first-run-box" id="firstRunSection">
+        <div class="fr-content">
+          <i class="bi bi-star-fill"></i>
+          <div class="fr-text">
+            <strong>Pengaturan Pertama</strong><br>
+            Sistem belum memiliki pengguna. Akun Google Anda akan didaftarkan sebagai <strong>Super Admin</strong>.
           </div>
         </div>
-        <button class="btn-google" id="btnFirstAdmin" type="button" style="border-color:#166534;color:#166534;">
-          <i class="bi bi-person-check-fill" style="font-size:20px;color:#166534;"></i>
-          Daftarkan Saya sebagai Super Admin
-        </button>
       </div>
-    </div>
-
-    <div class="login-footer">
-      <span id="loginFooterText">Mahakarya Sukses Indonesia &copy; 2026</span><br>
-      <small>Mahakarya HRIS v2.0 &mdash; Built with Google Apps Script</small>
+      <button class="btn-admin" id="btnFirstAdmin" type="button" style="display:none;">
+        <i class="bi bi-person-check-fill"></i>
+        Daftarkan Saya sebagai Super Admin
+      </button>
     </div>
   </div>
 
+  <!-- Footer -->
+  <div class="login-footer">
+    <p>
+      <span class="footer-brand" id="loginFooterBrand">Mahakarya HRIS</span> &copy; 2026<br>
+      <span class="footer-tagline">Crafted for Modern Human Resources</span>
+    </p>
+    <span class="version-badge" id="loginFooterVersion">v2.0.0</span>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     // ============================================================
     // Login Page Logic
@@ -382,6 +318,7 @@
         loginLoading.style.display = 'none';
         btnGoogleLogin.style.display = '';
         if (firstRunSection) firstRunSection.style.display = 'none';
+        if (btnFirstAdmin) btnFirstAdmin.style.display = 'none';
       }
 
       function showInfo(msg) {
@@ -395,6 +332,7 @@
         loginError.classList.remove('show');
         loginInfo.classList.remove('show');
         if (firstRunSection) firstRunSection.style.display = 'none';
+        if (btnFirstAdmin) btnFirstAdmin.style.display = 'none';
       }
 
       // Load portal settings for branding
@@ -404,20 +342,14 @@
             if (settings.companyName) {
               document.getElementById('loginCompanyName').textContent = settings.companyName;
               document.title = 'Login — ' + settings.companyName;
+              document.getElementById('loginFooterBrand').textContent = settings.companyName;
             }
-            if (settings.companyTagline) {
-              document.getElementById('loginTagline').textContent = settings.companyTagline;
-            }
-            if (settings.companyName) {
-              document.getElementById('loginFooterText').textContent = settings.companyName + ' \u00A9 2026';
+            if (settings.systemVersion) {
+              document.getElementById('loginFooterVersion').textContent = 'v' + settings.systemVersion;
             }
             var logoEl = document.getElementById('loginLogo');
             if (settings.companyLogo && logoEl) {
-              logoEl.innerHTML = '<img src="' + settings.companyLogo + '" alt="Logo" style="max-width:48px;max-height:48px;border-radius:8px;">';
-            }
-            var mobileLogoEl = document.getElementById('loginMobileLogo');
-            if (settings.companyLogo && mobileLogoEl) {
-              mobileLogoEl.innerHTML = '<img src="' + settings.companyLogo + '" alt="Logo" style="max-width:32px;max-height:32px;border-radius:6px;">';
+              logoEl.innerHTML = '<img src="' + settings.companyLogo + '" alt="Logo" style="max-width:44px;max-height:44px;border-radius:10px;">';
             }
           }
         })
@@ -429,6 +361,7 @@
         .withSuccessHandler(function(result) {
           if (result && result.isEmpty) {
             firstRunSection.style.display = 'block';
+            btnFirstAdmin.style.display = 'flex';
           }
         })
         .withFailureHandler(function() {})
@@ -439,7 +372,6 @@
       google.script.run
         .withSuccessHandler(function(user) {
           if (user && user.isLoggedIn) {
-            // Already logged in, redirect to dashboard
             window.location.href = '?page=dashboard';
             return;
           }
@@ -460,12 +392,10 @@
         })
         .getCurrentUser();
 
-      // Continue with Google button — refresh page to trigger Google auth
+      // Continue with Google button
       btnGoogleLogin.addEventListener('click', function() {
         showLoading();
         loginLoading.querySelector('p').textContent = 'Mengarahkan ke Google...';
-        // In Google Apps Script, session is automatic via Google account
-        // Refresh the page — if user is signed into Google, session will be detected
         window.location.reload();
       });
 

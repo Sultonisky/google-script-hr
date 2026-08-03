@@ -8,12 +8,23 @@ var MASTER_DATA_SHEET   = 'master_data';
 var MASTER_DATA_HEADERS = ['ID', 'Kategori', 'Nama', 'Deskripsi', 'Urutan', 'Aktif', 'Dibuat', 'Diubah'];
 
 var MASTER_DATA_CATEGORIES = {
-  recruitment_source: { label: 'Sumber Rekrutmen', icon: 'bi-link-45deg' },
-  candidate_status:   { label: 'Status Kandidat',   icon: 'bi-flag-fill' },
-  department:         { label: 'Departemen',         icon: 'bi-building' },
-  position:           { label: 'Posisi',             icon: 'bi-person-workspace' },
-  work_location:      { label: 'Lokasi Kerja',       icon: 'bi-geo-alt-fill' },
-  employee_type:      { label: 'Tipe Karyawan',      icon: 'bi-person-badge' }
+  recruitment_source:        { label: 'Sumber Rekrutmen',        icon: 'bi-link-45deg' },
+  candidate_status:          { label: 'Status Kandidat',         icon: 'bi-flag-fill' },
+  department:                { label: 'Departemen',              icon: 'bi-building' },
+  position:                  { label: 'Posisi',                  icon: 'bi-person-workspace' },
+  work_location:             { label: 'Lokasi Kerja',            icon: 'bi-geo-alt-fill' },
+  employee_type:             { label: 'Tipe Karyawan',           icon: 'bi-person-badge' },
+  education:                 { label: 'Pendidikan',              icon: 'bi-mortarboard-fill' },
+  work_experience:           { label: 'Pengalaman Kerja',        icon: 'bi-briefcase-fill' },
+  marital_status:            { label: 'Status Pernikahan',       icon: 'bi-heart-fill' },
+  gender:                    { label: 'Jenis Kelamin',           icon: 'bi-gender-male' },
+  current_employment_status: { label: 'Status Kerja Saat Ini',   icon: 'bi-person-check-fill' },
+  available_to_join:         { label: 'Ketersediaan Bergabung',  icon: 'bi-calendar-check-fill' },
+  employment_status:         { label: 'Status Employment',       icon: 'bi-shield-fill-check' },
+  contract_duration:         { label: 'Durasi Kontrak',          icon: 'bi-clock-fill' },
+  salary_type:               { label: 'Tipe Gaji',              icon: 'bi-cash-stack' },
+  company_entity:            { label: 'Entitas Perusahaan',      icon: 'bi-building' },
+  interview_result:          { label: 'Hasil Interview',         icon: 'bi-clipboard-check-fill' }
 };
 
 var DEFAULT_MASTER_DATA = {
@@ -127,9 +138,15 @@ function getMasterDataByCategory(category) {
     var result = getMasterDataList();
     if (!result.success) return result;
 
-    var filtered = result.data.filter(function(item) {
-      return item.category === category;
-    });
+    var filtered;
+    if (category) {
+      filtered = result.data.filter(function(item) {
+        return item.category === category;
+      });
+    } else {
+      // No category specified — return all items
+      filtered = result.data;
+    }
 
     // Sort by order
     filtered.sort(function(a, b) { return (a.order || 0) - (b.order || 0); });
@@ -151,6 +168,65 @@ function getMasterDataNamesByCategory(category) {
     return { success: true, data: names };
   } catch (e) {
     return { success: false, message: e.toString(), data: [] };
+  }
+}
+
+// ============= GET ALL CATEGORIES GROUPED (for dropdowns) =============
+
+function getMasterDataGrouped() {
+  try {
+    var result = getMasterDataList();
+    if (!result.success) return result;
+
+    var grouped = {};
+    Object.keys(MASTER_DATA_CATEGORIES).forEach(function(cat) {
+      grouped[cat] = result.data
+        .filter(function(item) { return item.category === cat; })
+        .sort(function(a, b) { return (a.order || 0) - (b.order || 0); })
+        .map(function(item) { return item.name; });
+    });
+
+    return { success: true, data: grouped };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+// ============= GET MULTIPLE CATEGORIES (BATCH FOR DROPDOWNS) =============
+
+function getMasterDataForCategories(categories) {
+  try {
+    if (!categories || !Array.isArray(categories) || categories.length === 0) {
+      categories = Object.keys(MASTER_DATA_CATEGORIES);
+    }
+
+    var result = getMasterDataList();
+    if (!result.success) return result;
+
+    var grouped = {};
+    categories.forEach(function(cat) {
+      if (!MASTER_DATA_CATEGORIES[cat]) {
+        grouped[cat] = { label: cat, items: [] };
+        return;
+      }
+      var items = result.data
+        .filter(function(item) { return item.category === cat; })
+        .sort(function(a, b) { return (a.order || 0) - (b.order || 0); })
+        .map(function(item) {
+          return {
+            name:        item.name,
+            displayName: item.description || item.name
+          };
+        });
+      grouped[cat] = {
+        label: MASTER_DATA_CATEGORIES[cat].label,
+        items: items
+      };
+    });
+
+    return { success: true, data: grouped };
+  } catch (e) {
+    return { success: false, message: e.toString() };
   }
 }
 
