@@ -1,0 +1,319 @@
+<!-- js/auth.html — LOGIN STATE MANAGEMENT + ROUTE PROTECTION + TOAST -->
+<script>
+(function() {
+  'use strict';
+
+  // ============================================================
+  // SESSION STATE
+  // ============================================================
+  var _currentUser = null;
+  var _sessionLoaded = false;
+  var _sessionCallbacks = [];
+
+  /**
+   * Returns a promise that resolves with the current user session.
+   * Caches the result for the page lifetime.
+   */
+  window.getUserSession = function() {
+    return new Promise(function(resolve) {
+      if (_sessionLoaded && _currentUser) {
+        resolve(_currentUser);
+        return;
+      }
+      if (_sessionLoaded) {
+        resolve(null);
+        return;
+      }
+      _sessionCallbacks.push(resolve);
+      google.script.run
+        .withSuccessHandler(function(user) {
+          _currentUser = user;
+          _sessionLoaded = true;
+          _sessionCallbacks.forEach(function(cb) { cb(user); });
+          _sessionCallbacks = [];
+        })
+        .withFailureHandler(function() {
+          _currentUser = { isLoggedIn: false, email: '', fullName: '', role: '', permissions: [] };
+          _sessionLoaded = true;
+          _sessionCallbacks.forEach(function(cb) { cb(null); });
+          _sessionCallbacks = [];
+        })
+        .getCurrentUser();
+    });
+  };
+
+  /**
+   * Checks if user is logged in. If not, redirects to login page.
+   * @param {string} requiredPermission - Optional permission to check
+   * @returns {Promise<Object>} user session
+   */
+  window.requireAuth = function(requiredPermission) {
+    return getUserSession().then(function(user) {
+      if (!user || !user.isLoggedIn) {
+        window.location.href = '?page=login';
+        return null;
+      }
+      if (requiredPermission && user.permissions && user.permissions.indexOf(requiredPermission) === -1) {
+        window.location.href = '?page=access-denied';
+        return null;
+      }
+      return user;
+    });
+  };
+
+  /**
+   * Gets the initials from a full name.
+   */
+  window.getUserInitials = function(fullName) {
+    if (!fullName || fullName === '') return 'HR';
+    var parts = fullName.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+    }
+    return fullName.substring(0, 2).toUpperCase();
+  };
+
+  /**
+   * Returns a CSS class for the role badge color.
+   */
+  window.getRoleBadgeClass = function(role) {
+    switch (role) {
+      case 'Super Admin': return 'role-badge-superadmin';
+      case 'HR Admin': return 'role-badge-hradmin';
+      case 'Recruiter': return 'role-badge-recruiter';
+      case 'Manager': return 'role-badge-manager';
+      case 'Viewer': return 'role-badge-viewer';
+      default: return '';
+    }
+  };
+
+  /**
+   * Populates all user profile UI elements across sidebar, topbar, and dropdown.
+   */
+  window.populateUserUI = function(user) {
+    if (!user || !user.isLoggedIn) return;
+
+    var initials = getUserInitials(user.fullName);
+    var displayName = user.fullName || user.email;
+    var roleLabel = user.role || '-';
+
+    // Sidebar
+    var el;
+    el = document.getElementById('sidebarUserName'); if (el) el.textContent = displayName;
+    el = document.getElementById('sidebarUserRole'); if (el) { el.textContent = roleLabel; el.className = 'sidebar-role-badge ' + getRoleBadgeClass(user.role); }
+    el = document.getElementById('sidebarAvatar'); if (el) el.textContent = initials;
+
+    // Topbar
+    el = document.getElementById('topbarUserName'); if (el) el.textContent = displayName;
+    el = document.getElementById('topbarUserRole'); if (el) { el.textContent = roleLabel; el.className = 'topbar-user-role sidebar-role-badge ' + getRoleBadgeClass(user.role); }
+    el = document.getElementById('topbarAvatar'); if (el) el.textContent = initials;
+
+    // Dropdown
+    el = document.getElementById('dropdownUserName'); if (el) el.textContent = displayName;
+    el = document.getElementById('dropdownUserEmail'); if (el) el.textContent = user.email;
+    el = document.getElementById('dropdownUserRole'); if (el) { el.textContent = roleLabel; el.className = 'sidebar-role-badge ' + getRoleBadgeClass(user.role); }
+    el = document.getElementById('dropdownAvatar'); if (el) el.textContent = initials;
+
+    // Show/hide permission-based nav items
+    applyPermissionsToNav(user.permissions || []);
+    applyPermissionsToDropdown(user.permissions || []);
+  };
+
+  /**
+   * Shows/hides nav items based on user permissions.
+   */
+  function applyPermissionsToNav(permissions) {
+    var navItems = document.querySelectorAll('#sidebarNav [data-permission]');
+    navItems.forEach(function(item) {
+      var requiredPerm = item.getAttribute('data-permission');
+      if (requiredPerm && permissions.indexOf(requiredPerm) === -1) {
+        item.style.display = 'none';
+      } else {
+        item.style.display = '';
+      }
+    });
+  }
+
+  /**
+   * Shows/hides dropdown menu items based on user permissions.
+   */
+  function applyPermissionsToDropdown(permissions) {
+    var el;
+    el = document.getElementById('btnDropdownUserManagement');
+    if (el) el.style.display = permissions.indexOf('manage_users') !== -1 ? '' : 'none';
+    el = document.getElementById('btnDropdownSettings');
+    if (el) el.style.display = permissions.indexOf('manage_settings') !== -1 ? '' : 'none';
+  }
+
+  // ============================================================
+  // TOAST NOTIFICATION SYSTEM
+  // ============================================================
+  var toastContainer = null;
+
+  function ensureToastContainer() {
+    if (toastContainer) return toastContainer;
+    toastContainer = document.createElement('div');
+    toastContainer.id = 'appToastContainer';
+    toastContainer.style.cssText = 'position:fixed;top:20px;right:20px;z-index:99999;display:flex;flex-direction:column;gap:10px;pointer-events:none;';
+    document.body.appendChild(toastContainer);
+    return toastContainer;
+  }
+
+  /**
+   * Shows a toast notification.
+   * @param {string} message
+   * @param {string} type - 'success' | 'error' | 'warning' | 'info'
+   * @param {number} duration - ms, default 4000
+   */
+  window.showToast = function(message, type, duration) {
+    type = type || 'info';
+    duration = duration || 4000;
+    var container = ensureToastContainer();
+
+    var colors = {
+      success: { bg: '#F0FDF4', border: '#BBF7D0', text: '#166534', icon: 'bi-check-circle-fill' },
+      error:   { bg: '#FEF2F2', border: '#FECACA', text: '#991B1B', icon: 'bi-exclamation-triangle-fill' },
+      warning: { bg: '#FFFBEB', border: '#FDE68A', text: '#92400E', icon: 'bi-exclamation-circle-fill' },
+      info:    { bg: '#EFF6FF', border: '#BFDBFE', text: '#1E40AF', icon: 'bi-info-circle-fill' }
+    };
+    var c = colors[type] || colors.info;
+
+    var toast = document.createElement('div');
+    toast.style.cssText = 'pointer-events:auto;display:flex;align-items:center;gap:10px;padding:14px 18px;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.12);font-size:14px;font-weight:500;font-family:Inter,Segoe UI,sans-serif;max-width:400px;opacity:0;transform:translateX(20px);transition:all 0.3s ease;' +
+      'background:' + c.bg + ';border:1px solid ' + c.border + ';color:' + c.text + ';';
+    toast.innerHTML = '<i class="bi ' + c.icon + '" style="font-size:18px;flex-shrink:0;"></i><span>' + message + '</span>';
+
+    container.appendChild(toast);
+    // Animate in
+    requestAnimationFrame(function() {
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateX(0)';
+    });
+
+    // Auto-dismiss
+    setTimeout(function() {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(20px)';
+      setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 300);
+    }, duration);
+  };
+
+  // ============================================================
+  // LOADING OVERLAY
+  // ============================================================
+  var loadingOverlay = null;
+
+  /**
+   * Shows a full-screen loading overlay.
+   * @param {string} message
+   */
+  window.showLoadingOverlay = function(message) {
+    if (!loadingOverlay) {
+      loadingOverlay = document.createElement('div');
+      loadingOverlay.id = 'appLoadingOverlay';
+      loadingOverlay.style.cssText = 'position:fixed;inset:0;z-index:99998;background:rgba(255,255,255,0.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity 0.3s;';
+      loadingOverlay.innerHTML = '<div style="width:40px;height:40px;border:3px solid #e5e7eb;border-top-color:#005BAC;border-radius:50%;animation:spin 0.8s linear infinite;"></div><p style="font-size:14px;color:#6b7280;font-family:Inter,Segoe UI,sans-serif;" id="loadingOverlayText">Memuat data...</p>';
+      document.body.appendChild(loadingOverlay);
+    }
+    if (message) {
+      var txt = document.getElementById('loadingOverlayText');
+      if (txt) txt.textContent = message;
+    }
+    loadingOverlay.style.display = 'flex';
+  };
+
+  /**
+   * Hides the loading overlay.
+   */
+  window.hideLoadingOverlay = function() {
+    if (loadingOverlay) loadingOverlay.style.display = 'none';
+  };
+
+  // ============================================================
+  // USER DROPDOWN MENU
+  // ============================================================
+  function initUserDropdown() {
+    var userBtn = document.getElementById('topbarUserBtn');
+    var dropdown = document.getElementById('userDropdownMenu');
+    if (!userBtn || !dropdown) return;
+
+    userBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      dropdown.classList.toggle('show');
+    });
+
+    document.addEventListener('click', function(e) {
+      if (!dropdown.contains(e.target) && e.target !== userBtn) {
+        dropdown.classList.remove('show');
+      }
+    });
+
+    // Logout
+    var logoutBtn = document.getElementById('btnDropdownLogout');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', function() {
+        try { sessionStorage.clear(); } catch(e) {}
+        try { localStorage.clear(); } catch(e) {}
+        window.location.href = '?page=login';
+      });
+    }
+
+    // Navigation buttons
+    var userMgmtBtn = document.getElementById('btnDropdownUserManagement');
+    if (userMgmtBtn) {
+      userMgmtBtn.addEventListener('click', function() {
+        window.location.href = '?page=user-management';
+      });
+    }
+    var settingsBtn = document.getElementById('btnDropdownSettings');
+    if (settingsBtn) {
+      settingsBtn.addEventListener('click', function() {
+        // Navigate to settings page in dashboard
+        window.location.href = '?page=dashboard#settings';
+      });
+    }
+  }
+
+  // ============================================================
+  // PAGE TRANSITION EFFECTS
+  // ============================================================
+  window.animatePageIn = function() {
+    var mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+      mainContent.style.opacity = '0';
+      mainContent.style.transform = 'translateY(8px)';
+      requestAnimationFrame(function() {
+        mainContent.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        mainContent.style.opacity = '1';
+        mainContent.style.transform = 'translateY(0)';
+      });
+    }
+  };
+
+  // ============================================================
+  // INIT ON DOM READY
+  // ============================================================
+  document.addEventListener('DOMContentLoaded', function() {
+    initUserDropdown();
+    animatePageIn();
+  });
+
+})();
+</script>
+<style>
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .sidebar-role-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.4;
+    white-space: nowrap;
+  }
+  .role-badge-superadmin { background: #FEF3C7; color: #92400E; }
+  .role-badge-hradmin { background: #DBEAFE; color: #1E40AF; }
+  .role-badge-recruiter { background: #D1FAE5; color: #065F46; }
+  .role-badge-manager { background: #E0E7FF; color: #3730A3; }
+  .role-badge-viewer { background: #F3F4F6; color: #374151; }
+</style>

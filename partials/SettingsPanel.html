@@ -1,8 +1,122 @@
 <!-- partials/SettingsPanel.html — SETTINGS PAGE SECTION -->
 <section class="page-section" id="pageSettings">
   <div class="panel settings-card">
-    <div class="panel-header"><h6>Pengaturan Dashboard</h6></div>
+    <div class="panel-header"><h6>Pengaturan Portal</h6></div>
     <div class="p-3 p-md-4">
+
+      <!-- Portal Info -->
+      <div class="settings-group-title"><i class="bi bi-building"></i> Informasi Portal</div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Nama Perusahaan</div>
+          <div class="settings-desc">Nama perusahaan yang ditampilkan di seluruh portal.</div>
+        </div>
+        <input type="text" id="settingCompanyName" placeholder="PT Mahakarya Sukses Indonesia" />
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Judul Portal</div>
+          <div class="settings-desc">Judul utama di sidebar dan header.</div>
+        </div>
+        <input type="text" id="settingPortalTitle" placeholder="Mahakarya HRIS" />
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Subtitle Portal</div>
+          <div class="settings-desc">Deskripsi singkat di bawah judul portal.</div>
+        </div>
+        <input type="text" id="settingPortalSubtitle" placeholder="Applicant Tracking System" />
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Warna Tema</div>
+          <div class="settings-desc">Warna utama yang digunakan di seluruh portal.</div>
+        </div>
+        <input type="color" id="settingThemeColor" value="#005BAC" style="width:60px;height:38px;border:none;cursor:pointer;" />
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Logo Perusahaan</div>
+          <div class="settings-desc">URL logo perusahaan (opsional, tampil di sidebar).</div>
+        </div>
+        <input type="text" id="settingCompanyLogo" placeholder="https://..." />
+      </div>
+
+      <!-- Contact -->
+      <div class="settings-group-title"><i class="bi bi-envelope"></i> Kontak Perusahaan</div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Alamat</div>
+          <div class="settings-desc">Alamat kantor perusahaan.</div>
+        </div>
+        <input type="text" id="settingCompanyAddress" placeholder="Jakarta, Indonesia" />
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Telepon</div>
+          <div class="settings-desc">Nomor telepon perusahaan (opsional).</div>
+        </div>
+        <input type="text" id="settingCompanyPhone" placeholder="021-XXXXXXXX" />
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Email</div>
+          <div class="settings-desc">Email resmi perusahaan (opsional).</div>
+        </div>
+        <input type="email" id="settingCompanyEmail" placeholder="hrd@company.com" />
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Website</div>
+          <div class="settings-desc">URL website perusahaan (opsional).</div>
+        </div>
+        <input type="text" id="settingWebsite" placeholder="https://company.com" />
+      </div>
+
+      <!-- Footer -->
+      <div class="settings-group-title"><i class="bi bi-text-paragraph"></i> Footer</div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Footer Text</div>
+          <div class="settings-desc">Teks yang ditampilkan di bagian footer portal.</div>
+        </div>
+        <input type="text" id="settingFooter" placeholder="© 2026 PT Mahakarya Sukses Indonesia" />
+      </div>
+
+      <!-- Dashboard Defaults -->
+      <div class="settings-group-title"><i class="bi bi-speedometer2"></i> Default Dashboard</div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Status Default</div>
+          <div class="settings-desc">Filter status saat dashboard dibuka.</div>
+        </div>
+        <select id="settingDefaultStatus">
+          <option value="">Semua Status</option>
+          <option>Pending</option>
+          <option>Accepted</option>
+          <option>Hold</option>
+          <option>Blacklist</option>
+        </select>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Sumber Rekrutmen Default</div>
+          <div class="settings-desc">Filter sumber rekrutmen saat dashboard dibuka.</div>
+        </div>
+        <select id="settingDefaultSource">
+          <option value="">Semua Sumber</option>
+          <option>Website</option>
+          <option>Job Fair</option>
+          <option>Referral</option>
+          <option>Social Media</option>
+          <option>Agency</option>
+          <option>Walk In</option>
+          <option>Other</option>
+        </select>
+      </div>
+
+      <!-- Display -->
+      <div class="settings-group-title"><i class="bi bi-display"></i> Tampilan</div>
       <div class="settings-row">
         <div>
           <div class="settings-label">Tema</div>
@@ -25,19 +139,9 @@
           <option value="100">100</option>
         </select>
       </div>
-      <div class="settings-row">
-        <div>
-          <div class="settings-label">Status Default</div>
-          <div class="settings-desc">Filter status saat dashboard dibuka.</div>
-        </div>
-        <select id="settingDefaultStatus">
-          <option value="">Semua Status</option>
-          <option>Pending</option>
-          <option>Accepted</option>
-          <option>Hold</option>
-          <option>Blacklist</option>
-        </select>
-      </div>
+
+      <!-- Auto Refresh -->
+      <div class="settings-group-title"><i class="bi bi-arrow-clockwise"></i> Auto Refresh</div>
       <div class="settings-row">
         <div>
           <div class="settings-label">Auto Refresh</div>
@@ -55,12 +159,20 @@
         </div>
         <input type="number" id="settingRefreshInterval" min="15" step="5" style="width:110px" />
       </div>
+
+      <!-- Actions -->
       <div class="settings-row">
         <div></div>
-        <button class="btn-reset-filter" id="btnSaveSettings" type="button">
-          <i class="bi bi-check2-circle"></i> Simpan Pengaturan
-        </button>
+        <div class="d-flex gap-2">
+          <button class="btn-reset-filter" id="btnResetSettings" type="button">
+            <i class="bi bi-arrow-counterclockwise"></i> Reset Default
+          </button>
+          <button class="btn-reset-filter" id="btnSaveSettings" type="button" style="background:var(--color-primary,#005BAC);color:#fff;">
+            <i class="bi bi-check2-circle"></i> Simpan Pengaturan
+          </button>
+        </div>
       </div>
+
     </div>
   </div>
 </section>

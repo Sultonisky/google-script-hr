@@ -1,9 +1,125 @@
 <script>
   // ============================================================
-  // js/table.html — TABLE RENDER & PAGINATION
+  // js/table.html — TABLE RENDER, PAGINATION & BULK ACTIONS
   // Depends on: helpers.html, settings.html, filters.html
   // ============================================================
 
+  // ---- BULK ACTIONS STATE ----
+  var selectedCandidateIds = [];
+
+  function getSelectedCandidateIds() {
+    return selectedCandidateIds;
+  }
+
+  function clearBulkSelection() {
+    selectedCandidateIds = [];
+    var selAll = document.getElementById('selectAll');
+    if (selAll) selAll.checked = false;
+    updateBulkBar();
+  }
+
+  function updateBulkBar() {
+    var bar     = document.getElementById('bulkActionBar');
+    var counter = document.getElementById('bulkSelectedCount');
+    if (bar) {
+      if (selectedCandidateIds.length > 0) {
+        bar.classList.remove('d-none');
+      } else {
+        bar.classList.add('d-none');
+      }
+    }
+    if (counter) counter.textContent = selectedCandidateIds.length;
+
+    // Sync row checkboxes
+    document.querySelectorAll('.row-select-cb').forEach(function(cb) {
+      cb.checked = selectedCandidateIds.indexOf(cb.getAttribute('data-id')) !== -1;
+    });
+  }
+
+  function initBulkActions() {
+    // Select All checkbox
+    var selAll = document.getElementById('selectAll');
+    if (selAll) {
+      selAll.addEventListener('change', function() {
+        var ps    = Number(appSettings.pageSize) || 10;
+        var start = (currentPage - 1) * ps;
+        var pageData = filteredCandidates.slice(start, start + ps);
+        pageData.forEach(function(row) {
+          var idx = selectedCandidateIds.indexOf(row.recruitmentId);
+          if (selAll.checked && idx === -1) {
+            selectedCandidateIds.push(row.recruitmentId);
+          } else if (!selAll.checked && idx !== -1) {
+            selectedCandidateIds.splice(idx, 1);
+          }
+        });
+        updateBulkBar();
+      });
+    }
+
+    // Bulk status change
+    document.querySelectorAll('.bulk-status-btn').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        var newStatus = btn.getAttribute('data-status');
+        if (selectedCandidateIds.length === 0 || !newStatus) return;
+        if (!confirm('Ubah status ' + selectedCandidateIds.length + ' kandidat menjadi "' + newStatus + '"?')) return;
+        showBulkLoading(true);
+        google.script.run
+          .withSuccessHandler(function(result) {
+            showBulkLoading(false);
+            showToast(result.message || 'Selesai', result.success ? 'success' : 'error');
+            clearBulkSelection();
+            loadCandidates();
+          })
+          .withFailureHandler(function(err) {
+            showBulkLoading(false);
+            showToast('Gagal: ' + (err.message || err), 'error');
+          })
+          .bulkUpdateStatus(selectedCandidateIds, newStatus);
+      });
+    });
+
+    // Bulk delete
+    var delBtn = document.getElementById('bulkDeleteBtn');
+    if (delBtn) {
+      delBtn.addEventListener('click', function() {
+        if (selectedCandidateIds.length === 0) return;
+        if (!confirm('HAPUS permanen ' + selectedCandidateIds.length + ' kandidat? Tindakan ini tidak dapat dibatalkan.')) return;
+        showBulkLoading(true);
+        google.script.run
+          .withSuccessHandler(function(result) {
+            showBulkLoading(false);
+            showToast(result.message || 'Selesai', result.success ? 'success' : 'error');
+            clearBulkSelection();
+            loadCandidates();
+          })
+          .withFailureHandler(function(err) {
+            showBulkLoading(false);
+            showToast('Gagal: ' + (err.message || err), 'error');
+          })
+          .bulkDeleteCandidates(selectedCandidateIds);
+      });
+    }
+
+    // Deselect all
+    var deselBtn = document.getElementById('bulkDeselectBtn');
+    if (deselBtn) {
+      deselBtn.addEventListener('click', function() { clearBulkSelection(); });
+    }
+  }
+
+  function showBulkLoading(on) {
+    var el = document.getElementById('tableLoading');
+    if (!el) return;
+    if (on) {
+      el.classList.remove('d-none');
+      el.querySelector('p').textContent = 'Memproses data...';
+    } else {
+      el.classList.add('d-none');
+    }
+  }
+
+  // ---- TABLE RENDER ----
   function renderTable() {
     var tbody   = document.getElementById('tableBody');
     var loading = document.getElementById('tableLoading');
@@ -28,7 +144,9 @@
     var pageData = filteredCandidates.slice(start, start + ps);
 
     if (tbody) tbody.innerHTML = pageData.map(function(row) {
+      var isChecked = selectedCandidateIds.indexOf(row.recruitmentId) !== -1;
       return '<tr>' +
+        '<td><input type="checkbox" class="form-check-input row-select-cb" data-id="' + escapeHtml(row.recruitmentId) + '"' + (isChecked ? ' checked' : '') + ' /></td>' +
         '<td><div class="avatar-sm">' + escapeHtml(initials(row.fullName)) + '</div></td>' +
         '<td><span class="id-mono">' + escapeHtml(row.recruitmentId) + '</span></td>' +
         '<td><div class="cand-name cand-name-link" style="cursor:pointer;color:var(--color-primary);" data-id="' + escapeHtml(row.recruitmentId) + '">' +
@@ -78,6 +196,27 @@
         openCandidateDrawer(el.getAttribute('data-id'));
       });
     });
+
+    // Row checkbox click — add/remove from bulk selection
+    document.querySelectorAll('.row-select-cb').forEach(function(cb) {
+      cb.addEventListener('change', function() {
+        var id = cb.getAttribute('data-id');
+        var idx = selectedCandidateIds.indexOf(id);
+        if (cb.checked && idx === -1) {
+          selectedCandidateIds.push(id);
+        } else if (!cb.checked && idx !== -1) {
+          selectedCandidateIds.splice(idx, 1);
+        }
+        // Sync Select All checkbox
+        var ps    = Number(appSettings.pageSize) || 10;
+        var start = (currentPage - 1) * ps;
+        var pageIds = filteredCandidates.slice(start, start + ps).map(function(r) { return r.recruitmentId; });
+        var allChecked = pageIds.length > 0 && pageIds.every(function(id) { return selectedCandidateIds.indexOf(id) !== -1; });
+        var selAll = document.getElementById('selectAll');
+        if (selAll) selAll.checked = allChecked;
+        updateBulkBar();
+      });
+    });
   }
 
   function updateStats(data) {
@@ -99,7 +238,7 @@
 
   function initTableSortHeaders() {
     document.querySelectorAll('table.hr-table thead th').forEach(function(th, idx) {
-      var sortKeyMap = { 2: 'name', 3: 'age', 7: 'date' };
+      var sortKeyMap = { 3: 'name', 4: 'age', 8: 'date' };
       if (!(idx in sortKeyMap)) return;
       th.addEventListener('click', function() {
         var key = sortKeyMap[idx];

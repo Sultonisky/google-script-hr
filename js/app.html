@@ -115,11 +115,16 @@
     initTableSortHeaders();
     initExportButtons();
     initSettingsPanel();
+    initBulkActions();
     initFab();
     initRefreshButton();
+    initImportModal();
 
     applyTheme(appSettings.theme);
     hydrateSettingsForm();
+
+    // Load portal settings from server (applies to sidebar, title, footer, theme color)
+    loadPortalSettings();
 
     var sf = document.getElementById('statusFilter');
     if (sf && appSettings.defaultStatus) sf.value = appSettings.defaultStatus;
@@ -128,5 +133,13 @@
     setupAutoRefresh();
     if (typeof initRecruitmentPage === 'function') initRecruitmentPage();
     if (typeof initOutsourceDashboard === 'function') initOutsourceDashboard();
+
+    // --- Auth initialization (uses js/auth.html session system) ---
+    if (typeof requireAuth === 'function') {
+      requireAuth().then(function(user) {
+        if (!user) return; // redirect already happened
+        populateUserUI(user);
+      });
+    }
   });
 </script>
