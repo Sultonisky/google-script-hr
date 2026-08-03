@@ -121,9 +121,15 @@
     if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
     if (drawerOverlay) drawerOverlay.addEventListener('click', closeDrawer);
 
-    // Print
+    // Export PDF
     var printBtn = document.getElementById('btnDrawerPrint');
-    if (printBtn) printBtn.addEventListener('click', function() { window.print(); });
+    if (printBtn) printBtn.addEventListener('click', function() {
+      if (activeCandidateId) {
+        exportCandidatePDF(activeCandidateId);
+      } else {
+        showToast('Tidak ada kandidat yang aktif.', 'warning');
+      }
+    });
 
     // HR Notes auto-save
     var notesEl = document.getElementById('cvHrNotes');

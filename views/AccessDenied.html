@@ -357,6 +357,10 @@
   <script>
     (function() {
       var baseUrl = window.location.href.split('?')[0];
+      var sessionToken = '';
+      try {
+        sessionToken = localStorage.getItem('mahakarya_hris_session') || sessionStorage.getItem('mahakarya_hris_session') || '';
+      } catch (e) {}
 
       // Load portal branding
       google.script.run
@@ -397,13 +401,13 @@
           }
         })
         .withFailureHandler(function() {})
-        .getCurrentUser();
+        .getCurrentUser(sessionToken);
 
       // Logout button
       document.getElementById('btnLogout').addEventListener('click', function() {
         // Clear any local session data and redirect to login
-        try { sessionStorage.clear(); } catch(e) {}
-        try { localStorage.clear(); } catch(e) {}
+        try { sessionStorage.removeItem('mahakarya_hris_session'); } catch(e) {}
+        try { localStorage.removeItem('mahakarya_hris_session'); } catch(e) {}
         window.location.href = baseUrl + '?page=login';
       });
 

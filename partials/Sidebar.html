@@ -11,10 +11,20 @@
 
   <nav class="sidebar-nav" id="sidebarNav">
     <div class="nav-section-label" data-permission="view_dashboard">Main</div>
-    <button class="nav-item active" type="button" data-page="pageDashboard" data-permission="view_dashboard">
+    <button
+      class="nav-item active"
+      type="button"
+      data-page="pageDashboard"
+      data-permission="view_dashboard"
+    >
       <i class="bi bi-grid-1x2-fill"></i> Dashboard
     </button>
-    <button class="nav-item" type="button" data-external="recruitment" data-permission="view_recruitment">
+    <button
+      class="nav-item"
+      type="button"
+      data-external="recruitment"
+      data-permission="view_recruitment"
+    >
       <i class="bi bi-people-fill"></i> Recruitment
       <span class="badge-count" id="navRecruitmentCount">0</span>
     </button>
@@ -25,22 +35,49 @@
       <i class="bi bi-person-badge-fill"></i> Karyawan
     </button>
 
-    <div class="nav-section-label" data-permission="view_recruitment">Candidate Status</div>
-    <button class="nav-item" type="button" data-page="pageDashboard" data-status="Hold" data-permission="view_recruitment">
+    <div class="nav-section-label" data-permission="view_recruitment">
+      Candidate Status
+    </div>
+    <button
+      class="nav-item"
+      type="button"
+      data-page="pageDashboard"
+      data-status="Hold"
+      data-permission="view_recruitment"
+    >
       <i class="bi bi-pause-circle-fill"></i> Hold
     </button>
-    <button class="nav-item" type="button" data-page="pageDashboard" data-status="Blacklist" data-permission="view_recruitment">
+    <button
+      class="nav-item"
+      type="button"
+      data-page="pageDashboard"
+      data-status="Blacklist"
+      data-permission="view_recruitment"
+    >
       <i class="bi bi-slash-circle-fill"></i> Blacklist
     </button>
 
     <div class="nav-section-label">System</div>
-    <button class="nav-item" type="button" data-page="pageDashboard" data-scroll="tablePanel" data-permission="view_audit_log">
+    <button
+      class="nav-item"
+      type="button"
+      data-page="pageDashboard"
+      data-scroll="tablePanel"
+      data-permission="view_audit_log"
+    >
       <i class="bi bi-clock-history"></i> Audit Log
     </button>
     <button class="nav-item nav-item-external" type="button" onclick="window.open('?page=settings','_self')" data-permission="manage_settings">
       <i class="bi bi-gear-fill"></i> Settings
     </button>
-    <button class="nav-item nav-item-external" type="button" onclick="window.open('?page=user-management','_self')" id="navUserManagement" data-permission="manage_users" style="display:none;">
+    <button
+      class="nav-item nav-item-external"
+      type="button"
+      onclick="window.open('?page=user-management', '_self')"
+      id="navUserManagement"
+      data-permission="manage_users"
+      style="display: none"
+    >
       <i class="bi bi-people-fill"></i> Manajemen Pengguna
     </button>
   </nav>

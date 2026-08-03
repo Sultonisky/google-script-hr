@@ -155,13 +155,15 @@
   <?!= include('js/userManagement'); ?>
 
   <script>
-    // === AUTH GUARD: Only Super Admin can manage users ===
-    Auth.check('manage_users', function(user) {
-      document.getElementById('addUserBtn').style.display = '';
-      document.getElementById('roleInfoCard').style.display = '';
-      document.getElementById('currentRoleDisplay').textContent = user.role;
-      Auth.renderUserBadge('userBadge');
-      UserManagement.load();
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof requireAuth !== 'function') return;
+      requireAuth('manage_users').then(function(user) {
+        if (!user) return;
+        document.getElementById('addUserBtn').style.display = '';
+        document.getElementById('roleInfoCard').style.display = '';
+        document.getElementById('currentRoleDisplay').textContent = user.role;
+        UserManagement.load();
+      });
     });
   </script>
 </body>
