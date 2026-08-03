@@ -7,7 +7,190 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.0.0] - 2026-07-30
+## [0.6.0] - 2026-08-03
+
+### Added
+- Architecture documentation (docs/ARCHITECTURE.md)
+  - System overview and tech stack
+  - Module architecture diagram
+  - Data flow and spreadsheet schema
+  - Security model and performance considerations
+- Developer guide (docs/CONTRIBUTING.md)
+  - Setup and development workflow
+  - Code style and conventions
+  - Bug reporting and feature request templates
+- Updated development roadmap for v0.6.0 stabilization phase
+
+### Changed
+- Versioned roadmap as v0.6.0 (previously unversioned)
+- Renamed v1.0.0 initial release to v0.1.0 (proper semantic versioning)
+- Updated CHANGELOG.md with proper version history
+
+### Fixed
+- N/A
+
+### Removed
+- N/A
+
+### Security
+- N/A
+
+### Documentation
+- Created docs/ARCHITECTURE.md - complete system architecture documentation
+- Created docs/CONTRIBUTING.md - developer contribution guide
+- Updated ROADMAP.md - v0.6.0 stabilization phase roadmap
+- Updated CHANGELOG.md - this file
+
+---
+
+## [0.5.0] - 2026-07-30
+
+### Added
+- UI polish and deployment readiness improvements
+- Enhanced visual design across all modules
+- Improved responsive layouts
+- Performance optimizations
+
+### Changed
+- N/A
+
+### Fixed
+- N/A
+
+### Removed
+- N/A
+
+### Security
+- N/A
+
+### Documentation
+- N/A
+
+---
+
+## [0.4.0] - 2026-07-30
+
+### Added
+- Multi-module expansion
+- Employee management module
+- Master data module
+- Settings module
+- User management module
+- Authentication system
+- Role-based access control (RBAC)
+- Portal settings management
+
+### Changed
+- N/A
+
+### Fixed
+- N/A
+
+### Removed
+- N/A
+
+### Security
+- Login/logout system
+- Session management
+- Role-based permissions (Admin, HRD, User)
+
+### Documentation
+- N/A
+
+---
+
+## [0.3.0] - 2026-07-29
+
+### Added
+- Modularization of backend code
+- Separate backend modules:
+  - Auth.gs - Authentication
+  - Config.gs - Configuration
+  - Employee.gs - Employee management
+  - Import.gs - Data import
+  - MasterData.gs - Master data
+  - Outsource.gs - Outsource management
+  - PortalSettings.gs - Portal settings
+  - Recruitment.gs - Recruitment management
+- Modular frontend views:
+  - Dashboard.html - HR Dashboard
+  - Employee.html - Employee management
+  - Landing.html - Public landing page
+  - Login.html - Login page
+  - MasterData.html - Master data management
+  - Settings.html - Settings page
+  - UserManagement.html - User management
+  - CandidateLanding.html - Candidate landing
+  - AccessDenied.html - Access denied page
+- Frontend JavaScript modules:
+  - js/app.html - Main app logic
+  - js/auth.html - Authentication
+  - js/employee.html - Employee
+  - js/filters.html - Filters
+  - js/import.html - Import
+  - js/masterData.html - Master data
+  - js/settings.html - Settings
+  - js/table.html - Table
+  - js/userManagement.html - User management
+- HTML partials:
+  - partials/CandidateTable.html
+  - partials/Modals.html
+  - partials/SettingsPanel.html
+  - partials/Sidebar.html
+  - partials/Topbar.html
+- CSS partials:
+  - css/modal.html
+  - css/table.html
+
+### Changed
+- N/A
+
+### Fixed
+- N/A
+
+### Removed
+- N/A
+
+### Security
+- N/A
+
+### Documentation
+- N/A
+
+---
+
+## [0.2.0] - 2026-07-29
+
+### Added
+- Advanced dashboard features
+- Analytics visualizations
+- Enhanced data table
+- Advanced filtering and sorting
+- Candidate profile drawer
+- Export functionality (CSV, Excel, PDF)
+- Dark mode
+- Settings page
+- FAB speed dial
+- Toast notifications
+
+### Changed
+- N/A
+
+### Fixed
+- N/A
+
+### Removed
+- N/A
+
+### Security
+- N/A
+
+### Documentation
+- N/A
+
+---
+
+## [0.1.0] - 2026-07-28
 
 ### Added
 - Initial release of Mahakarya HRIS - Applicant Tracking System
@@ -88,7 +271,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Description |
 |---------|------|-------------|
-| 1.0.0 | 2026-07-30 | Initial release - Foundation & Recruitment Portal |
+| 0.6.0 | 2026-08-03 | Stabilization: Documentation, Versioning, Testing |
+| 0.5.0 | 2026-07-30 | UI Polish & Deployment Readiness |
+| 0.4.0 | 2026-07-30 | Multi-Module Expansion |
+| 0.3.0 | 2026-07-29 | Modularization |
+| 0.2.0 | 2026-07-29 | Advanced Dashboard & Analytics |
+| 0.1.0 | 2026-07-28 | Initial release - Foundation & Recruitment Portal |
 
 ---
 
@@ -103,7 +291,7 @@ When making changes, add a new section at the top following this format:
 - New features
 
 ### Changed
-- Changes to existing features
+- Changes to existing functionality
 
 ### Fixed
 - Bug fixes
@@ -140,4 +328,4 @@ When making changes, add a new section at the top following this format:
 ---
 
 ## Last Updated
-2026-07-30 - Initial changelog for version 1.0.0
+2026-08-03 - Updated for v0.6.0 stabilization phase
