@@ -1,0 +1,257 @@
+<!-- js/masterData.html — Master Data Page Logic -->
+<script>
+  // ============ MASTER DATA PAGE STATE ============
+  var MD = {
+    allItems: [],
+    filteredItems: [],
+    categories: {},
+    currentCategory: '',
+    editingId: null,
+    modal: null
+  };
+
+  // ============ LOAD DATA ============
+  function mdLoadAll() {
+    google.script.run
+      .withSuccessHandler(function(result) {
+        if (result && result.success) {
+          MD.allItems = result.data || [];
+          MD.categories = result.categories || {};
+          mdRenderSummary();
+          mdRenderCatNav();
+          mdRenderTable();
+        }
+      })
+      .withFailureHandler(function(err) {
+        mdShowToast('Gagal memuat data: ' + err.message, 'danger');
+      })
+      .getMasterDataList();
+  }
+
+  // ============ SUMMARY CARDS ============
+  function mdRenderSummary() {
+    var grid = document.getElementById('mdSummaryGrid');
+    var cats = {};
+    MD.allItems.forEach(function(item) {
+      if (!cats[item.category]) cats[item.category] = 0;
+      cats[item.category]++;
+    });
+
+    var html = '';
+    Object.keys(MD.categories).forEach(function(cat) {
+      var meta = MD.categories[cat];
+      var count = cats[cat] || 0;
+      html += '<div class="md-summary-card" onclick="mdFilterCategory(\'' + cat + '\')" style="cursor:pointer;">' +
+        '<i class="bi ' + meta.icon + '"></i>' +
+        '<div class="count">' + count + '</div>' +
+        '<div class="label">' + meta.label + '</div>' +
+        '</div>';
+    });
+    grid.innerHTML = html;
+  }
+
+  // ============ CATEGORY NAV ============
+  function mdRenderCatNav() {
+    var nav = document.getElementById('mdCatNav');
+    var cats = {};
+    MD.allItems.forEach(function(item) {
+      if (!cats[item.category]) cats[item.category] = 0;
+      cats[item.category]++;
+    });
+
+    var html = '<button class="md-cat-btn ' + (!MD.currentCategory ? 'active' : '') + '" onclick="mdFilterCategory(\'\')">Semua <span class="badge">' + MD.allItems.length + '</span></button>';
+    Object.keys(MD.categories).forEach(function(cat) {
+      var meta = MD.categories[cat];
+      var count = cats[cat] || 0;
+      html += '<button class="md-cat-btn ' + (MD.currentCategory === cat ? 'active' : '') + '" onclick="mdFilterCategory(\'' + cat + '\')">' +
+        '<i class="bi ' + meta.icon + '"></i> ' + meta.label + ' <span class="badge">' + count + '</span></button>';
+    });
+    nav.innerHTML = html;
+
+    // Update label
+    var label = MD.currentCategory ? (MD.categories[MD.currentCategory] ? MD.categories[MD.currentCategory].label : '') : 'Semua Data';
+    document.getElementById('mdCurrentCategoryLabel').textContent = label;
+  }
+
+  // ============ FILTER ============
+  function mdFilterCategory(cat) {
+    MD.currentCategory = cat;
+    mdRenderCatNav();
+    mdRenderTable();
+  }
+
+  function mdApplyFilter() {
+    var query = (document.getElementById('mdSearch').value || '').toLowerCase().trim();
+    MD.filteredItems = MD.allItems.filter(function(item) {
+      var matchCat = !MD.currentCategory || item.category === MD.currentCategory;
+      var matchSearch = !query ||
+        item.name.toLowerCase().indexOf(query) !== -1 ||
+        (item.description || '').toLowerCase().indexOf(query) !== -1;
+      return matchCat && matchSearch;
+    });
+  }
+
+  // ============ RENDER TABLE ============
+  function mdRenderTable() {
+    mdApplyFilter();
+    var tbody = document.getElementById('mdTableBody');
+    var empty = document.getElementById('mdEmpty');
+    var table = document.getElementById('mdTable');
+    document.getElementById('mdCountInfo').textContent = MD.filteredItems.length + ' item';
+
+    if (MD.filteredItems.length === 0) {
+      table.style.display = 'none';
+      empty.style.display = '';
+      return;
+    }
+    table.style.display = '';
+    empty.style.display = 'none';
+
+    var html = '';
+    for (var i = 0; i < MD.filteredItems.length; i++) {
+      var item = MD.filteredItems[i];
+      var catLabel = MD.categories[item.category] ? MD.categories[item.category].label : item.category;
+      html += '<tr>' +
+        '<td><span class="order-num">' + (i + 1) + '</span></td>' +
+        '<td><strong>' + mdEsc(item.name) + '</strong></td>' +
+        '<td class="text-muted">' + mdEsc(item.description || '-') + '</td>' +
+        '<td><span class="cat-badge"><i class="bi ' + (MD.categories[item.category] ? MD.categories[item.category].icon : 'bi-tag') + '"></i> ' + mdEsc(catLabel) + '</span></td>' +
+        '<td><div class="actions">' +
+          '<button title="Edit" onclick="mdEditItem(\'' + item.id + '\')"><i class="bi bi-pencil"></i></button>' +
+          '<button title="Hapus" class="btn-del" onclick="mdDeleteItem(\'' + item.id + '\', \'' + mdEsc(item.name) + '\')"><i class="bi bi-trash3"></i></button>' +
+        '</div></td>' +
+        '</tr>';
+    }
+    tbody.innerHTML = html;
+  }
+
+  function mdEsc(s) {
+    var div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
+  }
+
+  // ============ MODAL ============
+  function mdOpenModal() {
+    if (!MD.modal) MD.modal = new bootstrap.Modal(document.getElementById('mdItemModal'));
+    mdPopulateCategorySelect();
+    MD.modal.show();
+  }
+
+  function mdPopulateCategorySelect() {
+    var sel = document.getElementById('mdItemCategory');
+    sel.innerHTML = '<option value="">— Pilih Kategori —</option>';
+    Object.keys(MD.categories).forEach(function(cat) {
+      sel.innerHTML += '<option value="' + cat + '">' + MD.categories[cat].label + '</option>';
+    });
+  }
+
+  function mdOpenAddModal() {
+    MD.editingId = null;
+    document.getElementById('mdItemModalLabel').textContent = 'Tambah Item';
+    document.getElementById('mdItemId').value = '';
+    document.getElementById('mdItemCategory').value = MD.currentCategory || '';
+    document.getElementById('mdItemName').value = '';
+    document.getElementById('mdItemDesc').value = '';
+    document.getElementById('mdItemOrder').value = MD.filteredItems.length + 1;
+    mdOpenModal();
+  }
+
+  function mdEditItem(id) {
+    var item = MD.allItems.find(function(x) { return x.id === id; });
+    if (!item) return;
+    MD.editingId = id;
+    document.getElementById('mdItemModalLabel').textContent = 'Edit Item';
+    document.getElementById('mdItemId').value = id;
+    document.getElementById('mdItemCategory').value = item.category;
+    document.getElementById('mdItemName').value = item.name;
+    document.getElementById('mdItemDesc').value = item.description || '';
+    document.getElementById('mdItemOrder').value = item.order || 1;
+    mdOpenModal();
+  }
+
+  function mdSaveItem() {
+    var category = document.getElementById('mdItemCategory').value;
+    var name = document.getElementById('mdItemName').value.trim();
+    var desc = document.getElementById('mdItemDesc').value.trim();
+    var order = parseInt(document.getElementById('mdItemOrder').value, 10) || 1;
+
+    if (!category) { mdShowToast('Pilih kategori terlebih dahulu.', 'warning'); return; }
+    if (!name) { mdShowToast('Nama item harus diisi.', 'warning'); return; }
+
+    var btn = document.getElementById('btnMdSaveItem');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Menyimpan...';
+
+    if (MD.editingId) {
+      google.script.run
+        .withSuccessHandler(function(r) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan';
+          if (r && r.success) {
+            mdShowToast(r.message, 'success');
+            MD.modal.hide();
+            mdLoadAll();
+          } else {
+            mdShowToast(r ? r.message : 'Gagal menyimpan.', 'danger');
+          }
+        })
+        .withFailureHandler(function(err) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan';
+          mdShowToast('Error: ' + err.message, 'danger');
+        })
+        .updateMasterDataItem(MD.editingId, { name: name, description: desc, order: order });
+    } else {
+      google.script.run
+        .withSuccessHandler(function(r) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan';
+          if (r && r.success) {
+            mdShowToast(r.message, 'success');
+            MD.modal.hide();
+            mdLoadAll();
+          } else {
+            mdShowToast(r ? r.message : 'Gagal menyimpan.', 'danger');
+          }
+        })
+        .withFailureHandler(function(err) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan';
+          mdShowToast('Error: ' + err.message, 'danger');
+        })
+        .addMasterDataItem(category, name, desc);
+    }
+  }
+
+  // ============ DELETE ============
+  function mdDeleteItem(id, name) {
+    if (!confirm('Hapus item "' + name + '"?')) return;
+    google.script.run
+      .withSuccessHandler(function(r) {
+        if (r && r.success) {
+          mdShowToast(r.message, 'success');
+          mdLoadAll();
+        } else {
+          mdShowToast(r ? r.message : 'Gagal menghapus.', 'danger');
+        }
+      })
+      .withFailureHandler(function(err) {
+        mdShowToast('Error: ' + err.message, 'danger');
+      })
+      .deleteMasterDataItem(id);
+  }
+
+  // ============ EVENT LISTENERS ============
+  document.addEventListener('DOMContentLoaded', function() {
+    MD.modal = new bootstrap.Modal(document.getElementById('mdItemModal'));
+    document.getElementById('btnMdAdd').addEventListener('click', mdOpenAddModal);
+    document.getElementById('btnMdSaveItem').addEventListener('click', mdSaveItem);
+    document.getElementById('mdSearch').addEventListener('input', mdRenderTable);
+
+    // Auth & load
+    Auth.check('view_employee', function(user) {
+      mdLoadAll();
+    });
+  });
+</script>
