@@ -63,6 +63,9 @@ var EXTRA_HEADERS = [
   'Employee ID'               // 31
 ];
 
+var RAW_KANDIDAT_COL = {};
+SHEET_HEADERS.concat(EXTRA_HEADERS).forEach(function(h, i) { RAW_KANDIDAT_COL[h] = i + 1; });
+
 // ============================================================
 // SHEET: Employee
 // Purpose: Complete employee master — final authority
@@ -75,7 +78,7 @@ var EMPLOYEE_HEADERS = [
   'Email',                    // 5
   'Phone',                    // 6
   'Join Date',                // 7
-  'Status',                   // 8   (alias for Employment Status)
+  'Status',                   // 8
   'Notes',                    // 9
   'Created At',               // 10
   'Company Entity',           // 11
@@ -107,7 +110,6 @@ var EMPLOYEE_HEADERS = [
   'Updated At'                // 37
 ];
 
-// Column index map for Employee sheet (1-based for getRange)
 var EMPLOYEE_COL = {};
 EMPLOYEE_HEADERS.forEach(function(h, i) { EMPLOYEE_COL[h] = i + 1; });
 
@@ -145,7 +147,6 @@ var OUTSOURCE_HEADERS = [
   'Updated At'                // 27
 ];
 
-// Column index map for Outsource sheet (1-based for getRange)
 var OUTSOURCE_COL = {};
 OUTSOURCE_HEADERS.forEach(function(h, i) { OUTSOURCE_COL[h] = i + 1; });
 
@@ -158,9 +159,13 @@ var AUDIT_LOG_HEADERS = [
   'User',                     // 2
   'Recruitment ID',           // 3
   'Action',                   // 4
-  'Old Value',                // 5
-  'New Value'                 // 6
+  'Field',                    // 5
+  'Old Value',                // 6
+  'New Value'                 // 7
 ];
+
+var AUDIT_COL = {};
+AUDIT_LOG_HEADERS.forEach(function(h, i) { AUDIT_COL[h] = i + 1; });
 
 // Alias used by some modules
 var AUDIT_LOG_SHEET_NAME = AUDIT_SHEET_NAME;
@@ -180,14 +185,17 @@ var USERS_HEADERS = [
   'Created By'                // 8
 ];
 
+var USERS_COL = {};
+USERS_HEADERS.forEach(function(h, i) { USERS_COL[h] = i + 1; });
+
 // ============================================================
 // SHEET: Archive
 // Purpose: Former candidates — historical data, never deleted
 // ============================================================
 var ARCHIVE_HEADERS = [
   'Archive ID',               // 1
-  'Original Type',            // 2   (Candidate | Outsource | Employee)
-  'Original ID',              // 3   (Recruitment ID / Outsource ID / Employee ID)
+  'Original Type',            // 2
+  'Original ID',              // 3
   'Full Name',                // 4
   'NIK',                      // 5
   'Email',                    // 6
@@ -195,13 +203,16 @@ var ARCHIVE_HEADERS = [
   'Position',                 // 8
   'Department',               // 9
   'Status',                   // 10
-  'Archive Reason',           // 11  (Resigned | Terminated | Contract Finished | etc.)
+  'Archive Reason',           // 11
   'Archive Date',             // 12
   'Archived By',              // 13
   'Notes',                    // 14
-  'Raw JSON',                 // 15  (full record snapshot)
+  'Raw JSON',                 // 15
   'Created At'                // 16
 ];
+
+var ARCHIVE_COL = {};
+ARCHIVE_HEADERS.forEach(function(h, i) { ARCHIVE_COL[h] = i + 1; });
 
 // ============================================================
 // SHEET: Offboarding
@@ -215,21 +226,27 @@ var OFFBOARDING_HEADERS = [
   'Department',               // 5
   'Join Date',                // 6
   'Last Working Date',        // 7
-  'Offboarding Type',         // 8  (Resignation | Termination | Retirement | Contract Finished)
+  'Offboarding Type',         // 8
   'Reason',                   // 9
   'Approved By',              // 10
   'Notes',                    // 11
-  'Status',                   // 12  (Pending | Approved | Completed)
-  'Archived',                 // 13  (Yes | No — whether moved to Archive)
+  'Status',                   // 12
+  'Archived',                 // 13
   'Created By',               // 14
   'Created At',               // 15
   'Updated At'                // 16
 ];
 
+var OFFBOARD_COL = {};
+OFFBOARDING_HEADERS.forEach(function(h, i) { OFFBOARD_COL[h] = i + 1; });
+
 // ============================================================
 // MASTER DATA CONFIGURATION
 // ============================================================
 var MASTER_DATA_HEADERS = ['ID', 'Kategori', 'Nama', 'Deskripsi', 'Urutan', 'Aktif', 'Dibuat', 'Diubah'];
+
+var MASTERDATA_COL = {};
+MASTER_DATA_HEADERS.forEach(function(h, i) { MASTERDATA_COL[h] = i + 1; });
 
 var MASTER_DATA_CATEGORIES = {
   recruitment_source:        { label: 'Sumber Rekrutmen',        icon: 'bi-link-45deg' },

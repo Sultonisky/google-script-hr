@@ -65,43 +65,34 @@ function importCandidates(rows) {
       }
       existingIds.push(rid.toUpperCase());
 
-      // Prepare row data matching SHEET_HEADERS order
+      // Prepare row data matching SHEET_HEADERS order (25 core columns)
       var now = Utilities.formatDate(new Date(), 'GMT+7', 'yyyy-MM-dd HH:mm:ss');
       var rowData = [
-        rid,                                                          // Recruitment ID
-        String(row.fullName || '').trim(),                            // Full Name
-        String(row.email || '').trim(),                               // Email
-        "'" + String(row.phone || '').trim(),                         // Phone (text)
-        String(row.gender || '').trim(),                              // Gender
-        String(row.dateOfBirth || '').trim(),                         // Date of Birth
-        row.age ? Number(row.age) : '',                               // Age
-        String(row.pob || '').trim(),                                 // Place of Birth
-        String(row.address || '').trim(),                             // Address
-        String(row.city || '').trim(),                                // City
-        String(row.province || '').trim(),                            // Province
-        String(row.district || '').trim(),                            // District
-        String(row.village || '').trim(),                             // Village
-        String(row.postalCode || '').trim(),                          // Postal Code
-        String(row.nik || '').trim(),                                 // NIK
-        String(row.education || '').trim(),                           // Education
-        String(row.major || '').trim(),                               // Major/Specialization
-        String(row.institution || '').trim(),                         // Institution Name
-        String(row.gpa || '').trim(),                                 // GPA
-        String(row.workExperience || '').trim(),                      // Work Experience
-        String(row.positionApplied || '').trim(),                     // Position Applied
-        row.expectedSalary ? Number(row.expectedSalary) : '',         // Expected Salary
-        String(row.availableImmediately || '').trim(),                 // Available Immediately
-        String(row.currentEmploymentStatus || '').trim(),             // Current Employment Status
-        String(row.recruitmentSource || 'CSV Import').trim(),         // Recruitment Source
-        String(row.notes || '').trim(),                               // Notes
-        now,                                                          // Created Date
-        'Pending',                                                    // Status
-        '',                                                           // Status Notes
-        '',                                                           // Last Updated
-        '',                                                           // Last Updated By
-        '',                                                           // Follow-Up Date
-        '',                                                           // Referred By
-        ''                                                            // Portfolio Link
+        rid,                                                          // 1  Recruitment ID
+        now,                                                          // 2  Created Date
+        String(row.fullName || '').trim(),                            // 3  Full Name
+        String(row.nik || '').trim(),                                 // 4  NIK
+        String(row.dateOfBirth || '').trim(),                         // 5  Birth Date
+        row.age ? Number(row.age) : '',                               // 6  Age
+        String(row.gender || '').trim(),                              // 7  Gender
+        String(row.maritalStatus || '').trim(),                       // 8  Marital Status
+        String(row.email || '').trim(),                               // 9  Email
+        "'" + String(row.phone || '').trim(),                         // 10 Phone (text)
+        String(row.address || '').trim(),                             // 11 Address
+        String(row.city || '').trim(),                                // 12 City
+        String(row.positionApplied || '').trim(),                     // 13 Position Applied
+        String(row.education || '').trim(),                           // 14 Education
+        String(row.workExperience || '').trim(),                      // 15 Work Experience
+        String(row.lastCompany || '').trim(),                         // 16 Last Company
+        String(row.currentEmploymentStatus || '').trim(),             // 17 Current Employment Status
+        String(row.availableToJoin || row.availableImmediately || '').trim(), // 18 Available to Join
+        row.expectedSalary ? Number(row.expectedSalary) : '',         // 19 Expected Salary
+        String(row.recruitmentSource || 'CSV Import').trim(),         // 20 Recruitment Source
+        String(row.cvLink || '').trim(),                              // 21 CV Link
+        'Pending',                                                    // 22 Status
+        String(row.notes || '').trim(),                               // 23 HR Notes
+        'system',                                                     // 24 Created By
+        now                                                           // 25 Updated At
       ];
 
       batchData.push(rowData);
@@ -115,7 +106,7 @@ function importCandidates(rows) {
 
       // Audit log for import
       for (var j = 0; j < batchData.length; j++) {
-        writeAuditLog_(batchData[j][0], 'Import', '', 'Imported via CSV', 'system');
+        writeAuditLog_(batchData[j][0], 'Import', 'CSV Import', '', batchData[j][RAW_KANDIDAT_COL['Full Name'] - 1]);
       }
     }
 

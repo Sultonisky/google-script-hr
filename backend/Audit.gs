@@ -30,16 +30,17 @@ function getAuditLogForCandidate(recruitmentId) {
 
   for (var r = 1; r < values.length; r++) {
     var row = values[r];
-    if (String(row[2]) !== String(recruitmentId)) continue;
+    if (String(row[AUDIT_COL['Recruitment ID'] - 1]) !== String(recruitmentId)) continue;
+    var ts = row[AUDIT_COL['Timestamp'] - 1];
     result.push({
-      timestamp: row[0] instanceof Date
-        ? Utilities.formatDate(row[0], 'GMT+7', 'dd/MM/yyyy HH:mm')
-        : String(row[0] || ''),
-      user:     String(row[1] || ''),
-      action:   String(row[3] || ''),
-      field:    String(row[4] || ''),
-      oldValue: String(row[5] || ''),
-      newValue: String(row[6] || '')
+      timestamp: ts instanceof Date
+        ? Utilities.formatDate(ts, 'GMT+7', 'dd/MM/yyyy HH:mm')
+        : String(ts || ''),
+      user:     String(row[AUDIT_COL['User'] - 1] || ''),
+      action:   String(row[AUDIT_COL['Action'] - 1] || ''),
+      field:    String(row[AUDIT_COL['Field'] - 1] || ''),
+      oldValue: String(row[AUDIT_COL['Old Value'] - 1] || ''),
+      newValue: String(row[AUDIT_COL['New Value'] - 1] || '')
     });
   }
 

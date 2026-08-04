@@ -4,23 +4,11 @@
 // Recruitment forms remain PUBLIC. Dashboard requires login.
 // ============================================================
 
-var USERS_SHEET_NAME = "Users";
 var SUPER_ADMIN_ROLE = "Super Admin";
 var AUTH_SESSION_CACHE_PREFIX = "auth_session_";
 var AUTH_SESSION_TTL_SECONDS = 21600; // 6 jam
 var AUTH_SESSION_STORAGE_KEY = "mahakarya_hris_session";
 var GOOGLE_CLIENT_ID_PROPERTY = "GOOGLE_CLIENT_ID";
-
-var USER_HEADERS = [
-  "Email",
-  "Full Name",
-  "Role",
-  "Status",
-  "Last Login",
-  "Created At",
-  "Updated At",
-  "Created By",
-];
 
 // Valid roles in hierarchy order
 var VALID_ROLES = ["Super Admin", "HR Admin", "Recruiter", "Manager", "Viewer"];
@@ -422,14 +410,14 @@ function getUsersSheet_() {
   var sheet = ss.getSheetByName(USERS_SHEET_NAME);
   if (!sheet) {
     sheet = ss.insertSheet(USERS_SHEET_NAME);
-    sheet.getRange(1, 1, 1, USER_HEADERS.length).setValues([USER_HEADERS]);
+    sheet.getRange(1, 1, 1, USERS_HEADERS.length).setValues([USERS_HEADERS]);
     sheet
-      .getRange(1, 1, 1, USER_HEADERS.length)
+      .getRange(1, 1, 1, USERS_HEADERS.length)
       .setFontWeight("bold")
       .setBackground("#005BAC")
       .setFontColor("#FFFFFF");
     sheet.setFrozenRows(1);
-    sheet.autoResizeColumns(1, USER_HEADERS.length);
+    sheet.autoResizeColumns(1, USERS_HEADERS.length);
   }
   return sheet;
 }
@@ -437,28 +425,29 @@ function getUsersSheet_() {
 /**
  * Finds a user by email (case-insensitive).
  * @param {string} email
- * @returns {Object|null} { email, fullName, role, status, lastLogin, createdAt, updatedAt, createdBy, rowIndex }
+ * @returns {Object|null}
  */
 function findUserByEmail_(email) {
   var sheet = getUsersSheet_();
   var lastRow = sheet.getLastRow();
   if (lastRow <= 1) return null;
 
-  var data = sheet.getRange(2, 1, lastRow - 1, USER_HEADERS.length).getValues();
+  var data = sheet.getRange(2, 1, lastRow - 1, USERS_HEADERS.length).getValues();
   var lowerEmail = email.toLowerCase();
 
   for (var i = 0; i < data.length; i++) {
-    if (String(data[i][0]).trim().toLowerCase() === lowerEmail) {
+    var row = data[i];
+    if (String(row[USERS_COL['Email'] - 1]).trim().toLowerCase() === lowerEmail) {
       return {
-        email: String(data[i][0]).trim(),
-        fullName: String(data[i][1]).trim(),
-        role: String(data[i][2]).trim(),
-        status: String(data[i][3]).trim(),
-        lastLogin: data[i][4],
-        createdAt: data[i][5],
-        updatedAt: data[i][6],
-        createdBy: String(data[i][7]).trim(),
-        rowIndex: i + 2,
+        email:     String(row[USERS_COL['Email'] - 1]).trim(),
+        fullName:  String(row[USERS_COL['Full Name'] - 1]).trim(),
+        role:      String(row[USERS_COL['Role'] - 1]).trim(),
+        status:    String(row[USERS_COL['Status'] - 1]).trim(),
+        lastLogin: row[USERS_COL['Last Login'] - 1],
+        createdAt: row[USERS_COL['Created At'] - 1],
+        updatedAt: row[USERS_COL['Updated At'] - 1],
+        createdBy: String(row[USERS_COL['Created By'] - 1]).trim(),
+        rowIndex:  i + 2,
       };
     }
   }
@@ -473,7 +462,7 @@ function updateLastLogin_(email) {
   if (!user) return;
   var sheet = getUsersSheet_();
   var now = Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd HH:mm:ss");
-  sheet.getRange(user.rowIndex, 5).setValue(now);
+  sheet.getRange(user.rowIndex, USERS_COL['Last Login']).setValue(now);
 }
 
 /**
@@ -493,17 +482,17 @@ function getAllUsers(sessionToken) {
   var lastRow = sheet.getLastRow();
   if (lastRow <= 1) return { success: true, users: [] };
 
-  var data = sheet.getRange(2, 1, lastRow - 1, USER_HEADERS.length).getValues();
+  var data = sheet.getRange(2, 1, lastRow - 1, USERS_HEADERS.length).getValues();
   var users = data.map(function (row) {
     return {
-      email: String(row[0]).trim(),
-      fullName: String(row[1]).trim(),
-      role: String(row[2]).trim(),
-      status: String(row[3]).trim(),
-      lastLogin: row[4] ? String(row[4]) : "",
-      createdAt: row[5] ? String(row[5]) : "",
-      updatedAt: row[6] ? String(row[6]) : "",
-      createdBy: String(row[7]).trim(),
+      email:     String(row[USERS_COL['Email'] - 1]).trim(),
+      fullName:  String(row[USERS_COL['Full Name'] - 1]).trim(),
+      role:      String(row[USERS_COL['Role'] - 1]).trim(),
+      status:    String(row[USERS_COL['Status'] - 1]).trim(),
+      lastLogin: row[USERS_COL['Last Login'] - 1] ? String(row[USERS_COL['Last Login'] - 1]) : "",
+      createdAt: row[USERS_COL['Created At'] - 1] ? String(row[USERS_COL['Created At'] - 1]) : "",
+      updatedAt: row[USERS_COL['Updated At'] - 1] ? String(row[USERS_COL['Updated At'] - 1]) : "",
+      createdBy: String(row[USERS_COL['Created By'] - 1]).trim(),
     };
   });
 
@@ -581,15 +570,15 @@ function updateUser(email, updates, sessionToken) {
   var now = Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd HH:mm:ss");
 
   if (updates.fullName)
-    sheet.getRange(user.rowIndex, 2).setValue(String(updates.fullName).trim());
+    sheet.getRange(user.rowIndex, USERS_COL['Full Name']).setValue(String(updates.fullName).trim());
   if (updates.role && VALID_ROLES.indexOf(updates.role) !== -1)
-    sheet.getRange(user.rowIndex, 3).setValue(updates.role);
+    sheet.getRange(user.rowIndex, USERS_COL['Role']).setValue(updates.role);
   if (
     updates.status &&
     (updates.status === "Active" || updates.status === "Inactive")
   )
-    sheet.getRange(user.rowIndex, 4).setValue(updates.status);
-  sheet.getRange(user.rowIndex, 7).setValue(now);
+    sheet.getRange(user.rowIndex, USERS_COL['Status']).setValue(updates.status);
+  sheet.getRange(user.rowIndex, USERS_COL['Updated At']).setValue(now);
 
   return { success: true, message: "Pengguna berhasil diperbarui." };
 }
