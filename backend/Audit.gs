@@ -1,21 +1,11 @@
 // ============================================================
 // backend/Audit.gs — AUDIT LOG
+// Uses AUDIT_LOG_HEADERS and AUDIT_SHEET_NAME from Config.gs
 // ============================================================
 
 // Tulis satu baris audit log (buat sheet jika belum ada)
 function writeAuditLog_(recruitmentId, action, field, oldValue, newValue) {
-  var ss    = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(AUDIT_LOG_SHEET_NAME);
-
-  if (!sheet) {
-    sheet = ss.insertSheet(AUDIT_LOG_SHEET_NAME);
-    sheet.appendRow(AUDIT_LOG_HEADERS);
-    sheet.getRange(1, 1, 1, AUDIT_LOG_HEADERS.length)
-         .setFontWeight('bold')
-         .setBackground('#005BAC')
-         .setFontColor('#FFFFFF');
-    sheet.setFrozenRows(1);
-  }
+  var sheet = getOrCreateAuditLogSheet_();
 
   var user = Session.getActiveUser().getEmail() || 'HR Dashboard';
   sheet.appendRow([
@@ -32,7 +22,7 @@ function writeAuditLog_(recruitmentId, action, field, oldValue, newValue) {
 // Ambil riwayat aktivitas untuk satu kandidat (dipakai Activity Timeline)
 function getAuditLogForCandidate(recruitmentId) {
   var ss    = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(AUDIT_LOG_SHEET_NAME);
+  var sheet = ss.getSheetByName(AUDIT_SHEET_NAME);
   if (!sheet || sheet.getLastRow() < 2) return [];
 
   var values = sheet.getRange(1, 1, sheet.getLastRow(), AUDIT_LOG_HEADERS.length).getValues();
@@ -40,16 +30,17 @@ function getAuditLogForCandidate(recruitmentId) {
 
   for (var r = 1; r < values.length; r++) {
     var row = values[r];
-    if (String(row[2]) !== String(recruitmentId)) continue;
+    if (String(row[AUDIT_COL['Recruitment ID'] - 1]) !== String(recruitmentId)) continue;
+    var ts = row[AUDIT_COL['Timestamp'] - 1];
     result.push({
-      timestamp: row[0] instanceof Date
-        ? Utilities.formatDate(row[0], 'GMT+7', 'dd/MM/yyyy HH:mm')
-        : String(row[0] || ''),
-      user:     String(row[1] || ''),
-      action:   String(row[3] || ''),
-      field:    String(row[4] || ''),
-      oldValue: String(row[5] || ''),
-      newValue: String(row[6] || '')
+      timestamp: ts instanceof Date
+        ? Utilities.formatDate(ts, 'GMT+7', 'dd/MM/yyyy HH:mm')
+        : String(ts || ''),
+      user:     String(row[AUDIT_COL['User'] - 1] || ''),
+      action:   String(row[AUDIT_COL['Action'] - 1] || ''),
+      field:    String(row[AUDIT_COL['Field'] - 1] || ''),
+      oldValue: String(row[AUDIT_COL['Old Value'] - 1] || ''),
+      newValue: String(row[AUDIT_COL['New Value'] - 1] || '')
     });
   }
 

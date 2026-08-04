@@ -334,51 +334,8 @@
     var logoutBtn = document.getElementById('btnDropdownLogout');
     if (logoutBtn) {
       logoutBtn.addEventListener('click', function() {
-        logoutBtn.disabled = true;
-        logoutBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Keluar...';
-
-        var sessionToken = getStoredSessionToken_();
-        clearStoredSessionToken_();
-        _currentUser = null;
-        _sessionLoaded = false;
-
-        function doRedirect() {
-          try {
-            window.top.location.replace('?page=login');
-          } catch (e) {
-            window.location.replace('?page=login');
-          }
-        }
-
-        if (sessionToken) {
-          // Tell backend to invalidate the cache entry, then redirect
-          google.script.run
-            .withSuccessHandler(doRedirect)
-            .withFailureHandler(doRedirect)
-            .clearUserSession(sessionToken);
-        } else {
-          doRedirect();
-        }
-      });
-    }
-
-    // Sidebar logout button (mobile-friendly)
-    var sidebarLogoutBtn = document.getElementById('btnSidebarLogout');
-    if (sidebarLogoutBtn) {
-      sidebarLogoutBtn.addEventListener('click', function() {
-        var logoutDropBtn = document.getElementById('btnDropdownLogout');
-        if (logoutDropBtn) {
-          logoutDropBtn.click();
-        } else {
-          clearStoredSessionToken_();
-          _currentUser = null;
-          _sessionLoaded = false;
-          try {
-            window.top.location.replace('?page=login');
-          } catch (e) {
-            window.location.replace('?page=login');
-          }
-        }
+        clearAuthSessionToken();
+        window.location.href = '?page=login';
       });
     }
 
