@@ -6,13 +6,18 @@
 
   var allCandidates     = [];
   var autoRefreshTimer  = null;
+  var _loadCandidatesInFlight = false;
 
   function loadCandidates(silent) {
+    // Prevent duplicate concurrent requests
+    if (_loadCandidatesInFlight) return;
+
     var btnRefresh = document.getElementById('btnRefresh');
     var loading    = document.getElementById('tableLoading');
     var empty      = document.getElementById('tableEmpty');
     var subtitle   = document.getElementById('panelSubtitle');
 
+    _loadCandidatesInFlight = true;
     if (btnRefresh) btnRefresh.classList.add('spinning');
     if (!silent) {
       if (loading)  loading.classList.remove('d-none');
@@ -25,6 +30,7 @@
 
     google.script.run
       .withSuccessHandler(function(response) {
+        _loadCandidatesInFlight = false;
         if (btnRefresh) { btnRefresh.classList.remove('spinning'); btnRefresh.disabled = false; }
         allCandidates = response || [];
         if (subtitle) subtitle.innerText = 'Terakhir dimuat: ' + new Date().toLocaleString('id-ID');
@@ -32,8 +38,12 @@
         updateStats(allCandidates);
         applyFilters();
         if (!silent) showToast('Data kandidat berhasil dimuat (' + allCandidates.length + ' data).', 'success');
+
+        // Start auto-refresh only after first successful load
+        if (!autoRefreshTimer) setupAutoRefresh();
       })
       .withFailureHandler(function(error) {
+        _loadCandidatesInFlight = false;
         if (btnRefresh) { btnRefresh.classList.remove('spinning'); btnRefresh.disabled = false; }
         if (!silent) {
           if (loading) loading.classList.add('d-none');

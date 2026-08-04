@@ -107,6 +107,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', function() {
+    // --- STEP 1: Synchronous UI initialization (no server calls) ---
     initSidebar();
     initDarkModeToggle();
     initDrawer();
@@ -123,23 +124,32 @@
     applyTheme(appSettings.theme);
     hydrateSettingsForm();
 
-    // Load portal settings from server (applies to sidebar, title, footer, theme color)
-    loadPortalSettings();
-
     var sf = document.getElementById('statusFilter');
     if (sf && appSettings.defaultStatus) sf.value = appSettings.defaultStatus;
 
-    loadCandidates(false);
-    setupAutoRefresh();
-    if (typeof initRecruitmentPage === 'function') initRecruitmentPage();
-    if (typeof initOutsourceDashboard === 'function') initOutsourceDashboard();
-
-    // --- Auth initialization (uses js/auth.html session system) ---
+    // --- STEP 2: Authentication (must complete first) ---
     if (typeof requireAuth === 'function') {
       requireAuth().then(function(user) {
         if (!user) return; // redirect already happened
-        populateUserUI(user);
+
+        // --- STEP 3: Load portal settings ---
+        loadPortalSettings();
+
+        // --- STEP 4: Initialize filter UI for recruitment & outsource (no server calls) ---
+        if (typeof initRecruitmentPage === 'function') initRecruitmentPage();
+        if (typeof initOutsourceUI === 'function') initOutsourceUI();
+
+        // --- STEP 5: Load all data in parallel (after auth succeeds) ---
+        loadCandidates(false);
+        if (typeof loadOutsourceData === 'function') loadOutsourceData(false);
       });
+    } else {
+      // No auth module present — fallback to direct initialization
+      loadPortalSettings();
+      if (typeof initRecruitmentPage === 'function') initRecruitmentPage();
+      if (typeof initOutsourceUI === 'function') initOutsourceUI();
+      loadCandidates(false);
+      if (typeof loadOutsourceData === 'function') loadOutsourceData(false);
     }
   });
 </script>
