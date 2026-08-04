@@ -213,8 +213,8 @@
     });
   }
 
-  // ---- Init ----
-  function initOutsourceDashboard() {
+  // ---- Init (event listeners only — no data loading) ----
+  function initOutsourceUI() {
     var si = document.getElementById('osSearchInput');
     if (si) si.addEventListener('input', applyOsFilters);
 
@@ -249,8 +249,11 @@
       exportXlsx(rows, 'Outsource', 'outsource-' + today + '.xlsx');
       showToast('Export Excel berhasil (' + rows.length + ' data).', 'success');
     });
+  }
 
-    // Load data on init
+  // Legacy name kept for backward compatibility
+  function initOutsourceDashboard() {
+    initOutsourceUI();
     loadOutsourceData(false);
   }
 </script>
