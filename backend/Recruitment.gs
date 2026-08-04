@@ -47,7 +47,7 @@ function simpanDataKandidat(formObject) {
       createdDate
     ]);
 
-    writeAuditLog_(recruitmentId, 'Created', '-', 'Pending');
+    writeAuditLog_(recruitmentId, 'Created', 'Status', '-', 'Pending');
     return 'Sukses';
   } catch (error) {
     return 'Error: ' + error.toString();
@@ -145,7 +145,7 @@ function updateCandidateStatus(recruitmentId, newStatus, hrNotes) {
     if (hrNotes !== undefined && hrNotes !== null)
       setCell_(sheet, found, NOTES_COLUMN_NAME, hrNotes);
     touchUpdatedAt_(sheet, found);
-    writeAuditLog_(recruitmentId, 'Update Status', oldStatus, newStatus);
+    writeAuditLog_(recruitmentId, 'Update Status', 'Status', oldStatus, newStatus);
 
     return { success: true, recruitmentId: recruitmentId, newStatus: newStatus };
   } catch (err) {
@@ -170,7 +170,7 @@ function holdCandidate(recruitmentId, reason, followUpDate, hrNotes) {
     setCell_(sheet, found, 'Hold Follow Up Date', followUpDate || '');
     if (hrNotes !== undefined && hrNotes !== null) setCell_(sheet, found, NOTES_COLUMN_NAME, hrNotes);
     touchUpdatedAt_(sheet, found);
-    writeAuditLog_(recruitmentId, 'Hold', oldStatus, 'Hold (' + (reason || '-') + ')');
+    writeAuditLog_(recruitmentId, 'Hold', 'Status', oldStatus, 'Hold (' + (reason || '-') + ')');
 
     return { success: true, recruitmentId: recruitmentId, newStatus: 'Hold' };
   } catch (err) {
@@ -199,7 +199,7 @@ function blacklistCandidate(recruitmentId, reason, hrNotes) {
     setCell_(sheet, found, 'Blacklist Updated By', user);
     if (hrNotes !== undefined && hrNotes !== null) setCell_(sheet, found, NOTES_COLUMN_NAME, hrNotes);
     touchUpdatedAt_(sheet, found);
-    writeAuditLog_(recruitmentId, 'Blacklist', oldStatus, 'Blacklist (' + (reason || '-') + ')');
+    writeAuditLog_(recruitmentId, 'Blacklist', 'Status', oldStatus, 'Blacklist (' + (reason || '-') + ')');
 
     return { success: true, recruitmentId: recruitmentId, newStatus: 'Blacklist' };
   } catch (err) {
@@ -267,7 +267,7 @@ function acceptCandidateToEmployee(recruitmentId, hrNotes) {
       ]);
     }
 
-    writeAuditLog_(recruitmentId, 'Accepted', oldStatus, 'Accepted -> Employee ' + employeeId);
+    writeAuditLog_(recruitmentId, 'Accepted', 'Status', oldStatus, 'Accepted -> Employee ' + employeeId);
     return { success: true, recruitmentId: recruitmentId, newStatus: 'Accepted', employeeId: employeeId };
   } catch (err) {
     return { success: false, message: err.message };
@@ -314,7 +314,7 @@ function deleteCandidate(recruitmentId) {
       return { success: false, message: 'Recruitment ID tidak ditemukan: ' + recruitmentId };
 
     sheet.deleteRow(found.rowNumber);
-    writeAuditLog_(recruitmentId, 'Deleted', '-', 'Deleted');
+    writeAuditLog_(recruitmentId, 'Deleted', 'Record', '-', 'Deleted');
     return { success: true, recruitmentId: recruitmentId };
   } catch (err) {
     return { success: false, message: err.message };

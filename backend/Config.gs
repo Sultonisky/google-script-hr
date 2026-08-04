@@ -83,3 +83,69 @@ var EMPLOYEE_HEADERS = [
   'Created By',
   'Updated At'
 ];
+
+// ============================================================
+// MASTER DATA CONFIGURATION
+// ============================================================
+var MASTER_DATA_SHEET   = 'master_data';
+var MASTER_DATA_HEADERS = ['ID', 'Kategori', 'Nama', 'Deskripsi', 'Urutan', 'Aktif', 'Dibuat', 'Diubah'];
+
+var MASTER_DATA_CATEGORIES = {
+  recruitment_source:        { label: 'Sumber Rekrutmen',        icon: 'bi-link-45deg' },
+  candidate_status:          { label: 'Status Kandidat',         icon: 'bi-flag-fill' },
+  department:                { label: 'Departemen',              icon: 'bi-building' },
+  position:                  { label: 'Posisi',                  icon: 'bi-person-workspace' },
+  work_location:             { label: 'Lokasi Kerja',            icon: 'bi-geo-alt-fill' },
+  employee_type:             { label: 'Tipe Karyawan',           icon: 'bi-person-badge' },
+  education:                 { label: 'Pendidikan',              icon: 'bi-mortarboard-fill' },
+  work_experience:           { label: 'Pengalaman Kerja',        icon: 'bi-briefcase-fill' },
+  marital_status:            { label: 'Status Pernikahan',       icon: 'bi-heart-fill' },
+  gender:                    { label: 'Jenis Kelamin',           icon: 'bi-gender-male' },
+  current_employment_status: { label: 'Status Kerja Saat Ini',   icon: 'bi-person-check-fill' },
+  available_to_join:         { label: 'Ketersediaan Bergabung',  icon: 'bi-calendar-check-fill' },
+  employment_status:         { label: 'Status Employment',       icon: 'bi-shield-fill-check' },
+  contract_duration:         { label: 'Durasi Kontrak',          icon: 'bi-clock-fill' },
+  salary_type:               { label: 'Tipe Gaji',              icon: 'bi-cash-stack' },
+  company_entity:            { label: 'Entitas Perusahaan',      icon: 'bi-building' },
+  interview_result:          { label: 'Hasil Interview',         icon: 'bi-clipboard-check-fill' }
+};
+
+var DEFAULT_MASTER_DATA = {
+  recruitment_source: ['Website', 'Job Fair', 'Referral', 'Social Media', 'Agency', 'Walk In', 'Other'],
+  candidate_status:   ['Pending', 'Interview', 'Accepted', 'Hold', 'Blacklist', 'Rejected'],
+  department:         ['Human Resources', 'Finance', 'Marketing', 'Operations', 'IT', 'Sales', 'Legal'],
+  position:           ['Staff', 'Supervisor', 'Manager', 'Director', 'Intern', 'Outsource'],
+  work_location:      ['Jakarta', 'Bandung', 'Surabaya', 'Semarang', 'Yogyakarta', 'Medan'],
+  employee_type:      ['Full Time', 'Part Time', 'Contract', 'Intern', 'Outsource']
+};
+
+// ============================================================
+// AUDIT LOG CONFIGURATION
+// ============================================================
+var AUDIT_LOG_SHEET_NAME = 'Audit_Log';
+var AUDIT_LOG_HEADERS = ['Recruitment ID', 'Action', 'Field', 'Old Value', 'New Value', 'User', 'Timestamp'];
+
+// ============================================================
+// OUTSOURCE CONFIGURATION
+// ============================================================
+var OUTSOURCE_SHEET_NAME = 'Outsource';
+var OUTSOURCE_HEADERS = [
+  'Outsource ID',
+  'Vendor',
+  'Employee Name',
+  'NIK',
+  'Position',
+  'Department',
+  'Work Location',
+  'Company Entity',
+  'Contract Start',
+  'Contract End',
+  'Contract Duration',
+  'Salary',
+  'Salary Type',
+  'Status',
+  'Notes',
+  'Created By',
+  'Created At',
+  'Updated At'
+];
