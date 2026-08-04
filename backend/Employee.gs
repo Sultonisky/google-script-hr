@@ -1,229 +1,136 @@
 // ============================================================
-// backend/Employee.gs — EMPLOYEE MANAGEMENT
-// CRUD operations for master employee data, converted from
-// accepted candidates. Core HR data beyond recruitment.
+// backend/Employee.gs — MASTER DATA KARYAWAN
+// Schema: defined in EMPLOYEE_HEADERS (Config.gs)
+// Column access: use EMPLOYEE_COL[headerName] — NEVER hardcoded indexes
 // ============================================================
 
+// ============= GENERATE EMPLOYEE ID =============
+// Reuses generateEmployeeId_() from IdGenerator.gs
 
-// ============= HELPER =============
-
-function getOrCreateEmployeeSheet_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(EMPLOYEE_SHEET_NAME);
-  if (!sheet) {
-    sheet = ss.insertSheet(EMPLOYEE_SHEET_NAME);
-    sheet.getRange(1, 1, 1, EMPLOYEE_HEADERS.length).setValues([EMPLOYEE_HEADERS]);
-    sheet.getRange(1, 1, 1, EMPLOYEE_HEADERS.length)
-      .setBackground('#005BAC').setFontColor('#ffffff').setFontWeight('bold');
-    sheet.setFrozenRows(1);
-    autoResizeColumns_(sheet, EMPLOYEE_HEADERS.length);
-  } else {
-    // Sync headers — tambahkan kolom baru dari EMPLOYEE_HEADERS jika belum ada
-    var currentHeaders = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    var missingHeaders = EMPLOYEE_HEADERS.filter(function(h) {
-      return currentHeaders.indexOf(h) === -1;
-    });
-    if (missingHeaders.length > 0) {
-      var startCol = currentHeaders.length + 1;
-      sheet.getRange(1, startCol, 1, missingHeaders.length).setValues([missingHeaders]);
-      sheet.getRange(1, startCol, 1, missingHeaders.length)
-        .setBackground('#005BAC').setFontColor('#ffffff').setFontWeight('bold');
-      autoResizeColumns_(sheet, sheet.getLastColumn());
-    }
-  }
-  return sheet;
-}
-
-function generateEmployeeId_() {
-  var props = PropertiesService.getScriptProperties();
-  var counter = parseInt(props.getProperty('employee_counter') || '0', 10);
-  counter++;
-  props.setProperty('employee_counter', String(counter));
-  return 'EMP-' + padNumber_(counter, 5);
-}
-
-// ============= GET ALL EMPLOYEES =============
-
-function getEmployeeList(filters) {
+// ============= GET EMPLOYEE LIST =============
+function getEmployeeList() {
   try {
     var sheet = getOrCreateEmployeeSheet_();
-    var data  = sheet.getDataRange().getValues();
-    if (data.length <= 1) return { success: true, data: [], total: 0 };
+    if (!sheet || sheet.getLastRow() < 2) return { success: true, data: [] };
 
-    var headers = data[0];
-    var items   = [];
-    for (var i = 1; i < data.length; i++) {
-      var row = {};
-      for (var j = 0; j < headers.length; j++) {
-        row[headers[j]] = data[i][j];
-      }
-      // Apply filters if provided
-      if (filters) {
-        if (filters.status && row['Employment Status'] !== filters.status) continue;
-        if (filters.department && row['Department'] !== filters.department) continue;
-        if (filters.position && row['Position'] !== filters.position) continue;
-        if (filters.search) {
-          var q = String(filters.search).toLowerCase();
-          var matchName  = String(row['Full Name']).toLowerCase().indexOf(q) !== -1;
-          var matchNik   = String(row['NIK']).toLowerCase().indexOf(q) !== -1;
-          var matchEmail = String(row['Email']).toLowerCase().indexOf(q) !== -1;
-          if (!matchName && !matchNik && !matchEmail) continue;
-        }
-      }
+    var data     = sheet.getDataRange().getValues();
+    var headers  = data[0];
+    var colIndex = {};
+    headers.forEach(function(h, i) { colIndex[String(h).trim()] = i; });
+
+    var items = [];
+    for (var r = 1; r < data.length; r++) {
+      var row = data[r];
+      if (!row.join('').toString().trim()) continue;
+
       items.push({
-        employeeId:      row['Employee ID'],
-        companyEntity:   row['Company Entity'],
-        employeeType:    row['Employee Type'],
-        fullName:        row['Full Name'],
-        nik:             row['NIK'],
-        birthDate:       row['Birth Date'],
-        age:             row['Age'],
-        gender:          row['Gender'],
-        maritalStatus:   row['Marital Status'],
-        email:           row['Email'],
-        phone:           row['Phone'],
-        address:         row['Address'],
-        city:            row['City'],
-        education:       row['Education'],
-        workExperience:  row['Work Experience'],
-        department:      row['Department'],
-        position:        row['Position'],
-        joinDate:        row['Join Date'],
-        contractStart:   row['Contract Start'],
-        contractEnd:     row['Contract End'],
-        contractDuration:row['Contract Duration'],
-        employmentStatus:row['Employment Status'],
-        salary:          row['Salary'],
-        salaryType:      row['Salary Type'],
-        outsourceVendor: row['Outsource Vendor'],
-        contractNumber:  row['Contract Number'],
-        district:        row['District'],
-        recruitmentId:   row['Recruitment ID'],
-        recruitmentSource:row['Recruitment Source'],
-        hrNotes:         row['HR Notes'],
-        createdBy:       row['Created By'],
-        updatedAt:       row['Updated At']
+        employeeId:        String(row[colIndex['Employee ID']]         || ''),
+        recruitmentId:     String(row[colIndex['Recruitment ID']]      || ''),
+        fullName:          String(row[colIndex['Full Name']]           || ''),
+        position:          String(row[colIndex['Position']]            || ''),
+        email:             String(row[colIndex['Email']]               || ''),
+        phone:             String(row[colIndex['Phone']]               || ''),
+        joinDate:          String(row[colIndex['Join Date']]           || ''),
+        status:            String(row[colIndex['Status']]              || ''),
+        notes:             String(row[colIndex['Notes']]               || ''),
+        createdAt:         row[colIndex['Created At']] instanceof Date
+                             ? Utilities.formatDate(row[colIndex['Created At']], 'GMT+7', 'dd/MM/yyyy HH:mm')
+                             : String(row[colIndex['Created At']]      || ''),
+        companyEntity:     String(row[colIndex['Company Entity']]      || ''),
+        employeeType:      String(row[colIndex['Employee Type']]       || ''),
+        nik:               String(row[colIndex['NIK']]                 || ''),
+        birthDate:         String(row[colIndex['Birth Date']]          || ''),
+        age:               String(row[colIndex['Age']]                 || ''),
+        gender:            String(row[colIndex['Gender']]              || ''),
+        maritalStatus:     String(row[colIndex['Marital Status']]      || ''),
+        address:           String(row[colIndex['Address']]             || ''),
+        city:              String(row[colIndex['City']]                || ''),
+        education:         String(row[colIndex['Education']]           || ''),
+        workExperience:    String(row[colIndex['Work Experience']]     || ''),
+        department:        String(row[colIndex['Department']]          || ''),
+        division:          String(row[colIndex['Division']]            || ''),
+        branch:            String(row[colIndex['Branch']]              || ''),
+        contractStart:     String(row[colIndex['Contract Start']]      || ''),
+        contractEnd:       String(row[colIndex['Contract End']]        || ''),
+        contractDuration:  String(row[colIndex['Contract Duration']]   || ''),
+        employmentStatus:  String(row[colIndex['Employment Status']]   || ''),
+        salary:            row[colIndex['Salary']] || '',
+        salaryType:        String(row[colIndex['Salary Type']]         || ''),
+        outsourceVendor:   String(row[colIndex['Outsource Vendor']]    || ''),
+        contractNumber:    String(row[colIndex['Contract Number']]     || ''),
+        district:          String(row[colIndex['District']]            || ''),
+        recruitmentSource: String(row[colIndex['Recruitment Source']]  || ''),
+        hrNotes:           String(row[colIndex['HR Notes']]            || ''),
+        createdBy:         String(row[colIndex['Created By']]          || ''),
+        updatedAt:         row[colIndex['Updated At']] instanceof Date
+                             ? Utilities.formatDate(row[colIndex['Updated At']], 'GMT+7', 'dd/MM/yyyy HH:mm')
+                             : String(row[colIndex['Updated At']]       || '')
       });
     }
 
-    return { success: true, data: items, total: items.length };
-  } catch (e) {
-    return { success: false, message: e.toString() };
-  }
-}
+    items.sort(function(a, b) {
+      return (b.createdAt || '').localeCompare(a.createdAt || '');
+    });
 
-// ============= GET SINGLE EMPLOYEE =============
-
-function getEmployeeById(id) {
-  try {
-    if (!id) return { success: false, message: 'ID harus diisi.' };
-
-    var sheet = getOrCreateEmployeeSheet_();
-    var data  = sheet.getDataRange().getValues();
-    if (data.length <= 1) return { success: false, message: 'Data tidak ditemukan.' };
-
-    var headers = data[0];
-    for (var i = 1; i < data.length; i++) {
-      if (String(data[i][0]) === String(id)) {
-        var row = {};
-        for (var j = 0; j < headers.length; j++) {
-          row[headers[j]] = data[i][j];
-        }
-        return {
-          success: true,
-          data: {
-            employeeId:      row['Employee ID'],
-            companyEntity:   row['Company Entity'],
-            employeeType:    row['Employee Type'],
-            fullName:        row['Full Name'],
-            nik:             row['NIK'],
-            birthDate:       row['Birth Date'],
-            age:             row['Age'],
-            gender:          row['Gender'],
-            maritalStatus:   row['Marital Status'],
-            email:           row['Email'],
-            phone:           row['Phone'],
-            address:         row['Address'],
-            city:            row['City'],
-            education:       row['Education'],
-            workExperience:  row['Work Experience'],
-            department:      row['Department'],
-            position:        row['Position'],
-            joinDate:        row['Join Date'],
-            contractStart:   row['Contract Start'],
-            contractEnd:     row['Contract End'],
-            contractDuration:row['Contract Duration'],
-            employmentStatus:row['Employment Status'],
-            salary:          row['Salary'],
-            salaryType:      row['Salary Type'],
-            outsourceVendor: row['Outsource Vendor'],
-            contractNumber:  row['Contract Number'],
-            district:        row['District'],
-            recruitmentId:   row['Recruitment ID'],
-            recruitmentSource:row['Recruitment Source'],
-            hrNotes:         row['HR Notes'],
-            createdBy:       row['Created By'],
-            updatedAt:       row['Updated At']
-          }
-        };
-      }
-    }
-
-    return { success: false, message: 'Data tidak ditemukan.' };
+    return { success: true, data: items };
   } catch (e) {
     return { success: false, message: e.toString() };
   }
 }
 
 // ============= ADD EMPLOYEE =============
-
 function addEmployee(empData) {
   try {
-    if (!empData || !empData.fullName) {
-      return { success: false, message: 'Nama lengkap harus diisi.' };
-    }
+    if (!empData.fullName) return { success: false, message: 'Nama karyawan wajib diisi.' };
 
     var lock = LockService.getScriptLock();
-    lock.waitLock(5000);
+    lock.waitLock(10000);
+
+    var now        = new Date();
+    var newId      = generateEmployeeId_(now);
+    var createdAt  = Utilities.formatDate(now, 'GMT+7', 'yyyy-MM-dd HH:mm:ss');
 
     var sheet = getOrCreateEmployeeSheet_();
-    var now   = getNow_();
-    var newId = generateEmployeeId_();
 
-    var newRow = [
-      newId,                                    // Employee ID
-      empData.companyEntity   || '',            // Company Entity
-      empData.employeeType    || '',            // Employee Type
-      empData.fullName        || '',            // Full Name
-      empData.nik             || '',            // NIK
-      empData.birthDate       || '',            // Birth Date
-      empData.age             || '',            // Age
-      empData.gender          || '',            // Gender
-      empData.maritalStatus   || '',            // Marital Status
-      empData.email           || '',            // Email
-      empData.phone           || '',            // Phone
-      empData.address         || '',            // Address
-      empData.city            || '',            // City
-      empData.education       || '',            // Education
-      empData.workExperience  || '',            // Work Experience
-      empData.department      || '',            // Department
-      empData.position        || '',            // Position
-      empData.joinDate        || now,           // Join Date
-      empData.contractStart   || '',            // Contract Start
-      empData.contractEnd     || '',            // Contract End
-      empData.contractDuration|| '',            // Contract Duration
-      empData.employmentStatus|| 'Active',      // Employment Status
-      empData.salary          || '',            // Salary
-      empData.salaryType      || '',            // Salary Type
-      empData.outsourceVendor || '',            // Outsource Vendor
-      empData.contractNumber  || '',            // Contract Number
-      empData.district        || '',            // District
-      empData.recruitmentId   || '',            // Recruitment ID
-      empData.recruitmentSource||'',            // Recruitment Source
-      empData.hrNotes         || '',            // HR Notes
-      empData.createdBy       || '',            // Created By
-      now                                         // Updated At
-    ];
+    // Build row using EMPLOYEE_COL for column order alignment
+    var newRow = new Array(EMPLOYEE_HEADERS.length).fill('');
+    newRow[EMPLOYEE_COL['Employee ID'] - 1]         = newId;
+    newRow[EMPLOYEE_COL['Recruitment ID'] - 1]      = empData.recruitmentId   || '';
+    newRow[EMPLOYEE_COL['Full Name'] - 1]            = empData.fullName        || '';
+    newRow[EMPLOYEE_COL['Position'] - 1]             = empData.position        || '';
+    newRow[EMPLOYEE_COL['Email'] - 1]                = empData.email           || '';
+    newRow[EMPLOYEE_COL['Phone'] - 1]                = empData.phone           || '';
+    newRow[EMPLOYEE_COL['Join Date'] - 1]            = empData.joinDate        || createdAt;
+    newRow[EMPLOYEE_COL['Status'] - 1]               = empData.status          || 'Active';
+    newRow[EMPLOYEE_COL['Notes'] - 1]                = empData.notes           || '';
+    newRow[EMPLOYEE_COL['Created At'] - 1]           = createdAt;
+    newRow[EMPLOYEE_COL['Company Entity'] - 1]       = empData.companyEntity   || 'PT Mahakarya Sukses Indonesia';
+    newRow[EMPLOYEE_COL['Employee Type'] - 1]        = empData.employeeType    || '';
+    newRow[EMPLOYEE_COL['NIK'] - 1]                  = empData.nik             || '';
+    newRow[EMPLOYEE_COL['Birth Date'] - 1]           = empData.birthDate       || '';
+    newRow[EMPLOYEE_COL['Age'] - 1]                  = empData.age             || '';
+    newRow[EMPLOYEE_COL['Gender'] - 1]               = empData.gender          || '';
+    newRow[EMPLOYEE_COL['Marital Status'] - 1]       = empData.maritalStatus   || '';
+    newRow[EMPLOYEE_COL['Address'] - 1]              = empData.address         || '';
+    newRow[EMPLOYEE_COL['City'] - 1]                 = empData.city            || '';
+    newRow[EMPLOYEE_COL['Education'] - 1]            = empData.education       || '';
+    newRow[EMPLOYEE_COL['Work Experience'] - 1]      = empData.workExperience  || '';
+    newRow[EMPLOYEE_COL['Department'] - 1]           = empData.department      || '';
+    newRow[EMPLOYEE_COL['Division'] - 1]             = empData.division        || '';
+    newRow[EMPLOYEE_COL['Branch'] - 1]               = empData.branch          || '';
+    newRow[EMPLOYEE_COL['Contract Start'] - 1]       = empData.contractStart   || '';
+    newRow[EMPLOYEE_COL['Contract End'] - 1]         = empData.contractEnd     || '';
+    newRow[EMPLOYEE_COL['Contract Duration'] - 1]    = empData.contractDuration|| '';
+    newRow[EMPLOYEE_COL['Employment Status'] - 1]    = empData.employmentStatus|| 'Active';
+    newRow[EMPLOYEE_COL['Salary'] - 1]               = empData.salary          || '';
+    newRow[EMPLOYEE_COL['Salary Type'] - 1]          = empData.salaryType      || '';
+    newRow[EMPLOYEE_COL['Outsource Vendor'] - 1]     = empData.outsourceVendor || '';
+    newRow[EMPLOYEE_COL['Contract Number'] - 1]      = empData.contractNumber  || '';
+    newRow[EMPLOYEE_COL['District'] - 1]             = empData.district        || '';
+    newRow[EMPLOYEE_COL['Recruitment Source'] - 1]   = empData.recruitmentSource|| '';
+    newRow[EMPLOYEE_COL['HR Notes'] - 1]             = empData.hrNotes         || '';
+    newRow[EMPLOYEE_COL['Created By'] - 1]           = empData.createdBy       || '';
+    newRow[EMPLOYEE_COL['Updated At'] - 1]           = createdAt;
 
     sheet.appendRow(newRow);
     lock.releaseLock();
@@ -235,12 +142,9 @@ function addEmployee(empData) {
 }
 
 // ============= UPDATE EMPLOYEE =============
-
 function updateEmployee(id, updates) {
   try {
-    if (!id || !updates) {
-      return { success: false, message: 'ID dan data harus diisi.' };
-    }
+    if (!id || !updates) return { success: false, message: 'ID dan data harus diisi.' };
 
     var lock = LockService.getScriptLock();
     lock.waitLock(5000);
@@ -250,45 +154,56 @@ function updateEmployee(id, updates) {
 
     for (var i = 1; i < data.length; i++) {
       if (String(data[i][0]) === String(id)) {
-        // Col indices: 1=Employee ID, 2=Company Entity, 3=Employee Type, 4=Full Name,
-        // 5=NIK, 6=Birth Date, 7=Age, 8=Gender, 9=Marital Status, 10=Email,
-        // 11=Phone, 12=Address, 13=City, 14=Education, 15=Work Experience,
-        // 16=Department, 17=Position, 18=Join Date, 19=Contract Start,
-        // 20=Contract End, 21=Contract Duration, 22=Employment Status,
-        // 23=Salary, 24=Salary Type, 25=Outsource Vendor, 26=Contract Number,
-        // 27=District, 28=Recruitment ID, 29=Recruitment Source,
-        // 30=HR Notes, 31=Created By, 32=Updated At
-        if (updates.companyEntity !== undefined)   sheet.getRange(i + 1, 2).setValue(updates.companyEntity);
-        if (updates.employeeType !== undefined)     sheet.getRange(i + 1, 3).setValue(updates.employeeType);
-        if (updates.fullName !== undefined)         sheet.getRange(i + 1, 4).setValue(updates.fullName);
-        if (updates.nik !== undefined)              sheet.getRange(i + 1, 5).setValue(updates.nik);
-        if (updates.birthDate !== undefined)        sheet.getRange(i + 1, 6).setValue(updates.birthDate);
-        if (updates.age !== undefined)              sheet.getRange(i + 1, 7).setValue(updates.age);
-        if (updates.gender !== undefined)           sheet.getRange(i + 1, 8).setValue(updates.gender);
-        if (updates.maritalStatus !== undefined)    sheet.getRange(i + 1, 9).setValue(updates.maritalStatus);
-        if (updates.email !== undefined)            sheet.getRange(i + 1, 10).setValue(updates.email);
-        if (updates.phone !== undefined)            sheet.getRange(i + 1, 11).setValue(updates.phone);
-        if (updates.address !== undefined)          sheet.getRange(i + 1, 12).setValue(updates.address);
-        if (updates.city !== undefined)             sheet.getRange(i + 1, 13).setValue(updates.city);
-        if (updates.education !== undefined)        sheet.getRange(i + 1, 14).setValue(updates.education);
-        if (updates.workExperience !== undefined)   sheet.getRange(i + 1, 15).setValue(updates.workExperience);
-        if (updates.department !== undefined)       sheet.getRange(i + 1, 16).setValue(updates.department);
-        if (updates.position !== undefined)         sheet.getRange(i + 1, 17).setValue(updates.position);
-        if (updates.joinDate !== undefined)         sheet.getRange(i + 1, 18).setValue(updates.joinDate);
-        if (updates.contractStart !== undefined)    sheet.getRange(i + 1, 19).setValue(updates.contractStart);
-        if (updates.contractEnd !== undefined)      sheet.getRange(i + 1, 20).setValue(updates.contractEnd);
-        if (updates.contractDuration !== undefined) sheet.getRange(i + 1, 21).setValue(updates.contractDuration);
-        if (updates.employmentStatus !== undefined) sheet.getRange(i + 1, 22).setValue(updates.employmentStatus);
-        if (updates.salary !== undefined)           sheet.getRange(i + 1, 23).setValue(updates.salary);
-        if (updates.salaryType !== undefined)       sheet.getRange(i + 1, 24).setValue(updates.salaryType);
-        if (updates.outsourceVendor !== undefined)  sheet.getRange(i + 1, 25).setValue(updates.outsourceVendor);
-        if (updates.contractNumber !== undefined)   sheet.getRange(i + 1, 26).setValue(updates.contractNumber);
-        if (updates.district !== undefined)         sheet.getRange(i + 1, 27).setValue(updates.district);
-        if (updates.recruitmentId !== undefined)    sheet.getRange(i + 1, 28).setValue(updates.recruitmentId);
-        if (updates.recruitmentSource !== undefined)sheet.getRange(i + 1, 29).setValue(updates.recruitmentSource);
-        if (updates.hrNotes !== undefined)          sheet.getRange(i + 1, 30).setValue(updates.hrNotes);
-        if (updates.createdBy !== undefined)        sheet.getRange(i + 1, 31).setValue(updates.createdBy);
-        sheet.getRange(i + 1, 32).setValue(now);
+        var now = Utilities.formatDate(new Date(), 'GMT+7', 'yyyy-MM-dd HH:mm:ss');
+
+        // Map camelCase update keys to header names
+        var keyMap = {
+          companyEntity:   'Company Entity',
+          employeeType:    'Employee Type',
+          fullName:        'Full Name',
+          nik:             'NIK',
+          birthDate:       'Birth Date',
+          age:             'Age',
+          gender:          'Gender',
+          maritalStatus:   'Marital Status',
+          email:           'Email',
+          phone:           'Phone',
+          address:         'Address',
+          city:            'City',
+          education:       'Education',
+          workExperience:  'Work Experience',
+          department:      'Department',
+          division:        'Division',
+          branch:          'Branch',
+          position:        'Position',
+          joinDate:        'Join Date',
+          contractStart:   'Contract Start',
+          contractEnd:     'Contract End',
+          contractDuration:'Contract Duration',
+          employmentStatus:'Employment Status',
+          salary:          'Salary',
+          salaryType:      'Salary Type',
+          outsourceVendor: 'Outsource Vendor',
+          contractNumber:  'Contract Number',
+          district:        'District',
+          recruitmentId:   'Recruitment ID',
+          recruitmentSource:'Recruitment Source',
+          hrNotes:         'HR Notes',
+          notes:           'Notes',
+          status:          'Status',
+          createdBy:       'Created By'
+        };
+
+        var col = -1;
+        for (var key in updates) {
+          if (!updates.hasOwnProperty(key)) continue;
+          var header = keyMap[key];
+          if (header && EMPLOYEE_COL[header]) {
+            sheet.getRange(i + 1, EMPLOYEE_COL[header]).setValue(updates[key]);
+          }
+        }
+        // Always update "Updated At"
+        sheet.getRange(i + 1, EMPLOYEE_COL['Updated At']).setValue(now);
 
         lock.releaseLock();
         return { success: true, message: 'Data karyawan berhasil diperbarui.' };
@@ -303,7 +218,6 @@ function updateEmployee(id, updates) {
 }
 
 // ============= DELETE EMPLOYEE =============
-
 function deleteEmployee(id) {
   try {
     if (!id) return { success: false, message: 'ID harus diisi.' };
@@ -313,10 +227,11 @@ function deleteEmployee(id) {
 
     var sheet = getOrCreateEmployeeSheet_();
     var data  = sheet.getDataRange().getValues();
+    var colNameIdx = 0; // Employee ID is column 1
 
     for (var i = 1; i < data.length; i++) {
-      if (String(data[i][0]) === String(id)) {
-        var name = data[i][3];
+      if (String(data[i][colNameIdx]) === String(id)) {
+        var name = data[i][EMPLOYEE_COL['Full Name'] - 1];
         sheet.deleteRow(i + 1);
         lock.releaseLock();
         return { success: true, message: 'Karyawan "' + name + '" berhasil dihapus.' };
@@ -331,7 +246,6 @@ function deleteEmployee(id) {
 }
 
 // ============= EMPLOYEE STATISTICS =============
-
 function getEmployeeStats() {
   try {
     var result = getEmployeeList();
@@ -348,7 +262,7 @@ function getEmployeeStats() {
     };
 
     items.forEach(function(emp) {
-      if (emp.employmentStatus === 'Active') stats.active++;
+      if (emp.employmentStatus === 'Active' || emp.status === 'Active') stats.active++;
       else stats.inactive++;
 
       var dept = emp.department || 'Belum Ditentukan';

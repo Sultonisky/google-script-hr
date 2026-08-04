@@ -231,40 +231,48 @@ function acceptCandidateToEmployee(recruitmentId, hrNotes) {
     if (!existingEmpId) {
       var empSheet = getOrCreateEmployeeSheet_();
       var createdAt = Utilities.formatDate(now, 'GMT+7', 'yyyy-MM-dd HH:mm:ss');
-      empSheet.appendRow([
-        employeeId,                                              // Employee ID
-        'PT Mahakarya Sukses Indonesia',                         // Company Entity
-        'PKWTT',                                                 // Employee Type (default organik, HR dapat edit)
-        found.values[found.colIndex['Full Name']],               // Full Name
-        found.values[found.colIndex['NIK']],                     // NIK
-        found.values[found.colIndex['Birth Date']],              // Birth Date
-        found.values[found.colIndex['Age']],                     // Age
-        found.values[found.colIndex['Gender']],                  // Gender
-        found.values[found.colIndex['Marital Status']],          // Marital Status
-        found.values[found.colIndex['Email']],                   // Email
-        found.values[found.colIndex['Phone']],                   // Phone
-        found.values[found.colIndex['Address']],                 // Address
-        found.values[found.colIndex['City']],                    // City
-        found.values[found.colIndex['Education']],               // Education
-        found.values[found.colIndex['Work Experience']],         // Work Experience
-        '',                                                      // Department (HR isi manual)
-        found.values[found.colIndex['Position Applied']],        // Position
-        Utilities.formatDate(now, 'GMT+7', 'yyyy-MM-dd'),        // Join Date
-        '',                                                      // Contract Start
-        '',                                                      // Contract End
-        '',                                                      // Contract Duration
-        'Active',                                                // Employment Status
-        found.values[found.colIndex['Expected Salary']],         // Salary
-        'Monthly',                                               // Salary Type
-        '',                                                      // Outsource Vendor
-        '',                                                      // Contract Number (N/A for pipeline)
-        '',                                                      // District (N/A for pipeline)
-        recruitmentId,                                           // Recruitment ID
-        found.values[found.colIndex['Recruitment Source']],      // Recruitment Source
-        hrNotes || '',                                           // HR Notes
-        'System',                                                // Created By
-        createdAt                                                // Updated At
-      ]);
+
+      // Build row using EMPLOYEE_COL for exact column alignment
+      var newRow = new Array(EMPLOYEE_HEADERS.length).fill('');
+      newRow[EMPLOYEE_COL['Employee ID'] - 1]       = employeeId;
+      newRow[EMPLOYEE_COL['Recruitment ID'] - 1]    = recruitmentId;
+      newRow[EMPLOYEE_COL['Full Name'] - 1]         = found.values[found.colIndex['Full Name']];
+      newRow[EMPLOYEE_COL['Position'] - 1]          = found.values[found.colIndex['Position Applied']];
+      newRow[EMPLOYEE_COL['Email'] - 1]             = found.values[found.colIndex['Email']];
+      newRow[EMPLOYEE_COL['Phone'] - 1]             = found.values[found.colIndex['Phone']];
+      newRow[EMPLOYEE_COL['Join Date'] - 1]         = Utilities.formatDate(now, 'GMT+7', 'yyyy-MM-dd');
+      newRow[EMPLOYEE_COL['Status'] - 1]            = 'Active';
+      newRow[EMPLOYEE_COL['Notes'] - 1]             = hrNotes || '';
+      newRow[EMPLOYEE_COL['Created At'] - 1]        = createdAt;
+      newRow[EMPLOYEE_COL['Company Entity'] - 1]    = 'PT Mahakarya Sukses Indonesia';
+      newRow[EMPLOYEE_COL['Employee Type'] - 1]     = 'PKWTT';
+      newRow[EMPLOYEE_COL['NIK'] - 1]               = found.values[found.colIndex['NIK']];
+      newRow[EMPLOYEE_COL['Birth Date'] - 1]        = found.values[found.colIndex['Birth Date']];
+      newRow[EMPLOYEE_COL['Age'] - 1]               = found.values[found.colIndex['Age']];
+      newRow[EMPLOYEE_COL['Gender'] - 1]            = found.values[found.colIndex['Gender']];
+      newRow[EMPLOYEE_COL['Marital Status'] - 1]    = found.values[found.colIndex['Marital Status']];
+      newRow[EMPLOYEE_COL['Address'] - 1]           = found.values[found.colIndex['Address']];
+      newRow[EMPLOYEE_COL['City'] - 1]              = found.values[found.colIndex['City']];
+      newRow[EMPLOYEE_COL['Education'] - 1]         = found.values[found.colIndex['Education']];
+      newRow[EMPLOYEE_COL['Work Experience'] - 1]   = found.values[found.colIndex['Work Experience']];
+      newRow[EMPLOYEE_COL['Department'] - 1]        = '';
+      newRow[EMPLOYEE_COL['Division'] - 1]          = '';
+      newRow[EMPLOYEE_COL['Branch'] - 1]            = '';
+      newRow[EMPLOYEE_COL['Contract Start'] - 1]    = '';
+      newRow[EMPLOYEE_COL['Contract End'] - 1]      = '';
+      newRow[EMPLOYEE_COL['Contract Duration'] - 1] = '';
+      newRow[EMPLOYEE_COL['Employment Status'] - 1] = 'Active';
+      newRow[EMPLOYEE_COL['Salary'] - 1]            = found.values[found.colIndex['Expected Salary']];
+      newRow[EMPLOYEE_COL['Salary Type'] - 1]       = 'Monthly';
+      newRow[EMPLOYEE_COL['Outsource Vendor'] - 1]  = '';
+      newRow[EMPLOYEE_COL['Contract Number'] - 1]   = '';
+      newRow[EMPLOYEE_COL['District'] - 1]          = '';
+      newRow[EMPLOYEE_COL['Recruitment Source'] - 1]= found.values[found.colIndex['Recruitment Source']];
+      newRow[EMPLOYEE_COL['HR Notes'] - 1]          = hrNotes || '';
+      newRow[EMPLOYEE_COL['Created By'] - 1]        = 'System';
+      newRow[EMPLOYEE_COL['Updated At'] - 1]        = createdAt;
+
+      empSheet.appendRow(newRow);
     }
 
     writeAuditLog_(recruitmentId, 'Accepted', 'Status', oldStatus, 'Accepted -> Employee ' + employeeId);

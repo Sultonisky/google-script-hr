@@ -1,21 +1,11 @@
 // ============================================================
 // backend/Audit.gs — AUDIT LOG
+// Uses AUDIT_LOG_HEADERS and AUDIT_SHEET_NAME from Config.gs
 // ============================================================
 
 // Tulis satu baris audit log (buat sheet jika belum ada)
 function writeAuditLog_(recruitmentId, action, field, oldValue, newValue) {
-  var ss    = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(AUDIT_LOG_SHEET_NAME);
-
-  if (!sheet) {
-    sheet = ss.insertSheet(AUDIT_LOG_SHEET_NAME);
-    sheet.appendRow(AUDIT_LOG_HEADERS);
-    sheet.getRange(1, 1, 1, AUDIT_LOG_HEADERS.length)
-         .setFontWeight('bold')
-         .setBackground('#005BAC')
-         .setFontColor('#FFFFFF');
-    sheet.setFrozenRows(1);
-  }
+  var sheet = getOrCreateAuditLogSheet_();
 
   var user = Session.getActiveUser().getEmail() || 'HR Dashboard';
   sheet.appendRow([
@@ -32,7 +22,7 @@ function writeAuditLog_(recruitmentId, action, field, oldValue, newValue) {
 // Ambil riwayat aktivitas untuk satu kandidat (dipakai Activity Timeline)
 function getAuditLogForCandidate(recruitmentId) {
   var ss    = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(AUDIT_LOG_SHEET_NAME);
+  var sheet = ss.getSheetByName(AUDIT_SHEET_NAME);
   if (!sheet || sheet.getLastRow() < 2) return [];
 
   var values = sheet.getRange(1, 1, sheet.getLastRow(), AUDIT_LOG_HEADERS.length).getValues();
