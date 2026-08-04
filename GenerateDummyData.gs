@@ -1,830 +1,1128 @@
 // ============================================================
-// GenerateDummyData.gs — Generate 100 dummy recruitment records
+// GenerateDummyData.gs — Complete HRIS Demo Dataset Generator
 // ============================================================
-// INSTRUCTIONS:
-// 1. Paste this file content into a NEW file in Apps Script editor
-// 2. Run function generateAllDummyData() from the editor
-// 3. After verification, delete this file from the project
+// Run: generateAllHRISDemoData() from Apps Script editor
+// Generates: Master Data, Recruitment (100), Employee (100), Outsource (100), Audit Logs
 // ============================================================
 
-function generateAllDummyData() {
+// ============================================================
+// GenerateDummyData.gs — Complete HRIS Demo Dataset Generator
+// ============================================================
+// Run: generateAllHRISDemoData() from Apps Script editor
+// Generates: Master Data, Recruitment (100), Employee (100), Outsource (100), Audit Logs
+// ============================================================
+
+function generateAllHRISDemoData() {
   var lock = LockService.getScriptLock();
-  lock.waitLock(30000);
+  lock.waitLock(60000);
   try {
-    var sheet = getOrCreateSheet_();
-    var startRow = sheet.getLastRow() + 1;
+    Logger.log('===== START: Generate HRIS Demo Data =====');
+    var today = new Date();
 
-    // Check if data already exists to prevent duplicates
-    if (sheet.getLastRow() > 1) {
-      var lastRecruitId = sheet.getRange(sheet.getLastRow(), 1).getValue();
-      Logger.log("Existing data found. Last Recruitment ID: " + lastRecruitId);
-      Logger.log("Appending new records starting at row " + startRow);
-    }
+    // 1. Master Data
+    var mdCount = generateMasterData_(today);
 
-    var records = buildDummyRecords_();
+    // 2. Recruitment (100 candidates)
+    var recResult = generateRecruitmentData_(today);
 
-    // Build batch data
-    var batchData = [];
-    for (var i = 0; i < records.length; i++) {
-      batchData.push(records[i].row);
-    }
+    // 3. Employee (50 legacy + 50 from recruitment)
+    var empResult = generateEmployeeData_(recResult.accepted, today);
 
-    // Write all at once for performance
-    sheet
-      .getRange(startRow, 1, batchData.length, batchData[0].length)
-      .setValues(batchData);
+    // 4. Outsource (100 records)
+    var osCount = generateOutsourceData_(today);
 
-    // Write audit logs for each record
-    for (var j = 0; j < records.length; j++) {
-      var rec = records[j];
-      try {
-        writeAuditLog_(
-          rec.recruitmentId,
-          "Created (Dummy Data)",
-          "-",
-          rec.status,
-        );
-      } catch (e) {
-        Logger.log(
-          "Audit log skip for " + rec.recruitmentId + ": " + e.message,
-        );
-      }
-    }
+    // 5. Audit Logs
+    generateAuditLogs_(recResult.records, empResult.legacyIds, empResult.recIds);
 
-    Logger.log(
-      "SUCCESS: " +
-        records.length +
-        " dummy records inserted at rows " +
-        startRow +
-        "-" +
-        (startRow + records.length - 1),
-    );
-    return "Sukses: " + records.length + " data dummy berhasil ditambahkan.";
-  } catch (error) {
-    Logger.log("ERROR: " + error.toString());
-    return "Error: " + error.toString();
+    Logger.log('===== COMPLETE =====');
+    Logger.log('Master Data: ' + mdCount);
+    Logger.log('Recruitment: ' + recResult.count + ' (' + recResult.accepted.length + ' accepted)');
+    Logger.log('Employee: ' + empResult.count);
+    Logger.log('Outsource: ' + osCount);
+
+    return 'OK — MD:' + mdCount + ' Rec:' + recResult.count + ' Emp:' + empResult.count + ' OS:' + osCount;
+  } catch (e) {
+    Logger.log('ERROR: ' + e.toString());
+    return 'Error: ' + e.toString();
   } finally {
     lock.releaseLock();
   }
-}
-
-function buildDummyRecords_() {
-  var records = [];
-  var today = new Date();
-
-  // Status distribution — menyesuaikan dengan sistem: Pending, Accepted, Hold, Blacklist
-  var statusList = [];
-  addMultiple_(statusList, "Pending", 70); // Mayoritas kandidat baru masuk, belum ada aksi
-  addMultiple_(statusList, "Accepted", 20); // Kandidat yang diterima
-  addMultiple_(statusList, "Hold", 8); // Kandidat yang ditahan sementara
-  addMultiple_(statusList, "Blacklist", 2); // Kandidat yang di-blacklist
-
-  // Shuffle status list
-  shuffleArray_(statusList);
-
-  // Position list
-  var positions = [
-    "IT Support",
-    "Network Engineer",
-    "Software Engineer",
-    "Backend Developer",
-    "Frontend Developer",
-    "Fullstack Developer",
-    "HR Staff",
-    "HR Recruiter",
-    "Finance Staff",
-    "Accounting Staff",
-    "Digital Marketing",
-    "Graphic Designer",
-    "UI/UX Designer",
-    "Sales Executive",
-    "Purchasing Staff",
-    "Warehouse Staff",
-    "Admin",
-    "Customer Service",
-  ];
-
-  // Indonesian first names
-  var maleFirstNames = [
-    "Ahmad",
-    "Budi",
-    "Dedi",
-    "Eko",
-    "Fajar",
-    "Gilang",
-    "Hendra",
-    "Irfan",
-    "Joko",
-    "Krisna",
-    "Luthfi",
-    "Muhammad",
-    "Nanda",
-    "Oki",
-    "Prasetyo",
-    "Rizki",
-    "Satria",
-    "Taufik",
-    "Ujang",
-    "Wahyu",
-    "Yoga",
-    "Aditya",
-    "Bagus",
-    "Cakra",
-    "Dimas",
-    "Elang",
-    "Farhan",
-    "Guntur",
-    "Hafiz",
-    "Indra",
-    "Januar",
-    "Kurniawan",
-    "Lukman",
-    "Maulana",
-    "Nugroho",
-  ];
-
-  var femaleFirstNames = [
-    "Ani",
-    "Bunga",
-    "Citra",
-    "Dewi",
-    "Eka",
-    "Fitri",
-    "Gita",
-    "Hana",
-    "Indah",
-    "Juli",
-    "Kartika",
-    "Lestari",
-    "Maya",
-    "Nina",
-    "Oktavia",
-    "Putri",
-    "Ratna",
-    "Sari",
-    "Tantri",
-    "Ulya",
-    "Wati",
-    "Yunita",
-    "Ayu",
-    "Bening",
-    "Cempaka",
-    "Dian",
-    "Elsa",
-    "Fiona",
-    "Grace",
-    "Hani",
-    "Intan",
-    "Julia",
-    "Kirana",
-    "Luna",
-    "Mega",
-  ];
-
-  var lastNames = [
-    "Susanto",
-    "Wijaya",
-    "Pratama",
-    "Kurniawan",
-    "Setiawan",
-    "Saputra",
-    "Hidayat",
-    "Santoso",
-    "Putra",
-    "Ardianto",
-    "Nugroho",
-    "Suryadi",
-    "Wibowo",
-    "Rahman",
-    "Firmansyah",
-    "Suhendar",
-    "Gunawan",
-    "Hartono",
-    "Budiman",
-    "Siregar",
-    "Tampubolon",
-    "Manurung",
-    "Purba",
-    "Simanjuntak",
-    "Limbong",
-    "Togatorop",
-    "Sinaga",
-    "Nainggolan",
-    "Hutapea",
-    "Panggabean",
-  ];
-
-  // Cities
-  var cities = [
-    "Jakarta Selatan",
-    "Jakarta Barat",
-    "Jakarta Pusat",
-    "Jakarta Utara",
-    "Jakarta Timur",
-    "Bandung",
-    "Surabaya",
-    "Yogyakarta",
-    "Semarang",
-    "Malang",
-    "Medan",
-    "Palembang",
-    "Makassar",
-    "Denpasar",
-    "Balikpapan",
-    "Tangerang",
-    "Bekasi",
-    "Depok",
-    "Bogor",
-    "Banten",
-  ];
-
-  // Education levels — must match form values in FormPendaftaran & backend validation
-  var educationLevels = [
-    "Senior High School",
-    "Vocational High School",
-    "Diploma III",
-    "Bachelor Degree",
-    "Master Degree",
-  ];
-
-  // Work experiences — must match form option values
-  var workExperiences = [
-    "No Experience",
-    "Less than 1 Year",
-    "1-2 Years",
-    "2-3 Years",
-    "3-5 Years",
-    "5-10 Years",
-    "More than 10 Years",
-  ];
-
-  // Companies
-  var companies = [
-    "PT Telkom Indonesia",
-    "PT Bank Mandiri",
-    "PT Pertamina",
-    "PT PLN",
-    "PT Garuda Indonesia",
-    "PT Astra International",
-    "PT Unilever Indonesia",
-    "PT Indofood Sukses Makmur",
-    "PT Telekomunikasi Seluler",
-    "PT Matahari Putra Prima",
-    "PT Kalbe Farma",
-    "PT BRI",
-    "PT BCA",
-    "PT Bank Negara Indonesia",
-    "PT Wijaya Karya",
-    "PT Adhi Karya",
-    "PT Jasa Marga",
-    "PT Angkasa Pura",
-    "PT Pos Indonesia",
-    "PT Kereta Api Indonesia",
-    "PT Samsung Electronics Indonesia",
-    "PT Xiaomi Communications",
-    "PT Gojek Indonesia",
-    "PT Tokopedia",
-    "PT Traveloka",
-    "PT Shopee Indonesia",
-    "PT Grab Indonesia",
-    "PT Lazada Indonesia",
-    "PT Bukalapak",
-    "PT Blibli.com",
-  ];
-
-  // Employment statuses — must match form option values
-  var empStatuses = [
-    "Employed Full Time",
-    "Employed Contract",
-    "Part Time",
-    "Freelance",
-    "Unemployed",
-    "Resigned",
-    "Fresh Graduate",
-  ];
-
-  // Available to join options
-  var availableToJoin = [
-    "Segera",
-    "1 Minggu",
-    "2 Minggu",
-    "1 Bulan",
-    "2 Bulan",
-    "3 Bulan",
-    "Bisa Negosiasi",
-  ];
-
-  // Recruitment sources
-  var recruitmentSources = [
-    "JobStreet",
-    "LinkedIn",
-    "Indeed",
-    "Glassdoor",
-    "Instagram",
-    "Website Perusahaan",
-    "Referensi Karyawan",
-    "Kampus / Career Fair",
-    "Indeed",
-    "Loker.id",
-    "Karir.com",
-  ];
-
-  // Salary ranges by position type
-  var salaryRanges = {
-    "IT Support": [4000000, 7000000],
-    "Network Engineer": [5000000, 9000000],
-    "Software Engineer": [7000000, 15000000],
-    "Backend Developer": [7000000, 14000000],
-    "Frontend Developer": [6000000, 13000000],
-    "Fullstack Developer": [8000000, 16000000],
-    "HR Staff": [4500000, 8000000],
-    "HR Recruiter": [4500000, 8000000],
-    "Finance Staff": [5000000, 9000000],
-    "Accounting Staff": [4500000, 8000000],
-    "Digital Marketing": [4500000, 10000000],
-    "Graphic Designer": [4000000, 8000000],
-    "UI/UX Designer": [5000000, 12000000],
-    "Sales Executive": [4000000, 9000000],
-    "Purchasing Staff": [4000000, 7500000],
-    "Warehouse Staff": [3500000, 6000000],
-    Admin: [3500000, 6000000],
-    "Customer Service": [3500000, 6500000],
-  };
-
-  // HR Notes pool
-  var hrNotesPool = [
-    "Kandidat memiliki pengalaman yang relevan dengan posisi yang dilamar.",
-    "CV lengkap dan menarik, perlu follow up untuk interview.",
-    "Kandidat direferensikan oleh tim internal.",
-    "Hasil tes technical cukup baik, perlu evaluasi lebih lanjut.",
-    "Tingkat komunikasi kandidat sangat baik.",
-    "Kandidat sudah memiliki pengalaman di industri serupa.",
-    "Perlu konfirmasi gaji yang diharapkan dengan budget yang tersedia.",
-    "Kandidat bersedia untuk remote work.",
-    "Jadwalkan ulang interview karena kandidat berhalangan.",
-    "Portfolio kandidat sangat impresif.",
-    "",
-    "",
-    "",
-  ];
-
-  // Addresses
-  var streetNames = [
-    "Jl. Sudirman",
-    "Jl. Thamrin",
-    "Jl. Gatot Subroto",
-    "Jl. Diponegoro",
-    "Jl. Ahmad Yani",
-    "Jl. Imam Bonjol",
-    "Jl. Hayam Wuruk",
-    "Jl. Gajah Mada",
-    "Jl. Veteran",
-    "Jl. Pahlawan",
-    "Jl. Merdeka",
-    "Jl. Asia Afrika",
-    "Jl. Pemuda",
-    "Jl. Kartini",
-    "Jl. Sisingamangaraja",
-    "Jl. Rasuna Said",
-    "Jl. Kuningan",
-    "Jl. TB Simatupang",
-    "Jl. HR Rasuna Said",
-    "Jl. M.H. Thamrin",
-    "Jl. Jenderal Soedirman",
-  ];
-
-  // Universities
-  var universities = [
-    "Universitas Indonesia",
-    "Institut Teknologi Bandung",
-    "Universitas Gadjah Mada",
-    "Universitas Diponegoro",
-    "Institut Teknologi Sepuluh Nopember",
-    "Universitas Airlangga",
-    "Universitas Padjadjaran",
-    "Universitas Hasanuddin",
-    "Universitas Brawijaya",
-    "Universitas Sebelas Maret",
-    "Universitas Negeri Jakarta",
-    "Universitas Negeri Yogyakarta",
-    "Universitas Muhammadiyah Jakarta",
-    "Universitas Trisakti",
-    "Universitas Mercu Buana",
-    "Universitas Bina Nusantara",
-    "Politeknik Negeri Jakarta",
-    "Politeknik Negeri Bandung",
-    "Universitas Pancasila",
-    "Universitas Tarumanagara",
-  ];
-
-  // Majors
-  var majors = [
-    "Teknik Informatika",
-    "Sistem Informasi",
-    "Ilmu Komputer",
-    "Teknik Komputer",
-    "Teknik Elektro",
-    "Teknik Mesin",
-    "Teknik Sipil",
-    "Teknik Industri",
-    "Akuntansi",
-    "Manajemen",
-    "Ekonomi",
-    "Bisnis",
-    "Desain Grafis",
-    "Desain Komunikasi Visual",
-    "Seni Rupa",
-    "Psikologi",
-    "Hubungan Masyarakat",
-    "Ilmu Komunikasi",
-    "Hukum",
-    "Sastra Inggris",
-    "Pendidikan",
-  ];
-
-  // Marital statuses — must match form values
-  var maritalStatuses = ["Single", "Married", "Divorced", "Widowed"];
-
-  // Hold reasons
-  var holdReasons = [
-    "Kandidat minta penundaan",
-    "Posisi belum dibuka",
-    "Budget belum tersedia",
-    "Menunggu hasil background check",
-  ];
-
-  // Blacklist reasons
-  var blacklistReasons = [
-    "Tidak hadir tanpa konfirmasi",
-    "Berdusta dalam aplikasi",
-    "Pelanggaran etika saat interview",
-  ];
-
-  var usedEmails = {};
-  var usedPhones = {};
-  var usedNik = {};
-
-  for (var i = 0; i < 100; i++) {
-    var status = statusList[i];
-    var isMale = Math.random() > 0.45;
-    var firstName = isMale
-      ? pickRandom_(maleFirstNames)
-      : pickRandom_(femaleFirstNames);
-    var lastName = pickRandom_(lastNames);
-    var fullName = firstName + " " + lastName;
-
-    var position = pickRandom_(positions);
-    var salaryRange = salaryRanges[position];
-    var expectedSalary = randomInt_(salaryRange[0], salaryRange[1]);
-    // Round salary to nearest 500000
-    expectedSalary = Math.round(expectedSalary / 500000) * 500000;
-
-    var education = pickRandom_(educationLevels);
-    var workExp = pickRandom_(workExperiences);
-
-    // Age based on experience
-    var age;
-    if (workExp === "No Experience" || workExp === "Less than 1 Year") {
-      age = randomInt_(20, 25);
-    } else if (workExp === "1-2 Years") {
-      age = randomInt_(22, 28);
-    } else if (workExp === "2-3 Years") {
-      age = randomInt_(24, 30);
-    } else if (workExp === "3-5 Years") {
-      age = randomInt_(26, 33);
-    } else if (workExp === "5-10 Years") {
-      age = randomInt_(28, 38);
-    } else {
-      age = randomInt_(32, 50);
-    }
-    if (age > 50) age = 50;
-
-    var birthYear = today.getFullYear() - age;
-    var birthMonth = randomInt_(1, 12);
-    var birthDay = randomInt_(1, 28);
-    var birthDate = birthYear + "-" + pad_(birthMonth) + "-" + pad_(birthDay);
-
-    // Generate unique phone
-    var phone;
-    do {
-      phone = "08" + randomDigits_(10);
-    } while (usedPhones[phone]);
-    usedPhones[phone] = true;
-
-    // Generate unique email
-    var emailBase = firstName.toLowerCase() + "." + lastName.toLowerCase();
-    emailBase = emailBase.replace(/[^a-z0-9.]/g, "");
-    var emailSuffix = randomInt_(1, 999);
-    var email = emailBase + emailSuffix + "@gmail.com";
-    var emailAttempt = 0;
-    while (usedEmails[email]) {
-      emailAttempt++;
-      email = emailBase + emailSuffix + emailAttempt + "@gmail.com";
-    }
-    usedEmails[email] = true;
-
-    var city = pickRandom_(cities);
-    var street = pickRandom_(streetNames) + " No. " + randomInt_(1, 150);
-    var address = street + ", " + city;
-
-    var university = pickRandom_(universities);
-    var major = pickRandom_(majors);
-    var educationDisplay = education;
-    if (
-      education === "S1" ||
-      education === "S2" ||
-      education === "D3" ||
-      education === "D4"
-    ) {
-      educationDisplay = education + " " + major;
-    }
-
-    var company = workExp === "No Experience" ? "-" : pickRandom_(companies);
-    var empStatus = pickRandom_(empStatuses);
-    var joinDate = pickRandom_(availableToJoin);
-    var source = pickRandom_(recruitmentSources);
-    var maritalStatus = pickRandom_(maritalStatuses);
-
-    var cvLink = "";
-    if (Math.random() > 0.3) {
-      cvLink =
-        "https://drive.google.com/file/d/" + randomAlphanumeric_(15) + "/view";
-    }
-
-    var hrNotes = pickRandom_(hrNotesPool);
-
-    // Created Date - spread across last 90 days
-    var daysAgo = randomInt_(0, 90);
-    var createdDateObj = new Date(today.getTime() - daysAgo * 86400000);
-    createdDateObj.setHours(
-      randomInt_(8, 17),
-      randomInt_(0, 59),
-      randomInt_(0, 59),
-    );
-    var createdDateStr = Utilities.formatDate(
-      createdDateObj,
-      "GMT+7",
-      "yyyy-MM-dd HH:mm:ss",
-    );
-
-    // Updated At
-    var updatedDateObj = new Date(
-      createdDateObj.getTime() + randomInt_(0, daysAgo) * 86400000,
-    );
-    updatedDateObj.setHours(
-      randomInt_(8, 17),
-      randomInt_(0, 59),
-      randomInt_(0, 59),
-    );
-    var updatedAtStr = Utilities.formatDate(
-      updatedDateObj,
-      "GMT+7",
-      "yyyy-MM-dd HH:mm:ss",
-    );
-
-    // Recruitment ID - use timestamp-based to avoid collision
-    var recDatePart = Utilities.formatDate(createdDateObj, "GMT+7", "yyyyMMdd");
-    var recId = "REC-" + recDatePart + "-" + ("000000" + (i + 1)).slice(-6);
-
-    // Extra columns
-    var holdReason = "";
-    var holdFollowUpDate = "";
-    var blacklistReason = "";
-    var blacklistDate = "";
-    var blacklistUpdatedBy = "";
-    var employeeId = "";
-
-    if (status === "Hold") {
-      holdReason = pickRandom_(holdReasons);
-      var fuDate = new Date(today.getTime() + randomInt_(7, 30) * 86400000);
-      holdFollowUpDate = Utilities.formatDate(fuDate, "GMT+7", "yyyy-MM-dd");
-    }
-
-    if (status === "Blacklist") {
-      blacklistReason = pickRandom_(blacklistReasons);
-      blacklistDate = updatedAtStr;
-      blacklistUpdatedBy = "HR Admin";
-    }
-
-    if (status === "Accepted") {
-      employeeId =
-        "EMP-" + today.getFullYear() + "-" + ("0000" + (i + 1)).slice(-4);
-    }
-
-    var row = [
-      recId, // Recruitment ID
-      createdDateStr, // Created Date
-      fullName, // Full Name
-      "'" + randomDigits_(16), // NIK (16-digit Indonesian national ID)
-      birthDate, // Birth Date
-      age, // Age
-      isMale ? "Male" : "Female", // Gender (matches backend: Male/Female)
-      maritalStatus, // Marital Status
-      email, // Email
-      "'" + phone, // Phone
-      address, // Address
-      city, // City
-      position, // Position Applied
-      educationDisplay, // Education
-      workExp, // Work Experience
-      company, // Last Company
-      empStatus, // Current Employment Status
-      joinDate, // Available to Join
-      expectedSalary, // Expected Salary
-      source, // Recruitment Source
-      cvLink, // CV Link
-      status, // Status
-      hrNotes, // HR Notes
-      "System", // Created By
-      updatedAtStr, // Updated At
-      holdReason, // Hold Reason (extra)
-      holdFollowUpDate, // Hold Follow Up Date (extra)
-      blacklistReason, // Blacklist Reason (extra)
-      blacklistDate, // Blacklist Date (extra)
-      blacklistUpdatedBy, // Blacklist Updated By (extra)
-      employeeId, // Employee ID (extra)
-    ];
-
-    records.push({ recruitmentId: recId, status: status, row: row });
-  }
-
-  return records;
 }
 
 // ============================================================
 // HELPER FUNCTIONS
 // ============================================================
-
-function pickRandom_(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
+function _gdPick_(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function _gdRandInt_(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
+function _gdPad_(n, s) { var r = '' + n; while (r.length < s) r = '0' + r; return r; }
+function _gdAddMultiple_(arr, val, cnt) { for (var i = 0; i < cnt; i++) arr.push(val); }
+function _gdShuffle_(arr) { for (var i = arr.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = arr[i]; arr[i] = arr[j]; arr[j] = t; } }
+function _gdRandDigits_(n) { var s = ''; for (var i = 0; i < n; i++) s += Math.floor(Math.random() * 10); return s; }
+function _gdRandAlphanum_(n) { var c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'; var s = ''; for (var i = 0; i < n; i++) s += c.charAt(Math.floor(Math.random() * c.length)); return s; }
+function _gdNow_() { return Utilities.formatDate(new Date(), 'GMT+7', 'yyyy-MM-dd HH:mm:ss'); }
+function _gdDateStr_(d) { return Utilities.formatDate(d, 'GMT+7', 'yyyy-MM-dd HH:mm:ss'); }
+function _gdDateOnly_(d) { return Utilities.formatDate(d, 'GMT+7', 'yyyy-MM-dd'); }
+function _gdRandSalary_(pos) {
+  var map = {
+    'Director':[15000000,30000000],'GM':[12000000,25000000],'Manager':[8000000,20000000],
+    'Supervisor':[5000000,12000000],'Team Lead':[5000000,12000000],'Senior Staff':[4000000,10000000],
+    'Staff':[3500000,8000000],'Junior Staff':[3000000,6000000],'IT Support':[4000000,7000000],
+    'Network Engineer':[5000000,9000000],'Software Engineer':[7000000,15000000],
+    'Backend Developer':[7000000,14000000],'Frontend Developer':[6000000,13000000],
+    'Fullstack Developer':[8000000,16000000],'HR Staff':[4500000,8000000],'HR Recruiter':[4500000,8000000],
+    'Finance Staff':[5000000,9000000],'Accounting Staff':[4500000,8000000],
+    'Digital Marketing Specialist':[4500000,10000000],'Graphic Designer':[4000000,8000000],
+    'UI/UX Designer':[5000000,12000000],'Sales Executive':[4000000,9000000],
+    'Purchasing Staff':[4000000,7500000],'Warehouse Staff':[3500000,6000000],
+    'Admin':[3500000,6000000],'Customer Service':[3500000,6500000],
+    'Quality Control Staff':[3500000,7000000],'Driver':[3000000,5500000],
+    'Security':[3000000,5000000],'Office Boy':[2500000,4500000]
+  };
+  var r = map[pos] || [3500000, 8000000];
+  return Math.round((_gdRandInt_(r[0], r[1]) / 500000)) * 500000;
 }
-
-function randomInt_(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+function _gdMaleNames_() {
+  return ['Ahmad','Budi','Dedi','Eko','Fajar','Gilang','Hendra','Irfan','Joko','Krisna',
+    'Luthfi','Muhammad','Nanda','Oki','Prasetyo','Rizki','Satria','Taufik','Ujang','Wahyu',
+    'Yoga','Aditya','Bagus','Cakra','Dimas','Elang','Farhan','Guntur','Hafiz','Indra',
+    'Januar','Kurniawan','Lukman','Maulana','Nugroho','Rian','Surya','Teguh','Yudi','Zainal',
+    'Andi','Bambang','Cipto','Dharmawan','Eko','Firman','Guruh','Hery','Iwan','Jefri',
+    'Khalid','Lukas','Mardiansyah','Naufal','Okta','Pranoto','Rizal','Saputra','Taufik','Umar',
+    'Viktor','Wibowo','Yusuf','Zulfikar','Akmal','Bima','Danang','Erik','Fahmi','Gibran',
+    'Haidar','Ilham','Javier','Kamal','Luthfi','Mikail','Nabil','Osman','Putra','Raka',
+    'Salsa','Tariq','Ubay','Vicky','Wahid','Xavier','Yusuf','Zidan','Alif','Bara'];
 }
-
-function pad_(n) {
-  return n < 10 ? "0" + n : "" + n;
+function _gdFemaleNames_() {
+  return ['Ani','Bunga','Citra','Dewi','Eka','Fitri','Gita','Hana','Indah','Juli',
+    'Kartika','Lestari','Maya','Nina','Oktavia','Putri','Ratna','Sari','Tantri','Ulya',
+    'Wati','Yunita','Ayu','Bening','Cempaka','Dian','Elsa','Fiona','Grace','Hani',
+    'Intan','Julia','Kirana','Luna','Mega','Nabila','Oktaviani','Pratiwi','Rina','Siti',
+    'Tika','Ulfa','Vina','Wida','Yanti','Zahra','Amina','Bella','Cinta','Dara',
+    'Eris','Fatimah','Gita','Hidayah','Ira','Jannah','Khalida','Laila','Mira','Nisa',
+    'Oka','Purnama','Qanita','Rahma','Salsabila','Tia','Ummi','Vera','Wahyuni','Xenia',
+    'Yani','Zahara','Aldila','Bianca','Cassia','Dhea','Eldora','Farah','Gisel','Hana',
+    'Izzati','Jihane','Khalisah','Lutfia','Mutiara','Nadhira','Olive','Prilly','Quinn','Rahma'];
 }
-
-function addMultiple_(arr, value, count) {
-  for (var i = 0; i < count; i++) arr.push(value);
+function _gdLastNames_() {
+  return ['Susanto','Wijaya','Pratama','Kurniawan','Setiawan','Saputra','Hidayat','Santoso',
+    'Putra','Ardianto','Nugroho','Suryadi','Wibowo','Rahman','Firmansyah','Suhendar',
+    'Gunawan','Hartono','Budiman','Siregar','Tampubolon','Manurung','Purba','Simanjuntak',
+    'Limbong','Togatorop','Sinaga','Nainggolan','Hutapea','Panggabean','Sitorus',
+    'Ginting','Pardede','Silalahi','Rumapea','Tambunan','Purnama','Wibowo','Hartono',
+    'Prasetyo','Wahyudi','Lestari','Hidayat','Saputra','Wijaya','Susanto','Rahman',
+    'Firmansyah','Setiawan','Suryadi','Kurniawan','Putra','Santoso','Ardianto','Nugroho',
+    'Hidayat','Siregar','Tampubolon','Manurung','Purba','Simanjuntak','Limbong','Togatorop',
+    'Sinaga','Nainggolan','Hutapea','Panggabean','Sitorus','Ginting','Pardede','Silalahi',
+    'Rumapea','Tambunan','Purnama','Wibowo','Hartono','Prasetyo','Wahyudi','Lestari',
+    'Hidayat','Saputra','Wijaya','Susanto','Rahman','Firmansyah','Setiawan','Suryadi',
+    'Kurniawan','Putra','Santoso','Ardianto','Nugroho','Hidayat','Siregar','Tampubolon'];
 }
-
-function shuffleArray_(arr) {
-  for (var i = arr.length - 1; i > 0; i--) {
-    var j = Math.floor(Math.random() * (i + 1));
-    var temp = arr[i];
-    arr[i] = arr[j];
-    arr[j] = temp;
-  }
+function _gdStreetNames_() {
+  return ['Jl. Sudirman','Jl. Thamrin','Jl. Gatot Subroto','Jl. Diponegoro','Jl. Ahmad Yani',
+    'Jl. Imam Bonjol','Jl. Hayam Wuruk','Jl. Gajah Mada','Jl. Veteran','Jl. Pahlawan',
+    'Jl. Merdeka','Jl. Asia Afrika','Jl. Pemuda','Jl. Kartini','Jl. Sisingamangaraja',
+    'Jl. Rasuna Said','Jl. Kuningan','Jl. TB Simatupang','Jl. HR Rasuna Said',
+    'Jl. M.H. Thamrin','Jl. Jenderal Soedirman','Jl. Mangga Besar','Jl. Kali Besar',
+    'Jl. Cikini','Jl. Menteng','Jl. Salemba','Jl. Senen','Jl. Jatinegara',
+    'Jl. Duren Sawit','Jl. Tebet','Jl. Pancoran','Jl. Pasar Minggu','Jl. Lenteng Agung',
+    'Jl. Srengseng','Jl. Kembangan','Jl. Meruya','Jl. Puri Kembangan','Jl. Cengkareng',
+    'Jl. Grogol','Jl. Kemanggisan','Jl. Palmerah','Jl. Cipete','Jl. Fatmawati',
+    'Jl. Bangka','Jl. Kemang','Jl. Pejaten','Jl. Warung Jati','Jl. Margonda',
+    'Jl. Merdeka','Jl. Asia Afrika','Jl. Naripan','Jl. Braga','Jl. Asia Afrika',
+    'Jl. Diponegoro','Jl. Supratman','Jl. Pahlawan','Jl. Perintis Kemerdekaan',
+    'Jl. H.R. Rasuna Said','Jl. Casablanca','Jl. Kyai Maja','Jl. Prof. Dr. Satrio',
+    'Jl. Haji Nawi','Jl. Gandaria','Jl. Cipete Raya','Jl. Pos Pengumben'];
 }
-
-function randomDigits_(count) {
-  var result = "";
-  for (var i = 0; i < count; i++) {
-    result += Math.floor(Math.random() * 10);
-  }
-  return result;
+function _gdGetCompanies_() {
+  return ['PT Telkom Indonesia','PT Bank Mandiri','PT Pertamina','PT PLN','PT Garuda Indonesia',
+    'PT Astra International','PT Unilever Indonesia','PT Indofood Sukses Makmur',
+    'PT Telekomunikasi Seluler','PT Matahari Putra Prima','PT Kalbe Farma','PT BRI',
+    'PT BCA','PT Bank Negara Indonesia','PT Wijaya Karya','PT Adhi Karya','PT Jasa Marga',
+    'PT Angkasa Pura','PT Pos Indonesia','PT Kereta Api Indonesia','PT Samsung Electronics Indonesia',
+    'PT Xiaomi Communications','PT Gojek Indonesia','PT Tokopedia','PT Traveloka',
+    'PT Shopee Indonesia','PT Grab Indonesia','PT Lazada Indonesia','PT Bukalapak','PT Blibli.com',
+    'PT Astra Otoparts','PT Charoen Pokphand Indonesia','PT Siam Cement Indonesia',
+    'PT Sumitomo Indonesia','PT Mitsui Indonesia','PT Toyota Motor Manufacturing Indonesia',
+    'PT Honda Prospect Motor','PT Daihatsu Indonesia','PT Suzuki Indomobil Motor',
+    'PT Yamaha Motor Indonesia','PT Astra Honda Motor','PT Kawasaki Motor Indonesia',
+    'PT Bimantara Citra','PT Lion Air','PT Sriwijaya Air','PT Batik Air',
+    'PT Citilink','PT Wings Air','PT Garuda Indonesia','PT Indonesia AirAsia',
+    'PT Trigana Air Service','PT Aviastar','PT Susi Air','PT Trans Nusa','PT Nam Air'];
 }
-
-function randomAlphanumeric_(count) {
-  var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  var result = "";
-  for (var i = 0; i < count; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
+function _gdGetCities_() {
+  return ['Jakarta Pusat','Jakarta Selatan','Jakarta Barat','Jakarta Utara','Jakarta Timur',
+    'Bandung','Surabaya','Semarang','Yogyakarta','Medan','Makassar','Balikpapan',
+    'Denpasar','Palembang','Banjarmasin','Pontianak','Padang','Lampung','Bengkulu',
+    'Jambi','Palangka Raya','Samarinda','Manado','Gorontalo','Palu','Mamuju','Ambon',
+    'Ternate','Jayapura','Manokwari','Sorong','Merauke','Wamena','Banda Aceh','Padang'];
+}
+function _gdPickForPosition_(pos, departments) {
+  var map = {
+    'Director': ['Human Resources','Finance','IT','Operations','Marketing'],
+    'GM': ['Human Resources','Finance','IT','Operations','Marketing','Sales'],
+    'Manager': ['Human Resources','Finance','Accounting','Marketing','Digital Marketing','Sales','IT','Engineering','Operations','Legal','GA','Warehouse','Purchasing','Quality Control','Customer Service','Admin'],
+    'Supervisor': departments,
+    'Team Lead': departments,
+    'Senior Staff': departments,
+    'Staff': departments,
+    'Junior Staff': departments,
+    'IT Support': ['IT','Engineering','Operations'],
+    'Network Engineer': ['IT','Engineering'],
+    'Software Engineer': ['IT','Engineering'],
+    'Backend Developer': ['IT','Engineering'],
+    'Frontend Developer': ['IT','Engineering'],
+    'Fullstack Developer': ['IT','Engineering'],
+    'HR Staff': ['Human Resources'],
+    'HR Recruiter': ['Human Resources'],
+    'Finance Staff': ['Finance','Accounting'],
+    'Accounting Staff': ['Finance','Accounting'],
+    'Digital Marketing Specialist': ['Marketing','Digital Marketing'],
+    'Graphic Designer': ['Marketing','Digital Marketing'],
+    'UI/UX Designer': ['Marketing','Digital Marketing','IT'],
+    'Sales Executive': ['Sales'],
+    'Purchasing Staff': ['Purchasing','Warehouse'],
+    'Warehouse Staff': ['Warehouse','Operations'],
+    'Admin': ['Admin','GA','Human Resources'],
+    'Customer Service': ['Customer Service'],
+    'Quality Control Staff': ['Quality Control','Operations'],
+    'Driver': ['GA','Operations','Warehouse'],
+    'Security': ['GA','Operations'],
+    'Office Boy': ['Admin','GA']
+  };
+  return _gdPick_(map[pos] || departments);
 }
 
 // ============================================================
-// VALIDATION FUNCTION — Run after insertion to verify
+// 1. MASTER DATA GENERATION
 // ============================================================
-function validateInsertedData() {
-  var sheet = getDashboardSheet_();
-  if (!sheet || sheet.getLastRow() < 2) {
-    Logger.log("ERROR: No data found in sheet");
-    return "No data found";
+function generateMasterData_(today) {
+  var sheet = getOrCreateMasterDataSheet_();
+  var data = sheet.getDataRange().getValues();
+
+  if (data.length > 50) {
+    Logger.log('Master Data already populated (' + (data.length - 1) + ' rows). Skipping.');
+    return data.length - 1;
   }
 
-  var lastRow = sheet.getLastRow();
-  var lastCol = sheet.getLastColumn();
-  var values = sheet.getRange(1, 1, lastRow, lastCol).getValues();
-  var headers = values[0];
+  var now = _gdNow_();
+  var rows = [];
+  var idCounter = 1;
 
-  var colIndex = {};
-  headers.forEach(function (h, i) {
-    colIndex[String(h).trim()] = i;
+  var allData = {
+    company_entity: [
+      { name: 'PT Mahakarya Sukses Indonesia', desc: 'Kantor Pusat' },
+      { name: 'PT Mahakarya Tech', desc: 'Divisi Teknologi' },
+      { name: 'PT Mahakarya Trading', desc: 'Divisi Perdagangan' },
+      { name: 'PT Mahakarya Logistics', desc: 'Divisi Logistik' },
+      { name: 'PT Mahakarya Capital', desc: 'Divisi Keuangan' }
+    ],
+    department: [
+      { name: 'Human Resources', desc: 'SDM & Administrasi' },
+      { name: 'Finance', desc: 'Keuangan & Akuntansi' },
+      { name: 'Accounting', desc: 'Pembukuan & Pelaporan' },
+      { name: 'Marketing', desc: 'Pemasaran & Branding' },
+      { name: 'Digital Marketing', desc: 'Pemasaran Digital' },
+      { name: 'Sales', desc: 'Penjualan & BD' },
+      { name: 'IT', desc: 'Teknologi Informasi' },
+      { name: 'Engineering', desc: 'Rekayasa & Pengembangan' },
+      { name: 'Operations', desc: 'Operasional' },
+      { name: 'Legal', desc: 'Hukum & Kepatuhan' },
+      { name: 'GA', desc: 'General Affairs' },
+      { name: 'Warehouse', desc: 'Gudang & Logistik' },
+      { name: 'Purchasing', desc: 'Pembelian & Pengadaan' },
+      { name: 'Quality Control', desc: 'Pengendalian Kualitas' },
+      { name: 'Customer Service', desc: 'Layanan Pelanggan' },
+      { name: 'Admin', desc: 'Administrasi Umum' }
+    ],
+    position: [
+      { name: 'Director', desc: 'Direktur' },
+      { name: 'GM', desc: 'General Manager' },
+      { name: 'Manager', desc: 'Manager' },
+      { name: 'Supervisor', desc: 'Supervisor' },
+      { name: 'Team Lead', desc: 'Ketua Tim' },
+      { name: 'Senior Staff', desc: 'Staf Senior' },
+      { name: 'Staff', desc: 'Staf' },
+      { name: 'Junior Staff', desc: 'Staf Junior' },
+      { name: 'Intern', desc: 'Peserta Magang' },
+      { name: 'Outsource', desc: 'Karyawan Outsource' },
+      { name: 'IT Support', desc: 'Support Teknologi' },
+      { name: 'Network Engineer', desc: 'Insinyur Jaringan' },
+      { name: 'Software Engineer', desc: 'Insinyur Perangkat Lunak' },
+      { name: 'Backend Developer', desc: 'Developer Backend' },
+      { name: 'Frontend Developer', desc: 'Developer Frontend' },
+      { name: 'Fullstack Developer', desc: 'Developer Fullstack' },
+      { name: 'HR Staff', desc: 'Staf SDM' },
+      { name: 'HR Recruiter', desc: 'Rekruter' },
+      { name: 'Finance Staff', desc: 'Staf Keuangan' },
+      { name: 'Accounting Staff', desc: 'Staf Akuntansi' },
+      { name: 'Digital Marketing Specialist', desc: 'Spesialis Marketing Digital' },
+      { name: 'Graphic Designer', desc: 'Desainer Grafis' },
+      { name: 'UI/UX Designer', desc: 'Desainer UI/UX' },
+      { name: 'Sales Executive', desc: 'Eksekutif Penjualan' },
+      { name: 'Purchasing Staff', desc: 'Staf Pembelian' },
+      { name: 'Warehouse Staff', desc: 'Staf Gudang' },
+      { name: 'Admin', desc: 'Administrasi' },
+      { name: 'Customer Service', desc: 'Layanan Pelanggan' },
+      { name: 'Quality Control Staff', desc: 'Staf QC' },
+      { name: 'Driver', desc: 'Sopir' },
+      { name: 'Security', desc: 'Satpam' },
+      { name: 'Office Boy', desc: 'OB' }
+    ],
+    work_location: [
+      { name: 'Jakarta Pusat', desc: 'Kantor Pusat' },
+      { name: 'Jakarta Selatan', desc: 'Kantor Cabang Selatan' },
+      { name: 'Jakarta Barat', desc: 'Kantor Cabang Barat' },
+      { name: 'Jakarta Timur', desc: 'Kantor Cabang Timur' },
+      { name: 'Jakarta Utara', desc: 'Kantor Cabang Utara' },
+      { name: 'Bandung', desc: 'Kantor Bandung' },
+      { name: 'Surabaya', desc: 'Kantor Surabaya' },
+      { name: 'Semarang', desc: 'Kantor Semarang' },
+      { name: 'Yogyakarta', desc: 'Kantor Yogyakarta' },
+      { name: 'Medan', desc: 'Kantor Medan' },
+      { name: 'Makassar', desc: 'Kantor Makassar' },
+      { name: 'Balikpapan', desc: 'Kantor Balikpapan' }
+    ],
+    employee_type: [
+      { name: 'PKWTT', desc: 'Perjanjian Kerja Waktu Tidak Tertentu' },
+      { name: 'PKWT', desc: 'Perjanjian Kerja Waktu Tertentu' },
+      { name: 'Outsource', desc: 'Karyawan Outsourcing' },
+      { name: 'Intern', desc: 'Peserta Magang' },
+      { name: 'Freelance', desc: 'Freelancer' }
+    ],
+    education: [
+      { name: 'SD', desc: 'Sekolah Dasar' },
+      { name: 'SMP', desc: 'Sekolah Menengah Pertama' },
+      { name: 'SMA', desc: 'Sekolah Menengah Atas' },
+      { name: 'SMK', desc: 'Sekolah Menengah Kejuruan' },
+      { name: 'D3', desc: 'Diploma 3' },
+      { name: 'D4', desc: 'Diploma 4' },
+      { name: 'S1', desc: 'Sarjana' },
+      { name: 'S2', desc: 'Magister' },
+      { name: 'S3', desc: 'Doktor' }
+    ],
+    work_experience: [
+      { name: 'Fresh Graduate', desc: 'Lulusan baru' },
+      { name: '< 1 Tahun', desc: 'Kurang dari 1 tahun' },
+      { name: '1-2 Tahun', desc: '1 sampai 2 tahun' },
+      { name: '2-3 Tahun', desc: '2 sampai 3 tahun' },
+      { name: '3-5 Tahun', desc: '3 sampai 5 tahun' },
+      { name: '5-10 Tahun', desc: '5 sampai 10 tahun' },
+      { name: '> 10 Tahun', desc: 'Lebih dari 10 tahun' }
+    ],
+    gender: [
+      { name: 'Laki-laki', desc: 'Male' },
+      { name: 'Perempuan', desc: 'Female' }
+    ],
+    marital_status: [
+      { name: 'Single', desc: 'Belum Menikah' },
+      { name: 'Married', desc: 'Menikah' },
+      { name: 'Divorced', desc: 'Cerai' },
+      { name: 'Widowed', desc: 'Duda/Janda' }
+    ],
+    current_employment_status: [
+      { name: 'Employed Full Time', desc: 'Bekerja Full Time' },
+      { name: 'Employed Contract', desc: 'Bekerja Kontrak' },
+      { name: 'Part Time', desc: 'Paruh Waktu' },
+      { name: 'Freelance', desc: 'Freelancer' },
+      { name: 'Unemployed', desc: 'Tidak Bekerja' },
+      { name: 'Resigned', desc: 'Sudah Resign' },
+      { name: 'Fresh Graduate', desc: 'Lulusan Baru' }
+    ],
+    available_to_join: [
+      { name: 'Segera', desc: 'Langsung' },
+      { name: '1 Minggu', desc: '1 Minggu' },
+      { name: '2 Minggu', desc: '2 Minggu' },
+      { name: '1 Bulan', desc: '1 Bulan' },
+      { name: '2 Bulan', desc: '2 Bulan' },
+      { name: '3 Bulan', desc: '3 Bulan' },
+      { name: 'Bisa Negosiasi', desc: 'Negosiasi' }
+    ],
+    employment_status: [
+      { name: 'Active', desc: 'Aktif' },
+      { name: 'Resigned', desc: 'Resign' },
+      { name: 'Terminated', desc: 'PHK' },
+      { name: 'On Leave', desc: 'Cuti' },
+      { name: 'Probation', desc: 'Masa Percobaan' }
+    ],
+    contract_duration: [
+      { name: '3 Bulan', desc: '3 bulan' },
+      { name: '6 Bulan', desc: '6 bulan' },
+      { name: '1 Tahun', desc: '12 bulan' },
+      { name: '2 Tahun', desc: '24 bulan' },
+      { name: '3 Tahun', desc: '36 bulan' }
+    ],
+    salary_type: [
+      { name: 'Monthly', desc: 'Gaji Bulanan' },
+      { name: 'Daily', desc: 'Gaji Harian' },
+      { name: 'Project-Based', desc: 'Bayaran Proyek' },
+      { name: 'Hourly', desc: 'Bayaran Per Jam' }
+    ],
+    recruitment_source: [
+      { name: 'JobStreet', desc: 'JobStreet.com' },
+      { name: 'LinkedIn', desc: 'LinkedIn' },
+      { name: 'Indeed', desc: 'Indeed.com' },
+      { name: 'Instagram', desc: 'Instagram' },
+      { name: 'Website Perusahaan', desc: 'Website resmi' },
+      { name: 'Referensi Karyawan', desc: 'Referral dari karyawan' },
+      { name: 'Kampus / Career Fair', desc: 'Kampus atau pameran karir' },
+      { name: 'Loker.id', desc: 'Loker.id' },
+      { name: 'Karir.com', desc: 'Karir.com' },
+      { name: 'Glassdoor', desc: 'Glassdoor' },
+      { name: 'Tokopedia Karir', desc: 'Karir Tokopedia' },
+      { name: 'Walk In', desc: 'Datang langsung' }
+    ],
+    candidate_status: [
+      { name: 'Applied', desc: 'Pelamar Baru' },
+      { name: 'Screening', desc: 'Sedang Screening' },
+      { name: 'Interview', desc: 'Proses Interview' },
+      { name: 'Psychotest', desc: 'Psikotest' },
+      { name: 'HR Interview', desc: 'Interview HR' },
+      { name: 'User Interview', desc: 'Interview User' },
+      { name: 'Offering', desc: 'Penawaran' },
+      { name: 'Accepted', desc: 'Diterima' },
+      { name: 'Rejected', desc: 'Ditolak' },
+      { name: 'Withdrawn', desc: 'Mengundurkan Diri' },
+      { name: 'Blacklist', desc: 'Blacklist' },
+      { name: 'Hold', desc: 'Ditahan' },
+      { name: 'Pending', desc: 'Menunggu' }
+    ],
+    interview_result: [
+      { name: 'Layak', desc: 'Lolos' },
+      { name: 'Tidak Layak', desc: 'Tidak Lolos' },
+      { name: 'Cadangan', desc: 'Alternatif' },
+      { name: 'Menunggu', desc: 'Belum dinilai' }
+    ]
+  };
+
+  Object.keys(allData).forEach(function(category) {
+    var items = allData[category];
+    for (var i = 0; i < items.length; i++) {
+      rows.push([
+        'MD-' + _gdPad_(idCounter, 4),
+        category,
+        items[i].name,
+        items[i].desc,
+        i + 1,
+        'TRUE',
+        now,
+        now
+      ]);
+      idCounter++;
+    }
   });
 
-  var totalRows = lastRow - 1;
-  var statusCounts = {};
-  var idSet = {};
-  var emailSet = {};
-  var phoneSet = {};
-  var duplicates = [];
-  var positionCounts = {};
-  var educationCounts = {};
-
-  for (var r = 1; r < values.length; r++) {
-    var row = values[r];
-    if (!row.join("").toString().trim()) continue;
-
-    var recId = String(row[colIndex["Recruitment ID"]] || "");
-    var email = String(row[colIndex["Email"]] || "");
-    var phone = String(row[colIndex["Phone"]] || "");
-    var status = String(row[colIndex["Status"]] || "");
-    var position = String(row[colIndex["Position Applied"]] || "");
-    var education = String(row[colIndex["Education"]] || "");
-
-    // Count statuses
-    statusCounts[status] = (statusCounts[status] || 0) + 1;
-
-    // Count positions
-    positionCounts[position] = (positionCounts[position] || 0) + 1;
-
-    // Count education
-    educationCounts[education] = (educationCounts[education] || 0) + 1;
-
-    // Check duplicates
-    if (idSet[recId]) duplicates.push("Duplicate ID: " + recId);
-    if (emailSet[email]) duplicates.push("Duplicate Email: " + email);
-    if (phoneSet[phone]) duplicates.push("Duplicate Phone: " + phone);
-
-    idSet[recId] = true;
-    emailSet[email] = true;
-    phoneSet[phone] = true;
+  if (rows.length > 0) {
+    sheet.getRange(2, 1, rows.length, MASTER_DATA_HEADERS.length).setValues(rows);
   }
 
-  Logger.log("=== VALIDATION RESULTS ===");
-  Logger.log("Total rows (excluding header): " + totalRows);
-  Logger.log("");
-  Logger.log("--- Status Distribution ---");
-  var statuses = ["Pending", "Accepted", "Hold", "Blacklist"];
-  for (var s = 0; s < statuses.length; s++) {
-    Logger.log(statuses[s] + ": " + (statusCounts[statuses[s]] || 0));
-  }
-  Logger.log("");
-  Logger.log("--- Duplicates ---");
-  if (duplicates.length === 0) {
-    Logger.log("No duplicates found!");
-  } else {
-    for (var d = 0; d < duplicates.length; d++) {
-      Logger.log(duplicates[d]);
-    }
-  }
-  Logger.log("");
-  Logger.log("--- Position Distribution ---");
-  var posKeys = Object.keys(positionCounts).sort();
-  for (var p = 0; p < posKeys.length; p++) {
-    Logger.log(posKeys[p] + ": " + positionCounts[posKeys[p]]);
-  }
-
-  return "Validation complete. Check Execution Log for details.";
+  Logger.log('Master Data: ' + rows.length + ' items written across ' + Object.keys(allData).length + ' categories');
+  return rows.length;
 }
 
 // ============================================================
-// CLEANUP — Remove all dummy data (CAREFUL!)
+// 2. RECRUITMENT DATA GENERATION
 // ============================================================
-function removeAllDummyData() {
-  var lock = LockService.getScriptLock();
-  lock.waitLock(30000);
-  try {
-    var sheet = getDashboardSheet_();
-    if (!sheet || sheet.getLastRow() < 2) return "No data to remove.";
+function generateRecruitmentData_(today) {
+  var sheet = getOrCreateSheet_();
+  var existingRows = sheet.getLastRow();
+  if (existingRows > 1) {
+    Logger.log('raw_kandidat already has ' + (existingRows - 1) + ' rows. Clearing...');
+    sheet.deleteRows(2, existingRows - 1);
+  }
 
-    var lastRow = sheet.getLastRow();
-    var lastCol = sheet.getLastColumn();
-    var values = sheet.getRange(1, 1, lastRow, lastCol).getValues();
-    var headers = values[0];
+  var records = [];
+  var acceptedRecords = [];
 
-    var colIndex = {};
-    headers.forEach(function (h, i) {
-      colIndex[String(h).trim()] = i;
-    });
+  var statusList = [];
+  _gdAddMultiple_(statusList, 'Accepted', 50);
+  _gdAddMultiple_(statusList, 'Applied', 8);
+  _gdAddMultiple_(statusList, 'Screening', 6);
+  _gdAddMultiple_(statusList, 'Interview', 6);
+  _gdAddMultiple_(statusList, 'Psychotest', 4);
+  _gdAddMultiple_(statusList, 'HR Interview', 4);
+  _gdAddMultiple_(statusList, 'User Interview', 4);
+  _gdAddMultiple_(statusList, 'Offering', 4);
+  _gdAddMultiple_(statusList, 'Rejected', 6);
+  _gdAddMultiple_(statusList, 'Withdrawn', 3);
+  _gdAddMultiple_(statusList, 'Hold', 4);
+  _gdAddMultiple_(statusList, 'Blacklist', 1);
+  _gdShuffle_(statusList);
 
-    var createdByCol = colIndex["Created By"];
-    var rowsToDelete = [];
+  var usedEmails = {};
+  var usedPhones = {};
+  var usedNik = {};
 
-    for (var r = 1; r < values.length; r++) {
-      if (String(values[r][createdByCol]) === "System") {
-        rowsToDelete.push(r + 1); // +1 because sheet rows are 1-indexed
+  var departments = ['Human Resources', 'Finance', 'Accounting', 'Marketing', 'Digital Marketing', 'Sales', 'IT', 'Engineering', 'Operations', 'Legal', 'GA', 'Warehouse', 'Purchasing', 'Quality Control', 'Customer Service', 'Admin'];
+  var positions = ['Director', 'GM', 'Manager', 'Supervisor', 'Team Lead', 'Senior Staff', 'Staff', 'Junior Staff', 'IT Support', 'Network Engineer', 'Software Engineer', 'Backend Developer', 'Frontend Developer', 'Fullstack Developer', 'HR Staff', 'HR Recruiter', 'Finance Staff', 'Accounting Staff', 'Digital Marketing Specialist', 'Graphic Designer', 'UI/UX Designer', 'Sales Executive', 'Purchasing Staff', 'Warehouse Staff', 'Admin', 'Customer Service', 'Quality Control Staff'];
+  var educationLevels = ['SMA', 'SMK', 'D3', 'S1', 'S2'];
+  var workExps = ['Fresh Graduate', '< 1 Tahun', '1-2 Tahun', '2-3 Tahun', '3-5 Tahun', '5-10 Tahun', '> 10 Tahun'];
+  var companies = _gdGetCompanies_();
+  var cities = _gdGetCities_();
+  var sources = ['JobStreet', 'LinkedIn', 'Indeed', 'Instagram', 'Website Perusahaan', 'Referensi Karyawan', 'Kampus / Career Fair', 'Loker.id', 'Karir.com', 'Glassdoor'];
+  var empStatuses = ['Employed Full Time', 'Employed Contract', 'Part Time', 'Freelance', 'Unemployed', 'Resigned', 'Fresh Graduate'];
+  var availableJoins = ['Segera', '1 Minggu', '2 Minggu', '1 Bulan', '2 Bulan', '3 Bulan', 'Bisa Negosiasi'];
+  var maritalStatuses = ['Single', 'Married', 'Divorced'];
+
+  var holdReasons = [
+    'Kandidat minta penundaan',
+    'Posisi belum dibuka',
+    'Budget belum tersedia',
+    'Menunggu hasil background check'
+  ];
+
+  var blacklistReasons = [
+    'Tidak hadir tanpa konfirmasi',
+    'Berdusta dalam aplikasi',
+    'Pelanggaran etika saat interview'
+  ];
+
+  var hrNotesPool = [
+    'Kandidat memiliki pengalaman yang relevan dengan posisi yang dilamar.',
+    'CV lengkap dan menarik, perlu follow up untuk interview.',
+    'Kandidat direferensikan oleh tim internal.',
+    'Hasil tes technical cukup baik, perlu evaluasi lebih lanjut.',
+    'Tingkat komunikasi kandidat sangat baik.',
+    'Kandidat sudah memiliki pengalaman di industri serupa.',
+    'Perlu konfirmasi gaji yang diharapkan dengan budget yang tersedia.',
+    'Kandidat bersedia untuk remote work.',
+    'Jadwalkan ulang interview karena kandidat berhalangan.',
+    'Portfolio kandidat sangat impresif.',
+    'Kandidat menunjukkan kemampuan leadership yang baik.',
+    'Butuh waktu lebih untuk evaluasi technical test.',
+    '', '', ''
+  ];
+
+  for (var i = 0; i < 100; i++) {
+    var status = statusList[i];
+    var isMale = Math.random() > 0.45;
+    var firstName = isMale ? _gdPick_(_gdMaleNames_()) : _gdPick_(_gdFemaleNames_());
+    var lastName = _gdPick_(_gdLastNames_());
+    var fullName = firstName + ' ' + lastName;
+
+    var position = _gdPick_(positions);
+    var dept = _gdPickForPosition_(position, departments);
+    var education = _gdPick_(educationLevels);
+    var workExp = _gdPick_(workExps);
+
+    var age;
+    if (workExp === 'Fresh Graduate' || workExp === '< 1 Tahun') age = _gdRandInt_(20, 25);
+    else if (workExp === '1-2 Tahun') age = _gdRandInt_(22, 28);
+    else if (workExp === '2-3 Tahun') age = _gdRandInt_(24, 30);
+    else if (workExp === '3-5 Tahun') age = _gdRandInt_(26, 33);
+    else if (workExp === '5-10 Tahun') age = _gdRandInt_(28, 38);
+    else age = _gdRandInt_(32, 50);
+    if (age > 50) age = 50;
+
+    var birthYear = today.getFullYear() - age;
+    var birthDate = birthYear + '-' + _gdPad_(_gdRandInt_(1, 12)) + '-' + _gdPad_(_gdRandInt_(1, 28));
+
+    var phone;
+    do { phone = '08' + _gdRandDigits_(10); } while (usedPhones[phone]);
+    usedPhones[phone] = true;
+
+    var emailBase = firstName.toLowerCase() + '.' + lastName.toLowerCase().replace(/[^a-z]/g, '');
+    var emailSuffix = _gdRandInt_(1, 999);
+    var email = emailBase + emailSuffix + '@gmail.com';
+    var emailAttempt = 0;
+    while (usedEmails[email]) { emailAttempt++; email = emailBase + emailSuffix + emailAttempt + '@gmail.com'; }
+    usedEmails[email] = true;
+
+    var nik;
+    do { nik = _gdRandDigits_(16); } while (usedNik[nik]);
+    usedNik[nik] = true;
+
+    var city = _gdPick_(cities);
+    var address = _gdPick_(_gdStreetNames_()) + ' No. ' + _gdRandInt_(1, 150) + ', ' + city;
+
+    var expectedSalary = _gdRandSalary_(position);
+    var company = (workExp === 'Fresh Graduate' || workExp === '< 1 Tahun') ? '-' : _gdPick_(companies);
+
+    var cvLink = '';
+    if (Math.random() > 0.3) {
+      cvLink = 'https://drive.google.com/file/d/' + _gdRandAlphanum_(15) + '/view';
+    }
+
+    var createdDateObj = new Date(today.getTime() - _gdRandInt_(5, 120) * 86400000);
+    createdDateObj.setHours(_gdRandInt_(8, 17), _gdRandInt_(0, 59), _gdRandInt_(0, 59));
+    var createdDateStr = Utilities.formatDate(createdDateObj, 'GMT+7', 'yyyy-MM-dd HH:mm:ss');
+
+    var updatedDateObj = new Date(createdDateObj.getTime() + _gdRandInt_(0, Math.max(1, Math.floor((today.getTime() - createdDateObj.getTime()) / 86400000))) * 86400000);
+    updatedDateObj.setHours(_gdRandInt_(8, 17), _gdRandInt_(0, 59), _gdRandInt_(0, 59));
+    var updatedAtStr = Utilities.formatDate(updatedDateObj, 'GMT+7', 'yyyy-MM-dd HH:mm:ss');
+
+    var recDatePart = Utilities.formatDate(createdDateObj, 'GMT+7', 'yyyyMMdd');
+    var recId = 'REC-' + recDatePart + '-' + _gdPad_(i + 1, 6);
+
+    var holdReason = '', holdFollowUpDate = '';
+    var blacklistReason = '', blacklistDate = '', blacklistUpdatedBy = '';
+    var employeeId = '';
+
+    if (status === 'Hold') {
+      holdReason = _gdPick_(holdReasons);
+      var fuDate = new Date(today.getTime() + _gdRandInt_(7, 30) * 86400000);
+      holdFollowUpDate = Utilities.formatDate(fuDate, 'GMT+7', 'yyyy-MM-dd');
+    }
+
+    if (status === 'Blacklist') {
+      blacklistReason = _gdPick_(blacklistReasons);
+      blacklistDate = updatedAtStr;
+      blacklistUpdatedBy = 'HR Admin';
+    }
+
+    if (status === 'Accepted') {
+      employeeId = 'EMP-' + today.getFullYear() + '-' + _gdPad_(i + 1, 5);
+    }
+
+    var row = [
+      recId,              // Recruitment ID
+      createdDateStr,     // Created Date
+      fullName,           // Full Name
+      "'" + nik,          // NIK
+      birthDate,          // Birth Date
+      age,                // Age
+      isMale ? 'Male' : 'Female',  // Gender
+      _gdPick_(maritalStatuses),   // Marital Status
+      email,              // Email
+      "'" + phone,        // Phone
+      address,            // Address
+      city,               // City
+      position,           // Position Applied
+      education,          // Education
+      workExp,            // Work Experience
+      company,            // Last Company
+      _gdPick_(empStatuses),       // Current Employment Status
+      _gdPick_(availableJoins),    // Available to Join
+      expectedSalary,     // Expected Salary
+      _gdPick_(sources),  // Recruitment Source
+      cvLink,             // CV Link
+      status,             // Status
+      _gdPick_(hrNotesPool),      // HR Notes
+      'Demo Generator',   // Created By
+      updatedAtStr,       // Updated At
+      holdReason,         // Hold Reason (extra)
+      holdFollowUpDate,   // Hold Follow Up Date (extra)
+      blacklistReason,    // Blacklist Reason (extra)
+      blacklistDate,      // Blacklist Date (extra)
+      blacklistUpdatedBy, // Blacklist Updated By (extra)
+      employeeId          // Employee ID (extra)
+    ];
+
+    records.push({ recruitmentId: recId, status: status, row: row, employeeId: employeeId, fullName: fullName });
+
+    if (status === 'Accepted') {
+      acceptedRecords.push({
+        recruitmentId: recId,
+        employeeId: employeeId,
+        fullName: fullName,
+        nik: nik,
+        gender: isMale ? 'Male' : 'Female',
+        email: email,
+        phone: phone,
+        address: address,
+        city: city,
+        position: position,
+        department: dept,
+        education: education,
+        workExp: workExp,
+        age: age,
+        birthDate: birthDate,
+        maritalStatus: _gdPick_(maritalStatuses),
+        expectedSalary: expectedSalary,
+        createdDate: createdDateStr,
+        updatedAt: updatedAtStr
+      });
+    }
+  }
+
+  var batchData = records.map(function(r) { return r.row; });
+  if (batchData.length > 0) {
+    var startRow = 2;
+    sheet.getRange(startRow, 1, batchData.length, batchData[0].length).setValues(batchData);
+  }
+
+  Logger.log('Recruitment: ' + records.length + ' candidates written (' + acceptedRecords.length + ' accepted)');
+  return { count: records.length, accepted: acceptedRecords, records: records };
+}
+
+// ============================================================
+// 3. EMPLOYEE DATA GENERATION (50 legacy + 50 from recruitment)
+// ============================================================
+function generateEmployeeData_(acceptedCandidates, today) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var empSheet = ss.getSheetByName(EMPLOYEE_SHEET_NAME);
+
+  var useFullHeaders = true;
+  if (empSheet && empSheet.getLastRow() > 0) {
+    var existingHeaders = empSheet.getRange(1, 1, 1, empSheet.getLastColumn()).getValues()[0];
+    if (existingHeaders.indexOf('Nama Lengkap') !== -1) {
+      useFullHeaders = false;
+    }
+  }
+
+  var headers = EMPLOYEE_HEADERS;
+  if (!empSheet) {
+    empSheet = ss.insertSheet(EMPLOYEE_SHEET_NAME);
+    empSheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    empSheet.getRange(1, 1, 1, headers.length)
+      .setBackground('#005BAC').setFontColor('#ffffff').setFontWeight('bold');
+    empSheet.setFrozenRows(1);
+  }
+
+  if (empSheet.getLastRow() > 1) {
+    empSheet.deleteRows(2, empSheet.getLastRow() - 1);
+  }
+
+  var empRows = [];
+  var empIds = [];
+  var legacyIds = [];
+  var recIds = [];
+  var empCounter = 1;
+
+  var departments = ['Human Resources', 'Finance', 'Accounting', 'Marketing', 'Digital Marketing', 'Sales', 'IT', 'Engineering', 'Operations', 'Legal', 'GA', 'Warehouse', 'Purchasing', 'Quality Control', 'Customer Service', 'Admin'];
+  var positions = ['Director', 'GM', 'Manager', 'Supervisor', 'Team Lead', 'Senior Staff', 'Staff', 'Junior Staff', 'IT Support', 'Network Engineer', 'Software Engineer', 'Backend Developer', 'Frontend Developer', 'Fullstack Developer', 'HR Staff', 'HR Recruiter', 'Finance Staff', 'Accounting Staff', 'Digital Marketing Specialist', 'Graphic Designer', 'UI/UX Designer', 'Sales Executive', 'Purchasing Staff', 'Warehouse Staff', 'Admin', 'Customer Service'];
+  var educationLevels = ['SMA', 'SMK', 'D3', 'S1', 'S2'];
+  var workLocations = ['Jakarta Pusat', 'Jakarta Selatan', 'Jakarta Barat', 'Jakarta Timur', 'Jakarta Utara', 'Bandung', 'Surabaya', 'Semarang', 'Yogyakarta', 'Medan', 'Makassar', 'Balikpapan'];
+  var companies = ['PT Mahakarya Sukses Indonesia', 'PT Mahakarya Tech', 'PT Mahakarya Trading', 'PT Mahakarya Logistics', 'PT Mahakarya Capital'];
+  var employeeTypes = ['PKWTT', 'PKWT', 'Outsource', 'Intern', 'Freelance'];
+  var empStatuses = ['Active', 'Resigned', 'Terminated', 'On Leave', 'Probation'];
+  var contractDurations = ['3 Bulan', '6 Bulan', '1 Tahun', '2 Tahun', '3 Tahun'];
+  var salaryTypes = ['Monthly', 'Daily', 'Project-Based', 'Hourly'];
+  var maritalStatuses = ['Single', 'Married', 'Divorced', 'Widowed'];
+  var bloodTypes = ['A', 'B', 'AB', 'O', '-'];
+  var cities = _gdGetCities_();
+  var streetNames = _gdStreetNames_();
+
+  // 50 Legacy employees
+  for (var i = 0; i < 50; i++) {
+    var isMale = Math.random() > 0.48;
+    var firstName = isMale ? _gdPick_(_gdMaleNames_()) : _gdPick_(_gdFemaleNames_());
+    var lastName = _gdPick_(_gdLastNames_());
+    var fullName = firstName + ' ' + lastName;
+
+    var position = _gdPick_(positions);
+    var dept = _gdPickForPosition_(position, departments);
+    var education = _gdPick_(educationLevels);
+    var workLoc = _gdPick_(workLocations);
+    var company = _gdPick_(companies);
+    var empType = 'PKWTT';
+    var empStatus = _gdPick_(empStatuses);
+    var salaryType = 'Monthly';
+    var salary = _gdRandSalary_(position);
+
+    var age;
+    if (position === 'Director' || position === 'GM') age = _gdRandInt_(40, 55);
+    else if (position === 'Manager') age = _gdRandInt_(35, 50);
+    else if (position === 'Supervisor' || position === 'Team Lead') age = _gdRandInt_(30, 45);
+    else if (position === 'Senior Staff') age = _gdRandInt_(28, 40);
+    else age = _gdRandInt_(22, 35);
+
+    var birthYear = today.getFullYear() - age;
+    var birthDate = birthYear + '-' + _gdPad_(_gdRandInt_(1, 12)) + '-' + _gdPad_(_gdRandInt_(1, 28));
+    var marital = _gdPick_(maritalStatuses);
+    var blood = _gdPick_(bloodTypes);
+
+    var hireYear = today.getFullYear() - _gdRandInt_(0, 10);
+    var hireMonth = _gdRandInt_(1, 12);
+    var hireDay = _gdRandInt_(1, 28);
+    var hireDate = hireYear + '-' + _gdPad_(hireMonth) + '-' + _gdPad_(hireDay);
+
+    var probEndObj = new Date(hireYear + 1, hireMonth - 1, hireDay);
+    var probEndDate = _gdDateOnly_(probEndObj);
+
+    var contractEndDate = '';
+    if (empType === 'PKWT') {
+      var ce = new Date(today.getFullYear() + 1, _gdRandInt_(0, 11), _gdRandInt_(1, 28));
+      contractEndDate = _gdDateOnly_(ce);
+    }
+
+    var nik;
+    do { nik = _gdRandDigits_(16); } while (usedNikGlobal(nik));
+    markNikUsed(nik);
+
+    var emailBase = firstName.toLowerCase() + '.' + lastName.toLowerCase().replace(/[^a-z]/g, '');
+    var email = emailBase + _gdRandInt_(1, 999) + '@mahakarya.co.id';
+    var phone = '08' + _gdRandDigits_(10);
+
+    var address = _gdPick_(streetNames) + ' No. ' + _gdRandInt_(1, 150) + ', ' + _gdPick_(cities);
+
+    var empId = 'EMP-' + hireYear + '-' + _gdPad_(empCounter, 5);
+    empCounter++;
+
+    // Baris sesuai EMPLOYEE_HEADERS (32 kolom) dari Config.gs
+    var row = [
+      empId,                                    // 1. Employee ID
+      company,                                  // 2. Company Entity
+      empType,                                  // 3. Employee Type
+      fullName,                                 // 4. Full Name
+      "'" + nik,                                // 5. NIK
+      birthDate,                                // 6. Birth Date
+      age,                                      // 7. Age
+      isMale ? 'Male' : 'Female',               // 8. Gender
+      marital,                                  // 9. Marital Status
+      email,                                    // 10. Email
+      "'" + phone,                              // 11. Phone
+      address,                                  // 12. Address
+      _gdPick_(cities),                         // 13. City
+      education,                                // 14. Education
+      '',                                       // 15. Work Experience
+      dept,                                     // 16. Department
+      position,                                 // 17. Position
+      hireDate,                                 // 18. Join Date
+      '',                                       // 19. Contract Start
+      contractEndDate,                          // 20. Contract End
+      '',                                       // 21. Contract Duration
+      empStatus,                                // 22. Employment Status
+      salary,                                   // 23. Salary
+      salaryType,                               // 24. Salary Type
+      '',                                       // 25. Outsource Vendor
+      '',                                       // 26. Contract Number
+      '',                                       // 27. District
+      '',                                       // 28. Recruitment ID
+      '',                                       // 29. Recruitment Source
+      '',                                       // 30. HR Notes
+      'Demo Generator',                          // 31. Created By
+      _gdNow_()                                 // 32. Updated At
+    ];
+
+    empRows.push(row);
+    empIds.push(empId);
+    legacyIds.push(empId);
+  }
+
+  // 50 from recruitment (accepted)
+  for (var j = 0; j < acceptedCandidates.length && j < 50; j++) {
+    var c = acceptedCandidates[j];
+    var isMale = c.gender === 'Male';
+    var age = c.age;
+    var birthDate = c.birthDate;
+    var marital = c.maritalStatus;
+
+    var hireDateObj = new Date(c.createdDate);
+    var hireDate = _gdDateOnly_(hireDateObj);
+    var probEndObj = new Date(hireDateObj.getFullYear() + 1, hireDateObj.getMonth(), hireDateObj.getDate());
+    var probEndDate = _gdDateOnly_(probEndObj);
+
+    var empId = c.employeeId;
+    recIds.push(empId);
+
+    // Baris sesuai EMPLOYEE_HEADERS (32 kolom) dari Config.gs
+    var row = [
+      empId,                                    // 1. Employee ID
+      'PT Mahakarya Sukses Indonesia',          // 2. Company Entity
+      'PKWTT',                                  // 3. Employee Type
+      c.fullName,                               // 4. Full Name
+      "'" + c.nik,                              // 5. NIK
+      birthDate,                                // 6. Birth Date
+      age,                                      // 7. Age
+      c.gender,                                 // 8. Gender
+      marital,                                  // 9. Marital Status
+      c.email,                                  // 10. Email
+      "'" + c.phone,                            // 11. Phone
+      c.address,                                // 12. Address
+      c.city,                                   // 13. City
+      c.education,                              // 14. Education
+      c.workExp,                                // 15. Work Experience
+      c.department,                             // 16. Department
+      c.position,                               // 17. Position
+      hireDate,                                 // 18. Join Date
+      '',                                       // 19. Contract Start
+      '',                                       // 20. Contract End
+      '',                                       // 21. Contract Duration
+      'Probation',                              // 22. Employment Status
+      c.expectedSalary,                         // 23. Salary
+      'Monthly',                                // 24. Salary Type
+      '',                                       // 25. Outsource Vendor
+      '',                                       // 26. Contract Number
+      '',                                       // 27. District
+      c.recruitmentId,                          // 28. Recruitment ID
+      '',                                       // 29. Recruitment Source
+      '',                                       // 30. HR Notes
+      'Demo Generator',                          // 31. Created By
+      c.updatedAt                               // 32. Updated At
+    ];
+
+    empRows.push(row);
+    empIds.push(empId);
+  }
+
+  if (empRows.length > 0) {
+    empSheet.getRange(2, 1, empRows.length, headers.length).setValues(empRows);
+  }
+
+  Logger.log('Employee: ' + empRows.length + ' employees written (' + legacyIds.length + ' legacy + ' + recIds.length + ' from recruitment)');
+  return { count: empRows.length, legacyIds: legacyIds, recIds: recIds, ids: empIds };
+}
+
+// NIK tracking for employee generation
+var _gdUsedNik = {};
+function usedNikGlobal(nik) { return !!_gdUsedNik[nik]; }
+function markNikUsed(nik) { _gdUsedNik[nik] = true; }
+
+// ============================================================
+// 4. OUTSOURCE DATA GENERATION (100 → Employee sheet)
+// ============================================================
+function generateOutsourceData_(today) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var empSheet = ss.getSheetByName(EMPLOYEE_SHEET_NAME);
+
+  if (!empSheet) {
+    Logger.log('Employee sheet not found. Skipping Outsource generation.');
+    return 0;
+  }
+
+  var headers = EMPLOYEE_HEADERS;
+  var existingRows = empSheet.getLastRow();
+
+  var osRows = [];
+  var departments = ['Human Resources', 'Finance', 'Accounting', 'Marketing', 'Digital Marketing', 'Sales', 'IT', 'Engineering', 'Operations', 'Legal', 'GA', 'Warehouse', 'Purchasing', 'Quality Control', 'Customer Service', 'Admin'];
+  var positions = ['IT Support', 'Network Engineer', 'Software Engineer', 'Backend Developer', 'Frontend Developer', 'Fullstack Developer', 'HR Staff', 'Finance Staff', 'Accounting Staff', 'Digital Marketing Specialist', 'Graphic Designer', 'UI/UX Designer', 'Sales Executive', 'Purchasing Staff', 'Warehouse Staff', 'Admin', 'Customer Service', 'Quality Control Staff', 'Driver', 'Security', 'Office Boy'];
+  var educationLevels = ['SMA', 'SMK', 'D3', 'S1'];
+  var workLocations = ['Jakarta Pusat', 'Jakarta Selatan', 'Jakarta Barat', 'Jakarta Timur', 'Jakarta Utara', 'Bandung', 'Surabaya', 'Semarang', 'Yogyakarta', 'Medan', 'Makassar', 'Balikpapan'];
+  var outsourceCompanies = ['PT Bhinneka Teknologi', 'PT Jasa Mandiri', 'PT Sumber Daya Prima', 'PT Mitra Sejahtera', 'PT Outsource Indonesia', 'PT Global Staffing', 'PT Teknologi Mandiri', 'PT Solusi SDM'];
+  var empStatuses = ['Active', 'On Leave', 'Resigned', 'Terminated'];
+  var contractDurations = ['3 Bulan', '6 Bulan', '1 Tahun', '2 Tahun', '3 Tahun'];
+  var maritalStatuses = ['Single', 'Married', 'Divorced'];
+  var bloodTypes = ['A', 'B', 'AB', 'O', '-'];
+  var cities = _gdGetCities_();
+  var streetNames = _gdStreetNames_();
+
+  for (var i = 0; i < 100; i++) {
+    var isMale = Math.random() > 0.52;
+    var firstName = isMale ? _gdPick_(_gdMaleNames_()) : _gdPick_(_gdFemaleNames_());
+    var lastName = _gdPick_(_gdLastNames_());
+    var fullName = firstName + ' ' + lastName;
+
+    var position = _gdPick_(positions);
+    var dept = _gdPickForPosition_(position, departments);
+    var education = _gdPick_(educationLevels);
+    var workLoc = _gdPick_(workLocations);
+    var company = _gdPick_(outsourceCompanies);
+    var empType = 'Outsource';
+    var empStatus = _gdPick_(empStatuses);
+    var salaryType = 'Monthly';
+    var salary = _gdRandSalary_(position);
+
+    var age;
+    if (position === 'Driver' || position === 'Security' || position === 'Office Boy') age = _gdRandInt_(20, 45);
+    else age = _gdRandInt_(22, 40);
+
+    var birthYear = today.getFullYear() - age;
+    var birthDate = birthYear + '-' + _gdPad_(_gdRandInt_(1, 12)) + '-' + _gdPad_(_gdRandInt_(1, 28));
+    var marital = _gdPick_(maritalStatuses);
+    var blood = _gdPick_(bloodTypes);
+
+    var hireYear = today.getFullYear() - _gdRandInt_(0, 3);
+    var hireMonth = _gdRandInt_(1, 12);
+    var hireDay = _gdRandInt_(1, 28);
+    var hireDate = hireYear + '-' + _gdPad_(hireMonth) + '-' + _gdPad_(hireDay);
+
+    var contractEndObj = new Date(today.getFullYear() + 1, _gdRandInt_(0, 11), _gdRandInt_(1, 28));
+    var contractEndDate = _gdDateOnly_(contractEndObj);
+
+    var nik;
+    do { nik = _gdRandDigits_(16); } while (usedNikGlobal(nik));
+    markNikUsed(nik);
+
+    var emailBase = firstName.toLowerCase() + '.' + lastName.toLowerCase().replace(/[^a-z]/g, '');
+    var email = emailBase + _gdRandInt_(1, 999) + '@' + company.toLowerCase().replace(/[^a-z]/g, '') + '.co.id';
+    var phone = '08' + _gdRandDigits_(10);
+
+    var address = _gdPick_(streetNames) + ' No. ' + _gdRandInt_(1, 150) + ', ' + _gdPick_(cities);
+
+    var empId = 'OS-' + hireYear + '-' + _gdPad_(i + 1, 5);
+
+    // Baris sesuai EMPLOYEE_HEADERS (32 kolom) dari Config.gs
+    var row = [
+      empId,                                    // 1. Employee ID
+      company,                                  // 2. Company Entity
+      empType,                                  // 3. Employee Type
+      fullName,                                 // 4. Full Name
+      "'" + nik,                                // 5. NIK
+      birthDate,                                // 6. Birth Date
+      age,                                      // 7. Age
+      isMale ? 'Male' : 'Female',               // 8. Gender
+      marital,                                  // 9. Marital Status
+      email,                                    // 10. Email
+      "'" + phone,                              // 11. Phone
+      address,                                  // 12. Address
+      _gdPick_(cities),                         // 13. City
+      education,                                // 14. Education
+      '',                                       // 15. Work Experience
+      dept,                                     // 16. Department
+      position,                                 // 17. Position
+      hireDate,                                 // 18. Join Date
+      '',                                       // 19. Contract Start
+      contractEndDate,                          // 20. Contract End
+      _gdPick_(contractDurations),              // 21. Contract Duration
+      empStatus,                                // 22. Employment Status
+      salary,                                   // 23. Salary
+      salaryType,                               // 24. Salary Type
+      company,                                  // 25. Outsource Vendor
+      '',                                       // 26. Contract Number
+      '',                                       // 27. District
+      '',                                       // 28. Recruitment ID
+      '',                                       // 29. Recruitment Source
+      '',                                       // 30. HR Notes
+      'Demo Generator',                          // 31. Created By
+      _gdNow_()                                 // 32. Updated At
+    ];
+
+    osRows.push(row);
+  }
+
+  if (osRows.length > 0) {
+    empSheet.getRange(existingRows + 1, 1, osRows.length, headers.length).setValues(osRows);
+  }
+
+  Logger.log('Outsource: ' + osRows.length + ' records written');
+  return osRows.length;
+}
+
+// ============================================================
+// 5. AUDIT LOG GENERATION
+// ============================================================
+function generateAuditLogs_(recruitmentRecords, legacyEmpIds, recEmpIds) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var auditSheet = ss.getSheetByName(AUDIT_LOG_SHEET_NAME);
+
+  if (!auditSheet) {
+    auditSheet = ss.insertSheet(AUDIT_LOG_SHEET_NAME);
+    auditSheet.getRange(1, 1, 1, AUDIT_LOG_HEADERS.length).setValues([AUDIT_LOG_HEADERS]);
+    auditSheet.getRange(1, 1, 1, AUDIT_LOG_HEADERS.length)
+      .setBackground('#005BAC').setFontColor('#ffffff').setFontWeight('bold');
+    auditSheet.setFrozenRows(1);
+  }
+
+  var auditRows = [];
+  var today = new Date();
+
+  // Recruitment audit logs
+  for (var i = 0; i < recruitmentRecords.length; i++) {
+    var rec = recruitmentRecords[i];
+    var recId = rec.recruitmentId;
+    var status = rec.status;
+    var fullName = rec.fullName;
+
+    // Created log
+    auditRows.push([
+      recId,
+      'CREATE',
+      'Status',
+      '',
+      status,
+      'Demo Generator',
+      _gdDateStr_(new Date(today.getTime() - _gdRandInt_(5, 120) * 86400000))
+    ]);
+
+    // Status progression logs
+    if (status !== 'Applied') {
+      var stages = ['Applied', 'Screening', 'Interview', 'Psychotest', 'HR Interview', 'User Interview', 'Offering'];
+      var currentStageIndex = stages.indexOf(status);
+      if (currentStageIndex === -1) currentStageIndex = stages.length - 1;
+
+      var baseDate = new Date(today.getTime() - _gdRandInt_(10, 60) * 86400000);
+      for (var s = 0; s <= currentStageIndex; s++) {
+        var stageDate = new Date(baseDate.getTime() + s * _gdRandInt_(2, 10) * 86400000);
+        if (s === 0) continue; // skip Applied (already logged)
+        var prevStage = stages[s - 1];
+        var currStage = stages[s];
+        auditRows.push([
+          recId,
+          'STATUS_CHANGE',
+          'Status',
+          prevStage,
+          currStage,
+          'Demo Generator',
+          _gdDateStr_(stageDate)
+        ]);
       }
     }
 
-    // Delete from bottom to top to avoid index shifting
-    rowsToDelete.sort(function (a, b) {
-      return b - a;
-    });
-    for (var i = 0; i < rowsToDelete.length; i++) {
-      sheet.deleteRow(rowsToDelete[i]);
+    // Hold log
+    if (status === 'Hold') {
+      auditRows.push([
+        recId,
+        'HOLD',
+        'Status',
+        '',
+        'Hold',
+        'Demo Generator',
+        _gdDateStr_(new Date(today.getTime() - _gdRandInt_(5, 30) * 86400000))
+      ]);
     }
 
-    Logger.log("Removed " + rowsToDelete.length + " dummy records.");
-    return "Removed " + rowsToDelete.length + " dummy records.";
-  } catch (error) {
-    return "Error: " + error.toString();
-  } finally {
-    lock.releaseLock();
+    // Blacklist log
+    if (status === 'Blacklist') {
+      auditRows.push([
+        recId,
+        'BLACKLIST',
+        'Status',
+        '',
+        'Blacklist',
+        'Demo Generator',
+        _gdDateStr_(new Date(today.getTime() - _gdRandInt_(5, 30) * 86400000))
+      ]);
+    }
+
+    // Accepted log
+    if (status === 'Accepted' && rec.employeeId) {
+      auditRows.push([
+        recId,
+        'ACCEPT_TO_EMPLOYEE',
+        'Status',
+        '',
+        'Accepted',
+        'Demo Generator',
+        _gdDateStr_(new Date(today.getTime() - _gdRandInt_(1, 10) * 86400000))
+      ]);
+    }
+
+    // HR Notes log
+    if (rec.row[21] && rec.row[21] !== 'Demo Generator') {
+      auditRows.push([
+        recId,
+        'HR_NOTES_UPDATE',
+        'HR Notes',
+        '',
+        rec.row[21],
+        'Demo Generator',
+        _gdNow_()
+      ]);
+    }
   }
+
+  // Employee audit logs (legacy)
+  for (var k = 0; k < legacyEmpIds.length; k++) {
+    var empId = legacyEmpIds[k];
+    auditRows.push([
+      empId,
+      'CREATE',
+      'Employee',
+      '',
+      'Created',
+      'Demo Generator',
+      _gdNow_()
+    ]);
+  }
+
+  // Employee audit logs (from recruitment)
+  for (var m = 0; m < recEmpIds.length; m++) {
+    var empId = recEmpIds[m];
+    auditRows.push([
+      empId,
+      'CREATE_FROM_RECRUITMENT',
+      'Employee',
+      '',
+      'Converted from recruitment',
+      'Demo Generator',
+      _gdNow_()
+    ]);
+  }
+
+  if (auditRows.length > 0) {
+    auditSheet.getRange(2, 1, auditRows.length, AUDIT_LOG_HEADERS.length).setValues(auditRows);
+  }
+
+  Logger.log('Audit Logs: ' + auditRows.length + ' entries written');
+  return auditRows.length;
 }

@@ -97,7 +97,7 @@ function simpanDataOutsource(formObject) {
       createdAt                                      // Updated At
     ]);
 
-    writeAuditLog_(employeeId, 'Employee Registered (OS)', '-', formObject.employee_type + ' — ' + formObject.position);
+    writeAuditLog_(employeeId, 'Employee Registered (OS)', 'Employee Type', '-', formObject.employee_type + ' — ' + formObject.position);
     return 'Sukses';
   } catch (error) {
     return 'Error: ' + error.toString();
