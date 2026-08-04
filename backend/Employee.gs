@@ -17,6 +17,19 @@ function getOrCreateEmployeeSheet_() {
       .setBackground('#005BAC').setFontColor('#ffffff').setFontWeight('bold');
     sheet.setFrozenRows(1);
     autoResizeColumns_(sheet, EMPLOYEE_HEADERS.length);
+  } else {
+    // Sync headers — tambahkan kolom baru dari EMPLOYEE_HEADERS jika belum ada
+    var currentHeaders = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    var missingHeaders = EMPLOYEE_HEADERS.filter(function(h) {
+      return currentHeaders.indexOf(h) === -1;
+    });
+    if (missingHeaders.length > 0) {
+      var startCol = currentHeaders.length + 1;
+      sheet.getRange(1, startCol, 1, missingHeaders.length).setValues([missingHeaders]);
+      sheet.getRange(1, startCol, 1, missingHeaders.length)
+        .setBackground('#005BAC').setFontColor('#ffffff').setFontWeight('bold');
+      autoResizeColumns_(sheet, sheet.getLastColumn());
+    }
   }
   return sheet;
 }
