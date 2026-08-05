@@ -389,6 +389,12 @@
             </button>
           </div>
         </div>
+        <div class="login-form-group" style="margin-bottom:8px;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:500;margin-bottom:0;">
+            <input type="checkbox" id="loginRememberMe" name="rememberMe" style="width:16px;height:16px;accent-color:#005bac;cursor:pointer;" />
+            <span style="font-size:13px;color:#374151;">Ingat Saya</span>
+          </label>
+        </div>
         <button class="btn-login" id="btnManualLogin" type="submit">
           <i class="bi bi-box-arrow-in-right"></i>
           Masuk
@@ -449,6 +455,7 @@
       var loginForm       = document.getElementById('loginForm');
       var loginIdentifier = document.getElementById('loginIdentifier');
       var loginPassword   = document.getElementById('loginPassword');
+      var loginRememberMe = document.getElementById('loginRememberMe');
       var btnManualLogin  = document.getElementById('btnManualLogin');
       var btnGoogleLogin  = document.getElementById('btnGoogleLogin');
       var togglePassword  = document.getElementById('togglePassword');
@@ -524,9 +531,12 @@
         } catch (e) { return ''; }
       }
 
-      function saveSessionToken(token) {
-        try { localStorage.setItem(AUTH_SESSION_STORAGE_KEY, token); } catch (e) {}
-        try { sessionStorage.setItem(AUTH_SESSION_STORAGE_KEY, token); } catch (e) {}
+      function saveSessionToken(token, rememberMe) {
+        if (rememberMe) {
+          try { localStorage.setItem(AUTH_SESSION_STORAGE_KEY, token); } catch (e) {}
+        } else {
+          try { sessionStorage.setItem(AUTH_SESSION_STORAGE_KEY, token); } catch (e) {}
+        }
       }
 
       function clearSessionToken() {
@@ -583,7 +593,7 @@
       // ============================================================
       function handleLoginResult(result) {
         if (result && result.success && result.sessionToken) {
-          saveSessionToken(result.sessionToken);
+          saveSessionToken(result.sessionToken, result.rememberMe);
           showInfo((result.message || 'Login berhasil.') + ' Mengalihkan ke dashboard...');
           showToast('Login berhasil!', 'success');
           setTimeout(function () { redirectToDashboard(result.sessionToken); }, 600);
@@ -681,13 +691,14 @@
         btnManualLogin.disabled = true;
         showLoading('Memverifikasi akun...');
 
+        var rememberMe = loginRememberMe ? loginRememberMe.checked : false;
         google.script.run
           .withSuccessHandler(handleLoginResult)
           .withFailureHandler(function (err) {
             showError('Gagal terhubung ke server: ' + (err && err.message ? err.message : String(err)));
             showToast('Koneksi gagal. Coba lagi.', 'error');
           })
-          .loginWithPassword(identifier, password);
+          .loginWithPassword(identifier, password, rememberMe);
       });
 
       // ============================================================

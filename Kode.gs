@@ -113,6 +113,16 @@ function doGet(e) {
       .addMetaTag("viewport", "width=device-width, initial-scale=1");
   }
 
+  // --- Candidate Registration (single-page: landing + form) ---
+  // ?type=kandidat or direct link backward compat
+  if (type === 'kandidat' && page === '') {
+    return buildTemplate_("views/CandidateLanding")
+      .evaluate()
+      .setTitle("Informasi Rekrutmen — Mahakarya HRIS")
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+      .addMetaTag("viewport", "width=device-width, initial-scale=1");
+  }
+
   // --- Public Landing Page (default entry) ---
   if (page === "landing" || page === "") {
     return buildTemplate_("views/Landing")
@@ -122,7 +132,7 @@ function doGet(e) {
       .addMetaTag("viewport", "width=device-width, initial-scale=1");
   }
 
-  // --- Default: Formulir Pendaftaran Kandidat (direct link backward compat) ---
+  // --- Fallback: Form Pendaftaran (outsource, etc.) ---
   var template = buildTemplate_("FormPendaftaran");
   template.tipePendaftar = type;
   return template

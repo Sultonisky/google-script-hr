@@ -197,7 +197,7 @@ function performLogout(sessionToken, email) {
     var userEmail = String(
       email || Session.getActiveUser().getEmail() || "unknown",
     );
-    writeAuditLog_("SYSTEM", "Logout", "user", userEmail, "logged_out");
+    writeAuditLog_(userEmail, "LOGOUT", "user", userEmail, "logged_out");
 
     // Clear session from cache
     clearUserSession(sessionToken);
@@ -380,30 +380,27 @@ var DEFAULT_DEMO_USERS = [
 ];
 
 /**
- * Seeds default demo users if Users sheet is empty.
+ * Auto-seeds demo users if they don't exist.
+ * Checks individually by email AND username — never overwrites existing data.
  * Called automatically during login attempts.
  * @returns {Object} { success, message, count }
  */
 function seedDefaultDemoUsers_() {
-  var sheet = getUsersSheet_();
-  var lastRow = sheet.getLastRow();
-  if (lastRow > 1) {
-    return { success: false, message: 'Users sheet already has data.', count: 0 };
-  }
-
   var lock = LockService.getScriptLock();
   try {
     lock.waitLock(10000);
-    lastRow = sheet.getLastRow();
-    if (lastRow > 1) {
-      return { success: false, message: 'Users sheet already has data.', count: 0 };
-    }
 
+    var sheet = getUsersSheet_();
     var now = Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd HH:mm:ss");
     var count = 0;
 
     for (var i = 0; i < DEFAULT_DEMO_USERS.length; i++) {
       var u = DEFAULT_DEMO_USERS[i];
+      // Skip if user already exists by email or username
+      var existsByEmail = findUserByEmailOrUsername_(u.email);
+      var existsByUsername = findUserByEmailOrUsername_(u.username);
+      if (existsByEmail || existsByUsername) continue;
+
       var hash = hashPassword_(u.password);
       sheet.appendRow([
         u.email.toLowerCase(),   // Email
@@ -421,7 +418,10 @@ function seedDefaultDemoUsers_() {
     }
     SpreadsheetApp.flush();
 
-    return { success: true, message: count + ' demo user berhasil dibuat.', count: count };
+    if (count > 0) {
+      return { success: true, message: count + ' demo user berhasil dibuat.', count: count };
+    }
+    return { success: true, message: 'Semua demo user sudah ada.', count: 0 };
   } catch (e) {
     return { success: false, message: 'Gagal membuat demo user: ' + e.message, count: 0 };
   } finally {
@@ -439,9 +439,10 @@ function seedDefaultDemoUsers_() {
  * Returns the same login response format as Google SSO.
  * @param {string} identifier - Email or username
  * @param {string} password - Plaintext password (verified against stored hash)
- * @returns {Object} { success, sessionToken, message, error, user }
+ * @param {boolean} rememberMe - If true, client saves session in localStorage; otherwise sessionStorage
+ * @returns {Object} { success, sessionToken, rememberMe, message, error, user }
  */
-function loginWithPassword(identifier, password) {
+function loginWithPassword(identifier, password, rememberMe) {
   try {
     // 1. Normalize
     var id = String(identifier || '').trim().toLowerCase();
@@ -451,14 +452,8 @@ function loginWithPassword(identifier, password) {
       return { success: false, error: 'Email/Username dan Password wajib diisi.' };
     }
 
-    // 2. Check if Users sheet is empty — auto-seed demo users
-    var sheetStatus = isUsersSheetEmpty();
-    if (sheetStatus && sheetStatus.isEmpty) {
-      var seedResult = seedDefaultDemoUsers_();
-      if (!seedResult.success || seedResult.count === 0) {
-        return { success: false, error: 'Gagal membuat user demo. Hubungi administrator.' };
-      }
-    }
+    // 2. Auto-seed demo users if needed
+    seedDefaultDemoUsers_();
 
     // 3. Find user by email or username
     var user = findUserByEmailOrUsername_(id);
@@ -492,6 +487,7 @@ function loginWithPassword(identifier, password) {
       success: true,
       message: 'Login berhasil.',
       sessionToken: sessionToken,
+      rememberMe: !!rememberMe,
       user: sessionUser,
     };
   } catch (e) {

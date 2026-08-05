@@ -25,20 +25,25 @@
 
     function getStoredSessionToken_() {
       try {
-        return (
-          localStorage.getItem(AUTH_SESSION_STORAGE_KEY) ||
-          sessionStorage.getItem(AUTH_SESSION_STORAGE_KEY) ||
-          ""
-        );
+        // Prefer sessionStorage (non-remember-me sessions)
+        var sVal = sessionStorage.getItem(AUTH_SESSION_STORAGE_KEY);
+        if (sVal) return sVal;
+        // Fall back to localStorage (remember-me sessions)
+        var lVal = localStorage.getItem(AUTH_SESSION_STORAGE_KEY);
+        if (lVal) return lVal;
+        return "";
       } catch (e) {
         return "";
       }
     }
 
-    function setStoredSessionToken_(token) {
+    function setStoredSessionToken_(token, rememberMe) {
       try {
-        localStorage.setItem(AUTH_SESSION_STORAGE_KEY, token);
-        sessionStorage.setItem(AUTH_SESSION_STORAGE_KEY, token);
+        if (rememberMe) {
+          localStorage.setItem(AUTH_SESSION_STORAGE_KEY, token);
+        } else {
+          sessionStorage.setItem(AUTH_SESSION_STORAGE_KEY, token);
+        }
       } catch (e) {}
     }
 
@@ -57,8 +62,8 @@
       return getStoredSessionToken_();
     };
 
-    window.setAuthSessionToken = function (token) {
-      setStoredSessionToken_(String(token || "").trim());
+    window.setAuthSessionToken = function (token, rememberMe) {
+      setStoredSessionToken_(String(token || "").trim(), rememberMe);
     };
 
     window.clearAuthSessionToken = function () {
