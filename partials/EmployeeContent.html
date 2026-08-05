@@ -1,66 +1,138 @@
-<!-- partials/EmployeeContent.html — EMPLOYEE PAGE CONTENT (for SPA include) -->
+<!-- partials/EmployeeContent.html — EMPLOYEE / MASTER DATA PAGE CONTENT (for SPA include) -->
 <!-- Contains only the body content; scripts & styles are loaded by Dashboard.html -->
-<div class="emp-ct">
-  <div class="emp-hdr">
+<div class="panel" id="employeePanel">
+  <div class="panel-header">
     <div>
-      <h4><i class="bi bi-people-fill me-2"></i>Manajemen Karyawan</h4>
-      <small class="text-muted">Data master karyawan aktif</small>
+      <h6>Daftar Karyawan</h6>
+      <div class="panel-subtitle" id="panelSubtitle">Memuat data...</div>
     </div>
-    <div style="display: flex; gap: 8px">
-      <button class="btn-eo" id="btnEmpRefresh" type="button">
-        <i class="bi bi-arrow-clockwise"></i>
-      </button>
-      <button class="btn-em" id="btnEmpAdd" type="button">
+    <div class="export-btns">
+      <button
+        class="btn-export"
+        style="
+          background: var(--color-primary);
+          color: #fff;
+          border: 1px solid var(--color-primary);
+        "
+        type="button"
+        id="btnEmpAdd"
+      >
         <i class="bi bi-plus-lg"></i> Tambah
       </button>
+      <button class="btn-export csv" id="btnEmpExportCsv" type="button">
+        <i class="bi bi-filetype-csv"></i> CSV
+      </button>
+      <button class="btn-export xlsx" id="btnEmpExportXlsx" type="button">
+        <i class="bi bi-file-earmark-excel"></i> Excel
+      </button>
     </div>
   </div>
-  <div class="emp-card">
-    <div class="emp-card-body"><div class="emp-stats" id="empStats"></div></div>
+
+  <!-- FILTER BAR -->
+  <div class="filter-bar">
+    <div class="table-search">
+      <i class="bi bi-search"></i>
+      <input
+        type="text"
+        id="empSearchInput"
+        placeholder="Cari nama, NIK, email, posisi, dept..."
+      />
+    </div>
+    <select class="filter-select" id="empDeptFilter">
+      <option value="">Semua Dept</option>
+    </select>
+    <select class="filter-select" id="empTypeFilter">
+      <option value="">Semua Tipe</option>
+    </select>
+    <select class="filter-select" id="empStatusFilter">
+      <option value="">Semua Status</option>
+      <option value="Active">Active</option>
+      <option value="Inactive">Inactive</option>
+    </select>
+    <select class="filter-select" id="empSortSelect">
+      <option value="newest">Terbaru</option>
+      <option value="oldest">Terlama</option>
+      <option value="name_asc">Nama A-Z</option>
+      <option value="name_desc">Nama Z-A</option>
+    </select>
+    <button
+      class="btn-refresh"
+      id="btnEmpRefresh"
+      type="button"
+      title="Muat ulang data"
+    >
+      <i class="bi bi-arrow-clockwise"></i>
+    </button>
   </div>
-  <div class="emp-card">
-    <div class="emp-card-hdr">
-      <h6><i class="bi bi-list-ul"></i> Daftar Karyawan</h6>
-      <div class="text-muted small" id="empCnt">0 karyawan</div>
+
+  <!-- TABLE -->
+  <div class="table-responsive">
+    <table class="table hr-table">
+      <thead>
+        <tr>
+          <th>Avatar</th>
+          <th>Employee ID</th>
+          <th>Karyawan</th>
+          <th>NIK</th>
+          <th>Departemen</th>
+          <th>Posisi</th>
+          <th>Tipe</th>
+          <th>Status</th>
+          <th>Tanggal Masuk</th>
+        </tr>
+      </thead>
+      <tbody id="empTableBody"></tbody>
+    </table>
+    <div class="table-loading" id="empTableLoading">
+      <div class="spinner-border" role="status"></div>
+      <p>Mengambil data dari spreadsheet...</p>
     </div>
-    <div class="emp-tb">
-      <div class="emp-srch">
-        <i class="bi bi-search"></i
-        ><input type="text" id="empQ" placeholder="Cari nama, NIK, email..." />
-      </div>
-      <div class="emp-flt">
-        <select id="fDept">
-          <option value="">Semua Dept</option>
-        </select>
-        <select id="fSt">
-          <option value="">Semua Status</option>
-          <option value="Active">Active</option>
-          <option value="Inactive">Inactive</option>
-        </select>
-        <select id="fType">
-          <option value="">Semua Tipe</option>
-        </select>
+    <div class="table-empty d-none" id="empTableEmpty">
+      <i class="bi bi-inbox"></i>
+      <p>Belum ada data karyawan.</p>
+    </div>
+  </div>
+
+  <div class="panel-footer">
+    <span id="empFooterCount">Menampilkan 0 data</span>
+    <nav
+      class="pagination-ui"
+      id="empPaginationUi"
+      aria-label="Pagination"
+    ></nav>
+  </div>
+</div>
+
+<!-- Stat Cards -->
+<div class="row g-3 mb-4" id="employeeStatsPanel">
+  <div class="col-6 col-md-4 col-xl-2p4">
+    <div class="stat-card">
+      <div class="stat-icon bg-blue"><i class="bi bi-people-fill"></i></div>
+      <div>
+        <div class="stat-label">Total Karyawan</div>
+        <div class="stat-value" data-current="0" id="empStatTotal">0</div>
       </div>
     </div>
-    <div class="emp-card-body">
-      <div style="overflow-x: auto">
-        <table class="emp-tbl">
-          <thead>
-            <tr>
-              <th>Karyawan</th>
-              <th>Dept</th>
-              <th>Posisi</th>
-              <th>Lokasi</th>
-              <th>Tipe</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="empTB"></tbody>
-        </table>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2p4">
+    <div class="stat-card">
+      <div class="stat-icon bg-green">
+        <i class="bi bi-check-circle-fill"></i>
       </div>
-      <div class="emp-empty" id="empEmp" style="display: none">
-        <i class="bi bi-people"></i>
-        <div>Belum ada data karyawan.</div>
+      <div>
+        <div class="stat-label">Active</div>
+        <div class="stat-value" data-current="0" id="empStatActive">0</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2p4">
+    <div class="stat-card">
+      <div class="stat-icon bg-red">
+        <i class="bi bi-slash-circle-fill"></i>
+      </div>
+      <div>
+        <div class="stat-label">Inactive</div>
+        <div class="stat-value" data-current="0" id="empStatInactive">0</div>
       </div>
     </div>
   </div>
@@ -71,11 +143,8 @@
   <div
     class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"
   >
-    <div class="modal-content" style="border-radius: 12px">
-      <div
-        class="modal-header"
-        style="border-bottom: 1px solid #f0f0f0; padding: 16px 20px"
-      >
+    <div class="modal-content">
+      <div class="modal-header">
         <h6 class="modal-title fw-bold" id="empDetTitle">Detail Karyawan</h6>
         <button
           type="button"
@@ -83,18 +152,15 @@
           data-bs-dismiss="modal"
         ></button>
       </div>
-      <div class="modal-body" id="empDetBody" style="padding: 20px"></div>
-      <div
-        class="modal-footer"
-        style="border-top: 1px solid #f0f0f0; padding: 12px 20px"
-      >
+      <div class="modal-body" id="empDetBody"></div>
+      <div class="modal-footer">
         <button
           type="button"
           class="btn btn-danger btn-sm fw-semibold"
           id="btnEmpDel"
           style="border: none"
         >
-          <i class="bi bi-trash3 me-1"></i>Hapus
+          <i class="bi bi-trash3 me-1"></i> Hapus
         </button>
         <div style="flex: 1"></div>
         <button
@@ -110,7 +176,7 @@
           id="btnEmpEdit"
           style="background: #005bac; border: none"
         >
-          <i class="bi bi-pencil me-1"></i>Edit
+          <i class="bi bi-pencil me-1"></i> Edit
         </button>
       </div>
     </div>
@@ -120,11 +186,8 @@
 <!-- Form Modal -->
 <div class="modal fade" id="empFormModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content" style="border-radius: 12px">
-      <div
-        class="modal-header"
-        style="border-bottom: 1px solid #f0f0f0; padding: 16px 20px"
-      >
+    <div class="modal-content">
+      <div class="modal-header">
         <h6 class="modal-title fw-bold" id="empFormTitle">Tambah Karyawan</h6>
         <button
           type="button"
@@ -132,111 +195,67 @@
           data-bs-dismiss="modal"
         ></button>
       </div>
-      <div class="modal-body" style="padding: 20px">
+      <div class="modal-body">
         <input type="hidden" id="efId" />
         <div class="row g-3">
           <div class="col-md-6">
-            <label class="form-label fw-semibold" style="font-size: 13px"
-              >Nama Lengkap *</label
-            ><input
-              type="text"
-              class="form-control"
-              id="efName"
-              style="font-size: 13px"
-            />
+            <label class="form-label fw-semibold">Nama Lengkap *</label>
+            <input type="text" class="form-control" id="efName" />
           </div>
           <div class="col-md-6">
-            <label class="form-label fw-semibold" style="font-size: 13px"
-              >NIK</label
-            ><input
-              type="text"
-              class="form-control"
-              id="efNik"
-              style="font-size: 13px"
-            />
+            <label class="form-label fw-semibold">NIK</label>
+            <input type="text" class="form-control" id="efNik" />
           </div>
           <div class="col-md-6">
-            <label class="form-label fw-semibold" style="font-size: 13px"
-              >Email</label
-            ><input
-              type="email"
-              class="form-control"
-              id="efEmail"
-              style="font-size: 13px"
-            />
+            <label class="form-label fw-semibold">Email</label>
+            <input type="email" class="form-control" id="efEmail" />
           </div>
           <div class="col-md-6">
-            <label class="form-label fw-semibold" style="font-size: 13px"
-              >No. Handphone</label
-            ><input
-              type="text"
-              class="form-control"
-              id="efPhone"
-              style="font-size: 13px"
-            />
+            <label class="form-label fw-semibold">No. Handphone</label>
+            <input type="text" class="form-control" id="efPhone" />
           </div>
           <div class="col-md-6">
-            <label class="form-label fw-semibold" style="font-size: 13px"
-              >Departemen</label
-            ><select class="form-select" id="efDept" style="font-size: 13px">
+            <label class="form-label fw-semibold">Departemen</label>
+            <select class="form-select" id="efDept">
               <option value="">— Pilih —</option>
             </select>
           </div>
           <div class="col-md-6">
-            <label class="form-label fw-semibold" style="font-size: 13px"
-              >Posisi</label
-            ><select class="form-select" id="efPos" style="font-size: 13px">
+            <label class="form-label fw-semibold">Posisi</label>
+            <select class="form-select" id="efPos">
               <option value="">— Pilih —</option>
             </select>
           </div>
           <div class="col-md-6">
-            <label class="form-label fw-semibold" style="font-size: 13px"
-              >Lokasi Kerja</label
-            ><select class="form-select" id="efLoc" style="font-size: 13px">
+            <label class="form-label fw-semibold">Lokasi Kerja</label>
+            <select class="form-select" id="efLoc">
               <option value="">— Pilih —</option>
             </select>
           </div>
           <div class="col-md-6">
-            <label class="form-label fw-semibold" style="font-size: 13px"
-              >Tipe Karyawan</label
-            ><select class="form-select" id="efType" style="font-size: 13px">
+            <label class="form-label fw-semibold">Tipe Karyawan</label>
+            <select class="form-select" id="efType">
               <option value="">— Pilih —</option>
             </select>
           </div>
           <div class="col-md-6">
-            <label class="form-label fw-semibold" style="font-size: 13px"
-              >Tanggal Masuk</label
-            ><input
-              type="date"
-              class="form-control"
-              id="efJoin"
-              style="font-size: 13px"
-            />
+            <label class="form-label fw-semibold">Tanggal Masuk</label>
+            <input type="date" class="form-control" id="efJoin" />
           </div>
           <div class="col-md-6">
-            <label class="form-label fw-semibold" style="font-size: 13px"
-              >Status</label
-            ><select class="form-select" id="efStatus" style="font-size: 13px">
+            <label class="form-label fw-semibold">Status</label>
+            <select class="form-select" id="efStatus">
               <option value="Active">Active</option>
               <option value="Inactive">Inactive</option>
             </select>
           </div>
           <div class="col-12">
-            <label class="form-label fw-semibold" style="font-size: 13px"
-              >Catatan HR</label
-            ><textarea
-              class="form-control"
-              id="efNotes"
-              rows="2"
-              style="font-size: 13px"
-            ></textarea>
+            <label class="form-label fw-semibold">Catatan HR</label>
+            <textarea class="form-control" id="efNotes" rows="2"></textarea>
           </div>
         </div>
       </div>
-      <div
-        class="modal-footer"
-        style="border-top: 1px solid #f0f0f0; padding: 12px 20px"
-      >
+      <div class="modal-footer">
         <button
           type="button"
           class="btn btn-light btn-sm fw-semibold"
@@ -250,9 +269,27 @@
           id="btnEmpSave"
           style="background: #005bac; border: none"
         >
-          <i class="bi bi-check2-circle me-1"></i>Simpan
+          <i class="bi bi-check2-circle me-1"></i> Simpan
         </button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+  <div
+    id="empToast"
+    class="toast align-items-center border-0 shadow"
+    role="alert"
+  >
+    <div class="d-flex">
+      <div class="toast-body" id="empToastBody"></div>
+      <button
+        type="button"
+        class="btn-close btn-close-white me-2 m-auto"
+        data-bs-dismiss="toast"
+      ></button>
     </div>
   </div>
 </div>
