@@ -1,6 +1,7 @@
 // ============================================================
 // backend/Outsource.gs — OUTSOURCE EMPLOYEE REGISTRATION
-// Flow: Form → raw_outsource (pending) → approved → Employee
+// Flow: Form → Employee sheet (Employee Type = "Outsource", Status = "Active")
+// (No more raw_outsource staging sheet — data lands directly in Employee.)
 // ============================================================
 
 // ---- Validasi form OS ----
@@ -23,6 +24,13 @@ function validateOutsourceForm_(f) {
     return "Posisi/jabatan wajib diisi.";
   if (!f.join_date) return "Tanggal mulai kerja wajib diisi.";
   if (!f.education) return "Pendidikan terakhir wajib dipilih.";
+  if (!f.company_entity) return "Entitas perusahaan wajib dipilih.";
+  if (!f.employee_type) return "Tipe karyawan wajib dipilih.";
+  if (!f.employment_status) return "Status kepegawaian wajib dipilih.";
+  if (!f.salary) return "Gaji wajib diisi dengan angka.";
+  if (!f.salary_type) return "Tipe gaji wajib dipilih.";
+  if (f.employee_type === "Outsource" && !f.outsource_vendor)
+    return "Nama outsource vendor wajib diisi untuk tipe Outsource.";
   return null;
 }
 
@@ -42,200 +50,300 @@ function generateOutsourceId_(now) {
   }
 }
 
-// ---- Simpan data OS ke raw_outsource (pending approval) ----
+// ---- Simpan data OS langsung ke sheet Employee ----
 function simpanDataOutsource(formObject) {
   try {
     var validationError = validateOutsourceForm_(formObject);
     if (validationError) return "Error: " + validationError;
 
-    var now = new Date();
-    var outsourceId = generateOutsourceId_(now);
-    var createdAt = Utilities.formatDate(now, "GMT+7", "yyyy-MM-dd HH:mm:ss");
+    var lock = LockService.getScriptLock();
+    lock.waitLock(10000);
+    try {
+      var now = new Date();
+      var outsourceId = generateOutsourceId_(now);
+      var employeeId = generateEmployeeId_(now);
+      var createdAt = Utilities.formatDate(now, "GMT+7", "yyyy-MM-dd HH:mm:ss");
 
-    var sheet = getOrCreateOutsourceSheet_();
+      var sheet = getOrCreateEmployeeSheet_();
 
-    var newRow = new Array(OUTSOURCE_HEADERS.length).fill("");
-    newRow[OUTSOURCE_COL["Outsource ID"] - 1] = outsourceId;
-    newRow[OUTSOURCE_COL["Created Date"] - 1] = createdAt;
-    newRow[OUTSOURCE_COL["Full Name"] - 1] = formObject.full_name;
-    newRow[OUTSOURCE_COL["NIK"] - 1] = "'" + formObject.nik;
-    newRow[OUTSOURCE_COL["Birth Date"] - 1] = formObject.birth_date;
-    newRow[OUTSOURCE_COL["Age"] - 1] = Number(formObject.age) || "";
-    newRow[OUTSOURCE_COL["Gender"] - 1] = formObject.gender;
-    newRow[OUTSOURCE_COL["Marital Status"] - 1] = formObject.marital_status;
-    newRow[OUTSOURCE_COL["Email"] - 1] = formObject.email;
-    newRow[OUTSOURCE_COL["Phone"] - 1] = "'" + formObject.phone;
-    newRow[OUTSOURCE_COL["Address"] - 1] = formObject.address;
-    newRow[OUTSOURCE_COL["City"] - 1] = formObject.city;
-    newRow[OUTSOURCE_COL["Province"] - 1] = formObject.province || "";
-    newRow[OUTSOURCE_COL["Position"] - 1] = formObject.position;
-    newRow[OUTSOURCE_COL["Department"] - 1] = formObject.department || "";
-    newRow[OUTSOURCE_COL["Join Date"] - 1] = formObject.join_date;
-    newRow[OUTSOURCE_COL["Education"] - 1] = formObject.education;
-    newRow[OUTSOURCE_COL["Work Experience"] - 1] =
-      formObject.work_experience || "";
-    newRow[OUTSOURCE_COL["Vendor Company"] - 1] =
-      formObject.vendor_company || "";
-    newRow[OUTSOURCE_COL["Contract Number"] - 1] =
-      formObject.contract_number || "";
-    newRow[OUTSOURCE_COL["Contract Duration"] - 1] =
-      formObject.contract_duration || "";
-    newRow[OUTSOURCE_COL["Salary"] - 1] = Number(formObject.salary) || 0;
-    newRow[OUTSOURCE_COL["Recruitment Source"] - 1] =
-      formObject.recruitment_source || "";
-    newRow[OUTSOURCE_COL["Status"] - 1] = "Pending";
-    newRow[OUTSOURCE_COL["Notes"] - 1] = "";
-    newRow[OUTSOURCE_COL["Created By"] - 1] = "System";
-    newRow[OUTSOURCE_COL["Updated At"] - 1] = createdAt;
+      // Build row using EMPLOYEE_COL for exact column alignment (37 cols)
+      var newRow = new Array(EMPLOYEE_HEADERS.length).fill("");
+      newRow[EMPLOYEE_COL["Employee ID"] - 1] = employeeId;
+      newRow[EMPLOYEE_COL["Recruitment ID"] - 1] = outsourceId;
+      newRow[EMPLOYEE_COL["Full Name"] - 1] = formObject.full_name;
+      newRow[EMPLOYEE_COL["Position"] - 1] = formObject.position;
+      newRow[EMPLOYEE_COL["Email"] - 1] = formObject.email;
+      newRow[EMPLOYEE_COL["Phone"] - 1] = "'" + formObject.phone;
+      newRow[EMPLOYEE_COL["Join Date"] - 1] = formObject.join_date;
+      newRow[EMPLOYEE_COL["Status"] - 1] = "Active";
+      newRow[EMPLOYEE_COL["Notes"] - 1] = "";
+      newRow[EMPLOYEE_COL["Created At"] - 1] = createdAt;
+      newRow[EMPLOYEE_COL["Company Entity"] - 1] =
+        formObject.company_entity || "PT Mahakarya Sukses Indonesia";
+      newRow[EMPLOYEE_COL["Employee Type"] - 1] = "Outsource";
+      newRow[EMPLOYEE_COL["NIK"] - 1] = "'" + formObject.nik;
+      newRow[EMPLOYEE_COL["Birth Date"] - 1] = formObject.birth_date;
+      newRow[EMPLOYEE_COL["Age"] - 1] = Number(formObject.age) || "";
+      newRow[EMPLOYEE_COL["Gender"] - 1] = formObject.gender;
+      newRow[EMPLOYEE_COL["Marital Status"] - 1] = formObject.marital_status;
+      newRow[EMPLOYEE_COL["Address"] - 1] = formObject.address;
+      newRow[EMPLOYEE_COL["City"] - 1] = formObject.city;
+      newRow[EMPLOYEE_COL["Education"] - 1] = formObject.education;
+      newRow[EMPLOYEE_COL["Work Experience"] - 1] =
+        formObject.work_experience || "";
+      newRow[EMPLOYEE_COL["Department"] - 1] = formObject.department || "";
+      newRow[EMPLOYEE_COL["Division"] - 1] = "";
+      newRow[EMPLOYEE_COL["Branch"] - 1] = "";
+      newRow[EMPLOYEE_COL["Contract Start"] - 1] =
+        formObject.contract_start || "";
+      newRow[EMPLOYEE_COL["Contract End"] - 1] =
+        formObject.contract_end || "";
+      newRow[EMPLOYEE_COL["Contract Duration"] - 1] =
+        formObject.contract_duration || "";
+      newRow[EMPLOYEE_COL["Employment Status"] - 1] =
+        formObject.employment_status || "Probation";
+      newRow[EMPLOYEE_COL["Salary"] - 1] = Number(formObject.salary) || 0;
+      newRow[EMPLOYEE_COL["Salary Type"] - 1] = formObject.salary_type || "Monthly";
+      newRow[EMPLOYEE_COL["Outsource Vendor"] - 1] =
+        formObject.outsource_vendor || "";
+      newRow[EMPLOYEE_COL["Contract Number"] - 1] =
+        formObject.contract_number || "";
+      newRow[EMPLOYEE_COL["District"] - 1] = "";
+      newRow[EMPLOYEE_COL["Recruitment Source"] - 1] =
+        formObject.recruitment_source || "";
+      newRow[EMPLOYEE_COL["HR Notes"] - 1] = "";
+      newRow[EMPLOYEE_COL["Created By"] - 1] = "System (Outsource Form)";
+      newRow[EMPLOYEE_COL["Updated At"] - 1] = createdAt;
 
-    sheet.appendRow(newRow);
+      sheet.appendRow(newRow);
 
-    writeAuditLog_(outsourceId, "Created", "Status", "-", "Pending");
-    return "Sukses";
+      writeAuditLog_(
+        outsourceId,
+        "Created",
+        "Status",
+        "-",
+        "Active (Outsource)",
+      );
+      return "Sukses";
+    } finally {
+      lock.releaseLock();
+    }
   } catch (error) {
     return "Error: " + error.toString();
   }
 }
 
-// ---- Approve outsource → Employee ----
-function approveOutsourceToEmployee(outsourceId, notes) {
-  var lock = LockService.getScriptLock();
-  lock.waitLock(10000);
+// ---- Get outsource list (from Employee sheet, Employee Type = "Outsource") ----
+function getOutsourceList() {
   try {
-    var srcSheet =
-      SpreadsheetApp.getActiveSpreadsheet().getSheetByName(
-        OUTSOURCE_SHEET_NAME,
-      );
-    if (!srcSheet || srcSheet.getLastRow() < 2)
-      return { success: false, message: "Sheet outsource tidak ditemukan." };
+    var sheet =
+      SpreadsheetApp.getActiveSpreadsheet().getSheetByName(EMPLOYEE_SHEET_NAME);
+    if (!sheet || sheet.getLastRow() < 2) return [];
 
-    var data = srcSheet.getDataRange().getValues();
+    var data = sheet.getDataRange().getValues();
+    var headers = data[0];
 
-    for (var i = 1; i < data.length; i++) {
-      if (
-        String(data[i][OUTSOURCE_COL["Outsource ID"] - 1]) !==
-        String(outsourceId)
-      )
+    var colIndex = {};
+    headers.forEach(function (h, i) {
+      colIndex[String(h).trim()] = i;
+    });
+
+    var result = [];
+    for (var r = 1; r < data.length; r++) {
+      var row = data[r];
+      if (!row.join("").toString().trim()) continue;
+
+      // Filter: only Outsource employee type
+      var empType = String(row[colIndex["Employee Type"]] || "").trim();
+      if (empType !== "Outsource") continue;
+
+      result.push({
+        employeeId: String(row[colIndex["Employee ID"]] || ""),
+        outsourceId: String(row[colIndex["Recruitment ID"]] || ""),
+        createdDate: fmtDate_(
+          row[colIndex["Created At"]],
+          "dd/MM/yyyy HH:mm",
+        ),
+        fullName: String(row[colIndex["Full Name"]] || ""),
+        nik: String(row[colIndex["NIK"]] || ""),
+        birthDate: String(row[colIndex["Birth Date"]] || ""),
+        age: String(row[colIndex["Age"]] || ""),
+        gender: String(row[colIndex["Gender"]] || ""),
+        maritalStatus: String(row[colIndex["Marital Status"]] || ""),
+        email: String(row[colIndex["Email"]] || ""),
+        phone: String(row[colIndex["Phone"]] || ""),
+        address: String(row[colIndex["Address"]] || ""),
+        city: String(row[colIndex["City"]] || ""),
+        position: String(row[colIndex["Position"]] || ""),
+        department: String(row[colIndex["Department"]] || ""),
+        joinDate: String(row[colIndex["Join Date"]] || ""),
+        education: String(row[colIndex["Education"]] || ""),
+        workExperience: String(row[colIndex["Work Experience"]] || ""),
+        employmentStatus: String(
+          row[colIndex["Employment Status"]] || "",
+        ),
+        contractStart: String(row[colIndex["Contract Start"]] || ""),
+        contractEnd: String(row[colIndex["Contract End"]] || ""),
+        contractDuration: String(
+          row[colIndex["Contract Duration"]] || "",
+        ),
+        salary: row[colIndex["Salary"]] || 0,
+        salaryType: String(row[colIndex["Salary Type"]] || ""),
+        outsourceVendor: String(row[colIndex["Outsource Vendor"]] || ""),
+        vendorCompany: String(row[colIndex["Outsource Vendor"]] || ""),
+        contractNumber: String(row[colIndex["Contract Number"]] || ""),
+        recruitmentSource: String(row[colIndex["Recruitment Source"]] || ""),
+        status: String(row[colIndex["Status"]] || ""),
+        notes: String(row[colIndex["HR Notes"]] || ""),
+        createdBy: String(row[colIndex["Created By"]] || ""),
+        updatedAt: fmtDate_(row[colIndex["Updated At"]], "dd/MM/yyyy HH:mm"),
+      });
+    }
+
+    result.sort(function (a, b) {
+      return (b.createdDate || "").localeCompare(a.createdDate || "");
+    });
+
+    return result;
+  } catch (error) {
+    return [];
+  }
+}
+
+// ---- Get single outsource employee by Employee ID ----
+function getOutsourceById(id) {
+  try {
+    var sheet =
+      SpreadsheetApp.getActiveSpreadsheet().getSheetByName(EMPLOYEE_SHEET_NAME);
+    if (!sheet || sheet.getLastRow() < 2)
+      return { success: false, message: "Sheet Employee tidak ditemukan." };
+
+    var data = sheet.getDataRange().getValues();
+    var headers = data[0];
+    var colIndex = {};
+    headers.forEach(function (h, i) {
+      colIndex[String(h).trim()] = i;
+    });
+
+    for (var r = 1; r < data.length; r++) {
+      if (String(data[r][colIndex["Employee ID"]] || "") !== String(id))
         continue;
+      var empType = String(
+        data[r][colIndex["Employee Type"]] || "",
+      ).trim();
+      if (empType !== "Outsource")
+        return {
+          success: false,
+          message: "Bukan karyawan outsource.",
+        };
 
-      var now = new Date();
-      var employeeId = generateEmployeeId_(now);
-      var createdAt = Utilities.formatDate(now, "GMT+7", "yyyy-MM-dd HH:mm:ss");
-      var row = data[i];
-
-      // Write to Employee sheet using EMPLOYEE_COL
-      var empSheet = getOrCreateEmployeeSheet_();
-      var newRow = new Array(EMPLOYEE_HEADERS.length).fill("");
-      newRow[EMPLOYEE_COL["Employee ID"] - 1] = employeeId;
-      newRow[EMPLOYEE_COL["Recruitment ID"] - 1] = outsourceId;
-      newRow[EMPLOYEE_COL["Full Name"] - 1] =
-        row[OUTSOURCE_COL["Full Name"] - 1];
-      newRow[EMPLOYEE_COL["Position"] - 1] = row[OUTSOURCE_COL["Position"] - 1];
-      newRow[EMPLOYEE_COL["Email"] - 1] = row[OUTSOURCE_COL["Email"] - 1];
-      newRow[EMPLOYEE_COL["Phone"] - 1] = row[OUTSOURCE_COL["Phone"] - 1];
-      newRow[EMPLOYEE_COL["Join Date"] - 1] =
-        row[OUTSOURCE_COL["Join Date"] - 1];
-      newRow[EMPLOYEE_COL["Status"] - 1] = "Active";
-      newRow[EMPLOYEE_COL["Notes"] - 1] = notes || "";
-      newRow[EMPLOYEE_COL["Created At"] - 1] = createdAt;
-      newRow[EMPLOYEE_COL["Company Entity"] - 1] =
-        "PT Mahakarya Sukses Indonesia";
-      newRow[EMPLOYEE_COL["Employee Type"] - 1] = "Outsource";
-      newRow[EMPLOYEE_COL["NIK"] - 1] = row[OUTSOURCE_COL["NIK"] - 1];
-      newRow[EMPLOYEE_COL["Birth Date"] - 1] =
-        row[OUTSOURCE_COL["Birth Date"] - 1];
-      newRow[EMPLOYEE_COL["Age"] - 1] = row[OUTSOURCE_COL["Age"] - 1];
-      newRow[EMPLOYEE_COL["Gender"] - 1] = row[OUTSOURCE_COL["Gender"] - 1];
-      newRow[EMPLOYEE_COL["Marital Status"] - 1] =
-        row[OUTSOURCE_COL["Marital Status"] - 1];
-      newRow[EMPLOYEE_COL["Address"] - 1] = row[OUTSOURCE_COL["Address"] - 1];
-      newRow[EMPLOYEE_COL["City"] - 1] = row[OUTSOURCE_COL["City"] - 1];
-      newRow[EMPLOYEE_COL["Education"] - 1] =
-        row[OUTSOURCE_COL["Education"] - 1];
-      newRow[EMPLOYEE_COL["Work Experience"] - 1] =
-        row[OUTSOURCE_COL["Work Experience"] - 1];
-      newRow[EMPLOYEE_COL["Department"] - 1] =
-        row[OUTSOURCE_COL["Department"] - 1];
-      newRow[EMPLOYEE_COL["Division"] - 1] = "";
-      newRow[EMPLOYEE_COL["Branch"] - 1] = "";
-      newRow[EMPLOYEE_COL["Contract Duration"] - 1] =
-        row[OUTSOURCE_COL["Contract Duration"] - 1];
-      newRow[EMPLOYEE_COL["Employment Status"] - 1] = "Active";
-      newRow[EMPLOYEE_COL["Salary"] - 1] = row[OUTSOURCE_COL["Salary"] - 1];
-      newRow[EMPLOYEE_COL["Salary Type"] - 1] = "Monthly";
-      newRow[EMPLOYEE_COL["Outsource Vendor"] - 1] =
-        row[OUTSOURCE_COL["Vendor Company"] - 1];
-      newRow[EMPLOYEE_COL["Contract Number"] - 1] =
-        row[OUTSOURCE_COL["Contract Number"] - 1];
-      newRow[EMPLOYEE_COL["District"] - 1] = "";
-      newRow[EMPLOYEE_COL["Recruitment Source"] - 1] =
-        row[OUTSOURCE_COL["Recruitment Source"] - 1];
-      newRow[EMPLOYEE_COL["HR Notes"] - 1] = notes || "";
-      newRow[EMPLOYEE_COL["Created By"] - 1] = "System";
-      newRow[EMPLOYEE_COL["Updated At"] - 1] = createdAt;
-
-      empSheet.appendRow(newRow);
-
-      // Update source row status
-      srcSheet.getRange(i + 1, OUTSOURCE_COL["Status"]).setValue("Approved");
-      srcSheet.getRange(i + 1, OUTSOURCE_COL["Updated At"]).setValue(createdAt);
-
-      writeAuditLog_(outsourceId, "Approved", "Status", "Pending", "Approved");
+      var row = data[r];
       return {
         success: true,
-        outsourceId: outsourceId,
-        employeeId: employeeId,
-        newStatus: "Approved",
+        data: {
+          employeeId: String(row[colIndex["Employee ID"]] || ""),
+          outsourceId: String(row[colIndex["Recruitment ID"]] || ""),
+          fullName: String(row[colIndex["Full Name"]] || ""),
+          nik: String(row[colIndex["NIK"]] || ""),
+          birthDate: String(row[colIndex["Birth Date"]] || ""),
+          age: String(row[colIndex["Age"]] || ""),
+          gender: String(row[colIndex["Gender"]] || ""),
+          maritalStatus: String(row[colIndex["Marital Status"]] || ""),
+          email: String(row[colIndex["Email"]] || ""),
+          phone: String(row[colIndex["Phone"]] || ""),
+          address: String(row[colIndex["Address"]] || ""),
+          city: String(row[colIndex["City"]] || ""),
+          position: String(row[colIndex["Position"]] || ""),
+          department: String(row[colIndex["Department"]] || ""),
+          joinDate: String(row[colIndex["Join Date"]] || ""),
+          education: String(row[colIndex["Education"]] || ""),
+          workExperience: String(row[colIndex["Work Experience"]] || ""),
+          employmentStatus: String(
+            row[colIndex["Employment Status"]] || "",
+          ),
+          contractStart: String(row[colIndex["Contract Start"]] || ""),
+          contractEnd: String(row[colIndex["Contract End"]] || ""),
+          contractDuration: String(
+            row[colIndex["Contract Duration"]] || "",
+          ),
+          salary: row[colIndex["Salary"]] || 0,
+          salaryType: String(row[colIndex["Salary Type"]] || ""),
+          outsourceVendor: String(row[colIndex["Outsource Vendor"]] || ""),
+          contractNumber: String(row[colIndex["Contract Number"]] || ""),
+          recruitmentSource: String(
+            row[colIndex["Recruitment Source"]] || "",
+          ),
+          status: String(row[colIndex["Status"]] || ""),
+          notes: String(row[colIndex["HR Notes"]] || ""),
+        },
       };
     }
 
-    return {
-      success: false,
-      message: "Outsource ID tidak ditemukan: " + outsourceId,
-    };
-  } catch (err) {
-    return { success: false, message: err.message };
-  } finally {
-    lock.releaseLock();
+    return { success: false, message: "Outsource ID tidak ditemukan: " + id };
+  } catch (error) {
+    return { success: false, message: error.toString() };
   }
 }
 
-// ---- Reject outsource ----
-function rejectOutsource(outsourceId, reason) {
+// ---- Update outsource employee status/notes ----
+function updateOutsourceStatus(id, status, notes) {
   var lock = LockService.getScriptLock();
   lock.waitLock(10000);
   try {
-    var srcSheet =
-      SpreadsheetApp.getActiveSpreadsheet().getSheetByName(
-        OUTSOURCE_SHEET_NAME,
-      );
-    if (!srcSheet || srcSheet.getLastRow() < 2)
-      return { success: false, message: "Sheet outsource tidak ditemukan." };
+    var sheet =
+      SpreadsheetApp.getActiveSpreadsheet().getSheetByName(EMPLOYEE_SHEET_NAME);
+    if (!sheet || sheet.getLastRow() < 2)
+      return { success: false, message: "Sheet Employee tidak ditemukan." };
 
-    var data = srcSheet.getDataRange().getValues();
+    var data = sheet.getDataRange().getValues();
+    var headers = data[0];
+    var colIndex = {};
+    headers.forEach(function (h, i) {
+      colIndex[String(h).trim()] = i;
+    });
 
-    for (var i = 1; i < data.length; i++) {
-      if (
-        String(data[i][OUTSOURCE_COL["Outsource ID"] - 1]) !==
-        String(outsourceId)
-      )
+    for (var r = 1; r < data.length; r++) {
+      if (String(data[r][colIndex["Employee ID"]] || "") !== String(id))
         continue;
+      var empType = String(
+        data[r][colIndex["Employee Type"]] || "",
+      ).trim();
+      if (empType !== "Outsource")
+        return {
+          success: false,
+          message: "Bukan karyawan outsource.",
+        };
 
-      var now = new Date();
-      var createdAt = Utilities.formatDate(now, "GMT+7", "yyyy-MM-dd HH:mm:ss");
+      var oldStatus = String(data[r][colIndex["Status"]] || "");
+      var now = Utilities.formatDate(
+        new Date(),
+        "GMT+7",
+        "yyyy-MM-dd HH:mm:ss",
+      );
 
-      srcSheet.getRange(i + 1, OUTSOURCE_COL["Status"]).setValue("Rejected");
-      srcSheet.getRange(i + 1, OUTSOURCE_COL["Notes"]).setValue(reason || "");
-      srcSheet.getRange(i + 1, OUTSOURCE_COL["Updated At"]).setValue(createdAt);
+      if (status) {
+        sheet
+          .getRange(r + 1, colIndex["Status"] + 1)
+          .setValue(status);
+      }
+      if (notes !== undefined && notes !== null) {
+        sheet
+          .getRange(r + 1, colIndex["HR Notes"] + 1)
+          .setValue(notes);
+      }
+      sheet
+        .getRange(r + 1, colIndex["Updated At"] + 1)
+        .setValue(now);
 
-      writeAuditLog_(outsourceId, "Rejected", "Status", "Pending", "Rejected");
-      return { success: true, outsourceId: outsourceId, newStatus: "Rejected" };
+      writeAuditLog_(id, "Update Status", "Status", oldStatus, status || oldStatus);
+      return {
+        success: true,
+        employeeId: id,
+        newStatus: status,
+      };
     }
 
-    return {
-      success: false,
-      message: "Outsource ID tidak ditemukan: " + outsourceId,
-    };
+    return { success: false, message: "Outsource ID tidak ditemukan: " + id };
   } catch (err) {
     return { success: false, message: err.message };
   } finally {
@@ -243,50 +351,45 @@ function rejectOutsource(outsourceId, reason) {
   }
 }
 
-// ---- Get outsource list (raw_outsource sheet) ----
-function getOutsourceList() {
-  var sheet =
-    SpreadsheetApp.getActiveSpreadsheet().getSheetByName(OUTSOURCE_SHEET_NAME);
-  if (!sheet || sheet.getLastRow() < 2) return [];
+// ---- Delete outsource employee by Employee ID ----
+function deleteOutsourceById(id) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var sheet =
+      SpreadsheetApp.getActiveSpreadsheet().getSheetByName(EMPLOYEE_SHEET_NAME);
+    if (!sheet || sheet.getLastRow() < 2)
+      return { success: false, message: "Sheet Employee tidak ditemukan." };
 
-  var data = sheet.getDataRange().getValues();
-  var headers = data[0];
-
-  var colIndex = {};
-  headers.forEach(function (h, i) {
-    colIndex[String(h).trim()] = i;
-  });
-
-  var result = [];
-  for (var r = 1; r < data.length; r++) {
-    var row = data[r];
-    if (!row.join("").toString().trim()) continue;
-    result.push({
-      outsourceId: String(row[colIndex["Outsource ID"]] || ""),
-      createdDate:
-        row[colIndex["Created Date"]] instanceof Date
-          ? Utilities.formatDate(
-              row[colIndex["Created Date"]],
-              "GMT+7",
-              "dd/MM/yyyy HH:mm",
-            )
-          : String(row[colIndex["Created Date"]] || ""),
-      fullName: String(row[colIndex["Full Name"]] || ""),
-      nik: String(row[colIndex["NIK"]] || ""),
-      email: String(row[colIndex["Email"]] || ""),
-      position: String(row[colIndex["Position"]] || ""),
-      department: String(row[colIndex["Department"]] || ""),
-      joinDate: String(row[colIndex["Join Date"]] || ""),
-      vendorCompany: String(row[colIndex["Vendor Company"]] || ""),
-      contractDuration: String(row[colIndex["Contract Duration"]] || ""),
-      status: String(row[colIndex["Status"]] || "Pending"),
-      notes: String(row[colIndex["Notes"]] || ""),
+    var data = sheet.getDataRange().getValues();
+    var headers = data[0];
+    var colIndex = {};
+    headers.forEach(function (h, i) {
+      colIndex[String(h).trim()] = i;
     });
+
+    for (var r = 1; r < data.length; r++) {
+      if (String(data[r][colIndex["Employee ID"]] || "") !== String(id))
+        continue;
+      var empType = String(
+        data[r][colIndex["Employee Type"]] || "",
+      ).trim();
+      if (empType !== "Outsource")
+        return {
+          success: false,
+          message: "Bukan karyawan outsource.",
+        };
+
+      var name = String(data[r][colIndex["Full Name"]] || "");
+      sheet.deleteRow(r + 1);
+      writeAuditLog_(id, "Deleted", "Status", "-", "Deleted");
+      return { success: true, message: 'Karyawan "' + name + '" berhasil dihapus.' };
+    }
+
+    return { success: false, message: "Outsource ID tidak ditemukan: " + id };
+  } catch (err) {
+    return { success: false, message: err.message };
+  } finally {
+    lock.releaseLock();
   }
-
-  result.sort(function (a, b) {
-    return (b.createdDate || "").localeCompare(a.createdDate || "");
-  });
-
-  return result;
 }
