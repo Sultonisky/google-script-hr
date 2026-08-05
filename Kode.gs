@@ -10,6 +10,8 @@
 //   backend/Validation.gs  — Validasi form server-side
 //   backend/Audit.gs       — Audit log & getAuditLogForCandidate
 //   backend/Recruitment.gs — CRUD kandidat (simpan, list, update, dll)
+//   backend/Employee.gs    — CRUD employee (getEmployeeList, addEmployee, updateEmployee, deleteEmployee, getEmployeeStats)
+//   backend/MasterData.gs — Master data kategori (getMasterDataList, getMasterDataGrouped, dll)
 //   backend/BulkActions.gs — Bulk update & delete
 //   backend/IdGenerator.gs — Generator ID rekrutmen & karyawan
 //   backend/Export.gs      — Placeholder ekspor server-side

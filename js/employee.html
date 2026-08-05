@@ -1,10 +1,12 @@
 <!-- js/employee.html — Employee Page Logic -->
+<!-- Depends on: js/helpers.html (escapeHtml, initials, statusBadgeClass, showToast, formatRupiah, parseDdMmYyyy) -->
 <script>
   // ============ EMPLOYEE STATE ============
   var EMP = {
     allItems: [],
     filtered: [],
     masterData: {},
+    currentPage: 1,
     detailId: null,
     editId: null,
     detModal: null,
@@ -13,17 +15,28 @@
 
   // ============ LOAD DATA ============
   function empLoadAll() {
+    var tbody = document.getElementById('empTableBody');
+    var loading = document.getElementById('empTableLoading');
+    var btn = document.getElementById('btnEmpRefresh');
+    if (btn) btn.classList.add('spinning');
+    if (loading) loading.classList.remove('d-none');
+    if (tbody) tbody.innerHTML = '';
+
     google.script.run
       .withSuccessHandler(function (result) {
+        if (btn) btn.classList.remove('spinning');
+        if (loading) loading.classList.add('d-none');
         if (result && result.success) {
           EMP.allItems = result.data || [];
           empRenderStats();
-          empRenderTable();
           empPopulateFilters();
+          empApplyFilters();
         }
       })
       .withFailureHandler(function (err) {
-        empToast("Gagal memuat data: " + err.message, "danger");
+        if (btn) btn.classList.remove('spinning');
+        if (loading) loading.classList.add('d-none');
+        if (typeof showToast === 'function') showToast('Gagal memuat data: ' + err.message, 'error');
       })
       .getEmployeeList();
   }
@@ -34,34 +47,28 @@
         if (result && result.success) {
           EMP.masterData = result.data || {};
           empPopulateFormSelects();
-          empPopulateFilters();
         }
       })
-      .withFailureHandler(function (err) {})
+      .withFailureHandler(function () {})
       .getMasterDataGrouped();
   }
 
   // ============ STATS ============
   function empRenderStats() {
-    var grid = document.getElementById("empStats");
     var total = EMP.allItems.length;
     var active = 0;
     var inactive = 0;
     EMP.allItems.forEach(function (e) {
-      if (e.status === "Active") active++;
+      if (e.status === 'Active') active++;
       else inactive++;
     });
 
-    grid.innerHTML =
-      '<div class="emp-sc pri"><div class="sn">' +
-      total +
-      '</div><div class="sl">Total Karyawan</div></div>' +
-      '<div class="emp-sc suc"><div class="sn">' +
-      active +
-      '</div><div class="sl">Active</div></div>' +
-      '<div class="emp-sc dan"><div class="sn">' +
-      inactive +
-      '</div><div class="sl">Inactive</div></div>';
+    var totalEl = document.getElementById('empStatTotal');
+    var activeEl = document.getElementById('empStatActive');
+    var inactiveEl = document.getElementById('empStatInactive');
+    if (totalEl) animateCounter(totalEl, total);
+    if (activeEl) animateCounter(activeEl, active);
+    if (inactiveEl) animateCounter(inactiveEl, inactive);
   }
 
   // ============ FILTERS ============
@@ -73,134 +80,172 @@
       if (e.employeeType) types[e.employeeType] = true;
     });
 
-    var fDept = document.getElementById("fDept");
-    var curDept = fDept.value;
-    fDept.innerHTML = '<option value="">Semua Dept</option>';
-    Object.keys(depts)
-      .sort()
-      .forEach(function (d) {
-        fDept.innerHTML +=
-          '<option value="' +
-          empEsc(d) +
-          '"' +
-          (curDept === d ? " selected" : "") +
-          ">" +
-          empEsc(d) +
-          "</option>";
+    var fDept = document.getElementById('empDeptFilter');
+    var curDept = fDept ? fDept.value : '';
+    if (fDept) {
+      fDept.innerHTML = '<option value="">Semua Dept</option>';
+      Object.keys(depts).sort().forEach(function (d) {
+        fDept.innerHTML += '<option value="' + escapeHtml(d) + '"' +
+          (curDept === d ? ' selected' : '') + '>' + escapeHtml(d) + '</option>';
       });
+    }
 
-    var fType = document.getElementById("fType");
-    var curType = fType.value;
-    fType.innerHTML = '<option value="">Semua Tipe</option>';
-    Object.keys(types)
-      .sort()
-      .forEach(function (t) {
-        fType.innerHTML +=
-          '<option value="' +
-          empEsc(t) +
-          '"' +
-          (curType === t ? " selected" : "") +
-          ">" +
-          empEsc(t) +
-          "</option>";
+    var fType = document.getElementById('empTypeFilter');
+    var curType = fType ? fType.value : '';
+    if (fType) {
+      fType.innerHTML = '<option value="">Semua Tipe</option>';
+      Object.keys(types).sort().forEach(function (t) {
+        fType.innerHTML += '<option value="' + escapeHtml(t) + '"' +
+          (curType === t ? ' selected' : '') + '>' + escapeHtml(t) + '</option>';
       });
+    }
+  }
+
+  function empApplyFilters() {
+    var siEl = document.getElementById('empSearchInput');
+    var dfEl = document.getElementById('empDeptFilter');
+    var tfEl = document.getElementById('empTypeFilter');
+    var sfEl = document.getElementById('empStatusFilter');
+    var ssEl = document.getElementById('empSortSelect');
+
+    if (!siEl) return;
+
+    var kw = siEl.value.trim().toLowerCase();
+    var dept = dfEl ? dfEl.value : '';
+    var type = tfEl ? tfEl.value : '';
+    var status = sfEl ? sfEl.value : '';
+    var sort = ssEl ? ssEl.value : 'newest';
+
+    EMP.filtered = EMP.allItems.filter(function (e) {
+      var mk = !kw ||
+        (e.fullName || '').toLowerCase().indexOf(kw) !== -1 ||
+        (e.nik || '').replace(/'/g, '').toLowerCase().indexOf(kw) !== -1 ||
+        (e.email || '').toLowerCase().indexOf(kw) !== -1 ||
+        (e.position || '').toLowerCase().indexOf(kw) !== -1 ||
+        (e.department || '').toLowerCase().indexOf(kw) !== -1;
+      var md = !dept || e.department === dept;
+      var mt = !type || e.employeeType === type;
+      var ms = !status || e.status === status;
+      return mk && md && mt && ms;
+    });
+
+    EMP.filtered.sort(function (a, b) {
+      switch (sort) {
+        case 'oldest':
+          return (parseDdMmYyyy(a.createdAt) || 0) - (parseDdMmYyyy(b.createdAt) || 0);
+        case 'name_asc':
+          return (a.fullName || '').localeCompare(b.fullName || '');
+        case 'name_desc':
+          return (b.fullName || '').localeCompare(a.fullName || '');
+        default:
+          return (parseDdMmYyyy(b.createdAt) || 0) - (parseDdMmYyyy(a.createdAt) || 0);
+      }
+    });
+
+    EMP.currentPage = 1;
+    empRenderTable();
   }
 
   // ============ TABLE ============
-  function empApplyFilter() {
-    var q = (document.getElementById("empQ").value || "").toLowerCase().trim();
-    var dept = document.getElementById("fDept").value;
-    var st = document.getElementById("fSt").value;
-    var tp = document.getElementById("fType").value;
+  var EMP_PAGE_SIZE = 20;
 
-    EMP.filtered = EMP.allItems.filter(function (e) {
-      if (dept && e.department !== dept) return false;
-      if (st && e.status !== st) return false;
-      if (tp && e.employeeType !== tp) return false;
-      if (q) {
-        var nm = (e.fullName || "").toLowerCase();
-        var nk = (e.nik || "").toLowerCase();
-        var em = (e.email || "").toLowerCase();
-        if (
-          nm.indexOf(q) === -1 &&
-          nk.indexOf(q) === -1 &&
-          em.indexOf(q) === -1
-        )
-          return false;
-      }
-      return true;
+  function empRenderTable() {
+    var tbody = document.getElementById('empTableBody');
+    var loading = document.getElementById('empTableLoading');
+    var empty = document.getElementById('empTableEmpty');
+    var ps = EMP_PAGE_SIZE;
+
+    if (loading) loading.classList.add('d-none');
+
+    if (!EMP.filtered || EMP.filtered.length === 0) {
+      if (tbody) tbody.innerHTML = '';
+      if (empty) empty.classList.remove('d-none');
+      var fc = document.getElementById('empFooterCount');
+      if (fc) fc.innerText = 'Menampilkan 0 dari ' + EMP.allItems.length + ' data';
+      empRenderPagination(ps);
+      return;
+    }
+    if (empty) empty.classList.add('d-none');
+
+    var totalPages = Math.max(1, Math.ceil(EMP.filtered.length / ps));
+    if (EMP.currentPage > totalPages) EMP.currentPage = totalPages;
+    var start = (EMP.currentPage - 1) * ps;
+    var pageData = EMP.filtered.slice(start, start + ps);
+
+    if (tbody) tbody.innerHTML = pageData.map(function (e) {
+      var empStatus = e.status || 'Inactive';
+      var stBadge = empStatus === 'Active' ? 'accepted' : 'blacklist';
+      return '<tr>' +
+        '<td><div class="avatar-sm">' + escapeHtml(initials(e.fullName)) + '</div></td>' +
+        '<td><span class="id-mono">' + escapeHtml(e.employeeId || '-') + '</span></td>' +
+        '<td><div class="cand-name cand-name-link" data-id="' + escapeHtml(e.employeeId) + '">' +
+          escapeHtml(e.fullName || '-') + '</div><div class="cand-sub">' + escapeHtml(e.email || '-') + '</div></td>' +
+        '<td>' + escapeHtml(e.nik || '-') + '</td>' +
+        '<td>' + escapeHtml(e.department || '-') + '</td>' +
+        '<td>' + escapeHtml(e.position || '-') + '</td>' +
+        '<td>' + escapeHtml(e.employeeType || '-') + '</td>' +
+        '<td><span class="badge-status ' + stBadge + '">' + escapeHtml(empStatus) + '</span></td>' +
+        '<td>' + escapeHtml(e.joinDate || '-') + '</td>' +
+        '</tr>';
+    }).join('');
+
+    var sStart = start + 1;
+    var sEnd = Math.min(start + ps, EMP.filtered.length);
+    var fc2 = document.getElementById('empFooterCount');
+    if (fc2) fc2.innerText = 'Menampilkan ' + sStart + '–' + sEnd +
+      ' dari ' + EMP.filtered.length + ' data (total ' + EMP.allItems.length + ')';
+
+    empRenderPagination(ps);
+    empAttachRowHandlers();
+  }
+
+  function empRenderPagination(ps) {
+    var nav = document.getElementById('empPaginationUi');
+    if (!nav) return;
+    var total = Math.max(1, Math.ceil(EMP.filtered.length / ps));
+    var html = '<button class="page-btn" type="button" id="empPrev" ' +
+      (EMP.currentPage === 1 ? 'disabled' : '') + '><i class="bi bi-chevron-left"></i></button>';
+    var mb = 5;
+    var sp = Math.max(1, EMP.currentPage - Math.floor(mb / 2));
+    var ep = Math.min(total, sp + mb - 1);
+    sp = Math.max(1, ep - mb + 1);
+    if (sp > 1) {
+      html += '<button class="page-btn" type="button" data-emp-page="1">1</button>';
+      if (sp > 2) html += '<span class="page-btn" style="border:none;background:transparent;cursor:default">&hellip;</span>';
+    }
+    for (var p = sp; p <= ep; p++) {
+      html += '<button class="page-btn' + (p === EMP.currentPage ? ' active' : '') +
+        '" type="button" data-emp-page="' + p + '">' + p + '</button>';
+    }
+    if (ep < total) {
+      if (ep < total - 1) html += '<span class="page-btn" style="border:none;background:transparent;cursor:default">&hellip;</span>';
+      html += '<button class="page-btn" type="button" data-emp-page="' + total + '">' + total + '</button>';
+    }
+    html += '<button class="page-btn" type="button" id="empNext" ' +
+      (EMP.currentPage === total ? 'disabled' : '') + '><i class="bi bi-chevron-right"></i></button>';
+    nav.innerHTML = html;
+    nav.querySelectorAll('button[data-emp-page]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        EMP.currentPage = parseInt(b.getAttribute('data-emp-page'), 10);
+        empRenderTable();
+      });
+    });
+    var prev = document.getElementById('empPrev');
+    var next = document.getElementById('empNext');
+    if (prev) prev.addEventListener('click', function () {
+      if (EMP.currentPage > 1) { EMP.currentPage--; empRenderTable(); }
+    });
+    if (next) next.addEventListener('click', function () {
+      if (EMP.currentPage < total) { EMP.currentPage++; empRenderTable(); }
     });
   }
 
-  function empRenderTable() {
-    empApplyFilter();
-    var tbody = document.getElementById("empTB");
-    var empty = document.getElementById("empEmp");
-    var table = document.querySelector(".emp-tbl");
-    document.getElementById("empCnt").textContent =
-      EMP.filtered.length + " karyawan";
-
-    if (EMP.filtered.length === 0) {
-      table.style.display = "none";
-      empty.style.display = "";
-      return;
-    }
-    table.style.display = "";
-    empty.style.display = "none";
-
-    var html = "";
-    for (var i = 0; i < EMP.filtered.length; i++) {
-      var e = EMP.filtered[i];
-      var initials = empInitials(e.fullName);
-      var stCls = e.status === "Active" ? "on" : "off";
-      html +=
-        "<tr onclick=\"empShowDetail('" +
-        e.employeeId +
-        "')\">" +
-        '<td><div class="emp-nm">' +
-        '<div class="emp-av">' +
-        (e.photo ? '<img src="' + empEsc(e.photo) + '" />' : initials) +
-        "</div>" +
-        '<div class="emp-inf"><div class="nm">' +
-        empEsc(e.fullName) +
-        '</div><div class="nk">' +
-        empEsc(e.nik || "-") +
-        "</div></div>" +
-        "</div></td>" +
-        "<td>" +
-        empEsc(e.department || "-") +
-        "</td>" +
-        "<td>" +
-        empEsc(e.position || "-") +
-        "</td>" +
-        "<td>" +
-        empEsc(e.city || "-") +
-        "</td>" +
-        "<td>" +
-        empEsc(e.employeeType || "-") +
-        "</td>" +
-        '<td><span class="emp-st ' +
-        stCls +
-        '">' +
-        empEsc(e.status) +
-        "</span></td>" +
-        "</tr>";
-    }
-    tbody.innerHTML = html;
-  }
-
-  function empInitials(name) {
-    if (!name) return "?";
-    var parts = name.trim().split(/\s+/);
-    if (parts.length >= 2)
-      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-    return parts[0].substring(0, 2).toUpperCase();
-  }
-
-  function empEsc(s) {
-    var div = document.createElement("div");
-    div.textContent = s || "";
-    return div.innerHTML;
+  function empAttachRowHandlers() {
+    document.querySelectorAll('.cand-name-link').forEach(function (el) {
+      el.addEventListener('click', function () {
+        empShowDetail(el.getAttribute('data-id'));
+      });
+    });
   }
 
   // ============ DETAIL MODAL ============
@@ -210,78 +255,63 @@
     });
     if (!emp) return;
     EMP.detailId = id;
-    document.getElementById("empDetTitle").textContent =
-      emp.fullName || "Detail Karyawan";
+    document.getElementById('empDetTitle').textContent = emp.fullName || 'Detail Karyawan';
 
-    var stCls = emp.status === "Active" ? "on" : "off";
+    var stBadge = emp.status === 'Active' ? 'accepted' : 'blacklist';
     var html =
-      empDt("NIK", emp.nik || "-") +
-      empDt("Nama Lengkap", emp.fullName || "-") +
-      empDt("Email", emp.email || "-") +
-      empDt("No. Handphone", emp.phone || "-") +
-      empDt("Departemen", emp.department || "-") +
-      empDt("Posisi", emp.position || "-") +
-      empDt("Lokasi Kerja", emp.city || "-") +
-      empDt("Tipe Karyawan", emp.employeeType || "-") +
-      empDt("Tanggal Masuk", emp.joinDate || "-") +
-      empDt(
-        "Status",
-        '<span class="emp-st ' + stCls + '">' + empEsc(emp.status) + "</span>",
-      ) +
-      empDt("Catatan HR", emp.notes || "-");
+      empDt('NIK', emp.nik || '-') +
+      empDt('Nama Lengkap', emp.fullName || '-') +
+      empDt('Email', emp.email || '-') +
+      empDt('No. Handphone', emp.phone || '-') +
+      empDt('Departemen', emp.department || '-') +
+      empDt('Posisi', emp.position || '-') +
+      empDt('Lokasi', emp.city || '-') +
+      empDt('Tipe Karyawan', emp.employeeType || '-') +
+      empDt('Tanggal Masuk', emp.joinDate || '-') +
+      empDt('Status', '<span class="badge-status ' + stBadge + '">' + escapeHtml(emp.status || 'Inactive') + '</span>') +
+      empDt('Catatan HR', emp.hrNotes || '-');
 
-    document.getElementById("empDetBody").innerHTML = html;
+    document.getElementById('empDetBody').innerHTML = html;
     EMP.detModal.show();
   }
 
   function empDt(label, val) {
-    return (
-      '<div class="dt-row"><div class="dt-label">' +
-      label +
-      '</div><div class="dt-val">' +
-      val +
-      "</div></div>"
-    );
+    return '<div class="dt-row"><div class="dt-label">' + label +
+      '</div><div class="dt-val">' + val + '</div></div>';
   }
 
   // ============ FORM MODAL ============
   function empPopulateFormSelects() {
-    var cats = ["department", "position", "work_location", "employee_type"];
-    var ids = ["efDept", "efPos", "efLoc", "efType"];
+    var cats = ['department', 'position', 'work_location', 'employee_type'];
+    var ids = ['efDept', 'efPos', 'efLoc', 'efType'];
     for (var c = 0; c < cats.length; c++) {
       var sel = document.getElementById(ids[c]);
+      if (!sel) continue;
       var items = EMP.masterData[cats[c]] || [];
-      var cur = sel.value;
       sel.innerHTML = '<option value="">— Pilih —</option>';
       items.forEach(function (name) {
-        var val = typeof name === "object" ? name.name : name;
-        sel.innerHTML +=
-          '<option value="' +
-          empEsc(val) +
-          '"' +
-          (cur === val ? " selected" : "") +
-          ">" +
-          empEsc(val) +
-          "</option>";
+        var val = typeof name === 'object' ? name.name : name;
+        sel.innerHTML += '<option value="' + escapeHtml(val) + '">' +
+          escapeHtml(val) + '</option>';
       });
     }
   }
 
   function empOpenAdd() {
     EMP.editId = null;
-    document.getElementById("empFormTitle").textContent = "Tambah Karyawan";
-    document.getElementById("efId").value = "";
-    document.getElementById("efName").value = "";
-    document.getElementById("efNik").value = "";
-    document.getElementById("efEmail").value = "";
-    document.getElementById("efPhone").value = "";
-    document.getElementById("efDept").value = "";
-    document.getElementById("efPos").value = "";
-    document.getElementById("efLoc").value = "";
-    document.getElementById("efType").value = "";
-    document.getElementById("efJoin").value = "";
-    document.getElementById("efStatus").value = "Active";
-    document.getElementById("efNotes").value = "";
+    document.getElementById('empFormTitle').textContent = 'Tambah Karyawan';
+    document.getElementById('efId').value = '';
+    document.getElementById('efName').value = '';
+    document.getElementById('efNik').value = '';
+    document.getElementById('efEmail').value = '';
+    document.getElementById('efPhone').value = '';
+    document.getElementById('efDept').value = '';
+    document.getElementById('efPos').value = '';
+    document.getElementById('efLoc').value = '';
+    document.getElementById('efType').value = '';
+    document.getElementById('efJoin').value = '';
+    document.getElementById('efStatus').value = 'Active';
+    document.getElementById('efNotes').value = '';
     EMP.formModal.show();
   }
 
@@ -292,46 +322,44 @@
     if (!emp) return;
     EMP.editId = emp.employeeId;
     EMP.detModal.hide();
-    document.getElementById("empFormTitle").textContent = "Edit Karyawan";
-    document.getElementById("efId").value = emp.employeeId;
-    document.getElementById("efName").value = emp.fullName || "";
-    document.getElementById("efNik").value = emp.nik || "";
-    document.getElementById("efEmail").value = emp.email || "";
-    document.getElementById("efPhone").value = emp.phone || "";
-    document.getElementById("efDept").value = emp.department || "";
-    document.getElementById("efPos").value = emp.position || "";
-    document.getElementById("efLoc").value = emp.city || "";
-    document.getElementById("efType").value = emp.employeeType || "";
-    document.getElementById("efJoin").value = emp.joinDate || "";
-    document.getElementById("efStatus").value = emp.status || "Active";
-    document.getElementById("efNotes").value = emp.notes || "";
-    setTimeout(function () {
-      EMP.formModal.show();
-    }, 300);
+    document.getElementById('empFormTitle').textContent = 'Edit Karyawan';
+    document.getElementById('efId').value = emp.employeeId;
+    document.getElementById('efName').value = emp.fullName || '';
+    document.getElementById('efNik').value = emp.nik || '';
+    document.getElementById('efEmail').value = emp.email || '';
+    document.getElementById('efPhone').value = emp.phone || '';
+    document.getElementById('efDept').value = emp.department || '';
+    document.getElementById('efPos').value = emp.position || '';
+    document.getElementById('efLoc').value = emp.city || '';
+    document.getElementById('efType').value = emp.employeeType || '';
+    document.getElementById('efJoin').value = emp.joinDate || '';
+    document.getElementById('efStatus').value = emp.status || 'Active';
+    document.getElementById('efNotes').value = emp.hrNotes || '';
+    setTimeout(function () { EMP.formModal.show(); }, 300);
   }
 
   function empSave() {
-    var name = document.getElementById("efName").value.trim();
+    var name = document.getElementById('efName').value.trim();
     if (!name) {
-      empToast("Nama lengkap harus diisi.", "warning");
+      empToast('Nama lengkap harus diisi.', 'warning');
       return;
     }
 
     var data = {
-      nik: document.getElementById("efNik").value.trim(),
+      nik: document.getElementById('efNik').value.trim(),
       fullName: name,
-      email: document.getElementById("efEmail").value.trim(),
-      phone: document.getElementById("efPhone").value.trim(),
-      department: document.getElementById("efDept").value,
-      position: document.getElementById("efPos").value,
-      workLocation: document.getElementById("efLoc").value,
-      employeeType: document.getElementById("efType").value,
-      joinDate: document.getElementById("efJoin").value,
-      status: document.getElementById("efStatus").value,
-      notes: document.getElementById("efNotes").value.trim(),
+      email: document.getElementById('efEmail').value.trim(),
+      phone: document.getElementById('efPhone').value.trim(),
+      department: document.getElementById('efDept').value,
+      position: document.getElementById('efPos').value,
+      workLocation: document.getElementById('efLoc').value,
+      employeeType: document.getElementById('efType').value,
+      joinDate: document.getElementById('efJoin').value,
+      status: document.getElementById('efStatus').value,
+      notes: document.getElementById('efNotes').value.trim(),
     };
 
-    var btn = document.getElementById("btnEmpSave");
+    var btn = document.getElementById('btnEmpSave');
     btn.disabled = true;
     btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Menyimpan...';
 
@@ -341,17 +369,17 @@
           btn.disabled = false;
           btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan';
           if (r && r.success) {
-            empToast(r.message, "success");
+            empToast(r.message, 'success');
             EMP.formModal.hide();
             empLoadAll();
           } else {
-            empToast(r ? r.message : "Gagal menyimpan.", "danger");
+            empToast(r ? r.message : 'Gagal menyimpan.', 'danger');
           }
         })
         .withFailureHandler(function (err) {
           btn.disabled = false;
           btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan';
-          empToast("Error: " + err.message, "danger");
+          empToast('Error: ' + err.message, 'danger');
         })
         .updateEmployee(EMP.editId, data);
     } else {
@@ -360,17 +388,17 @@
           btn.disabled = false;
           btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan';
           if (r && r.success) {
-            empToast(r.message, "success");
+            empToast(r.message, 'success');
             EMP.formModal.hide();
             empLoadAll();
           } else {
-            empToast(r ? r.message : "Gagal menyimpan.", "danger");
+            empToast(r ? r.message : 'Gagal menyimpan.', 'danger');
           }
         })
         .withFailureHandler(function (err) {
           btn.disabled = false;
           btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan';
-          empToast("Error: " + err.message, "danger");
+          empToast('Error: ' + err.message, 'danger');
         })
         .addEmployee(data);
     }
@@ -388,17 +416,43 @@
     google.script.run
       .withSuccessHandler(function (r) {
         if (r && r.success) {
-          empToast(r.message, "success");
+          empToast(r.message, 'success');
           EMP.detModal.hide();
           empLoadAll();
         } else {
-          empToast(r ? r.message : "Gagal menghapus.", "danger");
+          empToast(r ? r.message : 'Gagal menghapus.', 'danger');
         }
       })
       .withFailureHandler(function (err) {
-        empToast("Error: " + err.message, "danger");
+        empToast('Error: ' + err.message, 'danger');
       })
       .deleteEmployee(EMP.detailId);
+  }
+
+  // ============ EMP TOAST ============
+  function empToast(message, type) {
+    if (typeof showToast === 'function') {
+      showToast(message, type || 'info');
+    } else {
+      console.log('[Employee Toast]', type, message);
+    }
+  }
+
+  // ============ EXPORT ============
+  function getEmpExportRows() {
+    return EMP.filtered.map(function (r) {
+      return {
+        'Employee ID': r.employeeId,
+        'Nama': r.fullName,
+        'NIK': r.nik,
+        'Email': r.email,
+        'Posisi': r.position,
+        'Departemen': r.department,
+        'Tipe Karyawan': r.employeeType,
+        'Status': r.status,
+        'Tanggal Masuk': r.joinDate,
+      };
+    });
   }
 
   // ============ INIT (SPA-compatible) ============
@@ -407,39 +461,64 @@
     if (empInitialized) return;
     empInitialized = true;
 
-    EMP.detModal = new bootstrap.Modal(document.getElementById("empDetModal"));
-    EMP.formModal = new bootstrap.Modal(
-      document.getElementById("empFormModal"),
-    );
+    EMP.detModal = new bootstrap.Modal(document.getElementById('empDetModal'));
+    EMP.formModal = new bootstrap.Modal(document.getElementById('empFormModal'));
 
-    var btnAdd = document.getElementById("btnEmpAdd");
-    var btnRef = document.getElementById("btnEmpRefresh");
-    var btnSav = document.getElementById("btnEmpSave");
-    var btnEdt = document.getElementById("btnEmpEdit");
-    var btnDel = document.getElementById("btnEmpDel");
-    var empQ = document.getElementById("empQ");
-    var fDept = document.getElementById("fDept");
-    var fSt = document.getElementById("fSt");
-    var fType = document.getElementById("fType");
+    var btnAdd = document.getElementById('btnEmpAdd');
+    var btnRef = document.getElementById('btnEmpRefresh');
+    var btnSav = document.getElementById('btnEmpSave');
+    var btnEdt = document.getElementById('btnEmpEdit');
+    var btnDel = document.getElementById('btnEmpDel');
+    var si = document.getElementById('empSearchInput');
+    var df = document.getElementById('empDeptFilter');
+    var tf = document.getElementById('empTypeFilter');
+    var sf = document.getElementById('empStatusFilter');
+    var ss = document.getElementById('empSortSelect');
+    var btnCsv = document.getElementById('btnEmpExportCsv');
+    var btnXlsx = document.getElementById('btnEmpExportXlsx');
 
-    if (btnAdd) btnAdd.addEventListener("click", empOpenAdd);
-    if (btnRef) btnRef.addEventListener("click", empLoadAll);
-    if (btnSav) btnSav.addEventListener("click", empSave);
-    if (btnEdt) btnEdt.addEventListener("click", empOpenEdit);
-    if (btnDel) btnDel.addEventListener("click", empDelete);
-    if (empQ) empQ.addEventListener("input", empRenderTable);
-    if (fDept) fDept.addEventListener("change", empRenderTable);
-    if (fSt) fSt.addEventListener("change", empRenderTable);
-    if (fType) fType.addEventListener("change", empRenderTable);
+    if (btnAdd) btnAdd.addEventListener('click', empOpenAdd);
+    if (btnRef) btnRef.addEventListener('click', empLoadAll);
+    if (btnSav) btnSav.addEventListener('click', empSave);
+    if (btnEdt) btnEdt.addEventListener('click', empOpenEdit);
+    if (btnDel) btnDel.addEventListener('click', empDelete);
+    if (si) si.addEventListener('input', empApplyFilters);
+    if (df) df.addEventListener('change', empApplyFilters);
+    if (tf) tf.addEventListener('change', empApplyFilters);
+    if (sf) sf.addEventListener('change', empApplyFilters);
+    if (ss) ss.addEventListener('change', empApplyFilters);
+
+    var today = new Date().toISOString().slice(0, 10);
+    if (btnCsv) btnCsv.addEventListener('click', function () {
+      var rows = getEmpExportRows();
+      if (!rows.length) { showToast('Tidak ada data.', 'warning'); return; }
+      exportCsv(rows, 'employee-' + today + '.csv');
+      showToast('Export CSV berhasil (' + rows.length + ' data).', 'success');
+    });
+    if (btnXlsx) btnXlsx.addEventListener('click', function () {
+      var rows = getEmpExportRows();
+      if (!rows.length) { showToast('Tidak ada data.', 'warning'); return; }
+      exportXlsx(rows, 'Karyawan', 'employee-' + today + '.xlsx');
+      showToast('Export Excel berhasil (' + rows.length + ' data).', 'success');
+    });
   }
 
-  // Auto-init on DOMContentLoaded if elements exist (standalone page compat)
-  document.addEventListener("DOMContentLoaded", function () {
-    if (document.getElementById("empDetModal")) {
+  // SPA navigation hook
+  function empOnNavigate() {
+    initEmployeePage();
+    empLoadMaster();
+    empLoadAll();
+  }
+
+  // Auto-init on DOMContentLoaded if elements exist (standalone page)
+  document.addEventListener('DOMContentLoaded', function () {
+    if (document.getElementById('empDetModal')) {
       initEmployeePage();
-      Auth.check("view_employee", function (user) {
-        empLoadMaster();
-        empLoadAll();
+      requireAuth('view_employee').then(function (user) {
+        if (user) {
+          empLoadMaster();
+          empLoadAll();
+        }
       });
     }
   });
