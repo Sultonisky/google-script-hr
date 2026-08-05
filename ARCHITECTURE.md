@@ -159,6 +159,7 @@ flowchart TD
     PARAMS -->|page=login| LOGIN[views/Login]
     PARAMS -->|page=access-denied| AD[views/AccessDenied]
     PARAMS -->|page=candidate-landing| CL[views/CandidateLanding]
+    PARAMS -->|type=kandidat| CL
     PARAMS -->|page=landing or empty| LAND[views/Landing]
     PARAMS -->|type=outsource| OUT[OutsourceForm]
     PARAMS -->|default fallback| FP[FormPendaftaran]
@@ -187,8 +188,8 @@ flowchart TD
 | `?page=user-management` | views/UserManagement | Super Admin | User Management |
 | `?page=login` | views/Login | Public | Login Page |
 | `?page=access-denied` | views/AccessDenied | Public | Access Denied |
-| `?page=candidate-landing` | views/CandidateLanding | Public | Recruitment Info |
-| `?page=landing` or empty | views/Landing | Public | Public Landing |
+| `?page=candidate-landing` or `?type=kandidat` | views/CandidateLanding | Public | Single-page: Recruitment info + Registration form |
+| `?page=landing` or empty (no type) | views/Landing | Public | Public Landing |
 | `?type=outsource` | OutsourceForm | Public | Outsource Registration |
 | Default fallback | FormPendaftaran | Public | Candidate Registration |
 
