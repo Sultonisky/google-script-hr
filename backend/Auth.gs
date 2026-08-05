@@ -288,6 +288,217 @@ function getCurrentUserFromSessionToken_(sessionToken) {
   }
 }
 
+// ============================================================
+// PASSWORD HASHING — Temporary demo authentication
+// Uses HMAC-SHA256 with a fixed pepper stored in Script Properties.
+// After demo, this will be replaced with Firebase Auth.
+// ============================================================
+
+/**
+ * Derives a password hash using HMAC-SHA256.
+ * Pepper is stored in Script Properties (set once, never changes).
+ * @param {string} password - Plaintext password
+ * @returns {string} Hex-encoded hash
+ */
+function hashPassword_(password) {
+  var pepper = PropertiesService.getScriptProperties().getProperty('PASSWORD_PEPPER');
+  if (!pepper) {
+    pepper = Utilities.getUuid();
+    PropertiesService.getScriptProperties().setProperty('PASSWORD_PEPPER', pepper);
+  }
+  return Utilities.computeHmacSha256Signature(String(password), pepper)
+    .map(function(b) { return ('0' + (b & 0xFF).toString(16)).slice(-2); })
+    .join('');
+}
+
+/**
+ * Verifies a plaintext password against a stored hash.
+ * @param {string} password
+ * @param {string} storedHash
+ * @returns {boolean}
+ */
+function verifyPassword_(password, storedHash) {
+  if (!password || !storedHash) return false;
+  return hashPassword_(password) === String(storedHash).trim();
+}
+
+/**
+ * Finds a user by email OR username (case-insensitive).
+ * @param {string} identifier
+ * @returns {Object|null}
+ */
+function findUserByEmailOrUsername_(identifier) {
+  var sheet = getUsersSheet_();
+  var lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return null;
+
+  var data = sheet.getRange(2, 1, lastRow - 1, USERS_HEADERS.length).getValues();
+  var lowerId = String(identifier || '').trim().toLowerCase();
+
+  for (var i = 0; i < data.length; i++) {
+    var row = data[i];
+    var rowEmail    = String(row[USERS_COL['Email'] - 1] || '').trim().toLowerCase();
+    var rowUsername = String(row[USERS_COL['Username'] - 1] || '').trim().toLowerCase();
+    if (rowEmail === lowerId || rowUsername === lowerId) {
+      return {
+        email:        String(row[USERS_COL['Email'] - 1]).trim(),
+        username:     String(row[USERS_COL['Username'] - 1] || '').trim(),
+        fullName:     String(row[USERS_COL['Full Name'] - 1]).trim(),
+        role:         String(row[USERS_COL['Role'] - 1]).trim(),
+        status:       String(row[USERS_COL['Status'] - 1]).trim(),
+        passwordHash: String(row[USERS_COL['Password Hash'] - 1] || '').trim(),
+        lastLogin:    row[USERS_COL['Last Login'] - 1],
+        createdAt:    row[USERS_COL['Created At'] - 1],
+        updatedAt:    row[USERS_COL['Updated At'] - 1],
+        createdBy:    String(row[USERS_COL['Created By'] - 1]).trim(),
+        rowIndex:     i + 2,
+      };
+    }
+  }
+  return null;
+}
+
+// ============================================================
+// DEMO USERS — Auto-seed on first run
+// ============================================================
+
+var DEFAULT_DEMO_USERS = [
+  {
+    email: 'superadmin@mahakarya.local',
+    username: 'SuperAdmin',
+    fullName: 'Developer',
+    role: 'Super Admin',
+    password: '@C1JERUK'
+  },
+  {
+    email: 'hrd@mahakarya.local',
+    username: 'HRD',
+    fullName: 'HR Department',
+    role: 'HR Admin',
+    password: '@hrd1234567_'
+  }
+];
+
+/**
+ * Seeds default demo users if Users sheet is empty.
+ * Called automatically during login attempts.
+ * @returns {Object} { success, message, count }
+ */
+function seedDefaultDemoUsers_() {
+  var sheet = getUsersSheet_();
+  var lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    return { success: false, message: 'Users sheet already has data.', count: 0 };
+  }
+
+  var lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000);
+    lastRow = sheet.getLastRow();
+    if (lastRow > 1) {
+      return { success: false, message: 'Users sheet already has data.', count: 0 };
+    }
+
+    var now = Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd HH:mm:ss");
+    var count = 0;
+
+    for (var i = 0; i < DEFAULT_DEMO_USERS.length; i++) {
+      var u = DEFAULT_DEMO_USERS[i];
+      var hash = hashPassword_(u.password);
+      sheet.appendRow([
+        u.email.toLowerCase(),   // Email
+        u.username,              // Username
+        u.fullName,              // Full Name
+        u.role,                  // Role
+        'Active',                // Status
+        hash,                    // Password Hash
+        '',                      // Last Login
+        now,                     // Created At
+        now,                     // Updated At
+        'system-demo'            // Created By
+      ]);
+      count++;
+    }
+    SpreadsheetApp.flush();
+
+    return { success: true, message: count + ' demo user berhasil dibuat.', count: count };
+  } catch (e) {
+    return { success: false, message: 'Gagal membuat demo user: ' + e.message, count: 0 };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ============================================================
+// MANUAL LOGIN WITH PASSWORD
+// ============================================================
+
+/**
+ * Login with email/username + password.
+ * identifier may be email or username.
+ * Returns the same login response format as Google SSO.
+ * @param {string} identifier - Email or username
+ * @param {string} password - Plaintext password (verified against stored hash)
+ * @returns {Object} { success, sessionToken, message, error, user }
+ */
+function loginWithPassword(identifier, password) {
+  try {
+    // 1. Normalize
+    var id = String(identifier || '').trim().toLowerCase();
+    var pw = String(password || '');
+
+    if (!id || !pw) {
+      return { success: false, error: 'Email/Username dan Password wajib diisi.' };
+    }
+
+    // 2. Check if Users sheet is empty — auto-seed demo users
+    var sheetStatus = isUsersSheetEmpty();
+    if (sheetStatus && sheetStatus.isEmpty) {
+      var seedResult = seedDefaultDemoUsers_();
+      if (!seedResult.success || seedResult.count === 0) {
+        return { success: false, error: 'Gagal membuat user demo. Hubungi administrator.' };
+      }
+    }
+
+    // 3. Find user by email or username
+    var user = findUserByEmailOrUsername_(id);
+    if (!user) {
+      writeAuditLog_('SYSTEM', 'LOGIN_FAILED', 'user', id, 'user_not_found');
+      return { success: false, error: 'User tidak ditemukan. Periksa email/username dan password Anda.' };
+    }
+
+    // 4. Check status
+    if (user.status !== 'Active') {
+      writeAuditLog_(user.email, 'LOGIN_FAILED', 'user', user.email, 'inactive_account');
+      return {
+        success: false,
+        error: 'Akun Anda (' + user.email + ') belum aktif. Hubungi administrator.'
+      };
+    }
+
+    // 5. Verify password
+    if (!user.passwordHash || !verifyPassword_(pw, user.passwordHash)) {
+      writeAuditLog_(user.email, 'LOGIN_FAILED', 'user', user.email, 'wrong_password');
+      return { success: false, error: 'Password salah. Silakan coba lagi.' };
+    }
+
+    // 6. Success — create session (reuse existing)
+    updateLastLogin_(user.email);
+    writeAuditLog_(user.email, 'LOGIN_SUCCESS', 'user', user.email, 'logged_in');
+    var sessionUser = buildAuthenticatedUser_(user.email, user.fullName, user.role);
+    var sessionToken = createUserSession_(sessionUser);
+
+    return {
+      success: true,
+      message: 'Login berhasil.',
+      sessionToken: sessionToken,
+      user: sessionUser,
+    };
+  } catch (e) {
+    return { success: false, error: 'Gagal memproses login: ' + e.message };
+  }
+}
+
 function createPendingUserIfNeeded_(profile) {
   var existing = findUserByEmail_(profile.email);
   if (existing) return existing;
@@ -301,14 +512,16 @@ function createPendingUserIfNeeded_(profile) {
     var sheet = getUsersSheet_();
     var now = Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd HH:mm:ss");
     sheet.appendRow([
-      profile.email,
-      profile.fullName,
-      "Viewer",
-      "Inactive",
-      "",
-      now,
-      now,
-      "google-sso",
+      profile.email,        // Email
+      '',                   // Username (empty for Google SSO users)
+      profile.fullName,     // Full Name
+      'Viewer',             // Role
+      'Inactive',           // Status
+      '',                   // Password Hash (empty for Google SSO users)
+      '',                   // Last Login
+      now,                  // Created At
+      now,                  // Updated At
+      'google-sso'          // Created By
     ]);
     SpreadsheetApp.flush();
     existing = findUserByEmail_(profile.email);
@@ -467,15 +680,17 @@ function findUserByEmail_(email) {
     var row = data[i];
     if (String(row[USERS_COL['Email'] - 1]).trim().toLowerCase() === lowerEmail) {
       return {
-        email:     String(row[USERS_COL['Email'] - 1]).trim(),
-        fullName:  String(row[USERS_COL['Full Name'] - 1]).trim(),
-        role:      String(row[USERS_COL['Role'] - 1]).trim(),
-        status:    String(row[USERS_COL['Status'] - 1]).trim(),
-        lastLogin: row[USERS_COL['Last Login'] - 1],
-        createdAt: row[USERS_COL['Created At'] - 1],
-        updatedAt: row[USERS_COL['Updated At'] - 1],
-        createdBy: String(row[USERS_COL['Created By'] - 1]).trim(),
-        rowIndex:  i + 2,
+        email:        String(row[USERS_COL['Email'] - 1]).trim(),
+        username:     String(row[USERS_COL['Username'] - 1] || '').trim(),
+        fullName:     String(row[USERS_COL['Full Name'] - 1]).trim(),
+        role:         String(row[USERS_COL['Role'] - 1]).trim(),
+        status:       String(row[USERS_COL['Status'] - 1]).trim(),
+        passwordHash: String(row[USERS_COL['Password Hash'] - 1] || '').trim(),
+        lastLogin:    row[USERS_COL['Last Login'] - 1],
+        createdAt:    row[USERS_COL['Created At'] - 1],
+        updatedAt:    row[USERS_COL['Updated At'] - 1],
+        createdBy:    String(row[USERS_COL['Created By'] - 1]).trim(),
+        rowIndex:     i + 2,
       };
     }
   }
@@ -513,14 +728,15 @@ function getAllUsers(sessionToken) {
   var data = sheet.getRange(2, 1, lastRow - 1, USERS_HEADERS.length).getValues();
   var users = data.map(function (row) {
     return {
-      email:     String(row[USERS_COL['Email'] - 1]).trim(),
-      fullName:  String(row[USERS_COL['Full Name'] - 1]).trim(),
-      role:      String(row[USERS_COL['Role'] - 1]).trim(),
-      status:    String(row[USERS_COL['Status'] - 1]).trim(),
-      lastLogin: row[USERS_COL['Last Login'] - 1] ? String(row[USERS_COL['Last Login'] - 1]) : "",
-      createdAt: row[USERS_COL['Created At'] - 1] ? String(row[USERS_COL['Created At'] - 1]) : "",
-      updatedAt: row[USERS_COL['Updated At'] - 1] ? String(row[USERS_COL['Updated At'] - 1]) : "",
-      createdBy: String(row[USERS_COL['Created By'] - 1]).trim(),
+      email:        String(row[USERS_COL['Email'] - 1]).trim(),
+      username:     String(row[USERS_COL['Username'] - 1] || '').trim(),
+      fullName:     String(row[USERS_COL['Full Name'] - 1]).trim(),
+      role:         String(row[USERS_COL['Role'] - 1]).trim(),
+      status:       String(row[USERS_COL['Status'] - 1]).trim(),
+      lastLogin:    row[USERS_COL['Last Login'] - 1] ? String(row[USERS_COL['Last Login'] - 1]) : "",
+      createdAt:    row[USERS_COL['Created At'] - 1] ? String(row[USERS_COL['Created At'] - 1]) : "",
+      updatedAt:    row[USERS_COL['Updated At'] - 1] ? String(row[USERS_COL['Updated At'] - 1]) : "",
+      createdBy:    String(row[USERS_COL['Created By'] - 1]).trim(),
     };
   });
 
@@ -543,6 +759,7 @@ function addUser(userData, sessionToken) {
     .toLowerCase();
   var fullName = String(userData.fullName || "").trim();
   var role = String(userData.role || "Viewer").trim();
+  var username = String(userData.username || "").trim();
 
   // Validation
   if (!email || !fullName) {
@@ -555,20 +772,28 @@ function addUser(userData, sessionToken) {
     return { success: false, error: "Email sudah terdaftar: " + email };
   }
 
+  // Hash password if provided
+  var passwordHash = '';
+  if (userData.password) {
+    passwordHash = hashPassword_(userData.password);
+  }
+
   var lock = LockService.getScriptLock();
   try {
     lock.waitLock(10000);
     var sheet = getUsersSheet_();
     var now = Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd HH:mm:ss");
     sheet.appendRow([
-      email,
-      fullName,
-      role,
-      "Active",
-      "",
-      now,
-      now,
-      currentUser.email,
+      email,          // Email
+      username,       // Username
+      fullName,       // Full Name
+      role,           // Role
+      'Active',       // Status
+      passwordHash,   // Password Hash
+      '',             // Last Login
+      now,            // Created At
+      now,            // Updated At
+      currentUser.email // Created By
     ]);
     return { success: true, message: "Pengguna berhasil ditambahkan." };
   } catch (e) {
@@ -599,6 +824,8 @@ function updateUser(email, updates, sessionToken) {
 
   if (updates.fullName)
     sheet.getRange(user.rowIndex, USERS_COL['Full Name']).setValue(String(updates.fullName).trim());
+  if (updates.username !== undefined)
+    sheet.getRange(user.rowIndex, USERS_COL['Username']).setValue(String(updates.username).trim());
   if (updates.role && VALID_ROLES.indexOf(updates.role) !== -1)
     sheet.getRange(user.rowIndex, USERS_COL['Role']).setValue(updates.role);
   if (
@@ -606,6 +833,8 @@ function updateUser(email, updates, sessionToken) {
     (updates.status === "Active" || updates.status === "Inactive")
   )
     sheet.getRange(user.rowIndex, USERS_COL['Status']).setValue(updates.status);
+  if (updates.password)
+    sheet.getRange(user.rowIndex, USERS_COL['Password Hash']).setValue(hashPassword_(updates.password));
   sheet.getRange(user.rowIndex, USERS_COL['Updated At']).setValue(now);
 
   return { success: true, message: "Pengguna berhasil diperbarui." };
@@ -654,14 +883,16 @@ function seedSuperAdmin(email, fullName) {
 
   var now = Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd HH:mm:ss");
   sheet.appendRow([
-    String(email).trim().toLowerCase(),
-    String(fullName).trim(),
-    SUPER_ADMIN_ROLE,
-    "Active",
-    "",
-    now,
-    now,
-    "system",
+    String(email).trim().toLowerCase(),  // Email
+    '',                                  // Username
+    String(fullName).trim(),             // Full Name
+    SUPER_ADMIN_ROLE,                    // Role
+    'Active',                            // Status
+    '',                                  // Password Hash
+    '',                                  // Last Login
+    now,                                 // Created At
+    now,                                 // Updated At
+    'system'                             // Created By
   ]);
   return { success: true, message: "Super Admin berhasil dibuat: " + email };
 }
@@ -863,14 +1094,16 @@ function autoCreateFirstAdmin_(email, fullName) {
       return { success: false, error: "Sistem sudah memiliki pengguna." };
     }
     sheet.appendRow([
-      email.toLowerCase(),
-      fullName,
-      SUPER_ADMIN_ROLE,
-      "Active",
-      now,
-      now,
-      now,
-      "auto-setup",
+      email.toLowerCase(),  // Email
+      '',                   // Username
+      fullName,             // Full Name
+      SUPER_ADMIN_ROLE,     // Role
+      'Active',             // Status
+      '',                   // Password Hash
+      '',                   // Last Login
+      now,                  // Created At
+      now,                  // Updated At
+      'auto-setup'          // Created By
     ]);
     var sessionUser = buildAuthenticatedUser_(
       email.toLowerCase(),

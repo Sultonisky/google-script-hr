@@ -133,7 +133,99 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     .login-loading p { font-size: 13px; color: #6b7280; }
 
+    /* form inputs */
+    .login-form-group {
+      margin-bottom: 16px;
+    }
+    .login-form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+    .login-form-group .input-wrapper {
+      position: relative;
+    }
+    .login-form-group .input-wrapper i {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 16px;
+      color: #9ca3af;
+      pointer-events: none;
+    }
+    .login-form-group input {
+      width: 100%;
+      padding: 11px 14px 11px 38px;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+      color: #1a1a2e;
+      background: #fff;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease;
+      outline: none;
+    }
+    .login-form-group input::placeholder {
+      color: #c0c4cc;
+    }
+    .login-form-group input:focus {
+      border-color: #005bac;
+      box-shadow: 0 0 0 3px rgba(0,91,172,0.1);
+    }
+    .password-toggle {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #9ca3af;
+      font-size: 16px;
+      padding: 2px;
+      transition: color 0.18s ease;
+    }
+    .password-toggle:hover {
+      color: #6b7280;
+    }
+
+    /* login button */
+    .btn-login {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #005bac, #0b2540);
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      margin-top: 4px;
+    }
+    .btn-login:hover {
+      opacity: 0.92;
+      box-shadow: 0 4px 12px rgba(0,91,172,0.3);
+    }
+    .btn-login:active { transform: scale(0.98); }
+    .btn-login:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .btn-login i { font-size: 16px; }
+
     /* google button */
+    .google-btn-wrapper {
+      position: relative;
+      margin-top: 20px;
+    }
     .btn-google {
       display: flex;
       align-items: center;
@@ -143,54 +235,35 @@
       padding: 13px 20px;
       border: 1.5px solid #e5e7eb;
       border-radius: 10px;
-      background: #fff;
+      background: #f9fafb;
       font-size: 14px;
       font-weight: 600;
-      color: #374151;
-      cursor: pointer;
+      color: #9ca3af;
+      cursor: not-allowed;
+      opacity: 0.7;
       transition: all 0.18s ease;
+      pointer-events: none;
     }
-    .btn-google:hover {
-      border-color: #005bac;
-      background: #f8f9ff;
-      box-shadow: 0 2px 10px rgba(0,91,172,0.1);
+    .btn-google svg { width: 18px; height: 18px; flex-shrink: 0; opacity: 0.5; }
+    .coming-soon-badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #f59e0b;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 12px;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(245,158,11,0.3);
+      animation: pulse-badge 2s ease-in-out infinite;
     }
-    .btn-google:active { transform: scale(0.98); }
-    .btn-google svg { width: 18px; height: 18px; flex-shrink: 0; }
-
-    /* first run */
-    .first-run-box {
-      background: #f0fdf4;
-      border: 1px solid #bbf7d0;
-      border-radius: 10px;
-      padding: 12px 14px;
-      margin-top: 16px;
-      margin-bottom: 10px;
-      display: none;
+    @keyframes pulse-badge {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
     }
-    .first-run-box.show { display: block; }
-    .first-run-box .fr-inner { display: flex; align-items: flex-start; gap: 8px; }
-    .first-run-box i { color: #166534; font-size: 15px; margin-top: 2px; flex-shrink: 0; }
-    .first-run-box .fr-text { font-size: 13px; color: #166534; line-height: 1.5; }
-
-    .btn-admin {
-      display: none;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      width: 100%;
-      padding: 12px 18px;
-      border: 1.5px solid #166534;
-      border-radius: 10px;
-      background: #fff;
-      font-size: 13px;
-      font-weight: 600;
-      color: #166534;
-      cursor: pointer;
-      transition: all 0.18s ease;
-      margin-top: 8px;
-    }
-    .btn-admin:hover { background: #f0fdf4; }
 
     /* divider */
     .login-divider {
@@ -275,7 +348,7 @@
     <!-- ── Card login ── -->
     <div class="login-card">
       <div class="login-card-title">Masuk ke Sistem</div>
-      <div class="login-card-subtitle">Gunakan akun Google Workspace yang terdaftar</div>
+      <div class="login-card-subtitle">Gunakan email/username dan password Anda</div>
 
       <!-- Error -->
       <div class="login-error" id="loginError">
@@ -295,31 +368,46 @@
         <p id="loginLoadingText">Memverifikasi sesi...</p>
       </div>
 
-      <!-- Google Sign-In -->
-      <button class="btn-google" id="btnGoogleLogin" type="button">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
-          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-        </svg>
-        Lanjutkan dengan Google
-      </button>
-
-      <!-- First Run -->
-      <div class="first-run-box" id="firstRunSection">
-        <div class="fr-inner">
-          <i class="bi bi-star-fill"></i>
-          <div class="fr-text">
-            <strong>Pengaturan Pertama</strong><br />
-            Belum ada pengguna terdaftar. Akun Anda akan didaftarkan sebagai <strong>Super Admin</strong>.
+      <!-- Manual Login Form -->
+      <form id="loginForm" autocomplete="on">
+        <div class="login-form-group">
+          <label for="loginIdentifier">Email atau Username</label>
+          <div class="input-wrapper">
+            <i class="bi bi-person-fill"></i>
+            <input type="text" id="loginIdentifier" name="identifier"
+                   placeholder="Email atau Username" autocomplete="username" required />
           </div>
         </div>
+        <div class="login-form-group">
+          <label for="loginPassword">Password</label>
+          <div class="input-wrapper">
+            <i class="bi bi-lock-fill"></i>
+            <input type="password" id="loginPassword" name="password"
+                   placeholder="Password" autocomplete="current-password" required />
+            <button type="button" class="password-toggle" id="togglePassword" tabindex="-1" aria-label="Tampilkan password">
+              <i class="bi bi-eye-fill"></i>
+            </button>
+          </div>
+        </div>
+        <button class="btn-login" id="btnManualLogin" type="submit">
+          <i class="bi bi-box-arrow-in-right"></i>
+          Masuk
+        </button>
+      </form>
+
+      <!-- Google Sign-In (disabled, Coming Soon) -->
+      <div class="google-btn-wrapper">
+        <button class="btn-google" id="btnGoogleLogin" type="button" disabled>
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+          </svg>
+          Lanjutkan dengan Google
+        </button>
+        <span class="coming-soon-badge">Coming Soon</span>
       </div>
-      <button class="btn-admin" id="btnFirstAdmin" type="button">
-        <i class="bi bi-person-check-fill"></i>
-        Daftarkan Saya sebagai Super Admin
-      </button>
 
       <div class="login-divider">Akses terbatas untuk pengguna terdaftar</div>
     </div>
@@ -351,7 +439,6 @@
       // ============================================================
       var APP_BASE_URL = '<?!= appBaseUrl ?>' || window.location.href.split('?')[0];
       var AUTH_SESSION_STORAGE_KEY = 'mahakarya_hris_session';
-      var authConfig = null;
 
       var loginError      = document.getElementById('loginError');
       var loginErrorText  = document.getElementById('loginErrorText');
@@ -359,9 +446,43 @@
       var loginInfoText   = document.getElementById('loginInfoText');
       var loginLoading    = document.getElementById('loginLoading');
       var loadingText     = document.getElementById('loginLoadingText');
+      var loginForm       = document.getElementById('loginForm');
+      var loginIdentifier = document.getElementById('loginIdentifier');
+      var loginPassword   = document.getElementById('loginPassword');
+      var btnManualLogin  = document.getElementById('btnManualLogin');
       var btnGoogleLogin  = document.getElementById('btnGoogleLogin');
-      var btnFirstAdmin   = document.getElementById('btnFirstAdmin');
-      var firstRunSection = document.getElementById('firstRunSection');
+      var togglePassword  = document.getElementById('togglePassword');
+
+      // ============================================================
+      // TOAST (inline, since Login.html is standalone)
+      // ============================================================
+      function showToast(msg, type) {
+        type = type || 'info';
+        var colors = {
+          success: { bg: '#F0FDF4', border: '#BBF7D0', text: '#166534', icon: 'bi-check-circle-fill' },
+          error:   { bg: '#FEF2F2', border: '#FECACA', text: '#991B1B', icon: 'bi-exclamation-triangle-fill' },
+          info:    { bg: '#EFF6FF', border: '#BFDBFE', text: '#1E40AF', icon: 'bi-info-circle-fill' },
+          warning: { bg: '#FFFBEB', border: '#FDE68A', text: '#92400E', icon: 'bi-exclamation-circle-fill' }
+        };
+        var c = colors[type] || colors.info;
+        var container = document.getElementById('toastContainer');
+        if (!container) {
+          container = document.createElement('div');
+          container.id = 'toastContainer';
+          container.style.cssText = 'position:fixed;top:20px;right:20px;z-index:99999;display:flex;flex-direction:column;gap:10px;pointer-events:none;';
+          document.body.appendChild(container);
+        }
+        var toast = document.createElement('div');
+        toast.style.cssText = 'pointer-events:auto;display:flex;align-items:center;gap:10px;padding:14px 18px;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.12);font-size:14px;font-weight:500;font-family:Inter,Segoe UI,sans-serif;max-width:400px;opacity:0;transform:translateX(20px);transition:all 0.3s ease;background:' + c.bg + ';border:1px solid ' + c.border + ';color:' + c.text + ';';
+        toast.innerHTML = '<i class="bi ' + c.icon + '" style="font-size:18px;flex-shrink:0;"></i><span>' + msg + '</span>';
+        container.appendChild(toast);
+        requestAnimationFrame(function () { toast.style.opacity = '1'; toast.style.transform = 'translateX(0)'; });
+        setTimeout(function () {
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateX(20px)';
+          setTimeout(function () { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 300);
+        }, 4000);
+      }
 
       // ============================================================
       // UI HELPERS
@@ -370,9 +491,8 @@
         loginError.classList.add('show');
         loginErrorText.textContent = msg;
         loginLoading.style.display = 'none';
-        btnGoogleLogin.style.display = '';
-        firstRunSection.classList.remove('show');
-        btnFirstAdmin.style.display = 'none';
+        loginForm.style.display = '';
+        btnManualLogin.disabled = false;
       }
 
       function showInfo(msg) {
@@ -383,16 +503,15 @@
       function showLoading(msg) {
         loginLoading.style.display = 'flex';
         if (msg && loadingText) loadingText.textContent = msg;
-        btnGoogleLogin.style.display = 'none';
+        loginForm.style.display = 'none';
         loginError.classList.remove('show');
         loginInfo.classList.remove('show');
-        firstRunSection.classList.remove('show');
-        btnFirstAdmin.style.display = 'none';
       }
 
       function hideLoading() {
         loginLoading.style.display = 'none';
-        btnGoogleLogin.style.display = '';
+        loginForm.style.display = '';
+        btnManualLogin.disabled = false;
       }
 
       // ============================================================
@@ -460,70 +579,20 @@
       }
 
       // ============================================================
-      // AUTH CONFIG & GIS CREDENTIAL FLOW
-      // Uses google.accounts.id — no Authorized JavaScript Origins needed.
-      // ============================================================
-      function ensureAuthConfig(callback) {
-        if (authConfig) { callback(authConfig); return; }
-        google.script.run
-          .withSuccessHandler(function (result) { authConfig = result || {}; callback(authConfig); })
-          .withFailureHandler(function () { callback(null); })
-          .getAuthConfig();
-      }
-
-      function requestGoogleCredential(onSuccess) {
-        ensureAuthConfig(function (config) {
-          if (!config || !config.googleClientId) {
-            showError('Google Client ID belum diset di Script Properties. Isi properti GOOGLE_CLIENT_ID terlebih dahulu.');
-            return;
-          }
-          if (!window.google || !google.accounts || !google.accounts.id) {
-            showError('Google Identity Services belum siap. Muat ulang halaman lalu coba lagi.');
-            return;
-          }
-
-          google.accounts.id.initialize({
-            client_id: config.googleClientId,
-            callback: function (response) {
-              if (!response || !response.credential) {
-                showError('Google tidak mengembalikan credential. Coba lagi.');
-                return;
-              }
-              onSuccess(response.credential);
-            },
-            ux_mode: 'popup',
-            auto_select: false
-          });
-
-          google.accounts.id.prompt(function (notification) {
-            if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-              var tempDiv = document.getElementById('gsiButtonContainer');
-              if (!tempDiv) {
-                tempDiv = document.createElement('div');
-                tempDiv.id = 'gsiButtonContainer';
-                tempDiv.style.cssText = 'position:absolute;opacity:0;pointer-events:none;';
-                document.body.appendChild(tempDiv);
-              }
-              google.accounts.id.renderButton(tempDiv, { type: 'standard', theme: 'outline', size: 'large' });
-              var btn = tempDiv.querySelector('div[role="button"]');
-              if (btn) btn.click();
-            }
-          });
-        });
-      }
-
-      // ============================================================
-      // LOGIN RESULT HANDLER
+      // LOGIN RESULT HANDLER (shared for manual + future Google SSO)
       // ============================================================
       function handleLoginResult(result) {
         if (result && result.success && result.sessionToken) {
           saveSessionToken(result.sessionToken);
           showInfo((result.message || 'Login berhasil.') + ' Mengalihkan ke dashboard...');
-          setTimeout(function () { redirectToDashboard(result.sessionToken); }, 500);
+          showToast('Login berhasil!', 'success');
+          setTimeout(function () { redirectToDashboard(result.sessionToken); }, 600);
           return;
         }
         clearSessionToken();
-        showError(result && result.error ? result.error : 'Login gagal. Silakan coba lagi.');
+        var errMsg = result && result.error ? result.error : 'Login gagal. Silakan coba lagi.';
+        showError(errMsg);
+        showToast(errMsg, 'error');
       }
 
       // ============================================================
@@ -550,19 +619,6 @@
         })
         .withFailureHandler(function () {})
         .getPortalSettingsForLogin();
-
-      // ============================================================
-      // INIT: First-run check
-      // ============================================================
-      google.script.run
-        .withSuccessHandler(function (result) {
-          if (result && result.isEmpty) {
-            firstRunSection.classList.add('show');
-            btnFirstAdmin.style.display = 'flex';
-          }
-        })
-        .withFailureHandler(function () {})
-        .isUsersSheetEmpty();
 
       // ============================================================
       // INIT: Session check
@@ -592,35 +648,57 @@
         .getCurrentUser(existingToken);
 
       // ============================================================
-      // EVENT: Login with Google
+      // EVENT: Password visibility toggle
       // ============================================================
-      btnGoogleLogin.addEventListener('click', function () {
-        showLoading('Membuka autentikasi Google...');
-        requestGoogleCredential(function (idToken) {
-          if (loadingText) loadingText.textContent = 'Memverifikasi akun Google...';
-          google.script.run
-            .withSuccessHandler(handleLoginResult)
-            .withFailureHandler(function (err) {
-              showError('Gagal: ' + (err && err.message ? err.message : String(err)));
-            })
-            .signInWithGoogleCredential(idToken);
-        });
+      togglePassword.addEventListener('click', function () {
+        var isPassword = loginPassword.type === 'password';
+        loginPassword.type = isPassword ? 'text' : 'password';
+        togglePassword.innerHTML = isPassword
+          ? '<i class="bi bi-eye-slash-fill"></i>'
+          : '<i class="bi bi-eye-fill"></i>';
       });
 
       // ============================================================
-      // EVENT: Register as Super Admin (first run only)
+      // EVENT: Manual login form submit
       // ============================================================
-      btnFirstAdmin.addEventListener('click', function () {
-        showLoading('Memverifikasi akun Google...');
-        requestGoogleCredential(function (idToken) {
-          if (loadingText) loadingText.textContent = 'Mendaftarkan akun Super Admin...';
-          google.script.run
-            .withSuccessHandler(handleLoginResult)
-            .withFailureHandler(function (err) {
-              showError('Gagal: ' + (err && err.message ? err.message : String(err)));
-            })
-            .autoCreateFirstAdminWithCredential(idToken);
-        });
+      loginForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        var identifier = String(loginIdentifier.value || '').trim();
+        var password = String(loginPassword.value || '');
+
+        if (!identifier) {
+          loginIdentifier.focus();
+          showError('Email atau Username wajib diisi.');
+          return;
+        }
+        if (!password) {
+          loginPassword.focus();
+          showError('Password wajib diisi.');
+          return;
+        }
+
+        btnManualLogin.disabled = true;
+        showLoading('Memverifikasi akun...');
+
+        google.script.run
+          .withSuccessHandler(handleLoginResult)
+          .withFailureHandler(function (err) {
+            showError('Gagal terhubung ke server: ' + (err && err.message ? err.message : String(err)));
+            showToast('Koneksi gagal. Coba lagi.', 'error');
+          })
+          .loginWithPassword(identifier, password);
+      });
+
+      // ============================================================
+      // EVENT: Google SSO button (disabled — Coming Soon)
+      // ============================================================
+      btnGoogleLogin.addEventListener('click', function (e) {
+        e.preventDefault();
+        showToast(
+          'Google Single Sign-On sedang dalam tahap pengembangan dan akan segera tersedia.',
+          'info'
+        );
       });
 
     })();
