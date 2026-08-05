@@ -168,6 +168,10 @@
       transition: border-color 0.18s ease, box-shadow 0.18s ease;
       outline: none;
     }
+    /* Extra right padding for the password field to clear the toggle button */
+    #loginPassword {
+      padding-right: 42px;
+    }
     .login-form-group input::placeholder {
       color: #c0c4cc;
     }
@@ -177,7 +181,7 @@
     }
     .password-toggle {
       position: absolute;
-      right: 12px;
+      right: 10px;
       top: 50%;
       transform: translateY(-50%);
       background: none;
@@ -185,11 +189,16 @@
       cursor: pointer;
       color: #9ca3af;
       font-size: 16px;
-      padding: 2px;
+      padding: 4px 6px;
+      line-height: 1;
+      z-index: 2;
       transition: color 0.18s ease;
     }
     .password-toggle:hover {
       color: #6b7280;
+    }
+    .password-toggle i {
+      pointer-events: none;
     }
 
     /* login button */
@@ -778,12 +787,17 @@
       // ============================================================
       // EVENT: Password visibility toggle
       // ============================================================
-      togglePassword.addEventListener('click', function () {
-        var isPassword = loginPassword.type === 'password';
-        loginPassword.type = isPassword ? 'text' : 'password';
-        togglePassword.innerHTML = isPassword
-          ? '<i class="bi bi-eye-slash-fill"></i>'
-          : '<i class="bi bi-eye-fill"></i>';
+      togglePassword.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var pwInput = document.getElementById('loginPassword');
+        var icon    = togglePassword.querySelector('i');
+        if (!pwInput) return;
+        var isHidden = pwInput.type === 'password';
+        pwInput.type = isHidden ? 'text' : 'password';
+        if (icon) {
+          icon.className = isHidden ? 'bi bi-eye-slash-fill' : 'bi bi-eye-fill';
+        }
+        togglePassword.setAttribute('aria-label', isHidden ? 'Sembunyikan password' : 'Tampilkan password');
       });
 
       // ============================================================
