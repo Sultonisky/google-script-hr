@@ -184,6 +184,34 @@ function clearUserSession(sessionToken) {
   return { success: true };
 }
 
+/**
+ * Perform logout: write audit log + clear session cache.
+ * Called by client-side logout handler.
+ * @param {string} sessionToken - The session token to invalidate
+ * @param {string} email - The email of the user logging out
+ * @returns {Object} { success }
+ */
+function performLogout(sessionToken, email) {
+  try {
+    // Write audit log for logout
+    var userEmail = String(
+      email || Session.getActiveUser().getEmail() || "unknown",
+    );
+    writeAuditLog_("SYSTEM", "Logout", "user", userEmail, "logged_out");
+
+    // Clear session from cache
+    clearUserSession(sessionToken);
+
+    return { success: true };
+  } catch (e) {
+    // Even if audit log fails, ensure session is cleared
+    try {
+      clearUserSession(sessionToken);
+    } catch (ignored) {}
+    return { success: true };
+  }
+}
+
 function getCurrentUserFromNativeSession_() {
   try {
     var email = Session.getActiveUser().getEmail();
@@ -679,38 +707,46 @@ function checkPermission(permission, sessionToken) {
  * @returns {Object} { email, fullName, picture }
  */
 function verifyGoogleIdToken_(idToken) {
-  var token = String(idToken || '').trim();
-  if (!token) throw new Error('ID token tidak ditemukan.');
+  var token = String(idToken || "").trim();
+  if (!token) throw new Error("ID token tidak ditemukan.");
 
-  var parts = token.split('.');
-  if (parts.length !== 3) throw new Error('Format ID token tidak valid.');
+  var parts = token.split(".");
+  if (parts.length !== 3) throw new Error("Format ID token tidak valid.");
 
   try {
     // Base64url → Base64 → decode
-    var base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-    while (base64.length % 4 !== 0) base64 += '=';
+    var base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    while (base64.length % 4 !== 0) base64 += "=";
     var bytes = Utilities.base64Decode(base64);
-    var json = bytes.map(function(b) { return String.fromCharCode(b); }).join('');
+    var json = bytes
+      .map(function (b) {
+        return String.fromCharCode(b);
+      })
+      .join("");
     var payload = JSON.parse(json);
 
-    if (!payload.email) throw new Error('Email tidak ada di token.');
-    if (payload.email_verified !== true) throw new Error('Email belum diverifikasi Google.');
+    if (!payload.email) throw new Error("Email tidak ada di token.");
+    if (payload.email_verified !== true)
+      throw new Error("Email belum diverifikasi Google.");
 
     // Check token not expired
     var now = Math.floor(Date.now() / 1000);
-    if (payload.exp && payload.exp < now) throw new Error('Token sudah kadaluarsa, coba login ulang.');
+    if (payload.exp && payload.exp < now)
+      throw new Error("Token sudah kadaluarsa, coba login ulang.");
 
     // Check token not too old (max 10 minutes)
-    if (payload.iat && (now - payload.iat) > 600) throw new Error('Token terlalu lama, coba login ulang.');
+    if (payload.iat && now - payload.iat > 600)
+      throw new Error("Token terlalu lama, coba login ulang.");
 
     return {
       email: String(payload.email).trim().toLowerCase(),
-      fullName: getDisplayNameFromProfile_(payload.email, payload.name || ''),
-      picture: String(payload.picture || '')
+      fullName: getDisplayNameFromProfile_(payload.email, payload.name || ""),
+      picture: String(payload.picture || ""),
     };
   } catch (e) {
-    if (e.message.indexOf('token') !== -1 || e.message.indexOf('Token') !== -1) throw e;
-    throw new Error('Gagal membaca ID token: ' + e.message);
+    if (e.message.indexOf("token") !== -1 || e.message.indexOf("Token") !== -1)
+      throw e;
+    throw new Error("Gagal membaca ID token: " + e.message);
   }
 }
 
@@ -728,10 +764,11 @@ function signInWithGoogleCredential(idToken) {
     if (sheetStatus && sheetStatus.isEmpty) {
       return {
         success: false,
-        error: 'Sistem belum memiliki pengguna. Gunakan tombol "Daftarkan Saya sebagai Super Admin" untuk pengaturan pertama.',
-        reason: 'first_run',
+        error:
+          'Sistem belum memiliki pengguna. Gunakan tombol "Daftarkan Saya sebagai Super Admin" untuk pengaturan pertama.',
+        reason: "first_run",
         email: profile.email,
-        fullName: profile.fullName
+        fullName: profile.fullName,
       };
     }
 
@@ -740,36 +777,47 @@ function signInWithGoogleCredential(idToken) {
       user = createPendingUserIfNeeded_(profile);
       return {
         success: false,
-        error: 'Akun Google Anda belum aktif. Data Anda sudah dicatat di sheet Users, silakan minta Super Admin mengaktifkan akses Anda.',
-        reason: 'pending_approval',
+        error:
+          "Akun Google Anda belum aktif. Data Anda sudah dicatat di sheet Users, silakan minta Super Admin mengaktifkan akses Anda.",
+        reason: "pending_approval",
         email: profile.email,
         fullName: profile.fullName,
-        role: user ? user.role : 'Viewer'
+        role: user ? user.role : "Viewer",
       };
     }
 
-    if (user.status !== 'Active') {
+    if (user.status !== "Active") {
       return {
         success: false,
-        error: 'Akun Anda (' + profile.email + ') belum aktif. Hubungi administrator untuk mengaktifkan akun Anda.',
-        reason: 'inactive',
+        error:
+          "Akun Anda (" +
+          profile.email +
+          ") belum aktif. Hubungi administrator untuk mengaktifkan akun Anda.",
+        reason: "inactive",
         email: profile.email,
         fullName: user.fullName || profile.fullName,
-        role: user.role
+        role: user.role,
       };
     }
 
     updateLastLogin_(profile.email);
-    var sessionUser = buildAuthenticatedUser_(profile.email, user.fullName || profile.fullName, user.role);
+    var sessionUser = buildAuthenticatedUser_(
+      profile.email,
+      user.fullName || profile.fullName,
+      user.role,
+    );
     var sessionToken = createUserSession_(sessionUser);
     return {
       success: true,
-      message: 'Login berhasil.',
+      message: "Login berhasil.",
       sessionToken: sessionToken,
-      user: sessionUser
+      user: sessionUser,
     };
   } catch (e) {
-    return { success: false, error: 'Gagal memverifikasi login Google: ' + e.message };
+    return {
+      success: false,
+      error: "Gagal memverifikasi login Google: " + e.message,
+    };
   }
 }
 
@@ -783,7 +831,10 @@ function autoCreateFirstAdminWithCredential(idToken) {
     var profile = verifyGoogleIdToken_(idToken);
     return autoCreateFirstAdmin_(profile.email, profile.fullName);
   } catch (e) {
-    return { success: false, error: 'Gagal memverifikasi akun Google: ' + e.message };
+    return {
+      success: false,
+      error: "Gagal memverifikasi akun Google: " + e.message,
+    };
   }
 }
 
@@ -795,34 +846,49 @@ function autoCreateFirstAdmin_(email, fullName) {
   var sheet = getUsersSheet_();
   var lastRow = sheet.getLastRow();
   if (lastRow > 1) {
-    return { success: false, error: 'Sistem sudah memiliki pengguna. Tidak dapat membuat Super Admin otomatis.' };
+    return {
+      success: false,
+      error:
+        "Sistem sudah memiliki pengguna. Tidak dapat membuat Super Admin otomatis.",
+    };
   }
 
-  var now = Utilities.formatDate(new Date(), 'GMT+7', 'yyyy-MM-dd HH:mm:ss');
+  var now = Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd HH:mm:ss");
   var lock = LockService.getScriptLock();
   try {
     lock.waitLock(10000);
     sheet = getUsersSheet_();
     lastRow = sheet.getLastRow();
     if (lastRow > 1) {
-      return { success: false, error: 'Sistem sudah memiliki pengguna.' };
+      return { success: false, error: "Sistem sudah memiliki pengguna." };
     }
-    sheet.appendRow([email.toLowerCase(), fullName, SUPER_ADMIN_ROLE, 'Active', now, now, now, 'auto-setup']);
-    var sessionUser = buildAuthenticatedUser_(email.toLowerCase(), fullName, SUPER_ADMIN_ROLE);
+    sheet.appendRow([
+      email.toLowerCase(),
+      fullName,
+      SUPER_ADMIN_ROLE,
+      "Active",
+      now,
+      now,
+      now,
+      "auto-setup",
+    ]);
+    var sessionUser = buildAuthenticatedUser_(
+      email.toLowerCase(),
+      fullName,
+      SUPER_ADMIN_ROLE,
+    );
     return {
       success: true,
-      message: 'Super Admin berhasil dibuat: ' + fullName + ' (' + email + ')',
+      message: "Super Admin berhasil dibuat: " + fullName + " (" + email + ")",
       sessionToken: createUserSession_(sessionUser),
-      user: sessionUser
+      user: sessionUser,
     };
   } catch (e) {
-    return { success: false, error: 'Gagal membuat Super Admin: ' + e.message };
+    return { success: false, error: "Gagal membuat Super Admin: " + e.message };
   } finally {
     lock.releaseLock();
   }
 }
-
-
 
 /**
  * Checks if the Users sheet is empty (no users registered).
@@ -841,8 +907,8 @@ function isUsersSheetEmpty() {
  * @returns {Object} { success, message, error }
  */
 function autoCreateFirstAdmin(accessToken) {
-  var email = '';
-  var fullName = '';
+  var email = "";
+  var fullName = "";
 
   if (accessToken) {
     try {
@@ -850,14 +916,21 @@ function autoCreateFirstAdmin(accessToken) {
       email = profile.email;
       fullName = profile.fullName;
     } catch (e) {
-      return { success: false, error: 'Gagal memverifikasi akun Google: ' + e.message };
+      return {
+        success: false,
+        error: "Gagal memverifikasi akun Google: " + e.message,
+      };
     }
   } else {
     email = Session.getActiveUser().getEmail();
-    if (!email || email === '') {
-      return { success: false, error: 'Tidak dapat mendeteksi akun Google. Pastikan Anda login ke akun Google yang benar.' };
+    if (!email || email === "") {
+      return {
+        success: false,
+        error:
+          "Tidak dapat mendeteksi akun Google. Pastikan Anda login ke akun Google yang benar.",
+      };
     }
-    fullName = getDisplayNameFromProfile_(email, '');
+    fullName = getDisplayNameFromProfile_(email, "");
   }
 
   return autoCreateFirstAdmin_(email, fullName);

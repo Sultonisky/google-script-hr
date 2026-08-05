@@ -3,153 +3,202 @@
   // js/app.html — MAIN APP INIT & SIDEBAR / PAGE NAVIGATION
   // Depends on: ALL other js/* modules
   // Must be included LAST in the HTML file.
+  //
+  // SPA Router: sidebar uses data-page="pageX" / data-external="employee"
+  // attributes. The router (js/router.html) handles showing/hiding
+  // page sections and updating the URL hash state.
   // ============================================================
 
-  var pageTitles = {
-    pageDashboard:   ['Dashboard',   'Ringkasan rekrutmen & data kandidat'],
-    pageRecruitment: ['Recruitment', 'Daftar lengkap semua kandidat'],
-    pageSettings:    ['Settings',    'Preferensi tampilan & perilaku dashboard']
-  };
+  // ============================================================
+  // SIDEBAR INIT — mobile toggle, active state, overlay
+  // ============================================================
+  function initSidebar() {
+    var sidebar = document.getElementById("sidebar");
+    var overlay = document.getElementById("sidebarOverlay");
+    var btnBurger = document.getElementById("btnBurger");
 
-  function showPage(pageId) {
-    document.querySelectorAll('.page-section').forEach(function(s) { s.classList.remove('active'); });
-    var target = document.getElementById(pageId);
-    if (target) target.classList.add('active');
-    var meta = pageTitles[pageId] || ['Dashboard', ''];
-    var titleEl    = document.getElementById('pageTitleText');
-    var subtitleEl = document.getElementById('pageSubtitleText');
-    if (titleEl)    titleEl.innerText    = meta[0];
-    if (subtitleEl) subtitleEl.innerText = meta[1];
-    
-    // Update recruitment page data when switching to it
-    if (pageId === 'pageRecruitment' && allCandidates && allCandidates.length > 0) {
-      updateRecStats(allCandidates);
-      populateRecDropdowns(allCandidates);
-      applyRecFilters();
+    function openSidebar() {
+      if (sidebar) sidebar.classList.add("show");
+      if (overlay) overlay.classList.add("show");
+    }
+    function closeSidebar() {
+      if (sidebar) sidebar.classList.remove("show");
+      if (overlay) overlay.classList.remove("show");
+    }
+
+    if (btnBurger) btnBurger.addEventListener("click", openSidebar);
+    if (overlay) overlay.addEventListener("click", closeSidebar);
+
+    // Sidebar nav items — data-page / data-external driven
+    document
+      .querySelectorAll(".sidebar-nav .nav-item")
+      .forEach(function (item) {
+        item.addEventListener("click", function () {
+          // Remove active from all, add to clicked
+          document
+            .querySelectorAll(".sidebar-nav .nav-item")
+            .forEach(function (i) {
+              i.classList.remove("active");
+            });
+          item.classList.add("active");
+
+          var pageId = item.getAttribute("data-page");
+          var external = item.getAttribute("data-external");
+          var status = item.getAttribute("data-status");
+          var scroll = item.getAttribute("data-scroll");
+
+          if (external) {
+            // External navigation (e.g. open spreadsheet)
+            handleExternalNav(external);
+          } else if (pageId && typeof SPA !== "undefined") {
+            // Build params from data attributes
+            var params = {};
+            if (status) params.status = status;
+            if (scroll) params.scroll = scroll;
+            SPA.navigate(pageId, Object.keys(params).length ? params : null);
+          }
+
+          // Close mobile sidebar
+          if (window.innerWidth < 992) closeSidebar();
+        });
+      });
+  }
+
+  // ============================================================
+  // EXTERNAL NAVIGATION HANDLER
+  // data-external="employee" -> open spreadsheet
+  // ============================================================
+  function handleExternalNav(external) {
+    if (external === "employee") {
+      showToast(
+        'Buka sheet "Employee" di spreadsheet untuk melihat Master Data karyawan.',
+        "success",
+      );
+    } else {
+      showToast("Navigasi eksternal: " + external, "info");
     }
   }
 
-  function initSidebar() {
-    var sidebar   = document.getElementById('sidebar');
-    var overlay   = document.getElementById('sidebarOverlay');
-    var btnBurger = document.getElementById('btnBurger');
-
-    function openSidebar()  { if (sidebar) sidebar.classList.add('show');    if (overlay) overlay.classList.add('show'); }
-    function closeSidebar() { if (sidebar) sidebar.classList.remove('show'); if (overlay) overlay.classList.remove('show'); }
-
-    if (btnBurger) btnBurger.addEventListener('click', openSidebar);
-    if (overlay)   overlay.addEventListener('click',   closeSidebar);
-
-    document.querySelectorAll('.nav-item').forEach(function(item) {
-      item.addEventListener('click', function() {
-        document.querySelectorAll('.nav-item').forEach(function(i) { i.classList.remove('active'); });
-        item.classList.add('active');
-
-        if (item.dataset.external === 'employee') {
-          showToast('Buka sheet "Employee" di spreadsheet untuk melihat Master Data karyawan.', 'success');
-        } else if (item.dataset.page) {
-          showPage(item.dataset.page);
-          if (item.dataset.status) {
-            var sf = document.getElementById('statusFilter');
-            if (sf) { sf.value = item.dataset.status; applyFilters(); }
-          }
-          if (item.dataset.scroll) {
-            setTimeout(function() {
-              var el = document.getElementById(item.dataset.scroll);
-              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }, 50);
-          }
-        }
-        if (window.innerWidth < 992) closeSidebar();
-      });
-    });
-  }
-
+  // ============================================================
+  // DARK MODE TOGGLE
+  // ============================================================
   function initDarkModeToggle() {
-    var darkBtn = document.getElementById('btnDarkModeToggle');
+    var darkBtn = document.getElementById("btnDarkModeToggle");
     if (!darkBtn) return;
-    darkBtn.addEventListener('click', function() {
-      appSettings.theme = appSettings.theme === 'dark' ? 'light' : 'dark';
+    darkBtn.addEventListener("click", function () {
+      appSettings.theme = appSettings.theme === "dark" ? "light" : "dark";
       applyTheme(appSettings.theme);
       saveSettingsToStorage(appSettings);
-      var stEl = document.getElementById('settingTheme');
+      var stEl = document.getElementById("settingTheme");
       if (stEl) stEl.value = appSettings.theme;
-      if (filteredCandidates.length > 0) renderCharts(filteredCandidates);
+      if (
+        typeof filteredCandidates !== "undefined" &&
+        filteredCandidates.length > 0
+      )
+        renderCharts(filteredCandidates);
     });
   }
 
+  // ============================================================
+  // FAB SPEED DIAL
+  // ============================================================
   function initFab() {
-    var fabMain    = document.getElementById('fabMain');
-    var fabActions = document.getElementById('fabActions');
-    if (!fabMain) return;
-    fabMain.addEventListener('click', function() {
-      fabMain.classList.toggle('open');
-      fabActions.classList.toggle('d-none');
+    var fabMain = document.getElementById("fabMain");
+    var fabActions = document.getElementById("fabActions");
+    if (!fabMain || !fabActions) return;
+
+    fabMain.addEventListener("click", function () {
+      fabMain.classList.toggle("open");
+      fabActions.classList.toggle("d-none");
     });
-    function closeFab() { fabMain.classList.remove('open'); fabActions.classList.add('d-none'); }
 
-    var fabRefresh = document.getElementById('fabRefresh');
-    var fabExport  = document.getElementById('fabExport');
-    var fabPrint   = document.getElementById('fabPrint');
-    var fabForm    = document.getElementById('fabRecruitmentForm');
-    var fabEmp     = document.getElementById('fabMasterEmployee');
+    function closeFab() {
+      fabMain.classList.remove("open");
+      fabActions.classList.add("d-none");
+    }
 
-    if (fabRefresh) fabRefresh.addEventListener('click', function() { closeFab(); loadCandidates(false); });
-    if (fabExport)  fabExport.addEventListener('click',  function() { closeFab(); document.getElementById('btnExportXlsx').click(); });
-    if (fabPrint)   fabPrint.addEventListener('click',   function() { closeFab(); window.print(); });
-    if (fabForm)    fabForm.addEventListener('click',    function() { closeFab(); window.open(window.location.href.split('?')[0] + '?type=kandidat', '_blank'); });
-    if (fabEmp)     fabEmp.addEventListener('click',     function() { closeFab(); showToast('Buka sheet "Employee" di spreadsheet untuk melihat Master Data karyawan.', 'success'); });
+    var fabRefresh = document.getElementById("fabRefresh");
+    if (fabRefresh)
+      fabRefresh.addEventListener("click", function () {
+        closeFab();
+        loadCandidates();
+      });
+
+    var fabExport = document.getElementById("fabExport");
+    if (fabExport)
+      fabExport.addEventListener("click", function () {
+        closeFab();
+        var b = document.getElementById("btnExportXlsx");
+        if (b) b.click();
+      });
+
+    var fabPrint = document.getElementById("fabPrint");
+    if (fabPrint)
+      fabPrint.addEventListener("click", function () {
+        closeFab();
+        window.print();
+      });
+
+    var fabRecForm = document.getElementById("fabRecruitmentForm");
+    if (fabRecForm)
+      fabRecForm.addEventListener("click", function () {
+        closeFab();
+        window.open(getBaseUrl() + "?type=kandidat", "_blank");
+      });
+
+    var fabMasterEmp = document.getElementById("fabMasterEmployee");
+    if (fabMasterEmp)
+      fabMasterEmp.addEventListener("click", function () {
+        closeFab();
+        showToast(
+          'Buka sheet "Employee" di spreadsheet untuk melihat Master Data karyawan.',
+          "success",
+        );
+      });
   }
 
-  function initRefreshButton() {
-    var btnRefresh = document.getElementById('btnRefresh');
-    if (btnRefresh) btnRefresh.addEventListener('click', function() { loadCandidates(false); });
+  // ============================================================
+  // KEYBOARD SHORTCUTS
+  // ============================================================
+  function initKeyboardShortcuts() {
+    document.addEventListener("keydown", function (e) {
+      // Escape: close drawer
+      if (e.key === "Escape") {
+        var dp = document.getElementById("drawerPanel");
+        if (dp && dp.classList.contains("show")) {
+          closeDrawer();
+          e.preventDefault();
+        }
+      }
+    });
   }
 
-  document.addEventListener('DOMContentLoaded', function() {
-    // --- STEP 1: Synchronous UI initialization (no server calls) ---
+  // ============================================================
+  // INIT ALL — ordered by dependency
+  // ============================================================
+  function initApp() {
+    // 1. Init settings form (from js/settings.html)
+    if (typeof hydrateSettingsForm === "function") hydrateSettingsForm();
+
+    // 2. Init sidebar mobile toggle & dark mode
     initSidebar();
     initDarkModeToggle();
-    initDrawer();
-    initStatusModals();
-    initFilters();
-    initTableSortHeaders();
-    initExportButtons();
-    initSettingsPanel();
-    initBulkActions();
-    initFab();
-    initRefreshButton();
-    initImportModal();
 
-    applyTheme(appSettings.theme);
-    hydrateSettingsForm();
+    // 3. Init dashboard data + charts + filters + table + drawer + exports
+    if (typeof initDashboard === "function") initDashboard();
 
-    var sf = document.getElementById('statusFilter');
-    if (sf && appSettings.defaultStatus) sf.value = appSettings.defaultStatus;
-
-    // --- STEP 2: Authentication (must complete first) ---
-    if (typeof requireAuth === 'function') {
-      requireAuth().then(function(user) {
-        if (!user) return; // redirect already happened
-
-        // --- STEP 3: Load portal settings ---
-        loadPortalSettings();
-
-        // --- STEP 4: Initialize filter UI for recruitment & outsource (no server calls) ---
-        if (typeof initRecruitmentPage === 'function') initRecruitmentPage();
-        if (typeof initOutsourceUI === 'function') initOutsourceUI();
-
-        // --- STEP 5: Load all data in parallel (after auth succeeds) ---
-        loadCandidates(false);
-        if (typeof loadOutsourceData === 'function') loadOutsourceData(false);
-      });
-    } else {
-      // No auth module present — fallback to direct initialization
-      loadPortalSettings();
-      if (typeof initRecruitmentPage === 'function') initRecruitmentPage();
-      if (typeof initOutsourceUI === 'function') initOutsourceUI();
-      loadCandidates(false);
-      if (typeof loadOutsourceData === 'function') loadOutsourceData(false);
+    // 4. SPA Router — after dashboard init, set up hash-based navigation
+    if (typeof SPA !== "undefined" && typeof SPA.init === "function") {
+      SPA.init();
     }
-  });
+
+    // 5. FAB speed dial & keyboard shortcuts
+    initFab();
+    initKeyboardShortcuts();
+
+    // 6. Auto-refresh setup
+    if (typeof setupAutoRefresh === "function") setupAutoRefresh();
+  }
+
+  document.addEventListener("DOMContentLoaded", initApp);
 </script>
