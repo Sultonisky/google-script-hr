@@ -36,6 +36,9 @@ function getEmployeeList() {
         createdAt:         row[colIndex['Created At']] instanceof Date
                              ? Utilities.formatDate(row[colIndex['Created At']], 'GMT+7', 'dd/MM/yyyy HH:mm')
                              : String(row[colIndex['Created At']]      || ''),
+        _rawCreatedAt:     row[colIndex['Created At']] instanceof Date
+                             ? row[colIndex['Created At']].getTime()
+                             : (new Date(String(row[colIndex['Created At']] || ''))).getTime() || 0,
         companyEntity:     String(row[colIndex['Company Entity']]      || ''),
         employeeType:      String(row[colIndex['Employee Type']]       || ''),
         nik:               String(row[colIndex['NIK']]                 || ''),
@@ -69,8 +72,10 @@ function getEmployeeList() {
     }
 
     items.sort(function(a, b) {
-      return (b.createdAt || '').localeCompare(a.createdAt || '');
+      return (b._rawCreatedAt || 0) - (a._rawCreatedAt || 0);
     });
+
+    items.forEach(function(item) { delete item._rawCreatedAt; });
 
     return { success: true, data: items };
   } catch (e) {
