@@ -358,75 +358,55 @@ function findUserByEmailOrUsername_(identifier) {
   return null;
 }
 
-// ============================================================
-// DEMO USERS — Auto-seed on first run
-// ============================================================
-
-var DEFAULT_DEMO_USERS = [
-  {
-    email: 'superadmin@mahakarya.local',
-    username: 'SuperAdmin',
-    fullName: 'Developer',
-    role: 'Super Admin',
-    password: '@C1JERUK'
-  },
-  {
-    email: 'hrd@mahakarya.local',
-    username: 'HRD',
-    fullName: 'HR Department',
-    role: 'HR Admin',
-    password: '@hrd1234567_'
-  }
-];
-
 /**
- * Auto-seeds demo users if they don't exist.
- * Checks individually by email AND username — never overwrites existing data.
- * Called automatically during login attempts.
- * @returns {Object} { success, message, count }
+ * Ensures all USERS_HEADERS columns exist in the Users sheet.
+ * Adds missing columns (e.g. Username, Password Hash) for existing rows.
+ * Safe to call multiple times — only adds what's missing.
  */
-function seedDefaultDemoUsers_() {
-  var lock = LockService.getScriptLock();
-  try {
-    lock.waitLock(10000);
-
-    var sheet = getUsersSheet_();
-    var now = Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd HH:mm:ss");
-    var count = 0;
-
-    for (var i = 0; i < DEFAULT_DEMO_USERS.length; i++) {
-      var u = DEFAULT_DEMO_USERS[i];
-      // Skip if user already exists by email or username
-      var existsByEmail = findUserByEmailOrUsername_(u.email);
-      var existsByUsername = findUserByEmailOrUsername_(u.username);
-      if (existsByEmail || existsByUsername) continue;
-
-      var hash = hashPassword_(u.password);
-      sheet.appendRow([
-        u.email.toLowerCase(),   // Email
-        u.username,              // Username
-        u.fullName,              // Full Name
-        u.role,                  // Role
-        'Active',                // Status
-        hash,                    // Password Hash
-        '',                      // Last Login
-        now,                     // Created At
-        now,                     // Updated At
-        'system-demo'            // Created By
-      ]);
-      count++;
-    }
-    SpreadsheetApp.flush();
-
-    if (count > 0) {
-      return { success: true, message: count + ' demo user berhasil dibuat.', count: count };
-    }
-    return { success: true, message: 'Semua demo user sudah ada.', count: 0 };
-  } catch (e) {
-    return { success: false, message: 'Gagal membuat demo user: ' + e.message, count: 0 };
-  } finally {
-    lock.releaseLock();
+function ensureUsersColumns_() {
+  var sheet = getUsersSheet_();
+  var headerRow = sheet.getRange(1, 1, 1, USERS_HEADERS.length).getValues()[0];
+  var headers = [];
+  for (var i = 0; i < headerRow.length; i++) {
+    headers.push(String(headerRow[i] || '').trim());
   }
+
+  var missingCols = [];
+  for (var j = 0; j < USERS_HEADERS.length; j++) {
+    if (headers[j] !== USERS_HEADERS[j]) {
+      missingCols.push({ index: j, header: USERS_HEADERS[j] });
+    }
+  }
+
+  if (missingCols.length === 0) return { added: 0 };
+
+  // Re-write header row to ensure correctness
+  sheet.getRange(1, 1, 1, USERS_HEADERS.length).setValues([USERS_HEADERS]);
+  sheet.getRange(1, 1, 1, USERS_HEADERS.length)
+    .setFontWeight('bold')
+    .setBackground('#005BAC')
+    .setFontColor('#FFFFFF');
+
+  // For missing columns, fill empty cells in existing data rows
+  var lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    for (var k = 0; k < missingCols.length; k++) {
+      var colIdx = missingCols[k].index + 1; // 1-based
+      var range = sheet.getRange(2, colIdx, lastRow - 1, 1);
+      var vals = range.getValues();
+      var needsFill = false;
+      for (var r = 0; r < vals.length; r++) {
+        if (vals[r][0] === '' || vals[r][0] === null || vals[r][0] === undefined) {
+          vals[r][0] = '';
+          needsFill = true;
+        }
+      }
+      if (needsFill) range.setValues(vals);
+    }
+  }
+
+  sheet.autoResizeColumns(1, USERS_HEADERS.length);
+  return { added: missingCols.length, columns: missingCols.map(function(c) { return c.header; }) };
 }
 
 // ============================================================
@@ -452,8 +432,8 @@ function loginWithPassword(identifier, password, rememberMe) {
       return { success: false, error: 'Email/Username dan Password wajib diisi.' };
     }
 
-    // 2. Auto-seed demo users if needed
-    seedDefaultDemoUsers_();
+    // 2. Ensure sheet columns are in sync
+    ensureUsersColumns_();
 
     // 3. Find user by email or username
     var user = findUserByEmailOrUsername_(id);
@@ -1116,6 +1096,50 @@ function autoCreateFirstAdmin_(email, fullName) {
     return { success: false, error: "Gagal membuat Super Admin: " + e.message };
   } finally {
     lock.releaseLock();
+  }
+}
+
+/**
+ * Sets the initial password for a user who has no password yet.
+ * Requires manage_users permission (can be self-set during first login).
+ * @param {string} email - The user's email
+ * @param {string} newPassword - The new plaintext password
+ * @param {string} sessionToken - Session token for authorization
+ * @returns {Object} { success, message, error }
+ */
+function setInitialPassword(email, newPassword, sessionToken) {
+  try {
+    var user = findUserByEmail_(email);
+    if (!user) {
+      return { success: false, error: 'Pengguna tidak ditemukan.' };
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+      return { success: false, error: 'Password minimal 6 karakter.' };
+    }
+
+    // Check if user already has a password — only Super Admin can reset
+    if (user.passwordHash) {
+      var currentUser = getCurrentUser(sessionToken);
+      if (!currentUser.isLoggedIn || currentUser.role !== SUPER_ADMIN_ROLE) {
+        return { success: false, error: 'Hanya Super Admin yang dapat mengatur ulang password.' };
+      }
+    }
+
+    var lock = LockService.getScriptLock();
+    try {
+      lock.waitLock(10000);
+      var now = Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd HH:mm:ss");
+      var sheet = getUsersSheet_();
+      sheet.getRange(user.rowIndex, USERS_COL['Password Hash']).setValue(hashPassword_(newPassword));
+      sheet.getRange(user.rowIndex, USERS_COL['Updated At']).setValue(now);
+      SpreadsheetApp.flush();
+      return { success: true, message: 'Password berhasil diatur.' };
+    } finally {
+      lock.releaseLock();
+    }
+  } catch (e) {
+    return { success: false, error: 'Gagal mengatur password: ' + e.message };
   }
 }
 
