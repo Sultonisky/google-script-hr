@@ -95,48 +95,6 @@ function ensureEmployeeHeaders_(sheet) {
     .setFontColor("#FFFFFF");
 }
 
-// ============= raw_outsource =============
-function getOrCreateOutsourceSheet_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(OUTSOURCE_SHEET_NAME);
-  if (!sheet) sheet = ss.insertSheet(OUTSOURCE_SHEET_NAME);
-
-  if (sheet.getLastRow() === 0) {
-    sheet.appendRow(OUTSOURCE_HEADERS);
-    sheet
-      .getRange(1, 1, 1, OUTSOURCE_HEADERS.length)
-      .setFontWeight("bold")
-      .setBackground("#005BAC")
-      .setFontColor("#FFFFFF");
-    sheet.setFrozenRows(1);
-    sheet.autoResizeColumns(1, OUTSOURCE_HEADERS.length);
-  } else {
-    ensureOutsourceHeaders_(sheet);
-  }
-  return sheet;
-}
-
-function ensureOutsourceHeaders_(sheet) {
-  var lastCol = sheet.getLastColumn();
-  var headerRow = sheet
-    .getRange(1, 1, 1, lastCol)
-    .getValues()[0]
-    .map(function (h) {
-      return String(h).trim();
-    });
-  var missing = OUTSOURCE_HEADERS.filter(function (h) {
-    return headerRow.indexOf(h) === -1;
-  });
-  if (missing.length === 0) return;
-  var startCol = lastCol + 1;
-  sheet.getRange(1, startCol, 1, missing.length).setValues([missing]);
-  sheet
-    .getRange(1, startCol, 1, missing.length)
-    .setFontWeight("bold")
-    .setBackground("#005BAC")
-    .setFontColor("#FFFFFF");
-}
-
 // ============= Archive =============
 function getOrCreateArchiveSheet_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -221,7 +179,6 @@ function getOrCreateUsersSheet_() {
 function setupSpreadsheet() {
   getOrCreateSheet_();
   getOrCreateEmployeeSheet_();
-  getOrCreateOutsourceSheet_();
   getOrCreateArchiveSheet_();
   getOrCreateOffboardingSheet_();
   getOrCreateAuditLogSheet_();

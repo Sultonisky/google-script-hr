@@ -112,7 +112,7 @@ function addEmployee(empData) {
     newRow[EMPLOYEE_COL['Gender'] - 1]               = empData.gender          || '';
     newRow[EMPLOYEE_COL['Marital Status'] - 1]       = empData.maritalStatus   || '';
     newRow[EMPLOYEE_COL['Address'] - 1]              = empData.address         || '';
-    newRow[EMPLOYEE_COL['City'] - 1]                 = empData.city            || '';
+    newRow[EMPLOYEE_COL['City'] - 1]                 = empData.city            || empData.workLocation || '';
     newRow[EMPLOYEE_COL['Education'] - 1]            = empData.education       || '';
     newRow[EMPLOYEE_COL['Work Experience'] - 1]      = empData.workExperience  || '';
     newRow[EMPLOYEE_COL['Department'] - 1]           = empData.department      || '';
@@ -162,14 +162,13 @@ function updateEmployee(id, updates) {
           employeeType:    'Employee Type',
           fullName:        'Full Name',
           nik:             'NIK',
-          birthDate:       'Birth Date',
+          workLocation:    'City',
           age:             'Age',
           gender:          'Gender',
           maritalStatus:   'Marital Status',
           email:           'Email',
           phone:           'Phone',
           address:         'Address',
-          city:            'City',
           education:       'Education',
           workExperience:  'Work Experience',
           department:      'Department',
