@@ -2,14 +2,8 @@
 // GenerateDummyData.gs — Complete HRIS Demo Dataset Generator
 // ============================================================
 // Run: generateAllHRISDemoData() from Apps Script editor
-// Generates: Master Data, Recruitment (100), Employee (100), Outsource (100), Audit Logs
-// ============================================================
-
-// ============================================================
-// GenerateDummyData.gs — Complete HRIS Demo Dataset Generator
-// ============================================================
-// Run: generateAllHRISDemoData() from Apps Script editor
-// Generates: Master Data, Recruitment (100), Employee (100), Outsource (100), Audit Logs
+// Generates: Recruitment (100), Employee (100), Outsource (100), Audit Logs
+// (Master data is derived dynamically from the Employee sheet.)
 // ============================================================
 
 function generateAllHRISDemoData() {
@@ -18,9 +12,6 @@ function generateAllHRISDemoData() {
   try {
     Logger.log("===== START: Generate HRIS Demo Data =====");
     var today = new Date();
-
-    // 1. Master Data
-    var mdCount = generateMasterData_(today);
 
     // 2. Recruitment (100 candidates)
     var recResult = generateRecruitmentData_(today);
@@ -39,7 +30,6 @@ function generateAllHRISDemoData() {
     );
 
     Logger.log("===== COMPLETE =====");
-    Logger.log("Master Data: " + mdCount);
     Logger.log(
       "Recruitment: " +
         recResult.count +
@@ -51,9 +41,8 @@ function generateAllHRISDemoData() {
     Logger.log("Outsource: " + osCount);
 
     return (
-      "OK — MD:" +
-      mdCount +
-      " Rec:" +
+      "OK — " +
+      "Rec:" +
       recResult.count +
       " Emp:" +
       empResult.count +
@@ -665,249 +654,7 @@ function _gdPickForPosition_(pos, departments) {
 }
 
 // ============================================================
-// 1. MASTER DATA GENERATION
-// ============================================================
-function generateMasterData_(today) {
-  var sheet = getOrCreateMasterDataSheet_();
-  var data = sheet.getDataRange().getValues();
-
-  if (data.length > 50) {
-    Logger.log(
-      "Master Data already populated (" +
-        (data.length - 1) +
-        " rows). Skipping.",
-    );
-    return data.length - 1;
-  }
-
-  var now = _gdNow_();
-  var rows = [];
-  var idCounter = 1;
-
-  var allData = {
-    company_entity: [
-      { name: "PT Mahakarya Sukses Indonesia", desc: "Kantor Pusat" },
-      { name: "PT Mahakarya Tech", desc: "Divisi Teknologi" },
-      { name: "PT Mahakarya Trading", desc: "Divisi Perdagangan" },
-      { name: "PT Mahakarya Logistics", desc: "Divisi Logistik" },
-      { name: "PT Mahakarya Capital", desc: "Divisi Keuangan" },
-    ],
-    department: [
-      { name: "Human Resources", desc: "SDM & Administrasi" },
-      { name: "Finance", desc: "Keuangan & Akuntansi" },
-      { name: "Accounting", desc: "Pembukuan & Pelaporan" },
-      { name: "Marketing", desc: "Pemasaran & Branding" },
-      { name: "Digital Marketing", desc: "Pemasaran Digital" },
-      { name: "Sales", desc: "Penjualan & BD" },
-      { name: "IT", desc: "Teknologi Informasi" },
-      { name: "Engineering", desc: "Rekayasa & Pengembangan" },
-      { name: "Operations", desc: "Operasional" },
-      { name: "Legal", desc: "Hukum & Kepatuhan" },
-      { name: "GA", desc: "General Affairs" },
-      { name: "Warehouse", desc: "Gudang & Logistik" },
-      { name: "Purchasing", desc: "Pembelian & Pengadaan" },
-      { name: "Quality Control", desc: "Pengendalian Kualitas" },
-      { name: "Customer Service", desc: "Layanan Pelanggan" },
-      { name: "Admin", desc: "Administrasi Umum" },
-    ],
-    position: [
-      { name: "Director", desc: "Direktur" },
-      { name: "GM", desc: "General Manager" },
-      { name: "Manager", desc: "Manager" },
-      { name: "Supervisor", desc: "Supervisor" },
-      { name: "Team Lead", desc: "Ketua Tim" },
-      { name: "Senior Staff", desc: "Staf Senior" },
-      { name: "Staff", desc: "Staf" },
-      { name: "Junior Staff", desc: "Staf Junior" },
-      { name: "Intern", desc: "Peserta Magang" },
-      { name: "Outsource", desc: "Karyawan Outsource" },
-      { name: "IT Support", desc: "Support Teknologi" },
-      { name: "Network Engineer", desc: "Insinyur Jaringan" },
-      { name: "Software Engineer", desc: "Insinyur Perangkat Lunak" },
-      { name: "Backend Developer", desc: "Developer Backend" },
-      { name: "Frontend Developer", desc: "Developer Frontend" },
-      { name: "Fullstack Developer", desc: "Developer Fullstack" },
-      { name: "HR Staff", desc: "Staf SDM" },
-      { name: "HR Recruiter", desc: "Rekruter" },
-      { name: "Finance Staff", desc: "Staf Keuangan" },
-      { name: "Accounting Staff", desc: "Staf Akuntansi" },
-      {
-        name: "Digital Marketing Specialist",
-        desc: "Spesialis Marketing Digital",
-      },
-      { name: "Graphic Designer", desc: "Desainer Grafis" },
-      { name: "UI/UX Designer", desc: "Desainer UI/UX" },
-      { name: "Sales Executive", desc: "Eksekutif Penjualan" },
-      { name: "Purchasing Staff", desc: "Staf Pembelian" },
-      { name: "Warehouse Staff", desc: "Staf Gudang" },
-      { name: "Admin", desc: "Administrasi" },
-      { name: "Customer Service", desc: "Layanan Pelanggan" },
-      { name: "Quality Control Staff", desc: "Staf QC" },
-      { name: "Driver", desc: "Sopir" },
-      { name: "Security", desc: "Satpam" },
-      { name: "Office Boy", desc: "OB" },
-    ],
-    work_location: [
-      { name: "Jakarta Pusat", desc: "Kantor Pusat" },
-      { name: "Jakarta Selatan", desc: "Kantor Cabang Selatan" },
-      { name: "Jakarta Barat", desc: "Kantor Cabang Barat" },
-      { name: "Jakarta Timur", desc: "Kantor Cabang Timur" },
-      { name: "Jakarta Utara", desc: "Kantor Cabang Utara" },
-      { name: "Bandung", desc: "Kantor Bandung" },
-      { name: "Surabaya", desc: "Kantor Surabaya" },
-      { name: "Semarang", desc: "Kantor Semarang" },
-      { name: "Yogyakarta", desc: "Kantor Yogyakarta" },
-      { name: "Medan", desc: "Kantor Medan" },
-      { name: "Makassar", desc: "Kantor Makassar" },
-      { name: "Balikpapan", desc: "Kantor Balikpapan" },
-    ],
-    employee_type: [
-      { name: "PKWTT", desc: "Perjanjian Kerja Waktu Tidak Tertentu" },
-      { name: "PKWT", desc: "Perjanjian Kerja Waktu Tertentu" },
-      { name: "Outsource", desc: "Karyawan Outsourcing" },
-      { name: "Intern", desc: "Peserta Magang" },
-      { name: "Freelance", desc: "Freelancer" },
-    ],
-    education: [
-      { name: "SD", desc: "Sekolah Dasar" },
-      { name: "SMP", desc: "Sekolah Menengah Pertama" },
-      { name: "SMA", desc: "Sekolah Menengah Atas" },
-      { name: "SMK", desc: "Sekolah Menengah Kejuruan" },
-      { name: "D3", desc: "Diploma 3" },
-      { name: "D4", desc: "Diploma 4" },
-      { name: "S1", desc: "Sarjana" },
-      { name: "S2", desc: "Magister" },
-      { name: "S3", desc: "Doktor" },
-    ],
-    work_experience: [
-      { name: "Fresh Graduate", desc: "Lulusan baru" },
-      { name: "< 1 Tahun", desc: "Kurang dari 1 tahun" },
-      { name: "1-2 Tahun", desc: "1 sampai 2 tahun" },
-      { name: "2-3 Tahun", desc: "2 sampai 3 tahun" },
-      { name: "3-5 Tahun", desc: "3 sampai 5 tahun" },
-      { name: "5-10 Tahun", desc: "5 sampai 10 tahun" },
-      { name: "> 10 Tahun", desc: "Lebih dari 10 tahun" },
-    ],
-    gender: [
-      { name: "Laki-laki", desc: "Male" },
-      { name: "Perempuan", desc: "Female" },
-    ],
-    marital_status: [
-      { name: "Single", desc: "Belum Menikah" },
-      { name: "Married", desc: "Menikah" },
-      { name: "Divorced", desc: "Cerai" },
-      { name: "Widowed", desc: "Duda/Janda" },
-    ],
-    current_employment_status: [
-      { name: "Employed Full Time", desc: "Bekerja Full Time" },
-      { name: "Employed Contract", desc: "Bekerja Kontrak" },
-      { name: "Part Time", desc: "Paruh Waktu" },
-      { name: "Freelance", desc: "Freelancer" },
-      { name: "Unemployed", desc: "Tidak Bekerja" },
-      { name: "Resigned", desc: "Sudah Resign" },
-      { name: "Fresh Graduate", desc: "Lulusan Baru" },
-    ],
-    available_to_join: [
-      { name: "Segera", desc: "Langsung" },
-      { name: "1 Minggu", desc: "1 Minggu" },
-      { name: "2 Minggu", desc: "2 Minggu" },
-      { name: "1 Bulan", desc: "1 Bulan" },
-      { name: "2 Bulan", desc: "2 Bulan" },
-      { name: "3 Bulan", desc: "3 Bulan" },
-      { name: "Bisa Negosiasi", desc: "Negosiasi" },
-    ],
-    employment_status: [
-      { name: "Active", desc: "Aktif" },
-      { name: "Resigned", desc: "Resign" },
-      { name: "Terminated", desc: "PHK" },
-      { name: "On Leave", desc: "Cuti" },
-      { name: "Probation", desc: "Masa Percobaan" },
-    ],
-    contract_duration: [
-      { name: "3 Bulan", desc: "3 bulan" },
-      { name: "6 Bulan", desc: "6 bulan" },
-      { name: "1 Tahun", desc: "12 bulan" },
-      { name: "2 Tahun", desc: "24 bulan" },
-      { name: "3 Tahun", desc: "36 bulan" },
-    ],
-    salary_type: [
-      { name: "Monthly", desc: "Gaji Bulanan" },
-      { name: "Daily", desc: "Gaji Harian" },
-      { name: "Project-Based", desc: "Bayaran Proyek" },
-      { name: "Hourly", desc: "Bayaran Per Jam" },
-    ],
-    recruitment_source: [
-      { name: "JobStreet", desc: "JobStreet.com" },
-      { name: "LinkedIn", desc: "LinkedIn" },
-      { name: "Indeed", desc: "Indeed.com" },
-      { name: "Instagram", desc: "Instagram" },
-      { name: "Website Perusahaan", desc: "Website resmi" },
-      { name: "Referensi Karyawan", desc: "Referral dari karyawan" },
-      { name: "Kampus / Career Fair", desc: "Kampus atau pameran karir" },
-      { name: "Loker.id", desc: "Loker.id" },
-      { name: "Karir.com", desc: "Karir.com" },
-      { name: "Glassdoor", desc: "Glassdoor" },
-      { name: "Tokopedia Karir", desc: "Karir Tokopedia" },
-      { name: "Walk In", desc: "Datang langsung" },
-    ],
-    candidate_status: [
-      { name: "Applied", desc: "Pelamar Baru" },
-      { name: "Screening", desc: "Sedang Screening" },
-      { name: "Interview", desc: "Proses Interview" },
-      { name: "Psychotest", desc: "Psikotest" },
-      { name: "HR Interview", desc: "Interview HR" },
-      { name: "User Interview", desc: "Interview User" },
-      { name: "Offering", desc: "Penawaran" },
-      { name: "Accepted", desc: "Diterima" },
-      { name: "Rejected", desc: "Ditolak" },
-      { name: "Withdrawn", desc: "Mengundurkan Diri" },
-      { name: "Blacklist", desc: "Blacklist" },
-      { name: "Hold", desc: "Ditahan" },
-      { name: "Pending", desc: "Menunggu" },
-    ],
-    interview_result: [
-      { name: "Layak", desc: "Lolos" },
-      { name: "Tidak Layak", desc: "Tidak Lolos" },
-      { name: "Cadangan", desc: "Alternatif" },
-      { name: "Menunggu", desc: "Belum dinilai" },
-    ],
-  };
-
-  Object.keys(allData).forEach(function (category) {
-    var items = allData[category];
-    for (var i = 0; i < items.length; i++) {
-      rows.push([
-        "MD-" + _gdPad_(idCounter, 4),
-        category,
-        items[i].name,
-        items[i].desc,
-        i + 1,
-        "TRUE",
-        now,
-        now,
-      ]);
-      idCounter++;
-    }
-  });
-
-  if (rows.length > 0) {
-    sheet
-      .getRange(2, 1, rows.length, MASTER_DATA_HEADERS.length)
-      .setValues(rows);
-  }
-
-  Logger.log(
-    "Master Data: " +
-      rows.length +
-      " items written across " +
-      Object.keys(allData).length +
-      " categories",
-  );
-  return rows.length;
-}
-
-// ============================================================
-// 2. RECRUITMENT DATA GENERATION
+// 1. RECRUITMENT DATA GENERATION
 // ============================================================
 function generateRecruitmentData_(today) {
   var sheet = getOrCreateSheet_();
@@ -1286,7 +1033,7 @@ function generateRecruitmentData_(today) {
 }
 
 // ============================================================
-// 3. EMPLOYEE DATA GENERATION (50 legacy + 50 from recruitment)
+// 2. EMPLOYEE DATA GENERATION (50 legacy + 50 from recruitment)
 // ============================================================
 function generateEmployeeData_(acceptedCandidates, today) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -1633,7 +1380,7 @@ function markNikUsed(nik) {
 }
 
 // ============================================================
-// 4. OUTSOURCE DATA GENERATION (100 → Employee sheet)
+// 3. OUTSOURCE DATA GENERATION (100 → Employee sheet)
 // ============================================================
 function generateOutsourceData_(today) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -1858,7 +1605,7 @@ function generateOutsourceData_(today) {
 }
 
 // ============================================================
-// 5. AUDIT LOG GENERATION
+// 4. AUDIT LOG GENERATION
 // ============================================================
 function generateAuditLogs_(recruitmentRecords, legacyEmpIds, recEmpIds) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();

@@ -2,96 +2,126 @@
 // backend/MasterData.gs — MASTER DATA CRUD
 // Manages dropdown options: recruitment sources, statuses,
 // departments, positions, work locations, employee types.
-// Uses MASTER_DATA_SHEET, MASTER_DATA_HEADERS, MASTERDATA_COL,
-// MASTER_DATA_CATEGORIES, DEFAULT_MASTER_DATA from Config.gs
+// Reads dynamically from Employee sheet (distinct column values)
+// and falls back to DEFAULT_MASTER_DATA for categories not
+// present in Employee sheet (e.g. offboarding_type, archive_reason).
 // ============================================================
 
 // ============= HELPER =============
 
-function getOrCreateMasterDataSheet_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(MASTER_DATA_SHEET);
-  if (!sheet) {
-    sheet = ss.insertSheet(MASTER_DATA_SHEET);
-    sheet.getRange(1, 1, 1, MASTER_DATA_HEADERS.length).setValues([MASTER_DATA_HEADERS]);
-    sheet.getRange(1, 1, 1, MASTER_DATA_HEADERS.length)
-      .setBackground('#005BAC').setFontColor('#ffffff').setFontWeight('bold');
-    sheet.setFrozenRows(1);
-    autoResizeColumns(sheet, MASTER_DATA_HEADERS.length);
-    initializeDefaultMasterData_();
-  }
-  return sheet;
-}
-
-function initializeDefaultMasterData_() {
-  var sheet = getOrCreateMasterDataSheet_();
-  var rows = [];
-  var now = getNow_();
-  var idCounter = 1;
-
-  Object.keys(DEFAULT_MASTER_DATA).forEach(function(category) {
-    var items = DEFAULT_MASTER_DATA[category];
-    for (var i = 0; i < items.length; i++) {
-      rows.push([
-        'MD-' + padNumber_(idCounter, 4),
-        category,
-        items[i],
-        '',
-        i + 1,
-        'TRUE',
-        now,
-        now
-      ]);
-      idCounter++;
-    }
-  });
-
-  if (rows.length > 0) {
-    sheet.getRange(2, 1, rows.length, MASTER_DATA_HEADERS.length).setValues(rows);
+function _getMasterDataSheet_() {
+  try {
+    return SpreadsheetApp.getActiveSpreadsheet().getSheetByName(
+      EMPLOYEE_SHEET_NAME,
+    );
+  } catch (e) {
+    return null;
   }
 }
 
-function padNumber_(num, size) {
-  var s = String(num);
-  while (s.length < size) s = '0' + s;
-  return s;
-}
-
-function generateMasterDataId_() {
-  var props = PropertiesService.getScriptProperties();
-  var counter = parseInt(props.getProperty('master_data_counter') || '0', 10);
-  counter++;
-  props.setProperty('master_data_counter', String(counter));
-  return 'MD-' + padNumber_(counter, 4);
+function _getColumnIndex_(headers) {
+  var map = {};
+  if (!headers) return map;
+  for (var i = 0; i < headers.length; i++) {
+    map[String(headers[i]).trim()] = i;
+  }
+  return map;
 }
 
 // ============= GET ALL MASTER DATA =============
 
 function getMasterDataList() {
   try {
-    var sheet = getOrCreateMasterDataSheet_();
-    var data  = sheet.getDataRange().getValues();
-    if (data.length <= 1) return { success: true, data: [], categories: MASTER_DATA_CATEGORIES };
-
-    var items   = [];
-    for (var i = 1; i < data.length; i++) {
-      var row = data[i];
-      // Only include active items
-      if (String(row[MASTERDATA_COL['Aktif'] - 1]).toUpperCase() === 'TRUE') {
-        items.push({
-          id:          row[MASTERDATA_COL['ID'] - 1],
-          category:    row[MASTERDATA_COL['Kategori'] - 1],
-          name:        row[MASTERDATA_COL['Nama'] - 1],
-          description: row[MASTERDATA_COL['Deskripsi'] - 1],
-          order:       row[MASTERDATA_COL['Urutan'] - 1],
-          active:      true,
-          created:     row[MASTERDATA_COL['Dibuat'] - 1],
-          modified:    row[MASTERDATA_COL['Diubah'] - 1]
+    var sheet = _getMasterDataSheet_();
+    if (!sheet || sheet.getLastRow() < 2) {
+      var fallback = [];
+      var order = 1;
+      Object.keys(MASTER_DATA_CATEGORIES).forEach(function (cat) {
+        var defaults = DEFAULT_MASTER_DATA[cat] || [];
+        defaults.forEach(function (name) {
+          fallback.push({
+            id: "MD-" + order,
+            category: cat,
+            name: name,
+            description: "",
+            order: order,
+            active: true,
+            created: "",
+            modified: "",
+          });
+          order++;
         });
-      }
+      });
+      return {
+        success: true,
+        data: fallback,
+        categories: MASTER_DATA_CATEGORIES,
+      };
     }
 
-    return { success: true, data: items, categories: MASTER_DATA_CATEGORIES };
+    var data = sheet.getDataRange().getValues();
+    var headers = data[0];
+    var col = _getColumnIndex_(headers);
+
+    var items = [];
+    for (var r = 1; r < data.length; r++) {
+      var row = data[r];
+      if (!row.join("").toString().trim()) continue;
+      var order = parseInt(row[col["Order"]] || 1, 10) || r;
+      Object.keys(MASTER_DATA_CATEGORIES).forEach(function (cat) {
+        var empCol = MASTER_DATA_EMPLOYEE_COL_MAP[cat];
+        if (empCol && col[empCol] !== undefined) {
+          var val = String(row[col[empCol]] || "").trim();
+          if (val) {
+            items.push({
+              id: cat + "-" + r,
+              category: cat,
+              name: val,
+              description: "",
+              order: order,
+              active: true,
+              created: String(row[col["Created At"]] || ""),
+              modified: String(row[col["Updated At"]] || ""),
+            });
+          }
+        }
+      });
+    }
+
+    // Merge with defaults for categories not in Employee sheet
+    var seen = {};
+    items.forEach(function (it) {
+      var key = it.category + "|" + it.name.toLowerCase();
+      if (!seen[key]) {
+        seen[key] = true;
+      }
+    });
+
+    var orderCounter = items.length + 1;
+    Object.keys(MASTER_DATA_CATEGORIES).forEach(function (cat) {
+      var empCol = MASTER_DATA_EMPLOYEE_COL_MAP[cat];
+      if (empCol) return; // derived from Employee sheet
+      var defaults = DEFAULT_MASTER_DATA[cat] || [];
+      defaults.forEach(function (name) {
+        items.push({
+          id: "MD-" + orderCounter,
+          category: cat,
+          name: name,
+          description: "",
+          order: orderCounter,
+          active: true,
+          created: "",
+          modified: "",
+        });
+        orderCounter++;
+      });
+    });
+
+    return {
+      success: true,
+      data: items,
+      categories: MASTER_DATA_CATEGORIES,
+    };
   } catch (e) {
     return { success: false, message: e.toString() };
   }
@@ -106,16 +136,16 @@ function getMasterDataByCategory(category) {
 
     var filtered;
     if (category) {
-      filtered = result.data.filter(function(item) {
+      filtered = result.data.filter(function (item) {
         return item.category === category;
       });
     } else {
-      // No category specified — return all items
       filtered = result.data;
     }
 
-    // Sort by order
-    filtered.sort(function(a, b) { return (a.order || 0) - (b.order || 0); });
+    filtered.sort(function (a, b) {
+      return (a.order || 0) - (b.order || 0);
+    });
 
     return { success: true, data: filtered };
   } catch (e) {
@@ -130,7 +160,9 @@ function getMasterDataNamesByCategory(category) {
     var result = getMasterDataByCategory(category);
     if (!result.success) return { success: false, data: [] };
 
-    var names = result.data.map(function(item) { return item.name; });
+    var names = result.data.map(function (item) {
+      return item.name;
+    });
     return { success: true, data: names };
   } catch (e) {
     return { success: false, message: e.toString(), data: [] };
@@ -145,11 +177,17 @@ function getMasterDataGrouped() {
     if (!result.success) return result;
 
     var grouped = {};
-    Object.keys(MASTER_DATA_CATEGORIES).forEach(function(cat) {
+    Object.keys(MASTER_DATA_CATEGORIES).forEach(function (cat) {
       grouped[cat] = result.data
-        .filter(function(item) { return item.category === cat; })
-        .sort(function(a, b) { return (a.order || 0) - (b.order || 0); })
-        .map(function(item) { return item.name; });
+        .filter(function (item) {
+          return item.category === cat;
+        })
+        .sort(function (a, b) {
+          return (a.order || 0) - (b.order || 0);
+        })
+        .map(function (item) {
+          return item.name;
+        });
     });
 
     return { success: true, data: grouped };
@@ -162,7 +200,11 @@ function getMasterDataGrouped() {
 
 function getMasterDataForCategories(categories) {
   try {
-    if (!categories || !Array.isArray(categories) || categories.length === 0) {
+    if (
+      !categories ||
+      !Array.isArray(categories) ||
+      categories.length === 0
+    ) {
       categories = Object.keys(MASTER_DATA_CATEGORIES);
     }
 
@@ -170,23 +212,27 @@ function getMasterDataForCategories(categories) {
     if (!result.success) return result;
 
     var grouped = {};
-    categories.forEach(function(cat) {
+    categories.forEach(function (cat) {
       if (!MASTER_DATA_CATEGORIES[cat]) {
         grouped[cat] = { label: cat, items: [] };
         return;
       }
       var items = result.data
-        .filter(function(item) { return item.category === cat; })
-        .sort(function(a, b) { return (a.order || 0) - (b.order || 0); })
-        .map(function(item) {
+        .filter(function (item) {
+          return item.category === cat;
+        })
+        .sort(function (a, b) {
+          return (a.order || 0) - (b.order || 0);
+        })
+        .map(function (item) {
           return {
-            name:        item.name,
-            displayName: item.description || item.name
+            name: item.name,
+            displayName: item.description || item.name,
           };
         });
       grouped[cat] = {
         label: MASTER_DATA_CATEGORIES[cat].label,
-        items: items
+        items: items,
       };
     });
 
@@ -204,13 +250,17 @@ function getMasterDataSummary() {
     if (!result.success) return result;
 
     var summary = {};
-    Object.keys(MASTER_DATA_CATEGORIES).forEach(function(cat) {
-      var items = result.data.filter(function(item) { return item.category === cat; });
+    Object.keys(MASTER_DATA_CATEGORIES).forEach(function (cat) {
+      var items = result.data.filter(function (item) {
+        return item.category === cat;
+      });
       summary[cat] = {
         label: MASTER_DATA_CATEGORIES[cat].label,
-        icon:  MASTER_DATA_CATEGORIES[cat].icon,
+        icon: MASTER_DATA_CATEGORIES[cat].icon,
         count: items.length,
-        items: items.map(function(item) { return item.name; })
+        items: items.map(function (item) {
+          return item.name;
+        }),
       };
     });
 
@@ -225,45 +275,37 @@ function getMasterDataSummary() {
 function addMasterDataItem(category, name, description) {
   try {
     if (!category || !name) {
-      return { success: false, message: 'Kategori dan nama harus diisi.' };
+      return {
+        success: false,
+        message: "Kategori dan nama harus diisi.",
+      };
+    }
+
+    var empCol = MASTER_DATA_EMPLOYEE_COL_MAP[category];
+    if (empCol) {
+      return {
+        success: false,
+        message:
+          'Kategori "' +
+          category +
+          '" dikelola otomatis dari data karyawan. Penambahan manual tidak tersedia.',
+      };
     }
 
     if (!MASTER_DATA_CATEGORIES[category]) {
-      return { success: false, message: 'Kategori tidak valid: ' + category };
+      return {
+        success: false,
+        message: "Kategori tidak valid: " + category,
+      };
     }
 
-    var lock = LockService.getScriptLock();
-    lock.waitLock(5000);
-
-    var sheet = getOrCreateMasterDataSheet_();
-    var data  = sheet.getDataRange().getValues();
-
-    // Check duplicate
-    for (var i = 1; i < data.length; i++) {
-      if (String(data[i][MASTERDATA_COL['Kategori'] - 1]) === category &&
-          String(data[i][MASTERDATA_COL['Nama'] - 1]).toLowerCase() === String(name).toLowerCase()) {
-        lock.releaseLock();
-        return { success: false, message: 'Item "' + name + '" sudah ada dalam kategori ini.' };
-      }
-    }
-
-    // Get max order
-    var maxOrder = 0;
-    for (var i = 1; i < data.length; i++) {
-      if (String(data[i][MASTERDATA_COL['Kategori'] - 1]) === category) {
-        var ord = parseInt(data[i][MASTERDATA_COL['Urutan'] - 1], 10) || 0;
-        if (ord > maxOrder) maxOrder = ord;
-      }
-    }
-
-    var now  = getNow_();
-    var newId = generateMasterDataId_();
-    var newRow = [newId, category, name, description || '', maxOrder + 1, 'TRUE', now, now];
-
-    sheet.appendRow(newRow);
-    lock.releaseLock();
-
-    return { success: true, message: 'Item "' + name + '" berhasil ditambahkan.', id: newId };
+    return {
+      success: false,
+      message:
+        'Kategori "' +
+        category +
+        '" tidak memiliki sheet master data. Nilai diambil dari DEFAULT_MASTER_DATA.',
+    };
   } catch (e) {
     return { success: false, message: e.toString() };
   }
@@ -274,41 +316,17 @@ function addMasterDataItem(category, name, description) {
 function updateMasterDataItem(id, updates) {
   try {
     if (!id || !updates) {
-      return { success: false, message: 'ID dan data harus diisi.' };
+      return {
+        success: false,
+        message: "ID dan data harus diisi.",
+      };
     }
 
-    var lock = LockService.getScriptLock();
-    lock.waitLock(5000);
-
-    var sheet = getOrCreateMasterDataSheet_();
-    var data  = sheet.getDataRange().getValues();
-
-    for (var i = 1; i < data.length; i++) {
-      if (String(data[i][MASTERDATA_COL['ID'] - 1]) === String(id)) {
-        // Check duplicate name if updating name
-        if (updates.name) {
-          for (var j = 1; j < data.length; j++) {
-            if (i !== j &&
-                String(data[j][MASTERDATA_COL['Kategori'] - 1]) === String(data[i][MASTERDATA_COL['Kategori'] - 1]) &&
-                String(data[j][MASTERDATA_COL['Nama'] - 1]).toLowerCase() === String(updates.name).toLowerCase()) {
-              lock.releaseLock();
-              return { success: false, message: 'Item "' + updates.name + '" sudah ada dalam kategori ini.' };
-            }
-          }
-          sheet.getRange(i + 1, MASTERDATA_COL['Nama']).setValue(updates.name);
-        }
-        if (updates.description !== undefined) sheet.getRange(i + 1, MASTERDATA_COL['Deskripsi']).setValue(updates.description);
-        if (updates.order !== undefined)       sheet.getRange(i + 1, MASTERDATA_COL['Urutan']).setValue(updates.order);
-        if (updates.active !== undefined)      sheet.getRange(i + 1, MASTERDATA_COL['Aktif']).setValue(updates.active ? 'TRUE' : 'FALSE');
-        sheet.getRange(i + 1, MASTERDATA_COL['Diubah']).setValue(getNow_());
-
-        lock.releaseLock();
-        return { success: true, message: 'Item berhasil diperbarui.' };
-      }
-    }
-
-    lock.releaseLock();
-    return { success: false, message: 'Item tidak ditemukan.' };
+    return {
+      success: false,
+      message:
+        "Master data tidak dapat diubah — nilainya dihasilkan otomatis dari sheet Employee.",
+    };
   } catch (e) {
     return { success: false, message: e.toString() };
   }
@@ -318,25 +336,14 @@ function updateMasterDataItem(id, updates) {
 
 function deleteMasterDataItem(id) {
   try {
-    if (!id) return { success: false, message: 'ID harus diisi.' };
+    if (!id)
+      return { success: false, message: "ID harus diisi." };
 
-    var lock = LockService.getScriptLock();
-    lock.waitLock(5000);
-
-    var sheet = getOrCreateMasterDataSheet_();
-    var data  = sheet.getDataRange().getValues();
-
-    for (var i = 1; i < data.length; i++) {
-      if (String(data[i][MASTERDATA_COL['ID'] - 1]) === String(id)) {
-        sheet.getRange(i + 1, MASTERDATA_COL['Aktif']).setValue('FALSE');
-        sheet.getRange(i + 1, MASTERDATA_COL['Diubah']).setValue(getNow_());
-        lock.releaseLock();
-        return { success: true, message: 'Item berhasil dihapus.' };
-      }
-    }
-
-    lock.releaseLock();
-    return { success: false, message: 'Item tidak ditemukan.' };
+    return {
+      success: false,
+      message:
+        "Master data tidak dapat dihapus — nilainya dihasilkan otomatis dari sheet Employee.",
+    };
   } catch (e) {
     return { success: false, message: e.toString() };
   }
@@ -347,24 +354,17 @@ function deleteMasterDataItem(id) {
 function reorderMasterDataItems(orderedIds) {
   try {
     if (!orderedIds || !Array.isArray(orderedIds)) {
-      return { success: false, message: 'Data urutan tidak valid.' };
+      return {
+        success: false,
+        message: "Data urutan tidak valid.",
+      };
     }
 
-    var lock = LockService.getScriptLock();
-    lock.waitLock(5000);
-
-    var sheet = getOrCreateMasterDataSheet_();
-    var data  = sheet.getDataRange().getValues();
-
-    for (var i = 1; i < data.length; i++) {
-      var idx = orderedIds.indexOf(String(data[i][MASTERDATA_COL['ID'] - 1]));
-      if (idx !== -1) {
-        sheet.getRange(i + 1, MASTERDATA_COL['Urutan']).setValue(idx + 1);
-      }
-    }
-
-    lock.releaseLock();
-    return { success: true, message: 'Urutan berhasil diperbarui.' };
+    return {
+      success: false,
+      message:
+        "Master data tidak dapat diurutkan — nilainya dihasilkan otomatis dari sheet Employee.",
+    };
   } catch (e) {
     return { success: false, message: e.toString() };
   }

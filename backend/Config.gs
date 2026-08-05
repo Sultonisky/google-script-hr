@@ -11,10 +11,9 @@ var DASHBOARD_SHEET_NAME = "raw_kandidat";
 var EMPLOYEE_SHEET_NAME = "Employee";
 var AUDIT_SHEET_NAME = "Audit_Log";
 var USERS_SHEET_NAME = "Users";
-var OUTSOURCE_SHEET_NAME = "raw_outsource";
 var ARCHIVE_SHEET_NAME = "Archive";
 var OFFBOARDING_SHEET_NAME = "Offboarding";
-var MASTER_DATA_SHEET = "master_data";
+var MASTER_DATA_SHEET = "master_data"; // Deprecated: master data now derived from Employee sheet
 
 // ============= COLUMN LOOKUP KEYS =============
 var STATUS_COLUMN_NAME = "Status";
@@ -118,9 +117,11 @@ EMPLOYEE_HEADERS.forEach(function (h, i) {
 });
 
 // ============================================================
-// SHEET: raw_outsource
-// Purpose: Outsource self-registration (before approval → Employee)
+// SHEET: raw_outsource  (DEPRECATED — outsource data now goes directly
+// to the Employee sheet via simpanDataOutsource)
+// Constants retained for reference / backward compatibility.
 // ============================================================
+var OUTSOURCE_SHEET_NAME = "raw_outsource"; // Deprecated: no longer created by setupSpreadsheet()
 var OUTSOURCE_HEADERS = [
   "Outsource ID", // 1
   "Created Date", // 2
@@ -366,4 +367,44 @@ var DEFAULT_MASTER_DATA = {
     "Contract Ended",
     "Other",
   ],
+  gender: ["Laki-laki", "Perempuan"],
+  current_employment_status: [
+    "Employed Full Time",
+    "Employed Contract",
+    "Part Time",
+    "Freelance",
+    "Unemployed",
+    "Resigned",
+    "Fresh Graduate",
+  ],
+  available_to_join: [
+    "Segera",
+    "1 Minggu",
+    "2 Minggu",
+    "1 Bulan",
+    "2 Bulan",
+    "3 Bulan",
+    "Bisa Negosiasi",
+  ],
+};
+
+// ============================================================
+// MASTER DATA → EMPLOYEE SHEET COLUMN MAPPING
+// Categories whose values can be derived (distinct) from the
+// Employee sheet.  Categories NOT listed here fall back to
+// DEFAULT_MASTER_DATA defaults.
+// ============================================================
+var MASTER_DATA_EMPLOYEE_COL_MAP = {
+  recruitment_source: "Recruitment Source",
+  department: "Department",
+  position: "Position",
+  employee_type: "Employee Type",
+  education: "Education",
+  work_experience: "Work Experience",
+  marital_status: "Marital Status",
+  employment_status: "Employment Status",
+  contract_duration: "Contract Duration",
+  salary_type: "Salary Type",
+  company_entity: "Company Entity",
+  gender: "Gender",
 };
