@@ -328,6 +328,88 @@
       margin-left: 6px;
     }
 
+    /* ── Success state ── */
+    .login-success-state {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      padding: 24px 0 8px;
+    }
+    .login-success-state.show {
+      display: flex;
+    }
+    .login-success-check {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #ECFDF5;
+      border: 2.5px solid #10B981;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: checkBounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    .login-success-check i {
+      font-size: 28px;
+      color: #10B981;
+      opacity: 0;
+      animation: checkIconFadeIn 0.3s ease 0.25s forwards;
+    }
+    @keyframes checkBounceIn {
+      0% { transform: scale(0); opacity: 0; }
+      60% { transform: scale(1.1); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes checkIconFadeIn {
+      0% { opacity: 0; transform: scale(0.5); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    .login-success-text {
+      font-size: 16px;
+      font-weight: 700;
+      color: #065F46;
+      animation: fadeSlideUp 0.4s ease 0.4s forwards;
+      opacity: 0;
+    }
+    .login-success-welcome {
+      font-size: 13px;
+      color: #6b7280;
+      animation: fadeSlideUp 0.4s ease 0.55s forwards;
+      opacity: 0;
+    }
+    @keyframes fadeSlideUp {
+      0% { opacity: 0; transform: translateY(6px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Page exit transition ── */
+    .login-page.exiting {
+      animation: loginExit 0.45s ease forwards;
+    }
+    @keyframes loginExit {
+      0% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-20px) scale(0.96); }
+    }
+
+    /* ── Overlay for smooth transition ── */
+    .login-transition-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 99990;
+      background: rgba(255,255,255,0);
+      pointer-events: none;
+      opacity: 0;
+    }
+    .login-transition-overlay.active {
+      animation: overlayFadeIn 0.3s ease 0.1s forwards;
+      pointer-events: auto;
+    }
+    @keyframes overlayFadeIn {
+      0% { opacity: 0; background: rgba(255,255,255,0); }
+      100% { opacity: 1; background: rgba(255,255,255,1); }
+    }
+
     @media (max-width: 480px) {
       .login-card { padding: 28px 20px; }
       .login-features { gap: 6px; }
@@ -366,6 +448,15 @@
       <div class="login-loading" id="loginLoading" style="display:none;">
         <div class="login-spinner"></div>
         <p id="loginLoadingText">Memverifikasi sesi...</p>
+      </div>
+
+      <!-- Success State -->
+      <div class="login-success-state" id="loginSuccessState">
+        <div class="login-success-check">
+          <i class="bi bi-check-lg"></i>
+        </div>
+        <div class="login-success-text">Login Berhasil</div>
+        <div class="login-success-welcome" id="loginSuccessWelcome"></div>
       </div>
 
       <!-- Manual Login Form -->
@@ -428,6 +519,9 @@
     </div>
 
   </div>
+
+  <!-- ── Transition overlay ── -->
+  <div class="login-transition-overlay" id="loginTransitionOverlay"></div>
 
   <!-- ── Footer ── -->
   <div class="login-footer">
@@ -570,6 +664,7 @@
         try {
           var url = new URL(target, window.location.origin);
           if (sessionToken) url.searchParams.set('sessionToken', sessionToken);
+          url.searchParams.set('loginSuccess', '1');
           return url.toString();
         } catch (e) {
           return APP_BASE_URL + '?page=dashboard'
@@ -589,14 +684,37 @@
       }
 
       // ============================================================
-      // LOGIN RESULT HANDLER (shared for manual + future Google SSO)
+      // LOGIN RESULT HANDLER — with success animation
       // ============================================================
       function handleLoginResult(result) {
         if (result && result.success && result.sessionToken) {
           saveSessionToken(result.sessionToken, result.rememberMe);
-          showInfo((result.message || 'Login berhasil.') + ' Mengalihkan ke dashboard...');
-          showToast('Login berhasil!', 'success');
-          setTimeout(function () { redirectToDashboard(result.sessionToken); }, 600);
+
+          // 1. Hide form & errors, show success state
+          loginForm.style.display = 'none';
+          loginError.classList.remove('show');
+          loginInfo.classList.remove('show');
+          loginLoading.style.display = 'none';
+          var successState = document.getElementById('loginSuccessState');
+          var welcomeEl = document.getElementById('loginSuccessWelcome');
+          if (welcomeEl && result.user && result.user.fullName) {
+            welcomeEl.textContent = 'Selamat datang, ' + result.user.fullName;
+          }
+          if (successState) successState.classList.add('show');
+
+          // 2. After ~1100ms of success animation, exit the page
+          setTimeout(function () {
+            var overlay = document.getElementById('loginTransitionOverlay');
+            var loginPage = document.querySelector('.login-page');
+            if (overlay) overlay.classList.add('active');
+            if (loginPage) loginPage.classList.add('exiting');
+
+            // 3. Redirect after exit animation completes
+            setTimeout(function () {
+              redirectToDashboard(result.sessionToken);
+            }, 500);
+          }, 1100);
+
           return;
         }
         clearSessionToken();
