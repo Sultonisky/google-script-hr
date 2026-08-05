@@ -1,0 +1,285 @@
+<script>
+  // ============================================================
+  // js/auditLog.html — AUDIT LOG PAGE LOGIC
+  // Depends on: helpers.html, settings.html
+  // ============================================================
+
+  var allAuditLogs = [];
+  var filteredAuditLogs = [];
+  var auditCurrentPage = 1;
+  var auditInitialized = false;
+
+  // ---- Load data from backend ----
+  function loadAuditLogs(silent) {
+    var btnR = document.getElementById("btnAuditRefresh");
+    var tbody = document.getElementById("auditTableBody");
+
+    if (btnR) btnR.classList.add("spinning");
+    if (!silent) {
+      if (tbody)
+        tbody.innerHTML =
+          '<tr><td colspan="7" class="text-center text-muted py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">Memuat data audit log...</p></td></tr>';
+    }
+    if (btnR) btnR.disabled = true;
+
+    google.script.run
+      .withSuccessHandler(function (data) {
+        if (btnR) {
+          btnR.classList.remove("spinning");
+          btnR.disabled = false;
+        }
+        allAuditLogs = data || [];
+        applyAuditFilters();
+        if (!silent)
+          showToast(
+            "Data audit log dimuat (" + allAuditLogs.length + " data).",
+            "success",
+          );
+      })
+      .withFailureHandler(function (err) {
+        if (btnR) {
+          btnR.classList.remove("spinning");
+          btnR.disabled = false;
+        }
+        if (!silent)
+          showToast("Gagal memuat data audit log: " + err.message, "error");
+        if (tbody)
+          tbody.innerHTML =
+            '<tr><td colspan="7" class="text-center text-danger py-4"><i class="bi bi-exclamation-triangle"></i> Gagal memuat data: ' +
+            escapeHtml(err.message) +
+            "</td></tr>";
+      })
+      .getAllAuditLogs(500);
+  }
+
+  // ---- Stats ----
+  function updateAuditStats(data) {
+    var ct = function (fn) {
+      return data.filter(fn).length;
+    };
+    var stats = {
+      auditStatTotal: data.length,
+      auditStatCreated: ct(function (r) {
+        return (r.action || "").toLowerCase() === "created";
+      }),
+      auditStatUpdate: ct(function (r) {
+        return (r.action || "").toLowerCase() === "update status";
+      }),
+      auditStatHoldBl: ct(function (r) {
+        var a = (r.action || "").toLowerCase();
+        return a === "hold" || a === "blacklist";
+      }),
+    };
+    Object.keys(stats).forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) animateCounter(el, stats[id]);
+    });
+  }
+
+  // ---- Filters ----
+  function applyAuditFilters() {
+    var siEl = document.getElementById("auditSearchInput");
+    var afEl = document.getElementById("auditActionFilter");
+    if (!siEl) return;
+
+    var kw = siEl.value.trim().toLowerCase();
+    var action = afEl ? afEl.value.toLowerCase() : "";
+
+    filteredAuditLogs = allAuditLogs.filter(function (r) {
+      var mk =
+        !kw ||
+        (r.recruitmentId || "").toLowerCase().indexOf(kw) !== -1 ||
+        (r.user || "").toLowerCase().indexOf(kw) !== -1 ||
+        (r.action || "").toLowerCase().indexOf(kw) !== -1 ||
+        (r.oldValue || "").toLowerCase().indexOf(kw) !== -1 ||
+        (r.newValue || "").toLowerCase().indexOf(kw) !== -1;
+      var ma = !action || (r.action || "").toLowerCase() === action;
+      return mk && ma;
+    });
+
+    auditCurrentPage = 1;
+    renderAuditTable();
+    updateAuditStats(filteredAuditLogs);
+  }
+
+  // ---- Table render ----
+  function renderAuditTable() {
+    var tbody = document.getElementById("auditTableBody");
+    var ps = Number(appSettings.pageSize) || 10;
+
+    if (!filteredAuditLogs || filteredAuditLogs.length === 0) {
+      if (tbody)
+        tbody.innerHTML =
+          '<tr><td colspan="7" class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:2rem;"></i><br>Belum ada data audit log.</td></tr>';
+      var fc = document.getElementById("auditFooterCount");
+      if (fc) fc.innerText = "Menampilkan 0 dari 0 data";
+      renderAuditPagination(ps);
+      return;
+    }
+
+    var total = Math.max(1, Math.ceil(filteredAuditLogs.length / ps));
+    if (auditCurrentPage > total) auditCurrentPage = total;
+    var start = (auditCurrentPage - 1) * ps;
+    var pageData = filteredAuditLogs.slice(start, start + ps);
+
+    var actionBadgeClass = function (action) {
+      var a = (action || "").toLowerCase();
+      if (a === "created") return "accepted";
+      if (a === "accepted") return "accepted";
+      if (a === "hold") return "hold";
+      if (a === "blacklist") return "blacklist";
+      if (a === "deleted") return "blacklist";
+      return "pending";
+    };
+
+    if (tbody)
+      tbody.innerHTML = pageData
+        .map(function (r) {
+          return (
+            "<tr>" +
+            "<td>" +
+            escapeHtml(r.timestamp) +
+            "</td>" +
+            "<td>" +
+            escapeHtml(r.user) +
+            "</td>" +
+            '<td><span class="id-mono">' +
+            escapeHtml(r.recruitmentId) +
+            "</span></td>" +
+            '<td><span class="badge-status ' +
+            actionBadgeClass(r.action) +
+            '">' +
+            escapeHtml(r.action) +
+            "</span></td>" +
+            "<td>" +
+            escapeHtml(r.field) +
+            "</td>" +
+            "<td>" +
+            escapeHtml(r.oldValue) +
+            "</td>" +
+            "<td>" +
+            escapeHtml(r.newValue) +
+            "</td>" +
+            "</tr>"
+          );
+        })
+        .join("");
+
+    var sStart = start + 1,
+      sEnd = Math.min(start + ps, filteredAuditLogs.length);
+    var fc2 = document.getElementById("auditFooterCount");
+    if (fc2)
+      fc2.innerText =
+        "Menampilkan " +
+        sStart +
+        "\u2013" +
+        sEnd +
+        " dari " +
+        filteredAuditLogs.length +
+        " data (total " +
+        allAuditLogs.length +
+        ")";
+
+    renderAuditPagination(ps);
+  }
+
+  // ---- Pagination ----
+  function renderAuditPagination(ps) {
+    var nav = document.getElementById("auditPaginationUi");
+    if (!nav) return;
+    var total = Math.max(1, Math.ceil(filteredAuditLogs.length / ps));
+    var html =
+      '<button class="page-btn" type="button" id="auditPagePrev" ' +
+      (auditCurrentPage === 1 ? "disabled" : "") +
+      '><i class="bi bi-chevron-left"></i></button>';
+    var mb = 5,
+      sp = Math.max(1, auditCurrentPage - Math.floor(mb / 2)),
+      ep = Math.min(total, sp + mb - 1);
+    sp = Math.max(1, ep - mb + 1);
+    if (sp > 1) {
+      html += '<button class="page-btn" type="button" data-apg="1">1</button>';
+      if (sp > 2)
+        html +=
+          '<span class="page-btn" style="border:none;background:transparent;cursor:default">&hellip;</span>';
+    }
+    for (var p = sp; p <= ep; p++)
+      html +=
+        '<button class="page-btn' +
+        (p === auditCurrentPage ? " active" : "") +
+        '" type="button" data-apg="' +
+        p +
+        '">' +
+        p +
+        "</button>";
+    if (ep < total) {
+      if (ep < total - 1)
+        html +=
+          '<span class="page-btn" style="border:none;background:transparent;cursor:default">&hellip;</span>';
+      html +=
+        '<button class="page-btn" type="button" data-apg="' +
+        total +
+        '">' +
+        total +
+        "</button>";
+    }
+    html +=
+      '<button class="page-btn" type="button" id="auditPageNext" ' +
+      (auditCurrentPage === total ? "disabled" : "") +
+      '><i class="bi bi-chevron-right"></i></button>';
+    nav.innerHTML = html;
+    nav.querySelectorAll("button[data-apg]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        auditCurrentPage = parseInt(b.getAttribute("data-apg"), 10);
+        renderAuditTable();
+      });
+    });
+    var prev = document.getElementById("auditPagePrev"),
+      next = document.getElementById("auditPageNext");
+    if (prev)
+      prev.addEventListener("click", function () {
+        if (auditCurrentPage > 1) {
+          auditCurrentPage--;
+          renderAuditTable();
+        }
+      });
+    if (next)
+      next.addEventListener("click", function () {
+        if (auditCurrentPage < total) {
+          auditCurrentPage++;
+          renderAuditTable();
+        }
+      });
+  }
+
+  // ---- Init ----
+  function initAuditLogPage() {
+    if (auditInitialized) return;
+    auditInitialized = true;
+
+    var si = document.getElementById("auditSearchInput");
+    if (si) si.addEventListener("input", applyAuditFilters);
+
+    var af = document.getElementById("auditActionFilter");
+    if (af) af.addEventListener("change", applyAuditFilters);
+
+    var btnReset = document.getElementById("btnAuditReset");
+    if (btnReset)
+      btnReset.addEventListener("click", function () {
+        if (si) si.value = "";
+        if (af) af.value = "";
+        applyAuditFilters();
+      });
+
+    var btnRef = document.getElementById("btnAuditRefresh");
+    if (btnRef)
+      btnRef.addEventListener("click", function () {
+        loadAuditLogs(false);
+      });
+  }
+
+  // ---- SPA Navigation Hook ----
+  function auditOnNavigate() {
+    initAuditLogPage();
+    loadAuditLogs(false);
+  }
+</script>

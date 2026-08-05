@@ -1,0 +1,155 @@
+<!-- partials/UserManagementContent.html — USER MANAGEMENT CONTENT (for SPA include) -->
+<!-- Contains only the body content; scripts are loaded by Dashboard.html -->
+<div class="um-container">
+  <!-- Header -->
+  <div class="um-header">
+    <div>
+      <h4><i class="bi bi-people-fill me-2"></i>Manajemen Pengguna</h4>
+      <small class="text-muted"
+        >Kelola akun pengguna dan hak akses sistem</small
+      >
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <span id="userCount" class="text-muted small"></span>
+      <button
+        class="btn btn-primary"
+        onclick="UserManagement.openAddModal()"
+        id="addUserBtn"
+        style="display: none"
+      >
+        <i class="bi bi-plus-lg"></i> Tambah Pengguna
+      </button>
+    </div>
+  </div>
+
+  <!-- Info card -->
+  <div class="info-card" id="roleInfoCard" style="display: none">
+    <div class="d-flex align-items-start gap-2">
+      <i class="bi bi-info-circle mt-1"></i>
+      <div>
+        <strong>Role Aktif: <span id="currentRoleDisplay"></span></strong>
+        <p>
+          Hanya <strong>Super Admin</strong> yang dapat mengelola pengguna dan
+          mengubah role.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table Card -->
+  <div class="um-card">
+    <div class="um-toolbar">
+      <div class="input-group" style="max-width: 320px">
+        <span class="input-group-text bg-white border-end-0"
+          ><i class="bi bi-search"></i
+        ></span>
+        <input
+          type="text"
+          class="form-control border-start-0"
+          id="userSearch"
+          placeholder="Cari nama atau email..."
+          oninput="UserManagement.filterTable()"
+        />
+      </div>
+    </div>
+    <div class="table-responsive">
+      <table class="table um-table mb-0">
+        <thead>
+          <tr>
+            <th>Pengguna</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Login Terakhir</th>
+            <th class="text-end">Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="usersTableBody">
+          <tr>
+            <td colspan="5" class="text-center py-4">
+              <div class="spinner-border text-primary" role="status"></div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit User Modal -->
+<div
+  class="modal fade"
+  id="userModal"
+  tabindex="-1"
+  aria-labelledby="userModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold" id="userModalLabel">Tambah Pengguna</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Tutup"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label for="userEmail" class="form-label fw-semibold"
+            >Email Google <span class="text-danger">*</span></label
+          >
+          <input
+            type="email"
+            class="form-control"
+            id="userEmail"
+            placeholder="contoh@google.com"
+            required
+          />
+          <div class="form-text">
+            Gunakan alamat email Google aktif pengguna.
+          </div>
+        </div>
+        <div class="mb-3">
+          <label for="userFullName" class="form-label fw-semibold"
+            >Nama Lengkap <span class="text-danger">*</span></label
+          >
+          <input
+            type="text"
+            class="form-control"
+            id="userFullName"
+            placeholder="Nama lengkap pengguna"
+            required
+          />
+        </div>
+        <div class="mb-3">
+          <label for="userRole" class="form-label fw-semibold">Role</label>
+          <select class="form-select" id="userRole">
+            <option value="Viewer">Viewer — Hanya melihat data</option>
+            <option value="Manager">Manager — Melihat & export data</option>
+            <option value="Recruiter">Recruiter — Kelola kandidat</option>
+            <option value="HR Admin">
+              HR Admin — Akses penuh (kecuali user)
+            </option>
+            <option value="Super Admin">
+              Super Admin — Akses penuh termasuk user
+            </option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+          Batal
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          id="saveUserBtn"
+          onclick="UserManagement.save()"
+        >
+          <i class="bi bi-check-lg"></i> Simpan
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

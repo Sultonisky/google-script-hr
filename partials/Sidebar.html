@@ -1,99 +1,75 @@
-<!-- partials/Sidebar.html — SHARED SIDEBAR -->
+<!-- partials/Sidebar.html — SPA Sidebar Navigation -->
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-brand">
-    <div class="logo-box" id="sidebarLogoBox">MS</div>
+    <div class="logo-box">MS</div>
     <div class="brand-text">
-      <strong id="sidebarBrandName">Mahakarya HRIS</strong>
-      <small id="sidebarBrandTagline">Applicant Tracking System</small>
+      <strong>Mahakarya HRIS</strong>
+      <small>Applicant Tracking System</small>
     </div>
   </div>
 
   <nav class="sidebar-nav" id="sidebarNav">
-    <div class="nav-section-label" data-permission="view_dashboard">Main</div>
-    <button
-      class="nav-item active"
-      type="button"
-      data-page="pageDashboard"
-      data-permission="view_dashboard"
-    >
+    <div class="nav-section-label">Main</div>
+    <button class="nav-item active" type="button" data-page="pageDashboard">
       <i class="bi bi-grid-1x2-fill"></i> Dashboard
     </button>
     <button
       class="nav-item"
       type="button"
-      data-external="recruitment"
-      data-permission="view_recruitment"
+      data-page="pageRecruitment"
+      data-scroll="recTablePanel"
     >
       <i class="bi bi-people-fill"></i> Recruitment
       <span class="badge-count" id="navRecruitmentCount">0</span>
     </button>
-    <button
-      class="nav-item nav-item-external"
-      type="button"
-      onclick="window.open('?page=master-data', '_self')"
-      data-permission="view_employee"
-    >
-      <i class="bi bi-database-fill"></i> Master Data
+    <button class="nav-item" type="button" data-page="pageEmployee">
+      <i class="bi bi-person-badge-fill"></i> Master Data
     </button>
-    <button
-      class="nav-item nav-item-external"
-      type="button"
-      onclick="window.open('?page=employee', '_self')"
-      data-permission="view_employee"
-    >
-      <i class="bi bi-person-badge-fill"></i> Karyawan
+    <button class="nav-item" type="button" data-page="pageOutsource">
+      <i class="bi bi-building"></i> Outsource
     </button>
 
-    <div class="nav-section-label" data-permission="view_recruitment">
-      Candidate Status
-    </div>
+    <div class="nav-section-label">Candidate Status</div>
     <button
       class="nav-item"
       type="button"
-      data-page="pageDashboard"
+      data-page="pageRecruitment"
       data-status="Hold"
-      data-permission="view_recruitment"
     >
       <i class="bi bi-pause-circle-fill"></i> Hold
     </button>
     <button
       class="nav-item"
       type="button"
-      data-page="pageDashboard"
+      data-page="pageRecruitment"
       data-status="Blacklist"
-      data-permission="view_recruitment"
     >
       <i class="bi bi-slash-circle-fill"></i> Blacklist
     </button>
 
     <div class="nav-section-label">System</div>
-    <button
-      class="nav-item"
-      type="button"
-      data-page="pageDashboard"
-      data-scroll="tablePanel"
-      data-permission="view_audit_log"
-    >
+    <button class="nav-item" type="button" data-page="pageAuditLog">
       <i class="bi bi-clock-history"></i> Audit Log
     </button>
-    <button
-      class="nav-item nav-item-external"
-      type="button"
-      onclick="window.open('?page=settings', '_self')"
-      data-permission="manage_settings"
-    >
+    <button class="nav-item" type="button" data-page="pageSettings">
       <i class="bi bi-gear-fill"></i> Settings
     </button>
     <button
-      class="nav-item nav-item-external"
+      class="nav-item"
       type="button"
-      onclick="window.open('?page=user-management', '_self')"
-      id="navUserManagement"
+      data-page="pageUserManagement"
       data-permission="manage_users"
-      style="display: none"
     >
-      <i class="bi bi-people-fill"></i> Manajemen Pengguna
+      <i class="bi bi-shield-lock"></i> User Management
     </button>
   </nav>
+
+  <div class="sidebar-footer">
+    <div class="avatar">HR</div>
+    <div class="user-meta">
+      <strong>HR Team</strong><small>Mahakarya Sukses Indonesia</small>
+    </div>
+  </div>
 </aside>

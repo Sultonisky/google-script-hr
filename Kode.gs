@@ -38,120 +38,96 @@ function buildTemplate_(filename) {
 
 // ============================================================
 // ROUTER — doGet(e)
-// ?page=dashboard       -> HR Dashboard   (views/Dashboard)
-// ?page=recruitment     -> Recruitment    (views/DashboardRecruitment)
-// ?type=kandidat / dsb  -> Form Pendaftaran (FormPendaftaran — root level)
+// SPA Dashboard: semua halaman dashboard (dashboard, recruitment,
+// employee, settings, master-data, user-management) menggunakan
+// views/Dashboard.html sebagai shell. Client-side router (#hash)
+// mengatur konten yang ditampilkan.
+//
+// ?page=dashboard/recruitment/employee/settings/master-data/user-management
+//   -> views/Dashboard (SPA)
+// ?type=kandidat / dsb -> Form Pendaftaran (FormPendaftaran)
 // ============================================================
 function doGet(e) {
   var params = (e && e.parameter) || {};
-  var page   = params.page || '';
-  var type   = params.type || 'kandidat';
+  var page = params.page || "";
+  var type = params.type || "kandidat";
 
-  // --- HR Dashboard ---
-  if (page === 'dashboard') {
-    return buildTemplate_('views/Dashboard')
+  // --- SPA Dashboard routes (semua ke views/Dashboard) ---
+  var spaPages = [
+    "dashboard",
+    "recruitment",
+    "employee",
+    "settings",
+    "master-data",
+    "user-management",
+  ];
+  if (spaPages.indexOf(page) !== -1) {
+    var titles = {
+      dashboard: "HR Dashboard",
+      recruitment: "Recruitment — ATS",
+      employee: "Manajemen Karyawan — Mahakarya HRIS",
+      settings: "Pengaturan Portal — Mahakarya HRIS",
+      "master-data": "Master Data — Mahakarya HRIS",
+      "user-management": "Manajemen Pengguna — Mahakarya HRIS",
+    };
+    return buildTemplate_("views/Dashboard")
       .evaluate()
-      .setTitle('HR Dashboard')
+      .setTitle(titles[page] || "HR Dashboard")
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
-  }
-
-  // --- Recruitment standalone page ---
-  if (page === 'recruitment') {
-    return buildTemplate_('views/DashboardRecruitment')
-      .evaluate()
-      .setTitle('Recruitment — ATS')
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+      .addMetaTag("viewport", "width=device-width, initial-scale=1");
   }
 
   // --- Form Outsource ---
-  if (type === 'outsource') {
-    return buildTemplate_('OutsourceForm')
+  if (type === "outsource") {
+    return buildTemplate_("OutsourceForm")
       .evaluate()
-      .setTitle('Registrasi Karyawan Outsource — Mahakarya HRIS')
+      .setTitle("Registrasi Karyawan Outsource — Mahakarya HRIS")
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+      .addMetaTag("viewport", "width=device-width, initial-scale=1");
   }
 
   // --- Access Denied page ---
-  if (page === 'access-denied') {
-    return buildTemplate_('views/AccessDenied')
+  if (page === "access-denied") {
+    return buildTemplate_("views/AccessDenied")
       .evaluate()
-      .setTitle('Akses Ditolak — Mahakarya HRIS')
+      .setTitle("Akses Ditolak — Mahakarya HRIS")
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
-  }
-
-  // --- User Management ---
-  if (page === 'user-management') {
-    return buildTemplate_('views/UserManagement')
-      .evaluate()
-      .setTitle('Manajemen Pengguna — Mahakarya HRIS')
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
-  }
-
-  // --- Portal Settings ---
-  if (page === 'settings') {
-    return buildTemplate_('views/Settings')
-      .evaluate()
-      .setTitle('Pengaturan Portal — Mahakarya HRIS')
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
-  }
-
-  // --- Master Data ---
-  if (page === 'master-data') {
-    return buildTemplate_('views/MasterData')
-      .evaluate()
-      .setTitle('Master Data — Mahakarya HRIS')
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
-  }
-
-  // --- Employee Management ---
-  if (page === 'employee') {
-    return buildTemplate_('views/Employee')
-      .evaluate()
-      .setTitle('Manajemen Karyawan — Mahakarya HRIS')
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+      .addMetaTag("viewport", "width=device-width, initial-scale=1");
   }
 
   // --- Login Page ---
-  if (page === 'login') {
-    return buildTemplate_('views/Login')
+  if (page === "login") {
+    return buildTemplate_("views/Login")
       .evaluate()
-      .setTitle('Login — Mahakarya HRIS')
+      .setTitle("Login — Mahakarya HRIS")
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+      .addMetaTag("viewport", "width=device-width, initial-scale=1");
   }
 
   // --- Candidate Landing (info rekrutmen) ---
-  if (page === 'candidate-landing') {
-    return buildTemplate_('views/CandidateLanding')
+  if (page === "candidate-landing") {
+    return buildTemplate_("views/CandidateLanding")
       .evaluate()
-      .setTitle('Informasi Rekrutmen — Mahakarya HRIS')
+      .setTitle("Informasi Rekrutmen — Mahakarya HRIS")
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+      .addMetaTag("viewport", "width=device-width, initial-scale=1");
   }
 
   // --- Public Landing Page (default entry) ---
-  if (page === 'landing' || page === '') {
-    return buildTemplate_('views/Landing')
+  if (page === "landing" || page === "") {
+    return buildTemplate_("views/Landing")
       .evaluate()
-      .setTitle('Mahakarya HRIS')
+      .setTitle("Mahakarya HRIS")
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+      .addMetaTag("viewport", "width=device-width, initial-scale=1");
   }
 
   // --- Default: Formulir Pendaftaran Kandidat (direct link backward compat) ---
-  var template = buildTemplate_('FormPendaftaran');
+  var template = buildTemplate_("FormPendaftaran");
   template.tipePendaftar = type;
   return template
     .evaluate()
-    .setTitle('Form Pendaftaran Karyawan Baru')
+    .setTitle("Form Pendaftaran Karyawan Baru")
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+    .addMetaTag("viewport", "width=device-width, initial-scale=1");
 }

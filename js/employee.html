@@ -8,13 +8,13 @@
     detailId: null,
     editId: null,
     detModal: null,
-    formModal: null
+    formModal: null,
   };
 
   // ============ LOAD DATA ============
   function empLoadAll() {
     google.script.run
-      .withSuccessHandler(function(result) {
+      .withSuccessHandler(function (result) {
         if (result && result.success) {
           EMP.allItems = result.data || [];
           empRenderStats();
@@ -22,79 +22,111 @@
           empPopulateFilters();
         }
       })
-      .withFailureHandler(function(err) {
-        empToast('Gagal memuat data: ' + err.message, 'danger');
+      .withFailureHandler(function (err) {
+        empToast("Gagal memuat data: " + err.message, "danger");
       })
       .getEmployeeList();
   }
 
   function empLoadMaster() {
     google.script.run
-      .withSuccessHandler(function(result) {
+      .withSuccessHandler(function (result) {
         if (result && result.success) {
           EMP.masterData = result.data || {};
           empPopulateFormSelects();
           empPopulateFilters();
         }
       })
-      .withFailureHandler(function(err) {})
+      .withFailureHandler(function (err) {})
       .getMasterDataGrouped();
   }
 
   // ============ STATS ============
   function empRenderStats() {
-    var grid = document.getElementById('empStats');
+    var grid = document.getElementById("empStats");
     var total = EMP.allItems.length;
     var active = 0;
     var inactive = 0;
-    EMP.allItems.forEach(function(e) { if (e.status === 'Active') active++; else inactive++; });
+    EMP.allItems.forEach(function (e) {
+      if (e.status === "Active") active++;
+      else inactive++;
+    });
 
     grid.innerHTML =
-      '<div class="emp-sc pri"><div class="sn">' + total + '</div><div class="sl">Total Karyawan</div></div>' +
-      '<div class="emp-sc suc"><div class="sn">' + active + '</div><div class="sl">Active</div></div>' +
-      '<div class="emp-sc dan"><div class="sn">' + inactive + '</div><div class="sl">Inactive</div></div>';
+      '<div class="emp-sc pri"><div class="sn">' +
+      total +
+      '</div><div class="sl">Total Karyawan</div></div>' +
+      '<div class="emp-sc suc"><div class="sn">' +
+      active +
+      '</div><div class="sl">Active</div></div>' +
+      '<div class="emp-sc dan"><div class="sn">' +
+      inactive +
+      '</div><div class="sl">Inactive</div></div>';
   }
 
   // ============ FILTERS ============
   function empPopulateFilters() {
     var depts = {};
     var types = {};
-    EMP.allItems.forEach(function(e) {
+    EMP.allItems.forEach(function (e) {
       if (e.department) depts[e.department] = true;
       if (e.employeeType) types[e.employeeType] = true;
     });
 
-    var fDept = document.getElementById('fDept');
+    var fDept = document.getElementById("fDept");
     var curDept = fDept.value;
     fDept.innerHTML = '<option value="">Semua Dept</option>';
-    Object.keys(depts).sort().forEach(function(d) {
-      fDept.innerHTML += '<option value="' + empEsc(d) + '"' + (curDept === d ? ' selected' : '') + '>' + empEsc(d) + '</option>';
-    });
+    Object.keys(depts)
+      .sort()
+      .forEach(function (d) {
+        fDept.innerHTML +=
+          '<option value="' +
+          empEsc(d) +
+          '"' +
+          (curDept === d ? " selected" : "") +
+          ">" +
+          empEsc(d) +
+          "</option>";
+      });
 
-    var fType = document.getElementById('fType');
+    var fType = document.getElementById("fType");
     var curType = fType.value;
     fType.innerHTML = '<option value="">Semua Tipe</option>';
-    Object.keys(types).sort().forEach(function(t) {
-      fType.innerHTML += '<option value="' + empEsc(t) + '"' + (curType === t ? ' selected' : '') + '>' + empEsc(t) + '</option>';
-    });
+    Object.keys(types)
+      .sort()
+      .forEach(function (t) {
+        fType.innerHTML +=
+          '<option value="' +
+          empEsc(t) +
+          '"' +
+          (curType === t ? " selected" : "") +
+          ">" +
+          empEsc(t) +
+          "</option>";
+      });
   }
 
   // ============ TABLE ============
   function empApplyFilter() {
-    var q = (document.getElementById('empQ').value || '').toLowerCase().trim();
-    var dept = document.getElementById('fDept').value;
-    var st = document.getElementById('fSt').value;
-    var tp = document.getElementById('fType').value;
+    var q = (document.getElementById("empQ").value || "").toLowerCase().trim();
+    var dept = document.getElementById("fDept").value;
+    var st = document.getElementById("fSt").value;
+    var tp = document.getElementById("fType").value;
 
-    EMP.filtered = EMP.allItems.filter(function(e) {
+    EMP.filtered = EMP.allItems.filter(function (e) {
       if (dept && e.department !== dept) return false;
       if (st && e.status !== st) return false;
       if (tp && e.employeeType !== tp) return false;
       if (q) {
-        var nm = (e.fullName || '').toLowerCase();
-        var nk = (e.nik || '').toLowerCase();
-        var em = (e.email || '').toLowerCase();
-        if (nm.indexOf(q) === -1 && nk.indexOf(q) === -1 && em.indexOf(q) === -1) return false;
+        var nm = (e.fullName || "").toLowerCase();
+        var nk = (e.nik || "").toLowerCase();
+        var em = (e.email || "").toLowerCase();
+        if (
+          nm.indexOf(q) === -1 &&
+          nk.indexOf(q) === -1 &&
+          em.indexOf(q) === -1
+        )
+          return false;
       }
       return true;
     });
@@ -102,194 +134,243 @@
 
   function empRenderTable() {
     empApplyFilter();
-    var tbody = document.getElementById('empTB');
-    var empty = document.getElementById('empEmp');
-    var table = document.querySelector('.emp-tbl');
-    document.getElementById('empCnt').textContent = EMP.filtered.length + ' karyawan';
+    var tbody = document.getElementById("empTB");
+    var empty = document.getElementById("empEmp");
+    var table = document.querySelector(".emp-tbl");
+    document.getElementById("empCnt").textContent =
+      EMP.filtered.length + " karyawan";
 
     if (EMP.filtered.length === 0) {
-      table.style.display = 'none';
-      empty.style.display = '';
+      table.style.display = "none";
+      empty.style.display = "";
       return;
     }
-    table.style.display = '';
-    empty.style.display = 'none';
+    table.style.display = "";
+    empty.style.display = "none";
 
-    var html = '';
+    var html = "";
     for (var i = 0; i < EMP.filtered.length; i++) {
       var e = EMP.filtered[i];
       var initials = empInitials(e.fullName);
-      var stCls = e.status === 'Active' ? 'on' : 'off';
-      html += '<tr onclick="empShowDetail(\'' + e.id + '\')">' +
+      var stCls = e.status === "Active" ? "on" : "off";
+      html +=
+        "<tr onclick=\"empShowDetail('" +
+        e.id +
+        "')\">" +
         '<td><div class="emp-nm">' +
-          '<div class="emp-av">' + (e.photo ? '<img src="' + empEsc(e.photo) + '" />' : initials) + '</div>' +
-          '<div class="emp-inf"><div class="nm">' + empEsc(e.fullName) + '</div><div class="nk">' + empEsc(e.nik || '-') + '</div></div>' +
-        '</div></td>' +
-        '<td>' + empEsc(e.department || '-') + '</td>' +
-        '<td>' + empEsc(e.position || '-') + '</td>' +
-        '<td>' + empEsc(e.workLocation || '-') + '</td>' +
-        '<td>' + empEsc(e.employeeType || '-') + '</td>' +
-        '<td><span class="emp-st ' + stCls + '">' + empEsc(e.status) + '</span></td>' +
-        '</tr>';
+        '<div class="emp-av">' +
+        (e.photo ? '<img src="' + empEsc(e.photo) + '" />' : initials) +
+        "</div>" +
+        '<div class="emp-inf"><div class="nm">' +
+        empEsc(e.fullName) +
+        '</div><div class="nk">' +
+        empEsc(e.nik || "-") +
+        "</div></div>" +
+        "</div></td>" +
+        "<td>" +
+        empEsc(e.department || "-") +
+        "</td>" +
+        "<td>" +
+        empEsc(e.position || "-") +
+        "</td>" +
+        "<td>" +
+        empEsc(e.workLocation || "-") +
+        "</td>" +
+        "<td>" +
+        empEsc(e.employeeType || "-") +
+        "</td>" +
+        '<td><span class="emp-st ' +
+        stCls +
+        '">' +
+        empEsc(e.status) +
+        "</span></td>" +
+        "</tr>";
     }
     tbody.innerHTML = html;
   }
 
   function empInitials(name) {
-    if (!name) return '?';
+    if (!name) return "?";
     var parts = name.trim().split(/\s+/);
-    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    if (parts.length >= 2)
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     return parts[0].substring(0, 2).toUpperCase();
   }
 
   function empEsc(s) {
-    var div = document.createElement('div');
-    div.textContent = s || '';
+    var div = document.createElement("div");
+    div.textContent = s || "";
     return div.innerHTML;
   }
 
   // ============ DETAIL MODAL ============
   function empShowDetail(id) {
-    var emp = EMP.allItems.find(function(x) { return x.id === id; });
+    var emp = EMP.allItems.find(function (x) {
+      return x.id === id;
+    });
     if (!emp) return;
     EMP.detailId = id;
-    document.getElementById('empDetTitle').textContent = emp.fullName || 'Detail Karyawan';
+    document.getElementById("empDetTitle").textContent =
+      emp.fullName || "Detail Karyawan";
 
-    var stCls = emp.status === 'Active' ? 'on' : 'off';
+    var stCls = emp.status === "Active" ? "on" : "off";
     var html =
-      empDt('NIK', emp.nik || '-') +
-      empDt('Nama Lengkap', emp.fullName || '-') +
-      empDt('Email', emp.email || '-') +
-      empDt('No. Handphone', emp.phone || '-') +
-      empDt('Departemen', emp.department || '-') +
-      empDt('Posisi', emp.position || '-') +
-      empDt('Lokasi Kerja', emp.workLocation || '-') +
-      empDt('Tipe Karyawan', emp.employeeType || '-') +
-      empDt('Tanggal Masuk', emp.joinDate || '-') +
-      empDt('Status', '<span class="emp-st ' + stCls + '">' + empEsc(emp.status) + '</span>') +
-      empDt('Catatan HR', emp.notes || '-');
+      empDt("NIK", emp.nik || "-") +
+      empDt("Nama Lengkap", emp.fullName || "-") +
+      empDt("Email", emp.email || "-") +
+      empDt("No. Handphone", emp.phone || "-") +
+      empDt("Departemen", emp.department || "-") +
+      empDt("Posisi", emp.position || "-") +
+      empDt("Lokasi Kerja", emp.workLocation || "-") +
+      empDt("Tipe Karyawan", emp.employeeType || "-") +
+      empDt("Tanggal Masuk", emp.joinDate || "-") +
+      empDt(
+        "Status",
+        '<span class="emp-st ' + stCls + '">' + empEsc(emp.status) + "</span>",
+      ) +
+      empDt("Catatan HR", emp.notes || "-");
 
-    document.getElementById('empDetBody').innerHTML = html;
+    document.getElementById("empDetBody").innerHTML = html;
     EMP.detModal.show();
   }
 
   function empDt(label, val) {
-    return '<div class="dt-row"><div class="dt-label">' + label + '</div><div class="dt-val">' + val + '</div></div>';
+    return (
+      '<div class="dt-row"><div class="dt-label">' +
+      label +
+      '</div><div class="dt-val">' +
+      val +
+      "</div></div>"
+    );
   }
 
   // ============ FORM MODAL ============
   function empPopulateFormSelects() {
-    var cats = ['department', 'position', 'work_location', 'employee_type'];
-    var ids  = ['efDept', 'efPos', 'efLoc', 'efType'];
+    var cats = ["department", "position", "work_location", "employee_type"];
+    var ids = ["efDept", "efPos", "efLoc", "efType"];
     for (var c = 0; c < cats.length; c++) {
       var sel = document.getElementById(ids[c]);
       var items = EMP.masterData[cats[c]] || [];
       var cur = sel.value;
       sel.innerHTML = '<option value="">— Pilih —</option>';
-      items.forEach(function(name) {
-        var val = typeof name === 'object' ? name.name : name;
-        sel.innerHTML += '<option value="' + empEsc(val) + '"' + (cur === val ? ' selected' : '') + '>' + empEsc(val) + '</option>';
+      items.forEach(function (name) {
+        var val = typeof name === "object" ? name.name : name;
+        sel.innerHTML +=
+          '<option value="' +
+          empEsc(val) +
+          '"' +
+          (cur === val ? " selected" : "") +
+          ">" +
+          empEsc(val) +
+          "</option>";
       });
     }
   }
 
   function empOpenAdd() {
     EMP.editId = null;
-    document.getElementById('empFormTitle').textContent = 'Tambah Karyawan';
-    document.getElementById('efId').value = '';
-    document.getElementById('efName').value = '';
-    document.getElementById('efNik').value = '';
-    document.getElementById('efEmail').value = '';
-    document.getElementById('efPhone').value = '';
-    document.getElementById('efDept').value = '';
-    document.getElementById('efPos').value = '';
-    document.getElementById('efLoc').value = '';
-    document.getElementById('efType').value = '';
-    document.getElementById('efJoin').value = '';
-    document.getElementById('efStatus').value = 'Active';
-    document.getElementById('efNotes').value = '';
+    document.getElementById("empFormTitle").textContent = "Tambah Karyawan";
+    document.getElementById("efId").value = "";
+    document.getElementById("efName").value = "";
+    document.getElementById("efNik").value = "";
+    document.getElementById("efEmail").value = "";
+    document.getElementById("efPhone").value = "";
+    document.getElementById("efDept").value = "";
+    document.getElementById("efPos").value = "";
+    document.getElementById("efLoc").value = "";
+    document.getElementById("efType").value = "";
+    document.getElementById("efJoin").value = "";
+    document.getElementById("efStatus").value = "Active";
+    document.getElementById("efNotes").value = "";
     EMP.formModal.show();
   }
 
   function empOpenEdit() {
-    var emp = EMP.allItems.find(function(x) { return x.id === EMP.detailId; });
+    var emp = EMP.allItems.find(function (x) {
+      return x.id === EMP.detailId;
+    });
     if (!emp) return;
     EMP.editId = emp.id;
     EMP.detModal.hide();
-    document.getElementById('empFormTitle').textContent = 'Edit Karyawan';
-    document.getElementById('efId').value = emp.id;
-    document.getElementById('efName').value = emp.fullName || '';
-    document.getElementById('efNik').value = emp.nik || '';
-    document.getElementById('efEmail').value = emp.email || '';
-    document.getElementById('efPhone').value = emp.phone || '';
-    document.getElementById('efDept').value = emp.department || '';
-    document.getElementById('efPos').value = emp.position || '';
-    document.getElementById('efLoc').value = emp.workLocation || '';
-    document.getElementById('efType').value = emp.employeeType || '';
-    document.getElementById('efJoin').value = emp.joinDate || '';
-    document.getElementById('efStatus').value = emp.status || 'Active';
-    document.getElementById('efNotes').value = emp.notes || '';
-    setTimeout(function() { EMP.formModal.show(); }, 300);
+    document.getElementById("empFormTitle").textContent = "Edit Karyawan";
+    document.getElementById("efId").value = emp.id;
+    document.getElementById("efName").value = emp.fullName || "";
+    document.getElementById("efNik").value = emp.nik || "";
+    document.getElementById("efEmail").value = emp.email || "";
+    document.getElementById("efPhone").value = emp.phone || "";
+    document.getElementById("efDept").value = emp.department || "";
+    document.getElementById("efPos").value = emp.position || "";
+    document.getElementById("efLoc").value = emp.workLocation || "";
+    document.getElementById("efType").value = emp.employeeType || "";
+    document.getElementById("efJoin").value = emp.joinDate || "";
+    document.getElementById("efStatus").value = emp.status || "Active";
+    document.getElementById("efNotes").value = emp.notes || "";
+    setTimeout(function () {
+      EMP.formModal.show();
+    }, 300);
   }
 
   function empSave() {
-    var name = document.getElementById('efName').value.trim();
-    if (!name) { empToast('Nama lengkap harus diisi.', 'warning'); return; }
+    var name = document.getElementById("efName").value.trim();
+    if (!name) {
+      empToast("Nama lengkap harus diisi.", "warning");
+      return;
+    }
 
     var data = {
-      nik:          document.getElementById('efNik').value.trim(),
-      fullName:     name,
-      email:        document.getElementById('efEmail').value.trim(),
-      phone:        document.getElementById('efPhone').value.trim(),
-      department:   document.getElementById('efDept').value,
-      position:     document.getElementById('efPos').value,
-      workLocation: document.getElementById('efLoc').value,
-      employeeType: document.getElementById('efType').value,
-      joinDate:     document.getElementById('efJoin').value,
-      status:       document.getElementById('efStatus').value,
-      notes:        document.getElementById('efNotes').value.trim()
+      nik: document.getElementById("efNik").value.trim(),
+      fullName: name,
+      email: document.getElementById("efEmail").value.trim(),
+      phone: document.getElementById("efPhone").value.trim(),
+      department: document.getElementById("efDept").value,
+      position: document.getElementById("efPos").value,
+      workLocation: document.getElementById("efLoc").value,
+      employeeType: document.getElementById("efType").value,
+      joinDate: document.getElementById("efJoin").value,
+      status: document.getElementById("efStatus").value,
+      notes: document.getElementById("efNotes").value.trim(),
     };
 
-    var btn = document.getElementById('btnEmpSave');
+    var btn = document.getElementById("btnEmpSave");
     btn.disabled = true;
     btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Menyimpan...';
 
     if (EMP.editId) {
       google.script.run
-        .withSuccessHandler(function(r) {
+        .withSuccessHandler(function (r) {
           btn.disabled = false;
           btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan';
           if (r && r.success) {
-            empToast(r.message, 'success');
+            empToast(r.message, "success");
             EMP.formModal.hide();
             empLoadAll();
           } else {
-            empToast(r ? r.message : 'Gagal menyimpan.', 'danger');
+            empToast(r ? r.message : "Gagal menyimpan.", "danger");
           }
         })
-        .withFailureHandler(function(err) {
+        .withFailureHandler(function (err) {
           btn.disabled = false;
           btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan';
-          empToast('Error: ' + err.message, 'danger');
+          empToast("Error: " + err.message, "danger");
         })
         .updateEmployee(EMP.editId, data);
     } else {
       google.script.run
-        .withSuccessHandler(function(r) {
+        .withSuccessHandler(function (r) {
           btn.disabled = false;
           btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan';
           if (r && r.success) {
-            empToast(r.message, 'success');
+            empToast(r.message, "success");
             EMP.formModal.hide();
             empLoadAll();
           } else {
-            empToast(r ? r.message : 'Gagal menyimpan.', 'danger');
+            empToast(r ? r.message : "Gagal menyimpan.", "danger");
           }
         })
-        .withFailureHandler(function(err) {
+        .withFailureHandler(function (err) {
           btn.disabled = false;
           btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan';
-          empToast('Error: ' + err.message, 'danger');
+          empToast("Error: " + err.message, "danger");
         })
         .addEmployee(data);
     }
@@ -298,44 +379,68 @@
   // ============ DELETE ============
   function empDelete() {
     if (!EMP.detailId) return;
-    var emp = EMP.allItems.find(function(x) { return x.id === EMP.detailId; });
+    var emp = EMP.allItems.find(function (x) {
+      return x.id === EMP.detailId;
+    });
     if (!emp) return;
     if (!confirm('Hapus karyawan "' + emp.fullName + '"?')) return;
 
     google.script.run
-      .withSuccessHandler(function(r) {
+      .withSuccessHandler(function (r) {
         if (r && r.success) {
-          empToast(r.message, 'success');
+          empToast(r.message, "success");
           EMP.detModal.hide();
           empLoadAll();
         } else {
-          empToast(r ? r.message : 'Gagal menghapus.', 'danger');
+          empToast(r ? r.message : "Gagal menghapus.", "danger");
         }
       })
-      .withFailureHandler(function(err) {
-        empToast('Error: ' + err.message, 'danger');
+      .withFailureHandler(function (err) {
+        empToast("Error: " + err.message, "danger");
       })
       .deleteEmployee(EMP.detailId);
   }
 
-  // ============ INIT ============
-  document.addEventListener('DOMContentLoaded', function() {
-    EMP.detModal = new bootstrap.Modal(document.getElementById('empDetModal'));
-    EMP.formModal = new bootstrap.Modal(document.getElementById('empFormModal'));
+  // ============ INIT (SPA-compatible) ============
+  var empInitialized = false;
+  function initEmployeePage() {
+    if (empInitialized) return;
+    empInitialized = true;
 
-    document.getElementById('btnEmpAdd').addEventListener('click', empOpenAdd);
-    document.getElementById('btnEmpRefresh').addEventListener('click', empLoadAll);
-    document.getElementById('btnEmpSave').addEventListener('click', empSave);
-    document.getElementById('btnEmpEdit').addEventListener('click', empOpenEdit);
-    document.getElementById('btnEmpDel').addEventListener('click', empDelete);
-    document.getElementById('empQ').addEventListener('input', empRenderTable);
-    document.getElementById('fDept').addEventListener('change', empRenderTable);
-    document.getElementById('fSt').addEventListener('change', empRenderTable);
-    document.getElementById('fType').addEventListener('change', empRenderTable);
+    EMP.detModal = new bootstrap.Modal(document.getElementById("empDetModal"));
+    EMP.formModal = new bootstrap.Modal(
+      document.getElementById("empFormModal"),
+    );
 
-    Auth.check('view_employee', function(user) {
-      empLoadMaster();
-      empLoadAll();
-    });
+    var btnAdd = document.getElementById("btnEmpAdd");
+    var btnRef = document.getElementById("btnEmpRefresh");
+    var btnSav = document.getElementById("btnEmpSave");
+    var btnEdt = document.getElementById("btnEmpEdit");
+    var btnDel = document.getElementById("btnEmpDel");
+    var empQ = document.getElementById("empQ");
+    var fDept = document.getElementById("fDept");
+    var fSt = document.getElementById("fSt");
+    var fType = document.getElementById("fType");
+
+    if (btnAdd) btnAdd.addEventListener("click", empOpenAdd);
+    if (btnRef) btnRef.addEventListener("click", empLoadAll);
+    if (btnSav) btnSav.addEventListener("click", empSave);
+    if (btnEdt) btnEdt.addEventListener("click", empOpenEdit);
+    if (btnDel) btnDel.addEventListener("click", empDelete);
+    if (empQ) empQ.addEventListener("input", empRenderTable);
+    if (fDept) fDept.addEventListener("change", empRenderTable);
+    if (fSt) fSt.addEventListener("change", empRenderTable);
+    if (fType) fType.addEventListener("change", empRenderTable);
+  }
+
+  // Auto-init on DOMContentLoaded if elements exist (standalone page compat)
+  document.addEventListener("DOMContentLoaded", function () {
+    if (document.getElementById("empDetModal")) {
+      initEmployeePage();
+      Auth.check("view_employee", function (user) {
+        empLoadMaster();
+        empLoadAll();
+      });
+    }
   });
 </script>

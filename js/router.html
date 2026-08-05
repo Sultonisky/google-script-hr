@@ -1,0 +1,245 @@
+<!-- js/router.html — SPA Hash Router (data-page / data-external) -->
+<script>
+  // ============================================================
+  // SPA ROUTER — pure client-side navigation
+  // Sidebar uses data-page="pageX" / data-external="employee"
+  // Hash state: #/dashboard, #/recruitment, #/employee, etc.
+  // ============================================================
+  var SPA = {
+    currentPage: null,
+
+    // Map of page IDs to route metadata
+    pageMap: {
+      pageDashboard: {
+        route: "dashboard",
+        title: "Dashboard",
+        subtitle: "Ringkasan rekrutmen & data kandidat",
+      },
+      pageRecruitment: {
+        route: "recruitment",
+        title: "Recruitment",
+        subtitle: "Daftar kandidat rekrutmen",
+      },
+      pageEmployee: {
+        route: "employee",
+        title: "Master Data Employee",
+        subtitle: "Data master karyawan",
+      },
+      pageOutsource: {
+        route: "outsource",
+        title: "Outsource",
+        subtitle: "Data karyawan outsource",
+      },
+      pageSettings: {
+        route: "settings",
+        title: "Settings",
+        subtitle: "Pengaturan portal & dashboard",
+      },
+      pageUserManagement: {
+        route: "user-management",
+        title: "User Management",
+        subtitle: "Kelola pengguna sistem",
+      },
+      pageAuditLog: {
+        route: "audit-log",
+        title: "Audit Log",
+        subtitle: "Riwayat aktivitas semua modul sistem",
+      },
+    },
+
+    // Reverse map: route -> pageId
+    routeToPage: {
+      dashboard: "pageDashboard",
+      recruitment: "pageRecruitment",
+      employee: "pageEmployee",
+      outsource: "pageOutsource",
+      settings: "pageSettings",
+      "user-management": "pageUserManagement",
+      "audit-log": "pageAuditLog",
+    },
+
+    // ============================================================
+    // HASH PARSING
+    // #/recruitment?status=Hold&scroll=recTablePanel
+    // -> { route: "recruitment", params: {status:"Hold", scroll:"recTablePanel"} }
+    // ============================================================
+    parseHash: function () {
+      var raw = window.location.hash.replace(/^#\/?/, "") || "dashboard";
+      var parts = raw.split("?");
+      var route = parts[0] || "dashboard";
+      var params = {};
+      if (parts[1]) {
+        parts[1].split("&").forEach(function (pair) {
+          var kv = pair.split("=");
+          if (kv[0])
+            params[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1] || "");
+        });
+      }
+      return { route: route, params: params };
+    },
+
+    // ============================================================
+    // INIT — listen for hashchange, handle initial route
+    // ============================================================
+    init: function () {
+      var self = this;
+
+      // Listen for hash changes (browser back/forward, manual hash set)
+      window.addEventListener("hashchange", function () {
+        self.handleRoute();
+      });
+
+      // Handle initial route from URL hash
+      self.handleRoute();
+    },
+
+    // ============================================================
+    // HANDLE ROUTE — parse hash and show page
+    // ============================================================
+    handleRoute: function () {
+      var self = this;
+      var parsed = self.parseHash();
+      var pageId = self.routeToPage[parsed.route] || "pageDashboard";
+      self.showPage(pageId, parsed.params);
+    },
+
+    // ============================================================
+    // SHOW PAGE — switch page sections, update sidebar, topbar
+    // ============================================================
+    showPage: function (pageId, params) {
+      var self = this;
+      var prevPage = self.currentPage;
+      params = params || {};
+
+      // Resolve page config
+      var config = self.pageMap[pageId] || self.pageMap["pageDashboard"];
+      var sectionId = pageId;
+
+      // Hide all page-section elements
+      document.querySelectorAll(".page-section").forEach(function (s) {
+        s.classList.remove("active");
+      });
+
+      // Show target page section
+      var target = document.getElementById(sectionId);
+      if (target) target.classList.add("active");
+
+      // Update sidebar active state by matching data-page
+      var matchedItem = null;
+      document
+        .querySelectorAll(".sidebar-nav .nav-item")
+        .forEach(function (item) {
+          item.classList.remove("active");
+          var itemPage = item.getAttribute("data-page");
+          if (itemPage === pageId && !matchedItem) {
+            matchedItem = item;
+          }
+        });
+
+      // Activate the first matching sidebar item
+      if (matchedItem) {
+        matchedItem.classList.add("active");
+      }
+
+      // If status param is present, highlight the specific status link
+      if (params.status) {
+        document
+          .querySelectorAll(".sidebar-nav .nav-item")
+          .forEach(function (item) {
+            var itemStatus = item.getAttribute("data-status");
+            if (itemStatus && itemStatus === params.status) {
+              item.classList.add("active");
+              matchedItem = item;
+            }
+          });
+      }
+
+      // Update topbar title
+      var titleEl = document.getElementById("pageTitleText");
+      var subtitleEl = document.getElementById("pageSubtitleText");
+      if (titleEl) titleEl.textContent = config.title;
+      if (subtitleEl) subtitleEl.textContent = config.subtitle;
+
+      self.currentPage = pageId;
+
+      // Scroll to top on page change
+      if (prevPage !== pageId) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      // Handle query params for recruitment/dashboard page
+      if (params.status && typeof applyStatusFilter === "function") {
+        applyStatusFilter(params.status);
+      }
+      if (params.scroll) {
+        setTimeout(function () {
+          var el = document.getElementById(params.scroll);
+          if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 100);
+      }
+
+      // Page-specific onNavigate hooks
+      if (pageId === "pageEmployee" && typeof empOnNavigate === "function") {
+        empOnNavigate();
+      }
+      if (pageId === "pageOutsource" && typeof outOnNavigate === "function") {
+        outOnNavigate();
+      }
+      if (
+        pageId === "pageUserManagement" &&
+        typeof umOnNavigate === "function"
+      ) {
+        umOnNavigate();
+      }
+      if (
+        pageId === "pageSettings" &&
+        typeof settingsOnNavigate === "function"
+      ) {
+        settingsOnNavigate();
+      }
+      if (pageId === "pageRecruitment" && typeof recOnNavigate === "function") {
+        recOnNavigate();
+      }
+      if (pageId === "pageAuditLog" && typeof auditOnNavigate === "function") {
+        auditOnNavigate();
+      }
+    },
+
+    // ============================================================
+    // NAVIGATE — programmatic navigation by pageId
+    // e.g. SPA.navigate('pageDashboard')
+    // ============================================================
+    navigate: function (pageId, params) {
+      var self = this;
+      var config = self.pageMap[pageId];
+      if (!config) return;
+
+      var hash = "#/" + config.route;
+      if (params) {
+        var qs = [];
+        Object.keys(params).forEach(function (key) {
+          qs.push(
+            encodeURIComponent(key) + "=" + encodeURIComponent(params[key]),
+          );
+        });
+        if (qs.length) hash += "?" + qs.join("&");
+      }
+
+      if (window.location.hash === hash) {
+        // Same hash — force re-render
+        self.showPage(pageId, params || {});
+      } else {
+        window.location.hash = hash;
+      }
+    },
+
+    // ============================================================
+    // GO — navigate by route name (backward compat)
+    // e.g. SPA.go('dashboard')
+    // ============================================================
+    go: function (route) {
+      var pageId = this.routeToPage[route] || "pageDashboard";
+      this.navigate(pageId);
+    },
+  };
+</script>

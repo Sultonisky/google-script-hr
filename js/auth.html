@@ -446,18 +446,33 @@
         });
       }
 
-      // Navigation buttons
+      // Navigation buttons — use SPA router for client-side navigation
       var userMgmtBtn = document.getElementById("btnDropdownUserManagement");
       if (userMgmtBtn) {
         userMgmtBtn.addEventListener("click", function () {
-          window.location.href = "?page=user-management";
+          dropdown.classList.remove("show");
+          if (
+            typeof SPA !== "undefined" &&
+            typeof SPA.navigate === "function"
+          ) {
+            SPA.navigate("pageUserManagement");
+          } else {
+            window.location.href = "?page=user-management";
+          }
         });
       }
       var settingsBtn = document.getElementById("btnDropdownSettings");
       if (settingsBtn) {
         settingsBtn.addEventListener("click", function () {
-          // Navigate to settings page in dashboard
-          window.location.href = "?page=dashboard#settings";
+          dropdown.classList.remove("show");
+          if (
+            typeof SPA !== "undefined" &&
+            typeof SPA.navigate === "function"
+          ) {
+            SPA.navigate("pageSettings");
+          } else {
+            window.location.href = "?page=dashboard#settings";
+          }
         });
       }
     }
