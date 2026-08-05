@@ -1273,3 +1273,109 @@ function getPortalSettingsForLogin() {
     };
   }
 }
+
+// ============================================================
+// PRODUCTION ADMIN SETUP
+// Run once from the Apps Script editor to create/update the
+// manual admin account for testing and production use.
+// NEVER called automatically — editor-only utility.
+// ============================================================
+
+/**
+ * Creates or updates the production manual admin account.
+ *
+ * Account spec:
+ *   Email    : admin@mahakarya.co.id
+ *   Username : admin
+ *   Full Name: Administrator
+ *   Role     : Super Admin
+ *   Status   : Active
+ *   Password : @C1JERUK  (stored as HMAC-SHA256 hash via hashPassword_)
+ *
+ * Rules:
+ *   - If the account does not exist, it is created.
+ *   - If the account already exists, ONLY the password hash is updated.
+ *   - The Google SSO account (muhsultonipml111@gmail.com) is never touched.
+ *   - No other rows are modified.
+ *
+ * Run from Apps Script editor: setupProductionAdmin()
+ *
+ * @returns {Object} { success, message, error }
+ */
+function setupProductionAdmin() {
+  try {
+    var TARGET_EMAIL    = 'admin@mahakarya.co.id';
+    var TARGET_USERNAME = 'admin';
+    var TARGET_NAME     = 'Administrator';
+    var TARGET_ROLE     = SUPER_ADMIN_ROLE; // 'Super Admin'
+    var TARGET_STATUS   = 'Active';
+    var TARGET_PASSWORD = '@C1JERUK';
+
+    ensureUsersColumns_();
+
+    var hash = hashPassword_(TARGET_PASSWORD);
+    var now  = Utilities.formatDate(new Date(), 'GMT+7', 'yyyy-MM-dd HH:mm:ss');
+    var existing = findUserByEmail_(TARGET_EMAIL);
+
+    if (existing) {
+      // Account exists — update password hash only, leave everything else intact
+      var sheet = getUsersSheet_();
+      sheet.getRange(existing.rowIndex, USERS_COL['Password Hash']).setValue(hash);
+      sheet.getRange(existing.rowIndex, USERS_COL['Updated At']).setValue(now);
+      SpreadsheetApp.flush();
+      Logger.log('[setupProductionAdmin] Password hash updated for: ' + TARGET_EMAIL);
+      return {
+        success: true,
+        message: 'Password hash diperbarui untuk akun: ' + TARGET_EMAIL,
+        action: 'updated'
+      };
+    }
+
+    // Account does not exist — create it
+    var lock = LockService.getScriptLock();
+    try {
+      lock.waitLock(10000);
+
+      // Double-check inside lock to prevent race condition
+      if (findUserByEmail_(TARGET_EMAIL)) {
+        // Another process created it between our check and lock acquisition
+        var sheet2 = getUsersSheet_();
+        var user2  = findUserByEmail_(TARGET_EMAIL);
+        sheet2.getRange(user2.rowIndex, USERS_COL['Password Hash']).setValue(hash);
+        sheet2.getRange(user2.rowIndex, USERS_COL['Updated At']).setValue(now);
+        SpreadsheetApp.flush();
+        return {
+          success: true,
+          message: 'Password hash diperbarui (race-condition guard) untuk: ' + TARGET_EMAIL,
+          action: 'updated'
+        };
+      }
+
+      var newSheet = getUsersSheet_();
+      newSheet.appendRow([
+        TARGET_EMAIL,    // Email
+        TARGET_USERNAME, // Username
+        TARGET_NAME,     // Full Name
+        TARGET_ROLE,     // Role
+        TARGET_STATUS,   // Status
+        hash,            // Password Hash
+        '',              // Last Login
+        now,             // Created At
+        now,             // Updated At
+        'system-setup'   // Created By
+      ]);
+      SpreadsheetApp.flush();
+      Logger.log('[setupProductionAdmin] Account created: ' + TARGET_EMAIL);
+      return {
+        success: true,
+        message: 'Akun produksi berhasil dibuat: ' + TARGET_EMAIL,
+        action: 'created'
+      };
+    } finally {
+      lock.releaseLock();
+    }
+  } catch (e) {
+    Logger.log('[setupProductionAdmin] ERROR: ' + e.message);
+    return { success: false, error: 'Gagal membuat akun produksi: ' + e.message };
+  }
+}
