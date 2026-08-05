@@ -1,12 +1,21 @@
 <script>
   // ============================================================
   // js/outsourceDashboard.html — OUTSOURCE DATA IN DASHBOARD
-  // Depends on: helpers.html, settings.html
+  // Fetches from Employee sheet (Employee Type = "Outsource")
+  // Depends on: helpers.html (escapeHtml, initials, animateCounter, showToast)
   // ============================================================
 
-  var allOutsource      = [];
-  var osFiltered        = [];
-  var osCurrentPage     = 1;
+  var OS = {
+    allItems: [],
+    filtered: [],
+    currentPage: 1,
+    detailId: null,
+    editId: null,
+    detModal: null,
+    formModal: null,
+  };
+
+  var OS_PAGE_SIZE = 20;
 
   // ---- Load data from backend ----
   function loadOutsourceData(silent) {
@@ -27,18 +36,17 @@
     google.script.run
       .withSuccessHandler(function(data) {
         if (btnR) { btnR.classList.remove('spinning'); btnR.disabled = false; }
-        allOutsource = data || [];
+        OS.allItems = data || [];
 
-        // Show panels only when data exists or when explicitly loaded
         var statsEl = document.getElementById('outsourceStats');
         var panelEl = document.getElementById('outsourcePanel');
         if (statsEl) statsEl.style.removeProperty('display');
-        if (panelEl) panelEl.style.display = 'block';
+        if (panelEl) panelEl.style.removeProperty('display');
 
         if (subtitle) subtitle.innerText = 'Terakhir dimuat: ' + new Date().toLocaleString('id-ID');
-        populateOsDropdowns(allOutsource);
+        populateOsVendorDropdown();
         applyOsFilters();
-        if (!silent) showToast('Data outsource dimuat (' + allOutsource.length + ' data).', 'success');
+        if (!silent) showToast('Data outsource dimuat (' + OS.allItems.length + ' data).', 'success');
       })
       .withFailureHandler(function(err) {
         if (btnR) { btnR.classList.remove('spinning'); btnR.disabled = false; }
@@ -47,29 +55,18 @@
       .getOutsourceList();
   }
 
-  // ---- Stat cards ----
-  function updateOsStats(data) {
-    var ct = function(fn) { return data.filter(fn).length; };
-    var m = {
-      osStatTotal:      data.length,
-      osStatPending:    ct(function(r){ return (r.employmentStatus||r.status||'').toLowerCase() === 'probation'; }),
-      osStatActive:     ct(function(r){ return (r.employmentStatus||r.status||'').toLowerCase() === 'active'; }),
-      osStatTerminated: ct(function(r){ return (r.employmentStatus||r.status||'').toLowerCase() === 'terminated'; })
-    };
-    Object.keys(m).forEach(function(id) {
-      var el = document.getElementById(id);
-      if (el) animateCounter(el, m[id]);
-    });
-  }
-
   // ---- Populate vendor dropdown ----
-  function populateOsDropdowns(data) {
+  function populateOsVendorDropdown() {
     var el = document.getElementById('osVendorFilter');
     if (!el) return;
-    var cur    = el.value;
-    var unique = Array.from(new Set(data.map(function(r){ return r.outsourceVendor || r.vendorCompany; }).filter(Boolean))).sort();
+    var cur = el.value;
+    var unique = Array.from(new Set(OS.allItems.map(function(r){
+      return r.outsourceVendor || '';
+    }).filter(Boolean))).sort();
     el.innerHTML = '<option value="">Semua Vendor</option>' +
-      unique.map(function(v){ return '<option value="' + escapeHtml(v) + '">' + escapeHtml(v) + '</option>'; }).join('');
+      unique.map(function(v){
+        return '<option value="' + escapeHtml(v) + '">' + escapeHtml(v) + '</option>';
+      }).join('');
     if (unique.indexOf(cur) !== -1) el.value = cur;
   }
 
@@ -82,12 +79,11 @@
     if (!siEl) return;
 
     var kw     = siEl.value.trim().toLowerCase();
-    var status = sfEl ? sfEl.value.toLowerCase() : '';
+    var status = sfEl ? sfEl.value : '';
     var vendor = vfEl ? vfEl.value : '';
     var sort   = ssEl ? ssEl.value : 'newest';
 
-    osFiltered = allOutsource.filter(function(r) {
-      var empStatus = (r.employmentStatus || r.status || '').toLowerCase();
+    OS.filtered = OS.allItems.filter(function(r) {
       var mk = !kw ||
         (r.employeeId||'').toLowerCase().indexOf(kw) !== -1 ||
         (r.fullName||'').toLowerCase().indexOf(kw) !== -1 ||
@@ -95,12 +91,12 @@
         (r.position||'').toLowerCase().indexOf(kw) !== -1 ||
         (r.outsourceVendor||r.vendorCompany||'').toLowerCase().indexOf(kw) !== -1 ||
         (r.employeeType||'').toLowerCase().indexOf(kw) !== -1;
-      var ms = !status || empStatus === status;
+      var ms = !status || (r.status || '').toLowerCase() === status.toLowerCase();
       var mv = !vendor || (r.outsourceVendor || r.vendorCompany) === vendor;
       return mk && ms && mv;
     });
 
-    osFiltered.sort(function(a, b) {
+    OS.filtered.sort(function(a, b) {
       switch (sort) {
         case 'oldest':    return (parseDdMmYyyy(a.createdDate)||0) - (parseDdMmYyyy(b.createdDate)||0);
         case 'name_asc':  return (a.fullName||'').localeCompare(b.fullName||'');
@@ -109,9 +105,24 @@
       }
     });
 
-    osCurrentPage = 1;
+    OS.currentPage = 1;
     renderOsTable();
-    updateOsStats(osFiltered);
+    updateOsStats();
+  }
+
+  // ---- Stat cards ----
+  function updateOsStats() {
+    var ct = function(fn) { return OS.filtered.filter(fn).length; };
+    var m = {
+      osStatTotal:      OS.filtered.length,
+      osStatPending:    ct(function(r){ return (r.employmentStatus||r.status||'').toLowerCase() === 'probation'; }),
+      osStatActive:     ct(function(r){ return (r.employmentStatus||r.status||'').toLowerCase() === 'active'; }),
+      osStatTerminated: ct(function(r){ return (r.employmentStatus||r.status||'').toLowerCase() === 'terminated'; })
+    };
+    Object.keys(m).forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) animateCounter(el, m[id]);
+    });
   }
 
   // ---- Render table ----
@@ -119,24 +130,24 @@
     var tbody   = document.getElementById('osTableBody');
     var loading = document.getElementById('osTableLoading');
     var empty   = document.getElementById('osTableEmpty');
-    var ps      = Number(appSettings.pageSize) || 10;
+    var ps      = OS_PAGE_SIZE;
 
     if (loading) loading.classList.add('d-none');
 
-    if (!osFiltered || osFiltered.length === 0) {
+    if (!OS.filtered || OS.filtered.length === 0) {
       if (tbody) tbody.innerHTML = '';
       if (empty) empty.classList.remove('d-none');
       var fc = document.getElementById('osFooterCount');
-      if (fc) fc.innerText = 'Menampilkan 0 dari ' + allOutsource.length + ' data';
+      if (fc) fc.innerText = 'Menampilkan 0 dari ' + OS.allItems.length + ' data';
       renderOsPagination(ps);
       return;
     }
     if (empty) empty.classList.add('d-none');
 
-    var total = Math.max(1, Math.ceil(osFiltered.length / ps));
-    if (osCurrentPage > total) osCurrentPage = total;
-    var start    = (osCurrentPage - 1) * ps;
-    var pageData = osFiltered.slice(start, start + ps);
+    var total = Math.max(1, Math.ceil(OS.filtered.length / ps));
+    if (OS.currentPage > total) OS.currentPage = total;
+    var start    = (OS.currentPage - 1) * ps;
+    var pageData = OS.filtered.slice(start, start + ps);
 
     if (tbody) tbody.innerHTML = pageData.map(function(r) {
       var empStatus    = r.employmentStatus || r.status || 'Active';
@@ -145,13 +156,14 @@
       var typeLabel    = r.employeeType || '-';
       return '<tr>' +
         '<td><div class="avatar-sm" style="background:rgba(8,145,178,0.1);color:#0e7490;">' + escapeHtml(initials(r.fullName)) + '</div></td>' +
-        '<td><span class="id-mono">' + escapeHtml(r.employeeId || r.outsourceId) + '</span></td>' +
+        '<td><span class="id-mono">' + escapeHtml(r.employeeId || '-') + '</span></td>' +
         '<td>' +
-          '<div class="cand-name" style="font-weight:600;">' + escapeHtml(r.fullName) + '</div>' +
-          '<div class="cand-sub">' + escapeHtml(r.email) + '</div>' +
+          '<div class="cand-name" style="font-weight:600;cursor:pointer;color:var(--color-primary);" data-id="' + escapeHtml(r.employeeId) + '">' +
+          escapeHtml(r.fullName || '-') + '</div>' +
+          '<div class="cand-sub">' + escapeHtml(r.email || '-') + '</div>' +
         '</td>' +
         '<td>' +
-          '<div style="font-weight:600;font-size:13px;">' + escapeHtml(r.position) + '</div>' +
+          '<div style="font-weight:600;font-size:13px;">' + escapeHtml(r.position || '-') + '</div>' +
           '<div class="cand-sub">' + escapeHtml(r.department || '-') + '</div>' +
         '</td>' +
         '<td><span class="badge-status ' + (typeLabel === 'Outsource' ? 'hold' : typeLabel === 'PKWT' ? 'pending' : typeLabel === 'Intern' ? 'blacklist' : 'accepted') + '" style="font-size:10.5px;">' + escapeHtml(typeLabel) + '</span></td>' +
@@ -159,84 +171,272 @@
         '<td>' + escapeHtml(r.joinDate || '-') + '</td>' +
         '<td><span class="badge-status ' + statusClass + '">' + escapeHtml(empStatus) + '</span></td>' +
         '<td>' +
-          '<button class="btn-action os-view-btn" title="Lihat detail" data-id="' + escapeHtml(r.employeeId || r.outsourceId) + '">' +
+          '<button class="btn-action btn-view-btn" title="Lihat detail" data-id="' + escapeHtml(r.employeeId) + '">' +
             '<i class="bi bi-eye-fill"></i>' +
           '</button>' +
         '</td>' +
         '</tr>';
     }).join('');
 
-    var sStart = start + 1, sEnd = Math.min(start + ps, osFiltered.length);
+    var sStart = start + 1, sEnd = Math.min(start + ps, OS.filtered.length);
     var fc2 = document.getElementById('osFooterCount');
-    if (fc2) fc2.innerText = 'Menampilkan ' + sStart + '\u2013' + sEnd + ' dari ' + osFiltered.length + ' data (total ' + allOutsource.length + ')';
+    if (fc2) fc2.innerText = 'Menampilkan ' + sStart + '–' + sEnd + ' dari ' + OS.filtered.length + ' data (total ' + OS.allItems.length + ')';
 
     renderOsPagination(ps);
+    attachOsRowHandlers();
   }
 
   // ---- Pagination ----
   function renderOsPagination(ps) {
     var nav   = document.getElementById('osPaginationUi');
     if (!nav) return;
-    var total = Math.max(1, Math.ceil(osFiltered.length / ps));
-    var html  = '<button class="page-btn" type="button" id="osPrev" ' + (osCurrentPage===1?'disabled':'') + '><i class="bi bi-chevron-left"></i></button>';
-    var mb=5, sp=Math.max(1, osCurrentPage-Math.floor(mb/2)), ep=Math.min(total, sp+mb-1);
+    var total = Math.max(1, Math.ceil(OS.filtered.length / ps));
+    var html  = '<button class="page-btn" type="button" id="osPrev" ' + (OS.currentPage===1?'disabled':'') + '><i class="bi bi-chevron-left"></i></button>';
+    var mb=5, sp=Math.max(1, OS.currentPage-Math.floor(mb/2)), ep=Math.min(total, sp+mb-1);
     sp=Math.max(1, ep-mb+1);
     if(sp>1){ html+='<button class="page-btn" type="button" data-opg="1">1</button>'; if(sp>2) html+='<span class="page-btn" style="border:none;background:transparent;cursor:default">&hellip;</span>'; }
-    for(var p=sp;p<=ep;p++) html+='<button class="page-btn'+(p===osCurrentPage?' active':'')+'" type="button" data-opg="'+p+'">'+p+'</button>';
-    if(ep<total){ if(ep<total-1) html+='<span class="page-btn" style="border:none;background:transparent;cursor:default">&hellip;</span>'; html+='<button class="page-btn" type="button" data-opg="'+total+'">'+total+'</button>'; }
-    html+='<button class="page-btn" type="button" id="osNext" '+(osCurrentPage===total?'disabled':'')+'>'+
-          '<i class="bi bi-chevron-right"></i></button>';
+    for(var p=sp;p<=ep;p++) html+='<button class="page-btn'+(p===OS.currentPage?' active':'')+'" type="button" data-opg="'+p+'">'+p+'</button>';
+    if(ep<total){ if(ep<total-1) html+='<span class="page-btn" style="border:none;background:transparent;cursor:default">&hellips;</span>'; html+='<button class="page-btn" type="button" data-opg="'+total+'">'+total+'</button>'; }
+    html+='<button class="page-btn" type="button" id="osNext" '+(OS.currentPage===total?'disabled':'')+'>'+
+            '<i class="bi bi-chevron-right"></i></button>';
     nav.innerHTML = html;
     nav.querySelectorAll('button[data-opg]').forEach(function(b) {
-      b.addEventListener('click', function(){ osCurrentPage=parseInt(b.getAttribute('data-opg'),10); renderOsTable(); });
+      b.addEventListener('click', function(){ OS.currentPage=parseInt(b.getAttribute('data-opg'),10); renderOsTable(); });
     });
     var prev=document.getElementById('osPrev'), next=document.getElementById('osNext');
-    if(prev) prev.addEventListener('click', function(){ if(osCurrentPage>1){ osCurrentPage--; renderOsTable(); } });
-    if(next) next.addEventListener('click', function(){ if(osCurrentPage<total){ osCurrentPage++; renderOsTable(); } });
+    if(prev) prev.addEventListener('click', function(){ if(OS.currentPage>1){ OS.currentPage--; renderOsTable(); } });
+    if(next) next.addEventListener('click', function(){ if(OS.currentPage<total){ OS.currentPage++; renderOsTable(); } });
+  }
+
+  function attachOsRowHandlers() {
+    document.querySelectorAll('.cand-name[data-id]').forEach(function(el) {
+      el.addEventListener('click', function() {
+        openOsDetail(el.getAttribute('data-id'));
+      });
+    });
+    document.querySelectorAll('.btn-view-btn').forEach(function(el) {
+      el.addEventListener('click', function() {
+        openOsDetail(el.getAttribute('data-id'));
+      });
+    });
+  }
+
+  // ---- Detail Modal ----
+  function openOsDetail(id) {
+    var os = OS.allItems.find(function(x) { return x.employeeId === id; });
+    if (!os) return;
+    OS.detailId = id;
+
+    document.getElementById('osDetTitle').textContent = os.fullName || 'Detail Outsource';
+
+    var empStatus = os.employmentStatus || os.status || 'Active';
+    var statusClass = empStatus === 'Active' ? 'accepted' : empStatus === 'Terminated' ? 'blacklist' : 'pending';
+    var typeLabel = os.employeeType || '-';
+    var typeClass = typeLabel === 'Outsource' ? 'hold' : 'accepted';
+
+    var html =
+      '<div class="dt-row"><div class="dt-label">Employee ID</div><div class="dt-val">' + escapeHtml(os.employeeId) + '</div></div>' +
+      '<div class="dt-row"><div class="dt-label">Outsource ID</div><div class="dt-val">' + escapeHtml(os.outsourceId) + '</div></div>' +
+      '<div class="dt-row"><div class="dt-label">NIK</div><div class="dt-val">' + escapeHtml(os.nik || '-') + '</div></div>' +
+      '<div class="dt-row"><div class="dt-label">Nama Lengkap</div><div class="dt-val">' + escapeHtml(os.fullName || '-') + '</div></div>' +
+      '<div class="dt-row"><div class="dt-label">Email</div><div class="dt-val">' + escapeHtml(os.email || '-') + '</div></div>' +
+      '<div class="dt-row"><div class="dt-label">No. HP</div><div class="dt-val">' + escapeHtml(os.phone || '-') + '</div></div>' +
+      '<div class="dt-row"><div class="dt-label">Posisi</div><div class="dt-val">' + escapeHtml(os.position || '-') + '</div></div>' +
+      '<div class="dt-row"><div class="dt-label">Departemen</div><div class="dt-val">' + escapeHtml(os.department || '-') + '</div></div>' +
+      '<div class="dt-row"><div class="dt-label">Lokasi</div><div class="dt-val">' + escapeHtml(os.city || '-') + '</div></div>' +
+      '<div class="dt-row"><div class="dt-label">Tipe Karyawan</div><div class="dt-val"><span class="badge-status ' + typeClass + '">' + escapeHtml(typeLabel) + '</span></div></div>' +
+      '<div class="dt-row"><div class="dt-label">Vendor / Perusahaan</div><div class="dt-val">' + escapeHtml(os.outsourceVendor || os.vendorCompany || '-') + '</div></div>' +
+      '<div class="dt-row"><div class="dt-label">Tanggal Masuk</div><div class="dt-val">' + escapeHtml(os.joinDate || '-') + '</div></div>' +
+      '<div class="dt-row"><div class="dt-label">Kontrak Start</div><div class="dt-val">' + escapeHtml(os.contractStart || '-') + '</div></div>' +
+      '<div class="dt-row"><div class="dt-label">Kontrak End</div><div class="dt-val">' + escapeHtml(os.contractEnd || '-') + '</div></div>' +
+      '<div class="dt-row"><div class="dt-label">Durasi Kontrak</div><div class="dt-val">' + escapeHtml(os.contractDuration || '-') + '</div></div>' +
+      '<div class="dt-row"><div class="dt-label">Nomor Kontrak</div><div class="dt-val">' + escapeHtml(os.contractNumber || '-') + '</div></div>' +
+      '<div class="dt-row"><div class="dt-label">Gaji</div><div class="dt-val">' + formatRupiah(os.salary || 0) + ' (' + escapeHtml(os.salaryType || '-') + ')</div></div>' +
+      '<div class="dt-row"><div class="dt-label">Status</div><div class="dt-val"><span class="badge-status ' + statusClass + '">' + escapeHtml(empStatus) + '</span></div></div>' +
+      '<div class="dt-row"><div class="dt-label">Catatan HR</div><div class="dt-val">' + escapeHtml(os.hrNotes || os.notes || '-') + '</div></div>' +
+      '<div class="dt-row"><div class="dt-label">Dibuat</div><div class="dt-val">' + escapeHtml(os.createdDate || '-') + '</div></div>';
+
+    document.getElementById('osDetBody').innerHTML = html;
+    OS.detModal.show();
+  }
+
+  // ---- Form Modal ----
+  function openOsForm(id) {
+    OS.editId = id || null;
+    document.getElementById('osFormTitle').textContent = id ? 'Edit Outsource' : 'Tambah Outsource';
+    document.getElementById('osfId').value = id || '';
+
+    if (id) {
+      var os = OS.allItems.find(function(x) { return x.employeeId === id; });
+      if (os) {
+        document.getElementById('osfNik').value = os.nik || '';
+        document.getElementById('osfNama').value = os.fullName || '';
+        document.getElementById('osfPosisi').value = os.position || '';
+        document.getElementById('osfPerusahaan').value = os.outsourceVendor || os.vendorCompany || '';
+        document.getElementById('osfTglMasuk').value = os.joinDate || '';
+        document.getElementById('osfStatus').value = (os.status || os.employmentStatus || 'Active');
+        document.getElementById('osfNotes').value = os.hrNotes || os.notes || '';
+      }
+    } else {
+      document.getElementById('osfNik').value = '';
+      document.getElementById('osfNama').value = '';
+      document.getElementById('osfPosisi').value = '';
+      document.getElementById('osfPerusahaan').value = '';
+      document.getElementById('osfTglMasuk').value = '';
+      document.getElementById('osfStatus').value = 'Active';
+      document.getElementById('osfNotes').value = '';
+    }
+    OS.formModal.show();
+  }
+
+  function saveOsData() {
+    var name = document.getElementById('osfNama').value.trim();
+    if (!name) { showToast('Nama lengkap harus diisi.', 'warning'); return; }
+
+    var data = {
+      nik: document.getElementById('osfNik').value.trim(),
+      fullName: name,
+      position: document.getElementById('osfPosisi').value.trim(),
+      companyEntity: 'PT Mahakarya Sukses Indonesia',
+      employeeType: 'Outsource',
+      email: '',
+      phone: '',
+      address: '',
+      city: '',
+      department: '',
+      joinDate: document.getElementById('osfTglMasuk').value,
+      status: document.getElementById('osfStatus').value,
+      notes: document.getElementById('osfNotes').value.trim(),
+      outsourceVendor: document.getElementById('osfPerusahaan').value.trim(),
+    };
+
+    var btn = document.getElementById('btnOsSave');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Menyimpan...';
+
+    if (OS.editId) {
+      google.script.run
+        .withSuccessHandler(function(r) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan';
+          if (r && r.success) {
+            showToast(r.message, 'success');
+            OS.formModal.hide();
+            loadOutsourceData(false);
+          } else {
+            showToast(r ? r.message : 'Gagal menyimpan.', 'danger');
+          }
+        })
+        .withFailureHandler(function(err) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan';
+          showToast('Error: ' + err.message, 'danger');
+        })
+        .updateEmployee(OS.editId, data);
+    } else {
+      google.script.run
+        .withSuccessHandler(function(r) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan';
+          if (typeof r === 'string' && r.indexOf('Sukses') !== -1) {
+            showToast('Karyawan outsource berhasil ditambahkan.', 'success');
+            OS.formModal.hide();
+            loadOutsourceData(false);
+          } else if (r && r.success) {
+            showToast(r.message, 'success');
+            OS.formModal.hide();
+            loadOutsourceData(false);
+          } else {
+            showToast(r ? (typeof r === 'string' ? r : r.message) : 'Gagal menyimpan.', 'danger');
+          }
+        })
+        .withFailureHandler(function(err) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan';
+          showToast('Error: ' + err.message, 'danger');
+        })
+        .simpanDataOutsource(data);
+    }
+  }
+
+  // ---- Delete ----
+  function deleteOsData() {
+    if (!OS.detailId) return;
+    var os = OS.allItems.find(function(x) { return x.employeeId === OS.detailId; });
+    if (!os) return;
+    if (!confirm('Hapus karyawan outsource "' + os.fullName + '"?')) return;
+
+    google.script.run
+      .withSuccessHandler(function(r) {
+        if (r && r.success) {
+          showToast(r.message, 'success');
+          OS.detModal.hide();
+          loadOutsourceData(false);
+        } else {
+          showToast(r ? r.message : 'Gagal menghapus.', 'danger');
+        }
+      })
+      .withFailureHandler(function(err) {
+        showToast('Error: ' + err.message, 'danger');
+      })
+      .deleteOutsourceById(OS.detailId);
   }
 
   // ---- Export ----
   function getOsExportRows() {
-    return osFiltered.map(function(r) {
+    return OS.filtered.map(function(r) {
       return {
-        'Outsource ID':     r.outsourceId,
-        'Nama Lengkap':     r.fullName,
-        'NIK':              r.nik,
-        'Email':            r.email,
-        'Posisi':           r.position,
-        'Vendor / Agency':  r.vendorCompany,
-        'Durasi Kontrak':   r.contractDuration,
-        'Tanggal Join':     r.joinDate,
-        'Status':           r.status,
-        'Tanggal Daftar':   r.createdDate
+        'Employee ID': r.employeeId,
+        'Outsource ID': r.outsourceId,
+        'Nama': r.fullName,
+        'NIK': r.nik,
+        'Email': r.email,
+        'Posisi': r.position,
+        'Departemen': r.department,
+        'Vendor': r.outsourceVendor || r.vendorCompany,
+        'Tipe Karyawan': r.employeeType,
+        'Status': r.status || r.employmentStatus,
+        'Tanggal Join': r.joinDate,
+        'Tanggal Daftar': r.createdDate,
       };
     });
   }
 
-  // ---- Init (event listeners only — no data loading) ----
+  // ---- Init ----
+  var osInitialized = false;
   function initOutsourceUI() {
+    if (osInitialized) return;
+    osInitialized = true;
+
+    OS.detModal = new bootstrap.Modal(document.getElementById('osDetModal'));
+    OS.formModal = new bootstrap.Modal(document.getElementById('osFormModal'));
+
     var si = document.getElementById('osSearchInput');
-    if (si) si.addEventListener('input', applyOsFilters);
-
-    ['osStatusFilter','osVendorFilter','osSortSelect'].forEach(function(id) {
-      var el = document.getElementById(id);
-      if (el) el.addEventListener('change', applyOsFilters);
-    });
-
+    var btnRef = document.getElementById('osBtnRefresh');
+    var btnAdd = document.getElementById('btnOutAdd');
+    var btnSav = document.getElementById('btnOsSave');
+    var btnEdt = document.getElementById('btnOsEdit');
+    var btnDel = document.getElementById('btnOsDel');
+    var btnCsv = document.getElementById('osBtnExportCsv');
+    var btnXlsx = document.getElementById('osBtnExportXlsx');
     var btnReset = document.getElementById('osBtnResetFilter');
+
+    if (si) si.addEventListener('input', applyOsFilters);
+    if (btnRef) btnRef.addEventListener('click', function(){ loadOutsourceData(false); });
+    if (btnAdd) btnAdd.addEventListener('click', function(){ openOsForm(null); });
+    if (btnSav) btnSav.addEventListener('click', saveOsData);
+    if (btnEdt) btnEdt.addEventListener('click', function(){ openOsForm(OS.detailId); });
+    if (btnDel) btnDel.addEventListener('click', deleteOsData);
     if (btnReset) btnReset.addEventListener('click', function() {
       if (si) si.value = '';
-      ['osStatusFilter','osVendorFilter'].forEach(function(id){ var e=document.getElementById(id); if(e) e.value=''; });
+      ['osStatusFilter','osVendorFilter'].forEach(function(id){
+        var e=document.getElementById(id); if(e) e.value='';
+      });
       document.getElementById('osSortSelect').value = 'newest';
       applyOsFilters();
     });
 
-    var btnRef = document.getElementById('osBtnRefresh');
-    if (btnRef) btnRef.addEventListener('click', function(){ loadOutsourceData(false); });
-
     var today = new Date().toISOString().slice(0,10);
-    var btnCsv  = document.getElementById('osBtnExportCsv');
-    var btnXlsx = document.getElementById('osBtnExportXlsx');
     if (btnCsv) btnCsv.addEventListener('click', function() {
       var rows = getOsExportRows();
       if (!rows.length) { showToast('Tidak ada data.', 'warning'); return; }
@@ -251,8 +451,8 @@
     });
   }
 
-  // Legacy name kept for backward compatibility
-  function initOutsourceDashboard() {
+  // SPA navigation hook — called by router when entering pageOutsource
+  function outOnNavigate() {
     initOutsourceUI();
     loadOutsourceData(false);
   }

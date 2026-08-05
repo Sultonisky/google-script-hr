@@ -552,19 +552,6 @@
   }
 
   // ============================================================
-  // OUTSOURCE PAGE — SPA NAVIGATION HOOK
-  // Called by router when navigating to pageOutsource
-  // ============================================================
-  function outOnNavigate() {
-    if (typeof initOutsourceUI === "function") {
-      initOutsourceUI();
-    }
-    if (typeof loadOutsourceData === "function") {
-      loadOutsourceData(false);
-    }
-  }
-
-  // ============================================================
   // SETTINGS PAGE — SPA NAVIGATION HOOK
   // Called by router when navigating to pageSettings
   // ============================================================

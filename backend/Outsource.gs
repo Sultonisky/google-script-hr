@@ -157,13 +157,13 @@ function getOutsourceList() {
       var empType = String(row[colIndex["Employee Type"]] || "").trim();
       if (empType !== "Outsource") continue;
 
-      result.push({
+       result.push({
         employeeId: String(row[colIndex["Employee ID"]] || ""),
         outsourceId: String(row[colIndex["Recruitment ID"]] || ""),
-        createdDate: fmtDate_(
-          row[colIndex["Created At"]],
-          "dd/MM/yyyy HH:mm",
-        ),
+        createdDate: fmtDate_(row[colIndex["Created At"]], "dd/MM/yyyy HH:mm"),
+        _rawCreated: row[colIndex["Created At"]] instanceof Date
+          ? row[colIndex["Created At"]].getTime()
+          : (new Date(String(row[colIndex["Created At"]] || ""))).getTime() || 0,
         fullName: String(row[colIndex["Full Name"]] || ""),
         nik: String(row[colIndex["NIK"]] || ""),
         birthDate: String(row[colIndex["Birth Date"]] || ""),
@@ -201,8 +201,10 @@ function getOutsourceList() {
     }
 
     result.sort(function (a, b) {
-      return (b.createdDate || "").localeCompare(a.createdDate || "");
+      return (b._rawCreated || 0) - (a._rawCreated || 0);
     });
+
+    result.forEach(function (item) { delete item._rawCreated; });
 
     return result;
   } catch (error) {

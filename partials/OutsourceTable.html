@@ -1,7 +1,7 @@
 <!-- partials/OutsourceTable.html — OUTSOURCE DATA PANEL -->
 
 <!-- Outsource Stat Cards -->
-<div class="row g-3 mb-3 mt-2" id="outsourceStats" style="display:none!important;">
+<div class="row g-3 mb-3 mt-2" id="outsourceStats">
   <div class="col-12">
     <div style="font-size:13px;font-weight:700;color:var(--color-text-soft);text-transform:uppercase;letter-spacing:.05em;padding:4px 0 8px;">
       <i class="bi bi-building-fill me-2" style="color:var(--color-primary)"></i>Data Karyawan Outsource
@@ -46,13 +46,16 @@
 </div>
 
 <!-- Outsource Table Panel -->
-<div class="panel mt-2" id="outsourcePanel" style="display:none;">
+<div class="panel mt-2" id="outsourcePanel">
   <div class="panel-header">
     <div>
       <h6>Data Karyawan Outsource</h6>
       <div class="panel-subtitle" id="osPanelSubtitle">Memuat data...</div>
     </div>
     <div class="export-btns">
+      <button class="btn-export" style="background:var(--color-primary);color:#fff;border:1px solid var(--color-primary)" type="button" id="btnOutAdd">
+        <i class="bi bi-plus-lg"></i> Tambah
+      </button>
       <button class="btn-export csv"  id="osBtnExportCsv"  type="button"><i class="bi bi-filetype-csv"></i> CSV</button>
       <button class="btn-export xlsx" id="osBtnExportXlsx" type="button"><i class="bi bi-file-earmark-excel"></i> Excel</button>
     </div>
@@ -66,9 +69,8 @@
     </div>
     <select class="filter-select" id="osStatusFilter">
       <option value="">Semua Status</option>
-      <option value="Pending Review">Pending Review</option>
       <option value="Active">Active</option>
-      <option value="Terminated">Terminated</option>
+      <option value="Inactive">Inactive</option>
     </select>
     <select class="filter-select" id="osVendorFilter">
       <option value="">Semua Vendor</option>
@@ -118,5 +120,80 @@
   <div class="panel-footer">
     <span id="osFooterCount">Menampilkan 0 data</span>
     <nav class="pagination-ui" id="osPaginationUi" aria-label="Outsource Pagination"></nav>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal fade" id="osDetModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title fw-bold" id="osDetTitle">Detail Outsource</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="osDetBody"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger btn-sm fw-semibold" id="btnOsDel">
+          <i class="bi bi-trash3 me-1"></i> Hapus
+        </button>
+        <button type="button" class="btn btn-primary btn-sm fw-semibold" id="btnOsEdit">
+          <i class="bi bi-pencil me-1"></i> Edit
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Form Modal -->
+<div class="modal fade" id="osFormModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title fw-bold" id="osFormTitle">Tambah Outsource</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="osfId" />
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">NIK *</label>
+            <input type="text" class="form-control" id="osfNik" required />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Nama Lengkap *</label>
+            <input type="text" class="form-control" id="osfNama" required />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Posisi *</label>
+            <input type="text" class="form-control" id="osfPosisi" required />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Perusahaan *</label>
+            <input type="text" class="form-control" id="osfPerusahaan" required />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Tanggal Masuk *</label>
+            <input type="date" class="form-control" id="osfTglMasuk" required />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Status</label>
+            <select class="form-select" id="osfStatus">
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Catatan</label>
+            <textarea class="form-control" id="osfNotes" rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light btn-sm fw-semibold" data-bs-dismiss="modal">Batal</button>
+        <button type="button" class="btn btn-primary btn-sm fw-semibold" id="btnOsSave" style="background:#005BAC;border:none;">
+          <i class="bi bi-check2-circle me-1"></i> Simpan
+        </button>
+      </div>
+    </div>
   </div>
 </div>
