@@ -54,19 +54,20 @@
 
   // ============ STATS ============
   function empRenderStats() {
-    var total = EMP.allItems.length;
-    var active = 0;
+    var total    = EMP.allItems.length;
+    var active   = 0;
     var inactive = 0;
-    EMP.allItems.forEach(function (e) {
-      if (e.status === 'Active') active++;
+    EMP.allItems.forEach(function(e) {
+      var s = (e.employmentStatus || e.status || '').toLowerCase();
+      if (s === 'active') active++;
       else inactive++;
     });
 
-    var totalEl = document.getElementById('empStatTotal');
-    var activeEl = document.getElementById('empStatActive');
+    var totalEl    = document.getElementById('empStatTotal');
+    var activeEl   = document.getElementById('empStatActive');
     var inactiveEl = document.getElementById('empStatInactive');
-    if (totalEl) animateCounter(totalEl, total);
-    if (activeEl) animateCounter(activeEl, active);
+    if (totalEl)    animateCounter(totalEl,    total);
+    if (activeEl)   animateCounter(activeEl,   active);
     if (inactiveEl) animateCounter(inactiveEl, inactive);
   }
 
@@ -124,7 +125,7 @@
         (e.department || '').toLowerCase().indexOf(kw) !== -1;
       var md = !dept || e.department === dept;
       var mt = !type || e.employeeType === type;
-      var ms = !status || e.status === status;
+      var ms = !status || (e.employmentStatus || e.status || '').toLowerCase() === status.toLowerCase();
       return mk && md && mt && ms;
     });
 
@@ -172,8 +173,8 @@
     var pageData = EMP.filtered.slice(start, start + ps);
 
     if (tbody) tbody.innerHTML = pageData.map(function (e) {
-      var empStatus = e.status || 'Inactive';
-      var stBadge = empStatus === 'Active' ? 'accepted' : 'blacklist';
+      var empStatus = e.employmentStatus || e.status || 'Inactive';
+      var stBadge = entityStatusBadgeClass(empStatus);
       return '<tr class="emp-row-link" data-id="' + escapeHtml(e.employeeId) + '" style="cursor:pointer;">' +
         '<td><div class="avatar-sm">' + escapeHtml(initials(e.fullName)) + '</div></td>' +
         '<td><span class="id-mono">' + escapeHtml(e.employeeId || '-') + '</span></td>' +
@@ -305,7 +306,7 @@
     document.getElementById('efLoc').value   = emp.city || '';
     document.getElementById('efType').value  = emp.employeeType || '';
     document.getElementById('efJoin').value  = emp.joinDate || '';
-    document.getElementById('efStatus').value = emp.status || 'Active';
+    document.getElementById('efStatus').value = emp.employmentStatus || emp.status || 'Active';
     document.getElementById('efNotes').value = emp.hrNotes || '';
     EMP.formModal.show();
   }
@@ -318,17 +319,18 @@
     }
 
     var data = {
-      nik: document.getElementById('efNik').value.trim(),
-      fullName: name,
-      email: document.getElementById('efEmail').value.trim(),
-      phone: document.getElementById('efPhone').value.trim(),
-      department: document.getElementById('efDept').value,
-      position: document.getElementById('efPos').value,
-      workLocation: document.getElementById('efLoc').value,
-      employeeType: document.getElementById('efType').value,
-      joinDate: document.getElementById('efJoin').value,
-      status: document.getElementById('efStatus').value,
-      notes: document.getElementById('efNotes').value.trim(),
+      nik:              document.getElementById('efNik').value.trim(),
+      fullName:         name,
+      email:            document.getElementById('efEmail').value.trim(),
+      phone:            document.getElementById('efPhone').value.trim(),
+      department:       document.getElementById('efDept').value,
+      position:         document.getElementById('efPos').value,
+      workLocation:     document.getElementById('efLoc').value,
+      employeeType:     document.getElementById('efType').value,
+      joinDate:         document.getElementById('efJoin').value,
+      status:           document.getElementById('efStatus').value,
+      employmentStatus: document.getElementById('efStatus').value,
+      notes:            document.getElementById('efNotes').value.trim(),
     };
 
     var btn = document.getElementById('btnEmpSave');

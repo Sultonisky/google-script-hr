@@ -28,17 +28,22 @@
   function setDrawerMode(mode) {
     if (drawerPanel) drawerPanel.setAttribute('data-mode', mode);
 
-    // Body sections
-    ['Candidate','Employee','Outsource'].forEach(function(m) {
+    // Toggle body sections via .active class (not inline style — avoids CSS specificity conflict)
+    ['Candidate', 'Employee', 'Outsource'].forEach(function(m) {
       var sec = document.getElementById('drawerSection' + m);
-      if (sec) sec.style.display = (m.toLowerCase() === mode) ? '' : 'none';
+      if (!sec) return;
+      if (m.toLowerCase() === mode) {
+        sec.classList.add('active');
+      } else {
+        sec.classList.remove('active');
+      }
     });
 
     // Footer
     var footerCand   = document.getElementById('drawerFooterCandidate');
     var footerEntity = document.getElementById('drawerFooterEntity');
-    if (footerCand)   footerCand.style.display   = (mode === 'candidate')  ? '' : 'none';
-    if (footerEntity) footerEntity.style.display = (mode !== 'candidate')  ? '' : 'none';
+    if (footerCand)   footerCand.style.display   = (mode === 'candidate') ? '' : 'none';
+    if (footerEntity) footerEntity.style.display = (mode !== 'candidate') ? '' : 'none';
 
     // Header buttons
     var btnPrint = document.getElementById('btnDrawerPrint');
@@ -195,8 +200,11 @@
     EMP.detailId = id;
     setDrawerMode('employee');
 
+    // Tentukan status tampilan — pakai employmentStatus jika ada, fallback ke status
+    var displayStatus = emp.employmentStatus || emp.status || 'Active';
+    var badgeClass    = entityStatusBadgeClass(displayStatus);
+
     // Header
-    var stBadge = emp.status === 'Active' ? 'accepted' : 'blacklist';
     var avatarEl = document.getElementById('drawerAvatar');
     if (avatarEl) avatarEl.innerText = initials(emp.fullName);
     var nameEl = document.getElementById('drawerCandidateName');
@@ -204,12 +212,17 @@
     var posEl = document.getElementById('drawerPosition');
     if (posEl) posEl.innerText = (emp.position || '-') + (emp.department ? ' · ' + emp.department : '');
     var badgeWrap = document.getElementById('drawerStatusBadgeWrap');
-    if (badgeWrap) badgeWrap.innerHTML =
-      '<span class="badge-status lg ' + stBadge + '">' + escapeHtml(emp.status || 'Inactive') + '</span>';
+    if (badgeWrap) {
+      badgeWrap.innerHTML =
+        '<span class="badge-status lg ' + badgeClass + '">' + escapeHtml(displayStatus) + '</span>' +
+        (emp.employeeType
+          ? ' <span class="badge-status lg hold" style="margin-left:4px;font-size:10px;opacity:0.85;">' + escapeHtml(emp.employeeType) + '</span>'
+          : '');
+    }
     setDrawerMeta([
-      { label: 'Employee ID', value: emp.employeeId || '-' },
+      { label: 'Employee ID',    value: emp.employeeId    || '-' },
       { label: 'Recruitment ID', value: emp.recruitmentId || '-' },
-      { label: 'Tanggal Masuk', value: emp.joinDate || '-' }
+      { label: 'Tanggal Masuk',  value: emp.joinDate      || '-' }
     ]);
 
     // Body fields
@@ -276,7 +289,7 @@
 
     // Header
     var empStatus   = os.employmentStatus || os.status || 'Active';
-    var statusClass = empStatus === 'Active' ? 'accepted' : empStatus === 'Terminated' ? 'blacklist' : 'pending';
+    var statusClass = entityStatusBadgeClass(empStatus);
     var avatarEl = document.getElementById('drawerAvatar');
     if (avatarEl) avatarEl.innerText = initials(os.fullName);
     var nameEl = document.getElementById('drawerCandidateName');
@@ -284,8 +297,11 @@
     var posEl = document.getElementById('drawerPosition');
     if (posEl) posEl.innerText = (os.position || '-') + (os.outsourceVendor || os.vendorCompany ? ' · ' + (os.outsourceVendor || os.vendorCompany) : '');
     var badgeWrap = document.getElementById('drawerStatusBadgeWrap');
-    if (badgeWrap) badgeWrap.innerHTML =
-      '<span class="badge-status lg ' + statusClass + '">' + escapeHtml(empStatus) + '</span>';
+    if (badgeWrap) {
+      badgeWrap.innerHTML =
+        '<span class="badge-status lg ' + statusClass + '">' + escapeHtml(empStatus) + '</span>' +
+        ' <span class="badge-status lg hold" style="margin-left:4px;font-size:10px;opacity:0.85;">Outsource</span>';
+    }
     setDrawerMeta([
       { label: 'Employee ID', value: os.employeeId || '-' },
       { label: 'Outsource ID', value: os.outsourceId || '-' },
