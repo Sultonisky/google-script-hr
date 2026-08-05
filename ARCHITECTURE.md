@@ -153,7 +153,7 @@ flowchart TD
 
     PARAMS -->|page=dashboard| DASH[views/Dashboard]
     PARAMS -->|page=employee| EMP[views/Employee]
-    PARAMS -->|page=master-data| MD[views/MasterData]
+    PARAMS -->|page=master-data| MD[views/Dashboard + pageMasterData]
     PARAMS -->|page=settings| SET[views/Settings]
     PARAMS -->|page=user-management| UM[views/UserManagement]
     PARAMS -->|page=login| LOGIN[views/Login]
@@ -183,7 +183,7 @@ flowchart TD
 |---|---|---|---|
 | `?page=dashboard` | views/Dashboard | Authenticated | HR Dashboard (main) |
 | `?page=employee` | views/Employee | Authenticated | Employee Management |
-| `?page=master-data` | views/MasterData | Authenticated | Master Data CRUD |
+| `?page=master-data` | views/Dashboard (pageMasterData) | Authenticated | Master Data CRUD |
 | `?page=settings` | views/Settings | Authenticated | Portal Settings |
 | `?page=user-management` | views/UserManagement | Super Admin | User Management |
 | `?page=login` | views/Login | Public | Login Page |

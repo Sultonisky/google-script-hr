@@ -23,7 +23,8 @@
     include('css/topbar'); ?> <?!= include('css/dashboard'); ?> <?!=
     include('css/table'); ?> <?!= include('css/drawer'); ?> <?!=
     include('css/modal'); ?> <?!= include('css/form'); ?> <?!=
-    include('css/employee'); ?> <?!= include('css/responsive'); ?>
+    include('css/employee'); ?> <?!= include('css/masterData'); ?> <?!=
+    include('css/responsive'); ?>
   </head>
   <body>
     <?!= include('partials/Sidebar'); ?>
@@ -55,6 +56,11 @@
 
         <!-- ===== PAGE: AUDIT LOG ===== -->
         <?!= include('partials/AuditLogPage'); ?>
+
+        <!-- ===== PAGE: MASTER DATA ===== -->
+        <section class="page-section" id="pageMasterData">
+          <?!= include('partials/MasterDataContent'); ?>
+        </section>
 
         <!-- ===== PAGE: SETTINGS ===== -->
         <!-- partials/SettingsPanel.html already contains <section id="pageSettings"> -->
