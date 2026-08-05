@@ -130,100 +130,160 @@ function getOrCreateAuditLogSheet_() {
 }
 
 // ---- Fix headers & reorder existing data to match AUDIT_LOG_HEADERS ----
+// Non-destructive: detects whether rows are in OLD or NEW order by inspecting
+// the data itself (not just headers), so already-correct data is never lost.
+// Old:  Timestamp | User | Recruitment ID | Action | Old Value | New Value | TimeStamp
+// New:  Recruitment ID | Action | Field | Old Value | New Value | User | Timestamp
 function fixAuditLogSheet(sheet) {
   var lastCol = sheet.getLastColumn();
   var lastRow = sheet.getLastRow();
+  var expectedLen = AUDIT_LOG_HEADERS.length;
+
+  // ---- Read current headers ----
   var currentHeaders =
     lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues()[0] : [];
+  var headersTrim = currentHeaders.map(function (h) {
+    return String(h || "").trim();
+  });
 
-  // Map current header names to column indices (0-based)
-  var colMap = {};
-  for (var c = 0; c < currentHeaders.length; c++) {
-    var name = String(currentHeaders[c] || "").trim();
-    if (name) colMap[name] = c;
+  // Headers already match? Nothing to do.
+  var headersCorrect = headersTrim.length >= expectedLen;
+  if (headersCorrect) {
+    for (var h = 0; h < expectedLen; h++) {
+      if (headersTrim[h] !== AUDIT_LOG_HEADERS[h]) {
+        headersCorrect = false;
+        break;
+      }
+    }
+  }
+  if (headersCorrect) {
+    return "Audit_Log is already correct. No fix needed.";
   }
 
-  // Detect old format: has "TimeStamp" (duplicate) but no "Field"
-  var hasOldTimestamp = colMap.hasOwnProperty("TimeStamp");
-  var hasField = colMap.hasOwnProperty("Field");
-  var hasTimestamp = colMap.hasOwnProperty("Timestamp");
-
-  if (lastRow < 2 && !hasOldTimestamp && !hasField) {
-    // Empty sheet — just write headers
-    if (lastCol > 0) sheet.getRange(1, 1, 1, lastCol).clearContent();
-    sheet
-      .getRange(1, 1, 1, AUDIT_LOG_HEADERS.length)
-      .setValues([AUDIT_LOG_HEADERS]);
-    sheet
-      .getRange(1, 1, 1, AUDIT_LOG_HEADERS.length)
-      .setBackground("#005BAC")
-      .setFontColor("#FFFFFF")
-      .setFontWeight("bold");
-    sheet.setFrozenRows(1);
-    return;
-  }
-
-  // Read existing data rows (if any)
+  // ---- Read existing data rows ----
   var oldData = [];
   if (lastRow >= 2) {
     oldData = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
   }
+  var hasData = oldData.length > 0;
 
-  // Migrate old format → new format
-  // Old: Timestamp | User | Recruitment ID | Action | Old Value | New Value | TimeStamp
-  // New: Recruitment ID | Action | Field | Old Value | New Value | User | Timestamp
-  var migratedData = [];
-  for (var r = 0; r < oldData.length; r++) {
-    var row = oldData[r];
-    if (hasOldTimestamp && !hasField) {
-      // Old 7-column format
-      migratedData.push([
-        row[colMap["Recruitment ID"]] || "", // 1 - Recruitment ID
-        row[colMap["Action"]] || "", // 2 - Action
-        row[colMap["Status"]] || "Status", // 3 - Field (default "Status" for old records)
-        row[colMap["Old Value"]] || "", // 4 - Old Value
-        row[colMap["New Value"]] || "", // 5 - New Value
-        row[colMap["User"]] || "", // 6 - User
-        row[colMap["Timestamp"]] || row[colMap["TimeStamp"]] || "", // 7 - Timestamp
-      ]);
-    } else {
-      // Already new-ish format or unknown — map what we can
-      migratedData.push([
-        row[colMap["Recruitment ID"]] || "",
-        row[colMap["Action"]] || "",
-        row[colMap["Field"]] || "Status",
-        row[colMap["Old Value"]] || "",
-        row[colMap["New Value"]] || "",
-        row[colMap["User"]] || "",
-        row[colMap["Timestamp"]] || "",
-      ]);
+  // ---- Detect data orientation by inspecting the first data row ----
+  // This is independent of header names, so we never misinterpret
+  // already-correct rows and never lose the Field column.
+  var dataIsNewOrder = false;
+  var dataIsOldOrder = false;
+  if (hasData) {
+    var sample = oldData[0];
+    var s0 = String(sample[0] || "");
+    var s1 = String(sample[1] || "");
+    var s2 = String(sample[2] || "");
+    var s3 = String(sample[3] || "");
+
+    var idPattern = /^(REC-|EMP-|OS-|KD-)/;
+    var actionPattern =
+      /^(CREATE|STATUS_CHANGE|HR_NOTES_UPDATE|UPDATE|HOLD|BLACKLIST|ACCEPT|CREATE_FROM_RECRUITMENT|DELETE|ARCHIVE|REJECT)/;
+    var fieldNames = [
+      "Status",
+      "HR Notes",
+      "Employee",
+      "Hold Reason",
+      "Blacklist Reason",
+      "Notes",
+    ];
+
+    // NEW order: col0 = ID, col1 = Action, col2 = Field name
+    if (
+      idPattern.test(s0) &&
+      actionPattern.test(s1) &&
+      fieldNames.indexOf(s2) !== -1
+    ) {
+      dataIsNewOrder = true;
+    }
+    // OLD order: col0 = Timestamp, col2 = ID, col3 = Action
+    if (
+      /^\d{4}-\d{2}-\d{2}/.test(s0) &&
+      idPattern.test(s2) &&
+      actionPattern.test(s3)
+    ) {
+      dataIsOldOrder = true;
     }
   }
 
-  // Clear entire sheet
+  // ---- Build correctly-ordered rows ----
+  var migratedData = [];
+
+  if (dataIsOldOrder && !dataIsNewOrder) {
+    // Genuinely OLD data → migrate by position.
+    // Old: [Timestamp, User, Recruitment ID, Action, Old Value, New Value, TimeStamp]
+    for (var r = 0; r < oldData.length; r++) {
+      var row = oldData[r];
+      var ts = row[0];
+      if (ts instanceof Date) {
+        ts = Utilities.formatDate(ts, "GMT+7", "yyyy-MM-dd HH:mm:ss");
+      }
+      migratedData.push([
+        String(row[2] || ""), // 1 - Recruitment ID
+        String(row[3] || ""), // 2 - Action
+        "Status", // 3 - Field (old format had no Field column)
+        String(row[4] || ""), // 4 - Old Value
+        String(row[5] || ""), // 5 - New Value
+        String(row[1] || ""), // 6 - User
+        String(ts || ""), // 7 - Timestamp
+      ]);
+    }
+  } else {
+    // Data is already in NEW order (or sheet has no data/unknown) —
+    // keep every row untouched, only normalize the headers.
+    for (var j = 0; j < oldData.length; j++) {
+      var src = oldData[j];
+      var out = [];
+      for (var k = 0; k < expectedLen; k++) {
+        out.push(k < src.length ? src[k] : "");
+      }
+      if (out[6] instanceof Date) {
+        out[6] = Utilities.formatDate(out[6], "GMT+7", "yyyy-MM-dd HH:mm:ss");
+      }
+      migratedData.push(out);
+    }
+  }
+
+  // ---- Rewrite the sheet ----
   sheet.clearContents();
   sheet.clearFormats();
-
-  // Write new headers
+  sheet.getRange(1, 1, 1, expectedLen).setValues([AUDIT_LOG_HEADERS]);
   sheet
-    .getRange(1, 1, 1, AUDIT_LOG_HEADERS.length)
-    .setValues([AUDIT_LOG_HEADERS]);
-  sheet
-    .getRange(1, 1, 1, AUDIT_LOG_HEADERS.length)
+    .getRange(1, 1, 1, expectedLen)
     .setBackground("#005BAC")
     .setFontColor("#FFFFFF")
     .setFontWeight("bold");
   sheet.setFrozenRows(1);
 
-  // Write migrated data
   if (migratedData.length > 0) {
     sheet
-      .getRange(2, 1, migratedData.length, AUDIT_LOG_HEADERS.length)
+      .getRange(2, 1, migratedData.length, expectedLen)
       .setValues(migratedData);
   }
-
-  sheet.setColumnWidths(1, AUDIT_LOG_HEADERS.length, 160);
+  sheet.setColumnWidths(1, expectedLen, 160);
   SpreadsheetApp.flush();
+
+  return (
+    "Audit_Log fixed: " +
+    expectedLen +
+    " headers written, " +
+    migratedData.length +
+    " rows preserved."
+  );
+}
+
+// ---- Public helper: run from Apps Script editor to repair the sheet ----
+// Run: repairAuditLogSheet()
+function repairAuditLogSheet() {
+  var sheet =
+    SpreadsheetApp.getActiveSpreadsheet().getSheetByName(AUDIT_SHEET_NAME);
+  if (!sheet) {
+    return "Audit_Log sheet not found. Run setupSpreadsheet() first.";
+  }
+  return fixAuditLogSheet(sheet);
 }
 
 // ============================================================
