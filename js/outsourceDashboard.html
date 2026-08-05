@@ -11,7 +11,6 @@
     currentPage: 1,
     detailId: null,
     editId: null,
-    detModal: null,
     formModal: null,
   };
 
@@ -209,58 +208,66 @@
   }
 
   function attachOsRowHandlers() {
-    document.querySelectorAll('.cand-name[data-id]').forEach(function(el) {
+    document.querySelectorAll('#osTableBody .cand-name[data-id]').forEach(function(el) {
       el.addEventListener('click', function() {
-        openOsDetail(el.getAttribute('data-id'));
+        openOutsourceDrawer(el.getAttribute('data-id'));
       });
     });
-    document.querySelectorAll('.btn-view-btn').forEach(function(el) {
+    document.querySelectorAll('#osTableBody .btn-view-btn').forEach(function(el) {
       el.addEventListener('click', function() {
-        openOsDetail(el.getAttribute('data-id'));
+        openOutsourceDrawer(el.getAttribute('data-id'));
       });
     });
   }
 
-  // ---- Detail Modal ----
-  function openOsDetail(id) {
-    var os = OS.allItems.find(function(x) { return x.employeeId === id; });
-    if (!os) return;
-    OS.detailId = id;
+  // ---- Init ----
+  var osInitialized = false;
+  function initOutsourceUI() {
+    if (osInitialized) return;
+    osInitialized = true;
 
-    document.getElementById('osDetTitle').textContent = os.fullName || 'Detail Outsource';
+    OS.formModal = new bootstrap.Modal(document.getElementById('osFormModal'));
 
-    var empStatus = os.employmentStatus || os.status || 'Active';
-    var statusClass = empStatus === 'Active' ? 'accepted' : empStatus === 'Terminated' ? 'blacklist' : 'pending';
-    var typeLabel = os.employeeType || '-';
-    var typeClass = typeLabel === 'Outsource' ? 'hold' : 'accepted';
+    var si      = document.getElementById('osSearchInput');
+    var btnRef  = document.getElementById('osBtnRefresh');
+    var btnAdd  = document.getElementById('btnOutAdd');
+    var btnSav  = document.getElementById('btnOsSave');
+    var btnCsv  = document.getElementById('osBtnExportCsv');
+    var btnXlsx = document.getElementById('osBtnExportXlsx');
+    var btnReset = document.getElementById('osBtnResetFilter');
 
-    var html =
-      '<div class="dt-row"><div class="dt-label">Employee ID</div><div class="dt-val">' + escapeHtml(os.employeeId) + '</div></div>' +
-      '<div class="dt-row"><div class="dt-label">Outsource ID</div><div class="dt-val">' + escapeHtml(os.outsourceId) + '</div></div>' +
-      '<div class="dt-row"><div class="dt-label">NIK</div><div class="dt-val">' + escapeHtml(os.nik || '-') + '</div></div>' +
-      '<div class="dt-row"><div class="dt-label">Nama Lengkap</div><div class="dt-val">' + escapeHtml(os.fullName || '-') + '</div></div>' +
-      '<div class="dt-row"><div class="dt-label">Email</div><div class="dt-val">' + escapeHtml(os.email || '-') + '</div></div>' +
-      '<div class="dt-row"><div class="dt-label">No. HP</div><div class="dt-val">' + escapeHtml(os.phone || '-') + '</div></div>' +
-      '<div class="dt-row"><div class="dt-label">Posisi</div><div class="dt-val">' + escapeHtml(os.position || '-') + '</div></div>' +
-      '<div class="dt-row"><div class="dt-label">Departemen</div><div class="dt-val">' + escapeHtml(os.department || '-') + '</div></div>' +
-      '<div class="dt-row"><div class="dt-label">Lokasi</div><div class="dt-val">' + escapeHtml(os.city || '-') + '</div></div>' +
-      '<div class="dt-row"><div class="dt-label">Tipe Karyawan</div><div class="dt-val"><span class="badge-status ' + typeClass + '">' + escapeHtml(typeLabel) + '</span></div></div>' +
-      '<div class="dt-row"><div class="dt-label">Vendor / Perusahaan</div><div class="dt-val">' + escapeHtml(os.outsourceVendor || os.vendorCompany || '-') + '</div></div>' +
-      '<div class="dt-row"><div class="dt-label">Tanggal Masuk</div><div class="dt-val">' + escapeHtml(os.joinDate || '-') + '</div></div>' +
-      '<div class="dt-row"><div class="dt-label">Kontrak Start</div><div class="dt-val">' + escapeHtml(os.contractStart || '-') + '</div></div>' +
-      '<div class="dt-row"><div class="dt-label">Kontrak End</div><div class="dt-val">' + escapeHtml(os.contractEnd || '-') + '</div></div>' +
-      '<div class="dt-row"><div class="dt-label">Durasi Kontrak</div><div class="dt-val">' + escapeHtml(os.contractDuration || '-') + '</div></div>' +
-      '<div class="dt-row"><div class="dt-label">Nomor Kontrak</div><div class="dt-val">' + escapeHtml(os.contractNumber || '-') + '</div></div>' +
-      '<div class="dt-row"><div class="dt-label">Gaji</div><div class="dt-val">' + formatRupiah(os.salary || 0) + ' (' + escapeHtml(os.salaryType || '-') + ')</div></div>' +
-      '<div class="dt-row"><div class="dt-label">Status</div><div class="dt-val"><span class="badge-status ' + statusClass + '">' + escapeHtml(empStatus) + '</span></div></div>' +
-      '<div class="dt-row"><div class="dt-label">Catatan HR</div><div class="dt-val">' + escapeHtml(os.hrNotes || os.notes || '-') + '</div></div>' +
-      '<div class="dt-row"><div class="dt-label">Dibuat</div><div class="dt-val">' + escapeHtml(os.createdDate || '-') + '</div></div>';
+    if (si)      si.addEventListener('input', applyOsFilters);
+    if (btnRef)  btnRef.addEventListener('click', function(){ loadOutsourceData(false); });
+    if (btnAdd)  btnAdd.addEventListener('click', function(){ openOsForm(null); });
+    if (btnSav)  btnSav.addEventListener('click', saveOsData);
+    if (btnReset) btnReset.addEventListener('click', function() {
+      if (si) si.value = '';
+      ['osStatusFilter','osVendorFilter'].forEach(function(id){
+        var e = document.getElementById(id); if (e) e.value = '';
+      });
+      document.getElementById('osSortSelect').value = 'newest';
+      applyOsFilters();
+    });
 
-    document.getElementById('osDetBody').innerHTML = html;
-    OS.detModal.show();
+    ['osStatusFilter','osVendorFilter','osSortSelect'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('change', applyOsFilters);
+    });
+
+    var today = new Date().toISOString().slice(0,10);
+    if (btnCsv) btnCsv.addEventListener('click', function() {
+      var rows = getOsExportRows();
+      if (!rows.length) { showToast('Tidak ada data.', 'warning'); return; }
+      exportCsv(rows, 'outsource-' + today + '.csv');
+      showToast('Export CSV berhasil (' + rows.length + ' data).', 'success');
+    });
+    if (btnXlsx) btnXlsx.addEventListener('click', function() {
+      var rows = getOsExportRows();
+      if (!rows.length) { showToast('Tidak ada data.', 'warning'); return; }
+      exportXlsx(rows, 'Outsource', 'outsource-' + today + '.xlsx');
+      showToast('Export Excel berhasil (' + rows.length + ' data).', 'success');
+    });
   }
-
-  // ---- Form Modal ----
   function openOsForm(id) {
     OS.editId = id || null;
     document.getElementById('osFormTitle').textContent = id ? 'Edit Outsource' : 'Tambah Outsource';
@@ -370,7 +377,7 @@
       .withSuccessHandler(function(r) {
         if (r && r.success) {
           showToast(r.message, 'success');
-          OS.detModal.hide();
+          closeDrawer();
           loadOutsourceData(false);
         } else {
           showToast(r ? r.message : 'Gagal menghapus.', 'danger');
@@ -399,55 +406,6 @@
         'Tanggal Join': r.joinDate,
         'Tanggal Daftar': r.createdDate,
       };
-    });
-  }
-
-  // ---- Init ----
-  var osInitialized = false;
-  function initOutsourceUI() {
-    if (osInitialized) return;
-    osInitialized = true;
-
-    OS.detModal = new bootstrap.Modal(document.getElementById('osDetModal'));
-    OS.formModal = new bootstrap.Modal(document.getElementById('osFormModal'));
-
-    var si = document.getElementById('osSearchInput');
-    var btnRef = document.getElementById('osBtnRefresh');
-    var btnAdd = document.getElementById('btnOutAdd');
-    var btnSav = document.getElementById('btnOsSave');
-    var btnEdt = document.getElementById('btnOsEdit');
-    var btnDel = document.getElementById('btnOsDel');
-    var btnCsv = document.getElementById('osBtnExportCsv');
-    var btnXlsx = document.getElementById('osBtnExportXlsx');
-    var btnReset = document.getElementById('osBtnResetFilter');
-
-    if (si) si.addEventListener('input', applyOsFilters);
-    if (btnRef) btnRef.addEventListener('click', function(){ loadOutsourceData(false); });
-    if (btnAdd) btnAdd.addEventListener('click', function(){ openOsForm(null); });
-    if (btnSav) btnSav.addEventListener('click', saveOsData);
-    if (btnEdt) btnEdt.addEventListener('click', function(){ openOsForm(OS.detailId); });
-    if (btnDel) btnDel.addEventListener('click', deleteOsData);
-    if (btnReset) btnReset.addEventListener('click', function() {
-      if (si) si.value = '';
-      ['osStatusFilter','osVendorFilter'].forEach(function(id){
-        var e=document.getElementById(id); if(e) e.value='';
-      });
-      document.getElementById('osSortSelect').value = 'newest';
-      applyOsFilters();
-    });
-
-    var today = new Date().toISOString().slice(0,10);
-    if (btnCsv) btnCsv.addEventListener('click', function() {
-      var rows = getOsExportRows();
-      if (!rows.length) { showToast('Tidak ada data.', 'warning'); return; }
-      exportCsv(rows, 'outsource-' + today + '.csv');
-      showToast('Export CSV berhasil (' + rows.length + ' data).', 'success');
-    });
-    if (btnXlsx) btnXlsx.addEventListener('click', function() {
-      var rows = getOsExportRows();
-      if (!rows.length) { showToast('Tidak ada data.', 'warning'); return; }
-      exportXlsx(rows, 'Outsource', 'outsource-' + today + '.xlsx');
-      showToast('Export Excel berhasil (' + rows.length + ' data).', 'success');
     });
   }
 
