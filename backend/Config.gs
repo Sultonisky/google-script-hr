@@ -184,13 +184,15 @@ var AUDIT_LOG_SHEET_NAME = AUDIT_SHEET_NAME;
 // ============================================================
 var USERS_HEADERS = [
   "Email", // 1
-  "Full Name", // 2
-  "Role", // 3
-  "Status", // 4
-  "Last Login", // 5
-  "Created At", // 6
-  "Updated At", // 7
-  "Created By", // 8
+  "Username", // 2
+  "Full Name", // 3
+  "Role", // 4
+  "Status", // 5
+  "Password Hash", // 6
+  "Last Login", // 7
+  "Created At", // 8
+  "Updated At", // 9
+  "Created By", // 10
 ];
 
 var USERS_COL = {};

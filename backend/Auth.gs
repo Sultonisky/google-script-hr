@@ -620,26 +620,6 @@ function requireRole(minRole, sessionToken) {
 // ============================================================
 
 /**
- * Returns the Users sheet, creating it if necessary.
- */
-function getUsersSheet_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(USERS_SHEET_NAME);
-  if (!sheet) {
-    sheet = ss.insertSheet(USERS_SHEET_NAME);
-    sheet.getRange(1, 1, 1, USERS_HEADERS.length).setValues([USERS_HEADERS]);
-    sheet
-      .getRange(1, 1, 1, USERS_HEADERS.length)
-      .setFontWeight("bold")
-      .setBackground("#005BAC")
-      .setFontColor("#FFFFFF");
-    sheet.setFrozenRows(1);
-    sheet.autoResizeColumns(1, USERS_HEADERS.length);
-  }
-  return sheet;
-}
-
-/**
  * Finds a user by email (case-insensitive).
  * @param {string} email
  * @returns {Object|null}
@@ -1046,8 +1026,91 @@ function autoCreateFirstAdminWithCredential(idToken) {
 }
 
 /**
- * Internal helper: creates first Super Admin row and returns session.
- * Used by both autoCreateFirstAdmin (access_token) and autoCreateFirstAdminWithCredential (idToken).
+ * Gets or creates the Users sheet with proper headers.
+ * Mirrors the established getOrCreateSheet_() pattern from Sheets.gs.
+ * Includes migration: if existing sheet has fewer columns than USERS_HEADERS,
+ * recreates with correct schema while preserving existing data.
+ * @returns {GoogleAppsScript.Spreadsheet.Sheet}
+ */
+function getUsersSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(USERS_SHEET_NAME);
+
+  if (!sheet) {
+    // Sheet doesn't exist — create fresh
+    sheet = ss.insertSheet(USERS_SHEET_NAME);
+    _applyUserHeaders_(sheet);
+    return sheet;
+  }
+
+  // ── Migration: check if headers match current schema ──
+  var lastCol = sheet.getLastColumn();
+  var headerRow = lastCol >= 1
+    ? sheet.getRange(1, 1, 1, lastCol).getValues()[0]
+    : [];
+
+  var needsMigration = (lastCol < USERS_HEADERS.length);
+
+  if (!needsMigration) {
+    // Also check that each header matches (schema might have changed order)
+    for (var h = 0; h < USERS_HEADERS.length; h++) {
+      if (String(headerRow[h]).trim() !== USERS_HEADERS[h]) {
+        needsMigration = true;
+        break;
+      }
+    }
+  }
+
+  if (needsMigration) {
+    // Preserve existing data
+    var existingData = [];
+    var lastRow = sheet.getLastRow();
+    if (lastRow > 1) {
+      existingData = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+    }
+
+    // Delete old sheet and recreate with correct headers
+    ss.deleteSheet(sheet);
+    sheet = ss.insertSheet(USERS_SHEET_NAME);
+    _applyUserHeaders_(sheet);
+
+    // Write back existing data (preserves as many columns as possible)
+    if (existingData.length > 0) {
+      var rowsToWrite = existingData.length;
+      var colsToWrite = Math.min(lastCol, USERS_HEADERS.length);
+      sheet.getRange(2, 1, rowsToWrite, colsToWrite).setValues(
+        existingData.map(function(row) {
+          return row.slice(0, colsToWrite);
+        })
+      );
+      SpreadsheetApp.flush();
+    }
+  }
+
+  return sheet;
+}
+
+/**
+ * Applies Users sheet header styling. Extracted for reuse.
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet
+ */
+function _applyUserHeaders_(sheet) {
+  var headerRange = sheet.getRange(1, 1, 1, USERS_HEADERS.length);
+  headerRange.setValues([USERS_HEADERS]);
+  headerRange.setFontWeight("bold");
+  headerRange.setBackground("#005BAC");
+  headerRange.setFontColor("#FFFFFF");
+  headerRange.setHorizontalAlignment("center");
+  sheet.setFrozenRows(1);
+  sheet.setColumnWidths(1, USERS_HEADERS.length, 200);
+  SpreadsheetApp.flush();
+}
+
+/**
+ * Internal implementation for auto-creating first Super Admin.
+ * @param {string} email
+ * @param {string} fullName
+ * @returns {Object}
  */
 function autoCreateFirstAdmin_(email, fullName) {
   var sheet = getUsersSheet_();
@@ -1056,19 +1119,14 @@ function autoCreateFirstAdmin_(email, fullName) {
     return {
       success: false,
       error:
-        "Sistem sudah memiliki pengguna. Tidak dapat membuat Super Admin otomatis.",
+        "Users sheet sudah berisi data. Gunakan addUser untuk menambah pengguna.",
     };
   }
 
-  var now = Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd HH:mm:ss");
   var lock = LockService.getScriptLock();
   try {
     lock.waitLock(10000);
-    sheet = getUsersSheet_();
-    lastRow = sheet.getLastRow();
-    if (lastRow > 1) {
-      return { success: false, error: "Sistem sudah memiliki pengguna." };
-    }
+    var now = Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd HH:mm:ss");
     sheet.appendRow([
       email.toLowerCase(),  // Email
       '',                   // Username
