@@ -174,8 +174,12 @@ function getOutsourceList() {
         phone: String(row[colIndex["Phone"]] || ""),
         address: String(row[colIndex["Address"]] || ""),
         city: String(row[colIndex["City"]] || ""),
+        district: String(row[colIndex["District"]] || ""),
+        companyEntity: String(row[colIndex["Company Entity"]] || ""),
         position: String(row[colIndex["Position"]] || ""),
         department: String(row[colIndex["Department"]] || ""),
+        division: String(row[colIndex["Division"]] || ""),
+        branch: String(row[colIndex["Branch"]] || ""),
         joinDate: String(row[colIndex["Join Date"]] || ""),
         education: String(row[colIndex["Education"]] || ""),
         workExperience: String(row[colIndex["Work Experience"]] || ""),
@@ -187,14 +191,19 @@ function getOutsourceList() {
         contractDuration: String(
           row[colIndex["Contract Duration"]] || "",
         ),
-        salary: row[colIndex["Salary"]] || 0,
+        salary: row[colIndex["Salary"]] === "" || row[colIndex["Salary"]] === null
+          ? ""
+          : row[colIndex["Salary"]],
         salaryType: String(row[colIndex["Salary Type"]] || ""),
         outsourceVendor: String(row[colIndex["Outsource Vendor"]] || ""),
         vendorCompany: String(row[colIndex["Outsource Vendor"]] || ""),
         contractNumber: String(row[colIndex["Contract Number"]] || ""),
         recruitmentSource: String(row[colIndex["Recruitment Source"]] || ""),
         status: String(row[colIndex["Status"]] || ""),
-        notes: String(row[colIndex["HR Notes"]] || ""),
+        employeeType: String(row[colIndex["Employee Type"]] || "Outsource"),
+        companyEntity: String(row[colIndex["Company Entity"]] || ""),
+        notes: String(row[colIndex["Notes"]] || ""),
+        hrNotes: String(row[colIndex["HR Notes"]] || ""),
         createdBy: String(row[colIndex["Created By"]] || ""),
         updatedAt: fmtDate_(row[colIndex["Updated At"]], "dd/MM/yyyy HH:mm"),
       });
@@ -255,8 +264,12 @@ function getOutsourceById(id) {
           phone: String(row[colIndex["Phone"]] || ""),
           address: String(row[colIndex["Address"]] || ""),
           city: String(row[colIndex["City"]] || ""),
+          district: String(row[colIndex["District"]] || ""),
+          companyEntity: String(row[colIndex["Company Entity"]] || ""),
           position: String(row[colIndex["Position"]] || ""),
           department: String(row[colIndex["Department"]] || ""),
+          division: String(row[colIndex["Division"]] || ""),
+          branch: String(row[colIndex["Branch"]] || ""),
           joinDate: String(row[colIndex["Join Date"]] || ""),
           education: String(row[colIndex["Education"]] || ""),
           workExperience: String(row[colIndex["Work Experience"]] || ""),
@@ -268,7 +281,9 @@ function getOutsourceById(id) {
           contractDuration: String(
             row[colIndex["Contract Duration"]] || "",
           ),
-          salary: row[colIndex["Salary"]] || 0,
+          salary: row[colIndex["Salary"]] === "" || row[colIndex["Salary"]] === null
+            ? ""
+            : row[colIndex["Salary"]],
           salaryType: String(row[colIndex["Salary Type"]] || ""),
           outsourceVendor: String(row[colIndex["Outsource Vendor"]] || ""),
           contractNumber: String(row[colIndex["Contract Number"]] || ""),
@@ -276,7 +291,8 @@ function getOutsourceById(id) {
             row[colIndex["Recruitment Source"]] || "",
           ),
           status: String(row[colIndex["Status"]] || ""),
-          notes: String(row[colIndex["HR Notes"]] || ""),
+          notes: String(row[colIndex["Notes"]] || ""),
+          hrNotes: String(row[colIndex["HR Notes"]] || ""),
         },
       };
     }

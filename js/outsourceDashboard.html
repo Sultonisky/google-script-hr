@@ -153,7 +153,7 @@
       var statusClass  = empStatus === 'Active' ? 'accepted' : empStatus === 'Terminated' ? 'blacklist' : 'pending';
       var vendor       = r.outsourceVendor || r.vendorCompany || '-';
       var typeLabel    = r.employeeType || '-';
-      return '<tr>' +
+      return '<tr class="os-row-link" data-id="' + escapeHtml(r.employeeId) + '" style="cursor:pointer;">' +
         '<td><div class="avatar-sm" style="background:rgba(8,145,178,0.1);color:#0e7490;">' + escapeHtml(initials(r.fullName)) + '</div></td>' +
         '<td><span class="id-mono">' + escapeHtml(r.employeeId || '-') + '</span></td>' +
         '<td>' +
@@ -208,6 +208,12 @@
   }
 
   function attachOsRowHandlers() {
+    document.querySelectorAll('#osTableBody .os-row-link[data-id]').forEach(function(el) {
+      el.addEventListener('click', function(event) {
+        if (event.target.closest('button, a, input, select, textarea, label')) return;
+        openOutsourceDrawer(el.getAttribute('data-id'));
+      });
+    });
     document.querySelectorAll('#osTableBody .cand-name[data-id]').forEach(function(el) {
       el.addEventListener('click', function() {
         openOutsourceDrawer(el.getAttribute('data-id'));
@@ -329,6 +335,7 @@
           if (r && r.success) {
             showToast(r.message, 'success');
             OS.formModal.hide();
+            if (typeof closeDrawer === 'function') closeDrawer();
             loadOutsourceData(false);
           } else {
             showToast(r ? r.message : 'Gagal menyimpan.', 'danger');
@@ -348,10 +355,12 @@
           if (typeof r === 'string' && r.indexOf('Sukses') !== -1) {
             showToast('Karyawan outsource berhasil ditambahkan.', 'success');
             OS.formModal.hide();
+            if (typeof closeDrawer === 'function') closeDrawer();
             loadOutsourceData(false);
           } else if (r && r.success) {
             showToast(r.message, 'success');
             OS.formModal.hide();
+            if (typeof closeDrawer === 'function') closeDrawer();
             loadOutsourceData(false);
           } else {
             showToast(r ? (typeof r === 'string' ? r : r.message) : 'Gagal menyimpan.', 'danger');

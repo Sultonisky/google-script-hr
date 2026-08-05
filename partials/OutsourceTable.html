@@ -51,6 +51,7 @@
     <div>
       <h6>Data Karyawan Outsource</h6>
       <div class="panel-subtitle" id="osPanelSubtitle">Memuat data...</div>
+      <div class="panel-subtitle">Klik baris, nama, atau tombol lihat untuk membuka detail lengkap dari spreadsheet.</div>
     </div>
     <div class="export-btns">
       <button class="btn-export" style="background:var(--color-primary);color:#fff;border:1px solid var(--color-primary)" type="button" id="btnOutAdd">
@@ -123,56 +124,4 @@
   </div>
 </div>
 
-<!-- Form Modal -->
-<div class="modal fade" id="osFormModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h6 class="modal-title fw-bold" id="osFormTitle">Tambah Outsource</h6>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <input type="hidden" id="osfId" />
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">NIK *</label>
-            <input type="text" class="form-control" id="osfNik" required />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Nama Lengkap *</label>
-            <input type="text" class="form-control" id="osfNama" required />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Posisi *</label>
-            <input type="text" class="form-control" id="osfPosisi" required />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Perusahaan *</label>
-            <input type="text" class="form-control" id="osfPerusahaan" required />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Tanggal Masuk *</label>
-            <input type="date" class="form-control" id="osfTglMasuk" required />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Status</label>
-            <select class="form-select" id="osfStatus">
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-            </select>
-          </div>
-          <div class="col-12">
-            <label class="form-label fw-semibold">Catatan</label>
-            <textarea class="form-control" id="osfNotes" rows="2"></textarea>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-light btn-sm fw-semibold" data-bs-dismiss="modal">Batal</button>
-        <button type="button" class="btn btn-primary btn-sm fw-semibold" id="btnOsSave" style="background:#005BAC;border:none;">
-          <i class="bi bi-check2-circle me-1"></i> Simpan
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
+<!-- Form modal dipindah ke partials/EntityModals.html agar z-index tidak terpotong stacking context .page-section -->

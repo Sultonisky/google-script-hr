@@ -37,6 +37,7 @@
     <div>
       <h6>Daftar Karyawan</h6>
       <div class="panel-subtitle" id="empPanelSubtitle">Memuat data...</div>
+      <div class="panel-subtitle">Klik baris atau nama untuk melihat detail lengkap dari spreadsheet.</div>
     </div>
     <div class="export-btns">
       <button class="btn-export" style="background:var(--color-primary);color:#fff;border:1px solid var(--color-primary);"
@@ -114,73 +115,4 @@
   </div>
 </div>
 
-<!-- Form Modal (Add / Edit) — detail sekarang di drawer bersama -->
-<div class="modal fade" id="empFormModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h6 class="modal-title fw-bold" id="empFormTitle">Tambah Karyawan</h6>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <input type="hidden" id="efId" />
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Nama Lengkap *</label>
-            <input type="text" class="form-control" id="efName" />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">NIK</label>
-            <input type="text" class="form-control" id="efNik" />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Email</label>
-            <input type="email" class="form-control" id="efEmail" />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">No. Handphone</label>
-            <input type="text" class="form-control" id="efPhone" />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Departemen</label>
-            <select class="form-select" id="efDept"><option value="">— Pilih —</option></select>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Posisi</label>
-            <select class="form-select" id="efPos"><option value="">— Pilih —</option></select>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Lokasi Kerja</label>
-            <select class="form-select" id="efLoc"><option value="">— Pilih —</option></select>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Tipe Karyawan</label>
-            <select class="form-select" id="efType"><option value="">— Pilih —</option></select>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Tanggal Masuk</label>
-            <input type="date" class="form-control" id="efJoin" />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Status</label>
-            <select class="form-select" id="efStatus">
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-            </select>
-          </div>
-          <div class="col-12">
-            <label class="form-label fw-semibold">Catatan HR</label>
-            <textarea class="form-control" id="efNotes" rows="2"></textarea>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-light btn-sm fw-semibold" data-bs-dismiss="modal">Batal</button>
-        <button type="button" class="btn btn-primary btn-sm fw-semibold" id="btnEmpSave"
-          style="background:#005bac;border:none;">
-          <i class="bi bi-check2-circle me-1"></i> Simpan
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
+<!-- Form modal dipindah ke partials/EntityModals.html agar z-index tidak terpotong stacking context .page-section -->
