@@ -5,9 +5,10 @@
   /* Modal z-index — harus di atas drawer (1900) */
   .modal          { z-index: 2100 !important; }
   .modal-backdrop { z-index: 2050 !important; }
-  .drawer-panel.modal-open  { z-index: 1700; }
-  .drawer-overlay.modal-open { z-index: 1650; }
-  .toast-container { z-index: 2000; }
+  /* Drawer tetap terlihat di belakang modal (tidak perlu dimundurkan) */
+  .drawer-panel   { z-index: 1900; }
+  .drawer-overlay { z-index: 1800; }
+  .toast-container { z-index: 2200; }
   .toast-custom    { min-width: 300px; }
 
   [data-theme="dark"] .modal-content { background: var(--color-surface); color: var(--color-text); border-color: var(--color-border); }

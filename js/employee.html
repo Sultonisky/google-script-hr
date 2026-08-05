@@ -174,7 +174,7 @@
     if (tbody) tbody.innerHTML = pageData.map(function (e) {
       var empStatus = e.status || 'Inactive';
       var stBadge = empStatus === 'Active' ? 'accepted' : 'blacklist';
-      return '<tr>' +
+      return '<tr class="emp-row-link" data-id="' + escapeHtml(e.employeeId) + '" style="cursor:pointer;">' +
         '<td><div class="avatar-sm">' + escapeHtml(initials(e.fullName)) + '</div></td>' +
         '<td><span class="id-mono">' + escapeHtml(e.employeeId || '-') + '</span></td>' +
         '<td><div class="cand-name cand-name-link" data-id="' + escapeHtml(e.employeeId) + '">' +
@@ -240,6 +240,12 @@
   }
 
   function empAttachRowHandlers() {
+    document.querySelectorAll('#empTableBody .emp-row-link[data-id]').forEach(function(el) {
+      el.addEventListener('click', function(event) {
+        if (event.target.closest('button, a, input, select, textarea, label')) return;
+        openEmployeeDrawer(el.getAttribute('data-id'));
+      });
+    });
     document.querySelectorAll('#empTableBody .cand-name-link').forEach(function(el) {
       el.addEventListener('click', function() {
         openEmployeeDrawer(el.getAttribute('data-id'));
@@ -337,6 +343,7 @@
           if (r && r.success) {
             empToast(r.message, 'success');
             EMP.formModal.hide();
+            if (typeof closeDrawer === 'function') closeDrawer();
             empLoadAll();
           } else {
             empToast(r ? r.message : 'Gagal menyimpan.', 'danger');
@@ -356,6 +363,7 @@
           if (r && r.success) {
             empToast(r.message, 'success');
             EMP.formModal.hide();
+            if (typeof closeDrawer === 'function') closeDrawer();
             empLoadAll();
           } else {
             empToast(r ? r.message : 'Gagal menyimpan.', 'danger');

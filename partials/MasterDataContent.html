@@ -52,49 +52,7 @@
   </div>
 </div>
 
-<!-- Add/Edit Modal -->
-<div class="modal fade" id="mdItemModal" tabindex="-1" aria-labelledby="mdItemModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content" style="border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,0.12);">
-      <div class="modal-header" style="border-bottom:1px solid var(--border-color,#f0f0f0);padding:16px 20px;">
-        <h6 class="modal-title fw-bold" id="mdItemModalLabel">Tambah Item</h6>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
-      </div>
-      <div class="modal-body" style="padding:20px;">
-        <input type="hidden" id="mdItemId" />
-        <div class="mb-3">
-          <label class="form-label fw-semibold" style="font-size:13px;">
-            Kategori <span class="text-danger">*</span>
-          </label>
-          <select class="form-select" id="mdItemCategory" style="font-size:13px;">
-            <option value="">— Pilih Kategori —</option>
-          </select>
-        </div>
-        <div class="mb-3">
-          <label class="form-label fw-semibold" style="font-size:13px;">
-            Nama <span class="text-danger">*</span>
-          </label>
-          <input type="text" class="form-control" id="mdItemName" placeholder="Nama item" style="font-size:13px;" />
-        </div>
-        <div class="mb-3">
-          <label class="form-label fw-semibold" style="font-size:13px;">Deskripsi</label>
-          <input type="text" class="form-control" id="mdItemDesc" placeholder="Deskripsi singkat (opsional)" style="font-size:13px;" />
-        </div>
-        <div class="mb-3">
-          <label class="form-label fw-semibold" style="font-size:13px;">Urutan</label>
-          <input type="number" class="form-control" id="mdItemOrder" min="1" value="1" style="font-size:13px;width:100px;" />
-        </div>
-      </div>
-      <div class="modal-footer" style="border-top:1px solid var(--border-color,#f0f0f0);padding:12px 20px;">
-        <button type="button" class="btn btn-light btn-sm fw-semibold" data-bs-dismiss="modal">Batal</button>
-        <button type="button" class="btn btn-primary btn-sm fw-semibold" id="btnMdSaveItem"
-          style="background:#005BAC;border:none;">
-          <i class="bi bi-check2-circle me-1"></i> Simpan
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
+<!-- Add/Edit Modal dipindah ke partials/EntityModals.html agar z-index tidak terpotong stacking context -->
 
 <!-- Toast Notification -->
 <div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999;pointer-events:none;">

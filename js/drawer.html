@@ -57,6 +57,37 @@
     }).join('');
   }
 
+  function drawerTextValue(value) {
+    if (value === null || value === undefined) return '-';
+    var text = String(value).trim();
+    return text ? text : '-';
+  }
+
+  function drawerAgeValue(value) {
+    return drawerTextValue(value) === '-' ? '-' : String(value).trim() + ' Tahun';
+  }
+
+  function drawerGenderValue(value) {
+    if (value === 'Male') return 'Laki-laki';
+    if (value === 'Female') return 'Perempuan';
+    return drawerTextValue(value);
+  }
+
+  function setDrawerText(id, value) {
+    var el = document.getElementById(id);
+    if (el) el.innerText = drawerTextValue(value);
+  }
+
+  function setDrawerMoney(id, value) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (value === null || value === undefined || String(value).trim() === '') {
+      el.innerText = '-';
+      return;
+    }
+    el.innerText = formatRupiah(value);
+  }
+
   // ============================================================
   // MODE: CANDIDATE
   // ============================================================
@@ -160,6 +191,7 @@
   function openEmployeeDrawer(id) {
     var emp = EMP.allItems.find(function(x) { return x.employeeId === id; });
     if (!emp) return;
+    activeCandidateId = null;
     EMP.detailId = id;
     setDrawerMode('employee');
 
@@ -176,34 +208,58 @@
       '<span class="badge-status lg ' + stBadge + '">' + escapeHtml(emp.status || 'Inactive') + '</span>';
     setDrawerMeta([
       { label: 'Employee ID', value: emp.employeeId || '-' },
+      { label: 'Recruitment ID', value: emp.recruitmentId || '-' },
       { label: 'Tanggal Masuk', value: emp.joinDate || '-' }
     ]);
 
     // Body fields
-    var set = function(id, val) { var el = document.getElementById(id); if (el) el.innerText = val || '-'; };
-    set('empDrEmployeeId', emp.employeeId);
-    set('empDrNik',        emp.nik);
-    set('empDrFullName',   emp.fullName);
-    set('empDrEmail',      emp.email);
-    set('empDrPhone',      emp.phone);
-    set('empDrCity',       emp.city);
-    set('empDrDept',       emp.department);
-    set('empDrPosition',   emp.position);
-    set('empDrType',       emp.employeeType);
-    set('empDrJoinDate',   emp.joinDate);
-    set('empDrStatus',     emp.status);
-    set('empDrCreated',    emp.createdAt || emp.joinDate);
-    set('empDrNotes',      emp.hrNotes || emp.notes || '-');
+    setDrawerText('empDrEmployeeId',   emp.employeeId);
+    setDrawerText('empDrRecruitmentId', emp.recruitmentId);
+    setDrawerText('empDrNik',          emp.nik);
+    setDrawerText('empDrFullName',     emp.fullName);
+    setDrawerText('empDrBirthDate',    emp.birthDate);
+    setDrawerText('empDrAge',          drawerAgeValue(emp.age));
+    setDrawerText('empDrGender',       drawerGenderValue(emp.gender));
+    setDrawerText('empDrMarital',      emp.maritalStatus);
+    setDrawerText('empDrEmail',        emp.email);
+    setDrawerText('empDrPhone',        emp.phone);
+    setDrawerText('empDrCity',         emp.city);
+    setDrawerText('empDrDistrict',     emp.district);
+    setDrawerText('empDrAddress',      emp.address);
+    setDrawerText('empDrCompany',      emp.companyEntity);
+    setDrawerText('empDrType',         emp.employeeType);
+    setDrawerText('empDrDept',         emp.department);
+    setDrawerText('empDrDivision',     emp.division);
+    setDrawerText('empDrBranch',       emp.branch);
+    setDrawerText('empDrPosition',     emp.position);
+    setDrawerText('empDrEducation',    emp.education);
+    setDrawerText('empDrExperience',   emp.workExperience);
+    setDrawerText('empDrSource',       emp.recruitmentSource);
+    setDrawerText('empDrJoinDate',     emp.joinDate);
+    setDrawerText('empDrEmpStatus',    emp.employmentStatus);
+    setDrawerText('empDrStatus',       emp.status);
+    setDrawerText('empDrContractNo',   emp.contractNumber);
+    setDrawerText('empDrContractDur',  emp.contractDuration);
+    setDrawerText('empDrContractStart', emp.contractStart);
+    setDrawerText('empDrContractEnd',  emp.contractEnd);
+    setDrawerMoney('empDrSalary',      emp.salary);
+    setDrawerText('empDrSalaryType',   emp.salaryType);
+    setDrawerText('empDrVendor',       emp.outsourceVendor);
+    setDrawerText('empDrCreatedBy',    emp.createdBy);
+    setDrawerText('empDrCreated',      emp.createdAt || emp.joinDate);
+    setDrawerText('empDrUpdated',      emp.updatedAt || emp.createdAt || emp.joinDate);
+    setDrawerText('empDrGeneralNotes', emp.notes);
+    setDrawerText('empDrNotes',        emp.hrNotes);
 
     // Footer buttons wiring
     var btnEdit = document.getElementById('btnDrawerEntityEdit');
     var btnDel  = document.getElementById('btnDrawerEntityDelete');
-    if (btnEdit) { btnEdit.onclick = function() { closeDrawer(); empOpenEdit(); }; }
-    if (btnDel)  { btnDel.onclick  = function() { empDelete();   }; }
+    if (btnEdit) { btnEdit.onclick = function() { empOpenEdit(); }; }
+    if (btnDel)  { btnDel.onclick  = function() { empDelete();  }; }
 
     // Edit icon in header
     var headerEdit = document.getElementById('btnDrawerEdit');
-    if (headerEdit) { headerEdit.onclick = function() { closeDrawer(); empOpenEdit(); }; }
+    if (headerEdit) { headerEdit.onclick = function() { empOpenEdit(); }; }
 
     openDrawer();
   }
@@ -214,6 +270,7 @@
   function openOutsourceDrawer(id) {
     var os = OS.allItems.find(function(x) { return x.employeeId === id; });
     if (!os) return;
+    activeCandidateId = null;
     OS.detailId = id;
     setDrawerMode('outsource');
 
@@ -231,41 +288,58 @@
       '<span class="badge-status lg ' + statusClass + '">' + escapeHtml(empStatus) + '</span>';
     setDrawerMeta([
       { label: 'Employee ID', value: os.employeeId || '-' },
+      { label: 'Outsource ID', value: os.outsourceId || '-' },
       { label: 'Tanggal Masuk', value: os.joinDate || '-' }
     ]);
 
     // Body fields
-    var set = function(id, val) { var el = document.getElementById(id); if (el) el.innerText = val || '-'; };
-    set('osDrEmployeeId',    os.employeeId);
-    set('osDrOutsourceId',   os.outsourceId);
-    set('osDrNik',           os.nik);
-    set('osDrFullName',      os.fullName);
-    set('osDrEmail',         os.email);
-    set('osDrPhone',         os.phone);
-    set('osDrCity',          os.city);
-    set('osDrPosition',      os.position);
-    set('osDrDept',          os.department);
-    set('osDrVendor',        os.outsourceVendor || os.vendorCompany);
-    set('osDrType',          os.employeeType);
-    set('osDrJoinDate',      os.joinDate);
-    set('osDrStatus',        empStatus);
-    set('osDrContractNo',    os.contractNumber);
-    set('osDrContractDur',   os.contractDuration);
-    set('osDrContractStart', os.contractStart);
-    set('osDrContractEnd',   os.contractEnd);
-    set('osDrSalary',        formatRupiah(os.salary || 0));
-    set('osDrSalaryType',    os.salaryType);
-    set('osDrNotes',         os.hrNotes || os.notes || '-');
+    setDrawerText('osDrEmployeeId',    os.employeeId);
+    setDrawerText('osDrOutsourceId',   os.outsourceId);
+    setDrawerText('osDrNik',           os.nik);
+    setDrawerText('osDrFullName',      os.fullName);
+    setDrawerText('osDrBirthDate',     os.birthDate);
+    setDrawerText('osDrAge',           drawerAgeValue(os.age));
+    setDrawerText('osDrGender',        drawerGenderValue(os.gender));
+    setDrawerText('osDrMarital',       os.maritalStatus);
+    setDrawerText('osDrEmail',         os.email);
+    setDrawerText('osDrPhone',         os.phone);
+    setDrawerText('osDrCity',          os.city);
+    setDrawerText('osDrDistrict',      os.district);
+    setDrawerText('osDrAddress',       os.address);
+    setDrawerText('osDrCompany',       os.companyEntity);
+    setDrawerText('osDrPosition',      os.position);
+    setDrawerText('osDrDept',          os.department);
+    setDrawerText('osDrDivision',      os.division);
+    setDrawerText('osDrBranch',        os.branch);
+    setDrawerText('osDrVendor',        os.outsourceVendor || os.vendorCompany);
+    setDrawerText('osDrType',          os.employeeType);
+    setDrawerText('osDrJoinDate',      os.joinDate);
+    setDrawerText('osDrEmpStatus',     os.employmentStatus);
+    setDrawerText('osDrStatus',        os.status || empStatus);
+    setDrawerText('osDrEducation',     os.education);
+    setDrawerText('osDrExperience',    os.workExperience);
+    setDrawerText('osDrSource',        os.recruitmentSource);
+    setDrawerText('osDrContractNo',    os.contractNumber);
+    setDrawerText('osDrContractDur',   os.contractDuration);
+    setDrawerText('osDrContractStart', os.contractStart);
+    setDrawerText('osDrContractEnd',   os.contractEnd);
+    setDrawerMoney('osDrSalary',       os.salary);
+    setDrawerText('osDrSalaryType',    os.salaryType);
+    setDrawerText('osDrCreatedBy',     os.createdBy);
+    setDrawerText('osDrCreated',       os.createdDate);
+    setDrawerText('osDrUpdated',       os.updatedAt || os.createdDate);
+    setDrawerText('osDrGeneralNotes',  os.notes);
+    setDrawerText('osDrNotes',         os.hrNotes);
 
     // Footer buttons wiring
     var btnEdit = document.getElementById('btnDrawerEntityEdit');
     var btnDel  = document.getElementById('btnDrawerEntityDelete');
-    if (btnEdit) { btnEdit.onclick = function() { closeDrawer(); openOsForm(OS.detailId); }; }
+    if (btnEdit) { btnEdit.onclick = function() { openOsForm(OS.detailId); }; }
     if (btnDel)  { btnDel.onclick  = function() { deleteOsData(); }; }
 
     // Edit icon in header
     var headerEdit = document.getElementById('btnDrawerEdit');
-    if (headerEdit) { headerEdit.onclick = function() { closeDrawer(); openOsForm(OS.detailId); }; }
+    if (headerEdit) { headerEdit.onclick = function() { openOsForm(OS.detailId); }; }
 
     openDrawer();
   }

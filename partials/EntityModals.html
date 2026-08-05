@@ -1,0 +1,218 @@
+<!-- partials/EntityModals.html — FORM MODALS: Employee & Outsource -->
+<!-- Diletakkan di luar semua .page-section agar z-index tidak terpotong stacking context -->
+<!-- z-index sudah di-override di css/modal.html: .modal { z-index: 2100 } -->
+
+<!-- ===== EMPLOYEE FORM MODAL (Add / Edit) ===== -->
+<div class="modal fade" id="empFormModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title fw-bold" id="empFormTitle">Tambah Karyawan</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="efId" />
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Nama Lengkap *</label>
+            <input type="text" class="form-control" id="efName" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">NIK</label>
+            <input type="text" class="form-control" id="efNik" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Email</label>
+            <input type="email" class="form-control" id="efEmail" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">No. Handphone</label>
+            <input type="text" class="form-control" id="efPhone" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Departemen</label>
+            <select class="form-select" id="efDept"><option value="">— Pilih —</option></select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Posisi</label>
+            <select class="form-select" id="efPos"><option value="">— Pilih —</option></select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Lokasi Kerja</label>
+            <select class="form-select" id="efLoc"><option value="">— Pilih —</option></select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Tipe Karyawan</label>
+            <select class="form-select" id="efType"><option value="">— Pilih —</option></select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Tanggal Masuk</label>
+            <input type="date" class="form-control" id="efJoin" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Status</label>
+            <select class="form-select" id="efStatus">
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Catatan HR</label>
+            <textarea class="form-control" id="efNotes" rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light btn-sm fw-semibold" data-bs-dismiss="modal">Batal</button>
+        <button type="button" class="btn btn-primary btn-sm fw-semibold" id="btnEmpSave"
+          style="background:#005bac;border:none;">
+          <i class="bi bi-check2-circle me-1"></i> Simpan
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== OUTSOURCE FORM MODAL (Add / Edit) ===== -->
+<div class="modal fade" id="osFormModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title fw-bold" id="osFormTitle">Tambah Outsource</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="osfId" />
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">NIK *</label>
+            <input type="text" class="form-control" id="osfNik" required />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Nama Lengkap *</label>
+            <input type="text" class="form-control" id="osfNama" required />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Posisi *</label>
+            <input type="text" class="form-control" id="osfPosisi" required />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Perusahaan / Vendor *</label>
+            <input type="text" class="form-control" id="osfPerusahaan" required />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Tanggal Masuk *</label>
+            <input type="date" class="form-control" id="osfTglMasuk" required />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Status</label>
+            <select class="form-select" id="osfStatus">
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Catatan</label>
+            <textarea class="form-control" id="osfNotes" rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light btn-sm fw-semibold" data-bs-dismiss="modal">Batal</button>
+        <button type="button" class="btn btn-primary btn-sm fw-semibold" id="btnOsSave"
+          style="background:#005BAC;border:none;">
+          <i class="bi bi-check2-circle me-1"></i> Simpan
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MASTER DATA ITEM MODAL (Add / Edit) ===== -->
+<div class="modal fade" id="mdItemModal" tabindex="-1" aria-labelledby="mdItemModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,0.12);">
+      <div class="modal-header" style="border-bottom:1px solid var(--border-color,#f0f0f0);padding:16px 20px;">
+        <h6 class="modal-title fw-bold" id="mdItemModalLabel">Tambah Item</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+      </div>
+      <div class="modal-body" style="padding:20px;">
+        <input type="hidden" id="mdItemId" />
+        <div class="mb-3">
+          <label class="form-label fw-semibold" style="font-size:13px;">
+            Kategori <span class="text-danger">*</span>
+          </label>
+          <select class="form-select" id="mdItemCategory" style="font-size:13px;">
+            <option value="">— Pilih Kategori —</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold" style="font-size:13px;">
+            Nama <span class="text-danger">*</span>
+          </label>
+          <input type="text" class="form-control" id="mdItemName" placeholder="Nama item" style="font-size:13px;" />
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold" style="font-size:13px;">Deskripsi</label>
+          <input type="text" class="form-control" id="mdItemDesc" placeholder="Deskripsi singkat (opsional)" style="font-size:13px;" />
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold" style="font-size:13px;">Urutan</label>
+          <input type="number" class="form-control" id="mdItemOrder" min="1" value="1" style="font-size:13px;width:100px;" />
+        </div>
+      </div>
+      <div class="modal-footer" style="border-top:1px solid var(--border-color,#f0f0f0);padding:12px 20px;">
+        <button type="button" class="btn btn-light btn-sm fw-semibold" data-bs-dismiss="modal">Batal</button>
+        <button type="button" class="btn btn-primary btn-sm fw-semibold" id="btnMdSaveItem"
+          style="background:#005BAC;border:none;">
+          <i class="bi bi-check2-circle me-1"></i> Simpan
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== USER MANAGEMENT MODAL (Add / Edit) ===== -->
+<div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold" id="userModalLabel">Tambah Pengguna</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label for="userEmail" class="form-label fw-semibold">
+            Email Google <span class="text-danger">*</span>
+          </label>
+          <input type="email" class="form-control" id="userEmail"
+            placeholder="contoh@google.com" required />
+          <div class="form-text">Gunakan alamat email Google aktif pengguna.</div>
+        </div>
+        <div class="mb-3">
+          <label for="userFullName" class="form-label fw-semibold">
+            Nama Lengkap <span class="text-danger">*</span>
+          </label>
+          <input type="text" class="form-control" id="userFullName"
+            placeholder="Nama lengkap pengguna" required />
+        </div>
+        <div class="mb-3">
+          <label for="userRole" class="form-label fw-semibold">Role</label>
+          <select class="form-select" id="userRole">
+            <option value="Viewer">Viewer — Hanya melihat data</option>
+            <option value="Manager">Manager — Melihat & export data</option>
+            <option value="Recruiter">Recruiter — Kelola kandidat</option>
+            <option value="HR Admin">HR Admin — Akses penuh (kecuali user)</option>
+            <option value="Super Admin">Super Admin — Akses penuh termasuk user</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+        <button type="button" class="btn btn-primary" id="saveUserBtn" onclick="UserManagement.save()">
+          <i class="bi bi-check-lg"></i> Simpan
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
