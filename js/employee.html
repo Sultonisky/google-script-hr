@@ -155,7 +155,7 @@
       var stCls = e.status === "Active" ? "on" : "off";
       html +=
         "<tr onclick=\"empShowDetail('" +
-        e.id +
+        e.employeeId +
         "')\">" +
         '<td><div class="emp-nm">' +
         '<div class="emp-av">' +
@@ -174,7 +174,7 @@
         empEsc(e.position || "-") +
         "</td>" +
         "<td>" +
-        empEsc(e.workLocation || "-") +
+        empEsc(e.city || "-") +
         "</td>" +
         "<td>" +
         empEsc(e.employeeType || "-") +
@@ -206,7 +206,7 @@
   // ============ DETAIL MODAL ============
   function empShowDetail(id) {
     var emp = EMP.allItems.find(function (x) {
-      return x.id === id;
+      return x.employeeId === id;
     });
     if (!emp) return;
     EMP.detailId = id;
@@ -221,7 +221,7 @@
       empDt("No. Handphone", emp.phone || "-") +
       empDt("Departemen", emp.department || "-") +
       empDt("Posisi", emp.position || "-") +
-      empDt("Lokasi Kerja", emp.workLocation || "-") +
+      empDt("Lokasi Kerja", emp.city || "-") +
       empDt("Tipe Karyawan", emp.employeeType || "-") +
       empDt("Tanggal Masuk", emp.joinDate || "-") +
       empDt(
@@ -287,20 +287,20 @@
 
   function empOpenEdit() {
     var emp = EMP.allItems.find(function (x) {
-      return x.id === EMP.detailId;
+      return x.employeeId === EMP.detailId;
     });
     if (!emp) return;
-    EMP.editId = emp.id;
+    EMP.editId = emp.employeeId;
     EMP.detModal.hide();
     document.getElementById("empFormTitle").textContent = "Edit Karyawan";
-    document.getElementById("efId").value = emp.id;
+    document.getElementById("efId").value = emp.employeeId;
     document.getElementById("efName").value = emp.fullName || "";
     document.getElementById("efNik").value = emp.nik || "";
     document.getElementById("efEmail").value = emp.email || "";
     document.getElementById("efPhone").value = emp.phone || "";
     document.getElementById("efDept").value = emp.department || "";
     document.getElementById("efPos").value = emp.position || "";
-    document.getElementById("efLoc").value = emp.workLocation || "";
+    document.getElementById("efLoc").value = emp.city || "";
     document.getElementById("efType").value = emp.employeeType || "";
     document.getElementById("efJoin").value = emp.joinDate || "";
     document.getElementById("efStatus").value = emp.status || "Active";
@@ -380,7 +380,7 @@
   function empDelete() {
     if (!EMP.detailId) return;
     var emp = EMP.allItems.find(function (x) {
-      return x.id === EMP.detailId;
+      return x.employeeId === EMP.detailId;
     });
     if (!emp) return;
     if (!confirm('Hapus karyawan "' + emp.fullName + '"?')) return;
