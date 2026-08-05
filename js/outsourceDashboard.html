@@ -149,10 +149,14 @@
     var pageData = OS.filtered.slice(start, start + ps);
 
     if (tbody) tbody.innerHTML = pageData.map(function(r) {
-      var empStatus    = r.employmentStatus || r.status || 'Active';
-      var statusClass  = empStatus === 'Active' ? 'accepted' : empStatus === 'Terminated' ? 'blacklist' : 'pending';
-      var vendor       = r.outsourceVendor || r.vendorCompany || '-';
-      var typeLabel    = r.employeeType || '-';
+      var empStatus   = r.employmentStatus || r.status || 'Active';
+      var statusClass = entityStatusBadgeClass(empStatus);
+      var vendor      = r.outsourceVendor || r.vendorCompany || '-';
+      var typeLabel   = r.employeeType || '-';
+      var typeBadge   = typeLabel === 'Outsource' ? 'hold'
+                      : typeLabel === 'PKWT'      ? 'pending'
+                      : typeLabel === 'Intern'    ? 'blacklist'
+                      : 'accepted';
       return '<tr class="os-row-link" data-id="' + escapeHtml(r.employeeId) + '" style="cursor:pointer;">' +
         '<td><div class="avatar-sm" style="background:rgba(8,145,178,0.1);color:#0e7490;">' + escapeHtml(initials(r.fullName)) + '</div></td>' +
         '<td><span class="id-mono">' + escapeHtml(r.employeeId || '-') + '</span></td>' +
@@ -165,7 +169,7 @@
           '<div style="font-weight:600;font-size:13px;">' + escapeHtml(r.position || '-') + '</div>' +
           '<div class="cand-sub">' + escapeHtml(r.department || '-') + '</div>' +
         '</td>' +
-        '<td><span class="badge-status ' + (typeLabel === 'Outsource' ? 'hold' : typeLabel === 'PKWT' ? 'pending' : typeLabel === 'Intern' ? 'blacklist' : 'accepted') + '" style="font-size:10.5px;">' + escapeHtml(typeLabel) + '</span></td>' +
+        '<td><span class="badge-status ' + typeBadge + '" style="font-size:10.5px;">' + escapeHtml(typeLabel) + '</span></td>' +
         '<td>' + escapeHtml(vendor) + '</td>' +
         '<td>' + escapeHtml(r.joinDate || '-') + '</td>' +
         '<td><span class="badge-status ' + statusClass + '">' + escapeHtml(empStatus) + '</span></td>' +

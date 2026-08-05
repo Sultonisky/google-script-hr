@@ -32,6 +32,18 @@
     return 'pending';
   }
 
+  // Badge class untuk status karyawan/outsource (lebih kaya dari kandidat)
+  function entityStatusBadgeClass(status) {
+    var s = (status || '').toLowerCase().replace(/_/g, ' ');
+    if (s === 'active')     return 'accepted';      // hijau
+    if (s === 'probation')  return 'hold';           // biru
+    if (s === 'on leave')   return 'pending';        // kuning/gold
+    if (s === 'resigned')   return 'blacklist';      // merah
+    if (s === 'terminated') return 'blacklist';      // merah
+    if (s === 'inactive')   return 'blacklist';      // merah
+    return 'pending';
+  }
+
   function initials(name) {
     if (!name) return '?';
     var parts = name.trim().split(/\s+/);
