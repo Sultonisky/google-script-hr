@@ -1,15 +1,16 @@
 <script>
   // ============================================================
-  // js/drawer.html — CANDIDATE PROFILE DRAWER
+  // js/drawer.html — SHARED PROFILE DRAWER
+  // Modes: "candidate" | "employee" | "outsource"
   // Depends on: helpers.html, filters.html, api.html
   // ============================================================
 
   var activeCandidateId  = null;
   var notesAutoSaveTimer = null;
+  var drawerOverlay      = null;
+  var drawerPanel        = null;
 
-  var drawerOverlay = null;
-  var drawerPanel   = null;
-
+  // ---- Open / Close ----
   function openDrawer() {
     if (drawerOverlay) drawerOverlay.classList.add('show');
     if (drawerPanel)   drawerPanel.classList.add('show');
@@ -22,14 +23,52 @@
     document.body.style.overflow = '';
   }
 
+  // ---- Switch drawer mode ----
+  // mode: 'candidate' | 'employee' | 'outsource'
+  function setDrawerMode(mode) {
+    if (drawerPanel) drawerPanel.setAttribute('data-mode', mode);
+
+    // Body sections
+    ['Candidate','Employee','Outsource'].forEach(function(m) {
+      var sec = document.getElementById('drawerSection' + m);
+      if (sec) sec.style.display = (m.toLowerCase() === mode) ? '' : 'none';
+    });
+
+    // Footer
+    var footerCand   = document.getElementById('drawerFooterCandidate');
+    var footerEntity = document.getElementById('drawerFooterEntity');
+    if (footerCand)   footerCand.style.display   = (mode === 'candidate')  ? '' : 'none';
+    if (footerEntity) footerEntity.style.display = (mode !== 'candidate')  ? '' : 'none';
+
+    // Header buttons
+    var btnPrint = document.getElementById('btnDrawerPrint');
+    var btnEdit  = document.getElementById('btnDrawerEdit');
+    if (btnPrint) btnPrint.style.display = (mode === 'candidate') ? '' : 'none';
+    if (btnEdit)  btnEdit.style.display  = (mode !== 'candidate') ? '' : 'none';
+  }
+
+  // ---- Set header meta row ----
+  function setDrawerMeta(items) {
+    // items: [{label, value}, ...]
+    var el = document.getElementById('drawerIdMeta');
+    if (!el) return;
+    el.innerHTML = items.map(function(item) {
+      return '<span>' + escapeHtml(item.label) + '<strong>' + escapeHtml(item.value) + '</strong></span>';
+    }).join('');
+  }
+
+  // ============================================================
+  // MODE: CANDIDATE
+  // ============================================================
   function renderTimeline(items, fallbackCreatedDate) {
     var wrap = document.getElementById('drawerTimeline');
     if (!wrap) return;
     if (!items || items.length === 0) {
-      wrap.innerHTML = '<div class="timeline-empty">Belum ada riwayat aktivitas selain pendaftaran (' + escapeHtml(fallbackCreatedDate || '-') + ').</div>';
+      wrap.innerHTML = '<div class="timeline-empty">Belum ada riwayat aktivitas selain pendaftaran (' +
+        escapeHtml(fallbackCreatedDate || '-') + ').</div>';
       return;
     }
-    var iconMap    = { 'Created':'bi-plus-circle-fill','Update Status':'bi-arrow-repeat','Hold':'bi-pause-fill','Blacklist':'bi-slash-circle-fill','Accepted':'bi-check-lg' };
+    var iconMap     = { 'Created':'bi-plus-circle-fill','Update Status':'bi-arrow-repeat','Hold':'bi-pause-fill','Blacklist':'bi-slash-circle-fill','Accepted':'bi-check-lg' };
     var dotClassMap = { 'Created':'created','Accepted':'accepted','Hold':'hold','Blacklist':'blacklist' };
     wrap.innerHTML = items.map(function(ev) {
       var dotClass = dotClassMap[ev.action] || 'pending';
@@ -38,7 +77,8 @@
         '<div class="timeline-dot ' + dotClass + '"><i class="bi ' + icon + '"></i></div>' +
         '<div class="timeline-title">' + escapeHtml(ev.action) + '</div>' +
         '<div class="timeline-desc">'  + escapeHtml(ev.oldValue) + ' &rarr; ' + escapeHtml(ev.newValue) + '</div>' +
-        '<div class="timeline-time"><i class="bi bi-clock"></i> ' + escapeHtml(ev.timestamp) + ' &middot; ' + escapeHtml(ev.user) + '</div>' +
+        '<div class="timeline-time"><i class="bi bi-clock"></i> ' + escapeHtml(ev.timestamp) +
+        ' &middot; ' + escapeHtml(ev.user) + '</div>' +
         '</div>';
     }).join('');
   }
@@ -47,6 +87,7 @@
     var c = allCandidates.find(function(x) { return x.recruitmentId === id; });
     if (!c) return;
     activeCandidateId = id;
+    setDrawerMode('candidate');
 
     // Header
     var avatarEl = document.getElementById('drawerAvatar');
@@ -55,14 +96,14 @@
     if (nameEl) nameEl.innerText = c.fullName || '-';
     var posEl = document.getElementById('drawerPosition');
     if (posEl) posEl.innerText = c.positionApplied || '-';
-    var recIdEl = document.getElementById('drawerRecId');
-    if (recIdEl) recIdEl.innerText = c.recruitmentId || '-';
-    var dateEl = document.getElementById('drawerCreatedDate');
-    if (dateEl) dateEl.innerText = c.createdDate || '-';
-
     var badgeWrap = document.getElementById('drawerStatusBadgeWrap');
     if (badgeWrap) badgeWrap.innerHTML =
-      '<span class="badge-status lg ' + statusBadgeClass(c.status) + '">' + escapeHtml(c.status || 'Pending') + '</span>';
+      '<span class="badge-status lg ' + statusBadgeClass(c.status) + '">' +
+      escapeHtml(c.status || 'Pending') + '</span>';
+    setDrawerMeta([
+      { label: 'Recruitment ID', value: c.recruitmentId || '-' },
+      { label: 'Tanggal Daftar', value: c.createdDate || '-' }
+    ]);
 
     // Personal fields
     var fields = {
@@ -105,14 +146,133 @@
   }
 
   function updateStatusButtonsUI(currentStatus) {
-    var map = { accept:'Accepted', hold:'Hold', blacklist:'Blacklist', pending:'Pending' };
+    var map = { Accept:'Accepted', Hold:'Hold', Blacklist:'Blacklist' };
     Object.keys(map).forEach(function(key) {
-      var btn = document.getElementById('btn' + key.charAt(0).toUpperCase() + key.slice(1));
+      var btn = document.getElementById('btn' + key);
       if (!btn) return;
       btn.classList.toggle('current', map[key].toLowerCase() === (currentStatus||'').toLowerCase());
     });
   }
 
+  // ============================================================
+  // MODE: EMPLOYEE
+  // ============================================================
+  function openEmployeeDrawer(id) {
+    var emp = EMP.allItems.find(function(x) { return x.employeeId === id; });
+    if (!emp) return;
+    EMP.detailId = id;
+    setDrawerMode('employee');
+
+    // Header
+    var stBadge = emp.status === 'Active' ? 'accepted' : 'blacklist';
+    var avatarEl = document.getElementById('drawerAvatar');
+    if (avatarEl) avatarEl.innerText = initials(emp.fullName);
+    var nameEl = document.getElementById('drawerCandidateName');
+    if (nameEl) nameEl.innerText = emp.fullName || '-';
+    var posEl = document.getElementById('drawerPosition');
+    if (posEl) posEl.innerText = (emp.position || '-') + (emp.department ? ' · ' + emp.department : '');
+    var badgeWrap = document.getElementById('drawerStatusBadgeWrap');
+    if (badgeWrap) badgeWrap.innerHTML =
+      '<span class="badge-status lg ' + stBadge + '">' + escapeHtml(emp.status || 'Inactive') + '</span>';
+    setDrawerMeta([
+      { label: 'Employee ID', value: emp.employeeId || '-' },
+      { label: 'Tanggal Masuk', value: emp.joinDate || '-' }
+    ]);
+
+    // Body fields
+    var set = function(id, val) { var el = document.getElementById(id); if (el) el.innerText = val || '-'; };
+    set('empDrEmployeeId', emp.employeeId);
+    set('empDrNik',        emp.nik);
+    set('empDrFullName',   emp.fullName);
+    set('empDrEmail',      emp.email);
+    set('empDrPhone',      emp.phone);
+    set('empDrCity',       emp.city);
+    set('empDrDept',       emp.department);
+    set('empDrPosition',   emp.position);
+    set('empDrType',       emp.employeeType);
+    set('empDrJoinDate',   emp.joinDate);
+    set('empDrStatus',     emp.status);
+    set('empDrCreated',    emp.createdAt || emp.joinDate);
+    set('empDrNotes',      emp.hrNotes || emp.notes || '-');
+
+    // Footer buttons wiring
+    var btnEdit = document.getElementById('btnDrawerEntityEdit');
+    var btnDel  = document.getElementById('btnDrawerEntityDelete');
+    if (btnEdit) { btnEdit.onclick = function() { closeDrawer(); empOpenEdit(); }; }
+    if (btnDel)  { btnDel.onclick  = function() { empDelete();   }; }
+
+    // Edit icon in header
+    var headerEdit = document.getElementById('btnDrawerEdit');
+    if (headerEdit) { headerEdit.onclick = function() { closeDrawer(); empOpenEdit(); }; }
+
+    openDrawer();
+  }
+
+  // ============================================================
+  // MODE: OUTSOURCE
+  // ============================================================
+  function openOutsourceDrawer(id) {
+    var os = OS.allItems.find(function(x) { return x.employeeId === id; });
+    if (!os) return;
+    OS.detailId = id;
+    setDrawerMode('outsource');
+
+    // Header
+    var empStatus   = os.employmentStatus || os.status || 'Active';
+    var statusClass = empStatus === 'Active' ? 'accepted' : empStatus === 'Terminated' ? 'blacklist' : 'pending';
+    var avatarEl = document.getElementById('drawerAvatar');
+    if (avatarEl) avatarEl.innerText = initials(os.fullName);
+    var nameEl = document.getElementById('drawerCandidateName');
+    if (nameEl) nameEl.innerText = os.fullName || '-';
+    var posEl = document.getElementById('drawerPosition');
+    if (posEl) posEl.innerText = (os.position || '-') + (os.outsourceVendor || os.vendorCompany ? ' · ' + (os.outsourceVendor || os.vendorCompany) : '');
+    var badgeWrap = document.getElementById('drawerStatusBadgeWrap');
+    if (badgeWrap) badgeWrap.innerHTML =
+      '<span class="badge-status lg ' + statusClass + '">' + escapeHtml(empStatus) + '</span>';
+    setDrawerMeta([
+      { label: 'Employee ID', value: os.employeeId || '-' },
+      { label: 'Tanggal Masuk', value: os.joinDate || '-' }
+    ]);
+
+    // Body fields
+    var set = function(id, val) { var el = document.getElementById(id); if (el) el.innerText = val || '-'; };
+    set('osDrEmployeeId',    os.employeeId);
+    set('osDrOutsourceId',   os.outsourceId);
+    set('osDrNik',           os.nik);
+    set('osDrFullName',      os.fullName);
+    set('osDrEmail',         os.email);
+    set('osDrPhone',         os.phone);
+    set('osDrCity',          os.city);
+    set('osDrPosition',      os.position);
+    set('osDrDept',          os.department);
+    set('osDrVendor',        os.outsourceVendor || os.vendorCompany);
+    set('osDrType',          os.employeeType);
+    set('osDrJoinDate',      os.joinDate);
+    set('osDrStatus',        empStatus);
+    set('osDrContractNo',    os.contractNumber);
+    set('osDrContractDur',   os.contractDuration);
+    set('osDrContractStart', os.contractStart);
+    set('osDrContractEnd',   os.contractEnd);
+    set('osDrSalary',        formatRupiah(os.salary || 0));
+    set('osDrSalaryType',    os.salaryType);
+    set('osDrNotes',         os.hrNotes || os.notes || '-');
+
+    // Footer buttons wiring
+    var btnEdit = document.getElementById('btnDrawerEntityEdit');
+    var btnDel  = document.getElementById('btnDrawerEntityDelete');
+    if (btnEdit) { btnEdit.onclick = function() { closeDrawer(); openOsForm(OS.detailId); }; }
+    if (btnDel)  { btnDel.onclick  = function() { deleteOsData(); }; }
+
+    // Edit icon in header
+    var headerEdit = document.getElementById('btnDrawerEdit');
+    if (headerEdit) { headerEdit.onclick = function() { closeDrawer(); openOsForm(OS.detailId); }; }
+
+    openDrawer();
+  }
+
+  // ============================================================
+  // INIT DRAWER
+  // ============================================================
   function initDrawer() {
     drawerOverlay = document.getElementById('drawerOverlay');
     drawerPanel   = document.getElementById('drawerPanel');
@@ -121,7 +281,7 @@
     if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
     if (drawerOverlay) drawerOverlay.addEventListener('click', closeDrawer);
 
-    // Export PDF
+    // PDF export (candidate mode)
     var printBtn = document.getElementById('btnDrawerPrint');
     if (printBtn) printBtn.addEventListener('click', function() {
       if (activeCandidateId) {
@@ -131,13 +291,13 @@
       }
     });
 
-    // HR Notes auto-save
+    // HR Notes auto-save (candidate mode)
     var notesEl = document.getElementById('cvHrNotes');
     if (notesEl) {
       notesEl.addEventListener('input', function() {
         var charEl  = document.getElementById('notesCharCounter');
         var stateEl = document.getElementById('notesSaveState');
-        if (charEl)  charEl.innerText = notesEl.value.length + ' / 2000 karakter';
+        if (charEl)  charEl.innerText  = notesEl.value.length + ' / 2000 karakter';
         if (stateEl) { stateEl.innerText = 'Menyimpan...'; stateEl.className = 'notes-save-state saving'; }
         clearTimeout(notesAutoSaveTimer);
         notesAutoSaveTimer = setTimeout(persistHrNotes, 1200);
@@ -145,7 +305,10 @@
     }
 
     var saveBtn = document.getElementById('btnSaveNotesManual');
-    if (saveBtn) saveBtn.addEventListener('click', function() { clearTimeout(notesAutoSaveTimer); persistHrNotes(); });
+    if (saveBtn) saveBtn.addEventListener('click', function() {
+      clearTimeout(notesAutoSaveTimer);
+      persistHrNotes();
+    });
   }
 
   function persistHrNotes() {

@@ -1,600 +1,81 @@
 <script>
   // ============================================================
-  // js/dashboard.html — RECRUITMENT IN-PAGE TAB LOGIC
-  // Handles the pageRecruitment section within Dashboard.html
+  // js/dashboard.html — DASHBOARD & PAGE NAVIGATION HOOKS
   // Depends on: helpers.html, settings.html, filters.html, api.html
   // ============================================================
 
-  var recFilteredCandidates = [];
-  var recCurrentPage = 1;
   var recInitialized = false;
 
-  // ---- Stat cards ----
+  // ---- Stat cards (Recruitment page mini-stats) ----
   function updateRecStats(data) {
-    var el = function (id) {
-      return document.getElementById(id);
-    };
-    var ct = function (fn) {
-      return data.filter(fn).length;
-    };
-    if (el("recStatTotal")) el("recStatTotal").innerText = data.length;
-    if (el("recStatPending"))
-      el("recStatPending").innerText = ct(function (r) {
-        return (r.status || "Pending").toLowerCase() === "pending";
-      });
-    if (el("recStatAccepted"))
-      el("recStatAccepted").innerText = ct(function (r) {
-        return (r.status || "").toLowerCase() === "accepted";
-      });
-    if (el("recStatBlacklist"))
-      el("recStatBlacklist").innerText = ct(function (r) {
-        return (r.status || "").toLowerCase() === "blacklist";
-      });
+    var el = function(id) { return document.getElementById(id); };
+    var ct = function(fn) { return data.filter(fn).length; };
+    if (el('recStatTotal'))     el('recStatTotal').innerText     = data.length;
+    if (el('recStatPending'))   el('recStatPending').innerText   = ct(function(r){ return (r.status||'Pending').toLowerCase() === 'pending'; });
+    if (el('recStatAccepted'))  el('recStatAccepted').innerText  = ct(function(r){ return (r.status||'').toLowerCase() === 'accepted'; });
+    if (el('recStatBlacklist')) el('recStatBlacklist').innerText = ct(function(r){ return (r.status||'').toLowerCase() === 'blacklist'; });
   }
 
-  // ---- Dropdown population ----
-  function populateRecDropdowns(data) {
-    var map = [
-      ["recPositionFilter", "positionApplied", "Semua Posisi"],
-      ["recEducationFilter", "education", "Semua Pendidikan"],
-      ["recExperienceFilter", "workExperience", "Semua Pengalaman"],
-      ["recCityFilter", "city", "Semua Kota"],
-      ["recSourceFilter", "recruitmentSource", "Semua Sumber"],
-      [
-        "recEmploymentStatusFilter",
-        "currentEmploymentStatus",
-        "Semua Status Kerja",
-      ],
-    ];
-    map.forEach(function (m) {
-      var el = document.getElementById(m[0]);
-      if (!el) return;
-      var current = el.value;
-      var unique = Array.from(
-        new Set(
-          data
-            .map(function (r) {
-              return r[m[1]];
-            })
-            .filter(Boolean),
-        ),
-      ).sort();
-      el.innerHTML =
-        '<option value="">' +
-        m[2] +
-        "</option>" +
-        unique
-          .map(function (v) {
-            return (
-              '<option value="' +
-              escapeHtml(v) +
-              '">' +
-              escapeHtml(v) +
-              "</option>"
-            );
-          })
-          .join("");
-      if (unique.indexOf(current) !== -1) el.value = current;
-    });
-  }
-
-  // ---- Filters ----
-  function applyRecFilters() {
-    var g = function (id) {
-      var e = document.getElementById(id);
-      return e ? e.value : "";
-    };
-    var kw = g("recSearchInput").trim().toLowerCase();
-
-    recFilteredCandidates = allCandidates.filter(function (r) {
-      var mk =
-        !kw ||
-        (r.recruitmentId || "").toLowerCase().indexOf(kw) != -1 ||
-        (r.fullName || "").toLowerCase().indexOf(kw) != -1 ||
-        (r.phone || "").toLowerCase().indexOf(kw) != -1 ||
-        (r.email || "").toLowerCase().indexOf(kw) != -1 ||
-        (r.positionApplied || "").toLowerCase().indexOf(kw) != -1 ||
-        (r.city || "").toLowerCase().indexOf(kw) != -1 ||
-        (r.nik || "").toLowerCase().indexOf(kw) != -1;
-      var ms =
-        !g("recStatusFilter") ||
-        (r.status || "Pending").toLowerCase() ===
-          g("recStatusFilter").toLowerCase();
-      var mp =
-        !g("recPositionFilter") || r.positionApplied === g("recPositionFilter");
-      var me =
-        !g("recEducationFilter") || r.education === g("recEducationFilter");
-      var mg = !g("recGenderFilter") || r.gender === g("recGenderFilter");
-      var mso =
-        !g("recSourceFilter") || r.recruitmentSource === g("recSourceFilter");
-      var mem =
-        !g("recEmploymentStatusFilter") ||
-        r.currentEmploymentStatus === g("recEmploymentStatusFilter");
-      var mc = !g("recCityFilter") || r.city === g("recCityFilter");
-      var mx =
-        !g("recExperienceFilter") ||
-        r.workExperience === g("recExperienceFilter");
-      var msal = true,
-        salMin = g("recSalaryMinFilter"),
-        salMax = g("recSalaryMaxFilter");
-      if (salMin)
-        msal = msal && (Number(r.expectedSalary) || 0) >= Number(salMin);
-      if (salMax)
-        msal = msal && (Number(r.expectedSalary) || 0) <= Number(salMax);
-      var ma = true,
-        ageMin = g("recAgeMinFilter"),
-        ageMax = g("recAgeMaxFilter");
-      if (ageMin) ma = ma && (Number(r.age) || 0) >= Number(ageMin);
-      if (ageMax) ma = ma && (Number(r.age) || 0) <= Number(ageMax);
-      var md = true,
-        dfrom = g("recDateFromFilter"),
-        dto = g("recDateToFilter");
-      var rd = parseDdMmYyyy(r.createdDate);
-      if (dfrom && rd) md = md && rd >= new Date(dfrom);
-      if (dto && rd) {
-        var td2 = new Date(dto);
-        td2.setHours(23, 59, 59, 999);
-        md = md && rd <= td2;
-      }
-      return (
-        mk && ms && mp && me && mg && mso && mem && mc && mx && msal && ma && md
-      );
-    });
-
-    sortRecCandidates();
-    recCurrentPage = 1;
-    renderRecTable();
-    updateRecStats(recFilteredCandidates);
-  }
-
-  function sortRecCandidates() {
-    var sv = document.getElementById("recSortSelect")
-      ? document.getElementById("recSortSelect").value
-      : "newest";
-    recFilteredCandidates.sort(function (a, b) {
-      switch (sv) {
-        case "oldest":
-          return (
-            (parseDdMmYyyy(a.createdDate) || 0) -
-            (parseDdMmYyyy(b.createdDate) || 0)
-          );
-        case "name_asc":
-          return (a.fullName || "").localeCompare(b.fullName || "");
-        case "name_desc":
-          return (b.fullName || "").localeCompare(a.fullName || "");
-        case "age_desc":
-          return (Number(b.age) || 0) - (Number(a.age) || 0);
-        case "age_asc":
-          return (Number(a.age) || 0) - (Number(b.age) || 0);
-        case "salary_desc":
-          return (
-            (Number(b.expectedSalary) || 0) - (Number(a.expectedSalary) || 0)
-          );
-        case "salary_asc":
-          return (
-            (Number(a.expectedSalary) || 0) - (Number(b.expectedSalary) || 0)
-          );
-        default:
-          return (
-            (parseDdMmYyyy(b.createdDate) || 0) -
-            (parseDdMmYyyy(a.createdDate) || 0)
-          );
-      }
-    });
-  }
-
-  // ---- Table render ----
-  function renderRecTable() {
-    var tbody = document.getElementById("recTableBody");
-    var loading = document.getElementById("recTableLoading");
-    var empty = document.getElementById("recTableEmpty");
-    var ps = Number(appSettings.pageSize) || 10;
-
-    if (loading) loading.classList.add("d-none");
-    if (!recFilteredCandidates || recFilteredCandidates.length === 0) {
-      if (tbody) tbody.innerHTML = "";
-      if (empty) empty.classList.remove("d-none");
-      var fc = document.getElementById("recFooterCount");
-      if (fc)
-        fc.innerText = "Menampilkan 0 dari " + allCandidates.length + " data";
-      renderRecPagination(ps);
-      return;
-    }
-    if (empty) empty.classList.add("d-none");
-
-    var total = Math.max(1, Math.ceil(recFilteredCandidates.length / ps));
-    if (recCurrentPage > total) recCurrentPage = total;
-    var start = (recCurrentPage - 1) * ps;
-    var pageData = recFilteredCandidates.slice(start, start + ps);
-    var gl = function (r) {
-      return r.gender === "Male"
-        ? "Laki-laki"
-        : r.gender === "Female"
-          ? "Perempuan"
-          : r.gender || "-";
-    };
-
-    if (tbody)
-      tbody.innerHTML = pageData
-        .map(function (r) {
-          return (
-            "<tr>" +
-            '<td><div class="avatar-sm">' +
-            escapeHtml(initials(r.fullName)) +
-            "</div></td>" +
-            '<td><span class="id-mono">' +
-            escapeHtml(r.recruitmentId) +
-            "</span></td>" +
-            '<td><div class="cand-name cand-name-link" style="cursor:pointer;color:var(--color-primary);" data-id="' +
-            escapeHtml(r.recruitmentId) +
-            '">' +
-            escapeHtml(r.fullName) +
-            "</div>" +
-            '<div class="cand-sub">' +
-            escapeHtml(r.email) +
-            "</div>" +
-            '<div class="cand-sub"><i class="bi bi-telephone me-1"></i>' +
-            escapeHtml(r.phone) +
-            "</div></td>" +
-            "<td>" +
-            escapeHtml(r.age) +
-            " Th</td>" +
-            "<td>" +
-            escapeHtml(gl(r)) +
-            "</td>" +
-            "<td>" +
-            escapeHtml(r.positionApplied) +
-            "</td>" +
-            "<td>" +
-            escapeHtml(r.education) +
-            "</td>" +
-            "<td>" +
-            escapeHtml(r.workExperience) +
-            "</td>" +
-            "<td>" +
-            escapeHtml(formatRupiah(r.expectedSalary)) +
-            "</td>" +
-            "<td>" +
-            escapeHtml(r.recruitmentSource) +
-            "</td>" +
-            '<td><span class="badge-status ' +
-            statusBadgeClass(r.status) +
-            '">' +
-            escapeHtml(r.status || "Pending") +
-            "</span></td>" +
-            "<td>" +
-            escapeHtml(r.createdDate) +
-            "</td>" +
-            '<td><button class="btn-action rec-view-btn" title="Lihat profil" data-id="' +
-            escapeHtml(r.recruitmentId) +
-            '"><i class="bi bi-eye-fill"></i></button></td>' +
-            "</tr>"
-          );
-        })
-        .join("");
-
-    var sStart = start + 1,
-      sEnd = Math.min(start + ps, recFilteredCandidates.length);
-    var fc2 = document.getElementById("recFooterCount");
-    if (fc2)
-      fc2.innerText =
-        "Menampilkan " +
-        sStart +
-        "\u2013" +
-        sEnd +
-        " dari " +
-        recFilteredCandidates.length +
-        " data (total " +
-        allCandidates.length +
-        ")";
-
-    renderRecPagination(ps);
-    document
-      .querySelectorAll(
-        "#recTableBody .cand-name-link, #recTableBody .rec-view-btn",
-      )
-      .forEach(function (el) {
-        el.addEventListener("click", function () {
-          openCandidateDrawer(el.getAttribute("data-id"));
-        });
-      });
-  }
-
-  function renderRecPagination(ps) {
-    var nav = document.getElementById("recPaginationUi");
-    if (!nav) return;
-    var total = Math.max(1, Math.ceil(recFilteredCandidates.length / ps));
-    var html =
-      '<button class="page-btn" type="button" id="recPagePrev" ' +
-      (recCurrentPage === 1 ? "disabled" : "") +
-      ">" +
-      '<i class="bi bi-chevron-left"></i></button>';
-    var mb = 5,
-      sp = Math.max(1, recCurrentPage - Math.floor(mb / 2)),
-      ep = Math.min(total, sp + mb - 1);
-    sp = Math.max(1, ep - mb + 1);
-    if (sp > 1) {
-      html += '<button class="page-btn" type="button" data-rpg="1">1</button>';
-      if (sp > 2)
-        html +=
-          '<span class="page-btn" style="border:none;background:transparent;cursor:default">&hellip;</span>';
-    }
-    for (var p = sp; p <= ep; p++)
-      html +=
-        '<button class="page-btn' +
-        (p === recCurrentPage ? " active" : "") +
-        '" type="button" data-rpg="' +
-        p +
-        '">' +
-        p +
-        "</button>";
-    if (ep < total) {
-      if (ep < total - 1)
-        html +=
-          '<span class="page-btn" style="border:none;background:transparent;cursor:default">&hellip;</span>';
-      html +=
-        '<button class="page-btn" type="button" data-rpg="' +
-        total +
-        '">' +
-        total +
-        "</button>";
-    }
-    html +=
-      '<button class="page-btn" type="button" id="recPageNext" ' +
-      (recCurrentPage === total ? "disabled" : "") +
-      ">" +
-      '<i class="bi bi-chevron-right"></i></button>';
-    nav.innerHTML = html;
-    nav.querySelectorAll("button[data-rpg]").forEach(function (b) {
-      b.addEventListener("click", function () {
-        recCurrentPage = parseInt(b.getAttribute("data-rpg"), 10);
-        renderRecTable();
-      });
-    });
-    var prev = document.getElementById("recPagePrev"),
-      next = document.getElementById("recPageNext");
-    if (prev)
-      prev.addEventListener("click", function () {
-        if (recCurrentPage > 1) {
-          recCurrentPage--;
-          renderRecTable();
-        }
-      });
-    if (next)
-      next.addEventListener("click", function () {
-        if (recCurrentPage < total) {
-          recCurrentPage++;
-          renderRecTable();
-        }
-      });
-  }
-
-  // ---- Rec Export ----
-  function getRecExportRows() {
-    return recFilteredCandidates.map(function (r) {
-      return {
-        "Recruitment ID": r.recruitmentId,
-        "Nama Lengkap": r.fullName,
-        NIK: r.nik,
-        "Tanggal Lahir": r.birthDate,
-        Usia: r.age,
-        Gender: r.gender,
-        "Status Pernikahan": r.maritalStatus,
-        Email: r.email,
-        "No. HP": r.phone,
-        Kota: r.city,
-        "Posisi Dilamar": r.positionApplied,
-        Pendidikan: r.education,
-        Pengalaman: r.workExperience,
-        "Perusahaan Terakhir": r.lastCompany,
-        "Status Kerja": r.currentEmploymentStatus,
-        "Kesediaan Join": r.availableToJoin,
-        "Ekspektasi Gaji": r.expectedSalary,
-        Sumber: r.recruitmentSource,
-        Status: r.status,
-        "Alasan Hold": r.holdReason,
-        "Alasan Blacklist": r.blacklistReason,
-        "Employee ID": r.employeeId || "",
-        "Tanggal Daftar": r.createdDate,
-        "Terakhir Diupdate": r.updatedAt,
-      };
-    });
-  }
-
-  // ---- Init ----
+  // ---- Init (no-op — event listeners already set by initFilters/initBulkActions) ----
   function initRecruitmentPage() {
     if (recInitialized) return;
     recInitialized = true;
-    var si = document.getElementById("recSearchInput");
-    if (si) si.addEventListener("input", applyRecFilters);
-    [
-      "recStatusFilter",
-      "recPositionFilter",
-      "recGenderFilter",
-      "recSortSelect",
-    ].forEach(function (id) {
-      var el = document.getElementById(id);
-      if (el) el.addEventListener("change", applyRecFilters);
-    });
-    var btnMore = document.getElementById("recBtnToggleMore");
-    if (btnMore)
-      btnMore.addEventListener("click", function () {
-        document.getElementById("recFilterBarMore").classList.toggle("show");
-      });
-    var btnApply = document.getElementById("recBtnApplyMoreFilter");
-    if (btnApply) btnApply.addEventListener("click", applyRecFilters);
-    var btnReset = document.getElementById("recBtnResetFilter");
-    if (btnReset)
-      btnReset.addEventListener("click", function () {
-        if (si) si.value = "";
-        [
-          "recStatusFilter",
-          "recPositionFilter",
-          "recEducationFilter",
-          "recGenderFilter",
-          "recSourceFilter",
-          "recEmploymentStatusFilter",
-          "recCityFilter",
-          "recExperienceFilter",
-        ].forEach(function (id) {
-          var e = document.getElementById(id);
-          if (e) e.value = "";
-        });
-        [
-          "recSalaryMinFilter",
-          "recSalaryMaxFilter",
-          "recAgeMinFilter",
-          "recAgeMaxFilter",
-          "recDateFromFilter",
-          "recDateToFilter",
-        ].forEach(function (id) {
-          var e = document.getElementById(id);
-          if (e) e.value = "";
-        });
-        document.getElementById("recSortSelect").value = "newest";
-        applyRecFilters();
-      });
-    var btnRef = document.getElementById("recBtnRefresh");
-    if (btnRef)
-      btnRef.addEventListener("click", function () {
-        loadCandidates(false);
-      });
+  }
 
-    // Rec export buttons
-    var today = new Date().toISOString().slice(0, 10);
-    var rcCsv = document.getElementById("recBtnExportCsv");
-    if (rcCsv)
-      rcCsv.addEventListener("click", function () {
-        var rows = getRecExportRows();
-        if (!rows.length) {
-          showToast("Tidak ada data.", "warning");
-          return;
-        }
-        exportCsv(rows, "recruitment-" + today + ".csv");
-        showToast("Export CSV berhasil (" + rows.length + " data).", "success");
-      });
-    var rcXlsx = document.getElementById("recBtnExportXlsx");
-    if (rcXlsx)
-      rcXlsx.addEventListener("click", function () {
-        var rows = getRecExportRows();
-        if (!rows.length) {
-          showToast("Tidak ada data.", "warning");
-          return;
-        }
-        exportXlsx(rows, "Recruitment", "recruitment-" + today + ".xlsx");
-        showToast(
-          "Export Excel berhasil (" + rows.length + " data).",
-          "success",
-        );
-      });
-    var rcPdf = document.getElementById("recBtnExportPdf");
-    if (rcPdf)
-      rcPdf.addEventListener("click", function () {
-        var rows = getRecExportRows();
-        if (!rows.length) {
-          showToast("Tidak ada data.", "warning");
-          return;
-        }
-        exportPdf(rows, "Data Recruitment");
-      });
+  // ============================================================
+  // RECRUITMENT PAGE — SPA NAVIGATION HOOK
+  // ============================================================
+  function recOnNavigate() {
+    initRecruitmentPage();
+    // Sync mini-stat cards with already-loaded data
+    if (typeof allCandidates !== 'undefined' && allCandidates.length) {
+      updateRecStats(allCandidates);
+    }
   }
 
   // ============================================================
   // EMPLOYEE PAGE — SPA NAVIGATION HOOK
-  // Called by router when navigating to pageEmployee
-  // The employee page init (modals, event listeners) is handled by
-  // js/employee.html DOMContentLoaded — this just refreshes data.
   // ============================================================
   function empOnNavigate() {
-    if (typeof initEmployeePage === "function") {
-      initEmployeePage();
-    }
-    if (typeof empLoadMaster === "function") {
-      empLoadMaster();
-    }
-    if (typeof empLoadAll === "function") {
-      empLoadAll();
-    }
-  }
-
-  // ============================================================
-  // EMPLOYEE TOAST — fallback toast for employee page
-  // Uses global showToast if available
-  // ============================================================
-  function empToast(message, type) {
-    if (typeof showToast === "function") {
-      showToast(message, type || "info");
-    } else {
-      console.log("[Employee Toast]", type, message);
-    }
-  }
-
-  // ============================================================
-  // RECRUITMENT TAB — SPA NAVIGATION HOOK
-  // Called by router when navigating to pageRecruitment
-  // ============================================================
-  function recOnNavigate() {
-    initRecruitmentPage();
+    if (typeof initEmployeePage === 'function') initEmployeePage();
+    if (typeof empLoadMaster   === 'function') empLoadMaster();
+    if (typeof empLoadAll      === 'function') empLoadAll();
   }
 
   // ============================================================
   // APPLY STATUS FILTER — called by router for hash params
-  // e.g. #/recruitment?status=Hold or #/dashboard?status=Blacklist
+  // e.g. #/recruitment?status=Hold
+  // Uses the shared #statusFilter in the main CandidateTable
   // ============================================================
   function applyStatusFilter(status) {
-    var recFilter = document.getElementById("recStatusFilter");
-    if (recFilter) {
-      recFilter.value = status || "";
-      if (typeof applyRecFilters === "function") {
-        applyRecFilters();
-      }
-    }
-  }
-
-  // ============================================================
-  // OUTSOURCE PAGE — SPA NAVIGATION HOOK
-  // Called by router when navigating to pageOutsource
-  // ============================================================
-  function outOnNavigate() {
-    if (typeof initOutsourceUI === "function") {
-      initOutsourceUI();
-    }
-    if (typeof loadOutsourceData === "function") {
-      loadOutsourceData(false);
+    var sfEl = document.getElementById('statusFilter');
+    if (sfEl) {
+      sfEl.value = status || '';
+      if (typeof applyFilters === 'function') applyFilters();
     }
   }
 
   // ============================================================
   // SETTINGS PAGE — SPA NAVIGATION HOOK
-  // Called by router when navigating to pageSettings
   // ============================================================
   function settingsOnNavigate() {
-    if (typeof initSettingsPanel === "function") {
-      initSettingsPanel();
-    }
+    if (typeof initSettingsPanel === 'function') initSettingsPanel();
   }
 
   // ============================================================
   // USER MANAGEMENT PAGE — SPA NAVIGATION HOOK
-  // Called by router when navigating to pageUserManagement
   // ============================================================
   function umOnNavigate() {
-    if (
-      typeof UserManagement !== "undefined" &&
-      typeof UserManagement.load === "function"
-    ) {
-      var sessionToken =
-        typeof getAuthSessionToken === "function" ? getAuthSessionToken() : "";
-      if (typeof requireAuth === "function") {
-        requireAuth("manage_users").then(function (user) {
+    if (typeof UserManagement !== 'undefined' && typeof UserManagement.load === 'function') {
+      if (typeof requireAuth === 'function') {
+        requireAuth('manage_users').then(function(user) {
           if (!user) return;
-          var addUserBtn = document.getElementById("addUserBtn");
-          if (addUserBtn) addUserBtn.style.display = "";
-          var roleInfoCard = document.getElementById("roleInfoCard");
-          if (roleInfoCard) roleInfoCard.style.display = "";
-          var currentRoleDisplay =
-            document.getElementById("currentRoleDisplay");
-          if (currentRoleDisplay) currentRoleDisplay.textContent = user.role;
+          var addUserBtn       = document.getElementById('addUserBtn');
+          var roleInfoCard     = document.getElementById('roleInfoCard');
+          var currentRoleDisp  = document.getElementById('currentRoleDisplay');
+          if (addUserBtn)      addUserBtn.style.display      = '';
+          if (roleInfoCard)    roleInfoCard.style.display    = '';
+          if (currentRoleDisp) currentRoleDisp.textContent   = user.role;
           UserManagement.load();
         });
       }
@@ -605,7 +86,7 @@
   // GET BASE URL — helper for external links
   // ============================================================
   function getBaseUrl() {
-    return window.location.href.split("?")[0];
+    return window.location.href.split('?')[0];
   }
 
   // ============================================================
@@ -614,37 +95,37 @@
   // ============================================================
   function initDashboard() {
     // 1. Init filters (search, status, position, sort, advanced)
-    if (typeof initFilters === "function") initFilters();
+    if (typeof initFilters === 'function') initFilters();
 
     // 2. Init table sort headers & bulk actions
-    if (typeof initTableSortHeaders === "function") initTableSortHeaders();
-    if (typeof initBulkActions === "function") initBulkActions();
+    if (typeof initTableSortHeaders === 'function') initTableSortHeaders();
+    if (typeof initBulkActions      === 'function') initBulkActions();
 
     // 3. Init drawer (candidate profile side panel)
-    if (typeof initDrawer === "function") initDrawer();
+    if (typeof initDrawer === 'function') initDrawer();
 
     // 4. Init status modals (accept, hold, blacklist)
-    if (typeof initStatusModals === "function") initStatusModals();
+    if (typeof initStatusModals === 'function') initStatusModals();
 
     // 5. Init export buttons (CSV, Excel, PDF)
-    if (typeof initExportButtons === "function") initExportButtons();
+    if (typeof initExportButtons === 'function') initExportButtons();
 
     // 6. Init import modal (CSV import)
-    if (typeof initImportModal === "function") initImportModal();
+    if (typeof initImportModal === 'function') initImportModal();
 
     // 7. Init settings panel (portal settings form)
-    if (typeof initSettingsPanel === "function") initSettingsPanel();
+    if (typeof initSettingsPanel === 'function') initSettingsPanel();
 
     // 8. Init outsource UI (event listeners only, no data loading)
-    if (typeof initOutsourceUI === "function") initOutsourceUI();
+    if (typeof initOutsourceUI === 'function') initOutsourceUI();
 
-    // 9. Init recruitment page (event listeners only)
+    // 9. Mark recruitment page ready (listeners come from initFilters/initBulkActions)
     initRecruitmentPage();
 
     // 10. Init employee page (modals, event listeners)
-    if (typeof initEmployeePage === "function") initEmployeePage();
+    if (typeof initEmployeePage === 'function') initEmployeePage();
 
     // 11. Load candidate data (triggers charts, stats, table)
-    if (typeof loadCandidates === "function") loadCandidates(false);
+    if (typeof loadCandidates === 'function') loadCandidates(false);
   }
 </script>

@@ -242,16 +242,34 @@
       .deleteMasterDataItem(id);
   }
 
-  // ============ EVENT LISTENERS ============
-  document.addEventListener('DOMContentLoaded', function() {
-    MD.modal = new bootstrap.Modal(document.getElementById('mdItemModal'));
-    document.getElementById('btnMdAdd').addEventListener('click', mdOpenAddModal);
-    document.getElementById('btnMdSaveItem').addEventListener('click', mdSaveItem);
-    document.getElementById('mdSearch').addEventListener('input', mdRenderTable);
+  // ============ TOAST ============
+  function mdShowToast(msg, type) {
+    var toast = document.getElementById('mdToast');
+    if (!toast) return;
+    document.getElementById('mdToastBody').textContent = msg;
+    toast.className = 'toast align-items-center border-0 shadow text-bg-' + (type || 'primary');
+    new bootstrap.Toast(toast, { delay: 3500 }).show();
+  }
 
-    // Auth & load
+  // ============ ON NAVIGATE (dipanggil router saat halaman dibuka) ============
+  var MD_initialized = false;
+
+  function mdOnNavigate() {
+    if (!MD_initialized) {
+      MD_initialized = true;
+      MD.modal = new bootstrap.Modal(document.getElementById('mdItemModal'));
+      document.getElementById('btnMdAdd').addEventListener('click', mdOpenAddModal);
+      document.getElementById('btnMdSaveItem').addEventListener('click', mdSaveItem);
+      document.getElementById('mdSearch').addEventListener('input', mdRenderTable);
+    }
+    // Muat ulang data setiap kali halaman dibuka
     Auth.check('view_employee', function(user) {
       mdLoadAll();
     });
+  }
+
+  // ============ EVENT LISTENERS ============
+  document.addEventListener('DOMContentLoaded', function() {
+    // Inisialisasi lazy — hanya dijalankan saat router memanggil mdOnNavigate()
   });
 </script>

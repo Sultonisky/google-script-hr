@@ -37,6 +37,8 @@
         populateAllDropdowns(allCandidates);
         updateStats(allCandidates);
         applyFilters();
+        // Sync recruitment page mini-stat cards if available
+        if (typeof updateRecStats === 'function') updateRecStats(allCandidates);
         if (!silent) showToast('Data kandidat berhasil dimuat (' + allCandidates.length + ' data).', 'success');
 
         // Start auto-refresh only after first successful load

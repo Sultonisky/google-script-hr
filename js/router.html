@@ -45,6 +45,11 @@
         title: "Audit Log",
         subtitle: "Riwayat aktivitas semua modul sistem",
       },
+      pageMasterData: {
+        route: "master-data",
+        title: "Master Data",
+        subtitle: "Kelola data dropdown untuk formulir dan filter",
+      },
     },
 
     // Reverse map: route -> pageId
@@ -56,6 +61,7 @@
       settings: "pageSettings",
       "user-management": "pageUserManagement",
       "audit-log": "pageAuditLog",
+      "master-data": "pageMasterData",
     },
 
     // ============================================================
@@ -202,6 +208,9 @@
       }
       if (pageId === "pageAuditLog" && typeof auditOnNavigate === "function") {
         auditOnNavigate();
+      }
+      if (pageId === "pageMasterData" && typeof mdOnNavigate === "function") {
+        mdOnNavigate();
       }
     },
 

@@ -29,37 +29,41 @@
     </div>
   </div>
 
+  <!-- NOTE: CandidateTable partial is inlined here — Apps Script include() does NOT
+       support nested <?!= ?> tags, so the full panel HTML is written directly. -->
+
   <!-- Table panel -->
-  <div class="panel" id="recTablePanel">
+  <div class="panel" id="tablePanel">
     <div class="panel-header">
       <div>
-        <h6>Data Recruitment</h6>
-        <div class="panel-subtitle" id="recPanelSubtitle">Memuat data...</div>
+        <h6>Data Kandidat</h6>
+        <div class="panel-subtitle" id="panelSubtitle">Memuat data...</div>
       </div>
       <div class="export-btns">
-        <button class="btn-export csv"  id="recBtnExportCsv"  type="button"><i class="bi bi-filetype-csv"></i> CSV</button>
-        <button class="btn-export xlsx" id="recBtnExportXlsx" type="button"><i class="bi bi-file-earmark-excel"></i> Excel</button>
-        <button class="btn-export pdf"  id="recBtnExportPdf"  type="button"><i class="bi bi-file-earmark-pdf"></i> PDF</button>
+        <button class="btn-export" style="background:var(--color-primary);color:#fff;border:1px solid var(--color-primary)" type="button" onclick="openImportModal()"><i class="bi bi-upload"></i> Import</button>
+        <button class="btn-export csv"  id="btnExportCsv"  type="button"><i class="bi bi-filetype-csv"></i> CSV</button>
+        <button class="btn-export xlsx" id="btnExportXlsx" type="button"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+        <button class="btn-export pdf"  id="btnExportPdf"  type="button"><i class="bi bi-file-earmark-pdf"></i> PDF</button>
       </div>
     </div>
 
-    <!-- Filter bar basic -->
+    <!-- FILTER BAR — basic -->
     <div class="filter-bar">
       <div class="table-search">
         <i class="bi bi-search"></i>
-        <input type="text" id="recSearchInput" placeholder="Cari ID, nama, NIK, HP, email, posisi, kota..." />
+        <input type="text" id="searchInput" placeholder="Cari ID, nama, HP, email, posisi, kota..." />
       </div>
-      <select class="filter-select" id="recStatusFilter">
+      <select class="filter-select" id="statusFilter">
         <option value="">Semua Status</option>
-        <option>Pending</option><option>Accepted</option><option>Hold</option><option>Blacklist</option>
+        <option>Pending</option>
+        <option>Accepted</option>
+        <option>Hold</option>
+        <option>Blacklist</option>
       </select>
-      <select class="filter-select" id="recPositionFilter"><option value="">Semua Posisi</option></select>
-      <select class="filter-select" id="recGenderFilter">
-        <option value="">Semua Gender</option>
-        <option value="Male">Laki-laki</option>
-        <option value="Female">Perempuan</option>
+      <select class="filter-select" id="positionFilter">
+        <option value="">Semua Posisi</option>
       </select>
-      <select class="filter-select" id="recSortSelect">
+      <select class="filter-select" id="sortSelect">
         <option value="newest">Terbaru</option>
         <option value="oldest">Terlama</option>
         <option value="name_asc">Nama A-Z</option>
@@ -69,68 +73,111 @@
         <option value="salary_desc">Gaji Tertinggi</option>
         <option value="salary_asc">Gaji Terendah</option>
       </select>
-      <button class="btn-toggle-more" id="recBtnToggleMore" type="button"><i class="bi bi-sliders"></i> Filter Lanjutan</button>
-      <button class="btn-reset-filter" type="button" id="recBtnResetFilter"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
-      <button class="btn-refresh" id="recBtnRefresh" type="button" title="Muat ulang data"><i class="bi bi-arrow-clockwise"></i></button>
+      <button class="btn-toggle-more" id="btnToggleMore" type="button">
+        <i class="bi bi-sliders"></i> Filter Lanjutan
+      </button>
+      <button class="btn-reset-filter" type="button" id="btnResetFilter">
+        <i class="bi bi-arrow-counterclockwise"></i> Reset
+      </button>
+      <button class="btn-refresh" id="btnRefresh" type="button" title="Muat ulang data">
+        <i class="bi bi-arrow-clockwise"></i>
+      </button>
     </div>
 
-    <!-- Filter bar advanced -->
-    <div class="filter-bar filter-bar-collapse" id="recFilterBarMore">
-      <select class="filter-select" id="recEducationFilter"><option value="">Semua Pendidikan</option></select>
-      <select class="filter-select" id="recExperienceFilter"><option value="">Semua Pengalaman</option></select>
-      <select class="filter-select" id="recCityFilter"><option value="">Semua Kota</option></select>
-      <select class="filter-select" id="recSourceFilter"><option value="">Semua Sumber</option></select>
-      <select class="filter-select" id="recEmploymentStatusFilter"><option value="">Semua Status Kerja</option></select>
+    <!-- FILTER BAR — advanced (collapsible) -->
+    <div class="filter-bar filter-bar-collapse" id="filterBarMore">
+      <select class="filter-select" id="genderFilter">
+        <option value="">Semua Gender</option>
+        <option value="Male">Laki-laki</option>
+        <option value="Female">Perempuan</option>
+      </select>
+      <select class="filter-select" id="educationFilter"><option value="">Semua Pendidikan</option></select>
+      <select class="filter-select" id="experienceFilter"><option value="">Semua Pengalaman</option></select>
+      <select class="filter-select" id="cityFilter"><option value="">Semua Kota</option></select>
+      <select class="filter-select" id="sourceFilter"><option value="">Semua Sumber</option></select>
+      <select class="filter-select" id="employmentStatusFilter"><option value="">Semua Status Kerja</option></select>
       <div class="filter-range-group">
-        <input type="number" class="filter-number" id="recSalaryMinFilter" placeholder="Gaji min" />
+        <input type="number" class="filter-number" id="salaryMinFilter" placeholder="Gaji min" />
         <span>&ndash;</span>
-        <input type="number" class="filter-number" id="recSalaryMaxFilter" placeholder="Gaji max" />
+        <input type="number" class="filter-number" id="salaryMaxFilter" placeholder="Gaji max" />
       </div>
       <div class="filter-range-group">
-        <input type="number" class="filter-number" id="recAgeMinFilter" placeholder="Usia min" />
+        <input type="number" class="filter-number" id="ageMinFilter" placeholder="Usia min" />
         <span>&ndash;</span>
-        <input type="number" class="filter-number" id="recAgeMaxFilter" placeholder="Usia max" />
+        <input type="number" class="filter-number" id="ageMaxFilter" placeholder="Usia max" />
       </div>
-      <input type="date" class="filter-date" id="recDateFromFilter" title="Dari tanggal" />
-      <input type="date" class="filter-date" id="recDateToFilter"   title="Sampai tanggal" />
-      <button class="btn-reset-filter" type="button" id="recBtnApplyMoreFilter"><i class="bi bi-check2"></i> Terapkan</button>
+      <input type="date" class="filter-date" id="dateFromFilter" title="Dari tanggal" />
+      <input type="date" class="filter-date" id="dateToFilter"   title="Sampai tanggal" />
+      <button class="btn-reset-filter" type="button" id="btnApplyMoreFilter">
+        <i class="bi bi-check2"></i> Terapkan
+      </button>
     </div>
 
-    <!-- Table -->
+    <!-- BULK ACTION BAR -->
+    <div class="bulk-action-bar d-none" id="bulkActionBar">
+      <div class="bulk-action-info">
+        <span id="bulkSelectedCount">0</span> kandidat dipilih
+      </div>
+      <div class="bulk-action-buttons">
+        <div class="dropdown">
+          <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button"
+            data-bs-toggle="dropdown" data-bs-auto-close="outside">
+            <i class="bi bi-arrow-repeat"></i> Ubah Status
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item bulk-status-btn" href="#" data-status="Pending">
+              <i class="bi bi-hourglass-split text-warning"></i> Pending</a></li>
+            <li><a class="dropdown-item bulk-status-btn" href="#" data-status="Accepted">
+              <i class="bi bi-check-circle text-success"></i> Accepted</a></li>
+            <li><a class="dropdown-item bulk-status-btn" href="#" data-status="Hold">
+              <i class="bi bi-pause-circle text-primary"></i> Hold</a></li>
+            <li><a class="dropdown-item bulk-status-btn" href="#" data-status="Blacklist">
+              <i class="bi bi-x-circle text-danger"></i> Blacklist</a></li>
+          </ul>
+        </div>
+        <button class="btn btn-sm btn-outline-danger" id="bulkDeleteBtn" type="button">
+          <i class="bi bi-trash"></i> Hapus
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" id="bulkDeselectBtn" type="button">
+          <i class="bi bi-x-lg"></i> Batal Pilih
+        </button>
+      </div>
+    </div>
+
+    <!-- TABLE -->
     <div class="table-responsive">
       <table class="table hr-table">
         <thead>
           <tr>
+            <th class="col-check">
+              <input type="checkbox" class="form-check-input" id="selectAll" title="Pilih semua" />
+            </th>
             <th>Avatar</th>
-            <th data-rec-sort="id">Recruitment ID</th>
-            <th data-rec-sort="name">Kandidat</th>
-            <th data-rec-sort="age">Usia</th>
+            <th>Recruitment ID</th>
+            <th>Kandidat</th>
+            <th>Usia</th>
             <th>Gender</th>
             <th>Posisi</th>
-            <th>Pendidikan</th>
-            <th>Pengalaman</th>
-            <th data-rec-sort="salary">Exp. Gaji</th>
-            <th>Sumber</th>
             <th>Status</th>
-            <th data-rec-sort="date">Tanggal Daftar</th>
-            <th>Aksi</th>
+            <th>Tanggal Daftar</th>
           </tr>
         </thead>
-        <tbody id="recTableBody"></tbody>
+        <tbody id="tableBody"></tbody>
       </table>
-      <div class="table-loading" id="recTableLoading">
+      <div class="table-loading" id="tableLoading">
         <div class="spinner-border" role="status"></div>
         <p>Mengambil data dari spreadsheet...</p>
       </div>
-      <div class="table-empty d-none" id="recTableEmpty">
+      <div class="table-empty d-none" id="tableEmpty">
         <i class="bi bi-inbox"></i>
         <p>Belum ada data kandidat.</p>
       </div>
     </div>
 
     <div class="panel-footer">
-      <span id="recFooterCount">Menampilkan 0 data</span>
-      <nav class="pagination-ui" id="recPaginationUi" aria-label="Pagination"></nav>
+      <span id="footerCount">Menampilkan 0 data</span>
+      <nav class="pagination-ui" id="paginationUi" aria-label="Pagination"></nav>
     </div>
   </div>
+
 </section>

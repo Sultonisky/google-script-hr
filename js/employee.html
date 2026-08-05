@@ -9,7 +9,6 @@
     currentPage: 1,
     detailId: null,
     editId: null,
-    detModal: null,
     formModal: null,
   };
 
@@ -241,43 +240,11 @@
   }
 
   function empAttachRowHandlers() {
-    document.querySelectorAll('.cand-name-link').forEach(function (el) {
-      el.addEventListener('click', function () {
-        empShowDetail(el.getAttribute('data-id'));
+    document.querySelectorAll('#empTableBody .cand-name-link').forEach(function(el) {
+      el.addEventListener('click', function() {
+        openEmployeeDrawer(el.getAttribute('data-id'));
       });
     });
-  }
-
-  // ============ DETAIL MODAL ============
-  function empShowDetail(id) {
-    var emp = EMP.allItems.find(function (x) {
-      return x.employeeId === id;
-    });
-    if (!emp) return;
-    EMP.detailId = id;
-    document.getElementById('empDetTitle').textContent = emp.fullName || 'Detail Karyawan';
-
-    var stBadge = emp.status === 'Active' ? 'accepted' : 'blacklist';
-    var html =
-      empDt('NIK', emp.nik || '-') +
-      empDt('Nama Lengkap', emp.fullName || '-') +
-      empDt('Email', emp.email || '-') +
-      empDt('No. Handphone', emp.phone || '-') +
-      empDt('Departemen', emp.department || '-') +
-      empDt('Posisi', emp.position || '-') +
-      empDt('Lokasi', emp.city || '-') +
-      empDt('Tipe Karyawan', emp.employeeType || '-') +
-      empDt('Tanggal Masuk', emp.joinDate || '-') +
-      empDt('Status', '<span class="badge-status ' + stBadge + '">' + escapeHtml(emp.status || 'Inactive') + '</span>') +
-      empDt('Catatan HR', emp.hrNotes || '-');
-
-    document.getElementById('empDetBody').innerHTML = html;
-    EMP.detModal.show();
-  }
-
-  function empDt(label, val) {
-    return '<div class="dt-row"><div class="dt-label">' + label +
-      '</div><div class="dt-val">' + val + '</div></div>';
   }
 
   // ============ FORM MODAL ============
@@ -321,21 +288,20 @@
     });
     if (!emp) return;
     EMP.editId = emp.employeeId;
-    EMP.detModal.hide();
     document.getElementById('empFormTitle').textContent = 'Edit Karyawan';
-    document.getElementById('efId').value = emp.employeeId;
-    document.getElementById('efName').value = emp.fullName || '';
-    document.getElementById('efNik').value = emp.nik || '';
+    document.getElementById('efId').value    = emp.employeeId;
+    document.getElementById('efName').value  = emp.fullName || '';
+    document.getElementById('efNik').value   = emp.nik || '';
     document.getElementById('efEmail').value = emp.email || '';
     document.getElementById('efPhone').value = emp.phone || '';
-    document.getElementById('efDept').value = emp.department || '';
-    document.getElementById('efPos').value = emp.position || '';
-    document.getElementById('efLoc').value = emp.city || '';
-    document.getElementById('efType').value = emp.employeeType || '';
-    document.getElementById('efJoin').value = emp.joinDate || '';
+    document.getElementById('efDept').value  = emp.department || '';
+    document.getElementById('efPos').value   = emp.position || '';
+    document.getElementById('efLoc').value   = emp.city || '';
+    document.getElementById('efType').value  = emp.employeeType || '';
+    document.getElementById('efJoin').value  = emp.joinDate || '';
     document.getElementById('efStatus').value = emp.status || 'Active';
     document.getElementById('efNotes').value = emp.hrNotes || '';
-    setTimeout(function () { EMP.formModal.show(); }, 300);
+    EMP.formModal.show();
   }
 
   function empSave() {
@@ -417,7 +383,7 @@
       .withSuccessHandler(function (r) {
         if (r && r.success) {
           empToast(r.message, 'success');
-          EMP.detModal.hide();
+          closeDrawer();
           empLoadAll();
         } else {
           empToast(r ? r.message : 'Gagal menghapus.', 'danger');
@@ -455,33 +421,27 @@
     });
   }
 
-  // ============ INIT (SPA-compatible) ============
   var empInitialized = false;
   function initEmployeePage() {
     if (empInitialized) return;
     empInitialized = true;
 
-    EMP.detModal = new bootstrap.Modal(document.getElementById('empDetModal'));
     EMP.formModal = new bootstrap.Modal(document.getElementById('empFormModal'));
 
-    var btnAdd = document.getElementById('btnEmpAdd');
-    var btnRef = document.getElementById('btnEmpRefresh');
-    var btnSav = document.getElementById('btnEmpSave');
-    var btnEdt = document.getElementById('btnEmpEdit');
-    var btnDel = document.getElementById('btnEmpDel');
-    var si = document.getElementById('empSearchInput');
-    var df = document.getElementById('empDeptFilter');
-    var tf = document.getElementById('empTypeFilter');
-    var sf = document.getElementById('empStatusFilter');
-    var ss = document.getElementById('empSortSelect');
-    var btnCsv = document.getElementById('btnEmpExportCsv');
+    var btnAdd  = document.getElementById('btnEmpAdd');
+    var btnRef  = document.getElementById('btnEmpRefresh');
+    var btnSav  = document.getElementById('btnEmpSave');
+    var si      = document.getElementById('empSearchInput');
+    var df      = document.getElementById('empDeptFilter');
+    var tf      = document.getElementById('empTypeFilter');
+    var sf      = document.getElementById('empStatusFilter');
+    var ss      = document.getElementById('empSortSelect');
+    var btnCsv  = document.getElementById('btnEmpExportCsv');
     var btnXlsx = document.getElementById('btnEmpExportXlsx');
 
     if (btnAdd) btnAdd.addEventListener('click', empOpenAdd);
     if (btnRef) btnRef.addEventListener('click', empLoadAll);
     if (btnSav) btnSav.addEventListener('click', empSave);
-    if (btnEdt) btnEdt.addEventListener('click', empOpenEdit);
-    if (btnDel) btnDel.addEventListener('click', empDelete);
     if (si) si.addEventListener('input', empApplyFilters);
     if (df) df.addEventListener('change', empApplyFilters);
     if (tf) tf.addEventListener('change', empApplyFilters);
@@ -489,13 +449,13 @@
     if (ss) ss.addEventListener('change', empApplyFilters);
 
     var today = new Date().toISOString().slice(0, 10);
-    if (btnCsv) btnCsv.addEventListener('click', function () {
+    if (btnCsv) btnCsv.addEventListener('click', function() {
       var rows = getEmpExportRows();
       if (!rows.length) { showToast('Tidak ada data.', 'warning'); return; }
       exportCsv(rows, 'employee-' + today + '.csv');
       showToast('Export CSV berhasil (' + rows.length + ' data).', 'success');
     });
-    if (btnXlsx) btnXlsx.addEventListener('click', function () {
+    if (btnXlsx) btnXlsx.addEventListener('click', function() {
       var rows = getEmpExportRows();
       if (!rows.length) { showToast('Tidak ada data.', 'warning'); return; }
       exportXlsx(rows, 'Karyawan', 'employee-' + today + '.xlsx');
@@ -503,23 +463,6 @@
     });
   }
 
-  // SPA navigation hook
-  function empOnNavigate() {
-    initEmployeePage();
-    empLoadMaster();
-    empLoadAll();
-  }
-
-  // Auto-init on DOMContentLoaded if elements exist (standalone page)
-  document.addEventListener('DOMContentLoaded', function () {
-    if (document.getElementById('empDetModal')) {
-      initEmployeePage();
-      requireAuth('view_employee').then(function (user) {
-        if (user) {
-          empLoadMaster();
-          empLoadAll();
-        }
-      });
-    }
-  });
+  // SPA navigation hook — dipanggil oleh js/dashboard.html empOnNavigate()
+  // empOnNavigate() didefinisikan di js/dashboard.html
 </script>
