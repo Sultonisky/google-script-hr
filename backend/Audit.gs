@@ -70,7 +70,7 @@ function getAllAuditLogs(limit) {
 
 // Ambil riwayat aktivitas untuk satu kandidat (dipakai Activity Timeline)
 function getAuditLogForCandidate(recruitmentId) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss    = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(AUDIT_SHEET_NAME);
   if (!sheet || sheet.getLastRow() < 2) return [];
 
@@ -81,19 +81,17 @@ function getAuditLogForCandidate(recruitmentId) {
 
   for (var r = 1; r < values.length; r++) {
     var row = values[r];
-    if (String(row[AUDIT_COL["Recruitment ID"] - 1]) !== String(recruitmentId))
-      continue;
-    var ts = row[AUDIT_COL["Timestamp"] - 1];
+    if (String(row[AUDIT_COL['Recruitment ID'] - 1]) !== String(recruitmentId)) continue;
+    var ts = row[AUDIT_COL['Timestamp'] - 1];
     result.push({
-      timestamp:
-        ts instanceof Date
-          ? Utilities.formatDate(ts, "GMT+7", "dd/MM/yyyy HH:mm")
-          : String(ts || ""),
-      user: String(row[AUDIT_COL["User"] - 1] || ""),
-      action: String(row[AUDIT_COL["Action"] - 1] || ""),
-      field: String(row[AUDIT_COL["Field"] - 1] || ""),
-      oldValue: String(row[AUDIT_COL["Old Value"] - 1] || ""),
-      newValue: String(row[AUDIT_COL["New Value"] - 1] || ""),
+      timestamp: ts instanceof Date
+        ? Utilities.formatDate(ts, 'GMT+7', 'dd/MM/yyyy HH:mm')
+        : String(ts || ''),
+      user:     String(row[AUDIT_COL['User'] - 1] || ''),
+      action:   String(row[AUDIT_COL['Action'] - 1] || ''),
+      field:    String(row[AUDIT_COL['Field'] - 1] || ''),
+      oldValue: String(row[AUDIT_COL['Old Value'] - 1] || ''),
+      newValue: String(row[AUDIT_COL['New Value'] - 1] || '')
     });
   }
 
