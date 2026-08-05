@@ -6,166 +6,174 @@
 // ============================================================
 
 // ============= SHEET NAMES =============
-var SHEET_NAME              = 'raw_kandidat';
-var DASHBOARD_SHEET_NAME    = 'raw_kandidat';
-var EMPLOYEE_SHEET_NAME     = 'Employee';
-var AUDIT_SHEET_NAME        = 'Audit_Log';
-var USERS_SHEET_NAME        = 'Users';
-var OUTSOURCE_SHEET_NAME    = 'raw_outsource';
-var ARCHIVE_SHEET_NAME      = 'Archive';
-var OFFBOARDING_SHEET_NAME  = 'Offboarding';
-var MASTER_DATA_SHEET       = 'master_data';
+var SHEET_NAME = "raw_kandidat";
+var DASHBOARD_SHEET_NAME = "raw_kandidat";
+var EMPLOYEE_SHEET_NAME = "Employee";
+var AUDIT_SHEET_NAME = "Audit_Log";
+var USERS_SHEET_NAME = "Users";
+var OUTSOURCE_SHEET_NAME = "raw_outsource";
+var ARCHIVE_SHEET_NAME = "Archive";
+var OFFBOARDING_SHEET_NAME = "Offboarding";
+var MASTER_DATA_SHEET = "master_data";
 
 // ============= COLUMN LOOKUP KEYS =============
-var STATUS_COLUMN_NAME   = 'Status';
-var ID_COLUMN_NAME       = 'Recruitment ID';
-var NOTES_COLUMN_NAME    = 'HR Notes';
+var STATUS_COLUMN_NAME = "Status";
+var ID_COLUMN_NAME = "Recruitment ID";
+var NOTES_COLUMN_NAME = "HR Notes";
 
 // ============================================================
 // SHEET: raw_kandidat
 // Purpose: Candidate registration database
 // ============================================================
 var SHEET_HEADERS = [
-  'Recruitment ID',           // 1
-  'Created Date',             // 2
-  'Full Name',                // 3
-  'NIK',                      // 4
-  'Birth Date',               // 5
-  'Age',                      // 6
-  'Gender',                   // 7
-  'Marital Status',           // 8
-  'Email',                    // 9
-  'Phone',                    // 10
-  'Address',                  // 11
-  'City',                     // 12
-  'Position Applied',         // 13
-  'Education',                // 14
-  'Work Experience',          // 15
-  'Last Company',             // 16
-  'Current Employment Status',// 17
-  'Available to Join',        // 18
-  'Expected Salary',          // 19
-  'Recruitment Source',       // 20
-  'CV Link',                  // 21
-  'Status',                   // 22
-  'HR Notes',                 // 23
-  'Created By',               // 24
-  'Updated At'                // 25
+  "Recruitment ID", // 1
+  "Created Date", // 2
+  "Full Name", // 3
+  "NIK", // 4
+  "Birth Date", // 5
+  "Age", // 6
+  "Gender", // 7
+  "Marital Status", // 8
+  "Email", // 9
+  "Phone", // 10
+  "Address", // 11
+  "City", // 12
+  "Position Applied", // 13
+  "Education", // 14
+  "Work Experience", // 15
+  "Last Company", // 16
+  "Current Employment Status", // 17
+  "Available to Join", // 18
+  "Expected Salary", // 19
+  "Recruitment Source", // 20
+  "CV Link", // 21
+  "Status", // 22
+  "HR Notes", // 23
+  "Created By", // 24
+  "Updated At", // 25
 ];
 
 // Extra ATS columns (appended after core headers for backward compatibility)
 var EXTRA_HEADERS = [
-  'Hold Reason',              // 26
-  'Hold Follow Up Date',      // 27
-  'Blacklist Reason',         // 28
-  'Blacklist Date',           // 29
-  'Blacklist Updated By',     // 30
-  'Employee ID'               // 31
+  "Hold Reason", // 26
+  "Hold Follow Up Date", // 27
+  "Blacklist Reason", // 28
+  "Blacklist Date", // 29
+  "Blacklist Updated By", // 30
+  "Employee ID", // 31
 ];
 
 var RAW_KANDIDAT_COL = {};
-SHEET_HEADERS.concat(EXTRA_HEADERS).forEach(function(h, i) { RAW_KANDIDAT_COL[h] = i + 1; });
+SHEET_HEADERS.concat(EXTRA_HEADERS).forEach(function (h, i) {
+  RAW_KANDIDAT_COL[h] = i + 1;
+});
 
 // ============================================================
 // SHEET: Employee
 // Purpose: Complete employee master — final authority
 // ============================================================
 var EMPLOYEE_HEADERS = [
-  'Employee ID',              // 1
-  'Recruitment ID',           // 2
-  'Full Name',                // 3
-  'Position',                 // 4
-  'Email',                    // 5
-  'Phone',                    // 6
-  'Join Date',                // 7
-  'Status',                   // 8
-  'Notes',                    // 9
-  'Created At',               // 10
-  'Company Entity',           // 11
-  'Employee Type',            // 12
-  'NIK',                      // 13
-  'Birth Date',               // 14
-  'Age',                      // 15
-  'Gender',                   // 16
-  'Marital Status',           // 17
-  'Address',                  // 18
-  'City',                     // 19
-  'Education',                // 20
-  'Work Experience',          // 21
-  'Department',               // 22
-  'Division',                 // 23
-  'Branch',                   // 24
-  'Contract Start',           // 25
-  'Contract End',             // 26
-  'Contract Duration',        // 27
-  'Employment Status',        // 28
-  'Salary',                   // 29
-  'Salary Type',              // 30
-  'Outsource Vendor',         // 31
-  'Contract Number',          // 32
-  'District',                 // 33
-  'Recruitment Source',       // 34
-  'HR Notes',                 // 35
-  'Created By',               // 36
-  'Updated At'                // 37
+  "Employee ID", // 1
+  "Recruitment ID", // 2
+  "Full Name", // 3
+  "Position", // 4
+  "Email", // 5
+  "Phone", // 6
+  "Join Date", // 7
+  "Status", // 8
+  "Notes", // 9
+  "Created At", // 10
+  "Company Entity", // 11
+  "Employee Type", // 12
+  "NIK", // 13
+  "Birth Date", // 14
+  "Age", // 15
+  "Gender", // 16
+  "Marital Status", // 17
+  "Address", // 18
+  "City", // 19
+  "Education", // 20
+  "Work Experience", // 21
+  "Department", // 22
+  "Division", // 23
+  "Branch", // 24
+  "Contract Start", // 25
+  "Contract End", // 26
+  "Contract Duration", // 27
+  "Employment Status", // 28
+  "Salary", // 29
+  "Salary Type", // 30
+  "Outsource Vendor", // 31
+  "Contract Number", // 32
+  "District", // 33
+  "Recruitment Source", // 34
+  "HR Notes", // 35
+  "Created By", // 36
+  "Updated At", // 37
 ];
 
 var EMPLOYEE_COL = {};
-EMPLOYEE_HEADERS.forEach(function(h, i) { EMPLOYEE_COL[h] = i + 1; });
+EMPLOYEE_HEADERS.forEach(function (h, i) {
+  EMPLOYEE_COL[h] = i + 1;
+});
 
 // ============================================================
 // SHEET: raw_outsource
 // Purpose: Outsource self-registration (before approval → Employee)
 // ============================================================
 var OUTSOURCE_HEADERS = [
-  'Outsource ID',             // 1
-  'Created Date',             // 2
-  'Full Name',                // 3
-  'NIK',                      // 4
-  'Birth Date',               // 5
-  'Age',                      // 6
-  'Gender',                   // 7
-  'Marital Status',           // 8
-  'Email',                    // 9
-  'Phone',                    // 10
-  'Address',                  // 11
-  'City',                     // 12
-  'Province',                 // 13
-  'Position',                 // 14
-  'Department',               // 15
-  'Join Date',                // 16
-  'Education',                // 17
-  'Work Experience',          // 18
-  'Vendor Company',           // 19
-  'Contract Number',          // 20
-  'Contract Duration',        // 21
-  'Salary',                   // 22
-  'Recruitment Source',       // 23
-  'Status',                   // 24
-  'Notes',                    // 25
-  'Created By',               // 26
-  'Updated At'                // 27
+  "Outsource ID", // 1
+  "Created Date", // 2
+  "Full Name", // 3
+  "NIK", // 4
+  "Birth Date", // 5
+  "Age", // 6
+  "Gender", // 7
+  "Marital Status", // 8
+  "Email", // 9
+  "Phone", // 10
+  "Address", // 11
+  "City", // 12
+  "Province", // 13
+  "Position", // 14
+  "Department", // 15
+  "Join Date", // 16
+  "Education", // 17
+  "Work Experience", // 18
+  "Vendor Company", // 19
+  "Contract Number", // 20
+  "Contract Duration", // 21
+  "Salary", // 22
+  "Recruitment Source", // 23
+  "Status", // 24
+  "Notes", // 25
+  "Created By", // 26
+  "Updated At", // 27
 ];
 
 var OUTSOURCE_COL = {};
-OUTSOURCE_HEADERS.forEach(function(h, i) { OUTSOURCE_COL[h] = i + 1; });
+OUTSOURCE_HEADERS.forEach(function (h, i) {
+  OUTSOURCE_COL[h] = i + 1;
+});
 
 // ============================================================
 // SHEET: Audit_Log
 // Purpose: Activity tracking for all modules
 // ============================================================
 var AUDIT_LOG_HEADERS = [
-  'Timestamp',                // 1
-  'User',                     // 2
-  'Recruitment ID',           // 3
-  'Action',                   // 4
-  'Field',                    // 5
-  'Old Value',                // 6
-  'New Value'                 // 7
+  "Recruitment ID", // 1
+  "Action", // 2
+  "Field", // 3
+  "Old Value", // 4
+  "New Value", // 5
+  "User", // 6
+  "Timestamp", // 7
 ];
 
 var AUDIT_COL = {};
-AUDIT_LOG_HEADERS.forEach(function(h, i) { AUDIT_COL[h] = i + 1; });
+AUDIT_LOG_HEADERS.forEach(function (h, i) {
+  AUDIT_COL[h] = i + 1;
+});
 
 // Alias used by some modules
 var AUDIT_LOG_SHEET_NAME = AUDIT_SHEET_NAME;
@@ -175,110 +183,185 @@ var AUDIT_LOG_SHEET_NAME = AUDIT_SHEET_NAME;
 // Purpose: Google Workspace whitelist, login validation, RBAC
 // ============================================================
 var USERS_HEADERS = [
-  'Email',                    // 1
-  'Username',                 // 2
-  'Full Name',                // 3
-  'Role',                     // 4
-  'Status',                   // 5
-  'Password Hash',            // 6
-  'Last Login',               // 7
-  'Created At',               // 8
-  'Updated At',               // 9
-  'Created By'                // 10
+  "Email", // 1
+  "Full Name", // 2
+  "Role", // 3
+  "Status", // 4
+  "Last Login", // 5
+  "Created At", // 6
+  "Updated At", // 7
+  "Created By", // 8
 ];
 
 var USERS_COL = {};
-USERS_HEADERS.forEach(function(h, i) { USERS_COL[h] = i + 1; });
+USERS_HEADERS.forEach(function (h, i) {
+  USERS_COL[h] = i + 1;
+});
 
 // ============================================================
 // SHEET: Archive
 // Purpose: Former candidates — historical data, never deleted
 // ============================================================
 var ARCHIVE_HEADERS = [
-  'Archive ID',               // 1
-  'Original Type',            // 2
-  'Original ID',              // 3
-  'Full Name',                // 4
-  'NIK',                      // 5
-  'Email',                    // 6
-  'Phone',                    // 7
-  'Position',                 // 8
-  'Department',               // 9
-  'Status',                   // 10
-  'Archive Reason',           // 11
-  'Archive Date',             // 12
-  'Archived By',              // 13
-  'Notes',                    // 14
-  'Raw JSON',                 // 15
-  'Created At'                // 16
+  "Archive ID", // 1
+  "Original Type", // 2
+  "Original ID", // 3
+  "Full Name", // 4
+  "NIK", // 5
+  "Email", // 6
+  "Phone", // 7
+  "Position", // 8
+  "Department", // 9
+  "Status", // 10
+  "Archive Reason", // 11
+  "Archive Date", // 12
+  "Archived By", // 13
+  "Notes", // 14
+  "Raw JSON", // 15
+  "Created At", // 16
 ];
 
 var ARCHIVE_COL = {};
-ARCHIVE_HEADERS.forEach(function(h, i) { ARCHIVE_COL[h] = i + 1; });
+ARCHIVE_HEADERS.forEach(function (h, i) {
+  ARCHIVE_COL[h] = i + 1;
+});
 
 // ============================================================
 // SHEET: Offboarding
 // Purpose: Employee resignation, termination, retirement, contract end
 // ============================================================
 var OFFBOARDING_HEADERS = [
-  'Offboarding ID',           // 1
-  'Employee ID',              // 2
-  'Full Name',                // 3
-  'Position',                 // 4
-  'Department',               // 5
-  'Join Date',                // 6
-  'Last Working Date',        // 7
-  'Offboarding Type',         // 8
-  'Reason',                   // 9
-  'Approved By',              // 10
-  'Notes',                    // 11
-  'Status',                   // 12
-  'Archived',                 // 13
-  'Created By',               // 14
-  'Created At',               // 15
-  'Updated At'                // 16
+  "Offboarding ID", // 1
+  "Employee ID", // 2
+  "Full Name", // 3
+  "Position", // 4
+  "Department", // 5
+  "Join Date", // 6
+  "Last Working Date", // 7
+  "Offboarding Type", // 8
+  "Reason", // 9
+  "Approved By", // 10
+  "Notes", // 11
+  "Status", // 12
+  "Archived", // 13
+  "Created By", // 14
+  "Created At", // 15
+  "Updated At", // 16
 ];
 
 var OFFBOARD_COL = {};
-OFFBOARDING_HEADERS.forEach(function(h, i) { OFFBOARD_COL[h] = i + 1; });
+OFFBOARDING_HEADERS.forEach(function (h, i) {
+  OFFBOARD_COL[h] = i + 1;
+});
 
 // ============================================================
 // MASTER DATA CONFIGURATION
 // ============================================================
-var MASTER_DATA_HEADERS = ['ID', 'Kategori', 'Nama', 'Deskripsi', 'Urutan', 'Aktif', 'Dibuat', 'Diubah'];
+var MASTER_DATA_HEADERS = [
+  "ID",
+  "Kategori",
+  "Nama",
+  "Deskripsi",
+  "Urutan",
+  "Aktif",
+  "Dibuat",
+  "Diubah",
+];
 
 var MASTERDATA_COL = {};
-MASTER_DATA_HEADERS.forEach(function(h, i) { MASTERDATA_COL[h] = i + 1; });
+MASTER_DATA_HEADERS.forEach(function (h, i) {
+  MASTERDATA_COL[h] = i + 1;
+});
 
 var MASTER_DATA_CATEGORIES = {
-  recruitment_source:        { label: 'Sumber Rekrutmen',        icon: 'bi-link-45deg' },
-  candidate_status:          { label: 'Status Kandidat',         icon: 'bi-flag-fill' },
-  department:                { label: 'Departemen',              icon: 'bi-building' },
-  position:                  { label: 'Posisi',                  icon: 'bi-person-workspace' },
-  work_location:             { label: 'Lokasi Kerja',            icon: 'bi-geo-alt-fill' },
-  employee_type:             { label: 'Tipe Karyawan',           icon: 'bi-person-badge' },
-  education:                 { label: 'Pendidikan',              icon: 'bi-mortarboard-fill' },
-  work_experience:           { label: 'Pengalaman Kerja',        icon: 'bi-briefcase-fill' },
-  marital_status:            { label: 'Status Pernikahan',       icon: 'bi-heart-fill' },
-  gender:                    { label: 'Jenis Kelamin',           icon: 'bi-gender-male' },
-  current_employment_status: { label: 'Status Kerja Saat Ini',   icon: 'bi-person-check-fill' },
-  available_to_join:         { label: 'Ketersediaan Bergabung',  icon: 'bi-calendar-check-fill' },
-  employment_status:         { label: 'Status Employment',       icon: 'bi-shield-fill-check' },
-  contract_duration:         { label: 'Durasi Kontrak',          icon: 'bi-clock-fill' },
-  salary_type:               { label: 'Tipe Gaji',              icon: 'bi-cash-stack' },
-  company_entity:            { label: 'Entitas Perusahaan',      icon: 'bi-building' },
-  interview_result:          { label: 'Hasil Interview',         icon: 'bi-clipboard-check-fill' },
-  offboarding_type:          { label: 'Tipe Offboarding',        icon: 'bi-box-arrow-right' },
-  archive_reason:            { label: 'Alasan Archive',          icon: 'bi-archive-fill' }
+  recruitment_source: { label: "Sumber Rekrutmen", icon: "bi-link-45deg" },
+  candidate_status: { label: "Status Kandidat", icon: "bi-flag-fill" },
+  department: { label: "Departemen", icon: "bi-building" },
+  position: { label: "Posisi", icon: "bi-person-workspace" },
+  work_location: { label: "Lokasi Kerja", icon: "bi-geo-alt-fill" },
+  employee_type: { label: "Tipe Karyawan", icon: "bi-person-badge" },
+  education: { label: "Pendidikan", icon: "bi-mortarboard-fill" },
+  work_experience: { label: "Pengalaman Kerja", icon: "bi-briefcase-fill" },
+  marital_status: { label: "Status Pernikahan", icon: "bi-heart-fill" },
+  gender: { label: "Jenis Kelamin", icon: "bi-gender-male" },
+  current_employment_status: {
+    label: "Status Kerja Saat Ini",
+    icon: "bi-person-check-fill",
+  },
+  available_to_join: {
+    label: "Ketersediaan Bergabung",
+    icon: "bi-calendar-check-fill",
+  },
+  employment_status: {
+    label: "Status Employment",
+    icon: "bi-shield-fill-check",
+  },
+  contract_duration: { label: "Durasi Kontrak", icon: "bi-clock-fill" },
+  salary_type: { label: "Tipe Gaji", icon: "bi-cash-stack" },
+  company_entity: { label: "Entitas Perusahaan", icon: "bi-building" },
+  interview_result: {
+    label: "Hasil Interview",
+    icon: "bi-clipboard-check-fill",
+  },
+  offboarding_type: { label: "Tipe Offboarding", icon: "bi-box-arrow-right" },
+  archive_reason: { label: "Alasan Archive", icon: "bi-archive-fill" },
 };
 
 var DEFAULT_MASTER_DATA = {
-  recruitment_source: ['Website', 'Job Fair', 'Referral', 'Social Media', 'Agency', 'Walk In', 'Other'],
-  candidate_status:   ['Pending', 'Interview', 'Accepted', 'Hold', 'Blacklist', 'Rejected'],
-  department:         ['Human Resources', 'Finance', 'Marketing', 'Operations', 'IT', 'Sales', 'Legal'],
-  position:           ['Staff', 'Supervisor', 'Manager', 'Director', 'Intern', 'Outsource'],
-  work_location:      ['Jakarta', 'Bandung', 'Surabaya', 'Semarang', 'Yogyakarta', 'Medan'],
-  employee_type:      ['Full Time', 'Part Time', 'Contract', 'Intern', 'Outsource'],
-  offboarding_type:   ['Resignation', 'Termination', 'Retirement', 'Contract Finished'],
-  archive_reason:     ['Resigned', 'Terminated', 'Retired', 'Contract Ended', 'Other']
+  recruitment_source: [
+    "Website",
+    "Job Fair",
+    "Referral",
+    "Social Media",
+    "Agency",
+    "Walk In",
+    "Other",
+  ],
+  candidate_status: [
+    "Pending",
+    "Interview",
+    "Accepted",
+    "Hold",
+    "Blacklist",
+    "Rejected",
+  ],
+  department: [
+    "Human Resources",
+    "Finance",
+    "Marketing",
+    "Operations",
+    "IT",
+    "Sales",
+    "Legal",
+  ],
+  position: [
+    "Staff",
+    "Supervisor",
+    "Manager",
+    "Director",
+    "Intern",
+    "Outsource",
+  ],
+  work_location: [
+    "Jakarta",
+    "Bandung",
+    "Surabaya",
+    "Semarang",
+    "Yogyakarta",
+    "Medan",
+  ],
+  employee_type: ["Full Time", "Part Time", "Contract", "Intern", "Outsource"],
+  offboarding_type: [
+    "Resignation",
+    "Termination",
+    "Retirement",
+    "Contract Finished",
+  ],
+  archive_reason: [
+    "Resigned",
+    "Terminated",
+    "Retired",
+    "Contract Ended",
+    "Other",
+  ],
 };
