@@ -11,7 +11,6 @@ var DASHBOARD_SHEET_NAME = "raw_kandidat";
 var EMPLOYEE_SHEET_NAME = "Employee";
 var AUDIT_SHEET_NAME = "Audit_Log";
 var USERS_SHEET_NAME = "Users";
-var ARCHIVE_SHEET_NAME = "Archive";
 var OFFBOARDING_SHEET_NAME = "Offboarding";
 var MASTER_DATA_SHEET = "master_data"; // Deprecated: master data now derived from Employee sheet
 
@@ -243,34 +242,6 @@ var BLACKLIST_COL = {};
 BLACKLIST_HEADERS.forEach(function (h, i) { BLACKLIST_COL[h] = i + 1; });
 
 // ============================================================
-// SHEET: Archive
-// Purpose: Former candidates — historical data, never deleted
-// ============================================================
-var ARCHIVE_HEADERS = [
-  "Archive ID", // 1
-  "Original Type", // 2
-  "Original ID", // 3
-  "Full Name", // 4
-  "NIK", // 5
-  "Email", // 6
-  "Phone", // 7
-  "Position", // 8
-  "Department", // 9
-  "Status", // 10
-  "Archive Reason", // 11
-  "Archive Date", // 12
-  "Archived By", // 13
-  "Notes", // 14
-  "Raw JSON", // 15
-  "Created At", // 16
-];
-
-var ARCHIVE_COL = {};
-ARCHIVE_HEADERS.forEach(function (h, i) {
-  ARCHIVE_COL[h] = i + 1;
-});
-
-// ============================================================
 // SHEET: Offboarding
 // Purpose: Employee resignation, termination, retirement, contract end
 // ============================================================
@@ -348,7 +319,6 @@ var MASTER_DATA_CATEGORIES = {
     icon: "bi-clipboard-check-fill",
   },
   offboarding_type: { label: "Tipe Offboarding", icon: "bi-box-arrow-right" },
-  archive_reason: { label: "Alasan Archive", icon: "bi-archive-fill" },
 };
 
 var DEFAULT_MASTER_DATA = {
@@ -400,13 +370,6 @@ var DEFAULT_MASTER_DATA = {
     "Termination",
     "Retirement",
     "Contract Finished",
-  ],
-  archive_reason: [
-    "Resigned",
-    "Terminated",
-    "Retired",
-    "Contract Ended",
-    "Other",
   ],
   gender: ["Male", "Female"],
   current_employment_status: [
