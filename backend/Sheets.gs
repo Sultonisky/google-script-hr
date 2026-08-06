@@ -95,22 +95,132 @@ function ensureEmployeeHeaders_(sheet) {
     .setFontColor("#FFFFFF");
 }
 
+// ============================================================
+// HEADER AUTO-FIX
+// Pastikan header sheet persis sesuai schema yang diharapkan.
+// Dipanggil setiap kali sheet terbuka, sehingga selisih header
+// (mis. sheet dibuat manual / versi lama) otomatis diperbaiki.
+// ============================================================
+function ensureSheetHeadersMatch_(sheet, expectedHeaders, legacyMap) {
+  var lastCol = sheet.getLastColumn();
+  var currentHeaders = [];
+  if (lastCol > 0) {
+    currentHeaders = sheet
+      .getRange(1, 1, 1, lastCol)
+      .getValues()[0]
+      .map(function (h) {
+        return String(h).trim();
+      });
+  }
+
+  // APALAH: jika sheet kosong total tanpa baris, tulis header baru.
+  if (sheet.getLastRow() === 0) {
+    writeHeaderRow_(sheet, expectedHeaders);
+    return;
+  }
+
+  // Headers sudah persis sama? Tidak perlu apa-apa.
+  var headersMatch = false;
+  if (currentHeaders.length >= expectedHeaders.length) {
+    headersMatch = true;
+    for (var i = 0; i < expectedHeaders.length; i++) {
+      if (currentHeaders[i] !== expectedHeaders[i]) {
+        headersMatch = false;
+        break;
+      }
+    }
+  }
+  if (headersMatch) return;
+
+  // Simpan baris data yang sudah ada (jika sheet berisi data lama).
+  var existingRows = [];
+  var existingHeaders = currentHeaders.slice();
+  if (sheet.getLastRow() >= 2) {
+    existingRows = sheet
+      .getRange(2, 1, sheet.getLastRow() - 1, lastCol)
+      .getValues();
+  }
+
+  // Kosongkan lalu tulis ulang header baru.
+  sheet.clearContents();
+  sheet.clearFormats();
+  writeHeaderRow_(sheet, expectedHeaders);
+
+  if (existingRows.length > 0) {
+    // Petakan data lama ke kolom baru bila memungkinkan.
+    // legacyMap: header lama -> header baru. Balikkan jadi header baru -> header lama.
+    var newToOld = {};
+    if (legacyMap) {
+      for (var oldName in legacyMap) {
+        var newName = legacyMap[oldName];
+        if (newName) newToOld[newName] = oldName;
+      }
+    }
+
+    var oldColOf = {};
+    existingHeaders.forEach(function (h, i) {
+      oldColOf[h] = i;
+    });
+
+    var migrated = [];
+    for (var r = 0; r < existingRows.length; r++) {
+      var newRow = new Array(expectedHeaders.length).fill("");
+      var hasData = false;
+      for (var c = 0; c < expectedHeaders.length; c++) {
+        var target = expectedHeaders[c];
+        var srcCol = oldColOf[target];
+        if (srcCol === undefined && newToOld[target] !== undefined) {
+          srcCol = oldColOf[newToOld[target]];
+        }
+        if (srcCol !== undefined && existingRows[r][srcCol] !== undefined) {
+          var val = existingRows[r][srcCol];
+          if (val !== "" && val !== null) hasData = true;
+          newRow[c] = val;
+        }
+      }
+      // Baris kosong sepenuhnya? Buang.
+      if (hasData) migrated.push(newRow);
+    }
+    if (migrated.length > 0) {
+      sheet
+        .getRange(2, 1, migrated.length, expectedHeaders.length)
+        .setValues(migrated);
+    }
+  }
+}
+
+function writeHeaderRow_(sheet, headers) {
+  sheet
+    .getRange(1, 1, 1, headers.length)
+    .setValues([headers])
+    .setFontWeight("bold")
+    .setBackground("#005BAC")
+    .setFontColor("#FFFFFF");
+  sheet.setFrozenRows(1);
+  sheet.autoResizeColumns(1, headers.length);
+}
+
 // ============= Archive =============
+// Header lama (versi sebelum modular / manual di spreadsheet) yang
+// di-migrasi ke header baru saat sheet Archive sudah ada.
+var ARCHIVE_LEGACY_HEADER_MAP = {
+  "ID_Kandidat": "Original ID",
+  "Tanggal_Daftar": "Created At",
+  "Tipe_Pendaftar": "Original Type",
+  "Nama_Lengkap": "Full Name",
+  "No_HP": "Phone",
+  "Email": "Email",
+  "Pendidikan": null,
+  "Posisi_Dilamar": "Position",
+  "Status_HR": "Status",
+};
+
 function getOrCreateArchiveSheet_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(ARCHIVE_SHEET_NAME);
   if (!sheet) sheet = ss.insertSheet(ARCHIVE_SHEET_NAME);
 
-  if (sheet.getLastRow() === 0) {
-    sheet.appendRow(ARCHIVE_HEADERS);
-    sheet
-      .getRange(1, 1, 1, ARCHIVE_HEADERS.length)
-      .setFontWeight("bold")
-      .setBackground("#005BAC")
-      .setFontColor("#FFFFFF");
-    sheet.setFrozenRows(1);
-    sheet.autoResizeColumns(1, ARCHIVE_HEADERS.length);
-  }
+  ensureSheetHeadersMatch_(sheet, ARCHIVE_HEADERS, ARCHIVE_LEGACY_HEADER_MAP);
   return sheet;
 }
 
@@ -120,18 +230,7 @@ function getOrCreateOffboardingSheet_() {
   var sheet = ss.getSheetByName(OFFBOARDING_SHEET_NAME);
   if (!sheet) sheet = ss.insertSheet(OFFBOARDING_SHEET_NAME);
 
-  if (sheet.getLastRow() === 0) {
-    sheet.appendRow(OFFBOARDING_HEADERS);
-    sheet
-      .getRange(1, 1, 1, OFFBOARDING_HEADERS.length)
-      .setFontWeight("bold")
-      .setBackground("#005BAC")
-      .setFontColor("#FFFFFF");
-    sheet.setFrozenRows(1);
-    sheet.autoResizeColumns(1, OFFBOARDING_HEADERS.length);
-  } else {
-    ensureOffboardingHeaders_(sheet);
-  }
+  ensureSheetHeadersMatch_(sheet, OFFBOARDING_HEADERS, null);
   return sheet;
 }
 

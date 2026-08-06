@@ -78,6 +78,7 @@ function archiveCandidateData_(recruitmentId, archiveReason, notes) {
 
     return { success: true, archiveId: archiveId };
   } catch (err) {
+    Logger.log("archiveCandidateData_ ERROR for " + recruitmentId + ": " + err);
     return { success: false, message: err.toString() };
   }
 }
@@ -533,4 +534,51 @@ function deleteCandidate(recruitmentId) {
   } finally {
     lock.releaseLock();
   }
+}
+
+// ============================================================
+// DIAGNOSTIK — jalankan dari Apps Script editor (tanpa pending).
+// Memeriksa sheet Archive & Offboarding serta menguji archive data.
+// ============================================================
+function diagnoseArchiveAndOffboarding(statusFilter) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var out = {};
+  out.currentTaskSource = Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd HH:mm:ss");
+
+  // Cek sheet
+  out.sheets = ["Archive", "Offboarding", "raw_kandidat", "Employee", "Audit_Log"].map(function (name) {
+    var s = ss.getSheetByName(name);
+    return { name: name, exists: !!s, lastRow: s ? s.getLastRow() : null };
+  });
+
+  out.archiveHeaders = ARCHIVE_HEADERS;
+  out.offboardingHeaders = OFFBOARDING_HEADERS;
+
+  // Coba panggil konfigurasi: hanya verifikasi fungsi dapat diakses
+  out.hasArchiveSheetFn = typeof getOrCreateArchiveSheet_ === "function";
+  out.hasOffboardSheetFn = typeof getOrCreateOffboardingSheet_ === "function";
+
+  // Ambil satu kandidat status tertentu (Pending) utk contoh, TANPA mengubah.
+  try {
+    var sheet = getDashboardSheet_();
+    var lastR = sheet.getLastRow();
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    var idx = {};
+    headers.forEach(function (h, i) { idx[String(h).trim()] = i; });
+    var idCol = idx["Recruitment ID"];
+    var stCol = idx["Status"];
+    for (var r = 2; r <= lastR; r++) {
+      var st = String(sheet.getRange(r, stCol + 1).getValue() || "");
+      var id = String(sheet.getRange(r, idCol + 1).getValue() || "");
+      if (!id) continue;
+      if ((statusFilter && st === statusFilter) || (!statusFilter && (st === "Hold" || st === "Blacklist"))) {
+        out.sampleCandidate = { recruitmentId: id, status: st };
+        break;
+      }
+    }
+  } catch (e) {
+    out.sampleError = e.toString();
+  }
+
+  return out;
 }

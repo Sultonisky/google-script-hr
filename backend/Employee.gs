@@ -244,6 +244,7 @@ function offboardEmployee_(employeeId, offboardingType, reason, notes) {
 
     return { success: true, offboardingId: offboardingId };
   } catch (err) {
+    Logger.log("offboardEmployee_ ERROR for " + employeeId + ": " + err);
     return { success: false, message: err.toString() };
   }
 }
