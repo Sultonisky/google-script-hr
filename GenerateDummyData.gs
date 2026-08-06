@@ -57,7 +57,12 @@ function _gdClearSheets_() {
   ];
   targets.forEach(function(name) {
     var s = ss.getSheetByName(name);
-    if (s && s.getLastRow() > 1) s.deleteRows(2, s.getLastRow() - 1);
+    if (!s) return;
+    var lastRow = s.getLastRow();
+    // Perlu minimal 2 baris (header + 1 data) sebelum bisa deleteRows
+    if (lastRow > 1) {
+      s.deleteRows(2, lastRow - 1);
+    }
   });
 }
 
