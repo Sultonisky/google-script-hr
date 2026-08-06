@@ -323,11 +323,16 @@ var MASTER_DATA_CATEGORIES = {
 
 var DEFAULT_MASTER_DATA = {
   recruitment_source: [
-    "Website",
-    "Job Fair",
-    "Referral",
-    "Social Media",
-    "Agency",
+    "JobStreet",
+    "LinkedIn",
+    "Indeed",
+    "Instagram",
+    "Website Perusahaan",
+    "Referensi Karyawan",
+    "Kampus / Career Fair",
+    "Loker.id",
+    "Karir.com",
+    "Glassdoor",
     "Walk In",
     "Other",
   ],
