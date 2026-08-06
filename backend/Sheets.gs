@@ -69,9 +69,50 @@ function getOrCreateEmployeeSheet_() {
     sheet.setFrozenRows(1);
     sheet.autoResizeColumns(1, EMPLOYEE_HEADERS.length);
   } else {
-    ensureEmployeeHeaders_(sheet);
+    ensureSheetHeadersMatch_(sheet, EMPLOYEE_HEADERS, null);
   }
   return sheet;
+}
+
+// ============================================================
+// ONETIME FIX — jalankan sekali dari Apps Script editor untuk
+// menyelaraskan header sheet Employee dengan EMPLOYEE_HEADERS.
+// Data lama dimigrasikan ke posisi kolom yang benar.
+// Aman dijalankan berulang kali.
+// ============================================================
+function fixEmployeeHeadersNow() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(EMPLOYEE_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(EMPLOYEE_SHEET_NAME);
+  }
+
+  var before = {
+    lastRow: sheet.getLastRow(),
+    lastCol: sheet.getLastColumn(),
+    headers: sheet.getLastColumn() > 0
+      ? sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
+          .map(function(h) { return String(h).trim(); })
+      : [],
+  };
+
+  ensureSheetHeadersMatch_(sheet, EMPLOYEE_HEADERS, null);
+
+  var afterHeaders = sheet
+    .getRange(1, 1, 1, EMPLOYEE_HEADERS.length)
+    .getValues()[0]
+    .map(function(h) { return String(h).trim(); });
+
+  var match = afterHeaders.join('|') === EMPLOYEE_HEADERS.join('|');
+  return {
+    success: match,
+    headerCount: afterHeaders.length,
+    headers: afterHeaders,
+    before: before,
+    message: match
+      ? 'Header Employee berhasil diselaraskan menjadi ' + EMPLOYEE_HEADERS.length + ' kolom.'
+      : 'Header Employee masih tidak cocok, periksa kembali.',
+  };
 }
 
 function ensureEmployeeHeaders_(sheet) {
