@@ -4,7 +4,7 @@
 // departments, positions, work locations, employee types.
 // Reads dynamically from Employee sheet (distinct column values)
 // and falls back to DEFAULT_MASTER_DATA for categories not
-// present in Employee sheet (e.g. offboarding_type, archive_reason).
+// present in Employee sheet (e.g. offboarding_type).
 // ============================================================
 
 // ============= HELPER =============

@@ -200,74 +200,6 @@ function writeHeaderRow_(sheet, headers) {
   sheet.autoResizeColumns(1, headers.length);
 }
 
-// ============= Archive =============
-// Header lama (versi sebelum modular / manual di spreadsheet) yang
-// di-migrasi ke header baru saat sheet Archive sudah ada.
-var ARCHIVE_LEGACY_HEADER_MAP = {
-  "ID_Kandidat": "Original ID",
-  "Tanggal_Daftar": "Created At",
-  "Tipe_Pendaftar": "Original Type",
-  "Nama_Lengkap": "Full Name",
-  "No_HP": "Phone",
-  "Email": "Email",
-  "Pendidikan": null,
-  "Posisi_Dilamar": "Position",
-  "Status_HR": "Status",
-};
-
-function getOrCreateArchiveSheet_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(ARCHIVE_SHEET_NAME);
-  if (!sheet) sheet = ss.insertSheet(ARCHIVE_SHEET_NAME);
-
-  ensureSheetHeadersMatch_(sheet, ARCHIVE_HEADERS, ARCHIVE_LEGACY_HEADER_MAP);
-  return sheet;
-}
-
-// ============================================================
-// ONETIME FIX — jalankan sekali dari Apps Script editor untuk
-// menulis ulang header sheet Archive dengan 16 kolom baru
-// (ARCHIVE_HEADERS). Data lama (jika ada) dimigrasi lewat
-// pemetaan; sheet yang hanya berisi header lama akan bersih
-// menjadi 16 header baru. Aman dijalankan ulang.
-// ============================================================
-function fixArchiveHeadersNow() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(ARCHIVE_SHEET_NAME);
-  if (!sheet) sheet = ss.insertSheet(ARCHIVE_SHEET_NAME);
-
-  var before = {
-    lastRow: sheet.getLastRow(),
-    lastCol: sheet.getLastColumn(),
-    headers:
-      sheet.getLastColumn() > 0
-        ? sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(function (h) {
-            return String(h).trim();
-          })
-        : [],
-  };
-
-  ensureSheetHeadersMatch_(sheet, ARCHIVE_HEADERS, ARCHIVE_LEGACY_HEADER_MAP);
-
-  var afterHeaders = sheet
-    .getRange(1, 1, 1, ARCHIVE_HEADERS.length)
-    .getValues()[0]
-    .map(function (h) {
-      return String(h).trim();
-    });
-
-  return {
-    success: afterHeaders.join("|") === ARCHIVE_HEADERS.join("|"),
-    headerCount: afterHeaders.length,
-    headers: afterHeaders,
-    before: before,
-    message:
-      afterHeaders.join("|") === ARCHIVE_HEADERS.join("|")
-        ? "Header Archive berhasil ditulis ulang menjadi 16 kolom."
-        : "Header Archive masih tidak cocok, periksa kembali.",
-  };
-}
-
 // ============= Offboarding =============
 function getOrCreateOffboardingSheet_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -435,7 +367,6 @@ function setupSpreadsheet() {
   getOrCreateHoldSheet_();
   getOrCreateAcceptedSheet_();
   getOrCreateBlacklistSheet_();
-  getOrCreateArchiveSheet_();
   getOrCreateOffboardingSheet_();
   getOrCreateAuditLogSheet_();
   getOrCreateUsersSheet_();
