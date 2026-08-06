@@ -37,51 +37,52 @@
               <div class="col-md-6">
                 <label class="form-label" for="gender">Jenis Kelamin <span class="required">*</span></label>
                 <select class="form-select" id="gender" name="gender" required>
-                  <option value="">-- Pilih Jenis Kelamin --</option>
-                  <option value="Male">Laki-laki</option>
-                  <option value="Female">Perempuan</option>
+                  <option value="">-- Select Gender --</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
                 </select>
                 <div class="invalid-feedback">Jenis kelamin wajib dipilih.</div>
               </div>
               <div class="col-md-6">
                 <label class="form-label" for="marital_status">Status Pernikahan <span class="required">*</span></label>
                 <select class="form-select" id="marital_status" name="marital_status" required>
-                  <option value="">-- Pilih Status --</option>
-                  <option value="Single">Belum Menikah</option>
-                  <option value="Married">Menikah</option>
-                  <option value="Divorced">Cerai</option>
-                  <option value="Widowed">Janda/Duda</option>
+                  <option value="">-- Select Marital Status --</option>
+                  <option value="Single">Single</option>
+                  <option value="Married">Married</option>
+                  <option value="Divorced">Divorced</option>
+                  <option value="Widowed">Widowed</option>
                 </select>
                 <div class="invalid-feedback">Status pernikahan wajib dipilih.</div>
               </div>
               <div class="col-md-6">
                 <label class="form-label" for="education">Pendidikan Terakhir <span class="required">*</span></label>
                 <select class="form-select" id="education" name="education" required>
-                  <option value="">-- Pilih Pendidikan --</option>
-                  <option value="Elementary School">Sekolah Dasar (SD)</option>
-                  <option value="Junior High School">Sekolah Menengah Pertama (SMP)</option>
-                  <option value="Senior High School">Sekolah Menengah Atas (SMA)</option>
-                  <option value="Vocational High School">Sekolah Menengah Kejuruan (SMK)</option>
+                  <option value="">-- Select Education --</option>
+                  <option value="Elementary School">Elementary School</option>
+                  <option value="Junior High School">Junior High School</option>
+                  <option value="Senior High School (SMA)">Senior High School (SMA)</option>
+                  <option value="Vocational High School (SMK)">Vocational High School (SMK)</option>
                   <option value="Diploma I">Diploma I (D1)</option>
                   <option value="Diploma II">Diploma II (D2)</option>
-                  <option value="Diploma III">Diploma III (D3)</option>
-                  <option value="Bachelor Degree">Sarjana (S1)</option>
-                  <option value="Master Degree">Magister (S2)</option>
-                  <option value="Doctoral Degree">Doktoral (S3)</option>
-                  <option value="Other">Lainnya</option>
+                  <option value="Diploma (D3)">Diploma (D3)</option>
+                  <option value="Bachelor's Degree (S1)">Bachelor's Degree (S1)</option>
+                  <option value="Master's Degree (S2)">Master's Degree (S2)</option>
+                  <option value="Doctoral Degree (S3)">Doctoral Degree (S3)</option>
+                  <option value="Other">Other</option>
                 </select>
                 <div class="invalid-feedback">Pendidikan terakhir wajib dipilih.</div>
               </div>
               <div class="col-md-6">
                 <label class="form-label" for="work_experience">Pengalaman Kerja</label>
                 <select class="form-select" id="work_experience" name="work_experience">
-                  <option value="">-- Pilih Pengalaman --</option>
-                  <option value="Less than 1 Year">Kurang dari 1 Tahun</option>
-                  <option value="1-2 Years">1-2 Tahun</option>
-                  <option value="2-3 Years">2-3 Tahun</option>
-                  <option value="3-5 Years">3-5 Tahun</option>
-                  <option value="5-10 Years">5-10 Tahun</option>
-                  <option value="More than 10 Years">Lebih dari 10 Tahun</option>
+                  <option value="">-- Select Work Experience --</option>
+                  <option value="Fresh Graduate">Fresh Graduate</option>
+                  <option value="Less than 1 Year">Less than 1 Year</option>
+                  <option value="1-2 Years">1-2 Years</option>
+                  <option value="2-3 Years">2-3 Years</option>
+                  <option value="3-5 Years">3-5 Years</option>
+                  <option value="5-10 Years">5-10 Years</option>
+                  <option value="More than 10 Years">More than 10 Years</option>
                 </select>
               </div>
             </div>
@@ -112,22 +113,22 @@
               </div>
               <div class="col-md-4">
                 <label class="form-label" for="province">Provinsi <span class="required">*</span></label>
-                <select class="form-select" id="province" name="province" required><option value="">-- Pilih Provinsi --</option></select>
+                <select class="form-select" id="province" name="province" required><option value="">-- Select Province --</option></select>
                 <div class="invalid-feedback">Provinsi wajib dipilih.</div>
               </div>
               <div class="col-md-4">
                 <label class="form-label" for="city">Kota/Kabupaten <span class="required">*</span></label>
-                <select class="form-select" id="city" name="city" required><option value="">-- Pilih Kota/Kabupaten --</option></select>
+                <select class="form-select" id="city" name="city" required><option value="">-- Select City/Regency --</option></select>
                 <div class="invalid-feedback">Kota/Kabupaten wajib dipilih.</div>
               </div>
               <div class="col-md-4">
                 <label class="form-label" for="district">Kecamatan <span class="required">*</span></label>
                 <div id="districtWrap">
-                  <select class="form-select" id="district" name="district" required disabled><option value="">-- Pilih Kota dahulu --</option></select>
+                  <select class="form-select" id="district" name="district" required disabled><option value="">-- Select City first --</option></select>
                 </div>
                 <div class="invalid-feedback">Kecamatan wajib dipilih.</div>
                 <div id="districtLoading" style="display:none;font-size:12px;color:var(--color-text-soft);margin-top:5px;">
-                  <span class="spinner-border spinner-border-sm me-1" role="status"></span> Memuat kecamatan...
+                  <span class="spinner-border spinner-border-sm me-1" role="status"></span> Loading districts...
                 </div>
                 <div id="districtManualWrap" style="display:none;margin-top:6px;">
                   <input type="text" class="form-control" id="districtManual" placeholder="Ketik nama kecamatan manual">
@@ -154,7 +155,7 @@
               <div class="col-md-6">
                 <label class="form-label" for="company_entity">Entitas Perusahaan <span class="required">*</span></label>
                 <select class="form-select" id="company_entity" name="company_entity" required>
-                  <option value="">-- Pilih Entitas --</option>
+                  <option value="">-- Select Entity --</option>
                   <option value="PT Mahakarya Sukses Indonesia">PT Mahakarya Sukses Indonesia</option>
                 </select>
                 <div class="invalid-feedback">Entitas perusahaan wajib dipilih.</div>
@@ -162,7 +163,7 @@
               <div class="col-md-6">
                 <label class="form-label" for="employee_type">Tipe Karyawan <span class="required">*</span></label>
                 <select class="form-select" id="employee_type" name="employee_type" required data-master="employee_type">
-                  <option value="">-- Pilih Tipe --</option>
+                  <option value="">-- Select Type --</option>
                 </select>
                 <div class="invalid-feedback">Tipe karyawan wajib dipilih.</div>
               </div>
@@ -174,13 +175,13 @@
               <div class="col-md-6">
                 <label class="form-label" for="department">Departemen / Unit</label>
                 <select class="form-select" id="department" name="department" data-master="department">
-                  <option value="">-- Pilih Departemen --</option>
+                  <option value="">-- Select Department --</option>
                 </select>
               </div>
               <div class="col-md-6">
                 <label class="form-label" for="employment_status">Status Kepegawaian <span class="required">*</span></label>
                 <select class="form-select" id="employment_status" name="employment_status" required>
-                  <option value="">-- Pilih Status --</option>
+                  <option value="">-- Select Status --</option>
                   <option value="Active">Active</option>
                   <option value="On Leave">On Leave</option>
                   <option value="Probation">Probation</option>
@@ -203,15 +204,15 @@
               <div class="col-md-4" id="contractDurationGroup">
                 <label class="form-label" for="contract_duration">Durasi Kontrak <span class="required" id="contractDurationRequired" style="display:none">*</span></label>
                 <select class="form-select" id="contract_duration" name="contract_duration">
-                  <option value="">-- Pilih Durasi --</option>
-                  <option value="1 Bulan">1 Bulan</option>
-                  <option value="3 Bulan">3 Bulan</option>
-                  <option value="6 Bulan">6 Bulan</option>
-                  <option value="1 Tahun">1 Tahun</option>
-                  <option value="2 Tahun">2 Tahun</option>
-                  <option value="3 Tahun">3 Tahun</option>
-                  <option value="Tidak Terbatas">Tidak Terbatas</option>
-                  <option value="Lainnya">Lainnya</option>
+                  <option value="">-- Select Duration --</option>
+                  <option value="1 Month">1 Month</option>
+                  <option value="3 Months">3 Months</option>
+                  <option value="6 Months">6 Months</option>
+                  <option value="1 Year">1 Year</option>
+                  <option value="2 Years">2 Years</option>
+                  <option value="3 Years">3 Years</option>
+                  <option value="Unlimited">Unlimited</option>
+                  <option value="Other">Other</option>
                 </select>
                 <div class="invalid-feedback">Durasi kontrak wajib dipilih.</div>
               </div>
@@ -226,9 +227,9 @@
               <div class="col-md-6">
                 <label class="form-label" for="salary_type">Tipe Gaji <span class="required">*</span></label>
                 <select class="form-select" id="salary_type" name="salary_type" required>
-                  <option value="">-- Pilih Tipe --</option>
-                  <option value="Monthly">Monthly (Bulanan)</option>
-                  <option value="Daily">Daily (Harian)</option>
+                  <option value="">-- Select Type --</option>
+                  <option value="Monthly">Monthly</option>
+                  <option value="Daily">Daily</option>
                   <option value="Project-Based">Project-Based</option>
                 </select>
                 <div class="invalid-feedback">Tipe gaji wajib dipilih.</div>
@@ -257,13 +258,13 @@
               <div class="col-md-6">
                 <label class="form-label" for="recruitment_source">Sumber Penempatan</label>
                 <select class="form-select" id="recruitment_source" name="recruitment_source">
-                  <option value="">-- Pilih Sumber (opsional) --</option>
+                  <option value="">-- Select Source (optional) --</option>
                   <option value="Vendor Referral">Vendor Referral</option>
                   <option value="Internal Referral">Internal Referral</option>
                   <option value="Job Fair">Job Fair</option>
                   <option value="Walk In">Walk In</option>
                   <option value="Agency">Agency</option>
-                  <option value="Other">Lainnya</option>
+                  <option value="Other">Other</option>
                 </select>
               </div>
             </div>

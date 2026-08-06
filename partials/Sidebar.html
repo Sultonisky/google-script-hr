@@ -25,31 +25,35 @@
       <span class="badge-count" id="navRecruitmentCount">0</span>
     </button>
     <button class="nav-item" type="button" data-page="pageEmployee">
-      <i class="bi bi-person-badge-fill"></i> Karyawan
-    </button>
-    <button class="nav-item" type="button" data-page="pageOutsource">
-      <i class="bi bi-building"></i> Outsource
-    </button>
-    <button class="nav-item" type="button" data-page="pageMasterData">
-      <i class="bi bi-database-fill"></i> Master Data
+      <i class="bi bi-person-badge-fill"></i> Master Data
     </button>
 
     <div class="nav-section-label">Candidate Status</div>
     <button
       class="nav-item"
       type="button"
-      data-page="pageRecruitment"
-      data-status="Hold"
+      data-page="pageAccepted"
+    >
+      <i class="bi bi-check-circle-fill"></i> Accepted
+    </button>
+    <button
+      class="nav-item"
+      type="button"
+      data-page="pageHold"
     >
       <i class="bi bi-pause-circle-fill"></i> Hold
     </button>
     <button
       class="nav-item"
       type="button"
-      data-page="pageRecruitment"
-      data-status="Blacklist"
+      data-page="pageBlacklist"
     >
       <i class="bi bi-slash-circle-fill"></i> Blacklist
+    </button>
+
+    <div class="nav-section-label">Outsource</div>
+    <button class="nav-item" type="button" data-page="pageOutsource">
+      <i class="bi bi-building"></i> Outsource
     </button>
 
     <div class="nav-section-label">System</div>

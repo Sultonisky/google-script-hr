@@ -63,6 +63,8 @@ function getMasterDataList() {
     var headers = data[0];
     var col = _getColumnIndex_(headers);
 
+    // Track seen values per category to deduplicate Employee sheet rows
+    var seenFromSheet = {};
     var items = [];
     for (var r = 1; r < data.length; r++) {
       var row = data[r];
@@ -72,37 +74,45 @@ function getMasterDataList() {
         var empCol = MASTER_DATA_EMPLOYEE_COL_MAP[cat];
         if (empCol && col[empCol] !== undefined) {
           var val = String(row[col[empCol]] || "").trim();
-          if (val) {
-            items.push({
-              id: cat + "-" + r,
-              category: cat,
-              name: val,
-              description: "",
-              order: order,
-              active: true,
-              created: String(row[col["Created At"]] || ""),
-              modified: String(row[col["Updated At"]] || ""),
-            });
-          }
+          if (!val) return;
+          var dupKey = cat + "|" + val.toLowerCase();
+          if (seenFromSheet[dupKey]) return; // skip duplicate from sheet rows
+          seenFromSheet[dupKey] = true;
+          items.push({
+            id: cat + "-" + r,
+            category: cat,
+            name: val,
+            description: "",
+            order: order,
+            active: true,
+            created: String(row[col["Created At"]] || ""),
+            modified: String(row[col["Updated At"]] || ""),
+          });
         }
       });
     }
 
-    // Merge with defaults for categories not in Employee sheet
+    // Merge with defaults for EVERY category.
+    // Categories derived from the Employee sheet (MASTER_DATA_EMPLOYEE_COL_MAP,
+    // e.g. recruitment_source) still receive their DEFAULT_MASTER_DATA values as
+    // a fallback when the sheet has no recorded entries for that column — which
+    // is the normal case for recruitment_source since the value is only known at
+    // candidate-application time, not for existing employees. This keeps the
+    // registration-form dropdowns populated instead of rendering empty.
+    // Duplicate values (same category + name, case-insensitive) are skipped so
+    // values recorded on the Employee sheet always take precedence.
     var seen = {};
     items.forEach(function (it) {
-      var key = it.category + "|" + it.name.toLowerCase();
-      if (!seen[key]) {
-        seen[key] = true;
-      }
+      seen[it.category + "|" + it.name.toLowerCase()] = true;
     });
 
     var orderCounter = items.length + 1;
     Object.keys(MASTER_DATA_CATEGORIES).forEach(function (cat) {
-      var empCol = MASTER_DATA_EMPLOYEE_COL_MAP[cat];
-      if (empCol) return; // derived from Employee sheet
       var defaults = DEFAULT_MASTER_DATA[cat] || [];
       defaults.forEach(function (name) {
+        var key = cat + "|" + name.toLowerCase();
+        if (seen[key]) return;
+        seen[key] = true;
         items.push({
           id: "MD-" + orderCounter,
           category: cat,

@@ -1,0 +1,99 @@
+<!-- partials/HoldPage.html — Halaman Kandidat Hold (independen) -->
+<section class="page-section" id="pageHold">
+
+  <!-- Stat cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#e0edff"><i class="bi bi-pause-circle-fill" style="color:#005BAC"></i></div>
+        <div><div class="stat-label">Total Hold</div><div class="stat-value" id="holdStatTotal">0</div></div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-icon bg-gold"><i class="bi bi-hourglass-split"></i></div>
+        <div><div class="stat-label">Bulan Ini</div><div class="stat-value" id="holdStatMonth">0</div></div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#fef9ec"><i class="bi bi-calendar-check" style="color:#8a6100"></i></div>
+        <div><div class="stat-label">Ada Follow Up</div><div class="stat-value" id="holdStatFollowUp">0</div></div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-icon bg-blue"><i class="bi bi-briefcase-fill"></i></div>
+        <div><div class="stat-label">Posisi Unik</div><div class="stat-value" id="holdStatPositions">0</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table panel -->
+  <div class="panel" id="holdTablePanel">
+    <div class="panel-header">
+      <div>
+        <h6>Kandidat Hold</h6>
+        <div class="panel-subtitle" id="holdPanelSubtitle">Memuat data...</div>
+      </div>
+      <div class="export-btns">
+        <button class="btn-refresh" id="btnHoldRefresh" type="button" title="Muat ulang">
+          <i class="bi bi-arrow-clockwise"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="filter-bar">
+      <div class="table-search">
+        <i class="bi bi-search"></i>
+        <input type="text" id="holdSearchInput" placeholder="Cari ID, nama, posisi, kota..." />
+      </div>
+      <select class="filter-select" id="holdPositionFilter">
+        <option value="">Semua Posisi</option>
+      </select>
+      <select class="filter-select" id="holdSortSelect">
+        <option value="newest">Terbaru</option>
+        <option value="oldest">Terlama</option>
+        <option value="name_asc">Nama A-Z</option>
+        <option value="name_desc">Nama Z-A</option>
+      </select>
+      <button class="btn-reset-filter" type="button" id="btnHoldReset">
+        <i class="bi bi-arrow-counterclockwise"></i> Reset
+      </button>
+    </div>
+
+    <!-- Table -->
+    <div class="table-responsive">
+      <table class="table hr-table">
+        <thead>
+          <tr>
+            <th>Avatar</th>
+            <th>Recruitment ID</th>
+            <th>Kandidat</th>
+            <th>Usia</th>
+            <th>Posisi</th>
+            <th>Alasan Hold</th>
+            <th>Follow Up</th>
+            <th>Tgl Diproses</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="holdTableBody"></tbody>
+      </table>
+      <div class="table-loading" id="holdTableLoading">
+        <div class="spinner-border" role="status"></div>
+        <p>Mengambil data...</p>
+      </div>
+      <div class="table-empty d-none" id="holdTableEmpty">
+        <i class="bi bi-inbox"></i>
+        <p>Belum ada kandidat dengan status Hold.</p>
+      </div>
+    </div>
+
+    <div class="panel-footer">
+      <span id="holdFooterCount">Menampilkan 0 data</span>
+      <nav class="pagination-ui" id="holdPaginationUi" aria-label="Hold Pagination"></nav>
+    </div>
+  </div>
+</section>

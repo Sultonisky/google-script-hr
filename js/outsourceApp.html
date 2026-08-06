@@ -271,10 +271,10 @@
   function showNIKFeedback(success,r){
     nikFeedback.classList.add('show');
     if(success){
-      var det=['Tanggal Lahir: '+r.birthDate.formatted,'Jenis Kelamin: '+(r.gender==='Male'?'Laki-laki':'Perempuan')];
-      if(REGIONS.provinces[r.provinceCode]) det.push('Provinsi: '+REGIONS.provinces[r.provinceCode]);
-      if(REGIONS.cities[r.cityCode]) det.push('Kab/Kota: '+REGIONS.cities[r.cityCode]);
-      nikFeedback.innerHTML='<div class="alert alert-success"><i class="bi bi-check-circle-fill"></i> <strong>Data berhasil dikenali</strong><ul>'+det.map(function(d){return '<li>'+d+'</li>';}).join('')+'</ul></div>';
+      var det=['Birth Date: '+r.birthDate.formatted,'Gender: '+r.gender];
+      if(REGIONS.provinces[r.provinceCode]) det.push('Province: '+REGIONS.provinces[r.provinceCode]);
+      if(REGIONS.cities[r.cityCode]) det.push('City: '+REGIONS.cities[r.cityCode]);
+      nikFeedback.innerHTML='<div class="alert alert-success"><i class="bi bi-check-circle-fill"></i> <strong>NIK data recognized</strong><ul>'+det.map(function(d){return '<li>'+d+'</li>';}).join('')+'</ul></div>';
     } else {
       nikFeedback.innerHTML='<div class="alert alert-warning"><i class="bi bi-exclamation-triangle-fill"></i> <strong>NIK tidak valid.</strong></div>';
     }
@@ -284,19 +284,19 @@
   // REGION DROPDOWNS
   // ============================================================
   function populateProvinces(){
-    var html='<option value="">-- Pilih Provinsi --</option>';
+    var html='<option value="">-- Select Province --</option>';
     Object.keys(REGIONS.provinces).sort().forEach(function(c){ html+='<option value="'+c+'">'+REGIONS.provinces[c]+'</option>'; });
     provinceSelect.innerHTML=html;
   }
   function populateCities(pCode){
-    citySelect.innerHTML='<option value="">-- Pilih Kota/Kabupaten --</option>';
+    citySelect.innerHTML='<option value="">-- Select City/Regency --</option>';
     resetDistrict();
     if(!pCode) return;
     Object.keys(REGIONS.cities).filter(function(c){ return c.substring(0,2)===pCode; }).sort()
       .forEach(function(c){ citySelect.innerHTML+='<option value="'+c+'">'+REGIONS.cities[c]+'</option>'; });
   }
   function resetDistrict(){
-    districtInput.innerHTML='<option value="">-- Pilih Kota dahulu --</option>';
+    districtInput.innerHTML='<option value="">-- Select City first --</option>';
     districtInput.disabled=true; districtInput.value='';
     districtInput.classList.remove('is-valid','is-invalid');
     districtLoading.style.display='none';
@@ -318,7 +318,7 @@
       .getKecamatan(cityCode);
   }
   function populateDistrictOptions(list){
-    var html='<option value="">-- Pilih Kecamatan --</option>';
+    var html='<option value="">-- Select District --</option>';
     list.forEach(function(item){ html+='<option value="'+item.nama+'">'+item.nama+'</option>'; });
     districtInput.innerHTML=html; districtInput.disabled=false; districtInput.required=true;
     districtManualWrap.style.display='none'; districtManualInput.required=false;
@@ -488,8 +488,8 @@
             var items = data[cats[c]] || [];
             var cur = sel.value;
             var opts = '<option value="">';
-            if (ids[c] === 'department') opts += '-- Pilih Departemen --';
-            else if (ids[c] === 'employee_type') opts += '-- Pilih Tipe --';
+            if (ids[c] === 'department') opts += '-- Select Department --';
+            else if (ids[c] === 'employee_type') opts += '-- Select Type --';
             opts += '</option>';
             items.forEach(function(name) {
               var val = typeof name === 'object' ? name.name : name;

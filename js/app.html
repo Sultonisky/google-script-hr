@@ -271,6 +271,9 @@
     // 3. Init dashboard data + charts + filters + table + drawer + exports
     if (typeof initDashboard === "function") initDashboard();
 
+    // 3b. Init status pages (Hold / Accepted / Blacklist)
+    if (typeof initStatusPages === "function") initStatusPages();
+
     // 4. SPA Router — after dashboard init, set up hash-based navigation
     if (typeof SPA !== "undefined" && typeof SPA.init === "function") {
       SPA.init();

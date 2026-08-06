@@ -735,15 +735,15 @@ function generateRecruitmentData_(today) {
     "Customer Service",
     "Quality Control Staff",
   ];
-  var educationLevels = ["SMA", "SMK", "D3", "S1", "S2"];
+  var educationLevels = ["Junior High School", "Senior High School (SMA)", "Vocational High School (SMK)", "Diploma (D3)", "Bachelor's Degree (S1)", "Master's Degree (S2)"];
   var workExps = [
     "Fresh Graduate",
-    "< 1 Tahun",
-    "1-2 Tahun",
-    "2-3 Tahun",
-    "3-5 Tahun",
-    "5-10 Tahun",
-    "> 10 Tahun",
+    "Less than 1 Year",
+    "1-2 Years",
+    "2-3 Years",
+    "3-5 Years",
+    "5-10 Years",
+    "More than 10 Years",
   ];
   var companies = _gdGetCompanies_();
   var cities = _gdGetCities_();
@@ -769,13 +769,13 @@ function generateRecruitmentData_(today) {
     "Fresh Graduate",
   ];
   var availableJoins = [
-    "Segera",
-    "1 Minggu",
-    "2 Minggu",
-    "1 Bulan",
-    "2 Bulan",
-    "3 Bulan",
-    "Bisa Negosiasi",
+    "Immediately",
+    "1 Week",
+    "2 Weeks",
+    "1 Month",
+    "2 Months",
+    "3 Months",
+    "Negotiable",
   ];
   var maritalStatuses = ["Single", "Married", "Divorced"];
 
@@ -825,12 +825,12 @@ function generateRecruitmentData_(today) {
     var workExp = _gdPick_(workExps);
 
     var age;
-    if (workExp === "Fresh Graduate" || workExp === "< 1 Tahun")
+    if (workExp === "Fresh Graduate" || workExp === "Less than 1 Year")
       age = _gdRandInt_(20, 25);
-    else if (workExp === "1-2 Tahun") age = _gdRandInt_(22, 28);
-    else if (workExp === "2-3 Tahun") age = _gdRandInt_(24, 30);
-    else if (workExp === "3-5 Tahun") age = _gdRandInt_(26, 33);
-    else if (workExp === "5-10 Tahun") age = _gdRandInt_(28, 38);
+    else if (workExp === "1-2 Years") age = _gdRandInt_(22, 28);
+    else if (workExp === "2-3 Years") age = _gdRandInt_(24, 30);
+    else if (workExp === "3-5 Years") age = _gdRandInt_(26, 33);
+    else if (workExp === "5-10 Years") age = _gdRandInt_(28, 38);
     else age = _gdRandInt_(32, 50);
     if (age > 50) age = 50;
 
@@ -873,7 +873,7 @@ function generateRecruitmentData_(today) {
 
     var expectedSalary = _gdRandSalary_(position);
     var company =
-      workExp === "Fresh Graduate" || workExp === "< 1 Tahun"
+      workExp === "Fresh Graduate" || workExp === "Less than 1 Year"
         ? "-"
         : _gdPick_(companies);
 
@@ -1117,7 +1117,7 @@ function generateEmployeeData_(acceptedCandidates, today) {
     "Admin",
     "Customer Service",
   ];
-  var educationLevels = ["SMA", "SMK", "D3", "S1", "S2"];
+  var educationLevels = ["Junior High School", "Senior High School (SMA)", "Vocational High School (SMK)", "Diploma (D3)", "Bachelor's Degree (S1)", "Master's Degree (S2)"];
   var workLocations = [
     "Jakarta Pusat",
     "Jakarta Selatan",
@@ -1148,11 +1148,11 @@ function generateEmployeeData_(acceptedCandidates, today) {
     "Probation",
   ];
   var contractDurations = [
-    "3 Bulan",
-    "6 Bulan",
-    "1 Tahun",
-    "2 Tahun",
-    "3 Tahun",
+    "3 Months",
+    "6 Months",
+    "1 Year",
+    "2 Years",
+    "3 Years",
   ];
   var salaryTypes = ["Monthly", "Daily", "Project-Based", "Hourly"];
   var maritalStatuses = ["Single", "Married", "Divorced", "Widowed"];
@@ -1436,7 +1436,7 @@ function generateOutsourceData_(today) {
     "Security",
     "Office Boy",
   ];
-  var educationLevels = ["SMA", "SMK", "D3", "S1"];
+  var educationLevels = ["Junior High School", "Senior High School (SMA)", "Vocational High School (SMK)", "Diploma (D3)", "Bachelor's Degree (S1)"];
   var workLocations = [
     "Jakarta Pusat",
     "Jakarta Selatan",
@@ -1463,11 +1463,11 @@ function generateOutsourceData_(today) {
   ];
   var empStatuses = ["Active", "On Leave", "Resigned", "Terminated"];
   var contractDurations = [
-    "3 Bulan",
-    "6 Bulan",
-    "1 Tahun",
-    "2 Tahun",
-    "3 Tahun",
+    "3 Months",
+    "6 Months",
+    "1 Year",
+    "2 Years",
+    "3 Years",
   ];
   var maritalStatuses = ["Single", "Married", "Divorced"];
   var bloodTypes = ["A", "B", "AB", "O", "-"];

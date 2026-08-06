@@ -15,6 +15,11 @@ var ARCHIVE_SHEET_NAME = "Archive";
 var OFFBOARDING_SHEET_NAME = "Offboarding";
 var MASTER_DATA_SHEET = "master_data"; // Deprecated: master data now derived from Employee sheet
 
+// Sheet-sheet status kandidat (independen dari raw_kandidat)
+var HOLD_SHEET_NAME = "kandidat_hold";
+var ACCEPTED_SHEET_NAME = "kandidat_accepted";
+var BLACKLIST_SHEET_NAME = "kandidat_blacklist";
+
 // ============= COLUMN LOOKUP KEYS =============
 var STATUS_COLUMN_NAME = "Status";
 var ID_COLUMN_NAME = "Recruitment ID";
@@ -202,6 +207,42 @@ USERS_HEADERS.forEach(function (h, i) {
 });
 
 // ============================================================
+// SHEET: kandidat_hold
+// Kolom = SHEET_HEADERS + EXTRA_HEADERS + kolom khusus hold
+// ============================================================
+var HOLD_HEADERS = SHEET_HEADERS.concat(EXTRA_HEADERS).concat([
+  "Processed Date",    // tanggal dipindahkan ke sheet ini
+  "Processed By",      // user yang mengubah status
+]);
+
+var HOLD_COL = {};
+HOLD_HEADERS.forEach(function (h, i) { HOLD_COL[h] = i + 1; });
+
+// ============================================================
+// SHEET: kandidat_accepted
+// Kolom = SHEET_HEADERS + EXTRA_HEADERS + kolom khusus accepted
+// ============================================================
+var ACCEPTED_HEADERS = SHEET_HEADERS.concat(EXTRA_HEADERS).concat([
+  "Processed Date",
+  "Processed By",
+]);
+
+var ACCEPTED_COL = {};
+ACCEPTED_HEADERS.forEach(function (h, i) { ACCEPTED_COL[h] = i + 1; });
+
+// ============================================================
+// SHEET: kandidat_blacklist
+// Kolom = SHEET_HEADERS + EXTRA_HEADERS + kolom khusus blacklist
+// ============================================================
+var BLACKLIST_HEADERS = SHEET_HEADERS.concat(EXTRA_HEADERS).concat([
+  "Processed Date",
+  "Processed By",
+]);
+
+var BLACKLIST_COL = {};
+BLACKLIST_HEADERS.forEach(function (h, i) { BLACKLIST_COL[h] = i + 1; });
+
+// ============================================================
 // SHEET: Archive
 // Purpose: Former candidates — historical data, never deleted
 // ============================================================
@@ -367,7 +408,7 @@ var DEFAULT_MASTER_DATA = {
     "Contract Ended",
     "Other",
   ],
-  gender: ["Laki-laki", "Perempuan"],
+  gender: ["Male", "Female"],
   current_employment_status: [
     "Employed Full Time",
     "Employed Contract",
@@ -378,13 +419,37 @@ var DEFAULT_MASTER_DATA = {
     "Fresh Graduate",
   ],
   available_to_join: [
-    "Segera",
-    "1 Minggu",
-    "2 Minggu",
-    "1 Bulan",
-    "2 Bulan",
-    "3 Bulan",
-    "Bisa Negosiasi",
+    "Immediately",
+    "1 Week",
+    "2 Weeks",
+    "1 Month",
+    "2 Months",
+    "3 Months",
+    "Negotiable",
+  ],
+  education: [
+    "Junior High School",
+    "Senior High School (SMA)",
+    "Vocational High School (SMK)",
+    "Diploma (D3)",
+    "Bachelor's Degree (S1)",
+    "Master's Degree (S2)",
+    "Doctoral Degree (S3)",
+  ],
+  work_experience: [
+    "Fresh Graduate",
+    "Less than 1 Year",
+    "1-2 Years",
+    "2-3 Years",
+    "3-5 Years",
+    "5-10 Years",
+    "More than 10 Years",
+  ],
+  marital_status: [
+    "Single",
+    "Married",
+    "Divorced",
+    "Widowed",
   ],
 };
 

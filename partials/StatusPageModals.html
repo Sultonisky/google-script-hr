@@ -1,0 +1,71 @@
+<!-- partials/StatusPageModals.html — Modal ubah status untuk halaman Hold/Accepted/Blacklist -->
+
+<!-- Modal Ubah Status dari Hold/Accepted/Blacklist -->
+<div class="modal fade" id="moveStatusModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px">
+      <div class="modal-header">
+        <h6 class="modal-title mb-0" id="moveStatusModalTitle">Ubah Status Kandidat</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="moveStatusRecruitmentId" value="" />
+        <input type="hidden" id="moveStatusFromStatus" value="" />
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold" style="font-size:13px">Pindahkan ke Status</label>
+          <select class="form-select" id="moveStatusTarget">
+            <option value="Hold">Hold</option>
+            <option value="Accepted">Accepted</option>
+            <option value="Blacklist">Blacklist</option>
+          </select>
+        </div>
+
+        <div class="mb-3" id="moveStatusReasonWrap">
+          <label class="form-label fw-semibold" style="font-size:13px">Alasan <span id="moveStatusReasonLabel">(opsional)</span></label>
+          <textarea class="form-control" id="moveStatusReason" rows="3"
+            placeholder="Masukkan alasan perubahan status..."></textarea>
+        </div>
+
+        <div class="mb-0">
+          <label class="form-label fw-semibold" style="font-size:13px">Catatan HR (opsional)</label>
+          <textarea class="form-control" id="moveStatusHrNotes" rows="2"
+            placeholder="Catatan tambahan..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+        <button class="btn text-white" style="background:var(--color-primary)" id="btnConfirmMoveStatus">
+          <i class="bi bi-arrow-repeat me-1"></i>Simpan Perubahan
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal detail kandidat dari halaman status -->
+<div class="modal fade" id="statusDetailModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content" style="border-radius:16px">
+      <div class="modal-header">
+        <div>
+          <h6 class="modal-title mb-0" id="statusDetailName">Detail Kandidat</h6>
+          <small class="text-muted" id="statusDetailId">-</small>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3" id="statusDetailBody">
+          <!-- populated by JS -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+        <button class="btn text-white" style="background:var(--color-primary)"
+          id="btnStatusDetailMoveStatus" type="button">
+          <i class="bi bi-arrow-repeat me-1"></i>Ubah Status
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

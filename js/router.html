@@ -50,6 +50,21 @@
         title: "Master Data",
         subtitle: "Kelola data dropdown untuk formulir dan filter",
       },
+      pageHold: {
+        route: "hold",
+        title: "Kandidat Hold",
+        subtitle: "Daftar kandidat yang sedang ditahan / menunggu keputusan",
+      },
+      pageAccepted: {
+        route: "accepted",
+        title: "Kandidat Diterima",
+        subtitle: "Daftar kandidat yang telah diterima sebagai karyawan",
+      },
+      pageBlacklist: {
+        route: "blacklist",
+        title: "Kandidat Blacklist",
+        subtitle: "Daftar kandidat yang telah diblacklist",
+      },
     },
 
     // Reverse map: route -> pageId
@@ -62,6 +77,9 @@
       "user-management": "pageUserManagement",
       "audit-log": "pageAuditLog",
       "master-data": "pageMasterData",
+      "hold": "pageHold",
+      "accepted": "pageAccepted",
+      "blacklist": "pageBlacklist",
     },
 
     // ============================================================
@@ -212,6 +230,9 @@
       if (pageId === "pageMasterData" && typeof mdOnNavigate === "function") {
         mdOnNavigate();
       }
+      if (pageId === "pageHold"      && typeof holdOnNavigate      === "function") { holdOnNavigate(); }
+      if (pageId === "pageAccepted"  && typeof acceptedOnNavigate  === "function") { acceptedOnNavigate(); }
+      if (pageId === "pageBlacklist" && typeof blacklistOnNavigate === "function") { blacklistOnNavigate(); }
     },
 
     // ============================================================
