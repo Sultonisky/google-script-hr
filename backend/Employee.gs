@@ -244,6 +244,7 @@ function offboardEmployee_(employeeId, offboardingType, reason, notes) {
 
     return { success: true, offboardingId: offboardingId };
   } catch (err) {
+    Logger.log("offboardEmployee_ ERROR for " + employeeId + ": " + err);
     return { success: false, message: err.toString() };
   }
 }
@@ -334,6 +335,13 @@ function updateEmployee(id, updates) {
         var offboardingType = null;
         if (changedEmployment) offboardingType = resolveOffboardingType_(newEmploymentStatus);
         if (!offboardingType && changedStatus) offboardingType = resolveOffboardingType_(newStatus);
+
+        // Audit perubahan status (wajib sesuai AGENTS.md).
+        if (changedEmployment || changedStatus) {
+          var displayNewStatus = changedEmployment ? newEmploymentStatus : newStatus;
+          var displayOldStatus = changedEmployment ? oldEmploymentStatus : oldStatus;
+          writeAuditLog_(id, "Update Status", "Employment Status", displayOldStatus, displayNewStatus);
+        }
 
         var offboardResult = null;
         if (offboardingType) {
