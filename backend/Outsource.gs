@@ -160,13 +160,15 @@ function getOutsourceList() {
        result.push({
         employeeId: String(row[colIndex["Employee ID"]] || ""),
         outsourceId: String(row[colIndex["Recruitment ID"]] || ""),
-        createdDate: fmtDate_(row[colIndex["Created At"]], "dd/MM/yyyy HH:mm"),
+        createdDate: row[colIndex["Created At"]] instanceof Date
+          ? Utilities.formatDate(row[colIndex["Created At"]], "GMT+7", "dd/MM/yyyy HH:mm")
+          : fmtDateStr_(String(row[colIndex["Created At"]] || "")),
         _rawCreated: row[colIndex["Created At"]] instanceof Date
           ? row[colIndex["Created At"]].getTime()
           : (new Date(String(row[colIndex["Created At"]] || ""))).getTime() || 0,
         fullName: String(row[colIndex["Full Name"]] || ""),
         nik: String(row[colIndex["NIK"]] || ""),
-        birthDate: String(row[colIndex["Birth Date"]] || ""),
+        birthDate: fmtDateStr_(String(row[colIndex["Birth Date"]] || "")),
         age: String(row[colIndex["Age"]] || ""),
         gender: String(row[colIndex["Gender"]] || ""),
         maritalStatus: String(row[colIndex["Marital Status"]] || ""),
@@ -180,14 +182,14 @@ function getOutsourceList() {
         department: String(row[colIndex["Department"]] || ""),
         division: String(row[colIndex["Division"]] || ""),
         branch: String(row[colIndex["Branch"]] || ""),
-        joinDate: String(row[colIndex["Join Date"]] || ""),
+        joinDate: fmtDateStr_(String(row[colIndex["Join Date"]] || "")),
         education: String(row[colIndex["Education"]] || ""),
         workExperience: String(row[colIndex["Work Experience"]] || ""),
         employmentStatus: String(
           row[colIndex["Employment Status"]] || "",
         ),
-        contractStart: String(row[colIndex["Contract Start"]] || ""),
-        contractEnd: String(row[colIndex["Contract End"]] || ""),
+        contractStart: fmtDateStr_(String(row[colIndex["Contract Start"]] || "")),
+        contractEnd:   fmtDateStr_(String(row[colIndex["Contract End"]]   || "")),
         contractDuration: String(
           row[colIndex["Contract Duration"]] || "",
         ),
@@ -205,7 +207,9 @@ function getOutsourceList() {
         notes: String(row[colIndex["Notes"]] || ""),
         hrNotes: String(row[colIndex["HR Notes"]] || ""),
         createdBy: String(row[colIndex["Created By"]] || ""),
-        updatedAt: fmtDate_(row[colIndex["Updated At"]], "dd/MM/yyyy HH:mm"),
+        updatedAt: row[colIndex["Updated At"]] instanceof Date
+          ? Utilities.formatDate(row[colIndex["Updated At"]], "GMT+7", "dd/MM/yyyy HH:mm")
+          : fmtDateStr_(String(row[colIndex["Updated At"]] || "")),
       });
     }
 
@@ -256,7 +260,7 @@ function getOutsourceById(id) {
           outsourceId: String(row[colIndex["Recruitment ID"]] || ""),
           fullName: String(row[colIndex["Full Name"]] || ""),
           nik: String(row[colIndex["NIK"]] || ""),
-          birthDate: String(row[colIndex["Birth Date"]] || ""),
+          birthDate: fmtDateStr_(String(row[colIndex["Birth Date"]] || "")),
           age: String(row[colIndex["Age"]] || ""),
           gender: String(row[colIndex["Gender"]] || ""),
           maritalStatus: String(row[colIndex["Marital Status"]] || ""),
@@ -270,14 +274,14 @@ function getOutsourceById(id) {
           department: String(row[colIndex["Department"]] || ""),
           division: String(row[colIndex["Division"]] || ""),
           branch: String(row[colIndex["Branch"]] || ""),
-          joinDate: String(row[colIndex["Join Date"]] || ""),
+          joinDate: fmtDateStr_(String(row[colIndex["Join Date"]] || "")),
           education: String(row[colIndex["Education"]] || ""),
           workExperience: String(row[colIndex["Work Experience"]] || ""),
           employmentStatus: String(
             row[colIndex["Employment Status"]] || "",
           ),
-          contractStart: String(row[colIndex["Contract Start"]] || ""),
-          contractEnd: String(row[colIndex["Contract End"]] || ""),
+          contractStart: fmtDateStr_(String(row[colIndex["Contract Start"]] || "")),
+          contractEnd:   fmtDateStr_(String(row[colIndex["Contract End"]]   || "")),
           contractDuration: String(
             row[colIndex["Contract Duration"]] || "",
           ),
@@ -293,6 +297,13 @@ function getOutsourceById(id) {
           status: String(row[colIndex["Status"]] || ""),
           notes: String(row[colIndex["Notes"]] || ""),
           hrNotes: String(row[colIndex["HR Notes"]] || ""),
+          createdBy: String(row[colIndex["Created By"]] || ""),
+          createdDate: row[colIndex["Created At"]] instanceof Date
+            ? Utilities.formatDate(row[colIndex["Created At"]], "GMT+7", "dd/MM/yyyy HH:mm")
+            : fmtDateStr_(String(row[colIndex["Created At"]] || "")),
+          updatedAt: row[colIndex["Updated At"]] instanceof Date
+            ? Utilities.formatDate(row[colIndex["Updated At"]], "GMT+7", "dd/MM/yyyy HH:mm")
+            : fmtDateStr_(String(row[colIndex["Updated At"]] || "")),
         },
       };
     }
