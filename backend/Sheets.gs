@@ -360,10 +360,81 @@ function getOrCreateUsersSheet_() {
   return sheet;
 }
 
+// ============= kandidat_hold =============
+function getOrCreateHoldSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(HOLD_SHEET_NAME);
+  if (!sheet) sheet = ss.insertSheet(HOLD_SHEET_NAME);
+
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(HOLD_HEADERS);
+    sheet.getRange(1, 1, 1, HOLD_HEADERS.length)
+      .setFontWeight('bold').setBackground('#005BAC').setFontColor('#FFFFFF');
+    sheet.setFrozenRows(1);
+    sheet.autoResizeColumns(1, HOLD_HEADERS.length);
+  } else {
+    ensureStatusSheetHeaders_(sheet, HOLD_HEADERS);
+  }
+  return sheet;
+}
+
+// ============= kandidat_accepted =============
+function getOrCreateAcceptedSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(ACCEPTED_SHEET_NAME);
+  if (!sheet) sheet = ss.insertSheet(ACCEPTED_SHEET_NAME);
+
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(ACCEPTED_HEADERS);
+    sheet.getRange(1, 1, 1, ACCEPTED_HEADERS.length)
+      .setFontWeight('bold').setBackground('#166534').setFontColor('#FFFFFF');
+    sheet.setFrozenRows(1);
+    sheet.autoResizeColumns(1, ACCEPTED_HEADERS.length);
+  } else {
+    ensureStatusSheetHeaders_(sheet, ACCEPTED_HEADERS);
+  }
+  return sheet;
+}
+
+// ============= kandidat_blacklist =============
+function getOrCreateBlacklistSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(BLACKLIST_SHEET_NAME);
+  if (!sheet) sheet = ss.insertSheet(BLACKLIST_SHEET_NAME);
+
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(BLACKLIST_HEADERS);
+    sheet.getRange(1, 1, 1, BLACKLIST_HEADERS.length)
+      .setFontWeight('bold').setBackground('#991b1b').setFontColor('#FFFFFF');
+    sheet.setFrozenRows(1);
+    sheet.autoResizeColumns(1, BLACKLIST_HEADERS.length);
+  } else {
+    ensureStatusSheetHeaders_(sheet, BLACKLIST_HEADERS);
+  }
+  return sheet;
+}
+
+// Helper: pastikan extra headers ada di sheet status
+function ensureStatusSheetHeaders_(sheet, expectedHeaders) {
+  var lastCol = sheet.getLastColumn();
+  if (lastCol === 0) return;
+  var headerRow = sheet.getRange(1, 1, 1, lastCol).getValues()[0]
+    .map(function(h) { return String(h).trim(); });
+  var missing = expectedHeaders.filter(function(h) { return headerRow.indexOf(h) === -1; });
+  if (missing.length === 0) return;
+  var startCol = lastCol + 1;
+  sheet.getRange(1, startCol, 1, missing.length).setValues([missing]);
+  sheet.getRange(1, startCol, 1, missing.length)
+    .setFontWeight('bold').setBackground('#005BAC').setFontColor('#FFFFFF');
+}
+
 // ============= Setup All =============
 function setupSpreadsheet() {
   getOrCreateSheet_();
   getOrCreateEmployeeSheet_();
+  getOrCreateHoldSheet_();
+  getOrCreateAcceptedSheet_();
+  getOrCreateBlacklistSheet_();
   getOrCreateArchiveSheet_();
   getOrCreateOffboardingSheet_();
   getOrCreateAuditLogSheet_();

@@ -9,11 +9,15 @@
   // ---- Stat cards (Recruitment page mini-stats) ----
   function updateRecStats(data) {
     var el = function(id) { return document.getElementById(id); };
-    var ct = function(fn) { return data.filter(fn).length; };
+    var positions = {}, cities = {};
+    data.forEach(function(r) {
+      if (r.positionApplied) positions[r.positionApplied] = 1;
+      if (r.city) cities[r.city] = 1;
+    });
     if (el('recStatTotal'))     el('recStatTotal').innerText     = data.length;
-    if (el('recStatPending'))   el('recStatPending').innerText   = ct(function(r){ return (r.status||'Pending').toLowerCase() === 'pending'; });
-    if (el('recStatAccepted'))  el('recStatAccepted').innerText  = ct(function(r){ return (r.status||'').toLowerCase() === 'accepted'; });
-    if (el('recStatBlacklist')) el('recStatBlacklist').innerText = ct(function(r){ return (r.status||'').toLowerCase() === 'blacklist'; });
+    if (el('recStatPending'))   el('recStatPending').innerText   = data.filter(function(r){ return (r.status||'Pending').toLowerCase() === 'pending'; }).length;
+    if (el('recStatPositions')) el('recStatPositions').innerText = Object.keys(positions).length;
+    if (el('recStatCities'))    el('recStatCities').innerText    = Object.keys(cities).length;
   }
 
   // ---- Init (no-op — event listeners already set by initFilters/initBulkActions) ----
@@ -127,5 +131,27 @@
 
     // 11. Load candidate data (triggers charts, stats, table)
     if (typeof loadCandidates === 'function') loadCandidates(false);
+
+    // 12. Load status counts untuk stat cards global (accepted, hold, blacklist)
+    loadDashboardStatusCounts();
+  }
+
+  function loadDashboardStatusCounts() {
+    google.script.run
+      .withSuccessHandler(function(counts) {
+        if (!counts) return;
+        var map = {
+          statTotal:     counts.total,
+          statPending:   counts.pending,
+          statAccepted:  counts.accepted,
+          statHold:      counts.hold,
+          statBlacklist: counts.blacklist,
+        };
+        Object.keys(map).forEach(function(id) {
+          var el = document.getElementById(id);
+          if (el && typeof animateCounter === 'function') animateCounter(el, map[id]);
+        });
+      })
+      .getDashboardStatusCounts();
   }
 </script>

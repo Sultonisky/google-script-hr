@@ -1,0 +1,99 @@
+<!-- partials/AcceptedPage.html — Halaman Kandidat Accepted (independen) -->
+<section class="page-section" id="pageAccepted">
+
+  <!-- Stat cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-icon bg-green"><i class="bi bi-check-circle-fill"></i></div>
+        <div><div class="stat-label">Total Diterima</div><div class="stat-value" id="accStatTotal">0</div></div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-icon bg-gold"><i class="bi bi-calendar-check"></i></div>
+        <div><div class="stat-label">Bulan Ini</div><div class="stat-value" id="accStatMonth">0</div></div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-icon bg-blue"><i class="bi bi-briefcase-fill"></i></div>
+        <div><div class="stat-label">Posisi Unik</div><div class="stat-value" id="accStatPositions">0</div></div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#f0fdf4"><i class="bi bi-person-badge-fill" style="color:#166534"></i></div>
+        <div><div class="stat-label">Punya Employee ID</div><div class="stat-value" id="accStatEmployee">0</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table panel -->
+  <div class="panel" id="accTablePanel">
+    <div class="panel-header">
+      <div>
+        <h6>Kandidat Diterima</h6>
+        <div class="panel-subtitle" id="accPanelSubtitle">Memuat data...</div>
+      </div>
+      <div class="export-btns">
+        <button class="btn-refresh" id="btnAccRefresh" type="button" title="Muat ulang">
+          <i class="bi bi-arrow-clockwise"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="filter-bar">
+      <div class="table-search">
+        <i class="bi bi-search"></i>
+        <input type="text" id="accSearchInput" placeholder="Cari ID, nama, posisi, Employee ID..." />
+      </div>
+      <select class="filter-select" id="accPositionFilter">
+        <option value="">Semua Posisi</option>
+      </select>
+      <select class="filter-select" id="accSortSelect">
+        <option value="newest">Terbaru</option>
+        <option value="oldest">Terlama</option>
+        <option value="name_asc">Nama A-Z</option>
+        <option value="name_desc">Nama Z-A</option>
+      </select>
+      <button class="btn-reset-filter" type="button" id="btnAccReset">
+        <i class="bi bi-arrow-counterclockwise"></i> Reset
+      </button>
+    </div>
+
+    <!-- Table -->
+    <div class="table-responsive">
+      <table class="table hr-table">
+        <thead>
+          <tr>
+            <th>Avatar</th>
+            <th>Recruitment ID</th>
+            <th>Kandidat</th>
+            <th>Usia</th>
+            <th>Posisi</th>
+            <th>Employee ID</th>
+            <th>Tgl Diterima</th>
+            <th>Diproses Oleh</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="accTableBody"></tbody>
+      </table>
+      <div class="table-loading" id="accTableLoading">
+        <div class="spinner-border" role="status"></div>
+        <p>Mengambil data...</p>
+      </div>
+      <div class="table-empty d-none" id="accTableEmpty">
+        <i class="bi bi-inbox"></i>
+        <p>Belum ada kandidat dengan status Accepted.</p>
+      </div>
+    </div>
+
+    <div class="panel-footer">
+      <span id="accFooterCount">Menampilkan 0 data</span>
+      <nav class="pagination-ui" id="accPaginationUi" aria-label="Accepted Pagination"></nav>
+    </div>
+  </div>
+</section>

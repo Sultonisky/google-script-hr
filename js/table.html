@@ -221,12 +221,19 @@
 
   function updateStats(data) {
     function ct(fn) { return data.filter(fn).length; }
+    var positions = {};
+    var cities = {};
+    data.forEach(function(r) {
+      if (r.positionApplied) positions[r.positionApplied] = 1;
+      if (r.city) cities[r.city] = 1;
+    });
     var elems = {
-      statTotal:     data.length,
-      statPending:   ct(function(r){ return (r.status||'Pending').toLowerCase() === 'pending'; }),
-      statAccepted:  ct(function(r){ return (r.status||'').toLowerCase() === 'accepted'; }),
-      statHold:      ct(function(r){ return (r.status||'').toLowerCase() === 'hold'; }),
-      statBlacklist: ct(function(r){ return (r.status||'').toLowerCase() === 'blacklist'; })
+      statTotal:        data.length,
+      statPending:      ct(function(r){ return (r.status||'Pending').toLowerCase() === 'pending'; }),
+      recStatTotal:     data.length,
+      recStatPending:   ct(function(r){ return (r.status||'Pending').toLowerCase() === 'pending'; }),
+      recStatPositions: Object.keys(positions).length,
+      recStatCities:    Object.keys(cities).length,
     };
     Object.keys(elems).forEach(function(id) {
       var el = document.getElementById(id);

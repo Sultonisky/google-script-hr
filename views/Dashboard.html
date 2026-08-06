@@ -56,6 +56,15 @@
         <!-- ===== PAGE: AUDIT LOG ===== -->
         <?!= include('partials/AuditLogPage'); ?>
 
+        <!-- ===== PAGE: HOLD ===== -->
+        <?!= include('partials/HoldPage'); ?>
+
+        <!-- ===== PAGE: ACCEPTED ===== -->
+        <?!= include('partials/AcceptedPage'); ?>
+
+        <!-- ===== PAGE: BLACKLIST ===== -->
+        <?!= include('partials/BlacklistPage'); ?>
+
         <!-- ===== PAGE: MASTER DATA ===== -->
         <section class="page-section" id="pageMasterData">
           <?!= include('partials/MasterDataContent'); ?>
@@ -77,6 +86,7 @@
     <!-- Drawer + Modals (outside main-content, fixed position) -->
     <?!= include('partials/Drawer'); ?> <?!= include('partials/Modals'); ?>
     <?!= include('partials/EntityModals'); ?>
+    <?!= include('partials/StatusPageModals'); ?>
     <?!= include('partials/FloatingActionButton'); ?>
 
     <!-- CDN Scripts -->
@@ -95,7 +105,8 @@
     include('js/employee'); ?> <?!= include('js/userManagement'); ?> <?!=
     include('js/masterData'); ?> <?!= include('js/regions'); ?> <?!=
     include('js/import'); ?> <?!= include('js/auditLog'); ?> <?!=
-    include('js/auth'); ?> <?!= include('js/router'); ?> <?!= include('js/app');
+    include('js/statusPages'); ?> <?!= include('js/auth'); ?> <?!=
+    include('js/router'); ?> <?!= include('js/app');
     ?>
   </body>
 </html>

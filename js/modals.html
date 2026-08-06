@@ -33,11 +33,10 @@
     function onStatusUpdateSuccess(result, successMessage) {
       lockStatusButtons(false);
       if (result && result.success) {
-        var target = allCandidates.find(function(c) { return c.recruitmentId === activeCandidateId; });
-        if (target) {
-          target.status = result.newStatus;
-          if (result.employeeId) target.employeeId = result.employeeId;
-        }
+        // Kandidat sudah dipindahkan ke sheet status — hapus dari allCandidates
+        allCandidates = allCandidates.filter(function(c) {
+          return c.recruitmentId !== activeCandidateId;
+        });
         showToast(successMessage, 'success');
         closeDrawer();
         populateAllDropdowns(allCandidates);

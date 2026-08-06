@@ -1,0 +1,443 @@
+<script>
+  // ============================================================
+  // js/statusPages.html — Hold / Accepted / Blacklist Pages
+  // Depends on: helpers.html, api.html
+  // ============================================================
+
+  // ============================================================
+  // GENERIC STATUS PAGE CONTROLLER
+  // ============================================================
+  function createStatusPageCtrl(cfg) {
+    // cfg: { loadFn, pageId, prefix, statusName, statusLabel }
+    var data = [];
+    var filtered = [];
+    var page = 1;
+    var ps = 10;
+
+    function el(id) { return document.getElementById(cfg.prefix + id); }
+
+    function loadData(silent) {
+      var loadingEl = el('TableLoading');
+      var emptyEl   = el('TableEmpty');
+      var subtitleEl = el('PanelSubtitle');
+      if (!silent && loadingEl) loadingEl.classList.remove('d-none');
+      if (!silent && emptyEl) emptyEl.classList.add('d-none');
+      google.script.run
+        .withSuccessHandler(function(res) {
+          data = res || [];
+          if (subtitleEl) subtitleEl.innerText = 'Terakhir dimuat: ' + new Date().toLocaleString('id-ID');
+          if (loadingEl) loadingEl.classList.add('d-none');
+          populateFilter();
+          updateStats();
+          applyFilter();
+          if (!silent) showToast('Data ' + cfg.statusLabel + ' dimuat (' + data.length + ' data).', 'success');
+        })
+        .withFailureHandler(function(err) {
+          if (loadingEl) loadingEl.classList.add('d-none');
+          if (!silent) showToast('Gagal memuat data ' + cfg.statusLabel + ': ' + err.message, 'error');
+        })
+        [cfg.loadFn]();
+    }
+
+    function populateFilter() {
+      var sel = el('PositionFilter');
+      if (!sel) return;
+      var positions = [];
+      data.forEach(function(r) {
+        if (r.positionApplied && positions.indexOf(r.positionApplied) === -1)
+          positions.push(r.positionApplied);
+      });
+      sel.innerHTML = '<option value="">Semua Posisi</option>' +
+        positions.sort().map(function(p) {
+          return '<option value="' + escapeHtml(p) + '">' + escapeHtml(p) + '</option>';
+        }).join('');
+    }
+
+    function updateStats() {
+      var now = new Date();
+      var thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+      var monthCount = data.filter(function(r) {
+        var d = r.processedDate || r.createdDate || '';
+        return d.indexOf(thisMonth.split('-')[1] + '/' + thisMonth.split('-')[0]) !== -1 ||
+               (r.updatedAt || '').indexOf(thisMonth.split('-')[1] + '/' + thisMonth.split('-')[0]) !== -1;
+      }).length;
+
+      var positions = {};
+      data.forEach(function(r) { if (r.positionApplied) positions[r.positionApplied] = 1; });
+
+      var totalEl = el('StatTotal');
+      var monthEl = el('StatMonth');
+      var posEl   = el('StatPositions');
+      if (totalEl) animateCounter(totalEl, data.length);
+      if (monthEl) animateCounter(monthEl, monthCount);
+      if (posEl)   animateCounter(posEl, Object.keys(positions).length);
+
+      // Extra stat per status type
+      if (cfg.statusName === 'hold') {
+        var fuEl = document.getElementById('holdStatFollowUp');
+        if (fuEl) {
+          var fuCount = data.filter(function(r) { return r.holdFollowUpDate && r.holdFollowUpDate !== '-'; }).length;
+          animateCounter(fuEl, fuCount);
+        }
+      } else if (cfg.statusName === 'accepted') {
+        var empEl = document.getElementById('accStatEmployee');
+        if (empEl) {
+          var empCount = data.filter(function(r) { return r.employeeId && r.employeeId !== '-'; }).length;
+          animateCounter(empEl, empCount);
+        }
+      } else if (cfg.statusName === 'blacklist') {
+        var cityEl = document.getElementById('blStatCities');
+        if (cityEl) {
+          var cities = {};
+          data.forEach(function(r) { if (r.city) cities[r.city] = 1; });
+          animateCounter(cityEl, Object.keys(cities).length);
+        }
+      }
+    }
+
+    function applyFilter() {
+      var searchEl   = el('SearchInput');
+      var posEl      = el('PositionFilter');
+      var sortEl     = el('SortSelect');
+      var search     = searchEl ? searchEl.value.toLowerCase() : '';
+      var posFilter  = posEl ? posEl.value : '';
+      var sortVal    = sortEl ? sortEl.value : 'newest';
+
+      filtered = data.filter(function(r) {
+        var matchSearch = !search ||
+          (r.fullName || '').toLowerCase().indexOf(search) !== -1 ||
+          (r.recruitmentId || '').toLowerCase().indexOf(search) !== -1 ||
+          (r.positionApplied || '').toLowerCase().indexOf(search) !== -1 ||
+          (r.city || '').toLowerCase().indexOf(search) !== -1 ||
+          (r.email || '').toLowerCase().indexOf(search) !== -1 ||
+          (r.phone || '').toLowerCase().indexOf(search) !== -1 ||
+          (r.holdReason || '').toLowerCase().indexOf(search) !== -1 ||
+          (r.blacklistReason || '').toLowerCase().indexOf(search) !== -1 ||
+          (r.employeeId || '').toLowerCase().indexOf(search) !== -1;
+        var matchPos = !posFilter || r.positionApplied === posFilter;
+        return matchSearch && matchPos;
+      });
+
+      filtered.sort(function(a, b) {
+        function toTs(s) {
+          if (!s || s === '-') return 0;
+          var p = String(s).split(' '), d = p[0].split('/');
+          var t = p[1] ? p[1].split(':') : ['00', '00'];
+          if (d.length < 3) return 0;
+          return new Date(d[2], d[1]-1, d[0], t[0], t[1]).getTime();
+        }
+        if (sortVal === 'newest') return toTs(b.processedDate || b.createdDate) - toTs(a.processedDate || a.createdDate);
+        if (sortVal === 'oldest') return toTs(a.processedDate || a.createdDate) - toTs(b.processedDate || b.createdDate);
+        if (sortVal === 'name_asc')  return (a.fullName || '').localeCompare(b.fullName || '');
+        if (sortVal === 'name_desc') return (b.fullName || '').localeCompare(a.fullName || '');
+        return 0;
+      });
+
+      page = 1;
+      renderTable();
+    }
+
+    function renderTable() {
+      var tbody   = el('TableBody');
+      var emptyEl = el('TableEmpty');
+      var footerEl = el('FooterCount');
+
+      if (!filtered || filtered.length === 0) {
+        if (tbody) tbody.innerHTML = '';
+        if (emptyEl) emptyEl.classList.remove('d-none');
+        if (footerEl) footerEl.innerText = 'Menampilkan 0 dari ' + data.length + ' data';
+        renderPagination();
+        return;
+      }
+      if (emptyEl) emptyEl.classList.add('d-none');
+
+      var totalPages = Math.max(1, Math.ceil(filtered.length / ps));
+      if (page > totalPages) page = totalPages;
+      var start = (page - 1) * ps;
+      var pageData = filtered.slice(start, start + ps);
+
+      if (tbody) tbody.innerHTML = pageData.map(function(r) {
+        return renderRow(r);
+      }).join('');
+
+      var shownEnd = Math.min(start + ps, filtered.length);
+      if (footerEl) footerEl.innerText =
+        'Menampilkan ' + (start+1) + '–' + shownEnd + ' dari ' + filtered.length +
+        ' data (total ' + data.length + ')';
+
+      renderPagination();
+      attachRowHandlers();
+    }
+
+    function renderRow(r) {
+      var extraCol = '';
+      if (cfg.statusName === 'hold') {
+        extraCol =
+          '<td><small style="color:#666">' + escapeHtml(r.holdReason || '-') + '</small></td>' +
+          '<td><small>' + escapeHtml(r.holdFollowUpDate || '-') + '</small></td>';
+      } else if (cfg.statusName === 'accepted') {
+        extraCol =
+          '<td><span class="badge-status accepted">' + escapeHtml(r.employeeId || '-') + '</span></td>';
+      } else if (cfg.statusName === 'blacklist') {
+        extraCol =
+          '<td><small style="color:#991b1b">' + escapeHtml(r.blacklistReason || '-') + '</small></td>';
+      }
+
+      return '<tr>' +
+        '<td><div class="avatar-sm">' + escapeHtml(initials(r.fullName)) + '</div></td>' +
+        '<td><span class="id-mono">' + escapeHtml(r.recruitmentId) + '</span></td>' +
+        '<td><div class="cand-name">' + escapeHtml(r.fullName) + '</div>' +
+        '<div class="cand-sub">' + escapeHtml(r.email || '') + '</div></td>' +
+        '<td>' + escapeHtml(String(r.age || '-')) + ' Th</td>' +
+        '<td>' + escapeHtml(r.positionApplied || '-') + '</td>' +
+        extraCol +
+        '<td><small>' + escapeHtml(r.processedDate || r.createdDate || '-') + '</small></td>' +
+        '<td><small>' + escapeHtml(r.processedBy || '-') + '</small></td>' +
+        '<td>' +
+        '<button class="btn btn-sm btn-outline-primary me-1 btn-status-detail" ' +
+        'data-id="' + escapeHtml(r.recruitmentId) + '" title="Lihat Detail">' +
+        '<i class="bi bi-eye"></i></button>' +
+        '<button class="btn btn-sm btn-outline-secondary btn-status-move" ' +
+        'data-id="' + escapeHtml(r.recruitmentId) + '" data-from="' + cfg.statusLabel + '" title="Ubah Status">' +
+        '<i class="bi bi-arrow-repeat"></i></button>' +
+        '</td>' +
+        '</tr>';
+    }
+
+    function renderPagination() {
+      var nav = el('PaginationUi');
+      if (!nav) return;
+      var total = Math.max(1, Math.ceil(filtered.length / ps));
+      var html = '<button class="page-btn" type="button" id="' + cfg.prefix + 'PagePrev" ' + (page===1?'disabled':'') + '><i class="bi bi-chevron-left"></i></button>';
+      for (var p = 1; p <= total; p++) {
+        html += '<button class="page-btn' + (p===page?' active':'') + '" type="button" data-page="' + p + '">' + p + '</button>';
+      }
+      html += '<button class="page-btn" type="button" id="' + cfg.prefix + 'PageNext" ' + (page===total?'disabled':'') + '><i class="bi bi-chevron-right"></i></button>';
+      nav.innerHTML = html;
+      nav.querySelectorAll('button[data-page]').forEach(function(b) {
+        b.addEventListener('click', function() { page = parseInt(b.getAttribute('data-page'), 10); renderTable(); });
+      });
+      var prev = document.getElementById(cfg.prefix + 'PagePrev');
+      var next = document.getElementById(cfg.prefix + 'PageNext');
+      if (prev) prev.addEventListener('click', function() { if (page > 1) { page--; renderTable(); } });
+      if (next) next.addEventListener('click', function() { if (page < total) { page++; renderTable(); } });
+    }
+
+    function attachRowHandlers() {
+      document.querySelectorAll('#' + cfg.prefix + 'TableBody .btn-status-detail').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var id = btn.getAttribute('data-id');
+          var row = data.find(function(r) { return r.recruitmentId === id; });
+          if (row) openStatusDetail(row, cfg.statusLabel, cfg.statusName);
+        });
+      });
+      document.querySelectorAll('#' + cfg.prefix + 'TableBody .btn-status-move').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var id   = btn.getAttribute('data-id');
+          var from = btn.getAttribute('data-from');
+          openMoveStatusModal(id, from);
+        });
+      });
+    }
+
+    function onNavigate() {
+      if (data.length === 0) loadData(false);
+    }
+
+    function refresh() { loadData(false); }
+
+    return { loadData: loadData, onNavigate: onNavigate, refresh: refresh, applyFilter: applyFilter };
+  }
+
+  // ============================================================
+  // INSTANSIASI CONTROLLER PER STATUS
+  // ============================================================
+  var HOLD_PAGE, ACC_PAGE, BL_PAGE;
+
+  function initStatusPages() {
+    HOLD_PAGE = createStatusPageCtrl({
+      loadFn: 'getHoldList', pageId: 'pageHold',
+      prefix: 'hold', statusName: 'hold', statusLabel: 'Hold'
+    });
+    ACC_PAGE = createStatusPageCtrl({
+      loadFn: 'getAcceptedList', pageId: 'pageAccepted',
+      prefix: 'acc', statusName: 'accepted', statusLabel: 'Accepted'
+    });
+    BL_PAGE = createStatusPageCtrl({
+      loadFn: 'getBlacklistList', pageId: 'pageBlacklist',
+      prefix: 'bl', statusName: 'blacklist', statusLabel: 'Blacklist'
+    });
+
+    // Refresh buttons
+    var btnHoldRef = document.getElementById('btnHoldRefresh');
+    var btnAccRef  = document.getElementById('btnAccRefresh');
+    var btnBlRef   = document.getElementById('btnBlRefresh');
+    if (btnHoldRef) btnHoldRef.addEventListener('click', function() { HOLD_PAGE.refresh(); });
+    if (btnAccRef)  btnAccRef.addEventListener('click',  function() { ACC_PAGE.refresh(); });
+    if (btnBlRef)   btnBlRef.addEventListener('click',   function() { BL_PAGE.refresh(); });
+
+    // Filter inputs
+    (function() {
+      var filterConfigs = [
+        { prefix: 'hold', ctrl: null },
+        { prefix: 'acc',  ctrl: null },
+        { prefix: 'bl',   ctrl: null },
+      ];
+      // assign ctrl after instantiation
+      filterConfigs[0].ctrl = HOLD_PAGE;
+      filterConfigs[1].ctrl = ACC_PAGE;
+      filterConfigs[2].ctrl = BL_PAGE;
+
+      var resetIds = { hold: 'btnHoldReset', acc: 'btnAccReset', bl: 'btnBlReset' };
+
+      filterConfigs.forEach(function(fc) {
+        (function(prefix, ctrl) {
+          var si = document.getElementById(prefix + 'SearchInput');
+          var pf = document.getElementById(prefix + 'PositionFilter');
+          var ss = document.getElementById(prefix + 'SortSelect');
+          var rb = document.getElementById(resetIds[prefix]);
+          if (si) si.addEventListener('input',  function() { if (ctrl.applyFilter) ctrl.applyFilter(); });
+          if (pf) pf.addEventListener('change', function() { if (ctrl.applyFilter) ctrl.applyFilter(); });
+          if (ss) ss.addEventListener('change', function() { if (ctrl.applyFilter) ctrl.applyFilter(); });
+          if (rb) rb.addEventListener('click',  function() {
+            if (si) si.value = '';
+            if (pf) pf.value = '';
+            if (ss) ss.value = 'newest';
+            if (ctrl.applyFilter) ctrl.applyFilter();
+          });
+        })(fc.prefix, fc.ctrl);
+      });
+    })();
+
+    // Move status modal
+    initMoveStatusModal();
+  }
+
+  // ============================================================
+  // MOVE STATUS MODAL
+  // ============================================================
+  function openMoveStatusModal(recruitmentId, fromStatus) {
+    var idEl   = document.getElementById('moveStatusRecruitmentId');
+    var fromEl = document.getElementById('moveStatusFromStatus');
+    var titleEl = document.getElementById('moveStatusModalTitle');
+    var targetEl = document.getElementById('moveStatusTarget');
+    var reasonEl = document.getElementById('moveStatusReason');
+    var notesEl  = document.getElementById('moveStatusHrNotes');
+    if (idEl)    idEl.value   = recruitmentId;
+    if (fromEl)  fromEl.value = fromStatus;
+    if (titleEl) titleEl.innerText = 'Ubah Status: ' + recruitmentId;
+    if (reasonEl) reasonEl.value = '';
+    if (notesEl)  notesEl.value  = '';
+
+    // Exclude current status from dropdown
+    if (targetEl) {
+      Array.from(targetEl.options).forEach(function(opt) {
+        opt.disabled = opt.value === fromStatus;
+      });
+      // Select first enabled
+      var firstEnabled = Array.from(targetEl.options).find(function(o) { return !o.disabled; });
+      if (firstEnabled) targetEl.value = firstEnabled.value;
+    }
+
+    var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('moveStatusModal'));
+    modal.show();
+  }
+
+  function initMoveStatusModal() {
+    var confirmBtn = document.getElementById('btnConfirmMoveStatus');
+    if (!confirmBtn) return;
+    confirmBtn.addEventListener('click', function() {
+      var recruitmentId = (document.getElementById('moveStatusRecruitmentId') || {}).value;
+      var fromStatus    = (document.getElementById('moveStatusFromStatus') || {}).value;
+      var toStatus      = (document.getElementById('moveStatusTarget') || {}).value;
+      var reason        = (document.getElementById('moveStatusReason') || {}).value;
+      var hrNotes       = (document.getElementById('moveStatusHrNotes') || {}).value;
+
+      if (!recruitmentId || !fromStatus || !toStatus) return;
+      confirmBtn.disabled = true;
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          confirmBtn.disabled = false;
+          var modal = bootstrap.Modal.getInstance(document.getElementById('moveStatusModal'));
+          if (modal) modal.hide();
+          if (result && result.success) {
+            showToast('Status berhasil diubah ke ' + toStatus + '.', 'success');
+            // Refresh sumber dan tujuan
+            var refreshMap = { 'Hold': HOLD_PAGE, 'Accepted': ACC_PAGE, 'Blacklist': BL_PAGE };
+            if (refreshMap[fromStatus]) refreshMap[fromStatus].loadData(true);
+            if (refreshMap[toStatus])   refreshMap[toStatus].loadData(true);
+          } else {
+            showToast('Gagal: ' + (result ? result.message : 'Unknown error'), 'error');
+          }
+        })
+        .withFailureHandler(function(err) {
+          confirmBtn.disabled = false;
+          showToast('Error: ' + err.message, 'error');
+        })
+        .moveStatusCandidate(recruitmentId, fromStatus, toStatus, reason, hrNotes);
+    });
+  }
+
+  // ============================================================
+  // DETAIL MODAL
+  // ============================================================
+  function openStatusDetail(row, statusLabel, statusName) {
+    var nameEl = document.getElementById('statusDetailName');
+    var idEl   = document.getElementById('statusDetailId');
+    var bodyEl = document.getElementById('statusDetailBody');
+    var moveBtn = document.getElementById('btnStatusDetailMoveStatus');
+
+    if (nameEl) nameEl.innerText = row.fullName || '-';
+    if (idEl)   idEl.innerText   = row.recruitmentId + ' · ' + statusLabel;
+
+    if (bodyEl) {
+      var extraInfo = '';
+      if (statusName === 'hold') {
+        extraInfo =
+          '<div class="col-6"><div class="cv-label">Alasan Hold</div><div class="cv-value">' + escapeHtml(row.holdReason || '-') + '</div></div>' +
+          '<div class="col-6"><div class="cv-label">Follow Up</div><div class="cv-value">' + escapeHtml(row.holdFollowUpDate || '-') + '</div></div>';
+      } else if (statusName === 'accepted') {
+        extraInfo =
+          '<div class="col-6"><div class="cv-label">Employee ID</div><div class="cv-value">' + escapeHtml(row.employeeId || '-') + '</div></div>';
+      } else if (statusName === 'blacklist') {
+        extraInfo =
+          '<div class="col-6"><div class="cv-label">Alasan Blacklist</div><div class="cv-value" style="color:#991b1b">' + escapeHtml(row.blacklistReason || '-') + '</div></div>' +
+          '<div class="col-6"><div class="cv-label">Tgl Blacklist</div><div class="cv-value">' + escapeHtml(row.blacklistDate || '-') + '</div></div>';
+      }
+      bodyEl.innerHTML =
+        '<div class="col-6"><div class="cv-label">Nama Lengkap</div><div class="cv-value">' + escapeHtml(row.fullName || '-') + '</div></div>' +
+        '<div class="col-6"><div class="cv-label">NIK</div><div class="cv-value">' + escapeHtml(row.nik || '-') + '</div></div>' +
+        '<div class="col-6"><div class="cv-label">Email</div><div class="cv-value">' + escapeHtml(row.email || '-') + '</div></div>' +
+        '<div class="col-6"><div class="cv-label">No. HP</div><div class="cv-value">' + escapeHtml(row.phone || '-') + '</div></div>' +
+        '<div class="col-6"><div class="cv-label">Posisi</div><div class="cv-value">' + escapeHtml(row.positionApplied || '-') + '</div></div>' +
+        '<div class="col-6"><div class="cv-label">Kota</div><div class="cv-value">' + escapeHtml(row.city || '-') + '</div></div>' +
+        '<div class="col-6"><div class="cv-label">Pendidikan</div><div class="cv-value">' + escapeHtml(row.education || '-') + '</div></div>' +
+        '<div class="col-6"><div class="cv-label">Pengalaman</div><div class="cv-value">' + escapeHtml(row.workExperience || '-') + '</div></div>' +
+        '<div class="col-6"><div class="cv-label">Ekspektasi Gaji</div><div class="cv-value">' + formatRupiah(row.expectedSalary) + '</div></div>' +
+        '<div class="col-6"><div class="cv-label">Sumber</div><div class="cv-value">' + escapeHtml(row.recruitmentSource || '-') + '</div></div>' +
+        extraInfo +
+        '<div class="col-6"><div class="cv-label">Diproses</div><div class="cv-value">' + escapeHtml(row.processedDate || '-') + '</div></div>' +
+        '<div class="col-6"><div class="cv-label">Oleh</div><div class="cv-value">' + escapeHtml(row.processedBy || '-') + '</div></div>' +
+        (row.hrNotes ? '<div class="col-12"><div class="cv-label">Catatan HR</div><div class="cv-value" style="white-space:pre-wrap">' + escapeHtml(row.hrNotes) + '</div></div>' : '');
+    }
+
+    if (moveBtn) {
+      moveBtn.onclick = function() {
+        var detailModal = bootstrap.Modal.getInstance(document.getElementById('statusDetailModal'));
+        if (detailModal) detailModal.hide();
+        setTimeout(function() { openMoveStatusModal(row.recruitmentId, statusLabel); }, 300);
+      };
+    }
+
+    var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('statusDetailModal'));
+    modal.show();
+  }
+
+  // ============================================================
+  // NAVIGATE HOOKS — dipanggil dari router
+  // ============================================================
+  function holdOnNavigate()      { if (HOLD_PAGE) HOLD_PAGE.onNavigate(); }
+  function acceptedOnNavigate()  { if (ACC_PAGE)  ACC_PAGE.onNavigate(); }
+  function blacklistOnNavigate() { if (BL_PAGE)   BL_PAGE.onNavigate(); }
+</script>
