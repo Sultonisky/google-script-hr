@@ -336,6 +336,13 @@ function updateEmployee(id, updates) {
         if (changedEmployment) offboardingType = resolveOffboardingType_(newEmploymentStatus);
         if (!offboardingType && changedStatus) offboardingType = resolveOffboardingType_(newStatus);
 
+        // Audit perubahan status (wajib sesuai AGENTS.md).
+        if (changedEmployment || changedStatus) {
+          var displayNewStatus = changedEmployment ? newEmploymentStatus : newStatus;
+          var displayOldStatus = changedEmployment ? oldEmploymentStatus : oldStatus;
+          writeAuditLog_(id, "Update Status", "Employment Status", displayOldStatus, displayNewStatus);
+        }
+
         var offboardResult = null;
         if (offboardingType) {
           var reason = updates.reason || '';

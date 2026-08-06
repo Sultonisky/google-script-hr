@@ -224,6 +224,50 @@ function getOrCreateArchiveSheet_() {
   return sheet;
 }
 
+// ============================================================
+// ONETIME FIX — jalankan sekali dari Apps Script editor untuk
+// menulis ulang header sheet Archive dengan 16 kolom baru
+// (ARCHIVE_HEADERS). Data lama (jika ada) dimigrasi lewat
+// pemetaan; sheet yang hanya berisi header lama akan bersih
+// menjadi 16 header baru. Aman dijalankan ulang.
+// ============================================================
+function fixArchiveHeadersNow() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(ARCHIVE_SHEET_NAME);
+  if (!sheet) sheet = ss.insertSheet(ARCHIVE_SHEET_NAME);
+
+  var before = {
+    lastRow: sheet.getLastRow(),
+    lastCol: sheet.getLastColumn(),
+    headers:
+      sheet.getLastColumn() > 0
+        ? sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(function (h) {
+            return String(h).trim();
+          })
+        : [],
+  };
+
+  ensureSheetHeadersMatch_(sheet, ARCHIVE_HEADERS, ARCHIVE_LEGACY_HEADER_MAP);
+
+  var afterHeaders = sheet
+    .getRange(1, 1, 1, ARCHIVE_HEADERS.length)
+    .getValues()[0]
+    .map(function (h) {
+      return String(h).trim();
+    });
+
+  return {
+    success: afterHeaders.join("|") === ARCHIVE_HEADERS.join("|"),
+    headerCount: afterHeaders.length,
+    headers: afterHeaders,
+    before: before,
+    message:
+      afterHeaders.join("|") === ARCHIVE_HEADERS.join("|")
+        ? "Header Archive berhasil ditulis ulang menjadi 16 kolom."
+        : "Header Archive masih tidak cocok, periksa kembali.",
+  };
+}
+
 // ============= Offboarding =============
 function getOrCreateOffboardingSheet_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -232,6 +276,48 @@ function getOrCreateOffboardingSheet_() {
 
   ensureSheetHeadersMatch_(sheet, OFFBOARDING_HEADERS, null);
   return sheet;
+}
+
+// ============================================================
+// ONETIME FIX — jalankan sekali dari Apps Script editor untuk
+// menulis ulang header sheet Offboarding dengan 16 kolom
+// (OFFBOARDING_HEADERS). Aman dijalankan ulang.
+// ============================================================
+function fixOffboardingHeadersNow() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(OFFBOARDING_SHEET_NAME);
+  if (!sheet) sheet = ss.insertSheet(OFFBOARDING_SHEET_NAME);
+
+  var before = {
+    lastRow: sheet.getLastRow(),
+    lastCol: sheet.getLastColumn(),
+    headers:
+      sheet.getLastColumn() > 0
+        ? sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(function (h) {
+            return String(h).trim();
+          })
+        : [],
+  };
+
+  ensureSheetHeadersMatch_(sheet, OFFBOARDING_HEADERS, null);
+
+  var afterHeaders = sheet
+    .getRange(1, 1, 1, OFFBOARDING_HEADERS.length)
+    .getValues()[0]
+    .map(function (h) {
+      return String(h).trim();
+    });
+
+  return {
+    success: afterHeaders.join("|") === OFFBOARDING_HEADERS.join("|"),
+    headerCount: afterHeaders.length,
+    headers: afterHeaders,
+    before: before,
+    message:
+      afterHeaders.join("|") === OFFBOARDING_HEADERS.join("|")
+        ? "Header Offboarding berhasil ditulis ulang menjadi 16 kolom."
+        : "Header Offboarding masih tidak cocok, periksa kembali.",
+  };
 }
 
 function ensureOffboardingHeaders_(sheet) {
