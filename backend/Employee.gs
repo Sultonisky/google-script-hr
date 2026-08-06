@@ -146,6 +146,108 @@ function addEmployee(empData) {
   }
 }
 
+// ============= OFFBOARDING =============
+// Status karyawan yang memicu offboarding otomatis
+var OFFBOARDING_TRIGGER_STATUSES = ['Resigned', 'Terminated', 'On Leave'];
+
+// Pemetaan status employee -> Offboarding Type
+var OFFBOARDING_TYPE_MAP = {
+  'Resigned':   'Resignation',
+  'Terminated': 'Termination',
+  'On Leave':   'On Leave'
+};
+
+// Kembalikan nama offboarding type untuk sebuah status, atau null jika
+// status tersebut tidak memicu offboarding.
+function resolveOffboardingType_(status) {
+  status = String(status || '').trim();
+  return OFFBOARDING_TYPE_MAP[status] || null;
+}
+
+// Simpan catatan offboarding ke sheet Offboarding (buat jika belum ada).
+// Dipanggil dari updateEmployee saat status berubah ke Resigned / Terminated /
+// On Leave. Mengirim lock dari caller (updateEmployee), jadi tidak mengambil
+// lock ulang.
+function offboardEmployee_(employeeId, offboardingType, reason, notes) {
+  try {
+    var sheet = getOrCreateEmployeeSheet_();
+    var data  = sheet.getDataRange().getValues();
+    var headers = data[0];
+    var colIndex = {};
+    headers.forEach(function (h, i) { colIndex[String(h).trim()] = i; });
+
+    var row = null;
+    for (var r = 1; r < data.length; r++) {
+      if (String(data[r][colIndex['Employee ID']] || '') === String(employeeId)) {
+        row = data[r];
+        break;
+      }
+    }
+    if (!row)
+      return { success: false, message: 'Karyawan tidak ditemukan: ' + employeeId };
+
+    // Cegah duplikat: sudah ada offboarding bertipe sama untuk employee ini
+    var offSheet = getOrCreateOffboardingSheet_();
+    if (offSheet.getLastRow() > 1) {
+      var offData = offSheet
+        .getRange(2, 1, offSheet.getLastRow() - 1, OFFBOARDING_HEADERS.length)
+        .getValues();
+      for (var i = 0; i < offData.length; i++) {
+        if (
+          String(offData[i][OFFBOARD_COL['Employee ID'] - 1] || '') ===
+            String(employeeId) &&
+          String(offData[i][OFFBOARD_COL['Offboarding Type'] - 1] || '') ===
+            String(offboardingType)
+        ) {
+          return { success: false, duplicate: true, offboardingId: String(offData[i][OFFBOARD_COL['Offboarding ID'] - 1] || '') };
+        }
+      }
+    }
+
+    var user = Session.getActiveUser().getEmail() || 'HR Dashboard';
+    var now = new Date();
+    var nowStr = Utilities.formatDate(now, 'GMT+7', 'yyyy-MM-dd HH:mm:ss');
+    var offboardingId = generateOffboardingId_(now);
+
+    function val(name) {
+      var i = colIndex[name];
+      return i === undefined ? '' : String(row[i] || '');
+    }
+
+    var newRow = new Array(OFFBOARDING_HEADERS.length).fill('');
+    newRow[OFFBOARD_COL['Offboarding ID'] - 1]   = offboardingId;
+    newRow[OFFBOARD_COL['Employee ID'] - 1]      = employeeId;
+    newRow[OFFBOARD_COL['Full Name'] - 1]        = val('Full Name');
+    newRow[OFFBOARD_COL['Position'] - 1]         = val('Position');
+    newRow[OFFBOARD_COL['Department'] - 1]       = val('Department');
+    newRow[OFFBOARD_COL['Join Date'] - 1]        = val('Join Date');
+    newRow[OFFBOARD_COL['Last Working Date'] - 1] = nowStr;
+    newRow[OFFBOARD_COL['Offboarding Type'] - 1] = offboardingType;
+    newRow[OFFBOARD_COL['Reason'] - 1]           = reason || '';
+    newRow[OFFBOARD_COL['Approved By'] - 1]      = user;
+    newRow[OFFBOARD_COL['Notes'] - 1]            = notes || '';
+    newRow[OFFBOARD_COL['Status'] - 1]           = 'Active';
+    newRow[OFFBOARD_COL['Archived'] - 1]         = 'No';
+    newRow[OFFBOARD_COL['Created By'] - 1]       = user;
+    newRow[OFFBOARD_COL['Created At'] - 1]       = nowStr;
+    newRow[OFFBOARD_COL['Updated At'] - 1]       = nowStr;
+
+    offSheet.appendRow(newRow);
+
+    writeAuditLog_(
+      employeeId,
+      'Offboarding',
+      'Employment Status',
+      offboardingType,
+      offboardingType + ' -> ' + offboardingId,
+    );
+
+    return { success: true, offboardingId: offboardingId };
+  } catch (err) {
+    return { success: false, message: err.toString() };
+  }
+}
+
 // ============= UPDATE EMPLOYEE =============
 function updateEmployee(id, updates) {
   try {
@@ -160,6 +262,12 @@ function updateEmployee(id, updates) {
     for (var i = 1; i < data.length; i++) {
       if (String(data[i][0]) === String(id)) {
         var now = Utilities.formatDate(new Date(), 'GMT+7', 'yyyy-MM-dd HH:mm:ss');
+
+        // ---- Tangkap status lama untuk deteksi offboarding ----
+        var oldEmploymentStatus = String(
+          data[i][EMPLOYEE_COL['Employment Status'] - 1] || '',
+        );
+        var oldStatus = String(data[i][EMPLOYEE_COL['Status'] - 1] || '');
 
         // Map camelCase update keys to header names
         var keyMap = {
@@ -209,8 +317,41 @@ function updateEmployee(id, updates) {
         // Always update "Updated At"
         sheet.getRange(i + 1, EMPLOYEE_COL['Updated At']).setValue(now);
 
+        // ---- Trigger offboarding otomatis ----
+        // Jika status baru masuk daftar pemicu (Resigned / Terminated / On Leave)
+        // dan berbeda dari status lama, catat ke sheet Offboarding.
+        var newEmploymentStatus = updates.employmentStatus !== undefined
+          ? String(updates.employmentStatus)
+          : oldEmploymentStatus;
+        var newStatus = updates.status !== undefined
+          ? String(updates.status)
+          : oldStatus;
+
+        // Nilai status baru (perubahan pertama yang ditemukan).
+        // Hanya trigger jika field yang benar-benar berubah adalah trigger.
+        var changedEmployment = newEmploymentStatus !== oldEmploymentStatus;
+        var changedStatus = newStatus !== oldStatus;
+        var offboardingType = null;
+        if (changedEmployment) offboardingType = resolveOffboardingType_(newEmploymentStatus);
+        if (!offboardingType && changedStatus) offboardingType = resolveOffboardingType_(newStatus);
+
+        var offboardResult = null;
+        if (offboardingType) {
+          var reason = updates.reason || '';
+          var note = updates.notes || updates.hrNotes || '';
+          if (note === reason) note = '';
+          offboardResult = offboardEmployee_(id, offboardingType, reason, note);
+        }
+
         lock.releaseLock();
-        return { success: true, message: 'Data karyawan berhasil diperbarui.' };
+
+        return {
+          success: true,
+          message: 'Data karyawan berhasil diperbarui.',
+          offboarding: offboardResult
+            ? { triggered: true, type: offboardingType, id: offboardResult.offboardingId || null, duplicate: !!offboardResult.duplicate, offboardId: offboardResult.offboardingId }
+            : { triggered: false },
+        };
       }
     }
 
