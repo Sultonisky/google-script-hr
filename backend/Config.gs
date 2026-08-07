@@ -369,7 +369,13 @@ var DEFAULT_MASTER_DATA = {
     "Yogyakarta",
     "Medan",
   ],
-  employee_type: ["Full Time", "Part Time", "Contract", "Intern", "Outsource"],
+  employee_type: [
+    "Project",
+    "PKWTT",
+    "PKWT",
+    "Outsource",
+    "Intern",
+  ],
   offboarding_type: [
     "Resignation",
     "Termination",
