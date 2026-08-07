@@ -27,6 +27,9 @@
   .form-section-header i{font-size:24px;opacity:0.95;flex-shrink:0;}
   .form-section-header h5{font-weight:700;font-size:18px;margin:0;}
   .form-section-header p{font-size:13px;opacity:0.8;margin:4px 0 0;}
+  .form-section-header .section-status{margin-left:auto;font-size:12px;font-weight:600;padding:5px 12px;border-radius:100px;background:rgba(255,255,255,.14);color:#fff;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex-shrink:0;}
+  .form-section-header .section-status i{font-size:13px;}
+  .form-section-header .section-status.done{background:rgba(22,101,52,.95);}
   .form-section-body{padding:28px;}
   .form-label{font-weight:600;font-size:13.5px;color:var(--color-text);margin-bottom:6px;display:block;}
   .form-label .required{color:#dc3545;margin-left:2px;}
@@ -57,6 +60,7 @@
   .agreement-section:has(input:checked){border-color:var(--color-primary);box-shadow:0 0 0 3px rgba(0,91,172,.06);}
   .agreement-checkbox{display:flex;align-items:flex-start;gap:12px;}
   .agreement-checkbox .form-check-input{margin-top:3px;width:22px;height:22px;cursor:pointer;flex-shrink:0;}
+  .agreement-checkbox .form-check-input:disabled{cursor:not-allowed;opacity:.45;}
   .agreement-checkbox label{font-size:14px;line-height:1.6;color:var(--color-text);cursor:pointer;user-select:none;}
   .agreement-info{margin-top:14px;padding-top:14px;border-top:1px solid var(--color-border);}
   .agreement-info ul{margin:0;padding-left:20px;}

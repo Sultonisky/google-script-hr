@@ -436,6 +436,22 @@
       opacity: 0.8;
       margin: 4px 0 0;
     }
+    #formSection .form-section-header .section-status {
+      margin-left: auto;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 100px;
+      background: rgba(255,255,255,.14);
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    #formSection .form-section-header .section-status i { font-size: 13px; }
+    #formSection .form-section-header .section-status.done { background: rgba(22,101,52,.95); }
     #formSection .form-section-body { padding: 28px; }
     #formSection .form-label {
       font-weight: 600;
@@ -533,6 +549,10 @@
       margin-top: 2px;
       flex-shrink: 0;
       accent-color: var(--color-primary);
+    }
+    #formSection .agreement-checkbox .form-check-input:disabled {
+      cursor: not-allowed;
+      opacity: .45;
     }
     #formSection .agreement-checkbox .form-check-label {
       font-size: 14px;

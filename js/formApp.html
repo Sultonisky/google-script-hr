@@ -110,41 +110,115 @@
   }
 
   // ============================================================
-  // PROGRESS TRACKER
+  // PROGRESS & STRUCTURED VALIDATION
+  // Validasi dihitung per seksi. Checkbox persetujuan adalah
+  // LANGKAH TERAKHIR: hanya bisa dicentang setelah seluruh seksi
+  // lengkap. Tombol submit aktif hanya jika semua seksi lengkap
+  // DAN checkbox persetujuan dicentang.
   // ============================================================
-  var requiredFields = [
-    'full_name','nik','birth_date','age','gender','marital_status',
-    'email','phone','province','city','address',
-    'position_applied','education','work_experience',
-    'current_employment_status','available_to_join',
-    'expected_salary','recruitment_source','agreement'
+  var FORM_SECTIONS = [
+    { id:'sectionPersonal',   badgeId:'secBadgePersonal',   fields:['nik','full_name','birth_date','age','gender','marital_status'] },
+    { id:'sectionContact',    badgeId:'secBadgeContact',    fields:['email','phone','province','city','address'], district:true },
+    { id:'sectionEmployment', badgeId:'secBadgeEmployment', fields:['position_applied','education','work_experience','current_employment_status','available_to_join','expected_salary','recruitment_source'], lastCompany:true },
   ];
-  var TOTAL_WITH_DISTRICT = 20;
+
+  function isLastCompanyRequired(){
+    var we = workExperienceSelect ? workExperienceSelect.value : '';
+    return we !== '' && we !== 'No Experience';
+  }
+  function isDistrictValid(){
+    if (districtManualWrap && districtManualWrap.style.display !== 'none') {
+      return (districtManualInput.value || '').trim() !== '';
+    }
+    return !districtInput.disabled && (districtInput.value || '').trim() !== '';
+  }
+  function isFieldValid(el){
+    if (!el) return false;
+    if (el.type === 'checkbox') return !!el.checked;
+    var v = (el.value || '').trim();
+    if (v === '') return false;
+    if (el.checkValidity) return el.checkValidity();
+    return true;
+  }
+  function getSectionFieldIds(sec){
+    var ids = sec.fields.slice();
+    if (sec.district) ids.push('__district__');
+    if (sec.lastCompany && isLastCompanyRequired()) ids.push('last_company');
+    return ids;
+  }
+  function isSectionComplete(sec){
+    var ids = getSectionFieldIds(sec);
+    for (var i = 0; i < ids.length; i++) {
+      var id = ids[i];
+      if (id === '__district__') { if (!isDistrictValid()) return false; continue; }
+      if (!isFieldValid(document.getElementById(id))) return false;
+    }
+    return true;
+  }
+  function countSection(sec){
+    var ids = getSectionFieldIds(sec);
+    var valid = 0;
+    for (var i = 0; i < ids.length; i++) {
+      var id = ids[i];
+      if (id === '__district__') { if (isDistrictValid()) valid++; continue; }
+      var el = document.getElementById(id);
+      if (el && isFieldValid(el)) valid++;
+    }
+    return { total: ids.length, valid: valid };
+  }
+  function setSectionBadge(sec, complete){
+    var b = document.getElementById(sec.badgeId);
+    if (!b) return;
+    b.className = 'section-status' + (complete ? ' done' : '');
+    b.innerHTML = complete
+      ? '<i class="bi bi-check-circle-fill"></i> Lengkap'
+      : '<i class="bi bi-hourglass-split"></i> Belum lengkap';
+  }
+  function updateFormState(){
+    var allComplete = true;
+    FORM_SECTIONS.forEach(function(sec){
+      var done = isSectionComplete(sec);
+      if (!done) allComplete = false;
+      setSectionBadge(sec, done);
+    });
+
+    // Checkbox persetujuan = langkah TERAKHIR
+    agreementCheckbox.disabled = !allComplete;
+    if (!allComplete) {
+      agreementCheckbox.checked = false;
+      agreementCheckbox.classList.remove('is-valid','is-invalid');
+    }
+    var hint = document.getElementById('agreementHint');
+    if (hint) hint.style.display = allComplete ? 'none' : 'block';
+
+    submitBtn.disabled = !(allComplete && agreementCheckbox.checked);
+  }
+
   var progressMessages = [
     {min:0,  text:'Mulai mengisi formulir...'},
     {min:25, text:'Awal yang bagus! \uD83C\uDF89'},
     {min:50, text:'Form sudah setengah selesai.'},
-    {min:75, text:'Hampir selesai.'},
+    {min:75, text:'Hampir selesai. Centang persetujuan di langkah terakhir.'},
     {min:100,text:'Semua data telah lengkap. Silakan kirim pendaftaran.'}
   ];
 
   function updateProgress(){
-    var validCount = 0;
-    requiredFields.forEach(function(id){
-      var el = document.getElementById(id);
-      if(!el) return;
-      if(el.type === 'checkbox'){ if(el.checked) validCount++; }
-      else if(el.value && el.value.trim() !== ''){ if(el.checkValidity && el.checkValidity()) validCount++; }
+    var total = 0, valid = 0;
+    FORM_SECTIONS.forEach(function(sec){
+      var c = countSection(sec);
+      total += c.total; valid += c.valid;
     });
-    var districtOk = (!districtInput.disabled && districtInput.value && districtInput.value.trim() !== '') ||
-      (districtManualWrap && districtManualWrap.style.display !== 'none' && districtManualInput && districtManualInput.value.trim() !== '');
-    if(districtOk) validCount++;
-    var percent = Math.round((validCount / TOTAL_WITH_DISTRICT) * 100);
+    total += 1; // langkah terakhir: checkbox persetujuan
+    if (agreementCheckbox.checked) valid += 1;
+
+    var percent = total === 0 ? 0 : Math.min(100, Math.round((valid / total) * 100));
     progressFill.style.width = percent + '%';
-    progressCount.textContent = validCount + ' dari ' + TOTAL_WITH_DISTRICT + ' data telah lengkap';
+    progressCount.textContent = valid + ' dari ' + total + ' data telah lengkap';
     var msg = progressMessages[0].text;
-    for(var i = progressMessages.length-1; i >= 0; i--){ if(percent >= progressMessages[i].min){ msg = progressMessages[i].text; break; } }
+    for (var i = progressMessages.length-1; i >= 0; i--) { if (percent >= progressMessages[i].min) { msg = progressMessages[i].text; break; } }
     progressMessage.textContent = msg;
+
+    updateFormState();
   }
 
   // ============================================================
@@ -374,8 +448,8 @@
   // ============================================================
   workExperienceSelect.addEventListener('change', function(){
     var lc = document.getElementById('last_company');
-    if(this.value===''||this.value==='No Experience'){ lastCompanyGroup.style.display='none'; lc.value=''; lc.disabled=true; }
-    else { lastCompanyGroup.style.display='block'; lc.disabled=false; }
+    if(this.value===''||this.value==='No Experience'){ lastCompanyGroup.style.display='none'; lc.value=''; lc.disabled=true; lc.required=false; lc.classList.remove('is-valid','is-invalid'); }
+    else { lastCompanyGroup.style.display='block'; lc.disabled=false; lc.required=true; }
     validateField(this); updateProgress();
   });
 
@@ -383,7 +457,6 @@
   // AGREEMENT CHECKBOX
   // ============================================================
   agreementCheckbox.addEventListener('change', function(){
-    submitBtn.disabled = !this.checked;
     if(this.checked){ agreementError.style.display='none'; this.classList.add('is-valid'); this.classList.remove('is-invalid'); }
     else { this.classList.remove('is-valid'); }
     updateProgress();
