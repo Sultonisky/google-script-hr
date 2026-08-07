@@ -65,6 +65,29 @@
   }
 
   // ============================================================
+  // STAT CARD NAVIGATION — dashboard stat cards act like sidebar
+  // items using data-page="pageX" attributes + SPA.navigate()
+  // ============================================================
+  function initStatCardNav() {
+    document
+      .querySelectorAll(".stat-card[data-page]")
+      .forEach(function (card) {
+        card.addEventListener("click", function () {
+          var pageId = card.getAttribute("data-page");
+          var status = card.getAttribute("data-status");
+          var scroll = card.getAttribute("data-scroll");
+
+          if (pageId && typeof SPA !== "undefined") {
+            var params = {};
+            if (status) params.status = status;
+            if (scroll) params.scroll = scroll;
+            SPA.navigate(pageId, Object.keys(params).length ? params : null);
+          }
+        });
+      });
+  }
+
+  // ============================================================
   // EXTERNAL NAVIGATION HANDLER
   // data-external="employee" -> open spreadsheet
   // ============================================================
@@ -266,6 +289,7 @@
 
     // 2. Init sidebar mobile toggle & dark mode
     initSidebar();
+    initStatCardNav();
     initDarkModeToggle();
 
     // 3. Init dashboard data + charts + filters + table + drawer + exports
