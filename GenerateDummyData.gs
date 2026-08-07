@@ -3,7 +3,7 @@
 // ============================================================
 // Run: generateAllHRISDemoData() from Apps Script editor
 // Sheets generated:
-//   raw_kandidat      — 40 Pending candidates
+//   data_kandidat     — 40 Pending candidates
 //   kandidat_hold     — 15 Hold candidates
 //   kandidat_accepted — 30 Accepted candidates
 //   kandidat_blacklist— 15 Blacklist candidates
@@ -866,7 +866,7 @@ function _gdCandidateRow_(c, extraHeaders) {
 }
 
 // ============================================================
-// WRITE: raw_kandidat — hanya Pending
+// WRITE: data_kandidat — hanya Pending
 // ============================================================
 function _gdWriteRawKandidat_(candidates) {
   var sheet = getOrCreateSheet_();
@@ -875,7 +875,7 @@ function _gdWriteRawKandidat_(candidates) {
     return _gdCandidateRow_(c, false);
   });
   sheet.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
-  Logger.log("raw_kandidat: " + rows.length + " rows written");
+  Logger.log("data_kandidat: " + rows.length + " rows written");
 }
 
 // ============================================================
