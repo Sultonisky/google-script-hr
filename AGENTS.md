@@ -1,8 +1,8 @@
-# AGENTS.md — AI Agent Instructions for HRIS Project
+﻿# AGENTS.md — AI Agent Instructions for HRIS Project
 
 ## Project Overview
 
-**Project Name**: Mahakarya HRIS — Applicant Tracking System (ATS)  
+**Project Name**: MITO HRIS — Applicant Tracking System (ATS)  
 **Type**: Google Apps Script + HTML/Bootstrap 5  
 **Database**: Google Spreadsheet  
 **Purpose**: Recruitment management and HR dashboard for tracking candidates from application to employee onboarding

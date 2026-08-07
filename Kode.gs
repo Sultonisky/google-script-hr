@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // Kode.gs — ENTRY POINT & ROUTER
 // Satu-satunya file yang mengandung doGet().
 // Semua logika bisnis ada di file backend/ terpisah.
@@ -67,10 +67,10 @@ function doGet(e) {
     var titles = {
       dashboard: "HR Dashboard",
       recruitment: "Recruitment — ATS",
-      employee: "Manajemen Karyawan — Mahakarya HRIS",
-      settings: "Pengaturan Portal — Mahakarya HRIS",
-      "master-data": "Master Data — Mahakarya HRIS",
-      "user-management": "Manajemen Pengguna — Mahakarya HRIS",
+      employee: "Manajemen Karyawan — MITO HRIS",
+      settings: "Pengaturan Portal — MITO HRIS",
+      "master-data": "Master Data — MITO HRIS",
+      "user-management": "Manajemen Pengguna — MITO HRIS",
     };
     return buildTemplate_("views/Dashboard")
       .evaluate()
@@ -83,7 +83,7 @@ function doGet(e) {
   if (type === "outsource") {
     return buildTemplate_("OutsourceForm")
       .evaluate()
-      .setTitle("Registrasi Karyawan Outsource — Mahakarya HRIS")
+      .setTitle("Registrasi Karyawan Outsource — MITO HRIS")
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
       .addMetaTag("viewport", "width=device-width, initial-scale=1");
   }
@@ -92,7 +92,7 @@ function doGet(e) {
   if (page === "access-denied") {
     return buildTemplate_("views/AccessDenied")
       .evaluate()
-      .setTitle("Akses Ditolak — Mahakarya HRIS")
+      .setTitle("Akses Ditolak — MITO HRIS")
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
       .addMetaTag("viewport", "width=device-width, initial-scale=1");
   }
@@ -101,7 +101,7 @@ function doGet(e) {
   if (page === "login") {
     return buildTemplate_("views/Login")
       .evaluate()
-      .setTitle("Login — Mahakarya HRIS")
+      .setTitle("Login — MITO HRIS")
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
       .addMetaTag("viewport", "width=device-width, initial-scale=1");
   }
@@ -110,7 +110,7 @@ function doGet(e) {
   if (page === "candidate-landing") {
     return buildTemplate_("views/CandidateLanding")
       .evaluate()
-      .setTitle("Informasi Rekrutmen — Mahakarya HRIS")
+      .setTitle("Informasi Rekrutmen — MITO HRIS")
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
       .addMetaTag("viewport", "width=device-width, initial-scale=1");
   }
@@ -120,7 +120,7 @@ function doGet(e) {
   if (type === 'kandidat' && page === '') {
     return buildTemplate_("views/CandidateLanding")
       .evaluate()
-      .setTitle("Informasi Rekrutmen — Mahakarya HRIS")
+      .setTitle("Informasi Rekrutmen — MITO HRIS")
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
       .addMetaTag("viewport", "width=device-width, initial-scale=1");
   }
@@ -129,7 +129,7 @@ function doGet(e) {
   if (page === "landing" || page === "") {
     return buildTemplate_("views/Landing")
       .evaluate()
-      .setTitle("Mahakarya HRIS")
+      .setTitle("MITO HRIS")
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
       .addMetaTag("viewport", "width=device-width, initial-scale=1");
   }
@@ -143,3 +143,4 @@ function doGet(e) {
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag("viewport", "width=device-width, initial-scale=1");
 }
+

@@ -1,4 +1,4 @@
-# CHANGELOG.md — Version History
+﻿# CHANGELOG.md — Version History
 
 All notable changes to this project will be documented in this file.
 
@@ -193,7 +193,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2026-07-28
 
 ### Added
-- Initial release of Mahakarya HRIS - Applicant Tracking System
+- Initial release of MITO HRIS - Applicant Tracking System
 - Google Apps Script backend with single-file architecture (Kode.gs)
 - Candidate registration portal (FormPendaftaran.html)
 - HR Dashboard with advanced analytics (Dashboard.html)

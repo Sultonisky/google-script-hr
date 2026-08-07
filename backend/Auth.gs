@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // backend/Auth.gs — AUTHENTICATION & AUTHORIZATION
 // Google Workspace SSO via Apps Script Session.
 // Recruitment forms remain PUBLIC. Dashboard requires login.
@@ -1257,7 +1257,7 @@ function getPortalSettingsForLogin() {
     var result = getPortalSettings();
     var settings = result && result.settings ? result.settings : {};
     return {
-      companyName: settings.companyName || "Mahakarya HRIS",
+      companyName: settings.companyName || "MITO HRIS",
       companyLogo: settings.companyLogo || "",
       companyTagline:
         settings.companyTagline ||
@@ -1266,7 +1266,7 @@ function getPortalSettingsForLogin() {
     };
   } catch (e) {
     return {
-      companyName: "Mahakarya HRIS",
+      companyName: "MITO HRIS",
       companyLogo: "",
       companyTagline:
         "Sistem Manajemen Sumber Daya Manusia & Pelacakan Penerimaan Karyawan",
@@ -1379,3 +1379,4 @@ function setupProductionAdmin() {
     return { success: false, error: 'Gagal membuat akun produksi: ' + e.message };
   }
 }
+

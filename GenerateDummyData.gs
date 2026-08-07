@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // GenerateDummyData.gs — Complete HRIS Demo Dataset Generator
 // ============================================================
 // Run: generateAllHRISDemoData() from Apps Script editor
@@ -595,7 +595,12 @@ var _GD_BLACKLIST_REASONS_ = [
   "Pernah mengalami PHK dengan catatan buruk",
   "Memberikan informasi palsu tentang pengalaman kerja",
 ];
-var _GD_COMPANIES_INTERNAL_ = ["PT Mahakarya Sukses Indonesia"];
+var _GD_COMPANIES_INTERNAL_ = [
+  "PT Mahakarya Sukses Indonesia",
+  "PT Stein Perkasa Internasional",
+  "PT Perkasa Injeksi Indonesia",
+  "PT Mitra Elektro Perkasa",
+];
 var _GD_EMP_TYPES_ = ["Project", "PKWTT", "PKWT", "Outsource", "Intern"];
 var _GD_EMP_STATUSES_ = [
   "Active",

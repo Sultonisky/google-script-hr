@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // backend/PortalSettings.gs — PORTAL SETTINGS
 // Centralized configuration stored in ScriptProperties.
 // All hardcoded portal values are replaced by dynamic settings.
@@ -7,7 +7,7 @@
 // ---- Default portal settings ----
 var PORTAL_SETTINGS_DEFAULTS = {
   // Company Information
-  companyName:        'PT Mahakarya Sukses Indonesia',
+  companyName:        'MITO Group',
   companyLogo:        '',
   companyAddress:     'Jakarta, Indonesia',
   companyPhone:       '',
@@ -16,9 +16,9 @@ var PORTAL_SETTINGS_DEFAULTS = {
   // Branding
   sidebarLogo:        '',
   loginLogo:          '',
-  portalTitle:        'Mahakarya HRIS',
+  portalTitle:        'MITO HRIS',
   portalSubtitle:     'Applicant Tracking System',
-  footer:             '© 2026 PT Mahakarya Sukses Indonesia — HRIS Portal',
+  footer:             '© 2026 MITO Group — HRIS Portal',
   systemVersion:      '2.0.0',
   // Theme
   primaryColor:       '#005BAC',

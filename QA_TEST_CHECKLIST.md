@@ -1,5 +1,5 @@
-# QA / System Integration Testing Checklist
-## Mahakarya HRIS — Applicant Tracking System
+﻿# QA / System Integration Testing Checklist
+## MITO HRIS — Applicant Tracking System
 **Version**: 1.0  
 **Date**: 2026-08-03  
 **Status**: Ready for Execution  
@@ -119,7 +119,7 @@
 | ACCEPT-003 | Accept candidate: sets Status=Accepted | 1. Call acceptCandidateToEmployee(id) | Status updated to "Accepted" in data_kandidat | | |
 | ACCEPT-004 | Accept candidate: Employee ID stored back | 1. Accept candidate<br>2. Check data_kandidat | Employee ID written to "Employee ID" column in candidate row | | |
 | ACCEPT-005 | Accept candidate: re-accept uses existing Employee ID | 1. Accept candidate (gets EMP-00001)<br>2. Accept same candidate again | Reuses EMP-00001, does NOT create duplicate employee | | |
-| ACCEPT-006 | Accept candidate: employee default values | 1. Accept candidate<br>2. Check Employee sheet | Company="PT Mahakarya Sukses Indonesia", Type="PKWTT", Status="Active", Salary Type="Monthly" | | |
+| ACCEPT-006 | Accept candidate: employee default values | 1. Accept candidate<br>2. Check Employee sheet | Company="MITO Group", Type="PKWTT", Status="Active", Salary Type="Monthly" | | |
 | ACCEPT-007 | Accept candidate: audit log entry | 1. Accept candidate<br>2. Check Audit_Log | Action="Accepted", newValue="Accepted -> Employee EMP-XXXXX" | | |
 | ACCEPT-008 | Accept candidate: non-existent ID | 1. Call acceptCandidateToEmployee('FAKE-ID') | Returns error: "Recruitment ID tidak ditemukan" | | |
 

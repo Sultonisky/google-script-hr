@@ -319,7 +319,7 @@ function acceptCandidateToEmployee(recruitmentId, hrNotes) {
       newRow[EMPLOYEE_COL['Status'] - 1]            = 'Active';
       newRow[EMPLOYEE_COL['Notes'] - 1]             = hrNotes || '';
       newRow[EMPLOYEE_COL['Created At'] - 1]        = createdAt;
-      newRow[EMPLOYEE_COL['Company Entity'] - 1]    = 'PT Mahakarya Sukses Indonesia';
+      newRow[EMPLOYEE_COL['Company Entity'] - 1]    = 'MITO Group';
       newRow[EMPLOYEE_COL['Employee Type'] - 1]     = 'PKWTT';
       newRow[EMPLOYEE_COL['NIK'] - 1]               = found.values[found.colIndex['NIK']];
       newRow[EMPLOYEE_COL['Birth Date'] - 1]        = found.values[found.colIndex['Birth Date']];
@@ -530,7 +530,7 @@ function moveStatusCandidate(recruitmentId, fromStatus, toStatus, reason, hrNote
         empRow[EMPLOYEE_COL['Status'] - 1]            = 'Active';
         empRow[EMPLOYEE_COL['Notes'] - 1]             = hrNotes || '';
         empRow[EMPLOYEE_COL['Created At'] - 1]        = nowStr;
-        empRow[EMPLOYEE_COL['Company Entity'] - 1]    = 'PT Mahakarya Sukses Indonesia';
+        empRow[EMPLOYEE_COL['Company Entity'] - 1]    = 'MITO Group';
         empRow[EMPLOYEE_COL['Employee Type'] - 1]     = 'PKWTT';
         empRow[EMPLOYEE_COL['NIK'] - 1]               = found.values[found.colIndex['NIK']];
         empRow[EMPLOYEE_COL['Birth Date'] - 1]        = found.values[found.colIndex['Birth Date']];
