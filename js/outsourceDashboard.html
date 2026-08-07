@@ -114,7 +114,6 @@
     var ct = function(fn) { return OS.filtered.filter(fn).length; };
     var m = {
       osStatTotal:      OS.filtered.length,
-      osStatPending:    ct(function(r){ return (r.employmentStatus||r.status||'').toLowerCase() === 'probation'; }),
       osStatActive:     ct(function(r){ return (r.employmentStatus||r.status||'').toLowerCase() === 'active'; }),
       osStatTerminated: ct(function(r){ return (r.employmentStatus||r.status||'').toLowerCase() === 'terminated'; })
     };
