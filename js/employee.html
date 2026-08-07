@@ -271,23 +271,26 @@
     }
   }
 
-  function empOpenAdd() {
-    EMP.editId = null;
-    document.getElementById('empFormTitle').textContent = 'Tambah Karyawan';
-    document.getElementById('efId').value = '';
-    document.getElementById('efName').value = '';
-    document.getElementById('efNik').value = '';
-    document.getElementById('efEmail').value = '';
-    document.getElementById('efPhone').value = '';
-    document.getElementById('efDept').value = '';
-    document.getElementById('efPos').value = '';
-    document.getElementById('efLoc').value = '';
-    document.getElementById('efType').value = '';
-    document.getElementById('efJoin').value = '';
-    document.getElementById('efStatus').value = 'Active';
-    document.getElementById('efNotes').value = '';
-    EMP.formModal.show();
-  }
+  // ============ ADD (CREATE) DINONAKTIFKAN SEMENTARA ============
+  // Fungsi tambah karyawan tidak aktif untuk saat ini (backup: aktifkan kembali
+  // dengan menghapus komentar pada blok di bawah ini).
+  // function empOpenAdd() {
+  //   EMP.editId = null;
+  //   document.getElementById('empFormTitle').textContent = 'Tambah Karyawan';
+  //   document.getElementById('efId').value = '';
+  //   document.getElementById('efName').value = '';
+  //   document.getElementById('efNik').value = '';
+  //   document.getElementById('efEmail').value = '';
+  //   document.getElementById('efPhone').value = '';
+  //   document.getElementById('efDept').value = '';
+  //   document.getElementById('efPos').value = '';
+  //   document.getElementById('efLoc').value = '';
+  //   document.getElementById('efType').value = '';
+  //   document.getElementById('efJoin').value = '';
+  //   document.getElementById('efStatus').value = 'Active';
+  //   document.getElementById('efNotes').value = '';
+  //   EMP.formModal.show();
+  // }
 
   function empOpenEdit() {
     var emp = EMP.allItems.find(function (x) {
@@ -358,25 +361,29 @@
         })
         .updateEmployee(EMP.editId, data);
     } else {
-      google.script.run
-        .withSuccessHandler(function (r) {
-          btn.disabled = false;
-          btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan';
-          if (r && r.success) {
-            empToast(r.message, 'success');
-            EMP.formModal.hide();
-            if (typeof closeDrawer === 'function') closeDrawer();
-            empLoadAll();
-          } else {
-            empToast(r ? r.message : 'Gagal menyimpan.', 'danger');
-          }
-        })
-        .withFailureHandler(function (err) {
-          btn.disabled = false;
-          btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan';
-          empToast('Error: ' + err.message, 'danger');
-        })
-        .addEmployee(data);
+      // ============ ADD (CREATE) DINONAKTIFKAN SEMENTARA ============
+      // Path penyimpanan karyawan baru tidak aktif (backup: kembalikan dengan
+      // menghapus komentar pada blok di bawah ini).
+      // google.script.run
+      //   .withSuccessHandler(function (r) {
+      //     btn.disabled = false;
+      //     btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan';
+      //     if (r && r.success) {
+      //       empToast(r.message, 'success');
+      //       EMP.formModal.hide();
+      //       if (typeof closeDrawer === 'function') closeDrawer();
+      //       empLoadAll();
+      //     } else {
+      //       empToast(r ? r.message : 'Gagal menyimpan.', 'danger');
+      //     }
+      //   })
+      //   .withFailureHandler(function (err) {
+      //     btn.disabled = false;
+      //     btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan';
+      //     empToast('Error: ' + err.message, 'danger');
+      //   })
+      //   .addEmployee(data);
+      empToast('Fungsi tambah karyawan sedang dinonaktifkan.', 'warning');
     }
   }
 
@@ -449,7 +456,8 @@
     var btnCsv  = document.getElementById('btnEmpExportCsv');
     var btnXlsx = document.getElementById('btnEmpExportXlsx');
 
-    if (btnAdd) btnAdd.addEventListener('click', empOpenAdd);
+    // TOMBOL TAMBAH KARYAWAN DINONAKTIFKAN SEMENTARA — listener di-comment agar create tidak bisa dipanggil dari UI
+    // if (btnAdd) btnAdd.addEventListener('click', empOpenAdd);
     if (btnRef) btnRef.addEventListener('click', empLoadAll);
     if (btnSav) btnSav.addEventListener('click', empSave);
     if (si) si.addEventListener('input', empApplyFilters);

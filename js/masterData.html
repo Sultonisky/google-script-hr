@@ -146,16 +146,19 @@
     });
   }
 
-  function mdOpenAddModal() {
-    MD.editingId = null;
-    document.getElementById('mdItemModalLabel').textContent = 'Tambah Item';
-    document.getElementById('mdItemId').value = '';
-    document.getElementById('mdItemCategory').value = MD.currentCategory || '';
-    document.getElementById('mdItemName').value = '';
-    document.getElementById('mdItemDesc').value = '';
-    document.getElementById('mdItemOrder').value = MD.filteredItems.length + 1;
-    mdOpenModal();
-  }
+  // ============ ADD (CREATE) DINONAKTIFKAN SEMENTARA ============
+  // Fungsi tambah item tidak aktif untuk saat ini (backup: aktifkan kembali
+  // dengan menghapus komentar pada blok di bawah ini).
+  // function mdOpenAddModal() {
+  //   MD.editingId = null;
+  //   document.getElementById('mdItemModalLabel').textContent = 'Tambah Item';
+  //   document.getElementById('mdItemId').value = '';
+  //   document.getElementById('mdItemCategory').value = MD.currentCategory || '';
+  //   document.getElementById('mdItemName').value = '';
+  //   document.getElementById('mdItemDesc').value = '';
+  //   document.getElementById('mdItemOrder').value = MD.filteredItems.length + 1;
+  //   mdOpenModal();
+  // }
 
   function mdEditItem(id) {
     var item = MD.allItems.find(function(x) { return x.id === id; });
@@ -203,24 +206,28 @@
         })
         .updateMasterDataItem(MD.editingId, { name: name, description: desc, order: order });
     } else {
-      google.script.run
-        .withSuccessHandler(function(r) {
-          btn.disabled = false;
-          btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan';
-          if (r && r.success) {
-            mdShowToast(r.message, 'success');
-            MD.modal.hide();
-            mdLoadAll();
-          } else {
-            mdShowToast(r ? r.message : 'Gagal menyimpan.', 'danger');
-          }
-        })
-        .withFailureHandler(function(err) {
-          btn.disabled = false;
-          btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan';
-          mdShowToast('Error: ' + err.message, 'danger');
-        })
-        .addMasterDataItem(category, name, desc);
+      // ============ ADD (CREATE) DINONAKTIFKAN SEMENTARA ============
+      // Path penyimpanan item baru tidak aktif (backup: kembalikan dengan
+      // menghapus komentar pada blok di bawah ini).
+      // google.script.run
+      //   .withSuccessHandler(function(r) {
+      //     btn.disabled = false;
+      //     btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan';
+      //     if (r && r.success) {
+      //       mdShowToast(r.message, 'success');
+      //       MD.modal.hide();
+      //       mdLoadAll();
+      //     } else {
+      //       mdShowToast(r ? r.message : 'Gagal menyimpan.', 'danger');
+      //     }
+      //   })
+      //   .withFailureHandler(function(err) {
+      //     btn.disabled = false;
+      //     btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan';
+      //     mdShowToast('Error: ' + err.message, 'danger');
+      //   })
+      //   .addMasterDataItem(category, name, desc);
+      mdShowToast('Fungsi tambah item sedang dinonaktifkan.', 'warning');
     }
   }
 
@@ -258,7 +265,9 @@
     if (!MD_initialized) {
       MD_initialized = true;
       MD.modal = new bootstrap.Modal(document.getElementById('mdItemModal'));
-      document.getElementById('btnMdAdd').addEventListener('click', mdOpenAddModal);
+      // TOMBOL TAMBAH ITEM DINONAKTIFKAN SEMENTARA — listener dihapus agar
+      // create tidak bisa dipanggil dari UI (backup: kembalikan komentar ini).
+      // document.getElementById('btnMdAdd').addEventListener('click', mdOpenAddModal);
       document.getElementById('btnMdSaveItem').addEventListener('click', mdSaveItem);
       document.getElementById('mdSearch').addEventListener('input', mdRenderTable);
     }
