@@ -6,18 +6,10 @@
 
   var recInitialized = false;
 
-  // ---- Stat cards (Recruitment page mini-stats) ----
+  // ---- Stat card (Recruitment page: kandidat baru/pending) ----
   function updateRecStats(data) {
-    var el = function(id) { return document.getElementById(id); };
-    var positions = {}, cities = {};
-    data.forEach(function(r) {
-      if (r.positionApplied) positions[r.positionApplied] = 1;
-      if (r.city) cities[r.city] = 1;
-    });
-    if (el('recStatTotal'))     el('recStatTotal').innerText     = data.length;
-    if (el('recStatPending'))   el('recStatPending').innerText   = data.filter(function(r){ return (r.status||'Pending').toLowerCase() === 'pending'; }).length;
-    if (el('recStatPositions')) el('recStatPositions').innerText = Object.keys(positions).length;
-    if (el('recStatCities'))    el('recStatCities').innerText    = Object.keys(cities).length;
+    var el = document.getElementById('recStatPending');
+    if (el) el.innerText = data.filter(function(r){ return (r.status||'Pending').toLowerCase() === 'pending'; }).length;
   }
 
   // ---- Init (no-op — event listeners already set by initFilters/initBulkActions) ----
