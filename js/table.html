@@ -229,7 +229,6 @@
     });
     var elems = {
       statTotal:        data.length,
-      statPending:      ct(function(r){ return (r.status||'Pending').toLowerCase() === 'pending'; }),
       recStatTotal:     data.length,
       recStatPending:   ct(function(r){ return (r.status||'Pending').toLowerCase() === 'pending'; }),
       recStatPositions: Object.keys(positions).length,
