@@ -56,7 +56,7 @@ All existing field IDs and name attributes remain unchanged from the original im
 ### Migration Steps (When Ready)
 
 1. Open the Google Spreadsheet
-2. Go to `raw_kandidat` sheet
+2. Go to `data_kandidat` sheet
 3. Add column `Provinsi` after `Kota`
 4. Add column `Kecamatan` after `Provinsi`
 5. Update `SHEET_HEADERS` in `Kode.gs` to include new columns

@@ -6,15 +6,15 @@
 // ============================================================
 
 // ============= SHEET NAMES =============
-var SHEET_NAME = "raw_kandidat";
-var DASHBOARD_SHEET_NAME = "raw_kandidat";
+var SHEET_NAME = "data_kandidat";
+var DASHBOARD_SHEET_NAME = "data_kandidat";
 var EMPLOYEE_SHEET_NAME = "Employee";
 var AUDIT_SHEET_NAME = "Audit_Log";
 var USERS_SHEET_NAME = "Users";
 var OFFBOARDING_SHEET_NAME = "Offboarding";
 var MASTER_DATA_SHEET = "master_data"; // Deprecated: master data now derived from Employee sheet
 
-// Sheet-sheet status kandidat (independen dari raw_kandidat)
+// Sheet-sheet status kandidat (independen dari data_kandidat)
 var HOLD_SHEET_NAME = "kandidat_hold";
 var ACCEPTED_SHEET_NAME = "kandidat_accepted";
 var BLACKLIST_SHEET_NAME = "kandidat_blacklist";
@@ -25,7 +25,7 @@ var ID_COLUMN_NAME = "Recruitment ID";
 var NOTES_COLUMN_NAME = "HR Notes";
 
 // ============================================================
-// SHEET: raw_kandidat
+// SHEET: data_kandidat
 // Purpose: Candidate registration database
 // ============================================================
 var SHEET_HEADERS = [

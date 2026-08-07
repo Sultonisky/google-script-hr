@@ -135,7 +135,7 @@ e:/Project/HRIS/
 - **Registration**: `?type=kandidat` (default) - Candidate registration form
 
 ### Spreadsheet Sheets
-1. `raw_kandidat` - Candidate data (25 core + 6 extra columns)
+1. `data_kandidat` - Candidate data (25 core + 6 extra columns)
 2. `Employee` - Master employee data (10 columns)
 3. `Audit_Log` - Activity tracking (6 columns)
 

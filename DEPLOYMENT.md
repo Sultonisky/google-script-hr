@@ -209,7 +209,7 @@ The application expects these sheets (auto-created on first run):
 
 | Sheet Name | Purpose | Columns |
 |------------|---------|---------|
-| `raw_kandidat` | Candidate data | 31 columns |
+| `data_kandidat` | Candidate data | 31 columns |
 | `Employee` | Employee master | 10 columns |
 | `Audit_Log` | Activity tracking | 6 columns |
 | `settings` | App settings | Key-Value pairs |

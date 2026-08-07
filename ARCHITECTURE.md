@@ -268,7 +268,7 @@ flowchart TD
     end
 
     subgraph "Spreadsheet"
-        RK[(raw_kandidat)]
+        RK[(data_kandidat)]
         EMP[(Employee)]
         AL[(Audit_Log)]
     end
@@ -396,7 +396,7 @@ flowchart TD
 | 25 | Outsource Vendor | text | Empty if not outsource |
 | 26 | Contract Number | text | Vendor contract number |
 | 27 | District | text | Kecamatan |
-| 28 | Recruitment ID | text | Link to raw_kandidat if from pipeline |
+| 28 | Recruitment ID | text | Link to data_kandidat if from pipeline |
 | 29 | Recruitment Source | text | |
 | 30 | HR Notes | text | |
 | 31 | Created By | text | |
@@ -455,12 +455,12 @@ Master data provides dynamic dropdown options for the HRIS, eliminating hardcode
 
 ```mermaid
 erDiagram
-    raw_kandidat ||--o| Employee : "Accept (Recruitment ID link)"
-    raw_kandidat ||--o{ Audit_Log : "Activity timeline"
-    Users ||--o{ raw_kandidat : "Created By"
+    data_kandidat ||--o| Employee : "Accept (Recruitment ID link)"
+    data_kandidat ||--o{ Audit_Log : "Activity timeline"
+    Users ||--o{ data_kandidat : "Created By"
     Users ||--o{ Employee : "Created By"
 
-    raw_kandidat {
+    data_kandidat {
         string recruitmentId PK "REC-YYYYMMDD-000001"
         string createdDate
         string fullName
@@ -567,7 +567,7 @@ All sheets are auto-created on first access via `getOrCreate*()` pattern:
 
 | Sheet | Created By | Trigger |
 |---|---|---|
-| raw_kandidat | `getOrCreateSheet_()` | First candidate save or dashboard load |
+| data_kandidat | `getOrCreateSheet_()` | First candidate save or dashboard load |
 | Employee | `getOrCreateEmployeeSheet_()` | First employee creation |
 | Audit_Log | `writeAuditLog_()` | First audit entry |
 | Users | `getUsersSheet_()` | First auth check |
@@ -602,7 +602,7 @@ flowchart TD
     URL -->|?page=dashboard| DASH[HR Dashboard<br/>requires login]
     
     GAS_EDITOR --> SHEETS[Google Spreadsheet]
-    SHEETS -->|Auto-create| S1[raw_kandidat]
+    SHEETS -->|Auto-create| S1[data_kandidat]
     SHEETS -->|Auto-create| S2[Employee]
     SHEETS -->|Auto-create| S3[Audit_Log]
     SHEETS -->|Auto-create| S4[Users]
