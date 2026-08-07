@@ -78,12 +78,16 @@
       if (vr) vr.style.display = isOutsource ? 'inline' : 'none';
     }
 
-    // Contract duration: required for Outsource & PKWT
+    // Contract duration & tanggal kontrak: required untuk Outsource & PKWT
     if (contractDurationSel) {
       contractDurationSel.required = (type === 'Outsource' || type === 'PKWT');
       var cr = document.getElementById('contractDurationRequired');
       if (cr) cr.style.display = (type === 'Outsource' || type === 'PKWT') ? 'inline' : 'none';
     }
+    var csEl = document.getElementById('contract_start');
+    var ceEl = document.getElementById('contract_end');
+    if (csEl) csEl.required = (type === 'Outsource' || type === 'PKWT');
+    if (ceEl) ceEl.required = (type === 'Outsource' || type === 'PKWT');
 
     // Contract date fields: show for time-limited contracts
     var csg = document.getElementById('contractStartGroup');
@@ -124,41 +128,122 @@
   }
 
   // ============================================================
-  // PROGRESS TRACKER
+  // PROGRESS & STRUCTURED VALIDATION
+  // Validasi dihitung per seksi. Checkbox persetujuan adalah
+  // LANGKAH TERAKHIR: hanya bisa dicentang setelah seluruh seksi
+  // lengkap. Tombol submit aktif hanya jika semua seksi lengkap
+  // DAN checkbox persetujuan dicentang.
   // ============================================================
-  var coreRequiredFields = [
-    'full_name','nik','birth_date','age','gender','marital_status',
-    'email','phone','province','city','address',
-    'company_entity','employee_type','position',
-    'employment_status','join_date','salary','salary_type','agreement'
+  var FORM_SECTIONS = [
+    { id:'sectionPersonal',   badgeId:'secBadgePersonal',   fields:['nik','full_name','birth_date','age','gender','marital_status','education'] },
+    { id:'sectionContact',    badgeId:'secBadgeContact',    fields:['email','phone','province','city','address'], district:true },
+    { id:'sectionEmployment', badgeId:'secBadgeEmployment', fields:['company_entity','employee_type','position','employment_status','join_date','salary','salary_type'], contract:true },
+    { id:'vendorSection',     badgeId:'secBadgeVendor',     fields:['outsource_vendor'], vendorOnly:true },
   ];
-  var TOTAL_FIELDS = coreRequiredFields.length + 1; // +1 district
+
+  function isVendorRequired(){
+    return employeeTypeSelect ? employeeTypeSelect.value === 'Outsource' : false;
+  }
+  function isContractRequired(){
+    var t = employeeTypeSelect ? employeeTypeSelect.value : '';
+    return t === 'Outsource' || t === 'PKWT';
+  }
+  function isDistrictValid(){
+    if (districtManualWrap && districtManualWrap.style.display !== 'none') {
+      return (districtManualInput.value || '').trim() !== '';
+    }
+    return !districtInput.disabled && (districtInput.value || '').trim() !== '';
+  }
+  function isFieldValid(el){
+    if (!el) return false;
+    if (el.type === 'checkbox') return !!el.checked;
+    var v = (el.value || '').trim();
+    if (v === '') return false;
+    if (el.checkValidity) return el.checkValidity();
+    return true;
+  }
+  function getSectionFieldIds(sec){
+    if (sec.vendorOnly && !isVendorRequired()) return [];
+    var ids = sec.fields.slice();
+    if (sec.district) ids.push('__district__');
+    if (sec.contract && isContractRequired()) {
+      ids = ids.concat(['contract_start','contract_end','contract_duration']);
+    }
+    return ids;
+  }
+  function isSectionComplete(sec){
+    var ids = getSectionFieldIds(sec);
+    for (var i = 0; i < ids.length; i++) {
+      var id = ids[i];
+      if (id === '__district__') { if (!isDistrictValid()) return false; continue; }
+      if (!isFieldValid(document.getElementById(id))) return false;
+    }
+    return true;
+  }
+  function countSection(sec){
+    var ids = getSectionFieldIds(sec);
+    var valid = 0;
+    for (var i = 0; i < ids.length; i++) {
+      var id = ids[i];
+      if (id === '__district__') { if (isDistrictValid()) valid++; continue; }
+      var el = document.getElementById(id);
+      if (el && isFieldValid(el)) valid++;
+    }
+    return { total: ids.length, valid: valid };
+  }
+  function setSectionBadge(sec, complete){
+    var b = document.getElementById(sec.badgeId);
+    if (!b) return;
+    b.className = 'section-status' + (complete ? ' done' : '');
+    b.innerHTML = complete
+      ? '<i class="bi bi-check-circle-fill"></i> Lengkap'
+      : '<i class="bi bi-hourglass-split"></i> Belum lengkap';
+  }
+  function updateFormState(){
+    var allComplete = true;
+    FORM_SECTIONS.forEach(function(sec){
+      var done = isSectionComplete(sec);
+      if (!done) allComplete = false;
+      setSectionBadge(sec, done);
+    });
+
+    // Checkbox persetujuan = langkah TERAKHIR
+    agreementCheckbox.disabled = !allComplete;
+    if (!allComplete) {
+      agreementCheckbox.checked = false;
+      agreementCheckbox.classList.remove('is-valid','is-invalid');
+    }
+    var hint = document.getElementById('agreementHint');
+    if (hint) hint.style.display = allComplete ? 'none' : 'block';
+
+    submitBtn.disabled = !(allComplete && agreementCheckbox.checked);
+  }
 
   var progressMessages = [
     {min:0,  text:'Mulai mengisi formulir...'},
     {min:25, text:'Awal yang bagus! \uD83C\uDF89'},
     {min:50, text:'Form sudah setengah selesai.'},
-    {min:75, text:'Hampir selesai.'},
+    {min:75, text:'Hampir selesai. Centang persetujuan di langkah terakhir.'},
     {min:100,text:'Semua data telah lengkap. Silakan kirim.'}
   ];
 
   function updateProgress(){
-    var validCount = 0;
-    coreRequiredFields.forEach(function(id){
-      var el = document.getElementById(id);
-      if(!el) return;
-      if(el.type === 'checkbox'){ if(el.checked) validCount++; }
-      else if(el.value && el.value.trim() !== ''){ if(el.checkValidity && el.checkValidity()) validCount++; }
+    var total = 0, valid = 0;
+    FORM_SECTIONS.forEach(function(sec){
+      var c = countSection(sec);
+      total += c.total; valid += c.valid;
     });
-    var districtOk = (!districtInput.disabled && districtInput.value && districtInput.value.trim() !== '') ||
-      (districtManualWrap && districtManualWrap.style.display !== 'none' && districtManualInput && districtManualInput.value.trim() !== '');
-    if(districtOk) validCount++;
-    var percent = Math.min(100, Math.round((validCount / TOTAL_FIELDS) * 100));
+    total += 1; // langkah terakhir: checkbox persetujuan
+    if (agreementCheckbox.checked) valid += 1;
+
+    var percent = total === 0 ? 0 : Math.min(100, Math.round((valid / total) * 100));
     progressFill.style.width = percent + '%';
-    progressCount.textContent = validCount + ' dari ' + TOTAL_FIELDS + ' data telah lengkap';
+    progressCount.textContent = valid + ' dari ' + total + ' data telah lengkap';
     var msg = progressMessages[0].text;
-    for(var i = progressMessages.length-1; i >= 0; i--){ if(percent >= progressMessages[i].min){ msg = progressMessages[i].text; break; } }
+    for (var i = progressMessages.length-1; i >= 0; i--) { if (percent >= progressMessages[i].min) { msg = progressMessages[i].text; break; } }
     progressMessage.textContent = msg;
+
+    updateFormState();
   }
 
   // ============================================================
@@ -372,7 +457,6 @@
   // AGREEMENT
   // ============================================================
   agreementCheckbox.addEventListener('change',function(){
-    submitBtn.disabled=!this.checked;
     if(this.checked){ agreementError.style.display='none'; this.classList.add('is-valid'); this.classList.remove('is-invalid'); }
     else { this.classList.remove('is-valid'); }
     updateProgress();

@@ -5,10 +5,11 @@
       <form id="formPendaftaran" novalidate>
 
         <!-- SECTION 1: PERSONAL INFORMATION -->
-        <div class="form-section">
+        <div class="form-section" id="sectionPersonal">
           <div class="form-section-header">
             <i class="bi bi-person-fill"></i>
             <div><h5>Informasi Pribadi</h5><p>Data identitas dan informasi personal Anda</p></div>
+            <span class="section-status" id="secBadgePersonal"><i class="bi bi-hourglass-split"></i> Belum lengkap</span>
           </div>
           <div class="form-section-body">
             <div class="row g-3">
@@ -53,10 +54,11 @@
         </div>
 
         <!-- SECTION 2: CONTACT INFORMATION -->
-        <div class="form-section">
+        <div class="form-section" id="sectionContact">
           <div class="form-section-header">
             <i class="bi bi-envelope-fill"></i>
             <div><h5>Informasi Kontak</h5><p>Data komunikasi dan alamat Anda</p></div>
+            <span class="section-status" id="secBadgeContact"><i class="bi bi-hourglass-split"></i> Belum lengkap</span>
           </div>
           <div class="form-section-body">
             <div class="row g-3">
@@ -109,10 +111,11 @@
         </div>
 
         <!-- SECTION 3: EMPLOYMENT INFORMATION -->
-        <div class="form-section">
+        <div class="form-section" id="sectionEmployment">
           <div class="form-section-header">
             <i class="bi bi-briefcase-fill"></i>
             <div><h5>Informasi Pekerjaan</h5><p>Pengalaman dan ekspektasi karir Anda</p></div>
+            <span class="section-status" id="secBadgeEmployment"><i class="bi bi-hourglass-split"></i> Belum lengkap</span>
           </div>
           <div class="form-section-body">
             <div class="row g-3">
@@ -178,12 +181,15 @@
         <!-- DECLARATION -->
         <div class="agreement-section">
           <div class="agreement-checkbox">
-            <input class="form-check-input" type="checkbox" id="agreement" name="agreement" required>
+            <input class="form-check-input" type="checkbox" id="agreement" name="agreement" required disabled>
             <label class="form-check-label" for="agreement">
               Saya menyatakan bahwa seluruh data yang saya isi adalah benar dan dapat dipertanggungjawabkan. Saya bersedia mengikuti seluruh proses rekrutmen PT Mahakarya Sukses Indonesia apabila memenuhi kualifikasi.
             </label>
           </div>
           <div class="invalid-feedback" id="agreementError">Anda harus menyetujui pernyataan di atas untuk melanjutkan.</div>
+          <div class="form-text" id="agreementHint" style="display:none;">
+            <i class="bi bi-info-circle-fill"></i> Lengkapi seluruh data pada semua bagian terlebih dahulu untuk mengaktifkan persetujuan.
+          </div>
           <div class="agreement-info">
             <ul>
               <li>Data hanya digunakan untuk kebutuhan proses rekrutmen PT Mahakarya Sukses Indonesia.</li>
