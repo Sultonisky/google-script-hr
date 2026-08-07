@@ -1,6 +1,6 @@
-# DEPLOYMENT.md — Deployment Guide
+﻿# DEPLOYMENT.md — Deployment Guide
 
-Complete guide for deploying and managing the Mahakarya HRIS application.
+Complete guide for deploying and managing the MITO HRIS application.
 
 ---
 
@@ -67,7 +67,7 @@ cd HRIS
 
 Option A: Create new via clasp
 ```bash
-clasp create --title "Mahakarya HRIS" --type sheets
+clasp create --title "MITO HRIS" --type sheets
 # This creates .clasp.json with the script ID
 ```
 
@@ -104,7 +104,7 @@ In the Apps Script editor:
 
 | Property | Value |
 |----------|-------|
-| `APP_NAME` | Mahakarya HRIS |
+| `APP_NAME` | MITO HRIS |
 | `VERSION` | 0.6.0 |
 | `TIMEZONE` | Asia/Jakarta |
 
@@ -113,7 +113,7 @@ In the Apps Script editor:
 1. In Apps Script editor, click **Deploy** > **New deployment**
 2. Select type: **Web app**
 3. Configure:
-   - **Description**: `Mahakarya HRIS v0.6.0`
+   - **Description**: `MITO HRIS v0.6.0`
    - **Execute as**: `Me` (your account)
    - **Who has access**: `Anyone` (for public registration) or `Anyone with Google account` (for internal only)
 4. Click **Deploy**
@@ -197,7 +197,7 @@ Set these in Apps Script editor > Project Settings > Script Properties:
 
 | Property | Description | Example |
 |----------|-------------|---------|
-| `APP_NAME` | Application name | `Mahakarya HRIS` |
+| `APP_NAME` | Application name | `MITO HRIS` |
 | `VERSION` | Current version | `0.6.0` |
 | `TIMEZONE` | Default timezone | `Asia/Jakarta` |
 | `COUNTER_KEY` | Daily counter prefix | `REC` |

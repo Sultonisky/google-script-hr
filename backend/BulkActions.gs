@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // backend/BulkActions.gs — BULK UPDATE STATUS & BULK DELETE
 // ============================================================
 
@@ -88,7 +88,7 @@ function bulkMoveOne_(recruitmentId, newStatus) {
       empRow[EMPLOYEE_COL['Join Date'] - 1]        = Utilities.formatDate(now, 'GMT+7', 'yyyy-MM-dd');
       empRow[EMPLOYEE_COL['Status'] - 1]           = 'Active';
       empRow[EMPLOYEE_COL['Created At'] - 1]       = nowStr;
-      empRow[EMPLOYEE_COL['Company Entity'] - 1]   = 'PT Mahakarya Sukses Indonesia';
+      empRow[EMPLOYEE_COL['Company Entity'] - 1]   = 'MITO Group';
       empRow[EMPLOYEE_COL['Employee Type'] - 1]    = 'PKWTT';
       empRow[EMPLOYEE_COL['NIK'] - 1]              = found.values[found.colIndex['NIK']];
       empRow[EMPLOYEE_COL['Employment Status'] - 1] = 'Active';
@@ -193,3 +193,4 @@ function bulkDeleteCandidates(recruitmentIds) {
     lock.releaseLock();
   }
 }
+

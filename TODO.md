@@ -1,6 +1,6 @@
-# TODO.md — Task Tracking
+﻿# TODO.md — Task Tracking
 
-**Project**: Mahakarya HRIS - Applicant Tracking System  
+**Project**: MITO HRIS - Applicant Tracking System  
 **Version**: 1.0.0  
 **Last Updated**: 2026-07-30
 

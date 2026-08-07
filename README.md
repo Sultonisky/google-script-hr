@@ -1,4 +1,4 @@
-# Mahakarya HRIS — Applicant Tracking System (ATS)
+﻿# MITO HRIS — Applicant Tracking System (ATS)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Google Apps Script](https://img.shields.io/badge/Google%20Apps%20Script-000000?style=flat&logo=googleappsscript)](https://script.google.com/)
@@ -268,3 +268,4 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 ---
 
 *Built with ❤️ using Google Apps Script and Bootstrap 5*
+

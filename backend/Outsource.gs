@@ -79,7 +79,7 @@ function simpanDataOutsource(formObject) {
       newRow[EMPLOYEE_COL["Notes"] - 1] = "";
       newRow[EMPLOYEE_COL["Created At"] - 1] = createdAt;
       newRow[EMPLOYEE_COL["Company Entity"] - 1] =
-        formObject.company_entity || "PT Mahakarya Sukses Indonesia";
+        formObject.company_entity || "MITO Group";
       newRow[EMPLOYEE_COL["Employee Type"] - 1] = "Outsource";
       newRow[EMPLOYEE_COL["NIK"] - 1] = "'" + formObject.nik;
       newRow[EMPLOYEE_COL["Birth Date"] - 1] = formObject.birth_date;

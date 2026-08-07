@@ -383,6 +383,12 @@ var DEFAULT_MASTER_DATA = {
     "Contract Finished",
   ],
   gender: ["Male", "Female"],
+  company_entity: [
+    "PT Mahakarya Sukses Indonesia",
+    "PT Stein Perkasa Internasional",
+    "PT Perkasa Injeksi Indonesia",
+    "PT Mitra Elektro Perkasa",
+  ],
   current_employment_status: [
     "Employed Full Time",
     "Employed Contract",

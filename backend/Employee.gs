@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // backend/Employee.gs — MASTER DATA KARYAWAN
 // Schema: defined in EMPLOYEE_HEADERS (Config.gs)
 // Column access: use EMPLOYEE_COL[headerName] — NEVER hardcoded indexes
@@ -109,7 +109,7 @@ function addEmployee(empData) {
     newRow[EMPLOYEE_COL['Status'] - 1]               = empData.status          || 'Active';
     newRow[EMPLOYEE_COL['Notes'] - 1]                = empData.notes           || '';
     newRow[EMPLOYEE_COL['Created At'] - 1]           = createdAt;
-    newRow[EMPLOYEE_COL['Company Entity'] - 1]       = empData.companyEntity   || 'PT Mahakarya Sukses Indonesia';
+    newRow[EMPLOYEE_COL['Company Entity'] - 1]       = empData.companyEntity   || 'MITO Group';
     newRow[EMPLOYEE_COL['Employee Type'] - 1]        = empData.employeeType    || '';
     newRow[EMPLOYEE_COL['NIK'] - 1]                  = empData.nik             || '';
     newRow[EMPLOYEE_COL['Birth Date'] - 1]           = empData.birthDate       || '';

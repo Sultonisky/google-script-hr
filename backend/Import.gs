@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // backend/Import.gs — BULK IMPORT KARYAWAN (Master Data)
 // Validates rows and inserts into the Employee sheet.
 // ============================================================
@@ -100,7 +100,7 @@ function importEmployees(rows) {
       newRow[EMPLOYEE_COL["Status"] - 1]               = String(row.status || "Active").trim();
       newRow[EMPLOYEE_COL["Notes"] - 1]                = String(row.notes || "").trim();
       newRow[EMPLOYEE_COL["Created At"] - 1]           = nowStr;
-      newRow[EMPLOYEE_COL["Company Entity"] - 1]       = String(row.companyEntity || "PT Mahakarya Sukses Indonesia").trim();
+      newRow[EMPLOYEE_COL["Company Entity"] - 1]       = String(row.companyEntity || "MITO Group").trim();
       newRow[EMPLOYEE_COL["Employee Type"] - 1]        = String(row.employeeType || "").trim();
       newRow[EMPLOYEE_COL["NIK"] - 1]                  = row.nik ? "'" + String(row.nik).trim() : "";
       newRow[EMPLOYEE_COL["Birth Date"] - 1]           = String(row.birthDate || "").trim();
@@ -166,3 +166,4 @@ function importEmployees(rows) {
     lock.releaseLock();
   }
 }
+

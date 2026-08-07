@@ -1,6 +1,6 @@
-# ARCHITECTURE.md — System Architecture
+﻿# ARCHITECTURE.md — System Architecture
 
-**Project**: Mahakarya HRIS — Applicant Tracking System (ATS)  
+**Project**: MITO HRIS — Applicant Tracking System (ATS)  
 **Platform**: Google Apps Script + Google Sheets  
 **Version**: v0.6.0  
 **Last Updated**: 2026-08-03
@@ -688,7 +688,7 @@ graph TD
 
 ## Summary
 
-Mahakarya HRIS follows a **modular monolith** architecture within Google Apps Script's constraints:
+MITO HRIS follows a **modular monolith** architecture within Google Apps Script's constraints:
 
 - **Single entry point** (`Kode.gs`) handles all routing
 - **Separate backend modules** (`backend/*.gs`) handle domain-specific business logic

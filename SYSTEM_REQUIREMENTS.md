@@ -1,6 +1,6 @@
-# SYSTEM_REQUIREMENTS.md — System Requirements
+﻿# SYSTEM_REQUIREMENTS.md — System Requirements
 
-Complete list of system requirements for developing, deploying, and using Mahakarya HRIS.
+Complete list of system requirements for developing, deploying, and using MITO HRIS.
 
 ---
 

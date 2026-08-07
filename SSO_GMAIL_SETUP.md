@@ -1,4 +1,4 @@
-# Tutorial SSO Gmail untuk Mahakarya HRIS
+﻿# Tutorial SSO Gmail untuk MITO HRIS
 
 Dokumen ini mengikuti implementasi yang ada di project ini:
 
@@ -97,7 +97,7 @@ Masuk ke `Google Cloud Console > APIs & Services > Credentials`:
 1. Klik `Create Credentials`
 2. Pilih `OAuth client ID`
 3. Application type: `Web application`
-4. Isi nama client, misalnya `Mahakarya HRIS Web Login`
+4. Isi nama client, misalnya `MITO HRIS Web Login`
 
 ### E. Isi Authorized JavaScript origins
 
@@ -373,4 +373,5 @@ Status implementasi project setelah perbaikan:
 - auto-create pending user saat login Google: aktif
 - redirect login ke dashboard dengan bootstrap session token: aktif
 - route protection dashboard/user management: aktif
+
 

@@ -1,6 +1,6 @@
-# CONTRIBUTING.md — Developer Guide
+﻿# CONTRIBUTING.md — Developer Guide
 
-**Project**: Mahakarya HRIS  
+**Project**: MITO HRIS  
 **Version**: v0.6.0  
 **Last Updated**: 2026-08-03
 
@@ -234,7 +234,7 @@ In `Kode.gs`, add a new route:
 ```javascript
 if (page === 'new-page') {
   return HtmlService.createTemplateFromFile('views/NewPage').evaluate()
-      .setTitle('New Page — Mahakarya HRIS')
+      .setTitle('New Page — MITO HRIS')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
       .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }

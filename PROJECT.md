@@ -1,10 +1,10 @@
-# PROJECT.md — Technical Documentation
+﻿# PROJECT.md — Technical Documentation
 
 ## Project Information
 
-**Project Name**: Mahakarya HRIS — Applicant Tracking System (ATS)  
+**Project Name**: MITO HRIS — Applicant Tracking System (ATS)  
 **Version**: 1.0.0  
-**Company**: Mahakarya Sukses Indonesia  
+**Company**: MITO Group  
 **Created**: 2026-07-30  
 **Purpose**: Recruitment management and HR dashboard for tracking candidates from application to employee onboarding
 
