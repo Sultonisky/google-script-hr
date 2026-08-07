@@ -216,7 +216,7 @@ function holdCandidate(recruitmentId, reason, followUpDate, hrNotes) {
     var newRow = buildStatusRow_(found, HOLD_HEADERS, nowStr, user);
     holdSheet.appendRow(newRow);
 
-    // Hapus dari raw_kandidat
+    // Hapus dari data_kandidat
     sheet.deleteRow(found.rowNumber);
 
     writeAuditLog_(recruitmentId, 'Hold', 'Status', oldStatus, 'Hold (' + (reason || '-') + ')');
@@ -258,7 +258,7 @@ function blacklistCandidate(recruitmentId, reason, hrNotes) {
     var newRow  = buildStatusRow_(found, BLACKLIST_HEADERS, nowStr, user);
     blSheet.appendRow(newRow);
 
-    // Hapus dari raw_kandidat
+    // Hapus dari data_kandidat
     sheet.deleteRow(found.rowNumber);
 
     writeAuditLog_(recruitmentId, 'Blacklist', 'Status', oldStatus, 'Blacklist (' + (reason || '-') + ')');
@@ -300,7 +300,7 @@ function acceptCandidateToEmployee(recruitmentId, hrNotes) {
     var accRow   = buildStatusRow_(found, ACCEPTED_HEADERS, nowStr, user);
     accSheet.appendRow(accRow);
 
-    // Hapus dari raw_kandidat
+    // Hapus dari data_kandidat
     sheet.deleteRow(found.rowNumber);
 
     // Buat record di sheet Employee (jika belum ada)

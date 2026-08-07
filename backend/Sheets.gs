@@ -4,7 +4,7 @@
 // No hardcoded headers or column indexes anywhere.
 // ============================================================
 
-// ============= raw_kandidat =============
+// ============= data_kandidat =============
 function getOrCreateSheet_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(SHEET_NAME);
