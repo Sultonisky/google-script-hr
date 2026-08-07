@@ -290,7 +290,7 @@
         document.getElementById('osfNama').value = os.fullName || '';
         document.getElementById('osfPosisi').value = os.position || '';
         document.getElementById('osfPerusahaan').value = os.outsourceVendor || os.vendorCompany || '';
-        document.getElementById('osfTglMasuk').value = os.joinDate || '';
+        document.getElementById('osfTglMasuk').value = toDateInputValue(os.joinDate);
         document.getElementById('osfStatus').value = (os.status || os.employmentStatus || 'Active');
         document.getElementById('osfNotes').value = os.hrNotes || os.notes || '';
       }

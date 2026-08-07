@@ -59,9 +59,15 @@ function _gdClearSheets_() {
     var s = ss.getSheetByName(name);
     if (!s) return;
     var lastRow = s.getLastRow();
-    // Perlu minimal 2 baris (header + 1 data) sebelum bisa deleteRows
-    if (lastRow > 1) {
-      s.deleteRows(2, lastRow - 1);
+    var maxRows = s.getMaxRows();
+    // Sheet hanya punya header atau kosong — tidak perlu apa-apa
+    if (lastRow <= 1) return;
+    // Hapus konten baris data (baris 2 ke bawah)
+    s.getRange(2, 1, lastRow - 1, s.getLastColumn()).clearContent();
+    // Hapus baris kosong yang tersisa jika ada sisa row kosong di bawah
+    // supaya sheet kembali ke ukuran minimal (header + 1 baris kosong = 2 baris)
+    if (maxRows > 2) {
+      s.deleteRows(3, maxRows - 2);
     }
   });
 }

@@ -69,6 +69,14 @@
     return new Date(Number(d[2]), Number(d[1]) - 1, Number(d[0]));
   }
 
+  // Konversi tampilan dd/MM/yyyy[ HH:mm] menjadi nilai yyyy-MM-dd untuk input type="date"
+  function toDateInputValue(dateStr) {
+    if (!dateStr) return '';
+    var p = String(dateStr).split(' ')[0].split('/');
+    if (p.length !== 3 || p[2].length !== 4) return '';
+    return p[2] + '-' + p[1] + '-' + p[0];
+  }
+
   function showToast(message, type) {
     type = type || 'success';
     var iconMap  = { success: 'bi-check-circle-fill', warning: 'bi-exclamation-triangle-fill', error: 'bi-x-circle-fill' };
