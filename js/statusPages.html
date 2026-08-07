@@ -54,45 +54,8 @@
     }
 
     function updateStats() {
-      var now = new Date();
-      var thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-      var monthCount = data.filter(function(r) {
-        var d = r.processedDate || r.createdDate || '';
-        return d.indexOf(thisMonth.split('-')[1] + '/' + thisMonth.split('-')[0]) !== -1 ||
-               (r.updatedAt || '').indexOf(thisMonth.split('-')[1] + '/' + thisMonth.split('-')[0]) !== -1;
-      }).length;
-
-      var positions = {};
-      data.forEach(function(r) { if (r.positionApplied) positions[r.positionApplied] = 1; });
-
       var totalEl = el('StatTotal');
-      var monthEl = el('StatMonth');
-      var posEl   = el('StatPositions');
       if (totalEl) animateCounter(totalEl, data.length);
-      if (monthEl) animateCounter(monthEl, monthCount);
-      if (posEl)   animateCounter(posEl, Object.keys(positions).length);
-
-      // Extra stat per status type
-      if (cfg.statusName === 'hold') {
-        var fuEl = document.getElementById('holdStatFollowUp');
-        if (fuEl) {
-          var fuCount = data.filter(function(r) { return r.holdFollowUpDate && r.holdFollowUpDate !== '-'; }).length;
-          animateCounter(fuEl, fuCount);
-        }
-      } else if (cfg.statusName === 'accepted') {
-        var empEl = document.getElementById('accStatEmployee');
-        if (empEl) {
-          var empCount = data.filter(function(r) { return r.employeeId && r.employeeId !== '-'; }).length;
-          animateCounter(empEl, empCount);
-        }
-      } else if (cfg.statusName === 'blacklist') {
-        var cityEl = document.getElementById('blStatCities');
-        if (cityEl) {
-          var cities = {};
-          data.forEach(function(r) { if (r.city) cities[r.city] = 1; });
-          animateCounter(cityEl, Object.keys(cities).length);
-        }
-      }
     }
 
     function applyFilter() {
