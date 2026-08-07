@@ -65,76 +65,76 @@
   </div>
 </div>
 
-<!-- Import CSV Modal -->
-<div class="modal fade" id="importModal" tabindex="-1" aria-hidden="true">
+<!-- Import CSV Modal — Master Data (Employee) -->
+<div class="modal fade" id="empImportModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content" style="border-radius:16px">
       <div class="modal-header">
-        <h6 class="modal-title mb-0"><i class="bi bi-upload me-2"></i>Import Kandidat dari CSV</h6>
+        <h6 class="modal-title mb-0"><i class="bi bi-upload me-2"></i>Import Karyawan dari CSV</h6>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <!-- Step 1: File upload -->
-        <div id="importStep1">
+        <div id="empImportStep1">
           <p style="font-size:13.5px;color:#555">
-            Upload file CSV dengan format kolom yang sesuai. Kolom <strong>wajib</strong>: Nama, Telepon. Kolom opsional akan diisi kosong jika tidak tersedia.
+            Upload file CSV dengan format kolom yang sesuai. Kolom <strong>wajib</strong>: Nama. Kolom opsional akan diisi kosong jika tidak tersedia.
           </p>
-          <div class="border rounded-3 p-4 text-center" id="importDropZone" style="cursor:pointer;border-style:dashed!important;transition:background .2s">
+          <div class="border rounded-3 p-4 text-center" id="empImportDropZone" style="cursor:pointer;border-style:dashed!important;transition:background .2s">
             <i class="bi bi-file-earmark-spreadsheet fs-1" style="color:var(--color-primary)"></i>
             <p class="mb-1 mt-2 fw-semibold" style="font-size:14px">Klik atau seret file CSV ke sini</p>
             <p class="mb-0 text-muted" style="font-size:12px">Format: .csv (maks 5MB, 500 baris)</p>
-            <input type="file" id="importFileInput" accept=".csv" class="d-none" />
+            <input type="file" id="empImportFileInput" accept=".csv" class="d-none" />
           </div>
-          <div class="mt-3" id="importFileInfo" style="display:none">
+          <div class="mt-3" id="empImportFileInfo" style="display:none">
             <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:#f0f4f8">
               <i class="bi bi-file-earmark-check fs-5" style="color:var(--color-success)"></i>
               <div>
-                <div class="fw-semibold" style="font-size:13px" id="importFileName">-</div>
-                <div class="text-muted" style="font-size:12px" id="importFileSize">-</div>
+                <div class="fw-semibold" style="font-size:13px" id="empImportFileName">-</div>
+                <div class="text-muted" style="font-size:12px" id="empImportFileSize">-</div>
               </div>
-              <button class="btn btn-sm btn-outline-danger ms-auto" id="btnImportClearFile"><i class="bi bi-x"></i></button>
+              <button class="btn btn-sm btn-outline-danger ms-auto" id="btnEmpImportClearFile"><i class="bi bi-x"></i></button>
             </div>
           </div>
           <div class="mt-2 text-muted" style="font-size:12px">
-            <strong>Kolom CSV yang dikenali:</strong> fullName, email, phone, gender, dateOfBirth, age, pob, address, city, province, district, village, postalCode, nik, education, major, institution, gpa, workExperience, positionApplied, expectedSalary, availableImmediately, currentEmploymentStatus, recruitmentSource, notes
+            <strong>Kolom CSV yang dikenali:</strong> fullName, nik, email, phone, position, department, division, branch, employeeType, joinDate, status, employmentStatus, gender, birthDate, age, maritalStatus, address, city, education, workExperience, salary, salaryType, contractStart, contractEnd, contractDuration, contractNumber, outsourceVendor, district, recruitmentSource, notes
           </div>
         </div>
 
         <!-- Step 2: Preview & validation -->
-        <div id="importStep2" style="display:none">
+        <div id="empImportStep2" style="display:none">
           <div class="d-flex justify-content-between align-items-center mb-2">
             <h6 class="mb-0" style="font-size:14px">Hasil Validasi</h6>
-            <span class="badge" style="font-size:12px" id="importSummaryBadge">-</span>
+            <span class="badge" style="font-size:12px" id="empImportSummaryBadge">-</span>
           </div>
           <div style="max-height:300px;overflow-y:auto">
             <table class="table table-sm" style="font-size:12px">
-              <thead><tr><th>#</th><th>Nama</th><th>Telepon</th><th>Status</th></tr></thead>
-              <tbody id="importPreviewBody"></tbody>
+              <thead><tr><th>#</th><th>Nama</th><th>NIK</th><th>Status</th></tr></thead>
+              <tbody id="empImportPreviewBody"></tbody>
             </table>
           </div>
         </div>
 
         <!-- Step 3: Result -->
-        <div id="importStep3" style="display:none">
+        <div id="empImportStep3" style="display:none">
           <div class="text-center py-4">
-            <i class="bi bi-check-circle-fill fs-1" style="color:var(--color-success)" id="importResultIcon"></i>
-            <h5 class="mt-3 mb-1" id="importResultTitle">Import Selesai</h5>
-            <p class="text-muted mb-0" style="font-size:14px" id="importResultMessage">-</p>
+            <i class="bi bi-check-circle-fill fs-1" style="color:var(--color-success)" id="empImportResultIcon"></i>
+            <h5 class="mt-3 mb-1" id="empImportResultTitle">Import Selesai</h5>
+            <p class="text-muted mb-0" style="font-size:14px" id="empImportResultMessage">-</p>
           </div>
-          <div id="importResultErrors" style="display:none" class="mt-3">
+          <div id="empImportResultErrors" style="display:none" class="mt-3">
             <div class="p-3 rounded" style="background:#fef2f2;font-size:13px">
               <strong class="text-danger">Error Details:</strong>
-              <ul class="mb-0 mt-1" id="importErrorList"></ul>
+              <ul class="mb-0 mt-1" id="empImportErrorList"></ul>
             </div>
           </div>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-outline-secondary" data-bs-dismiss="modal" id="btnImportClose">Tutup</button>
-        <button class="btn btn-outline-primary" id="btnImportBack" style="display:none"><i class="bi bi-arrow-left me-1"></i>Kembali</button>
-        <button class="btn text-white disabled" style="background:var(--color-primary)" id="btnImportStart" disabled>
-          <span id="btnImportStartText"><i class="bi bi-upload me-1"></i>Mulai Import</span>
-          <span id="btnImportLoading" style="display:none"><span class="spinner-border spinner-border-sm me-1"></span>Memproses...</span>
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+        <button class="btn btn-outline-primary" id="btnEmpImportBack" style="display:none"><i class="bi bi-arrow-left me-1"></i>Kembali</button>
+        <button class="btn text-white disabled" style="background:var(--color-primary)" id="btnEmpImportStart" disabled>
+          <span id="btnEmpImportStartText"><i class="bi bi-upload me-1"></i>Mulai Import</span>
+          <span id="btnEmpImportLoading" style="display:none"><span class="spinner-border spinner-border-sm me-1"></span>Memproses...</span>
         </button>
       </div>
     </div>

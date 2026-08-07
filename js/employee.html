@@ -421,23 +421,7 @@
     }
   }
 
-  // ============ EXPORT ============
-  function getEmpExportRows() {
-    return EMP.filtered.map(function (r) {
-      return {
-        'Employee ID': r.employeeId,
-        'Nama': r.fullName,
-        'NIK': r.nik,
-        'Email': r.email,
-        'Posisi': r.position,
-        'Departemen': r.department,
-        'Tipe Karyawan': r.employeeType,
-        'Status': r.status,
-        'Tanggal Masuk': r.joinDate,
-      };
-    });
-  }
-
+  // ============ INIT ============
   var empInitialized = false;
   function initEmployeePage() {
     if (empInitialized) return;
@@ -453,8 +437,6 @@
     var tf      = document.getElementById('empTypeFilter');
     var sf      = document.getElementById('empStatusFilter');
     var ss      = document.getElementById('empSortSelect');
-    var btnCsv  = document.getElementById('btnEmpExportCsv');
-    var btnXlsx = document.getElementById('btnEmpExportXlsx');
 
     // TOMBOL TAMBAH KARYAWAN DINONAKTIFKAN SEMENTARA — listener di-comment agar create tidak bisa dipanggil dari UI
     // if (btnAdd) btnAdd.addEventListener('click', empOpenAdd);
@@ -466,19 +448,8 @@
     if (sf) sf.addEventListener('change', empApplyFilters);
     if (ss) ss.addEventListener('change', empApplyFilters);
 
-    var today = new Date().toISOString().slice(0, 10);
-    if (btnCsv) btnCsv.addEventListener('click', function() {
-      var rows = getEmpExportRows();
-      if (!rows.length) { showToast('Tidak ada data.', 'warning'); return; }
-      exportCsv(rows, 'employee-' + today + '.csv');
-      showToast('Export CSV berhasil (' + rows.length + ' data).', 'success');
-    });
-    if (btnXlsx) btnXlsx.addEventListener('click', function() {
-      var rows = getEmpExportRows();
-      if (!rows.length) { showToast('Tidak ada data.', 'warning'); return; }
-      exportXlsx(rows, 'Karyawan', 'employee-' + today + '.xlsx');
-      showToast('Export Excel berhasil (' + rows.length + ' data).', 'success');
-    });
+    // Import CSV (Master Data)
+    if (typeof initEmpImportModal === 'function') initEmpImportModal();
   }
 
   // SPA navigation hook — dipanggil oleh js/dashboard.html empOnNavigate()

@@ -146,38 +146,6 @@
         closeFab();
         loadCandidates();
       });
-
-    var fabExport = document.getElementById("fabExport");
-    if (fabExport)
-      fabExport.addEventListener("click", function () {
-        closeFab();
-        var b = document.getElementById("btnExportXlsx");
-        if (b) b.click();
-      });
-
-    var fabPrint = document.getElementById("fabPrint");
-    if (fabPrint)
-      fabPrint.addEventListener("click", function () {
-        closeFab();
-        window.print();
-      });
-
-    var fabRecForm = document.getElementById("fabRecruitmentForm");
-    if (fabRecForm)
-      fabRecForm.addEventListener("click", function () {
-        closeFab();
-        window.open(getBaseUrl() + "?type=kandidat", "_blank");
-      });
-
-    var fabMasterEmp = document.getElementById("fabMasterEmployee");
-    if (fabMasterEmp)
-      fabMasterEmp.addEventListener("click", function () {
-        closeFab();
-        showToast(
-          'Buka sheet "Employee" di spreadsheet untuk melihat Master Data karyawan.',
-          "success",
-        );
-      });
   }
 
   // ============================================================

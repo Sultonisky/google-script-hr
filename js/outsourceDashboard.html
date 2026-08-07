@@ -242,8 +242,6 @@
     var btnRef  = document.getElementById('osBtnRefresh');
     var btnAdd  = document.getElementById('btnOutAdd');
     var btnSav  = document.getElementById('btnOsSave');
-    var btnCsv  = document.getElementById('osBtnExportCsv');
-    var btnXlsx = document.getElementById('osBtnExportXlsx');
     var btnReset = document.getElementById('osBtnResetFilter');
 
     if (si)      si.addEventListener('input', applyOsFilters);
@@ -263,20 +261,6 @@
     ['osStatusFilter','osVendorFilter','osSortSelect'].forEach(function(id) {
       var el = document.getElementById(id);
       if (el) el.addEventListener('change', applyOsFilters);
-    });
-
-    var today = new Date().toISOString().slice(0,10);
-    if (btnCsv) btnCsv.addEventListener('click', function() {
-      var rows = getOsExportRows();
-      if (!rows.length) { showToast('Tidak ada data.', 'warning'); return; }
-      exportCsv(rows, 'outsource-' + today + '.csv');
-      showToast('Export CSV berhasil (' + rows.length + ' data).', 'success');
-    });
-    if (btnXlsx) btnXlsx.addEventListener('click', function() {
-      var rows = getOsExportRows();
-      if (!rows.length) { showToast('Tidak ada data.', 'warning'); return; }
-      exportXlsx(rows, 'Outsource', 'outsource-' + today + '.xlsx');
-      showToast('Export Excel berhasil (' + rows.length + ' data).', 'success');
     });
   }
   function openOsForm(id) {
@@ -405,26 +389,6 @@
         showToast('Error: ' + err.message, 'danger');
       })
       .deleteOutsourceById(OS.detailId);
-  }
-
-  // ---- Export ----
-  function getOsExportRows() {
-    return OS.filtered.map(function(r) {
-      return {
-        'Employee ID': r.employeeId,
-        'Outsource ID': r.outsourceId,
-        'Nama': r.fullName,
-        'NIK': r.nik,
-        'Email': r.email,
-        'Posisi': r.position,
-        'Departemen': r.department,
-        'Vendor': r.outsourceVendor || r.vendorCompany,
-        'Tipe Karyawan': r.employeeType,
-        'Status': r.status || r.employmentStatus,
-        'Tanggal Join': r.joinDate,
-        'Tanggal Daftar': r.createdDate,
-      };
-    });
   }
 
   // SPA navigation hook — called by router when entering pageOutsource
