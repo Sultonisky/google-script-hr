@@ -1,43 +1,45 @@
 <script>
   // ============================================================
-  // js/import.html — CSV IMPORT LOGIC
+  // js/import.html — CSV IMPORT LOGIC (Master Data / Employee)
   // Depends on: helpers.html (showToast)
   // ============================================================
 
-  var importFile = null;
-  var importRows = [];
+  var empImportFile = null;
+  var empImportRows = [];
 
-  function openImportModal() {
-    importFile = null;
-    importRows = [];
-    resetImportSteps();
-    var m = new bootstrap.Modal(document.getElementById('importModal'));
+  function openEmpImportModal() {
+    var modalEl = document.getElementById('empImportModal');
+    if (!modalEl) return;
+    empImportFile = null;
+    empImportRows = [];
+    resetEmpImportSteps();
+    var m = bootstrap.Modal.getOrCreateInstance(modalEl);
     m.show();
   }
 
-  function resetImportSteps() {
-    document.getElementById('importStep1').style.display = '';
-    document.getElementById('importStep2').style.display = 'none';
-    document.getElementById('importStep3').style.display = 'none';
-    document.getElementById('importFileInfo').style.display = 'none';
-    document.getElementById('importDropZone').style.display = '';
-    document.getElementById('btnImportStart').classList.add('disabled');
-    document.getElementById('btnImportStart').disabled = true;
-    document.getElementById('btnImportStartText').style.display = '';
-    document.getElementById('btnImportLoading').style.display = 'none';
-    document.getElementById('btnImportBack').style.display = 'none';
-    document.getElementById('importErrorList').innerHTML = '';
-    document.getElementById('importResultErrors').style.display = 'none';
-    document.getElementById('importPreviewBody').innerHTML = '';
-    document.getElementById('importSummaryBadge').textContent = '-';
+  function resetEmpImportSteps() {
+    document.getElementById('empImportStep1').style.display = '';
+    document.getElementById('empImportStep2').style.display = 'none';
+    document.getElementById('empImportStep3').style.display = 'none';
+    document.getElementById('empImportFileInfo').style.display = 'none';
+    document.getElementById('empImportDropZone').style.display = '';
+    document.getElementById('btnEmpImportStart').classList.add('disabled');
+    document.getElementById('btnEmpImportStart').disabled = true;
+    document.getElementById('btnEmpImportStartText').style.display = '';
+    document.getElementById('btnEmpImportLoading').style.display = 'none';
+    document.getElementById('btnEmpImportBack').style.display = 'none';
+    document.getElementById('empImportErrorList').innerHTML = '';
+    document.getElementById('empImportResultErrors').style.display = 'none';
+    document.getElementById('empImportPreviewBody').innerHTML = '';
+    document.getElementById('empImportSummaryBadge').textContent = '-';
   }
 
-  function initImportModal() {
-    var dropZone = document.getElementById('importDropZone');
-    var fileInput = document.getElementById('importFileInput');
-    var clearBtn = document.getElementById('btnImportClearFile');
-    var startBtn = document.getElementById('btnImportStart');
-    var backBtn = document.getElementById('btnImportBack');
+  function initEmpImportModal() {
+    var dropZone = document.getElementById('empImportDropZone');
+    var fileInput = document.getElementById('empImportFileInput');
+    var clearBtn = document.getElementById('btnEmpImportClearFile');
+    var startBtn = document.getElementById('btnEmpImportStart');
+    var backBtn = document.getElementById('btnEmpImportBack');
 
     if (dropZone && fileInput) {
       dropZone.addEventListener('click', function() { fileInput.click(); });
@@ -51,32 +53,32 @@
       dropZone.addEventListener('drop', function(e) {
         e.preventDefault();
         dropZone.style.background = '';
-        if (e.dataTransfer.files.length > 0) handleImportFile(e.dataTransfer.files[0]);
+        if (e.dataTransfer.files.length > 0) handleEmpImportFile(e.dataTransfer.files[0]);
       });
       fileInput.addEventListener('change', function() {
-        if (fileInput.files.length > 0) handleImportFile(fileInput.files[0]);
+        if (fileInput.files.length > 0) handleEmpImportFile(fileInput.files[0]);
       });
     }
 
     if (clearBtn) clearBtn.addEventListener('click', function() {
-      importFile = null;
-      importRows = [];
-      resetImportSteps();
+      empImportFile = null;
+      empImportRows = [];
+      resetEmpImportSteps();
       if (fileInput) fileInput.value = '';
     });
 
     if (startBtn) startBtn.addEventListener('click', function() {
-      if (importRows.length === 0) return;
-      runImport();
+      if (empImportRows.length === 0) return;
+      runEmpImport();
     });
 
     if (backBtn) backBtn.addEventListener('click', function() {
-      resetImportSteps();
-      if (importRows.length > 0) showImportPreview(importRows);
+      resetEmpImportSteps();
+      if (empImportRows.length > 0) showEmpImportPreview(empImportRows);
     });
   }
 
-  function handleImportFile(file) {
+  function handleEmpImportFile(file) {
     if (!file.name.toLowerCase().endsWith('.csv')) {
       showToast('Hanya file CSV yang didukung.', 'error');
       return;
@@ -85,66 +87,74 @@
       showToast('Ukuran file maksimal 5MB.', 'error');
       return;
     }
-    importFile = file;
+    empImportFile = file;
 
-    document.getElementById('importFileName').textContent = file.name;
-    document.getElementById('importFileSize').textContent = (file.size / 1024).toFixed(1) + ' KB';
-    document.getElementById('importFileInfo').style.display = '';
-    document.getElementById('importDropZone').style.display = 'none';
+    document.getElementById('empImportFileName').textContent = file.name;
+    document.getElementById('empImportFileSize').textContent = (file.size / 1024).toFixed(1) + ' KB';
+    document.getElementById('empImportFileInfo').style.display = '';
+    document.getElementById('empImportDropZone').style.display = 'none';
 
-    // Parse CSV
     var reader = new FileReader();
     reader.onload = function(e) {
       var text = e.target.result;
-      importRows = parseCSV(text);
+      empImportRows = parseEmpCSV(text);
 
-      if (importRows.length === 0) {
+      if (empImportRows.length === 0) {
         showToast('File CSV kosong atau format tidak sesuai.', 'error');
         return;
       }
-      if (importRows.length > 500) {
-        showToast('Maksimal 500 baris per import. File memiliki ' + importRows.length + ' baris.', 'error');
-        importRows = [];
+      if (empImportRows.length > 500) {
+        showToast('Maksimal 500 baris per import. File memiliki ' + empImportRows.length + ' baris.', 'error');
+        empImportRows = [];
         return;
       }
 
-      showImportPreview(importRows);
+      showEmpImportPreview(empImportRows);
     };
     reader.readAsText(file);
   }
 
-  function parseCSV(text) {
+  function parseEmpCSV(text) {
     var lines = text.split(/\r?\n/).filter(function(l) { return l.trim() !== ''; });
     if (lines.length < 2) return [];
 
-    var headers = lines[0].split(',').map(function(h) { return h.trim().replace(/^"|"$/g, ''); });
+    // Normalize header: trim, strip quotes, lowercase, remove spaces/underscores
+    function normHeader(h) {
+      return h.trim().replace(/^"|"$/g, '').toLowerCase().replace(/[\s_]/g, '');
+    }
 
-    // Map CSV headers to our field names
+    var headers = lines[0].split(',').map(normHeader);
+
     var fieldMap = {
-      'nama': 'fullName', 'fullname': 'fullName', 'full_name': 'fullName',
-      'email': 'email',
-      'telepon': 'phone', 'phone': 'phone', 'no_hp': 'phone', 'hp': 'phone', 'nomor_telepon': 'phone',
-      'gender': 'gender', 'jenis_kelamin': 'gender',
-      'tanggal_lahir': 'dateOfBirth', 'dateofbirth': 'dateOfBirth', 'date_of_birth': 'dateOfBirth', 'dob': 'dateOfBirth',
-      'usia': 'age', 'age': 'age',
-      'tempat_lahir': 'pob', 'pob': 'pob', 'place_of_birth': 'pob',
+      'nama': 'fullName', 'fullname': 'fullName', 'fullnamelengkap': 'fullName', 'namalengkap': 'fullName',
+      'nik': 'nik', 'nomorinduk': 'nik',
+      'email': 'email', 'emel': 'email',
+      'telepon': 'phone', 'phone': 'phone', 'nohp': 'phone', 'hp': 'phone', 'nomortelepon': 'phone',
+      'posisi': 'position', 'position': 'position', 'jabatan': 'position',
+      'departemen': 'department', 'department': 'department', 'dept': 'department',
+      'divisi': 'division', 'division': 'division',
+      'cabang': 'branch', 'branch': 'branch',
+      'tipekaryawan': 'employeeType', 'employeetype': 'employeeType', 'tipe': 'employeeType',
+      'tanggalmasuk': 'joinDate', 'joindate': 'joinDate', 'tglmasuk': 'joinDate',
+      'status': 'status',
+      'statuskerja': 'employmentStatus', 'employmentstatus': 'employmentStatus',
+      'gender': 'gender', 'jeniskelamin': 'gender',
+      'tanggallahir': 'birthDate', 'birthdate': 'birthDate', 'tgllahir': 'birthDate',
+      'usia': 'age', 'age': 'age', 'umur': 'age',
+      'statuspernikahan': 'maritalStatus', 'maritalstatus': 'maritalStatus',
       'alamat': 'address', 'address': 'address',
-      'kota': 'city', 'city': 'city', 'kota_asal': 'city',
-      'provinsi': 'province', 'province': 'province',
-      'kecamatan': 'district', 'district': 'district',
-      'kelurahan': 'village', 'village': 'village',
-      'kode_pos': 'postalCode', 'postalCode': 'postalCode', 'postal_code': 'postalCode',
-      'nik': 'nik',
+      'kota': 'city', 'city': 'city',
       'pendidikan': 'education', 'education': 'education',
-      'jurusan': 'major', 'major': 'major', 'specialization': 'major',
-      'institusi': 'institution', 'institution': 'institution', 'universitas': 'institution',
-      'ipk': 'gpa', 'gpa': 'gpa',
-      'pengalaman_kerja': 'workExperience', 'workExperience': 'workExperience', 'work_experience': 'workExperience',
-      'posisi': 'positionApplied', 'positionApplied': 'positionApplied', 'position_applied': 'positionApplied',
-      'gaji_harapan': 'expectedSalary', 'expectedSalary': 'expectedSalary', 'expected_salary': 'expectedSalary',
-      'langsung_bekerja': 'availableImmediately', 'availableImmediately': 'availableImmediately', 'available_immediately': 'availableImmediately',
-      'status_kerja': 'currentEmploymentStatus', 'currentEmploymentStatus': 'currentEmploymentStatus', 'current_employment_status': 'currentEmploymentStatus',
-      'sumber': 'recruitmentSource', 'recruitmentSource': 'recruitmentSource', 'recruitment_source': 'recruitmentSource',
+      'pengalamankerja': 'workExperience', 'workexperience': 'workExperience', 'pengalaman': 'workExperience',
+      'gaji': 'salary', 'salary': 'salary', 'upah': 'salary',
+      'tipegaji': 'salaryType', 'salarytype': 'salaryType',
+      'kontrakmulai': 'contractStart', 'contractstart': 'contractStart',
+      'kontrakberakhir': 'contractEnd', 'contractend': 'contractEnd',
+      'durasikontrak': 'contractDuration', 'contractduration': 'contractDuration',
+      'nokontrak': 'contractNumber', 'contractnumber': 'contractNumber',
+      'vendor': 'outsourceVendor', 'outsourcevendor': 'outsourceVendor',
+      'kecamatan': 'district', 'district': 'district',
+      'sumber': 'recruitmentSource', 'recruitmentsource': 'recruitmentSource',
       'catatan': 'notes', 'notes': 'notes'
     };
 
@@ -153,7 +163,7 @@
       var vals = lines[i].split(',').map(function(v) { return v.trim().replace(/^"|"$/g, ''); });
       var row = {};
       for (var j = 0; j < headers.length; j++) {
-        var key = fieldMap[headers[j].toLowerCase()] || headers[j];
+        var key = fieldMap[headers[j]] || headers[j];
         row[key] = vals[j] || '';
       }
       rows.push(row);
@@ -161,57 +171,53 @@
     return rows;
   }
 
-  function showImportPreview(rows) {
-    // Client-side basic validation
-    document.getElementById('importStep1').style.display = 'none';
-    document.getElementById('importStep2').style.display = '';
+  function showEmpImportPreview(rows) {
+    document.getElementById('empImportStep1').style.display = 'none';
+    document.getElementById('empImportStep2').style.display = '';
 
-    var badge = document.getElementById('importSummaryBadge');
+    var badge = document.getElementById('empImportSummaryBadge');
     badge.textContent = rows.length + ' baris siap diimport';
     badge.className = 'badge bg-primary';
     badge.style.fontSize = '12px';
 
-    var tbody = document.getElementById('importPreviewBody');
+    var tbody = document.getElementById('empImportPreviewBody');
     tbody.innerHTML = rows.map(function(r, i) {
       var nameOk = r.fullName && r.fullName.trim() !== '';
-      var phoneOk = r.phone && r.phone.trim() !== '';
-      var statusClass = (nameOk && phoneOk) ? 'text-success' : 'text-danger';
-      var statusIcon = (nameOk && phoneOk) ? 'bi-check-circle-fill' : 'bi-x-circle-fill';
-      var statusText = (nameOk && phoneOk) ? 'OK' : (!nameOk ? 'Nama kosong' : 'Telepon kosong');
+      var statusClass = nameOk ? 'text-success' : 'text-danger';
+      var statusIcon = nameOk ? 'bi-check-circle-fill' : 'bi-x-circle-fill';
+      var statusText = nameOk ? 'OK' : 'Nama kosong';
       return '<tr>' +
         '<td>' + (i + 1) + '</td>' +
         '<td>' + escapeHtml(r.fullName || '-') + '</td>' +
-        '<td>' + escapeHtml(r.phone || '-') + '</td>' +
+        '<td>' + escapeHtml(r.nik || '-') + '</td>' +
         '<td><i class="bi ' + statusIcon + ' ' + statusClass + '"></i> <span class="' + statusClass + '">' + statusText + '</span></td>' +
         '</tr>';
     }).join('');
 
-    document.getElementById('btnImportStart').classList.remove('disabled');
-    document.getElementById('btnImportStart').disabled = false;
-    document.getElementById('btnImportBack').style.display = '';
+    document.getElementById('btnEmpImportStart').classList.remove('disabled');
+    document.getElementById('btnEmpImportStart').disabled = false;
+    document.getElementById('btnEmpImportBack').style.display = '';
   }
 
-  function runImport() {
-    if (importRows.length === 0) return;
+  function runEmpImport() {
+    if (empImportRows.length === 0) return;
 
-    // Show loading state
-    document.getElementById('btnImportStartText').style.display = 'none';
-    document.getElementById('btnImportLoading').style.display = '';
-    document.getElementById('btnImportStart').classList.add('disabled');
-    document.getElementById('btnImportStart').disabled = true;
-    document.getElementById('btnImportBack').style.display = 'none';
+    document.getElementById('btnEmpImportStartText').style.display = 'none';
+    document.getElementById('btnEmpImportLoading').style.display = '';
+    document.getElementById('btnEmpImportStart').classList.add('disabled');
+    document.getElementById('btnEmpImportStart').disabled = true;
+    document.getElementById('btnEmpImportBack').style.display = 'none';
 
     google.script.run
       .withSuccessHandler(function(result) {
-        // Show result
-        document.getElementById('importStep2').style.display = 'none';
-        document.getElementById('importStep3').style.display = '';
+        document.getElementById('empImportStep2').style.display = 'none';
+        document.getElementById('empImportStep3').style.display = '';
 
-        var icon = document.getElementById('importResultIcon');
-        var title = document.getElementById('importResultTitle');
-        var msg = document.getElementById('importResultMessage');
-        var errDiv = document.getElementById('importResultErrors');
-        var errList = document.getElementById('importErrorList');
+        var icon = document.getElementById('empImportResultIcon');
+        var title = document.getElementById('empImportResultTitle');
+        var msg = document.getElementById('empImportResultMessage');
+        var errDiv = document.getElementById('empImportResultErrors');
+        var errList = document.getElementById('empImportErrorList');
 
         if (result.success) {
           icon.className = 'bi bi-check-circle-fill fs-1';
@@ -225,7 +231,7 @@
           title.className = 'mt-3 mb-1';
         }
 
-        msg.textContent = result.message || (result.imported + ' kandidat berhasil diimport.');
+        msg.textContent = result.message || (result.imported + ' karyawan berhasil diimport.');
 
         if (result.errors && result.errors.length > 0) {
           errDiv.style.display = '';
@@ -234,31 +240,29 @@
           }).join('');
         }
 
-        // Reset button states
-        document.getElementById('btnImportStartText').style.display = '';
-        document.getElementById('btnImportLoading').style.display = 'none';
-        document.getElementById('btnImportStart').style.display = 'none';
-        document.getElementById('btnImportBack').style.display = 'none';
+        document.getElementById('btnEmpImportStartText').style.display = '';
+        document.getElementById('btnEmpImportLoading').style.display = 'none';
+        document.getElementById('btnEmpImportStart').style.display = 'none';
+        document.getElementById('btnEmpImportBack').style.display = 'none';
 
-        // Refresh candidate table if on dashboard
-        if (typeof loadCandidates === 'function') loadCandidates();
+        if (typeof empLoadAll === 'function') empLoadAll();
 
         showToast(result.message || 'Import selesai.', result.success ? 'success' : 'error');
       })
       .withFailureHandler(function(err) {
-        document.getElementById('importStep2').style.display = 'none';
-        document.getElementById('importStep3').style.display = '';
-        document.getElementById('importResultIcon').className = 'bi bi-exclamation-circle-fill fs-1';
-        document.getElementById('importResultIcon').style.color = '#991b1b';
-        document.getElementById('importResultTitle').textContent = 'Import Gagal';
-        document.getElementById('importResultTitle').className = 'mt-3 mb-1 text-danger';
-        document.getElementById('importResultMessage').textContent = err.message || 'Terjadi kesalahan saat import.';
-        document.getElementById('btnImportStartText').style.display = '';
-        document.getElementById('btnImportLoading').style.display = 'none';
-        document.getElementById('btnImportStart').style.display = 'none';
-        document.getElementById('btnImportBack').style.display = '';
+        document.getElementById('empImportStep2').style.display = 'none';
+        document.getElementById('empImportStep3').style.display = '';
+        document.getElementById('empImportResultIcon').className = 'bi bi-exclamation-circle-fill fs-1';
+        document.getElementById('empImportResultIcon').style.color = '#991b1b';
+        document.getElementById('empImportResultTitle').textContent = 'Import Gagal';
+        document.getElementById('empImportResultTitle').className = 'mt-3 mb-1 text-danger';
+        document.getElementById('empImportResultMessage').textContent = err.message || 'Terjadi kesalahan saat import.';
+        document.getElementById('btnEmpImportStartText').style.display = '';
+        document.getElementById('btnEmpImportLoading').style.display = 'none';
+        document.getElementById('btnEmpImportStart').style.display = 'none';
+        document.getElementById('btnEmpImportBack').style.display = '';
         showToast('Import gagal: ' + (err.message || err), 'error');
       })
-      .importCandidates(importRows);
+      .importEmployees(empImportRows);
   }
 </script>

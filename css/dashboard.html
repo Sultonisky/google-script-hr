@@ -14,9 +14,14 @@
     height: 100%;
     transition: box-shadow 0.2s ease, transform 0.2s ease;
   }
-  .stat-card:hover {
+  button.stat-card {
+    width: 100%; text-align: left; cursor: pointer; font-family: inherit;
+    color: inherit;
+  }
+  button.stat-card:hover, button.stat-card:focus-visible {
     box-shadow: 0 14px 30px -12px rgba(15,35,60,0.14);
     transform: translateY(-2px);
+    outline: none;
   }
   .stat-icon {
     width: 44px; height: 44px; border-radius: 12px;

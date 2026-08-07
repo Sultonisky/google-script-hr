@@ -1,15 +1,15 @@
 // ============================================================
-// backend/Import.gs — BULK IMPORT CANDIDATES FROM CSV
-// Validates rows and inserts into raw_kandidat sheet.
+// backend/Import.gs — BULK IMPORT KARYAWAN (Master Data)
+// Validates rows and inserts into the Employee sheet.
 // ============================================================
 
 /**
- * Validates and imports an array of candidate objects into raw_kandidat.
- * Each object should have keys matching (or mapped to) the column headers.
- * @param {Array<Object>} rows - Array of candidate data objects
+ * Validates and imports an array of employee objects into the Employee sheet.
+ * Each object should have keys matching the employee column headers.
+ * @param {Array<Object>} rows - Array of employee data objects
  * @returns {Object} { success, imported, errors, warnings }
  */
-function importCandidates(rows) {
+function importEmployees(rows) {
   if (!rows || !Array.isArray(rows) || rows.length === 0) {
     return {
       success: false,
@@ -36,12 +36,12 @@ function importCandidates(rows) {
 
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName(SHEET_NAME);
+    var sheet = ss.getSheetByName(EMPLOYEE_SHEET_NAME);
     if (!sheet) {
       return {
         success: false,
         imported: 0,
-        errors: ['Sheet "' + SHEET_NAME + '" tidak ditemukan.'],
+        errors: ['Sheet "' + EMPLOYEE_SHEET_NAME + '" tidak ditemukan.'],
         warnings: [],
       };
     }
@@ -49,7 +49,9 @@ function importCandidates(rows) {
     var existingIds = [];
     var lastRow = sheet.getLastRow();
     if (lastRow > 1) {
-      var idData = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+      var idData = sheet
+        .getRange(2, EMPLOYEE_COL["Employee ID"], lastRow - 1, 1)
+        .getValues();
       existingIds = idData.map(function (r) {
         return String(r[0]).trim().toUpperCase();
       });
@@ -62,63 +64,71 @@ function importCandidates(rows) {
       var row = rows[i];
       var rowNum = i + 1;
 
-      // Required fields validation
+      // Required field validation
       if (!row.fullName || String(row.fullName).trim() === "") {
         errors.push("Baris " + rowNum + ": Nama lengkap wajib diisi.");
         continue;
       }
-      if (!row.phone || String(row.phone).trim() === "") {
-        errors.push("Baris " + rowNum + ": Nomor telepon wajib diisi.");
-        continue;
-      }
 
-      // Generate recruitment ID
-      var rid = generateRecruitmentId_(new Date());
+      // Generate Employee ID
+      var empId = generateEmployeeId_(new Date());
 
       // Ensure uniqueness
-      if (existingIds.indexOf(rid.toUpperCase()) !== -1) {
+      if (existingIds.indexOf(empId.toUpperCase()) !== -1) {
         warnings.push(
           "Baris " + rowNum + ": ID duplikat terdeteksi, ID baru dibuat.",
         );
-        rid = generateRecruitmentId_(new Date());
+        empId = generateEmployeeId_(new Date());
       }
-      existingIds.push(rid.toUpperCase());
+      existingIds.push(empId.toUpperCase());
 
-      // Prepare row data matching SHEET_HEADERS order (25 core columns)
-      var now = Utilities.formatDate(
+      var nowStr = Utilities.formatDate(
         new Date(),
         "GMT+7",
         "yyyy-MM-dd HH:mm:ss",
       );
-      var rowData = [
-        rid, // 1  Recruitment ID
-        now, // 2  Created Date
-        String(row.fullName || "").trim(), // 3  Full Name
-        String(row.nik || "").trim(), // 4  NIK
-        String(row.dateOfBirth || "").trim(), // 5  Birth Date
-        row.age ? Number(row.age) : "", // 6  Age
-        String(row.gender || "").trim(), // 7  Gender
-        String(row.maritalStatus || "").trim(), // 8  Marital Status
-        String(row.email || "").trim(), // 9  Email
-        "'" + String(row.phone || "").trim(), // 10 Phone (text)
-        String(row.address || "").trim(), // 11 Address
-        String(row.city || "").trim(), // 12 City
-        String(row.positionApplied || "").trim(), // 13 Position Applied
-        String(row.education || "").trim(), // 14 Education
-        String(row.workExperience || "").trim(), // 15 Work Experience
-        String(row.lastCompany || "").trim(), // 16 Last Company
-        String(row.currentEmploymentStatus || "").trim(), // 17 Current Employment Status
-        String(row.availableToJoin || row.availableImmediately || "").trim(), // 18 Available to Join
-        row.expectedSalary ? Number(row.expectedSalary) : "", // 19 Expected Salary
-        String(row.recruitmentSource || "CSV Import").trim(), // 20 Recruitment Source
-        String(row.cvLink || "").trim(), // 21 CV Link
-        "Pending", // 22 Status
-        String(row.notes || "").trim(), // 23 HR Notes
-        "system", // 24 Created By
-        now, // 25 Updated At
-      ];
 
-      batchData.push(rowData);
+      // Build row matching EMPLOYEE_HEADERS order via EMPLOYEE_COL
+      var newRow = new Array(EMPLOYEE_HEADERS.length).fill("");
+      newRow[EMPLOYEE_COL["Employee ID"] - 1]         = empId;
+      newRow[EMPLOYEE_COL["Recruitment ID"] - 1]      = String(row.recruitmentId || "").trim();
+      newRow[EMPLOYEE_COL["Full Name"] - 1]            = String(row.fullName || "").trim();
+      newRow[EMPLOYEE_COL["Position"] - 1]             = String(row.positionApplied || row.position || "").trim();
+      newRow[EMPLOYEE_COL["Email"] - 1]                = String(row.email || "").trim();
+      newRow[EMPLOYEE_COL["Phone"] - 1]                = row.phone ? "'" + String(row.phone).trim() : "";
+      newRow[EMPLOYEE_COL["Join Date"] - 1]            = String(row.joinDate || "").trim();
+      newRow[EMPLOYEE_COL["Status"] - 1]               = String(row.status || "Active").trim();
+      newRow[EMPLOYEE_COL["Notes"] - 1]                = String(row.notes || "").trim();
+      newRow[EMPLOYEE_COL["Created At"] - 1]           = nowStr;
+      newRow[EMPLOYEE_COL["Company Entity"] - 1]       = String(row.companyEntity || "PT Mahakarya Sukses Indonesia").trim();
+      newRow[EMPLOYEE_COL["Employee Type"] - 1]        = String(row.employeeType || "").trim();
+      newRow[EMPLOYEE_COL["NIK"] - 1]                  = row.nik ? "'" + String(row.nik).trim() : "";
+      newRow[EMPLOYEE_COL["Birth Date"] - 1]           = String(row.birthDate || "").trim();
+      newRow[EMPLOYEE_COL["Age"] - 1]                  = row.age ? Number(row.age) : "";
+      newRow[EMPLOYEE_COL["Gender"] - 1]               = String(row.gender || "").trim();
+      newRow[EMPLOYEE_COL["Marital Status"] - 1]       = String(row.maritalStatus || "").trim();
+      newRow[EMPLOYEE_COL["Address"] - 1]              = String(row.address || "").trim();
+      newRow[EMPLOYEE_COL["City"] - 1]                 = String(row.city || "").trim();
+      newRow[EMPLOYEE_COL["Education"] - 1]            = String(row.education || "").trim();
+      newRow[EMPLOYEE_COL["Work Experience"] - 1]      = String(row.workExperience || "").trim();
+      newRow[EMPLOYEE_COL["Department"] - 1]           = String(row.department || "").trim();
+      newRow[EMPLOYEE_COL["Division"] - 1]             = String(row.division || "").trim();
+      newRow[EMPLOYEE_COL["Branch"] - 1]               = String(row.branch || "").trim();
+      newRow[EMPLOYEE_COL["Contract Start"] - 1]       = String(row.contractStart || "").trim();
+      newRow[EMPLOYEE_COL["Contract End"] - 1]         = String(row.contractEnd || "").trim();
+      newRow[EMPLOYEE_COL["Contract Duration"] - 1]    = String(row.contractDuration || "").trim();
+      newRow[EMPLOYEE_COL["Employment Status"] - 1]    = String(row.employmentStatus || "Active").trim();
+      newRow[EMPLOYEE_COL["Salary"] - 1]               = row.salary ? Number(row.salary) : "";
+      newRow[EMPLOYEE_COL["Salary Type"] - 1]          = String(row.salaryType || "").trim();
+      newRow[EMPLOYEE_COL["Outsource Vendor"] - 1]     = String(row.outsourceVendor || "").trim();
+      newRow[EMPLOYEE_COL["Contract Number"] - 1]      = String(row.contractNumber || "").trim();
+      newRow[EMPLOYEE_COL["District"] - 1]             = String(row.district || "").trim();
+      newRow[EMPLOYEE_COL["Recruitment Source"] - 1]   = String(row.recruitmentSource || "CSV Import").trim();
+      newRow[EMPLOYEE_COL["HR Notes"] - 1]             = String(row.hrNotes || "").trim();
+      newRow[EMPLOYEE_COL["Created By"] - 1]           = "system";
+      newRow[EMPLOYEE_COL["Updated At"] - 1]           = nowStr;
+
+      batchData.push(newRow);
       imported++;
     }
 
@@ -131,7 +141,7 @@ function importCandidates(rows) {
 
       // Audit log for import
       for (var j = 0; j < batchData.length; j++) {
-        writeAuditLog_(batchData[j][0], "Import", "Status", "-", "Pending");
+        writeAuditLog_(batchData[j][0], "Import", "Status", "-", "Active");
       }
     }
 
@@ -142,7 +152,7 @@ function importCandidates(rows) {
       warnings: warnings,
       message:
         imported +
-        " kandidat berhasil diimport." +
+        " karyawan berhasil diimport." +
         (errors.length > 0 ? " " + errors.length + " baris gagal." : ""),
     };
   } catch (err) {
@@ -155,67 +165,4 @@ function importCandidates(rows) {
   } finally {
     lock.releaseLock();
   }
-}
-
-/**
- * Validates a batch of CSV rows before import (dry-run).
- * Returns row-by-row validation results.
- * @param {Array<Object>} rows
- * @returns {Object} { valid, invalid, details }
- */
-function validateImportRows(rows) {
-  if (!rows || !Array.isArray(rows) || rows.length === 0) {
-    return { valid: 0, invalid: 0, details: [] };
-  }
-
-  var details = [];
-  var valid = 0;
-  var invalid = 0;
-
-  for (var i = 0; i < rows.length; i++) {
-    var row = rows[i];
-    var rowNum = i + 1;
-    var rowErrors = [];
-
-    if (!row.fullName || String(row.fullName).trim() === "")
-      rowErrors.push("Nama wajib diisi");
-    if (!row.phone || String(row.phone).trim() === "")
-      rowErrors.push("Telepon wajib diisi");
-    if (
-      row.email &&
-      String(row.email).trim() !== "" &&
-      !isValidEmail_(String(row.email).trim())
-    ) {
-      rowErrors.push("Format email tidak valid");
-    }
-    if (
-      row.age &&
-      (isNaN(Number(row.age)) || Number(row.age) < 15 || Number(row.age) > 100)
-    ) {
-      rowErrors.push("Usia harus antara 15-100");
-    }
-
-    if (rowErrors.length > 0) {
-      invalid++;
-      details.push({
-        row: rowNum,
-        status: "error",
-        errors: rowErrors,
-        data: row,
-      });
-    } else {
-      valid++;
-      details.push({ row: rowNum, status: "ok", data: row });
-    }
-  }
-
-  return { valid: valid, invalid: invalid, details: details };
-}
-
-// ============================================================
-// PRIVATE HELPERS
-// ============================================================
-
-function isValidEmail_(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
