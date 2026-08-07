@@ -26,7 +26,7 @@
 
 ### Database
 - **Type**: Google Spreadsheet
-- **Sheets**: 3 sheets (raw_kandidat, Employee, Audit_Log)
+- **Sheets**: 3 sheets (data_kandidat, Employee, Audit_Log)
 
 ### External Libraries (CDN)
 - Chart.js 4.4.0 - Data visualization
@@ -233,7 +233,7 @@ e:/Project/HRIS/
 | `validateFormData_(f)` | Server-side form validation |
 | `generateRecruitmentId_(timestamp)` | Generate unique recruitment ID |
 | `generateEmployeeId_(timestamp)` | Generate unique employee ID |
-| `getOrCreateSheet_()` | Get or create raw_kandidat sheet |
+| `getOrCreateSheet_()` | Get or create data_kandidat sheet |
 | `getDashboardSheet_()` | Get dashboard sheet |
 | `getOrCreateEmployeeSheet_()` | Get or create Employee sheet |
 | `ensureExtraHeaders_(sheet)` | Add extra columns safely |
@@ -291,7 +291,7 @@ e:/Project/HRIS/
 
 ## Spreadsheet Structure
 
-### Sheet 1: raw_kandidat
+### Sheet 1: data_kandidat
 **Purpose**: Store all candidate data  
 **Total Columns**: 31 (25 core + 6 extra)
 
@@ -338,7 +338,7 @@ e:/Project/HRIS/
 
 **Columns (EMPLOYEE_HEADERS)**:
 1. Employee ID (string) - Format: EMP-YYYY-0000
-2. Recruitment ID (string) - Link to raw_kandidat
+2. Recruitment ID (string) - Link to data_kandidat
 3. Full Name (string)
 4. Position (string)
 5. Email (string)
@@ -380,7 +380,7 @@ Kode.gs validates server-side
     ↓
 Generate Recruitment ID
     ↓
-Append row to raw_kandidat sheet
+Append row to data_kandidat sheet
     ↓
 Write audit log (Created: - → Pending)
     ↓
@@ -397,7 +397,7 @@ DOMContentLoaded event
     ↓
 google.script.run.getRecruitmentList()
     ↓
-Kode.gs reads raw_kandidat sheet
+Kode.gs reads data_kandidat sheet
     ↓
 Map to objects with camelCase properties
     ↓
@@ -480,7 +480,7 @@ Generate Employee ID (EMP-YYYY-0000)
     ↓
 Update candidate status to "Accepted"
     ↓
-Set Employee ID in raw_kandidat
+Set Employee ID in data_kandidat
     ↓
 Append row to Employee sheet (if not exists)
     ↓
@@ -543,7 +543,7 @@ Update UI and show toast
 - **Data Attributes**: camelCase (`data-page`, `data-status`, `data-id`)
 
 ### Spreadsheet
-- **Sheet Names**: PascalCase (`raw_kandidat`, `Audit_Log`, `Employee`)
+- **Sheet Names**: PascalCase (`data_kandidat`, `Audit_Log`, `Employee`)
 - **Column Headers**: PascalCase (`Recruitment ID`, `Created Date`, `Full Name`)
 
 ---
@@ -651,7 +651,7 @@ try {
 2. Open Apps Script editor from spreadsheet
 3. Paste code and HTML files
 4. Run `setupSpreadsheet()` once to create sheets
-5. Verify sheets created: raw_kandidat, Employee, Audit_Log
+5. Verify sheets created: data_kandidat, Employee, Audit_Log
 
 ### Browser Requirements
 - Modern browser with JavaScript enabled

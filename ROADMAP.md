@@ -78,7 +78,7 @@
 
 ### Features Implemented
 - ✅ Google Apps Script backend with single-file architecture
-- ✅ Spreadsheet database setup (raw_kandidat, Employee, Audit_Log)
+- ✅ Spreadsheet database setup (data_kandidat, Employee, Audit_Log)
 - ✅ Candidate registration form with validation
 - ✅ Unique ID generation (Recruitment ID with daily counter)
 - ✅ Basic dashboard with statistics

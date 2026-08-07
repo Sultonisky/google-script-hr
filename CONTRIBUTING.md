@@ -91,7 +91,7 @@ function getRecruitmentList() { }
 function findCandidateRow_(sheet, id) { }
 
 // Constants: UPPER_SNAKE_CASE
-var SHEET_NAME = 'raw_kandidat';
+var SHEET_NAME = 'data_kandidat';
 
 // Section dividers
 // ============================================================

@@ -198,7 +198,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Candidate registration portal (FormPendaftaran.html)
 - HR Dashboard with advanced analytics (Dashboard.html)
 - Spreadsheet database with 3 sheets:
-  - raw_kandidat (31 columns: 25 core + 6 extra)
+  - data_kandidat (31 columns: 25 core + 6 extra)
   - Employee (10 columns)
   - Audit_Log (6 columns)
 - Unique ID generation system:

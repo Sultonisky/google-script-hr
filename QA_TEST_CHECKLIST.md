@@ -54,7 +54,7 @@
 
 | Test ID | Scenario | Steps | Expected Result | Actual Result | Status |
 |---------|----------|-------|-----------------|---------------|--------|
-| REG-001 | Submit complete valid form | 1. Fill all required fields<br>2. Submit form | Returns "Sukses"; new row in raw_kandidat with status "Pending" | | |
+| REG-001 | Submit complete valid form | 1. Fill all required fields<br>2. Submit form | Returns "Sukses"; new row in data_kandidat with status "Pending" | | |
 | REG-002 | Submit form: missing required field (full_name) | 1. Leave full_name empty<br>2. Submit | Returns error: "Nama lengkap wajib diisi" | | |
 | REG-003 | Submit form: invalid NIK (not 16 digits) | 1. Enter NIK "123"<br>2. Submit | Returns validation error for NIK | | |
 | REG-004 | Submit form: invalid email format | 1. Enter "notanemail"<br>2. Submit | Returns error: "Format email tidak valid" | | |
@@ -62,7 +62,7 @@
 | REG-006 | Submit form: expected salary not a number | 1. Enter "abc" in salary<br>2. Submit | Returns validation error for salary | | |
 | REG-007 | Fresh Graduate: Last Company defaults to "-" | 1. Select "Fresh Graduate" for work_experience<br>2. Submit | "Last Company" column = "-" | | |
 | REG-008 | Recruitment ID generated | 1. Submit valid form | Unique Recruitment ID (e.g., RCR-00001) generated and stored | | |
-| REG-009 | Created Date stored as GMT+7 | 1. Submit form<br>2. Check raw_kandidat | "Created Date" in "yyyy-MM-dd HH:mm:ss" GMT+7 format | | |
+| REG-009 | Created Date stored as GMT+7 | 1. Submit form<br>2. Check data_kandidat | "Created Date" in "yyyy-MM-dd HH:mm:ss" GMT+7 format | | |
 | REG-010 | NIK stored with leading apostrophe (text) | 1. Submit form with NIK starting with 0<br>2. Check sheet | NIK preserved as text, leading zeros intact | | |
 | REG-011 | Phone stored with leading apostrophe (text) | 1. Submit form<br>2. Check sheet | Phone stored as text string | | |
 | REG-012 | Audit log entry on registration | 1. Submit form<br>2. Check Audit_Log sheet | Entry with action "Created", old="-", new="Pending" | | |
@@ -116,8 +116,8 @@
 |---------|----------|-------|-----------------|---------------|--------|
 | ACCEPT-001 | Accept candidate: creates employee record | 1. Call acceptCandidateToEmployee(id, 'notes')<br>2. Check Employee sheet | New Employee row created with Employee ID, data copied from candidate | | |
 | ACCEPT-002 | Accept candidate: generates Employee ID | 1. Accept candidate | Employee ID generated (EMP-XXXXX format) | | |
-| ACCEPT-003 | Accept candidate: sets Status=Accepted | 1. Call acceptCandidateToEmployee(id) | Status updated to "Accepted" in raw_kandidat | | |
-| ACCEPT-004 | Accept candidate: Employee ID stored back | 1. Accept candidate<br>2. Check raw_kandidat | Employee ID written to "Employee ID" column in candidate row | | |
+| ACCEPT-003 | Accept candidate: sets Status=Accepted | 1. Call acceptCandidateToEmployee(id) | Status updated to "Accepted" in data_kandidat | | |
+| ACCEPT-004 | Accept candidate: Employee ID stored back | 1. Accept candidate<br>2. Check data_kandidat | Employee ID written to "Employee ID" column in candidate row | | |
 | ACCEPT-005 | Accept candidate: re-accept uses existing Employee ID | 1. Accept candidate (gets EMP-00001)<br>2. Accept same candidate again | Reuses EMP-00001, does NOT create duplicate employee | | |
 | ACCEPT-006 | Accept candidate: employee default values | 1. Accept candidate<br>2. Check Employee sheet | Company="PT Mahakarya Sukses Indonesia", Type="PKWTT", Status="Active", Salary Type="Monthly" | | |
 | ACCEPT-007 | Accept candidate: audit log entry | 1. Accept candidate<br>2. Check Audit_Log | Action="Accepted", newValue="Accepted -> Employee EMP-XXXXX" | | |
@@ -141,7 +141,7 @@
 
 | Test ID | Scenario | Steps | Expected Result | Actual Result | Status |
 |---------|----------|-------|-----------------|---------------|--------|
-| DEL-001 | Delete candidate: valid ID | 1. Call deleteCandidate(id) | Row removed from raw_kandidat; audit log written | | |
+| DEL-001 | Delete candidate: valid ID | 1. Call deleteCandidate(id) | Row removed from data_kandidat; audit log written | | |
 | DEL-002 | Delete candidate: non-existent ID | 1. Call deleteCandidate('XXX-99999') | Returns error: "Recruitment ID tidak ditemukan" | | |
 | DEL-003 | Delete candidate: audit log written | 1. Delete candidate<br>2. Check Audit_Log | Action="Deleted", oldValue="-", newValue="Deleted" | | |
 | DEL-004 | Delete candidate: sheet lock released | 1. Delete candidate<br>2. Attempt another operation | No lock contention; subsequent operations succeed | | |
@@ -288,13 +288,13 @@
 
 | Test ID | Scenario | Steps | Expected Result | Actual Result | Status |
 |---------|----------|-------|-----------------|---------------|--------|
-| SHEET-001 | raw_kandidat sheet has correct headers | 1. Check sheet headers | 25 core headers match SHEET_HEADERS array in Config.gs | | |
+| SHEET-001 | data_kandidat sheet has correct headers | 1. Check sheet headers | 25 core headers match SHEET_HEADERS array in Config.gs | | |
 | SHEET-002 | Extra headers appended correctly | 1. Check sheet headers | Hold Reason, Hold Follow Up Date, Blacklist Reason, etc. present at end | | |
 | SHEET-003 | Employee sheet has correct headers | 1. Check Employee sheet | Headers match EMPLOYEE_HEADERS from Config.gs | | |
 | SHEET-004 | Audit_Log sheet has correct headers | 1. Check Audit_Log sheet | Headers: Timestamp, User, Recruitment ID, Action, Old Value, New Value | | |
 | SHEET-005 | Users sheet has correct headers | 1. Check Users sheet | Headers: Email, Full Name, Role, Status, Last Login, Created At, Updated At, Created By | | |
 | SHEET-006 | Header styling: blue background, white text | 1. Check any sheet header row | Background #005BAC, font white, bold | | |
-| SHEET-007 | First row frozen | 1. Check all sheets | First row frozen on raw_kandidat, Employee, Users, Audit_Log | | |
+| SHEET-007 | First row frozen | 1. Check all sheets | First row frozen on data_kandidat, Employee, Users, Audit_Log | | |
 | SHEET-008 | NIK stored as text (leading zeros preserved) | 1. Save NIK "0012345678901234"<br>2. Read back | Full 16 digits preserved with leading zeros | | |
 | SHEET-009 | Phone stored as text | 1. Save phone "6281234567890"<br>2. Read back | Full number preserved as string | | |
 | SHEET-010 | Dates stored as formatted strings | 1. Check date columns | Format: "yyyy-MM-dd HH:mm:ss" in GMT+7 | | |
@@ -394,7 +394,7 @@
 
 | Test ID | Scenario | Steps | Expected Result | Actual Result | Status |
 |---------|----------|-------|-----------------|---------------|--------|
-| CFG-001 | SHEET_NAME constant | 1. Check Config.gs | SHEET_NAME = 'raw_kandidat' | | |
+| CFG-001 | SHEET_NAME constant | 1. Check Config.gs | SHEET_NAME = 'data_kandidat' | | |
 | CFG-002 | SHEET_HEADERS order preserved | 1. Count SHEET_HEADERS array | 25 core headers in defined order | | |
 | CFG-003 | EXTRA_HEADERS not breaking | 1. Check ensureExtraHeaders_() adds columns | Extra columns appended at end without affecting core data | | |
 | CFG-004 | EMPLOYEE_HEADERS count | 1. Count EMPLOYEE_HEADERS | 31 columns defined | | |
@@ -421,7 +421,7 @@
 | Risk ID | Area | Risk Description | Test Recommendation |
 |---------|------|------------------|---------------------|
 | RISK-001 | **LockService Concurrency** | Multiple users editing same candidate simultaneously may cause data corruption | Open 2 browser tabs, edit same candidate status at the same time; verify no data corruption |
-| RISK-002 | **Accept → Employee Data Transfer** | Data copying from raw_kandidat to Employee sheet with 31 columns — field mapping errors possible | Accept a candidate, then verify EVERY field in Employee sheet matches source data |
+| RISK-002 | **Accept → Employee Data Transfer** | Data copying from data_kandidat to Employee sheet with 31 columns — field mapping errors possible | Accept a candidate, then verify EVERY field in Employee sheet matches source data |
 | RISK-003 | **NIK/Phone as Text** | Leading apostrophe storage for NIK/Phone may fail if Apps Script auto-formats | Submit NIK "0012345678901234", verify all 16 digits preserved with leading zeros |
 | RISK-004 | **Bulk Operations** | Bulk delete/update with many rows may timeout (30s lock timeout) | Test with 50+ candidates in bulk operations; verify no partial failures |
 | RISK-005 | **Outsource Form Field Mapping** | Outsource form writes to Employee sheet with different column order than acceptance flow | Register outsource employee, verify each column matches EMPLOYEE_HEADERS from Config.gs |
