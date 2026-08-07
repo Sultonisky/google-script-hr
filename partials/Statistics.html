@@ -1,6 +1,6 @@
 <!-- partials/Statistics.html — STAT CARDS (Dashboard page) -->
 <div class="row g-3 mb-4">
-  <div class="col-6 col-md-4 col-xl-3">
+  <div class="col-6 col-md-4 col-xl-2">
     <button class="stat-card" type="button" data-page="pageRecruitment">
       <div class="stat-icon bg-blue"><i class="bi bi-people-fill"></i></div>
       <div>
@@ -9,7 +9,16 @@
       </div>
     </button>
   </div>
-  <div class="col-6 col-md-4 col-xl-3">
+  <div class="col-6 col-md-4 col-xl-2">
+    <button class="stat-card" type="button" data-page="pageRecruitment">
+      <div class="stat-icon bg-gold"><i class="bi bi-hourglass-split"></i></div>
+      <div>
+        <div class="stat-label">Pending</div>
+        <div class="stat-value" data-current="0" id="statPending">0</div>
+      </div>
+    </button>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
     <button class="stat-card" type="button" data-page="pageAccepted">
       <div class="stat-icon bg-green"><i class="bi bi-check-circle-fill"></i></div>
       <div>
@@ -18,7 +27,7 @@
       </div>
     </button>
   </div>
-  <div class="col-6 col-md-4 col-xl-3">
+  <div class="col-6 col-md-4 col-xl-2">
     <button class="stat-card" type="button" data-page="pageHold">
       <div class="stat-icon bg-navy"><i class="bi bi-pause-circle-fill"></i></div>
       <div>
@@ -27,7 +36,7 @@
       </div>
     </button>
   </div>
-  <div class="col-6 col-md-4 col-xl-3">
+  <div class="col-6 col-md-4 col-xl-2">
     <button class="stat-card" type="button" data-page="pageBlacklist">
       <div class="stat-icon bg-red"><i class="bi bi-slash-circle-fill"></i></div>
       <div>
