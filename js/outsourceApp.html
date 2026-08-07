@@ -594,6 +594,29 @@
   }
 
   // ============================================================
+  // DYNAMIC-REQUIRED FIELDS — explicit listeners
+  // Field-field ini tidak punya attr `required` di HTML saat load
+  // (di-set dinamis via JS), sehingga querySelectorAll('input[required]')
+  // di atas tidak menangkap mereka. Listener di-attach secara eksplisit.
+  // ============================================================
+  (function attachDynamicFieldListeners(){
+    var dynamicFields = [
+      'outsource_vendor',   // required hanya saat Outsource
+      'contract_number',    // opsional tapi perlu update progress
+      'contract_start',     // required saat Outsource/PKWT
+      'contract_end',       // required saat Outsource/PKWT
+      'contract_duration'   // required saat Outsource/PKWT
+    ];
+    dynamicFields.forEach(function(fid){
+      var el = document.getElementById(fid);
+      if (!el) return;
+      ['input', 'blur', 'change'].forEach(function(ev){
+        el.addEventListener(ev, function(){ validateField(this); updateProgress(); });
+      });
+    });
+  })();
+
+  // ============================================================
   // INIT
   // ============================================================
   populateMasterDropdowns();
