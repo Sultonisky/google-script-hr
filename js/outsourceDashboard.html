@@ -248,7 +248,8 @@
 
     if (si)      si.addEventListener('input', applyOsFilters);
     if (btnRef)  btnRef.addEventListener('click', function(){ loadOutsourceData(false); });
-    if (btnAdd)  btnAdd.addEventListener('click', function(){ openOsForm(null); });
+    // TOMBOL TAMBAH OUTSOURCE DINONAKTIFKAN SEMENTARA — listener di-comment agar create tidak bisa dipanggil dari UI
+    // if (btnAdd)  btnAdd.addEventListener('click', function(){ openOsForm(null); });
     if (btnSav)  btnSav.addEventListener('click', saveOsData);
     if (btnReset) btnReset.addEventListener('click', function() {
       if (si) si.value = '';
@@ -352,30 +353,34 @@
         })
         .updateEmployee(OS.editId, data);
     } else {
-      google.script.run
-        .withSuccessHandler(function(r) {
-          btn.disabled = false;
-          btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan';
-          if (typeof r === 'string' && r.indexOf('Sukses') !== -1) {
-            showToast('Karyawan outsource berhasil ditambahkan.', 'success');
-            OS.formModal.hide();
-            if (typeof closeDrawer === 'function') closeDrawer();
-            loadOutsourceData(false);
-          } else if (r && r.success) {
-            showToast(r.message, 'success');
-            OS.formModal.hide();
-            if (typeof closeDrawer === 'function') closeDrawer();
-            loadOutsourceData(false);
-          } else {
-            showToast(r ? (typeof r === 'string' ? r : r.message) : 'Gagal menyimpan.', 'danger');
-          }
-        })
-        .withFailureHandler(function(err) {
-          btn.disabled = false;
-          btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan';
-          showToast('Error: ' + err.message, 'danger');
-        })
-        .simpanDataOutsource(data);
+      // ============ ADD (CREATE) DINONAKTIFKAN SEMENTARA ============
+      // Path penyimpanan outsource baru tidak aktif (backup: kembalikan dengan
+      // menghapus komentar pada blok di bawah ini).
+      // google.script.run
+      //   .withSuccessHandler(function(r) {
+      //     btn.disabled = false;
+      //     btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan';
+      //     if (typeof r === 'string' && r.indexOf('Sukses') !== -1) {
+      //       showToast('Karyawan outsource berhasil ditambahkan.', 'success');
+      //       OS.formModal.hide();
+      //       if (typeof closeDrawer === 'function') closeDrawer();
+      //       loadOutsourceData(false);
+      //     } else if (r && r.success) {
+      //       showToast(r.message, 'success');
+      //       OS.formModal.hide();
+      //       if (typeof closeDrawer === 'function') closeDrawer();
+      //       loadOutsourceData(false);
+      //     } else {
+      //       showToast(r ? (typeof r === 'string' ? r : r.message) : 'Gagal menyimpan.', 'danger');
+      //     }
+      //   })
+      //   .withFailureHandler(function(err) {
+      //     btn.disabled = false;
+      //     btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan';
+      //     showToast('Error: ' + err.message, 'danger');
+      //   })
+      //   .simpanDataOutsource(data);
+      showToast('Fungsi tambah karyawan outsource sedang dinonaktifkan.', 'warning');
     }
   }
 
