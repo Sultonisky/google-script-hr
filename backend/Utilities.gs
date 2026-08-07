@@ -45,17 +45,30 @@ function fmtDate_(val, pattern) {
     : String(val || '');
 }
 
-// Format string tanggal (yyyy-MM-dd atau yyyy-MM-dd HH:mm:ss) ke dd/MM/yyyy HH:mm
-// Dipakai untuk kolom seperti joinDate, contractStart, contractEnd yang
-// disimpan sebagai string bukan Date object.
-function fmtDateStr_(str) {
-  if (!str || String(str).trim() === '') return '-';
-  var s = String(str).trim();
+// Format tanggal dari Date object atau string ke dd/MM/yyyy (atau
+// dd/MM/yyyy HH:mm bila ada komponen jam). Menerima Date object, string
+// yyyy-MM-dd / yyyy-MM-dd HH:mm:ss, maupun string hasil Date.toString()
+// (mis. "Tue Oct 07 2025 00:00:00 GMT+0700 (Waktu Indonesia Barat)").
+function fmtDateStr_(val) {
+  if (val instanceof Date) {
+    var hasTime = val.getHours() !== 0 || val.getMinutes() !== 0 || val.getSeconds() !== 0;
+    return Utilities.formatDate(val, 'GMT+7', hasTime ? 'dd/MM/yyyy HH:mm' : 'dd/MM/yyyy');
+  }
+  if (!val || String(val).trim() === '') return '-';
+  var s = String(val).trim();
   // Sudah dalam format dd/MM/yyyy... — kembalikan apa adanya
   if (/^\d{2}\/\d{2}\/\d{4}/.test(s)) return s;
   // Format yyyy-MM-dd HH:mm:ss atau yyyy-MM-dd
   var m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:\s+(\d{2}):(\d{2}))?/);
-  if (!m) return s;
+  if (!m) {
+    // Fallback: string hasil Date.toString() dari sel spreadsheet
+    var t = new Date(s);
+    if (!isNaN(t.getTime())) {
+      var hasTime2 = t.getHours() !== 0 || t.getMinutes() !== 0 || t.getSeconds() !== 0;
+      return Utilities.formatDate(t, 'GMT+7', hasTime2 ? 'dd/MM/yyyy HH:mm' : 'dd/MM/yyyy');
+    }
+    return s;
+  }
   var base = m[3] + '/' + m[2] + '/' + m[1];
   return m[4] ? base + ' ' + m[4] + ':' + m[5] : base;
 }

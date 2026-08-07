@@ -30,9 +30,7 @@ function getEmployeeList() {
         position:          String(row[colIndex['Position']]            || ''),
         email:             String(row[colIndex['Email']]               || ''),
         phone:             String(row[colIndex['Phone']]               || ''),
-        joinDate:          row[colIndex['Join Date']] instanceof Date
-                             ? Utilities.formatDate(row[colIndex['Join Date']], 'GMT+7', 'dd/MM/yyyy HH:mm')
-                             : fmtDateStr_(String(row[colIndex['Join Date']] || '')),
+        joinDate:          fmtDateStr_(row[colIndex['Join Date']]),
         status:            String(row[colIndex['Status']]              || ''),
         notes:             String(row[colIndex['Notes']]               || ''),
         createdAt:         row[colIndex['Created At']] instanceof Date
@@ -44,7 +42,7 @@ function getEmployeeList() {
         companyEntity:     String(row[colIndex['Company Entity']]      || ''),
         employeeType:      String(row[colIndex['Employee Type']]       || ''),
         nik:               String(row[colIndex['NIK']]                 || ''),
-        birthDate:         fmtDateStr_(String(row[colIndex['Birth Date']]          || '')),
+        birthDate:         fmtDateStr_(row[colIndex['Birth Date']]),
         age:               String(row[colIndex['Age']]                 || ''),
         gender:            String(row[colIndex['Gender']]              || ''),
         maritalStatus:     String(row[colIndex['Marital Status']]      || ''),
@@ -55,8 +53,8 @@ function getEmployeeList() {
         department:        String(row[colIndex['Department']]          || ''),
         division:          String(row[colIndex['Division']]            || ''),
         branch:            String(row[colIndex['Branch']]              || ''),
-        contractStart:     fmtDateStr_(String(row[colIndex['Contract Start']]      || '')),
-        contractEnd:       fmtDateStr_(String(row[colIndex['Contract End']]        || '')),
+        contractStart:     fmtDateStr_(row[colIndex['Contract Start']]),
+        contractEnd:       fmtDateStr_(row[colIndex['Contract End']]),
         contractDuration:  String(row[colIndex['Contract Duration']]   || ''),
         employmentStatus:  String(row[colIndex['Employment Status']]   || ''),
         salary:            row[colIndex['Salary']] || '',

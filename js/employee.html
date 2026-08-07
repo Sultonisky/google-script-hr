@@ -305,7 +305,7 @@
     document.getElementById('efPos').value   = emp.position || '';
     document.getElementById('efLoc').value   = emp.city || '';
     document.getElementById('efType').value  = emp.employeeType || '';
-    document.getElementById('efJoin').value  = emp.joinDate || '';
+    document.getElementById('efJoin').value  = toDateInputValue(emp.joinDate);
     document.getElementById('efStatus').value = emp.employmentStatus || emp.status || 'Active';
     document.getElementById('efNotes').value = emp.hrNotes || '';
     EMP.formModal.show();
