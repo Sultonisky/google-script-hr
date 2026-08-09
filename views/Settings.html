@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
@@ -30,13 +30,13 @@
     .sp-row input[type="text"], .sp-row input[type="email"], .sp-row input[type="number"], .sp-row input[type="url"], .sp-row select {
       width: 260px; max-width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; background: #fafafa;
     }
-    .sp-row input:focus, .sp-row select:focus { outline: none; border-color: #005BAC; background: #fff; box-shadow: 0 0 0 3px rgba(0,91,170,0.1); }
+    .sp-row input:focus, .sp-row select:focus { outline: none; border-color: #eb1c24; background: #fff; box-shadow: 0 0 0 3px rgba(235,28,36,0.1); }
     .sp-row input[type="color"] { width: 50px; height: 36px; border: none; cursor: pointer; background: none; }
     .sp-row input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
     .sp-nav-tabs { display: flex; gap: 4px; border-bottom: 2px solid #e5e7eb; margin-bottom: 20px; padding: 0 4px; }
     .sp-nav-tab { padding: 10px 16px; font-size: 13px; font-weight: 600; color: #6b7280; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
     .sp-nav-tab:hover { color: #374151; }
-    .sp-nav-tab.active { color: #005BAC; border-bottom-color: #005BAC; }
+    .sp-nav-tab.active { color: #eb1c24; border-bottom-color: #eb1c24; }
     .sp-tab-content { display: none; }
     .sp-tab-content.active { display: block; }
     .btn-back { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 13px; background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; transition: all 0.2s; }
@@ -45,15 +45,15 @@
     .sp-actions button { padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 13px; border: none; cursor: pointer; transition: all 0.2s; }
     .btn-sp-reset { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
     .btn-sp-reset:hover { background: #e5e7eb; }
-    .btn-sp-save { background: #005BAC; color: #fff; }
-    .btn-sp-save:hover { background: #00437e; }
-    .btn-sp-preview { background: #fff; color: #005BAC; border: 1px solid #005BAC; }
-    .btn-sp-preview:hover { background: #EFF6FF; }
+    .btn-sp-save { background: #eb1c24; color: #fff; }
+    .btn-sp-save:hover { background: #c41118; }
+    .btn-sp-preview { background: #fff; color: #eb1c24; border: 1px solid #eb1c24; }
+    .btn-sp-preview:hover { background: #FEE8E9; }
     .sp-preview-box { background: #f9fafb; border: 1px dashed #d1d5db; border-radius: 10px; padding: 20px; margin-top: 16px; }
     .sp-preview-sidebar { display: flex; gap: 12px; align-items: center; padding: 12px; background: #0B2540; border-radius: 8px; color: #fff; }
     .sp-preview-logo { width: 36px; height: 36px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; }
     .info-card { background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 10px; padding: 16px 20px; margin-bottom: 20px; }
-    .info-card i { color: #005BAC; font-size: 18px; }
+    .info-card i { color: #eb1c24; font-size: 18px; }
     .info-card p { margin: 4px 0 0 0; color: #1e40af; font-size: 13px; }
     @media (max-width: 768px) {
       .sp-row { flex-direction: column; align-items: flex-start; gap: 6px; }
@@ -179,7 +179,7 @@
           <div class="sp-group-title">Warna</div>
           <div class="sp-row">
             <div><div class="sp-label">Warna Primer</div><div class="sp-desc">Warna utama yang digunakan di seluruh portal.</div></div>
-            <input type="color" id="spPrimaryColor" value="#005BAC" />
+            <input type="color" id="spPrimaryColor" value="#eb1c24" />
           </div>
           <div class="sp-row">
             <div><div class="sp-label">Warna Sekunder</div><div class="sp-desc">Warna pendukung untuk elemen sekunder.</div></div>
@@ -310,7 +310,7 @@
           <div class="sp-group-title">Preview Sidebar</div>
           <div class="sp-preview-box">
             <div class="sp-preview-sidebar" id="spPreviewSidebar">
-              <div class="sp-preview-logo" id="spPreviewLogo" style="background:#005BAC;">MS</div>
+              <div class="sp-preview-logo" id="spPreviewLogo" style="background:#eb1c24;">MS</div>
               <div>
                 <div style="font-weight:700;font-size:14px;" id="spPreviewTitle">MITO HRIS</div>
                 <div style="font-size:11px;opacity:0.7;" id="spPreviewSubtitle">Applicant Tracking System</div>
@@ -373,7 +373,7 @@
       companyPhone: '', companyEmail: '', website: '', sidebarLogo: '', loginLogo: '',
       portalTitle: 'MITO HRIS', portalSubtitle: 'Applicant Tracking System',
       footer: '© 2026 MITO Group — HRIS Portal', systemVersion: '2.0.0',
-      primaryColor: '#005BAC', themeColor: '#005BAC', secondaryColor: '#6c757d',
+      primaryColor: '#eb1c24', themeColor: '#eb1c24', secondaryColor: '#6c757d',
       darkModeDefault: 'light', sidebarStyle: 'dark', refreshInterval: 60,
       defaultStatus: '', defaultSource: '', defaultSort: 'created_desc', defaultPageSize: 10,
       defaultCandidateStatus: 'Pending', defaultRecruitmentSource: '',

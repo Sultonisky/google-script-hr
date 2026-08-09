@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
@@ -19,7 +19,7 @@
       background: #f0f2f5;
     }
 
-    /* ── Page wrapper ── */
+    /* -- Page wrapper -- */
     .login-page {
       flex: 1;
       display: flex;
@@ -30,21 +30,21 @@
       gap: 32px;
     }
 
-    /* ── Top: logo + company name + greeting ── */
+    /* -- Top: logo + company name + greeting -- */
     .login-header {
       text-align: center;
     }
     .login-logo {
       width: 64px;
       height: 64px;
-      background: linear-gradient(135deg, #005bac, #0b2540);
+      background: linear-gradient(135deg, #eb1c24, #0b2540);
       border-radius: 16px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       font-size: 22px;
       font-weight: 800;
-      color: #fdb913;
+      color: #fff;
       margin-bottom: 14px;
     }
     .login-logo img {
@@ -64,7 +64,7 @@
       color: #6b7280;
     }
 
-    /* ── Center: login card ── */
+    /* -- Center: login card -- */
     .login-card {
       width: 100%;
       max-width: 400px;
@@ -126,7 +126,7 @@
       width: 36px;
       height: 36px;
       border: 3px solid #e5e7eb;
-      border-top-color: #005bac;
+      border-top-color: #eb1c24;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
@@ -176,8 +176,8 @@
       color: #c0c4cc;
     }
     .login-form-group input:focus {
-      border-color: #005bac;
-      box-shadow: 0 0 0 3px rgba(0,91,172,0.1);
+      border-color: #eb1c24;
+      box-shadow: 0 0 0 3px rgba(235,28,36,0.1);
     }
     .password-toggle {
       position: absolute;
@@ -211,7 +211,7 @@
       padding: 12px 20px;
       border: none;
       border-radius: 10px;
-      background: linear-gradient(135deg, #005bac, #0b2540);
+      background: linear-gradient(135deg, #eb1c24, #0b2540);
       font-size: 14px;
       font-weight: 600;
       color: #fff;
@@ -221,7 +221,7 @@
     }
     .btn-login:hover {
       opacity: 0.92;
-      box-shadow: 0 4px 12px rgba(0,91,172,0.3);
+      box-shadow: 0 4px 12px rgba(235,28,36,0.3);
     }
     .btn-login:active { transform: scale(0.98); }
     .btn-login:disabled {
@@ -291,7 +291,7 @@
       background: #e5e7eb;
     }
 
-    /* ── Bottom: feature strip ── */
+    /* -- Bottom: feature strip -- */
     .login-features {
       width: 100%;
       max-width: 560px;
@@ -315,10 +315,10 @@
     }
     .feature-chip i {
       font-size: 13px;
-      color: #005bac;
+      color: #eb1c24;
     }
 
-    /* ── Footer ── */
+    /* -- Footer -- */
     .login-footer {
       padding: 16px 24px;
       text-align: center;
@@ -337,7 +337,7 @@
       margin-left: 6px;
     }
 
-    /* ── Success state ── */
+    /* -- Success state -- */
     .login-success-state {
       display: none;
       flex-direction: column;
@@ -392,7 +392,7 @@
       100% { opacity: 1; transform: translateY(0); }
     }
 
-    /* ── Page exit transition ── */
+    /* -- Page exit transition -- */
     .login-page.exiting {
       animation: loginExit 0.45s ease forwards;
     }
@@ -401,7 +401,7 @@
       100% { opacity: 0; transform: translateY(-20px) scale(0.96); }
     }
 
-    /* ── Overlay for smooth transition ── */
+    /* -- Overlay for smooth transition -- */
     .login-transition-overlay {
       position: fixed;
       inset: 0;
@@ -429,14 +429,14 @@
 
   <div class="login-page">
 
-    <!-- ── Header: logo + nama + greeting ── -->
+    <!-- -- Header: logo + nama + greeting -- -->
     <div class="login-header">
       <div class="login-logo" id="loginLogo">MH</div>
       <h1 id="loginCompanyName">MITO HRIS</h1>
       <p class="login-greeting">Selamat datang — silakan masuk untuk melanjutkan</p>
     </div>
 
-    <!-- ── Card login ── -->
+    <!-- -- Card login -- -->
     <div class="login-card">
       <div class="login-card-title">Masuk ke Sistem</div>
       <div class="login-card-subtitle">Gunakan email/username dan password Anda</div>
@@ -491,7 +491,7 @@
         </div>
         <div class="login-form-group" style="margin-bottom:8px;">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:500;margin-bottom:0;">
-            <input type="checkbox" id="loginRememberMe" name="rememberMe" style="width:16px;height:16px;accent-color:#005bac;cursor:pointer;" />
+            <input type="checkbox" id="loginRememberMe" name="rememberMe" style="width:16px;height:16px;accent-color:#eb1c24;cursor:pointer;" />
             <span style="font-size:13px;color:#374151;">Ingat Saya</span>
           </label>
         </div>
@@ -518,7 +518,7 @@
       <div class="login-divider">Akses terbatas untuk pengguna terdaftar</div>
     </div>
 
-    <!-- ── Feature strip ── -->
+    <!-- -- Feature strip -- -->
     <div class="login-features">
       <div class="feature-chip"><i class="bi bi-bar-chart-fill"></i> Dashboard Analitik</div>
       <div class="feature-chip"><i class="bi bi-people-fill"></i> Manajemen Kandidat</div>
@@ -529,10 +529,10 @@
 
   </div>
 
-  <!-- ── Transition overlay ── -->
+  <!-- -- Transition overlay -- -->
   <div class="login-transition-overlay" id="loginTransitionOverlay"></div>
 
-  <!-- ── Footer ── -->
+  <!-- -- Footer -- -->
   <div class="login-footer">
     <span id="loginFooterBrand">MITO HRIS</span> &copy; 2026
     <span class="version-badge" id="loginFooterVersion">v2.0.0</span>
