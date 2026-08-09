@@ -8,6 +8,7 @@
   var OS = {
     allItems: [],
     filtered: [],
+    masterData: {},
     currentPage: 1,
     detailId: null,
     editId: null,
@@ -15,6 +16,19 @@
   };
 
   var OS_PAGE_SIZE = 20;
+
+  // ---- Load master data for form selects ----
+  function loadOsMasterData() {
+    if (OS.masterData && Object.keys(OS.masterData).length > 0) return; // sudah ter-load
+    google.script.run
+      .withSuccessHandler(function (result) {
+        if (result && result.success) {
+          OS.masterData = result.data || {};
+        }
+      })
+      .withFailureHandler(function () {})
+      .getMasterDataGrouped();
+  }
 
   // ---- Load data from backend ----
   function loadOutsourceData(silent) {
@@ -267,25 +281,86 @@
     document.getElementById('osFormTitle').textContent = id ? 'Edit Outsource' : 'Tambah Outsource';
     document.getElementById('osfId').value = id || '';
 
+    // Populate master data selects
+    var osMasterSelects = {
+      'company_entity':    'osfCompanyEntity',
+      'department':        'osfDept',
+      'education':         'osfEducation',
+      'work_experience':   'osfWorkExp',
+      'employment_status': 'osfEmpStatus',
+      'contract_duration': 'osfContractDuration',
+      'salary_type':       'osfSalaryType',
+      'recruitment_source':'osfRecruitSource'
+    };
+    var masterData = OS.masterData || {};
+    Object.keys(osMasterSelects).forEach(function (cat) {
+      var sel = document.getElementById(osMasterSelects[cat]);
+      if (!sel) return;
+      var items = masterData[cat] || [];
+      sel.innerHTML = '<option value="">— Pilih —</option>';
+      items.forEach(function (name) {
+        var val = typeof name === 'object' ? name.name : name;
+        sel.innerHTML += '<option value="' + escapeHtml(val) + '">' + escapeHtml(val) + '</option>';
+      });
+    });
+
     if (id) {
       var os = OS.allItems.find(function(x) { return x.employeeId === id; });
       if (os) {
-        document.getElementById('osfNik').value = os.nik || '';
-        document.getElementById('osfNama').value = os.fullName || '';
-        document.getElementById('osfPosisi').value = os.position || '';
-        document.getElementById('osfPerusahaan').value = os.outsourceVendor || os.vendorCompany || '';
-        document.getElementById('osfTglMasuk').value = toDateInputValue(os.joinDate);
-        document.getElementById('osfStatus').value = (os.status || os.employmentStatus || 'Active');
-        document.getElementById('osfNotes').value = os.hrNotes || os.notes || '';
+        // Data Pribadi
+        document.getElementById('osfNama').value          = os.fullName        || '';
+        document.getElementById('osfNik').value           = os.nik             || '';
+        document.getElementById('osfBirthDate').value     = toDateInputValue(os.birthDate);
+        document.getElementById('osfAge').value           = os.age             || '';
+        document.getElementById('osfGender').value        = os.gender          || '';
+        document.getElementById('osfMarital').value       = os.maritalStatus   || '';
+        document.getElementById('osfEmail').value         = os.email           || '';
+        document.getElementById('osfPhone').value         = os.phone           || '';
+        document.getElementById('osfAddress').value       = os.address         || '';
+        document.getElementById('osfDistrict').value      = os.district        || '';
+        document.getElementById('osfCity').value          = os.city            || '';
+        document.getElementById('osfEducation').value     = os.education       || '';
+        document.getElementById('osfWorkExp').value       = os.workExperience  || '';
+        // Data Pekerjaan
+        document.getElementById('osfCompanyEntity').value = os.companyEntity   || '';
+        document.getElementById('osfPosisi').value        = os.position        || '';
+        document.getElementById('osfDept').value          = os.department      || '';
+        document.getElementById('osfDivision').value      = os.division        || '';
+        document.getElementById('osfBranch').value        = os.branch          || '';
+        document.getElementById('osfTglMasuk').value      = toDateInputValue(os.joinDate);
+        document.getElementById('osfPerusahaan').value    = os.outsourceVendor || os.vendorCompany || '';
+        document.getElementById('osfRecruitSource').value = os.recruitmentSource || '';
+        document.getElementById('osfStatus').value        = os.status          || 'Active';
+        // Kontrak & Gaji
+        document.getElementById('osfEmpStatus').value     = os.employmentStatus || '';
+        document.getElementById('osfContractStart').value = toDateInputValue(os.contractStart);
+        document.getElementById('osfContractEnd').value   = toDateInputValue(os.contractEnd);
+        document.getElementById('osfContractDuration').value = os.contractDuration || '';
+        document.getElementById('osfContractNumber').value= os.contractNumber  || '';
+        document.getElementById('osfSalaryType').value    = os.salaryType      || '';
+        document.getElementById('osfSalary').value        = os.salary          || '';
+        // Catatan
+        document.getElementById('osfHrNotes').value       = os.hrNotes         || '';
+        document.getElementById('osfNotes').value         = os.notes           || '';
       }
     } else {
-      document.getElementById('osfNik').value = '';
-      document.getElementById('osfNama').value = '';
-      document.getElementById('osfPosisi').value = '';
-      document.getElementById('osfPerusahaan').value = '';
-      document.getElementById('osfTglMasuk').value = '';
+      // Reset semua field
+      ['osfNama','osfNik','osfEmail','osfPhone','osfAddress','osfDistrict','osfCity',
+       'osfPosisi','osfDivision','osfBranch','osfPerusahaan','osfContractNumber',
+       'osfHrNotes','osfNotes'].forEach(function(id) {
+        var el = document.getElementById(id); if (el) el.value = '';
+      });
+      ['osfBirthDate','osfTglMasuk','osfContractStart','osfContractEnd'].forEach(function(id) {
+        var el = document.getElementById(id); if (el) el.value = '';
+      });
+      ['osfAge','osfSalary'].forEach(function(id) {
+        var el = document.getElementById(id); if (el) el.value = '';
+      });
+      ['osfGender','osfMarital','osfCompanyEntity','osfDept','osfEducation','osfWorkExp',
+       'osfEmpStatus','osfContractDuration','osfSalaryType','osfRecruitSource'].forEach(function(id) {
+        var el = document.getElementById(id); if (el) el.value = '';
+      });
       document.getElementById('osfStatus').value = 'Active';
-      document.getElementById('osfNotes').value = '';
     }
     OS.formModal.show();
   }
@@ -295,20 +370,42 @@
     if (!name) { showToast('Nama lengkap harus diisi.', 'warning'); return; }
 
     var data = {
-      nik: document.getElementById('osfNik').value.trim(),
-      fullName: name,
-      position: document.getElementById('osfPosisi').value.trim(),
-      companyEntity: 'MITO Group',
-      employeeType: 'Outsource',
-      email: '',
-      phone: '',
-      address: '',
-      city: '',
-      department: '',
-      joinDate: document.getElementById('osfTglMasuk').value,
-      status: document.getElementById('osfStatus').value,
-      notes: document.getElementById('osfNotes').value.trim(),
-      outsourceVendor: document.getElementById('osfPerusahaan').value.trim(),
+      // Data Pribadi
+      fullName:          name,
+      nik:               document.getElementById('osfNik').value.trim(),
+      birthDate:         document.getElementById('osfBirthDate').value,
+      age:               document.getElementById('osfAge').value,
+      gender:            document.getElementById('osfGender').value,
+      maritalStatus:     document.getElementById('osfMarital').value,
+      email:             document.getElementById('osfEmail').value.trim(),
+      phone:             document.getElementById('osfPhone').value.trim(),
+      address:           document.getElementById('osfAddress').value.trim(),
+      district:          document.getElementById('osfDistrict').value.trim(),
+      city:              document.getElementById('osfCity').value.trim(),
+      education:         document.getElementById('osfEducation').value,
+      workExperience:    document.getElementById('osfWorkExp').value,
+      // Data Pekerjaan
+      companyEntity:     document.getElementById('osfCompanyEntity').value,
+      employeeType:      'Outsource',
+      position:          document.getElementById('osfPosisi').value.trim(),
+      department:        document.getElementById('osfDept').value,
+      division:          document.getElementById('osfDivision').value.trim(),
+      branch:            document.getElementById('osfBranch').value.trim(),
+      joinDate:          document.getElementById('osfTglMasuk').value,
+      outsourceVendor:   document.getElementById('osfPerusahaan').value.trim(),
+      recruitmentSource: document.getElementById('osfRecruitSource').value,
+      status:            document.getElementById('osfStatus').value,
+      // Kontrak & Gaji
+      employmentStatus:  document.getElementById('osfEmpStatus').value,
+      contractStart:     document.getElementById('osfContractStart').value,
+      contractEnd:       document.getElementById('osfContractEnd').value,
+      contractDuration:  document.getElementById('osfContractDuration').value,
+      contractNumber:    document.getElementById('osfContractNumber').value.trim(),
+      salary:            document.getElementById('osfSalary').value,
+      salaryType:        document.getElementById('osfSalaryType').value,
+      // Catatan
+      hrNotes:           document.getElementById('osfHrNotes').value.trim(),
+      notes:             document.getElementById('osfNotes').value.trim(),
     };
 
     var btn = document.getElementById('btnOsSave');
@@ -393,6 +490,7 @@
   // SPA navigation hook — called by router when entering pageOutsource
   function outOnNavigate() {
     initOutsourceUI();
+    loadOsMasterData();
     loadOutsourceData(false);
   }
 </script>
