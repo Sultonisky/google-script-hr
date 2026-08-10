@@ -72,3 +72,23 @@ function fmtDateStr_(val) {
   var base = m[3] + '/' + m[2] + '/' + m[1];
   return m[4] ? base + ' ' + m[4] + ':' + m[5] : base;
 }
+
+// ============================================================
+// Fetch gambar eksternal & return sebagai data URL base64
+// Digunakan untuk bypass CSP sandbox di HTML Service.
+// Contoh: getHeroImageBase64() -> "data:image/jpeg;base64,/9j/..."
+// ============================================================
+function getHeroImageBase64() {
+  try {
+    var url = 'https://media.giphy.com/avatars/mitoofficial/GtRq8wJjQCjJ.jpg';
+    var response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+    if (response.getResponseCode() !== 200) return '';
+    var blob = response.getBlob();
+    var mimeType = blob.getContentType() || 'image/jpeg';
+    var base64 = Utilities.base64Encode(blob.getBytes());
+    return 'data:' + mimeType + ';base64,' + base64;
+  } catch (e) {
+    Logger.log('getHeroImageBase64 error: ' + e.message);
+    return '';
+  }
+}

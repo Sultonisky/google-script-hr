@@ -380,15 +380,20 @@
                 <label class="form-label" for="employee_type"
                   >Tipe Karyawan <span class="required">*</span></label
                 >
-                <select
-                  class="form-select"
+                <input
+                  type="text"
+                  class="form-control"
+                  id="employee_type_display"
+                  value="Outsource"
+                  readonly
+                  style="background-color:#f8f9fa;cursor:default;"
+                />
+                <input
+                  type="hidden"
                   id="employee_type"
                   name="employee_type"
-                  required
-                  data-master="employee_type"
-                >
-                  <option value="">-- Select Type --</option>
-                </select>
+                  value="Outsource"
+                />
                 <div class="invalid-feedback">Tipe karyawan wajib dipilih.</div>
               </div>
               <div class="col-md-6">
