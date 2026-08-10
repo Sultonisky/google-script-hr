@@ -52,84 +52,90 @@ function generateOutsourceId_(now) {
 
 // ---- Simpan data OS langsung ke sheet Employee ----
 function simpanDataOutsource(formObject) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
   try {
     var validationError = validateOutsourceForm_(formObject);
-    if (validationError) return "Error: " + validationError;
-
-    var lock = LockService.getScriptLock();
-    lock.waitLock(10000);
-    try {
-      var now = new Date();
-      var outsourceId = generateOutsourceId_(now);
-      var employeeId = generateEmployeeId_(now);
-      var createdAt = Utilities.formatDate(now, "GMT+7", "yyyy-MM-dd HH:mm:ss");
-
-      var sheet = getOrCreateEmployeeSheet_();
-
-      // Build row using EMPLOYEE_COL for exact column alignment (37 cols)
-      var newRow = new Array(EMPLOYEE_HEADERS.length).fill("");
-      newRow[EMPLOYEE_COL["Employee ID"] - 1] = employeeId;
-      newRow[EMPLOYEE_COL["Recruitment ID"] - 1] = outsourceId;
-      newRow[EMPLOYEE_COL["Full Name"] - 1] = formObject.full_name;
-      newRow[EMPLOYEE_COL["Position"] - 1] = formObject.position;
-      newRow[EMPLOYEE_COL["Email"] - 1] = formObject.email;
-      newRow[EMPLOYEE_COL["Phone"] - 1] = "'" + formObject.phone;
-      newRow[EMPLOYEE_COL["Join Date"] - 1] = formObject.join_date;
-      newRow[EMPLOYEE_COL["Status"] - 1] = "Active";
-      newRow[EMPLOYEE_COL["Notes"] - 1] = "";
-      newRow[EMPLOYEE_COL["Created At"] - 1] = createdAt;
-      newRow[EMPLOYEE_COL["Company Entity"] - 1] =
-        formObject.company_entity || "MITO Group";
-      newRow[EMPLOYEE_COL["Employee Type"] - 1] = "Outsource";
-      newRow[EMPLOYEE_COL["NIK"] - 1] = "'" + formObject.nik;
-      newRow[EMPLOYEE_COL["Birth Date"] - 1] = formObject.birth_date;
-      newRow[EMPLOYEE_COL["Age"] - 1] = Number(formObject.age) || "";
-      newRow[EMPLOYEE_COL["Gender"] - 1] = formObject.gender;
-      newRow[EMPLOYEE_COL["Marital Status"] - 1] = formObject.marital_status;
-      newRow[EMPLOYEE_COL["Address"] - 1] = formObject.address;
-      newRow[EMPLOYEE_COL["City"] - 1] = formObject.city;
-      newRow[EMPLOYEE_COL["Education"] - 1] = formObject.education;
-      newRow[EMPLOYEE_COL["Work Experience"] - 1] =
-        formObject.work_experience || "";
-      newRow[EMPLOYEE_COL["Department"] - 1] = formObject.department || "";
-      newRow[EMPLOYEE_COL["Division"] - 1] = "";
-      newRow[EMPLOYEE_COL["Branch"] - 1] = "";
-      newRow[EMPLOYEE_COL["Contract Start"] - 1] =
-        formObject.contract_start || "";
-      newRow[EMPLOYEE_COL["Contract End"] - 1] =
-        formObject.contract_end || "";
-      newRow[EMPLOYEE_COL["Contract Duration"] - 1] =
-        formObject.contract_duration || "";
-      newRow[EMPLOYEE_COL["Employment Status"] - 1] =
-        formObject.employment_status || "Probation";
-      newRow[EMPLOYEE_COL["Salary"] - 1] = Number(formObject.salary) || 0;
-      newRow[EMPLOYEE_COL["Salary Type"] - 1] = formObject.salary_type || "Monthly";
-      newRow[EMPLOYEE_COL["Outsource Vendor"] - 1] =
-        formObject.outsource_vendor || "";
-      newRow[EMPLOYEE_COL["Contract Number"] - 1] =
-        formObject.contract_number || "";
-      newRow[EMPLOYEE_COL["District"] - 1] = "";
-      newRow[EMPLOYEE_COL["Recruitment Source"] - 1] =
-        formObject.recruitment_source || "";
-      newRow[EMPLOYEE_COL["HR Notes"] - 1] = "";
-      newRow[EMPLOYEE_COL["Created By"] - 1] = "System (Outsource Form)";
-      newRow[EMPLOYEE_COL["Updated At"] - 1] = createdAt;
-
-      sheet.appendRow(newRow);
-
-      writeAuditLog_(
-        outsourceId,
-        "Created",
-        "Status",
-        "-",
-        "Active (Outsource)",
-      );
-      return "Sukses";
-    } finally {
+    if (validationError) {
       lock.releaseLock();
+      return "Error: " + validationError;
     }
+
+    var nikCheck = isNikExists_(formObject.nik);
+    if (nikCheck.found) {
+      lock.releaseLock();
+      return "Error: NIK ini sudah terdaftar dengan status " + nikCheck.status + ". Tidak dapat mendaftar lagi.";
+    }
+
+    var now = new Date();
+    var outsourceId = generateOutsourceId_(now);
+    var employeeId = generateEmployeeId_(now);
+    var createdAt = Utilities.formatDate(now, "GMT+7", "yyyy-MM-dd HH:mm:ss");
+
+    var sheet = getOrCreateEmployeeSheet_();
+
+    var newRow = new Array(EMPLOYEE_HEADERS.length).fill("");
+    newRow[EMPLOYEE_COL["Employee ID"] - 1] = employeeId;
+    newRow[EMPLOYEE_COL["Recruitment ID"] - 1] = outsourceId;
+    newRow[EMPLOYEE_COL["Full Name"] - 1] = formObject.full_name;
+    newRow[EMPLOYEE_COL["Position"] - 1] = formObject.position;
+    newRow[EMPLOYEE_COL["Email"] - 1] = formObject.email;
+    newRow[EMPLOYEE_COL["Phone"] - 1] = "'" + formObject.phone;
+    newRow[EMPLOYEE_COL["Join Date"] - 1] = formObject.join_date;
+    newRow[EMPLOYEE_COL["Status"] - 1] = "Active";
+    newRow[EMPLOYEE_COL["Notes"] - 1] = "";
+    newRow[EMPLOYEE_COL["Created At"] - 1] = createdAt;
+    newRow[EMPLOYEE_COL["Company Entity"] - 1] =
+      formObject.company_entity || "MITO Group";
+    newRow[EMPLOYEE_COL["Employee Type"] - 1] = "Outsource";
+    newRow[EMPLOYEE_COL["NIK"] - 1] = "'" + formObject.nik;
+    newRow[EMPLOYEE_COL["Birth Date"] - 1] = formObject.birth_date;
+    newRow[EMPLOYEE_COL["Age"] - 1] = Number(formObject.age) || "";
+    newRow[EMPLOYEE_COL["Gender"] - 1] = formObject.gender;
+    newRow[EMPLOYEE_COL["Marital Status"] - 1] = formObject.marital_status;
+    newRow[EMPLOYEE_COL["Address"] - 1] = formObject.address;
+    newRow[EMPLOYEE_COL["City"] - 1] = formObject.city;
+    newRow[EMPLOYEE_COL["Education"] - 1] = formObject.education;
+    newRow[EMPLOYEE_COL["Work Experience"] - 1] =
+      formObject.work_experience || "";
+    newRow[EMPLOYEE_COL["Department"] - 1] = formObject.department || "";
+    newRow[EMPLOYEE_COL["Division"] - 1] = "";
+    newRow[EMPLOYEE_COL["Branch"] - 1] = "";
+    newRow[EMPLOYEE_COL["Contract Start"] - 1] =
+      formObject.contract_start || "";
+    newRow[EMPLOYEE_COL["Contract End"] - 1] =
+      formObject.contract_end || "";
+    newRow[EMPLOYEE_COL["Contract Duration"] - 1] =
+      formObject.contract_duration || "";
+    newRow[EMPLOYEE_COL["Employment Status"] - 1] =
+      formObject.employment_status || "Probation";
+    newRow[EMPLOYEE_COL["Salary"] - 1] = Number(formObject.salary) || 0;
+    newRow[EMPLOYEE_COL["Salary Type"] - 1] = formObject.salary_type || "Monthly";
+    newRow[EMPLOYEE_COL["Outsource Vendor"] - 1] =
+      formObject.outsource_vendor || "";
+    newRow[EMPLOYEE_COL["Contract Number"] - 1] =
+      formObject.contract_number || "";
+    newRow[EMPLOYEE_COL["District"] - 1] = "";
+    newRow[EMPLOYEE_COL["Recruitment Source"] - 1] =
+      formObject.recruitment_source || "";
+    newRow[EMPLOYEE_COL["HR Notes"] - 1] = "";
+    newRow[EMPLOYEE_COL["Created By"] - 1] = "System (Outsource Form)";
+    newRow[EMPLOYEE_COL["Updated At"] - 1] = createdAt;
+
+    sheet.appendRow(newRow);
+
+    writeAuditLog_(
+      outsourceId,
+      "Created",
+      "Status",
+      "-",
+      "Active (Outsource)",
+    );
+    return "Sukses";
   } catch (error) {
     return "Error: " + error.toString();
+  } finally {
+    lock.releaseLock();
   }
 }
 

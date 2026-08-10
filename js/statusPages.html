@@ -149,7 +149,7 @@
       return '<tr>' +
         '<td><div class="avatar-sm">' + escapeHtml(initials(r.fullName)) + '</div></td>' +
         '<td><span class="id-mono">' + escapeHtml(r.recruitmentId) + '</span></td>' +
-        '<td><div class="cand-name">' + escapeHtml(r.fullName) + '</div>' +
+        '<td><div class="cand-name cand-name-link" style="cursor:pointer;color:var(--color-primary);" data-id="' + escapeHtml(r.recruitmentId) + '" data-from="' + cfg.statusLabel + '">' + escapeHtml(r.fullName) + '</div>' +
         '<div class="cand-sub">' + escapeHtml(r.email || '') + '</div></td>' +
         '<td>' + escapeHtml(String(r.age || '-')) + ' Th</td>' +
         '<td>' + escapeHtml(r.positionApplied || '-') + '</td>' +
@@ -157,9 +157,6 @@
         '<td><small>' + escapeHtml(r.processedDate || r.createdDate || '-') + '</small></td>' +
         '<td><small>' + escapeHtml(r.processedBy || '-') + '</small></td>' +
         '<td>' +
-        '<button class="btn btn-sm btn-outline-primary me-1 btn-status-detail" ' +
-        'data-id="' + escapeHtml(r.recruitmentId) + '" title="Lihat Detail">' +
-        '<i class="bi bi-eye"></i></button>' +
         '<button class="btn btn-sm btn-outline-secondary btn-status-move" ' +
         'data-id="' + escapeHtml(r.recruitmentId) + '" data-from="' + cfg.statusLabel + '" title="Ubah Status">' +
         '<i class="bi bi-arrow-repeat"></i></button>' +
@@ -187,11 +184,11 @@
     }
 
     function attachRowHandlers() {
-      document.querySelectorAll('#' + cfg.prefix + 'TableBody .btn-status-detail').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-          var id = btn.getAttribute('data-id');
+      document.querySelectorAll('#' + cfg.prefix + 'TableBody .cand-name-link').forEach(function(el) {
+        el.addEventListener('click', function() {
+          var id = el.getAttribute('data-id');
           var row = data.find(function(r) { return r.recruitmentId === id; });
-          if (row) openStatusDetail(row, cfg.statusLabel, cfg.statusName);
+          if (row) openStatusDrawer(row, cfg.statusLabel, cfg.statusName);
         });
       });
       document.querySelectorAll('#' + cfg.prefix + 'TableBody .btn-status-move').forEach(function(btn) {
@@ -343,58 +340,63 @@
   }
 
   // ============================================================
-  // DETAIL MODAL
+  // STATUS DRAWER — reuses existing Drawer partial in candidate mode
   // ============================================================
-  function openStatusDetail(row, statusLabel, statusName) {
-    var nameEl = document.getElementById('statusDetailName');
-    var idEl   = document.getElementById('statusDetailId');
-    var bodyEl = document.getElementById('statusDetailBody');
-    var moveBtn = document.getElementById('btnStatusDetailMoveStatus');
+  function openStatusDrawer(row, statusLabel, statusName) {
+    activeCandidateId = row.recruitmentId;
+    setDrawerMode('candidate');
 
+    var avatarEl = document.getElementById('drawerAvatar');
+    if (avatarEl) avatarEl.innerText = initials(row.fullName);
+    var nameEl = document.getElementById('drawerCandidateName');
     if (nameEl) nameEl.innerText = row.fullName || '-';
-    if (idEl)   idEl.innerText   = row.recruitmentId + ' · ' + statusLabel;
+    var posEl = document.getElementById('drawerPosition');
+    if (posEl) posEl.innerText = row.positionApplied || '-';
+    var badgeWrap = document.getElementById('drawerStatusBadgeWrap');
+    if (badgeWrap) badgeWrap.innerHTML =
+      '<span class="badge-status lg ' + statusBadgeClass(statusLabel) + '">' +
+      escapeHtml(statusLabel) + '</span>';
+    setDrawerMeta([
+      { label: 'Recruitment ID', value: row.recruitmentId || '-' },
+      { label: 'Status', value: statusLabel },
+      { label: 'Diproses', value: row.processedDate || '-' }
+    ]);
 
-    if (bodyEl) {
-      var extraInfo = '';
-      if (statusName === 'hold') {
-        extraInfo =
-          '<div class="col-6"><div class="cv-label">Alasan Hold</div><div class="cv-value">' + escapeHtml(row.holdReason || '-') + '</div></div>' +
-          '<div class="col-6"><div class="cv-label">Follow Up</div><div class="cv-value">' + escapeHtml(row.holdFollowUpDate || '-') + '</div></div>';
-      } else if (statusName === 'accepted') {
-        extraInfo =
-          '<div class="col-6"><div class="cv-label">Employee ID</div><div class="cv-value">' + escapeHtml(row.employeeId || '-') + '</div></div>';
-      } else if (statusName === 'blacklist') {
-        extraInfo =
-          '<div class="col-6"><div class="cv-label">Alasan Blacklist</div><div class="cv-value" style="color:#991b1b">' + escapeHtml(row.blacklistReason || '-') + '</div></div>' +
-          '<div class="col-6"><div class="cv-label">Tgl Blacklist</div><div class="cv-value">' + escapeHtml(row.blacklistDate || '-') + '</div></div>';
-      }
-      bodyEl.innerHTML =
-        '<div class="col-6"><div class="cv-label">Nama Lengkap</div><div class="cv-value">' + escapeHtml(row.fullName || '-') + '</div></div>' +
-        '<div class="col-6"><div class="cv-label">NIK</div><div class="cv-value">' + escapeHtml(row.nik || '-') + '</div></div>' +
-        '<div class="col-6"><div class="cv-label">Email</div><div class="cv-value">' + escapeHtml(row.email || '-') + '</div></div>' +
-        '<div class="col-6"><div class="cv-label">No. HP</div><div class="cv-value">' + escapeHtml(row.phone || '-') + '</div></div>' +
-        '<div class="col-6"><div class="cv-label">Posisi</div><div class="cv-value">' + escapeHtml(row.positionApplied || '-') + '</div></div>' +
-        '<div class="col-6"><div class="cv-label">Kota</div><div class="cv-value">' + escapeHtml(row.city || '-') + '</div></div>' +
-        '<div class="col-6"><div class="cv-label">Pendidikan</div><div class="cv-value">' + escapeHtml(row.education || '-') + '</div></div>' +
-        '<div class="col-6"><div class="cv-label">Pengalaman</div><div class="cv-value">' + escapeHtml(row.workExperience || '-') + '</div></div>' +
-        '<div class="col-6"><div class="cv-label">Ekspektasi Gaji</div><div class="cv-value">' + formatRupiah(row.expectedSalary) + '</div></div>' +
-        '<div class="col-6"><div class="cv-label">Sumber</div><div class="cv-value">' + escapeHtml(row.recruitmentSource || '-') + '</div></div>' +
-        extraInfo +
-        '<div class="col-6"><div class="cv-label">Diproses</div><div class="cv-value">' + escapeHtml(row.processedDate || '-') + '</div></div>' +
-        '<div class="col-6"><div class="cv-label">Oleh</div><div class="cv-value">' + escapeHtml(row.processedBy || '-') + '</div></div>' +
-        (row.hrNotes ? '<div class="col-12"><div class="cv-label">Catatan HR</div><div class="cv-value" style="white-space:pre-wrap">' + escapeHtml(row.hrNotes) + '</div></div>' : '');
-    }
+    var fields = {
+      cvFullName: row.fullName, cvBirthDate: row.birthDate,
+      cvAge: row.age ? row.age + ' Tahun' : '-',
+      cvGender: row.gender === 'Male' ? 'Laki-laki' : row.gender === 'Female' ? 'Perempuan' : (row.gender || '-'),
+      cvMaritalStatus: row.maritalStatus, cvNik: row.nik,
+      cvPhone: row.phone, cvEmail: row.email, cvAddress: row.address, cvCity: row.city,
+      cvPosition: row.positionApplied, cvEducation: row.education,
+      cvExperience: row.workExperience, cvLastCompany: row.lastCompany,
+      cvEmploymentStatus: row.currentEmploymentStatus, cvAvailability: row.availableToJoin,
+      cvSalary: formatRupiah(row.expectedSalary), cvSource: row.recruitmentSource
+    };
+    Object.keys(fields).forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.innerText = fields[id] || '-';
+    });
 
-    if (moveBtn) {
-      moveBtn.onclick = function() {
-        var detailModal = bootstrap.Modal.getInstance(document.getElementById('statusDetailModal'));
-        if (detailModal) detailModal.hide();
-        setTimeout(function() { openMoveStatusModal(row.recruitmentId, statusLabel); }, 300);
-      };
-    }
+    var notesEl = document.getElementById('cvHrNotes');
+    if (notesEl) notesEl.value = row.hrNotes || '';
+    var charEl = document.getElementById('notesCharCounter');
+    if (charEl) charEl.innerText = (row.hrNotes || '').length + ' / 2000 karakter';
+    var lastEl = document.getElementById('notesLastUpdated');
+    if (lastEl) lastEl.innerText = row.updatedAt || row.processedDate || '-';
+    var stateEl = document.getElementById('notesSaveState');
+    if (stateEl) { stateEl.innerText = 'Tersimpan otomatis'; stateEl.className = 'notes-save-state'; }
 
-    var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('statusDetailModal'));
-    modal.show();
+    updateStatusButtonsUI(statusLabel);
+
+    var tl = document.getElementById('drawerTimeline');
+    if (tl) tl.innerHTML = '<div class="timeline-empty">Memuat riwayat...</div>';
+    google.script.run
+      .withSuccessHandler(function(events) { renderTimeline(events, row.createdDate); })
+      .withFailureHandler(function()       { renderTimeline([], row.createdDate); })
+      .getAuditLogForCandidate(row.recruitmentId);
+
+    openDrawer();
   }
 
   // ============================================================
