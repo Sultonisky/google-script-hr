@@ -4,9 +4,16 @@
 
 // ---- Simpan pelamar baru ----
 function simpanDataKandidat(formObject) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
   try {
     var validationError = validateFormData_(formObject);
     if (validationError) return "Error: " + validationError;
+
+    var nikCheck = isNikExists_(formObject.nik);
+    if (nikCheck.found) {
+      return "Error: NIK ini sudah terdaftar dengan status " + nikCheck.status + ". Tidak dapat mendaftar lagi.";
+    }
 
     var sheet = getOrCreateSheet_();
     var timestamp = new Date();
@@ -56,7 +63,57 @@ function simpanDataKandidat(formObject) {
     return "Sukses";
   } catch (error) {
     return "Error: " + error.toString();
+  } finally {
+    lock.releaseLock();
   }
+}
+
+// ============================================================
+// CEK DUPLIKASI NIK DI SEMUA SHEET
+// Mencari NIK di: data_kandidat, kandidat_hold, kandidat_accepted,
+// kandidat_blacklist, dan Employee. Return object {found, sheet, status}
+// ============================================================
+function isNikExists_(nik) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheetsToCheck = [
+    { name: SHEET_NAME, label: 'data_kandidat', status: 'Pending' },
+    { name: HOLD_SHEET_NAME, label: 'kandidat_hold', status: 'Hold' },
+    { name: ACCEPTED_SHEET_NAME, label: 'kandidat_accepted', status: 'Accepted' },
+    { name: BLACKLIST_SHEET_NAME, label: 'kandidat_blacklist', status: 'Blacklist' },
+    { name: EMPLOYEE_SHEET_NAME, label: 'Employee', status: 'Employee' }
+  ];
+
+  var searchNik = "'" + String(nik).trim();
+  var bareNik = String(nik).trim();
+
+  for (var s = 0; s < sheetsToCheck.length; s++) {
+    var sheetInfo = sheetsToCheck[s];
+    var sheet = ss.getSheetByName(sheetInfo.name);
+    if (!sheet || sheet.getLastRow() < 2) continue;
+
+    var lastRow = sheet.getLastRow();
+    var lastCol = sheet.getLastColumn();
+    var values = sheet.getRange(1, 1, lastRow, lastCol).getValues();
+    var headers = values[0];
+
+    var nikCol = -1;
+    for (var c = 0; c < headers.length; c++) {
+      if (String(headers[c]).trim() === 'NIK') {
+        nikCol = c;
+        break;
+      }
+    }
+    if (nikCol === -1) continue;
+
+    for (var r = 1; r < values.length; r++) {
+      var rowNik = String(values[r][nikCol] || '').trim();
+      if (rowNik === searchNik || rowNik === bareNik) {
+        return { found: true, sheet: sheetInfo.label, status: sheetInfo.status };
+      }
+    }
+  }
+
+  return { found: false, sheet: '', status: '' };
 }
 
 // ---- Ambil seluruh kandidat (dashboard) ----

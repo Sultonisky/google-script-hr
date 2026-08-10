@@ -33,15 +33,22 @@
     function onStatusUpdateSuccess(result, successMessage) {
       lockStatusButtons(false);
       if (result && result.success) {
-        // Kandidat sudah dipindahkan ke sheet status — hapus dari allCandidates
-        allCandidates = allCandidates.filter(function(c) {
-          return c.recruitmentId !== activeCandidateId;
-        });
+        if (typeof allCandidates !== 'undefined') {
+          allCandidates = allCandidates.filter(function(c) {
+            return c.recruitmentId !== activeCandidateId;
+          });
+        }
         showToast(successMessage, 'success');
         closeDrawer();
-        populateAllDropdowns(allCandidates);
-        updateStats(allCandidates);
-        applyFilters();
+        if (typeof populateAllDropdowns === 'function') populateAllDropdowns(allCandidates);
+        if (typeof updateStats === 'function') updateStats(allCandidates);
+        if (typeof applyFilters === 'function') applyFilters();
+        var refreshMap = { 'Hold': HOLD_PAGE, 'Accepted': ACC_PAGE, 'Blacklist': BL_PAGE };
+        if (result.newStatus) {
+          var targetPage = refreshMap[result.newStatus];
+          if (targetPage && typeof targetPage.loadData === 'function') targetPage.loadData(true);
+        }
+        if (typeof loadDashboardStatusCounts === 'function') loadDashboardStatusCounts();
       } else {
         showToast('Gagal memperbarui status: ' + (result ? result.message : 'Unknown error'), 'error');
       }
