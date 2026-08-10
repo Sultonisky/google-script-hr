@@ -124,7 +124,7 @@
 
   function isLastCompanyRequired(){
     var we = workExperienceSelect ? workExperienceSelect.value : '';
-    return we !== '' && we !== 'No Experience';
+    return we !== '' && we !== 'Fresh Graduate';
   }
   function isDistrictValid(){
     if (districtManualWrap && districtManualWrap.style.display !== 'none') {
@@ -448,7 +448,7 @@
   // ============================================================
   workExperienceSelect.addEventListener('change', function(){
     var lc = document.getElementById('last_company');
-    if(this.value===''||this.value==='No Experience'){ lastCompanyGroup.style.display='none'; lc.value=''; lc.disabled=true; lc.required=false; lc.classList.remove('is-valid','is-invalid'); }
+    if(this.value===''||this.value==='Fresh Graduate'){ lastCompanyGroup.style.display='none'; lc.value=''; lc.disabled=true; lc.required=false; lc.classList.remove('is-valid','is-invalid'); }
     else { lastCompanyGroup.style.display='block'; lc.disabled=false; lc.required=true; }
     validateField(this); updateProgress();
   });

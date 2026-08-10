@@ -29,7 +29,7 @@
   var progressMessage      = document.getElementById('progressMessage');
   var phoneInput           = document.getElementById('phone');
   var salaryInput          = document.getElementById('salary');
-  var employeeTypeSelect   = document.getElementById('employee_type');
+  var employeeTypeSelect   = document.getElementById('employee_type_display');
   var vendorSection        = document.getElementById('vendorSection');
   var vendorInput          = document.getElementById('outsource_vendor');
   var contractDurationSel  = document.getElementById('contract_duration');
@@ -64,7 +64,7 @@
   // EMPLOYEE TYPE — show/hide vendor section & contract required
   // ============================================================
   function handleEmployeeTypeChange() {
-    var type = employeeTypeSelect ? employeeTypeSelect.value : '';
+    var type = getEmployeeType();
     var isOutsource   = type === 'Outsource';
     var needsContract = type === 'Outsource' || type === 'PKWT' || type === 'Intern';
 
@@ -100,11 +100,9 @@
     updateProgress();
   }
 
-  if (employeeTypeSelect) {
-    employeeTypeSelect.addEventListener('change', function() {
-      validateField(this);
-      handleEmployeeTypeChange();
-    });
+  var employeeTypeHidden = document.getElementById('employee_type');
+  function getEmployeeType() {
+    return employeeTypeHidden ? employeeTypeHidden.value : 'Outsource';
   }
 
   // ============================================================
@@ -142,10 +140,10 @@
   ];
 
   function isVendorRequired(){
-    return employeeTypeSelect ? employeeTypeSelect.value === 'Outsource' : false;
+    return getEmployeeType() === 'Outsource';
   }
   function isContractRequired(){
-    var t = employeeTypeSelect ? employeeTypeSelect.value : '';
+    var t = getEmployeeType();
     return t === 'Outsource' || t === 'PKWT';
   }
   function isDistrictValid(){
@@ -564,27 +562,19 @@
       .withSuccessHandler(function(result) {
         if (result && result.success && result.data) {
           var data = result.data;
-          var cats = ['department', 'employee_type'];
-          var ids  = ['department', 'employee_type'];
+          var cats = ['department'];
+          var ids  = ['department'];
           for (var c = 0; c < cats.length; c++) {
             var sel = document.getElementById(ids[c]);
             if (!sel) continue;
             var items = data[cats[c]] || [];
             var cur = sel.value;
-            var opts = '<option value="">';
-            if (ids[c] === 'department') opts += '-- Select Department --';
-            else if (ids[c] === 'employee_type') opts += '-- Select Type --';
-            opts += '</option>';
+            var opts = '<option value="">-- Select Department --</option>';
             items.forEach(function(name) {
               var val = typeof name === 'object' ? name.name : name;
               opts += '<option value="' + val + '"' + (cur === val ? ' selected' : '') + '>' + val + '</option>';
             });
             sel.innerHTML = opts;
-          }
-          // Default tipe karyawan = Outsource (form registrasi outsource)
-          var etDefault = document.getElementById('employee_type');
-          if (etDefault && !etDefault.value && etDefault.options.length > 1) {
-            etDefault.value = 'Outsource';
           }
           handleEmployeeTypeChange();
         }

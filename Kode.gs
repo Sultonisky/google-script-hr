@@ -115,6 +115,15 @@ function doGet(e) {
       .addMetaTag("viewport", "width=device-width, initial-scale=1");
   }
 
+  // --- Candidate Update Data (kandidat accepted update data sendiri) ---
+  if (page === "update-data") {
+    return buildTemplate_("views/CandidateUpdateData")
+      .evaluate()
+      .setTitle("Update Data Karyawan — MITO HRIS")
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+      .addMetaTag("viewport", "width=device-width, initial-scale=1");
+  }
+
   // --- Candidate Registration (single-page: landing + form) ---
   // ?type=kandidat or direct link backward compat
   if (type === 'kandidat' && page === '') {

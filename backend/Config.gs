@@ -210,12 +210,14 @@ USERS_HEADERS.forEach(function (h, i) {
 // Kolom = SHEET_HEADERS + EXTRA_HEADERS + kolom khusus hold
 // ============================================================
 var HOLD_HEADERS = SHEET_HEADERS.concat(EXTRA_HEADERS).concat([
-  "Processed Date",    // tanggal dipindahkan ke sheet ini
-  "Processed By",      // user yang mengubah status
+  "Processed Date", // tanggal dipindahkan ke sheet ini
+  "Processed By", // user yang mengubah status
 ]);
 
 var HOLD_COL = {};
-HOLD_HEADERS.forEach(function (h, i) { HOLD_COL[h] = i + 1; });
+HOLD_HEADERS.forEach(function (h, i) {
+  HOLD_COL[h] = i + 1;
+});
 
 // ============================================================
 // SHEET: kandidat_accepted
@@ -227,7 +229,9 @@ var ACCEPTED_HEADERS = SHEET_HEADERS.concat(EXTRA_HEADERS).concat([
 ]);
 
 var ACCEPTED_COL = {};
-ACCEPTED_HEADERS.forEach(function (h, i) { ACCEPTED_COL[h] = i + 1; });
+ACCEPTED_HEADERS.forEach(function (h, i) {
+  ACCEPTED_COL[h] = i + 1;
+});
 
 // ============================================================
 // SHEET: kandidat_blacklist
@@ -239,7 +243,9 @@ var BLACKLIST_HEADERS = SHEET_HEADERS.concat(EXTRA_HEADERS).concat([
 ]);
 
 var BLACKLIST_COL = {};
-BLACKLIST_HEADERS.forEach(function (h, i) { BLACKLIST_COL[h] = i + 1; });
+BLACKLIST_HEADERS.forEach(function (h, i) {
+  BLACKLIST_COL[h] = i + 1;
+});
 
 // ============================================================
 // SHEET: Offboarding
@@ -369,13 +375,7 @@ var DEFAULT_MASTER_DATA = {
     "Yogyakarta",
     "Medan",
   ],
-  employee_type: [
-    "Project",
-    "PKWTT",
-    "PKWT",
-    "Outsource",
-    "Intern",
-  ],
+  employee_type: ["Project", "PKWTT", "PKWT", "Outsource", "Intern"],
   offboarding_type: [
     "Resignation",
     "Termination",
@@ -384,7 +384,7 @@ var DEFAULT_MASTER_DATA = {
   ],
   gender: ["Male", "Female"],
   company_entity: [
-    "PT Mahakarya Sukses Indonesia",
+    "MITO Group",
     "PT Stein Perkasa Internasional",
     "PT Perkasa Injeksi Indonesia",
     "PT Mitra Elektro Perkasa",
@@ -425,12 +425,7 @@ var DEFAULT_MASTER_DATA = {
     "5-10 Years",
     "More than 10 Years",
   ],
-  marital_status: [
-    "Single",
-    "Married",
-    "Divorced",
-    "Widowed",
-  ],
+  marital_status: ["Single", "Married", "Divorced", "Widowed"],
 };
 
 // ============================================================

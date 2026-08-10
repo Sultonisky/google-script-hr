@@ -636,3 +636,188 @@ function getDashboardStatusCounts() {
     total:     count(SHEET_NAME) + count(HOLD_SHEET_NAME) + count(ACCEPTED_SHEET_NAME) + count(BLACKLIST_SHEET_NAME),
   };
 }
+
+// ============================================================
+// GET CANDIDATE BY NIK — untuk halaman update data kandidat
+// Mencari data kandidat di sheet kandidat_accepted berdasarkan NIK KTP
+// ============================================================
+function getCandidateByNik(nik) {
+  try {
+    if (!nik || !/^\d{16}$/.test(String(nik).trim())) {
+      return { success: false, message: 'NIK harus tepat 16 digit angka.' };
+    }
+
+    var searchNik = "'" + String(nik).trim();
+    var sheet = getOrCreateAcceptedSheet_();
+    if (!sheet || sheet.getLastRow() < 2) {
+      return { success: false, message: 'Data tidak ditemukan. Pastikan Anda sudah diterima sebagai karyawan.' };
+    }
+
+    var lastRow = sheet.getLastRow();
+    var lastCol = sheet.getLastColumn();
+    var values = sheet.getRange(1, 1, lastRow, lastCol).getValues();
+    var headers = values[0];
+
+    var colIndex = {};
+    headers.forEach(function(h, i) { colIndex[String(h).trim()] = i; });
+
+    var nikCol = colIndex['NIK'];
+    if (nikCol === undefined) {
+      return { success: false, message: 'Kolom NIK tidak ditemukan di sheet.' };
+    }
+
+    for (var r = 1; r < values.length; r++) {
+      var row = values[r];
+      var rowNik = String(row[nikCol] || '').trim();
+      if (rowNik === searchNik || rowNik === String(nik).trim()) {
+        function cell(name) {
+          var idx = colIndex[name];
+          return idx === undefined ? '' : row[idx];
+        }
+
+        return {
+          success: true,
+          data: {
+            recruitmentId: String(cell('Recruitment ID') || ''),
+            fullName: String(cell('Full Name') || ''),
+            nik: String(cell('NIK') || '').replace(/^'/, ''),
+            birthDate: fmtDateStr_(cell('Birth Date')),
+            age: cell('Age') === '' ? '' : Number(cell('Age')),
+            gender: String(cell('Gender') || ''),
+            maritalStatus: String(cell('Marital Status') || ''),
+            email: String(cell('Email') || ''),
+            phone: String(cell('Phone') || '').replace(/^'/, ''),
+            address: String(cell('Address') || ''),
+            city: String(cell('City') || ''),
+            positionApplied: String(cell('Position Applied') || ''),
+            education: String(cell('Education') || ''),
+            workExperience: String(cell('Work Experience') || ''),
+            lastCompany: String(cell('Last Company') || ''),
+            currentEmploymentStatus: String(cell('Current Employment Status') || ''),
+            availableToJoin: String(cell('Available to Join') || ''),
+            expectedSalary: cell('Expected Salary') === '' ? 0 : Number(cell('Expected Salary')),
+            recruitmentSource: String(cell('Recruitment Source') || ''),
+            employeeId: String(cell('Employee ID') || ''),
+            status: String(cell('Status') || ''),
+          }
+        };
+      }
+    }
+
+    return { success: false, message: 'Data dengan NIK tersebut tidak ditemukan. Pastikan Anda sudah diterima sebagai karyawan.' };
+  } catch (err) {
+    return { success: false, message: err.message };
+  }
+}
+
+// ============================================================
+// UPDATE ACCEPTED CANDIDATE DATA — update data tambahan oleh kandidat
+// Hanya field tertentu yang boleh diupdate oleh kandidat sendiri
+// ============================================================
+function updateAcceptedCandidateData(nik, formData) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    if (!nik || !/^\d{16}$/.test(String(nik).trim())) {
+      return { success: false, message: 'NIK harus tepat 16 digit angka.' };
+    }
+
+    var searchNik = "'" + String(nik).trim();
+    var sheet = getOrCreateAcceptedSheet_();
+    if (!sheet || sheet.getLastRow() < 2) {
+      return { success: false, message: 'Data tidak ditemukan.' };
+    }
+
+    var lastRow = sheet.getLastRow();
+    var lastCol = sheet.getLastColumn();
+    var values = sheet.getRange(1, 1, lastRow, lastCol).getValues();
+    var headers = values[0];
+
+    var colIndex = {};
+    headers.forEach(function(h, i) { colIndex[String(h).trim()] = i; });
+
+    var nikCol = colIndex['NIK'];
+    if (nikCol === undefined) {
+      return { success: false, message: 'Kolom NIK tidak ditemukan.' };
+    }
+
+    var foundRow = -1;
+    for (var r = 1; r < values.length; r++) {
+      var rowNik = String(values[r][nikCol] || '').trim();
+      if (rowNik === searchNik || rowNik === String(nik).trim()) {
+        foundRow = r + 1;
+        break;
+      }
+    }
+
+    if (foundRow === -1) {
+      return { success: false, message: 'Data dengan NIK tersebut tidak ditemukan.' };
+    }
+
+    var editableFields = [
+      'Full Name', 'Birth Date', 'Age', 'Gender', 'Marital Status',
+      'Email', 'Phone', 'Address', 'City', 'Education',
+      'Work Experience', 'Last Company', 'Current Employment Status',
+      'Available to Join', 'Expected Salary', 'Recruitment Source'
+    ];
+
+    var fieldMap = {
+      full_name: 'Full Name',
+      birth_date: 'Birth Date',
+      age: 'Age',
+      gender: 'Gender',
+      marital_status: 'Marital Status',
+      email: 'Email',
+      phone: 'Phone',
+      address: 'Address',
+      city: 'City',
+      education: 'Education',
+      work_experience: 'Work Experience',
+      last_company: 'Last Company',
+      current_employment_status: 'Current Employment Status',
+      available_to_join: 'Available to Join',
+      expected_salary: 'Expected Salary',
+      recruitment_source: 'Recruitment Source'
+    };
+
+    var updatedCount = 0;
+    var nowStr = Utilities.formatDate(new Date(), 'GMT+7', 'yyyy-MM-dd HH:mm:ss');
+
+    Object.keys(formData).forEach(function(key) {
+      var headerName = fieldMap[key];
+      if (!headerName || editableFields.indexOf(headerName) === -1) return;
+
+      var colIdx = colIndex[headerName];
+      if (colIdx === undefined) return;
+
+      var newVal = formData[key];
+      if (key === 'phone') newVal = "'" + String(newVal || '');
+      if (key === 'age') newVal = Number(newVal) || '';
+      if (key === 'expected_salary') newVal = Number(String(newVal || '').replace(/\D/g, '')) || 0;
+
+      var oldVal = values[foundRow - 1][colIdx];
+      sheet.getRange(foundRow, colIdx + 1).setValue(newVal);
+
+      if (String(oldVal) !== String(newVal)) {
+        var recruitmentId = values[foundRow - 1][colIndex['Recruitment ID']];
+        writeAuditLog_(recruitmentId, 'Update Data', headerName, oldVal, newVal);
+        updatedCount++;
+      }
+    });
+
+    var updatedAtCol = colIndex['Updated At'];
+    if (updatedAtCol !== undefined) {
+      sheet.getRange(foundRow, updatedAtCol + 1).setValue(nowStr);
+    }
+
+    return {
+      success: true,
+      message: 'Data berhasil diperbarui (' + updatedCount + ' field diubah).',
+      updatedAt: nowStr
+    };
+  } catch (err) {
+    return { success: false, message: err.message };
+  } finally {
+    lock.releaseLock();
+  }
+}
