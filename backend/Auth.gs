@@ -6,7 +6,8 @@
 
 var SUPER_ADMIN_ROLE = "Super Admin";
 var AUTH_SESSION_CACHE_PREFIX = "auth_session_";
-var AUTH_SESSION_TTL_SECONDS = 21600; // 6 jam
+var AUTH_SESSION_TTL_SECONDS = 21600;        // 6 jam — batas maksimum CacheService GAS
+var AUTH_SESSION_RENEW_THRESHOLD = 3600;     // Renew jika sisa TTL < 1 jam
 var AUTH_SESSION_STORAGE_KEY = "mahakarya_hris_session";
 var GOOGLE_CLIENT_ID_PROPERTY = "GOOGLE_CLIENT_ID";
 
@@ -167,13 +168,33 @@ function createUserSession_(user) {
   CacheService.getScriptCache().put(
     AUTH_SESSION_CACHE_PREFIX + sessionToken,
     JSON.stringify({
-      email: user.email,
+      email:    user.email,
       fullName: user.fullName,
-      role: user.role,
+      role:     user.role,
+      created:  Date.now()
     }),
     AUTH_SESSION_TTL_SECONDS,
   );
   return sessionToken;
+}
+
+/**
+ * Renews an existing session token — resets TTL back to AUTH_SESSION_TTL_SECONDS.
+ * Called automatically inside getCurrentUserFromSessionToken_ when session
+ * is valid but approaching expiry.
+ * @param {string} token - The raw cache key suffix (without prefix)
+ * @param {Object} cached - The parsed session data already read from cache
+ */
+function renewSession_(token, cached) {
+  try {
+    CacheService.getScriptCache().put(
+      AUTH_SESSION_CACHE_PREFIX + token,
+      JSON.stringify(cached),
+      AUTH_SESSION_TTL_SECONDS
+    );
+  } catch (e) {
+    Logger.log('renewSession_ error: ' + e.message);
+  }
 }
 
 function clearUserSession(sessionToken) {
@@ -275,6 +296,17 @@ function getCurrentUserFromSessionToken_(sessionToken) {
         role: user.role,
         reason: "inactive",
       });
+    }
+
+    // Auto-renew: perpanjang TTL setiap kali user aktif (sliding window).
+    // CacheService tidak expose sisa TTL, jadi kita simpan timestamp
+    // di payload dan renew jika session sudah berjalan > (TTL - threshold).
+    var created = Number(cached.created || 0);
+    var ageSeconds = created > 0 ? Math.floor((Date.now() - created) / 1000) : AUTH_SESSION_TTL_SECONDS;
+    if (ageSeconds >= (AUTH_SESSION_TTL_SECONDS - AUTH_SESSION_RENEW_THRESHOLD)) {
+      // Reset created timestamp dan perpanjang cache
+      cached.created = Date.now();
+      renewSession_(token, cached);
     }
 
     return buildAuthenticatedUser_(
