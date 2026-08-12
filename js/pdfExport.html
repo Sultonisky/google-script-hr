@@ -7,11 +7,33 @@
   function exportCandidatePDF(candidateId) {
     var c = allCandidates.find(function(x) { return x.recruitmentId === candidateId; });
     if (!c) {
-      showToast('Data kandidat tidak ditemukan.', 'error');
+      // Kandidat mungkin sudah dipindah ke sheet status (hold/accepted/blacklist)
+      // sehingga tidak ada di allCandidates. Fetch dari backend.
+      google.script.run
+        .withSuccessHandler(function(fetched) {
+          if (fetched && fetched.recruitmentId) {
+            allCandidates.push(fetched);
+            exportCandidatePDF(candidateId);
+          } else {
+            showToast('Data kandidat tidak ditemukan.', 'error');
+          }
+        })
+        .withFailureHandler(function() {
+          showToast('Data kandidat tidak ditemukan.', 'error');
+        })
+        .getCandidateById(candidateId);
       return;
     }
 
     try {
+      if (typeof window.jspdf === 'undefined') {
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+        document.head.appendChild(script);
+        script.onload = function() { exportCandidatePDF(candidateId); };
+        return;
+      }
+
       var { jsPDF } = window.jspdf;
       var doc = new jsPDF();
       
@@ -88,7 +110,7 @@
       doc.setFontSize(18);
       doc.setTextColor(255, 255, 255);
       doc.setFont(undefined, 'bold');
-      doc.text('CANDIDATE PROFILE', margin, 15);
+      doc.text('PROFIL KANDIDAT', margin, 15);
       
       doc.setFontSize(10);
       doc.setFont(undefined, 'normal');
@@ -163,7 +185,7 @@
       yPos = Math.max(yPos, tempY);
 
       startY = yPos;
-      var genderText = c.gender === 'Male' ? 'Laki-laki' : c.gender === 'Female' ? 'Perempuan' : (c.gender || '-');
+      var genderText = c.gender || '-';
       addField('Jenis Kelamin', genderText, col1X, colWidth);
       tempY = yPos;
       yPos = startY;

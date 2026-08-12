@@ -416,6 +416,83 @@ function acceptCandidateToEmployee(recruitmentId, hrNotes) {
   }
 }
 
+// ---- Ambil satu kandidat by Recruitment ID (cari di semua sheet status) ----
+function getCandidateById(recruitmentId) {
+  try {
+    if (!recruitmentId) return null;
+
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheetsToCheck = [
+      { name: SHEET_NAME },
+      { name: HOLD_SHEET_NAME },
+      { name: ACCEPTED_SHEET_NAME },
+      { name: BLACKLIST_SHEET_NAME }
+    ];
+
+    for (var s = 0; s < sheetsToCheck.length; s++) {
+      var sheet = ss.getSheetByName(sheetsToCheck[s].name);
+      if (!sheet || sheet.getLastRow() < 2) continue;
+
+      var lastRow = sheet.getLastRow();
+      var lastCol = sheet.getLastColumn();
+      var values = sheet.getRange(1, 1, lastRow, lastCol).getValues();
+      var headers = values[0];
+
+      var colIndex = {};
+      headers.forEach(function(h, i) { colIndex[String(h).trim()] = i; });
+
+      var idCol = colIndex[ID_COLUMN_NAME];
+      if (idCol === undefined) continue;
+
+      for (var r = 1; r < values.length; r++) {
+        if (String(values[r][idCol]) === String(recruitmentId)) {
+          var row = values[r];
+          function cell(name) {
+            var idx = colIndex[name];
+            return idx === undefined ? '' : row[idx];
+          }
+          return {
+            recruitmentId:           String(cell('Recruitment ID') || ''),
+            createdDate:             fmtDate_(cell('Created Date'), 'dd/MM/yyyy HH:mm'),
+            fullName:                String(cell('Full Name') || ''),
+            nik:                     String(cell('NIK') || ''),
+            birthDate:               fmtDate_(cell('Birth Date'), 'dd/MM/yyyy'),
+            age:                     cell('Age') === '' ? '' : Number(cell('Age')),
+            gender:                  String(cell('Gender') || ''),
+            maritalStatus:           String(cell('Marital Status') || ''),
+            email:                   String(cell('Email') || ''),
+            phone:                   String(cell('Phone') || ''),
+            address:                 String(cell('Address') || ''),
+            city:                    String(cell('City') || ''),
+            positionApplied:         String(cell('Position Applied') || ''),
+            education:               String(cell('Education') || ''),
+            workExperience:          String(cell('Work Experience') || ''),
+            lastCompany:             String(cell('Last Company') || ''),
+            currentEmploymentStatus: String(cell('Current Employment Status') || ''),
+            availableToJoin:         String(cell('Available to Join') || ''),
+            expectedSalary:          cell('Expected Salary') === '' ? 0 : Number(cell('Expected Salary')),
+            recruitmentSource:       String(cell('Recruitment Source') || ''),
+            cvLink:                  String(cell('CV Link') || ''),
+            status:                  String(cell('Status') || 'Pending'),
+            hrNotes:                 String(cell('HR Notes') || ''),
+            createdBy:               String(cell('Created By') || ''),
+            updatedAt:               fmtDate_(cell('Updated At'), 'dd/MM/yyyy HH:mm'),
+            holdReason:              String(cell('Hold Reason') || ''),
+            holdFollowUpDate:        fmtDate_(cell('Hold Follow Up Date'), 'dd/MM/yyyy'),
+            blacklistReason:         String(cell('Blacklist Reason') || ''),
+            blacklistDate:           fmtDate_(cell('Blacklist Date'), 'dd/MM/yyyy HH:mm'),
+            blacklistUpdatedBy:      String(cell('Blacklist Updated By') || ''),
+            employeeId:              String(cell('Employee ID') || ''),
+          };
+        }
+      }
+    }
+    return null;
+  } catch (err) {
+    return null;
+  }
+}
+
 // ---- Simpan HR Notes (tanpa ubah status) ----
 // ============================================================
 // HELPER: buildStatusRow_
