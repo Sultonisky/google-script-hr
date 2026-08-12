@@ -303,7 +303,7 @@
   // ============================================================
   function parseNIK(nik){
     if(!nik||nik.length!==16||!/^[0-9]{16}$/.test(nik)) return null;
-    var day=parseInt(nik.substring(6,8),10),gender=(day>40)?'Female':'Male';
+    var day=parseInt(nik.substring(6,8),10),gender=(day>40)?'Perempuan':'Laki-laki';
     if(day>40) day-=40;
     var month=parseInt(nik.substring(8,10),10),year=parseInt(nik.substring(10,12),10);
     var fullYear=(year<=24)?2000+year:1900+year;

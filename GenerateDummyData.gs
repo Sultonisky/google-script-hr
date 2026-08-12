@@ -267,22 +267,20 @@ var _GD_DEPT_MAP_ = {
   "Office Boy": ["Admin", "GA"],
 };
 var _GD_EDUCATION_ = [
-  "Junior High School",
-  "Senior High School (SMA)",
-  "Vocational High School (SMK)",
-  "Diploma (D3)",
-  "Bachelor's Degree (S1)",
-  "Master's Degree (S2)",
-  "Doctoral Degree (S3)",
+  "SD",
+  "SMP",
+  "SMA/SMK",
+  "D3",
+  "S1",
+  "S2",
+  "S3",
 ];
 var _GD_WORK_EXP_ = [
   "Fresh Graduate",
-  "Less than 1 Year",
-  "1-2 Years",
-  "2-3 Years",
-  "3-5 Years",
-  "5-10 Years",
-  "More than 10 Years",
+  "1-2 Tahun",
+  "3-5 Tahun",
+  "5-10 Tahun",
+  "Lebih dari 10 Tahun",
 ];
 var _GD_EMP_STATUS_ = [
   "Employed Full Time",
@@ -294,15 +292,15 @@ var _GD_EMP_STATUS_ = [
   "Fresh Graduate",
 ];
 var _GD_AVAILABLE_ = [
-  "Immediately",
-  "1 Week",
-  "2 Weeks",
-  "1 Month",
-  "2 Months",
-  "3 Months",
-  "Negotiable",
+  "Segera",
+  "1 Minggu",
+  "2 Minggu",
+  "1 Bulan",
+  "2 Bulan",
+  "3 Bulan",
+  "Negosiasi",
 ];
-var _GD_MARITAL_ = ["Single", "Married", "Divorced", "Widowed"];
+var _GD_MARITAL_ = ["Belum Menikah", "Menikah", "Cerai"];
 var _GD_CITIES_ = [
   "Jakarta Pusat",
   "Jakarta Selatan",
@@ -610,13 +608,13 @@ var _GD_EMP_STATUSES_ = [
   "Probation",
 ];
 var _GD_CONTRACT_DUR_ = [
-  "3 Months",
-  "6 Months",
-  "1 Year",
-  "2 Years",
-  "3 Years",
+  "3 Bulan",
+  "6 Bulan",
+  "1 Tahun",
+  "2 Tahun",
+  "3 Tahun",
 ];
-var _GD_SALARY_TYPES_ = ["Monthly", "Daily", "Project-Based", "Hourly"];
+var _GD_SALARY_TYPES_ = ["Bulanan", "Harian", "Per Proyek", "Per Jam"];
 var _GD_OS_VENDORS_ = [
   "PT Cipta Karya Mandiri",
   "PT Solusi Tenaga Prima",
@@ -636,12 +634,11 @@ function _gdName_(isMale) {
   );
 }
 function _gdAgeForExp_(exp) {
-  if (exp === "Fresh Graduate" || exp === "Less than 1 Year")
+  if (exp === "Fresh Graduate")
     return _gdRandInt_(20, 25);
-  if (exp === "1-2 Years") return _gdRandInt_(22, 28);
-  if (exp === "2-3 Years") return _gdRandInt_(24, 30);
-  if (exp === "3-5 Years") return _gdRandInt_(26, 33);
-  if (exp === "5-10 Years") return _gdRandInt_(28, 38);
+  if (exp === "1-2 Tahun") return _gdRandInt_(22, 28);
+  if (exp === "3-5 Tahun") return _gdRandInt_(26, 33);
+  if (exp === "5-10 Tahun") return _gdRandInt_(28, 38);
   return _gdRandInt_(32, 50);
 }
 
@@ -670,7 +667,7 @@ function _gdBuildCandidatePool_(today) {
     var source = _gdPick_(_GD_SOURCES_);
     var salary = _gdRandSalary_(pos);
     var company =
-      exp === "Fresh Graduate" || exp === "Less than 1 Year"
+      exp === "Fresh Graduate"
         ? "-"
         : _gdPick_(_GD_COMPANIES_);
 
@@ -734,7 +731,7 @@ function _gdBuildCandidatePool_(today) {
       nik: nik,
       birthDate: birthDate,
       age: age,
-      gender: isMale ? "Male" : "Female",
+      gender: isMale ? "Laki-laki" : "Perempuan",
       maritalStatus: marital,
       email: email,
       phone: phone,
@@ -954,7 +951,7 @@ function _gdWriteEmployeeSheet_(acceptedCandidates, today) {
       ? "CONT-" + today.getFullYear() + "-" + _gdPad_(_gdRandInt_(1, 999), 4)
       : "";
     var vendor = empType === "Outsource" ? _gdPick_(_GD_OS_VENDORS_) : "";
-    var salaryType = empType === "Project" ? "Project-Based" : "Monthly";
+    var salaryType = empType === "Project" ? "Per Proyek" : "Bulanan";
     var row = new Array(EMPLOYEE_HEADERS.length).fill("");
     row[EMPLOYEE_COL["Employee ID"] - 1] = c.employeeId;
     row[EMPLOYEE_COL["Recruitment ID"] - 1] = c.recruitmentId;
@@ -1064,7 +1061,7 @@ function _gdWriteEmployeeSheet_(acceptedCandidates, today) {
     var contractNo = isContract
       ? "CONT-" + today.getFullYear() + "-" + _gdPad_(_gdRandInt_(1, 999), 4)
       : "";
-    var salaryType = empType === "Project" ? "Project-Based" : "Monthly";
+    var salaryType = empType === "Project" ? "Per Proyek" : "Bulanan";
 
     var row = new Array(EMPLOYEE_HEADERS.length).fill("");
     row[EMPLOYEE_COL["Employee ID"] - 1] = empId;
@@ -1082,7 +1079,7 @@ function _gdWriteEmployeeSheet_(acceptedCandidates, today) {
     row[EMPLOYEE_COL["NIK"] - 1] = "'" + nik;
     row[EMPLOYEE_COL["Birth Date"] - 1] = birthDate;
     row[EMPLOYEE_COL["Age"] - 1] = age;
-    row[EMPLOYEE_COL["Gender"] - 1] = isMale ? "Male" : "Female";
+    row[EMPLOYEE_COL["Gender"] - 1] = isMale ? "Laki-laki" : "Perempuan";
     row[EMPLOYEE_COL["Marital Status"] - 1] = marital;
     row[EMPLOYEE_COL["Address"] - 1] = address;
     row[EMPLOYEE_COL["City"] - 1] = city;

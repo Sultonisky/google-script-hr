@@ -152,7 +152,7 @@
         '<td><div class="cand-name cand-name-link" style="cursor:pointer;color:var(--color-primary);" data-id="' + escapeHtml(row.recruitmentId) + '">' +
           escapeHtml(row.fullName) + '</div><div class="cand-sub">' + escapeHtml(row.email) + '</div></td>' +
         '<td>' + escapeHtml(row.age) + ' Th</td>' +
-        '<td>' + escapeHtml(row.gender === 'Male' ? 'Laki-laki' : row.gender === 'Female' ? 'Perempuan' : row.gender) + '</td>' +
+        '<td>' + escapeHtml(row.gender || '-') + '</td>' +
         '<td>' + escapeHtml(row.positionApplied) + '</td>' +
         '<td><span class="badge-status ' + statusBadgeClass(row.status) + '">' + escapeHtml(row.status || 'Pending') + '</span></td>' +
         '<td>' + escapeHtml(row.createdDate) + '</td>' +
