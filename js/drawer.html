@@ -145,7 +145,7 @@
     var fields = {
       cvFullName: c.fullName, cvBirthDate: c.birthDate,
       cvAge:      c.age ? c.age + ' Tahun' : '-',
-      cvGender:   c.gender === 'Male' ? 'Laki-laki' : c.gender === 'Female' ? 'Perempuan' : (c.gender || '-'),
+      cvGender:   c.gender || '-',
       cvMaritalStatus: c.maritalStatus, cvNik: c.nik,
       cvPhone: c.phone, cvEmail: c.email, cvAddress: c.address, cvCity: c.city,
       cvPosition: c.positionApplied, cvEducation: c.education,

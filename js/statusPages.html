@@ -365,7 +365,7 @@
     var fields = {
       cvFullName: row.fullName, cvBirthDate: row.birthDate,
       cvAge: row.age ? row.age + ' Tahun' : '-',
-      cvGender: row.gender === 'Male' ? 'Laki-laki' : row.gender === 'Female' ? 'Perempuan' : (row.gender || '-'),
+      cvGender: row.gender || '-',
       cvMaritalStatus: row.maritalStatus, cvNik: row.nik,
       cvPhone: row.phone, cvEmail: row.email, cvAddress: row.address, cvCity: row.city,
       cvPosition: row.positionApplied, cvEducation: row.education,
