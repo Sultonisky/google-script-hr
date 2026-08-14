@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // backend/Employee.gs — MASTER DATA KARYAWAN
 // Schema: defined in EMPLOYEE_HEADERS (Config.gs)
 // Column access: use EMPLOYEE_COL[headerName] — NEVER hardcoded indexes
@@ -431,5 +431,399 @@ function getEmployeeStats() {
     return { success: true, stats: stats };
   } catch (e) {
     return { success: false, message: e.toString() };
+  }
+}
+
+// ============================================================
+// PROCESS ONBOARDING PROBATION
+// Dipanggil ketika HR memproses kandidat Accepted (offeringResponse
+// = "Diterima") menjadi Employee Probation.
+//
+// contractData: {
+//   companyEntity, department, division, branch, position,
+//   employeeType, contractNumber, contractDuration,
+//   contractStart, contractEnd, salary, salaryType, notes
+// }
+// ============================================================
+function processOnboardingProbation(recruitmentId, employeeId, contractData, processedBy) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var ss      = SpreadsheetApp.getActiveSpreadsheet();
+    var now     = new Date();
+    var nowStr  = Utilities.formatDate(now, 'GMT+7', 'yyyy-MM-dd HH:mm:ss');
+    var user    = processedBy || Session.getActiveUser().getEmail() || 'HR Dashboard';
+
+    // ── 1. Update Employee sheet ──────────────────────────────
+    var empSheet = getOrCreateEmployeeSheet_();
+    if (!empSheet || empSheet.getLastRow() < 2)
+      return { success: false, message: 'Sheet Employee tidak ditemukan.' };
+
+    var empData  = empSheet.getDataRange().getValues();
+    var empHdr   = empData[0];
+    var empColIdx = {};
+    empHdr.forEach(function(h, i) { empColIdx[String(h).trim()] = i; });
+
+    var empRow = -1;
+    for (var r = 1; r < empData.length; r++) {
+      if (String(empData[r][empColIdx['Employee ID']] || '') === String(employeeId)) {
+        empRow = r + 1; // 1-based
+        break;
+      }
+    }
+    if (empRow === -1)
+      return { success: false, message: 'Employee ID tidak ditemukan: ' + employeeId };
+
+    // Field yang di-update di Employee sheet
+    var empUpdates = {
+      'Company Entity':    contractData.companyEntity   || '',
+      'Department':        contractData.department       || '',
+      'Division':          contractData.division         || '',
+      'Branch':            contractData.branch           || '',
+      'Position':          contractData.position         || '',
+      'Employee Type':     contractData.employeeType     || 'PKWT',
+      'Contract Number':   contractData.contractNumber   || '',
+      'Contract Duration': contractData.contractDuration || '',
+      'Contract Start':    contractData.contractStart    || '',
+      'Contract End':      contractData.contractEnd      || '',
+      'Salary':            contractData.salary           ? Number(String(contractData.salary).replace(/\D/g, '')) || 0 : 0,
+      'Salary Type':       contractData.salaryType       || 'Monthly',
+      'Employment Status': 'Probation',
+      'Status':            'Probation',
+      'HR Notes':          contractData.notes            || '',
+      'Updated At':        nowStr,
+    };
+
+    Object.keys(empUpdates).forEach(function(colName) {
+      var colNum = EMPLOYEE_COL[colName];
+      if (colNum) empSheet.getRange(empRow, colNum).setValue(empUpdates[colName]);
+    });
+
+    // ── 2. Update kandidat_accepted sheet ────────────────────
+    var accSheet = ss.getSheetByName(ACCEPTED_SHEET_NAME);
+    if (accSheet && accSheet.getLastRow() > 1) {
+      ensureStatusSheetHeaders_(accSheet, ACCEPTED_HEADERS);
+
+      var accData = accSheet.getDataRange().getValues();
+      var accHdr  = accData[0];
+      var accColIdx = {};
+      accHdr.forEach(function(h, i) { accColIdx[String(h).trim()] = i; });
+
+      var accRow = -1;
+      var idCol = accColIdx['Recruitment ID'];
+      if (idCol !== undefined) {
+        for (var ra = 1; ra < accData.length; ra++) {
+          if (String(accData[ra][idCol] || '') === String(recruitmentId)) {
+            accRow = ra + 1;
+            break;
+          }
+        }
+      }
+
+      if (accRow !== -1) {
+        var onboardStatusCol = accColIdx['Onboarding Status'];
+        var onboardDateCol   = accColIdx['Onboarding Date'];
+        var onboardByCol     = accColIdx['Onboarding By'];
+        if (onboardStatusCol !== undefined) accSheet.getRange(accRow, onboardStatusCol + 1).setValue('Probation');
+        if (onboardDateCol   !== undefined) accSheet.getRange(accRow, onboardDateCol   + 1).setValue(nowStr);
+        if (onboardByCol     !== undefined) accSheet.getRange(accRow, onboardByCol     + 1).setValue(user);
+      }
+    }
+
+    // ── 3. Audit log ─────────────────────────────────────────
+    writeAuditLog_(
+      recruitmentId,
+      'Onboarding Probation',
+      'Employment Status',
+      'Accepted',
+      'Probation — Employee ' + employeeId + ' by ' + user
+    );
+
+    return {
+      success:    true,
+      employeeId: employeeId,
+      recruitmentId: recruitmentId,
+      status:     'Probation',
+      onboardingDate: nowStr,
+      onboardingBy:   user,
+    };
+  } catch (err) {
+    return { success: false, message: err.message };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ============================================================
+// GET PROBATION LIST — ambil karyawan dari Employee sheet
+// dengan Status = "Probation" atau Employment Status = "Probation"
+// Query langsung ke sheet agar tidak tergantung getEmployeeList()
+// ============================================================
+function getProbationList() {
+  try {
+    var empSheet = getOrCreateEmployeeSheet_();
+    if (!empSheet || empSheet.getLastRow() < 2) return [];
+
+    var data    = empSheet.getDataRange().getValues();
+    var headers = data[0];
+    var ci      = {};
+    headers.forEach(function(h, i) { ci[String(h).trim()] = i; });
+
+    function cell(row, name) {
+      var idx = ci[name];
+      return idx !== undefined ? row[idx] : '';
+    }
+
+    var items = [];
+    for (var r = 1; r < data.length; r++) {
+      var row = data[r];
+      if (!row.join('').toString().trim()) continue;
+      var st  = String(cell(row, 'Status')            || '').trim();
+      var est = String(cell(row, 'Employment Status') || '').trim();
+      if (st !== 'Probation' && est !== 'Probation') continue;
+
+      items.push({
+        employeeId:       String(cell(row, 'Employee ID')       || ''),
+        recruitmentId:    String(cell(row, 'Recruitment ID')    || ''),
+        fullName:         String(cell(row, 'Full Name')         || ''),
+        position:         String(cell(row, 'Position')          || ''),
+        email:            String(cell(row, 'Email')             || ''),
+        phone:            String(cell(row, 'Phone')             || ''),
+        nik:              String(cell(row, 'NIK')               || ''),
+        department:       String(cell(row, 'Department')        || ''),
+        division:         String(cell(row, 'Division')          || ''),
+        branch:           String(cell(row, 'Branch')            || ''),
+        companyEntity:    String(cell(row, 'Company Entity')    || ''),
+        employeeType:     String(cell(row, 'Employee Type')     || ''),
+        joinDate:         fmtDateStr_(cell(row, 'Join Date')),
+        contractStart:    fmtDateStr_(cell(row, 'Contract Start')),
+        contractEnd:      fmtDateStr_(cell(row, 'Contract End')),
+        contractDuration: String(cell(row, 'Contract Duration') || ''),
+        contractNumber:   String(cell(row, 'Contract Number')   || ''),
+        salary:           cell(row, 'Salary') || '',
+        salaryType:       String(cell(row, 'Salary Type')       || ''),
+        status:           st,
+        employmentStatus: est,
+        hrNotes:          String(cell(row, 'HR Notes')          || ''),
+        createdAt:        fmtDateStr_(cell(row, 'Created At')),
+        updatedAt:        fmtDateStr_(cell(row, 'Updated At')),
+        // eval fields diisi di bawah
+        lastEvalDate:     '',
+        lastAvgScore:     '',
+        lastKeputusan:    '',
+        lastEvaluator:    '',
+        lastStatusSK:     '',
+      });
+    }
+
+    if (items.length === 0) return [];
+
+    // Ambil riwayat evaluasi terakhir per employee
+    try {
+      var evalSheet = getOrCreateProbationEvalSheet_();
+      if (evalSheet && evalSheet.getLastRow() >= 2) {
+        var evalData = evalSheet.getDataRange().getValues();
+        var evalHdr  = evalData[0];
+        var eIdx     = {};
+        evalHdr.forEach(function(h, i) { eIdx[String(h).trim()] = i; });
+        var evalMap  = {};
+        for (var er = 1; er < evalData.length; er++) {
+          var erow  = evalData[er];
+          var empId = String(erow[eIdx['Employee ID']] || '');
+          if (!empId) continue;
+          evalMap[empId] = {
+            evalDate:  fmtDateStr_(erow[eIdx['Eval Date']]),
+            avgScore:  erow[eIdx['Nilai Rata-rata']] || '',
+            keputusan: String(erow[eIdx['Keputusan']]   || ''),
+            evaluator: String(erow[eIdx['Evaluator']]   || ''),
+            statusSK:  String(erow[eIdx['Status SK']]   || ''),
+          };
+        }
+        items.forEach(function(emp) {
+          var ev = evalMap[emp.employeeId];
+          if (!ev) return;
+          emp.lastEvalDate  = ev.evalDate  || '';
+          emp.lastAvgScore  = ev.avgScore  !== '' ? Number(ev.avgScore) : '';
+          emp.lastKeputusan = ev.keputusan || '';
+          emp.lastEvaluator = ev.evaluator || '';
+          emp.lastStatusSK  = ev.statusSK  || '';
+        });
+      }
+    } catch(evalErr) {
+      // eval sheet mungkin belum ada — biarkan items tanpa eval data
+      Logger.log('getProbationList evalSheet error: ' + evalErr);
+    }
+
+    return items;
+  } catch(e) {
+    Logger.log('getProbationList error: ' + e);
+    return [];
+  }
+}
+
+// ============================================================
+// GET PROBATION EVAL HISTORY — ambil semua riwayat evaluasi
+// untuk satu employee (untuk drawer / detail)
+// ============================================================
+function getProbationEvalHistory(employeeId) {
+  try {
+    var sheet = getOrCreateProbationEvalSheet_();
+    if (sheet.getLastRow() < 2) return [];
+
+    var data    = sheet.getDataRange().getValues();
+    var headers = data[0];
+    var colIdx  = {};
+    headers.forEach(function(h, i) { colIdx[String(h).trim()] = i; });
+
+    var result = [];
+    for (var r = 1; r < data.length; r++) {
+      var row = data[r];
+      if (String(row[colIdx['Employee ID']] || '') !== String(employeeId)) continue;
+      result.push({
+        evalId:           String(row[colIdx['Eval ID']]           || ''),
+        evalDate:         fmtDateStr_(row[colIdx['Eval Date']]),
+        skorKinerja:      row[colIdx['Skor Kinerja']]      !== '' ? Number(row[colIdx['Skor Kinerja']])      : '',
+        skorKedisiplinan: row[colIdx['Skor Kedisiplinan']] !== '' ? Number(row[colIdx['Skor Kedisiplinan']]) : '',
+        skorKomunikasi:   row[colIdx['Skor Komunikasi']]   !== '' ? Number(row[colIdx['Skor Komunikasi']])   : '',
+        skorInisiatif:    row[colIdx['Skor Inisiatif']]    !== '' ? Number(row[colIdx['Skor Inisiatif']])    : '',
+        skorTeamwork:     row[colIdx['Skor Teamwork']]     !== '' ? Number(row[colIdx['Skor Teamwork']])     : '',
+        nilaiRataRata:    row[colIdx['Nilai Rata-rata']]   !== '' ? Number(row[colIdx['Nilai Rata-rata']])   : '',
+        keputusan:        String(row[colIdx['Keputusan']]         || ''),
+        durasiPerpanjang: String(row[colIdx['Durasi Perpanjang']] || ''),
+        kontrakBaruStart: fmtDateStr_(row[colIdx['Kontrak Baru Start']]),
+        kontrakBaruEnd:   fmtDateStr_(row[colIdx['Kontrak Baru End']]),
+        catatan:          String(row[colIdx['Catatan Evaluator']] || ''),
+        evaluator:        String(row[colIdx['Evaluator']]         || ''),
+        createdAt:        fmtDateStr_(row[colIdx['Created At']]),
+        statusSK:         String(row[colIdx['Status SK']]         || ''),
+      });
+    }
+    // Urutkan terbaru dulu
+    result.sort(function(a, b) {
+      return (b.createdAt || '').localeCompare(a.createdAt || '');
+    });
+    return result;
+  } catch(e) {
+    return [];
+  }
+}
+
+// ============================================================
+// SAVE PROBATION EVAL — simpan hasil evaluasi probation
+//
+// evalData: {
+//   employeeId, recruitmentId,
+//   skorKinerja, skorKedisiplinan, skorKomunikasi,
+//   skorInisiatif, skorTeamwork,
+//   keputusan,           // "Lulus → Karyawan Tetap" | "Tidak Lulus → Perpanjang Probation"
+//   durasiPerpanjang,    // diisi jika Tidak Lulus (e.g. "3 Bulan")
+//   kontrakBaruStart,    // YYYY-MM-DD jika perpanjang
+//   kontrakBaruEnd,      // YYYY-MM-DD jika perpanjang
+//   catatan
+// }
+// evaluatedBy: email HR
+// ============================================================
+function saveProbationEval(evalData, evaluatedBy) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var ss      = SpreadsheetApp.getActiveSpreadsheet();
+    var now     = new Date();
+    var nowStr  = Utilities.formatDate(now, 'GMT+7', 'yyyy-MM-dd HH:mm:ss');
+    var user    = evaluatedBy || Session.getActiveUser().getEmail() || 'HR Dashboard';
+    var evalId  = generateEvalId_(now);
+
+    // ── 1. Ambil data employee dari Employee sheet ────────────
+    var empSheet = getOrCreateEmployeeSheet_();
+    var empData  = empSheet.getDataRange().getValues();
+    var empHdr   = empData[0];
+    var empCI    = {};
+    empHdr.forEach(function(h, i) { empCI[String(h).trim()] = i; });
+
+    var empRow = -1;
+    for (var r = 1; r < empData.length; r++) {
+      if (String(empData[r][empCI['Employee ID']] || '') === String(evalData.employeeId)) {
+        empRow = r;
+        break;
+      }
+    }
+    if (empRow === -1)
+      return { success: false, message: 'Employee ID tidak ditemukan: ' + evalData.employeeId };
+
+    var emp = empData[empRow];
+    function empVal(col) { return empCI[col] !== undefined ? emp[empCI[col]] : ''; }
+
+    // ── 2. Hitung nilai rata-rata ─────────────────────────────
+    var scores = [
+      Number(evalData.skorKinerja      || 0),
+      Number(evalData.skorKedisiplinan || 0),
+      Number(evalData.skorKomunikasi   || 0),
+      Number(evalData.skorInisiatif    || 0),
+      Number(evalData.skorTeamwork     || 0),
+    ];
+    var avg = Math.round((scores.reduce(function(s, v) { return s + v; }, 0) / 5) * 10) / 10;
+
+    var isLulus       = evalData.keputusan === 'Lulus → Karyawan Tetap';
+    var isPerpanjang  = evalData.keputusan === 'Tidak Lulus → Perpanjang Probation';
+
+    // ── 3. Simpan ke sheet Evaluasi_Probation ─────────────────
+    var evalSheet = getOrCreateProbationEvalSheet_();
+    var newRow    = new Array(PROBATION_EVAL_HEADERS.length).fill('');
+    newRow[PROBATION_EVAL_COL['Eval ID']           - 1] = evalId;
+    newRow[PROBATION_EVAL_COL['Employee ID']        - 1] = evalData.employeeId    || '';
+    newRow[PROBATION_EVAL_COL['Recruitment ID']     - 1] = evalData.recruitmentId || '';
+    newRow[PROBATION_EVAL_COL['Full Name']          - 1] = empVal('Full Name');
+    newRow[PROBATION_EVAL_COL['Position']           - 1] = empVal('Position');
+    newRow[PROBATION_EVAL_COL['Department']         - 1] = empVal('Department');
+    newRow[PROBATION_EVAL_COL['Contract Start']     - 1] = empVal('Contract Start');
+    newRow[PROBATION_EVAL_COL['Contract End']       - 1] = empVal('Contract End');
+    newRow[PROBATION_EVAL_COL['Eval Date']          - 1] = nowStr;
+    newRow[PROBATION_EVAL_COL['Skor Kinerja']       - 1] = Number(evalData.skorKinerja      || 0);
+    newRow[PROBATION_EVAL_COL['Skor Kedisiplinan']  - 1] = Number(evalData.skorKedisiplinan || 0);
+    newRow[PROBATION_EVAL_COL['Skor Komunikasi']    - 1] = Number(evalData.skorKomunikasi   || 0);
+    newRow[PROBATION_EVAL_COL['Skor Inisiatif']     - 1] = Number(evalData.skorInisiatif    || 0);
+    newRow[PROBATION_EVAL_COL['Skor Teamwork']      - 1] = Number(evalData.skorTeamwork     || 0);
+    newRow[PROBATION_EVAL_COL['Nilai Rata-rata']    - 1] = avg;
+    newRow[PROBATION_EVAL_COL['Keputusan']          - 1] = evalData.keputusan        || '';
+    newRow[PROBATION_EVAL_COL['Durasi Perpanjang']  - 1] = evalData.durasiPerpanjang || '';
+    newRow[PROBATION_EVAL_COL['Kontrak Baru Start'] - 1] = evalData.kontrakBaruStart || '';
+    newRow[PROBATION_EVAL_COL['Kontrak Baru End']   - 1] = evalData.kontrakBaruEnd   || '';
+    newRow[PROBATION_EVAL_COL['Catatan Evaluator']  - 1] = evalData.catatan          || '';
+    newRow[PROBATION_EVAL_COL['Evaluator']          - 1] = user;
+    newRow[PROBATION_EVAL_COL['Created At']         - 1] = nowStr;
+    newRow[PROBATION_EVAL_COL['Status SK']          - 1] = 'Pending';
+    evalSheet.appendRow(newRow);
+
+    // ── 4. Update Employee sheet berdasarkan keputusan ────────
+    var empRowNum = empRow + 1; // 1-based
+    if (isLulus) {
+      // Angkat ke karyawan tetap
+      empSheet.getRange(empRowNum, EMPLOYEE_COL['Status']).setValue('Active');
+      empSheet.getRange(empRowNum, EMPLOYEE_COL['Employment Status']).setValue('Active');
+      empSheet.getRange(empRowNum, EMPLOYEE_COL['Updated At']).setValue(nowStr);
+      writeAuditLog_(evalData.employeeId, 'Probation Lulus', 'Employment Status', 'Probation', 'Active (Karyawan Tetap) - Eval ' + evalId);
+    } else if (isPerpanjang) {
+      // Perpanjang probation — update contract end & duration
+      if (evalData.kontrakBaruEnd)      empSheet.getRange(empRowNum, EMPLOYEE_COL['Contract End']).setValue(evalData.kontrakBaruEnd);
+      if (evalData.kontrakBaruStart)    empSheet.getRange(empRowNum, EMPLOYEE_COL['Contract Start']).setValue(evalData.kontrakBaruStart);
+      if (evalData.durasiPerpanjang)    empSheet.getRange(empRowNum, EMPLOYEE_COL['Contract Duration']).setValue(evalData.durasiPerpanjang);
+      empSheet.getRange(empRowNum, EMPLOYEE_COL['Updated At']).setValue(nowStr);
+      writeAuditLog_(evalData.employeeId, 'Probation Diperpanjang', 'Contract End', String(empVal('Contract End')), evalData.kontrakBaruEnd + ' - Eval ' + evalId);
+    }
+
+    return {
+      success:       true,
+      evalId:        evalId,
+      employeeId:    evalData.employeeId,
+      keputusan:     evalData.keputusan,
+      nilaiRataRata: avg,
+      isLulus:       isLulus,
+      isPerpanjang:  isPerpanjang,
+      nowStr:        nowStr,
+    };
+  } catch(err) {
+    return { success: false, message: err.message };
+  } finally {
+    lock.releaseLock();
   }
 }
