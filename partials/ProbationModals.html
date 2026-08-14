@@ -1,0 +1,262 @@
+<!-- partials/ProbationModals.html — Modal Evaluasi Probation -->
+
+<!-- ============================================================
+     EVALUASI PROBATION MODAL
+     Search employee probation → isi 5 skor → pilih keputusan
+============================================================ -->
+<div class="modal fade" id="evalProbationModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+    <div class="modal-content" style="border-radius:16px">
+
+      <div class="modal-header" style="background:#7c3aed;border-radius:16px 16px 0 0">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-clipboard-check text-white fs-5"></i>
+          <h6 class="modal-title mb-0 text-white fw-bold">Evaluasi Karyawan Probation</h6>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body p-4">
+        <input type="hidden" id="evalEmployeeId" />
+        <input type="hidden" id="evalRecruitmentId" />
+
+        <!-- Step 1: Search karyawan probation -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold" style="font-size:13px">
+            <i class="bi bi-search me-1"></i>Cari Karyawan
+            <span class="text-muted fw-normal">(Status: Probation)</span>
+          </label>
+          <div class="position-relative">
+            <input type="text" class="form-control" id="evalEmpSearch"
+              placeholder="Ketik nama atau Employee ID..." autocomplete="off"
+              style="font-size:13px;padding-right:36px" />
+            <i class="bi bi-x-circle-fill position-absolute" id="evalEmpSearchClear"
+              style="right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;display:none"></i>
+          </div>
+          <div id="evalEmpDropdown" class="border rounded-3 mt-1 shadow-sm"
+            style="display:none;max-height:200px;overflow-y:auto;background:#fff;z-index:9999;position:relative">
+          </div>
+        </div>
+
+        <!-- Info karyawan terpilih + form evaluasi -->
+        <div id="evalEmpPreview" style="display:none">
+
+          <!-- Info card -->
+          <div class="p-3 rounded-3 mb-4" style="background:#f5f3ff;border:1px solid #ddd6fe">
+            <div class="d-flex align-items-center gap-3">
+              <div class="avatar-sm" id="evalEmpAvatar"
+                style="width:44px;height:44px;font-size:16px;flex-shrink:0;background:#7c3aed;color:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800">?</div>
+              <div class="flex-grow-1">
+                <div class="fw-bold" id="evalEmpName" style="font-size:15px">-</div>
+                <div class="text-muted" style="font-size:12px">
+                  <span id="evalEmpPosition">-</span>
+                  <span class="mx-1">·</span>
+                  <span id="evalEmpDept">-</span>
+                </div>
+              </div>
+              <div class="text-end flex-shrink-0" style="font-size:11.5px">
+                <div class="text-muted">Employee ID</div>
+                <div class="fw-semibold" id="evalEmpIdDisp">-</div>
+                <div class="text-muted mt-1">Kontrak S/D</div>
+                <div class="fw-semibold" id="evalEmpContractEnd">-</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Penilaian 5 kriteria -->
+          <p class="fw-bold mb-3" style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#7c3aed">
+            <i class="bi bi-star-fill me-1"></i>Penilaian (Skor 1–10)
+          </p>
+
+          <div class="row g-3 mb-3">
+            <!-- Kinerja -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold" style="font-size:13px">
+                Kinerja & Hasil Kerja <span class="text-danger">*</span>
+                <span class="eval-score-badge ms-2" id="badgeKinerja">-</span>
+              </label>
+              <input type="range" class="form-range eval-score-range" id="evalSkorKinerja"
+                min="1" max="10" step="1" value="5" data-badge="badgeKinerja" />
+              <div class="d-flex justify-content-between" style="font-size:10px;color:#9ca3af;margin-top:-2px">
+                <span>1 Buruk</span><span>5 Cukup</span><span>10 Sangat Baik</span>
+              </div>
+            </div>
+            <!-- Kedisiplinan -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold" style="font-size:13px">
+                Kedisiplinan <span class="text-danger">*</span>
+                <span class="eval-score-badge ms-2" id="badgeKedisiplinan">-</span>
+              </label>
+              <input type="range" class="form-range eval-score-range" id="evalSkorKedisiplinan"
+                min="1" max="10" step="1" value="5" data-badge="badgeKedisiplinan" />
+              <div class="d-flex justify-content-between" style="font-size:10px;color:#9ca3af;margin-top:-2px">
+                <span>1 Buruk</span><span>5 Cukup</span><span>10 Sangat Baik</span>
+              </div>
+            </div>
+            <!-- Komunikasi -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold" style="font-size:13px">
+                Komunikasi <span class="text-danger">*</span>
+                <span class="eval-score-badge ms-2" id="badgeKomunikasi">-</span>
+              </label>
+              <input type="range" class="form-range eval-score-range" id="evalSkorKomunikasi"
+                min="1" max="10" step="1" value="5" data-badge="badgeKomunikasi" />
+              <div class="d-flex justify-content-between" style="font-size:10px;color:#9ca3af;margin-top:-2px">
+                <span>1 Buruk</span><span>5 Cukup</span><span>10 Sangat Baik</span>
+              </div>
+            </div>
+            <!-- Inisiatif -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold" style="font-size:13px">
+                Inisiatif & Kreativitas <span class="text-danger">*</span>
+                <span class="eval-score-badge ms-2" id="badgeInisiatif">-</span>
+              </label>
+              <input type="range" class="form-range eval-score-range" id="evalSkorInisiatif"
+                min="1" max="10" step="1" value="5" data-badge="badgeInisiatif" />
+              <div class="d-flex justify-content-between" style="font-size:10px;color:#9ca3af;margin-top:-2px">
+                <span>1 Buruk</span><span>5 Cukup</span><span>10 Sangat Baik</span>
+              </div>
+            </div>
+            <!-- Teamwork -->
+            <div class="col-12 col-md-6">
+              <label class="form-label fw-semibold" style="font-size:13px">
+                Kerjasama Tim <span class="text-danger">*</span>
+                <span class="eval-score-badge ms-2" id="badgeTeamwork">-</span>
+              </label>
+              <input type="range" class="form-range eval-score-range" id="evalSkorTeamwork"
+                min="1" max="10" step="1" value="5" data-badge="badgeTeamwork" />
+              <div class="d-flex justify-content-between" style="font-size:10px;color:#9ca3af;margin-top:-2px">
+                <span>1 Buruk</span><span>5 Cukup</span><span>10 Sangat Baik</span>
+              </div>
+            </div>
+            <!-- Nilai rata-rata (auto) -->
+            <div class="col-12 col-md-6 d-flex align-items-end">
+              <div class="w-100 p-3 rounded-3 text-center"
+                style="background:#f5f3ff;border:2px solid #7c3aed">
+                <div class="text-muted fw-semibold" style="font-size:11px;text-transform:uppercase;letter-spacing:.04em">Nilai Rata-rata</div>
+                <div class="fw-bold mt-1" id="evalAvgScore"
+                  style="font-size:28px;color:#7c3aed;line-height:1">5.0</div>
+                <div style="font-size:11px;color:#9ca3af">dari 10</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Keputusan -->
+          <p class="fw-bold mb-3" style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#7c3aed">
+            <i class="bi bi-check2-circle me-1"></i>Keputusan <span class="text-danger">*</span>
+          </p>
+          <div class="d-flex flex-column gap-2 mb-4" id="evalDecisionOptions">
+
+            <!-- Lulus -->
+            <div class="eval-decision-opt p-3 rounded-3"
+              data-value="Lulus → Karyawan Tetap"
+              style="border:2px solid #e5e7eb;cursor:pointer;transition:border-color .15s,background .15s">
+              <div class="d-flex align-items-center gap-3">
+                <div class="eval-dec-dot" style="width:20px;height:20px;border-radius:50%;border:2px solid #d1d5db;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s">
+                  <div style="width:8px;height:8px;border-radius:50%;background:transparent;transition:background .15s"></div>
+                </div>
+                <div>
+                  <div class="fw-semibold" style="font-size:13px">
+                    <i class="bi bi-trophy-fill me-1" style="color:#166534"></i>Lulus → Karyawan Tetap
+                  </div>
+                  <div class="text-muted" style="font-size:11px">Karyawan diangkat sebagai karyawan tetap, status berubah ke Active. SK Pengangkatan diterbitkan.</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Perpanjang -->
+            <div class="eval-decision-opt p-3 rounded-3"
+              data-value="Tidak Lulus → Perpanjang Probation"
+              style="border:2px solid #e5e7eb;cursor:pointer;transition:border-color .15s,background .15s">
+              <div class="d-flex align-items-center gap-3">
+                <div class="eval-dec-dot" style="width:20px;height:20px;border-radius:50%;border:2px solid #d1d5db;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s">
+                  <div style="width:8px;height:8px;border-radius:50%;background:transparent;transition:background .15s"></div>
+                </div>
+                <div>
+                  <div class="fw-semibold" style="font-size:13px">
+                    <i class="bi bi-arrow-repeat me-1" style="color:#d97706"></i>Tidak Lulus → Perpanjang Probation
+                  </div>
+                  <div class="text-muted" style="font-size:11px">Kontrak probation diperpanjang. SK Perpanjangan diterbitkan.</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Form perpanjang (conditional) -->
+          <div id="evalExtendSection" style="display:none">
+            <p class="fw-bold mb-3" style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#d97706">
+              <i class="bi bi-calendar-range me-1"></i>Detail Perpanjangan
+            </p>
+            <div class="row g-3 mb-4">
+              <div class="col-md-4">
+                <label class="form-label fw-semibold" style="font-size:13px">Durasi Perpanjang <span class="text-danger">*</span></label>
+                <select class="form-select form-select-sm" id="evalDurasiPerpanjang">
+                  <option value="">— Pilih —</option>
+                  <option value="1 Bulan">1 Bulan</option>
+                  <option value="2 Bulan">2 Bulan</option>
+                  <option value="3 Bulan">3 Bulan</option>
+                  <option value="6 Bulan">6 Bulan</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold" style="font-size:13px">Mulai Kontrak Baru <span class="text-danger">*</span></label>
+                <input type="date" class="form-control form-control-sm" id="evalKontrakBaruStart" />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold" style="font-size:13px">Selesai Kontrak Baru</label>
+                <input type="date" class="form-control form-control-sm" id="evalKontrakBaruEnd" />
+                <div class="form-text" id="evalExtendEndHint" style="font-size:11px">Auto-hitung dari durasi</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Catatan -->
+          <div class="mb-0">
+            <label class="form-label fw-semibold" style="font-size:13px">Catatan Evaluator <span class="text-muted fw-normal">(opsional)</span></label>
+            <textarea class="form-control form-control-sm" id="evalCatatan" rows="2"
+              placeholder="Contoh: Perlu peningkatan di aspek komunikasi dan ketepatan waktu..."></textarea>
+          </div>
+
+        </div><!-- /#evalEmpPreview -->
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+        <button class="btn btn-sm text-white fw-semibold" style="background:#7c3aed"
+          id="btnConfirmEval" disabled>
+          <span id="btnEvalText"><i class="bi bi-clipboard-check me-1"></i>Simpan & Generate SK</span>
+          <span id="btnEvalLoading" style="display:none">
+            <span class="spinner-border spinner-border-sm me-1"></span>Memproses...
+          </span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     RIWAYAT EVALUASI MODAL (untuk lihat history per karyawan)
+============================================================ -->
+<div class="modal fade" id="evalHistoryModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+    <div class="modal-content" style="border-radius:16px">
+      <div class="modal-header">
+        <div>
+          <h6 class="modal-title mb-0 fw-bold">Riwayat Evaluasi</h6>
+          <small class="text-muted" id="evalHistoryEmpName">-</small>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-3">
+        <div id="evalHistoryBody">
+          <div class="text-center text-muted py-4" style="font-size:13px">Memuat riwayat...</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
