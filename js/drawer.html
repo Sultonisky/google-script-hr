@@ -170,6 +170,10 @@
 
     updateStatusButtonsUI(c.status || 'Pending');
 
+    // Sembunyikan tombol offering response & onboarding (hanya tampil via openStatusDrawer untuk Accepted)
+    var respWrap = document.getElementById('drawerOfferingRespWrap');
+    if (respWrap) respWrap.style.display = 'none';
+
     // Timeline
     var tl = document.getElementById('drawerTimeline');
     if (tl) tl.innerHTML = '<div class="timeline-empty">Memuat riwayat...</div>';

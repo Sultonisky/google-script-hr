@@ -1,5 +1,509 @@
 <!-- partials/StatusPageModals.html — Modal ubah status untuk halaman Hold/Accepted/Blacklist -->
 
+<!-- ============================================================
+     ONBOARDING PROBATION MODAL
+     Dipanggil dari tombol panel header di AcceptedPage (bukan dari drawer)
+     Filter: hanya kandidat Accepted + offeringResponse = "Diterima"
+============================================================ -->
+<div class="modal fade" id="onboardingModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+    <div class="modal-content" style="border-radius:16px">
+
+      <div class="modal-header" style="background:var(--color-primary);border-radius:16px 16px 0 0">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-person-fill-check text-white fs-5"></i>
+          <h6 class="modal-title mb-0 text-white fw-bold">Proses Onboarding Probation</h6>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body p-4">
+        <input type="hidden" id="onboardingRecruitmentId" />
+        <input type="hidden" id="onboardingEmployeeId" />
+
+        <!-- Step 1: Search kandidat -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold" style="font-size:13px">
+            <i class="bi bi-search me-1"></i>Cari Kandidat
+            <span class="text-muted fw-normal">(Status: Accepted + Diterima)</span>
+          </label>
+          <div class="position-relative">
+            <input type="text" class="form-control" id="onboardingCandSearch"
+              placeholder="Ketik nama atau Recruitment ID..." autocomplete="off"
+              style="font-size:13px;padding-right:36px" />
+            <i class="bi bi-x-circle-fill position-absolute" id="onboardingSearchClear"
+              style="right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;display:none"></i>
+          </div>
+          <!-- Dropdown hasil search -->
+          <div id="onboardingSearchDropdown" class="border rounded-3 mt-1 shadow-sm"
+            style="display:none;max-height:200px;overflow-y:auto;background:#fff;z-index:9999;position:relative">
+          </div>
+        </div>
+
+        <!-- Info Kandidat terpilih -->
+        <div id="onboardingCandPreview" style="display:none">
+          <div class="p-3 rounded-3 mb-4" style="background:#f0f7ff;border:1px solid #c7dff7">
+            <div class="d-flex align-items-center gap-3">
+              <div class="avatar-sm" id="onboardingCandAvatar"
+                style="width:44px;height:44px;font-size:16px;flex-shrink:0;background:var(--color-primary);color:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800">?</div>
+              <div class="flex-grow-1">
+                <div class="fw-bold" id="onboardingCandName" style="font-size:15px">-</div>
+                <div class="text-muted" id="onboardingCandPosition" style="font-size:12px">-</div>
+                <div style="font-size:11px;color:#888;margin-top:2px" id="onboardingCandEmail">-</div>
+              </div>
+              <div class="text-end flex-shrink-0" style="font-size:11.5px">
+                <div class="text-muted">Recruitment ID</div>
+                <div class="fw-semibold" id="onboardingCandRid">-</div>
+                <div class="text-muted mt-1">Employee ID</div>
+                <div class="fw-semibold" id="onboardingCandEmpId">-</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Form onboarding — hanya muncul setelah kandidat dipilih -->
+          <div id="onboardingFormSection">
+
+            <!-- Bagian 1: Penempatan -->
+            <p class="fw-bold mb-3" style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-primary)">
+              <i class="bi bi-building me-1"></i>Penempatan
+            </p>
+            <div class="row g-3 mb-4">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold" style="font-size:13px">Entitas Perusahaan <span class="text-danger">*</span></label>
+                <select class="form-select form-select-sm" id="onbCompanyEntity">
+                  <option value="">— Pilih —</option>
+                  <option value="PT Mahakarya Sukses Indonesia">PT Mahakarya Sukses Indonesia</option>
+                  <option value="PT Stein Perkasa Internasional">PT Stein Perkasa Internasional</option>
+                  <option value="PT Perkasa Injeksi Indonesia">PT Perkasa Injeksi Indonesia</option>
+                  <option value="PT Mitra Elektro Perkasa">PT Mitra Elektro Perkasa</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold" style="font-size:13px">Tipe Karyawan <span class="text-danger">*</span></label>
+                <select class="form-select form-select-sm" id="onbEmployeeType">
+                  <option value="">— Pilih —</option>
+                  <option value="PKWT">PKWT</option>
+                  <option value="PKWTT">PKWTT</option>
+                  <option value="Project">Project</option>
+                  <option value="Intern">Intern</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold" style="font-size:13px">Departemen <span class="text-danger">*</span></label>
+                <input type="text" class="form-control form-control-sm" id="onbDepartment" placeholder="Contoh: Human Resources" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold" style="font-size:13px">Posisi <span class="text-danger">*</span></label>
+                <input type="text" class="form-control form-control-sm" id="onbPosition" placeholder="Contoh: Staff HR" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold" style="font-size:13px">Divisi</label>
+                <input type="text" class="form-control form-control-sm" id="onbDivision" placeholder="Opsional" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold" style="font-size:13px">Cabang</label>
+                <input type="text" class="form-control form-control-sm" id="onbBranch" placeholder="Opsional" />
+              </div>
+            </div>
+
+            <!-- Bagian 2: Kontrak -->
+            <p class="fw-bold mb-3" style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-primary)">
+              <i class="bi bi-file-earmark-text-fill me-1"></i>Kontrak Probation
+            </p>
+            <div class="row g-3 mb-4">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold" style="font-size:13px">No. Kontrak</label>
+                <input type="text" class="form-control form-control-sm" id="onbContractNumber" placeholder="Contoh: PKT/2026/001" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold" style="font-size:13px">Durasi Probation <span class="text-danger">*</span></label>
+                <select class="form-select form-select-sm" id="onbContractDuration">
+                  <option value="">— Pilih —</option>
+                  <option value="1 Bulan">1 Bulan</option>
+                  <option value="2 Bulan">2 Bulan</option>
+                  <option value="3 Bulan">3 Bulan</option>
+                  <option value="6 Bulan">6 Bulan</option>
+                  <option value="12 Bulan">12 Bulan</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold" style="font-size:13px">Mulai Probation <span class="text-danger">*</span></label>
+                <input type="date" class="form-control form-control-sm" id="onbContractStart" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold" style="font-size:13px">Selesai Probation</label>
+                <input type="date" class="form-control form-control-sm" id="onbContractEnd" />
+                <div class="form-text" id="onbContractEndHint" style="font-size:11px">Isi manual atau terisi otomatis dari durasi</div>
+              </div>
+            </div>
+
+            <!-- Bagian 3: Kompensasi -->
+            <p class="fw-bold mb-3" style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-primary)">
+              <i class="bi bi-cash-stack me-1"></i>Kompensasi
+            </p>
+            <div class="row g-3 mb-4">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold" style="font-size:13px">Gaji Probation (Rp) <span class="text-danger">*</span></label>
+                <input type="text" class="form-control form-control-sm" id="onbSalary" placeholder="Contoh: 5000000" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold" style="font-size:13px">Tipe Gaji</label>
+                <select class="form-select form-select-sm" id="onbSalaryType">
+                  <option value="Monthly">Monthly (Bulanan)</option>
+                  <option value="Daily">Daily (Harian)</option>
+                  <option value="Weekly">Weekly (Mingguan)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Catatan -->
+            <div class="mb-0">
+              <label class="form-label fw-semibold" style="font-size:13px">Catatan HR <span class="text-muted fw-normal">(opsional)</span></label>
+              <textarea class="form-control form-control-sm" id="onbNotes" rows="2"
+                placeholder="Contoh: Probation 3 bulan, evaluasi bulan ke-2 dan ke-3..."></textarea>
+            </div>
+
+          </div><!-- /#onboardingFormSection -->
+        </div><!-- /#onboardingCandPreview -->
+
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+        <button class="btn btn-sm text-white fw-semibold" style="background:var(--color-primary)"
+          id="btnConfirmOnboarding" disabled>
+          <span id="btnOnboardingText"><i class="bi bi-person-fill-check me-1"></i>Proses Onboarding</span>
+          <span id="btnOnboardingLoading" style="display:none">
+            <span class="spinner-border spinner-border-sm me-1"></span>Memproses...
+          </span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Offering Letter Modal -->
+<div class="modal fade" id="offeringModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content" style="border-radius:16px">
+      <div class="modal-header" style="background:var(--color-primary);border-radius:16px 16px 0 0">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-file-earmark-text-fill text-white fs-5"></i>
+          <h6 class="modal-title mb-0 text-white fw-bold">Buat Offering Letter</h6>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+
+        <!-- Search Kandidat -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold" style="font-size:13px">
+            <i class="bi bi-search me-1"></i>Cari Kandidat (Status: Accepted)
+          </label>
+          <div class="position-relative">
+            <input type="text" class="form-control" id="offeringCandidateSearch"
+              placeholder="Ketik nama kandidat..." autocomplete="off" style="font-size:13px;padding-right:36px" />
+            <i class="bi bi-x-circle-fill position-absolute" id="offeringSearchClear"
+              style="right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;display:none"></i>
+          </div>
+          <!-- Dropdown hasil search -->
+          <div id="offeringSearchDropdown" class="border rounded-3 mt-1 shadow-sm"
+            style="display:none;max-height:200px;overflow-y:auto;background:#fff;z-index:9999;position:relative">
+          </div>
+        </div>
+
+        <!-- Preview data kandidat -->
+        <div id="offeringCandidatePreview" style="display:none">
+          <div class="p-3 rounded-3 mb-3" style="background:#f0f7ff;border:1px solid #c7dff7">
+            <div class="d-flex align-items-center gap-3 mb-2">
+              <div class="avatar-sm" id="offeringCandAvatar" style="width:44px;height:44px;font-size:16px;flex-shrink:0">?</div>
+              <div>
+                <div class="fw-bold" id="offeringCandName" style="font-size:15px">-</div>
+                <div class="text-muted" id="offeringCandPosition" style="font-size:12px">-</div>
+                <div style="font-size:11px;color:#888" id="offeringCandRecruitId">-</div>
+              </div>
+            </div>
+            <div class="row g-2" style="font-size:12px">
+              <div class="col-6 col-md-3" style="min-width:0"><span class="text-muted d-block">NIK</span><span class="fw-semibold d-block text-truncate" id="offeringCandNik">-</span></div>
+              <div class="col-6 col-md-3" style="min-width:0"><span class="text-muted d-block">Email</span><span class="fw-semibold d-block text-truncate" id="offeringCandEmail" title="">-</span></div>
+              <div class="col-6 col-md-3" style="min-width:0"><span class="text-muted d-block">No. HP</span><span class="fw-semibold d-block text-truncate" id="offeringCandPhone">-</span></div>
+              <div class="col-6 col-md-3" style="min-width:0"><span class="text-muted d-block">Kota</span><span class="fw-semibold d-block text-truncate" id="offeringCandCity">-</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detail Penawaran -->
+        <div id="offeringStep2" style="display:none">
+          <hr class="my-3" />
+          <p class="fw-semibold mb-3" style="font-size:13px;color:var(--color-primary)">
+            <i class="bi bi-pencil-square me-1"></i>Detail Penawaran
+          </p>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" style="font-size:12px;font-weight:600">Entitas Perusahaan <span class="text-danger">*</span></label>
+              <select class="form-select form-select-sm" id="offerCompanyEntity">
+                <option value="">-- Pilih perusahaan --</option>
+                <option value="PT Mahakarya Sukses Indonesia">PT Mahakarya Sukses Indonesia</option>
+                <option value="PT Stein Perkasa Internasional">PT Stein Perkasa Internasional</option>
+                <option value="PT Perkasa Injeksi Indonesia">PT Perkasa Injeksi Indonesia</option>
+                <option value="PT Mitra Elektro Perkasa">PT Mitra Elektro Perkasa</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" style="font-size:12px;font-weight:600">Posisi Ditawarkan <span class="text-danger">*</span></label>
+              <input type="text" class="form-control form-control-sm" id="offerPosition" placeholder="Contoh: Staff Marketing" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" style="font-size:12px;font-weight:600">Departemen <span class="text-danger">*</span></label>
+              <input type="text" class="form-control form-control-sm" id="offerDepartment" placeholder="Contoh: Marketing" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" style="font-size:12px;font-weight:600">Gaji Ditawarkan (Rp) <span class="text-danger">*</span></label>
+              <input type="text" class="form-control form-control-sm" id="offerSalary" placeholder="Contoh: 5000000" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" style="font-size:12px;font-weight:600">Tanggal Mulai Bergabung <span class="text-danger">*</span></label>
+              <input type="date" class="form-control form-control-sm" id="offerJoinDate" />
+            </div>
+            <!-- Batas Konfirmasi — dinonaktifkan sementara
+            <div class="col-md-6">
+              <label class="form-label" style="font-size:12px;font-weight:600">Batas Konfirmasi</label>
+              <input type="date" class="form-control form-control-sm" id="offerDeadline" />
+            </div>
+            -->
+            <div class="col-12">
+              <label class="form-label" style="font-size:12px;font-weight:600">Benefit / Fasilitas Tambahan</label>
+              <textarea class="form-control form-control-sm" id="offerBenefit" rows="3"
+                placeholder="Contoh: BPJS Kesehatan &amp; Ketenagakerjaan, THR, Tunjangan Transport Rp500.000/bulan..."></textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label" style="font-size:12px;font-weight:600">Catatan Tambahan</label>
+              <textarea class="form-control form-control-sm" id="offerNotes" rows="2"
+                placeholder="Opsional: instruksi khusus, lokasi kerja, dll."></textarea>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer" style="border-top:1px solid #eee">
+        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+        <button class="btn btn-sm text-white" style="background:var(--color-primary)" id="btnGenerateOffering" disabled>
+          <span id="btnOfferingText"><i class="bi bi-floppy-fill me-1"></i>Simpan Offering Letter</span>
+          <span id="btnOfferingLoading" style="display:none"><span class="spinner-border spinner-border-sm me-1"></span>Menyimpan...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Offering Letter Preview Modal -->
+<div class="modal fade" id="offeringPreviewModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+    <div class="modal-content" style="border-radius:16px">
+
+      <div class="modal-header" style="background:var(--color-primary);border-radius:16px 16px 0 0">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-file-earmark-check-fill text-white fs-5"></i>
+          <h6 class="modal-title mb-0 text-white fw-bold">Preview Offering Letter</h6>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body p-4">
+
+        <!-- Warning: data tidak ada di memory / spreadsheet -->
+        <div id="prevOfferNoDataWarn" class="alert alert-warning d-flex align-items-center gap-2 mb-3" style="display:none;font-size:13px">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+          <span>Data detail offering tidak tersedia di sesi ini (mungkin karena halaman di-refresh). Klik <strong>Edit</strong> untuk mengisi ulang dan generate ulang.</span>
+        </div>
+
+        <!-- Info kandidat -->
+        <div class="d-flex align-items-center gap-3 mb-3 p-3 rounded-3" style="background:#f0f7ff;border:1px solid #c7dff7">
+          <div class="avatar-sm" style="width:44px;height:44px;font-size:16px;flex-shrink:0" id="prevOfferCandAvatar">?</div>
+          <div class="flex-grow-1">
+            <div class="fw-bold" id="prevOfferCandName" style="font-size:15px">-</div>
+            <div class="text-muted" id="prevOfferCandPos" style="font-size:12px">-</div>
+            <div style="font-size:11px;color:#999" id="prevOfferCandRid">-</div>
+          </div>
+          <div class="text-end" style="font-size:11px;color:#666;flex-shrink:0">
+            <div>Dibuat: <strong id="prevOfferCreated">-</strong></div>
+            <div>Oleh: <strong id="prevOfferCreatedBy">-</strong></div>
+            <div>Diperbarui: <strong id="prevOfferUpdated">-</strong></div>
+          </div>
+        </div>
+
+        <hr class="my-3" />
+
+        <!-- Detail penawaran -->
+        <p class="fw-semibold mb-3" style="font-size:13px;color:var(--color-primary)">
+          <i class="bi bi-list-check me-1"></i>Detail Penawaran
+        </p>
+
+        <div class="row g-2" style="font-size:13px">
+          <div class="col-md-6">
+            <div class="p-2 rounded-2" style="background:#f8fafc;border:1px solid #e8edf2">
+              <div class="text-muted mb-1" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Perusahaan</div>
+              <div class="fw-semibold" id="prevOfferCompany">-</div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-2 rounded-2" style="background:#f8fafc;border:1px solid #e8edf2">
+              <div class="text-muted mb-1" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Posisi</div>
+              <div class="fw-semibold" id="prevOfferPosition">-</div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-2 rounded-2" style="background:#f8fafc;border:1px solid #e8edf2">
+              <div class="text-muted mb-1" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Departemen</div>
+              <div class="fw-semibold" id="prevOfferDept">-</div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-2 rounded-2" style="background:#fff8e1;border:1px solid #ffe082">
+              <div class="text-muted mb-1" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Gaji Ditawarkan</div>
+              <div class="fw-bold" id="prevOfferSalary" style="color:#005bac;font-size:14px">-</div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-2 rounded-2" style="background:#f8fafc;border:1px solid #e8edf2">
+              <div class="text-muted mb-1" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Tanggal Bergabung</div>
+              <div class="fw-semibold" id="prevOfferJoinDate">-</div>
+            </div>
+          </div>
+          <div class="col-12" id="prevOfferBenefitWrap">
+            <div class="p-2 rounded-2" style="background:#f8fafc;border:1px solid #e8edf2">
+              <div class="text-muted mb-1" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Benefit / Fasilitas</div>
+              <div id="prevOfferBenefit" style="white-space:pre-wrap;font-size:13px">-</div>
+            </div>
+          </div>
+          <div class="col-12" id="prevOfferNotesWrap">
+            <div class="p-2 rounded-2" style="background:#fffde7;border:1px solid #fff9c4">
+              <div class="text-muted mb-1" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Catatan Tambahan</div>
+              <div id="prevOfferNotes" style="white-space:pre-wrap;font-size:13px">-</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="modal-footer" style="border-top:1px solid #eee;gap:8px">
+        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+        <button class="btn btn-outline-primary btn-sm" id="btnEditOffering">
+          <i class="bi bi-pencil me-1"></i>Edit Offering
+        </button>
+        <button class="btn btn-sm text-white" style="background:var(--color-primary)" id="btnDownloadOffering" disabled>
+          <i class="bi bi-download me-1"></i>Download PDF
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Offering Response Modal -->
+<div class="modal fade" id="offeringResponseModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px">
+      <div class="modal-header">
+        <div>
+          <h6 class="modal-title mb-0 fw-bold">Update Respons Offering</h6>
+          <small class="text-muted" id="offerRespCandName">-</small>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="offerRespRecruitmentId" />
+        <!-- hidden radio inputs — dikontrol JS, tidak ditampilkan -->
+        <input type="hidden" id="offerRespValue" value="" />
+
+        <label class="form-label fw-semibold mb-2" style="font-size:13px">Respons Kandidat</label>
+        <div class="d-flex flex-column gap-2 mb-3" id="offerRespOptions">
+
+          <!-- Opsi: Menunggu -->
+          <div class="offer-resp-opt p-3 rounded-3"
+            data-value="Menunggu"
+            style="border:2px solid #e5e7eb;cursor:pointer;transition:border-color .15s,background .15s">
+            <div class="d-flex align-items-center gap-3">
+              <div class="offer-resp-dot" style="
+                width:20px;height:20px;border-radius:50%;border:2px solid #d1d5db;
+                flex-shrink:0;display:flex;align-items:center;justify-content:center;
+                transition:border-color .15s,background .15s">
+                <div class="offer-resp-dot-inner" style="
+                  width:8px;height:8px;border-radius:50%;background:transparent;
+                  transition:background .15s"></div>
+              </div>
+              <div>
+                <div class="fw-semibold" style="font-size:13px">
+                  <i class="bi bi-hourglass-split me-1" style="color:#8a6100"></i>Menunggu
+                </div>
+                <div class="text-muted" style="font-size:11px">Offering sudah dikirim, belum ada konfirmasi dari kandidat</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Opsi: Diterima -->
+          <div class="offer-resp-opt p-3 rounded-3"
+            data-value="Diterima"
+            style="border:2px solid #e5e7eb;cursor:pointer;transition:border-color .15s,background .15s">
+            <div class="d-flex align-items-center gap-3">
+              <div class="offer-resp-dot" style="
+                width:20px;height:20px;border-radius:50%;border:2px solid #d1d5db;
+                flex-shrink:0;display:flex;align-items:center;justify-content:center;
+                transition:border-color .15s,background .15s">
+                <div class="offer-resp-dot-inner" style="
+                  width:8px;height:8px;border-radius:50%;background:transparent;
+                  transition:background .15s"></div>
+              </div>
+              <div>
+                <div class="fw-semibold" style="font-size:13px">
+                  <i class="bi bi-check-circle-fill me-1" style="color:#166534"></i>Diterima
+                </div>
+                <div class="text-muted" style="font-size:11px">Kandidat setuju dan siap bergabung sesuai tanggal yang ditentukan</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Opsi: Ditolak -->
+          <div class="offer-resp-opt p-3 rounded-3"
+            data-value="Ditolak"
+            style="border:2px solid #e5e7eb;cursor:pointer;transition:border-color .15s,background .15s">
+            <div class="d-flex align-items-center gap-3">
+              <div class="offer-resp-dot" style="
+                width:20px;height:20px;border-radius:50%;border:2px solid #d1d5db;
+                flex-shrink:0;display:flex;align-items:center;justify-content:center;
+                transition:border-color .15s,background .15s">
+                <div class="offer-resp-dot-inner" style="
+                  width:8px;height:8px;border-radius:50%;background:transparent;
+                  transition:background .15s"></div>
+              </div>
+              <div>
+                <div class="fw-semibold" style="font-size:13px">
+                  <i class="bi bi-x-circle-fill me-1" style="color:#991b1b"></i>Ditolak
+                </div>
+                <div class="text-muted" style="font-size:11px">Kandidat menolak tawaran — proses rekrutmen selesai</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="mb-0">
+          <label class="form-label fw-semibold" style="font-size:13px">Catatan <span class="text-muted fw-normal">(opsional)</span></label>
+          <textarea class="form-control" id="offerRespNotes" rows="3"
+            placeholder="Contoh: Kandidat menolak karena gaji tidak sesuai, negosiasi gagal..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+        <button class="btn text-white" style="background:var(--color-primary)" id="btnConfirmOfferResp" disabled>
+          <i class="bi bi-check-lg me-1"></i>Simpan Respons
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Ubah Status dari Hold/Accepted/Blacklist -->
 <div class="modal fade" id="moveStatusModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
