@@ -58,8 +58,8 @@
     var active   = 0;
     var inactive = 0;
     EMP.allItems.forEach(function(e) {
-      var s = (e.employmentStatus || e.status || '').toLowerCase();
-      if (s === 'active') active++;
+      var s = (e.statusEmployee || '').toLowerCase();
+      if (s === 'active' || s === 'probation') active++;
       else inactive++;
     });
 
@@ -74,10 +74,8 @@
   // ============ FILTERS ============
   function empPopulateFilters() {
     var depts = {};
-    var types = {};
     EMP.allItems.forEach(function (e) {
       if (e.department) depts[e.department] = true;
-      if (e.employeeType) types[e.employeeType] = true;
     });
 
     var fDept = document.getElementById('empDeptFilter');
@@ -89,22 +87,11 @@
           (curDept === d ? ' selected' : '') + '>' + escapeHtml(d) + '</option>';
       });
     }
-
-    var fType = document.getElementById('empTypeFilter');
-    var curType = fType ? fType.value : '';
-    if (fType) {
-      fType.innerHTML = '<option value="">Semua Tipe</option>';
-      Object.keys(types).sort().forEach(function (t) {
-        fType.innerHTML += '<option value="' + escapeHtml(t) + '"' +
-          (curType === t ? ' selected' : '') + '>' + escapeHtml(t) + '</option>';
-      });
-    }
   }
 
   function empApplyFilters() {
     var siEl = document.getElementById('empSearchInput');
     var dfEl = document.getElementById('empDeptFilter');
-    var tfEl = document.getElementById('empTypeFilter');
     var sfEl = document.getElementById('empStatusFilter');
     var ssEl = document.getElementById('empSortSelect');
 
@@ -112,7 +99,6 @@
 
     var kw = siEl.value.trim().toLowerCase();
     var dept = dfEl ? dfEl.value : '';
-    var type = tfEl ? tfEl.value : '';
     var status = sfEl ? sfEl.value : '';
     var sort = ssEl ? ssEl.value : 'newest';
 
@@ -120,13 +106,28 @@
       var mk = !kw ||
         (e.fullName || '').toLowerCase().indexOf(kw) !== -1 ||
         (e.nik || '').replace(/'/g, '').toLowerCase().indexOf(kw) !== -1 ||
-        (e.email || '').toLowerCase().indexOf(kw) !== -1 ||
-        (e.position || '').toLowerCase().indexOf(kw) !== -1 ||
-        (e.department || '').toLowerCase().indexOf(kw) !== -1;
+        (e.npwp || '').replace(/'/g, '').toLowerCase().indexOf(kw) !== -1 ||
+        (e.personalEmail || e.email || '').toLowerCase().indexOf(kw) !== -1 ||
+        (e.workingEmail || '').toLowerCase().indexOf(kw) !== -1 ||
+        (e.mobilePhone || e.phone || '').replace(/'/g, '').toLowerCase().indexOf(kw) !== -1 ||
+        (e.positionCurrent || e.position || '').toLowerCase().indexOf(kw) !== -1 ||
+        (e.department || '').toLowerCase().indexOf(kw) !== -1 ||
+        (e.branchName || e.branch || '').toLowerCase().indexOf(kw) !== -1 ||
+        (e.jobLevel || '').toLowerCase().indexOf(kw) !== -1 ||
+        (e.grade || '').toLowerCase().indexOf(kw) !== -1 ||
+        (e.directSuperior || '').toLowerCase().indexOf(kw) !== -1 ||
+        (e.indirectSuperior || '').toLowerCase().indexOf(kw) !== -1 ||
+        (e.costCenter || '').toLowerCase().indexOf(kw) !== -1 ||
+        (e.bankName || '').toLowerCase().indexOf(kw) !== -1 ||
+        (e.bankAccount || '').replace(/'/g, '').toLowerCase().indexOf(kw) !== -1 ||
+        (e.bpjsKetenagakerjaan || '').replace(/'/g, '').toLowerCase().indexOf(kw) !== -1 ||
+        (e.bpjsKesehatan || '').replace(/'/g, '').toLowerCase().indexOf(kw) !== -1 ||
+        (e.areaKerja || '').toLowerCase().indexOf(kw) !== -1 ||
+        (e.lokasiKerja || e.city || '').toLowerCase().indexOf(kw) !== -1 ||
+        (e.employeeId || '').toLowerCase().indexOf(kw) !== -1;
       var md = !dept || e.department === dept;
-      var mt = !type || e.employeeType === type;
-      var ms = !status || (e.employmentStatus || e.status || '').toLowerCase() === status.toLowerCase();
-      return mk && md && mt && ms;
+      var ms = !status || (e.statusEmployee || '').toLowerCase() === status.toLowerCase();
+      return mk && md && ms;
     });
 
     EMP.filtered.sort(function (a, b) {
@@ -173,17 +174,18 @@
     var pageData = EMP.filtered.slice(start, start + ps);
 
     if (tbody) tbody.innerHTML = pageData.map(function (e) {
-      var empStatus = e.employmentStatus || e.status || 'Inactive';
+      var empStatus = e.statusEmployee || 'Inactive';
       var stBadge = entityStatusBadgeClass(empStatus);
+      var displayPos = e.positionCurrent || e.position || '-';
+      var displayEmail = e.personalEmail || e.email || '-';
       return '<tr class="emp-row-link" data-id="' + escapeHtml(e.employeeId) + '" style="cursor:pointer;">' +
         '<td><div class="avatar-sm">' + escapeHtml(initials(e.fullName)) + '</div></td>' +
         '<td><span class="id-mono">' + escapeHtml(e.employeeId || '-') + '</span></td>' +
         '<td><div class="cand-name cand-name-link" data-id="' + escapeHtml(e.employeeId) + '">' +
-          escapeHtml(e.fullName || '-') + '</div><div class="cand-sub">' + escapeHtml(e.email || '-') + '</div></td>' +
+          escapeHtml(e.fullName || '-') + '</div><div class="cand-sub">' + escapeHtml(displayEmail) + '</div></td>' +
         '<td>' + escapeHtml(e.nik || '-') + '</td>' +
         '<td>' + escapeHtml(e.department || '-') + '</td>' +
-        '<td>' + escapeHtml(e.position || '-') + '</td>' +
-        '<td>' + escapeHtml(e.employeeType || '-') + '</td>' +
+        '<td>' + escapeHtml(displayPos) + '</td>' +
         '<td><span class="badge-status ' + stBadge + '">' + escapeHtml(empStatus) + '</span></td>' +
         '<td>' + escapeHtml(e.joinDate || '-') + '</td>' +
         '</tr>';
@@ -260,14 +262,6 @@
     var selectMap = {
       'department':        'efDept',
       'position':          'efPos',
-      'employee_type':     'efType',
-      'company_entity':    'efCompanyEntity',
-      'education':         'efEducation',
-      'work_experience':   'efWorkExp',
-      'employment_status': 'efEmpStatus',
-      'contract_duration': 'efContractDuration',
-      'salary_type':       'efSalaryType',
-      'recruitment_source':'efRecruitSource'
     };
     Object.keys(selectMap).forEach(function (cat) {
       var sel = document.getElementById(selectMap[cat]);
@@ -311,45 +305,55 @@
     document.getElementById('empFormTitle').textContent = 'Edit Karyawan';
     document.getElementById('efId').value              = emp.employeeId;
 
-    // Data Pribadi
+    // SEKSI 1: Identitas & Data Pribadi
     document.getElementById('efName').value            = emp.fullName        || '';
     document.getElementById('efNik').value             = emp.nik             || '';
+    document.getElementById('efNpwp').value            = emp.npwp            || '';
+    document.getElementById('efBirthPlace').value      = emp.birthPlace      || '';
     document.getElementById('efBirthDate').value       = toDateInputValue(emp.birthDate);
-    document.getElementById('efAge').value             = emp.age             || '';
+    document.getElementById('efBloodType').value       = emp.bloodType       || '';
     document.getElementById('efGender').value          = emp.gender          || '';
+    document.getElementById('efReligion').value        = emp.religion        || '';
     document.getElementById('efMarital').value         = emp.maritalStatus   || '';
-    document.getElementById('efEmail').value           = emp.email           || '';
-    document.getElementById('efPhone').value           = emp.phone           || '';
-    document.getElementById('efAddress').value         = emp.address         || '';
-    document.getElementById('efDistrict').value        = emp.district        || '';
-    document.getElementById('efCity').value            = emp.city            || '';
-    document.getElementById('efEducation').value       = emp.education       || '';
-    document.getElementById('efWorkExp').value         = emp.workExperience  || '';
+    document.getElementById('efPtkp').value            = emp.ptkpStatus      || '';
+    document.getElementById('efEmail').value           = emp.personalEmail   || emp.email || '';
+    document.getElementById('efPhone').value           = emp.mobilePhone     || emp.phone || '';
+    document.getElementById('efAddress').value         = emp.citizenIdAddress || emp.address || '';
+    document.getElementById('efResidentialAddress').value = emp.residentialAddress || '';
 
-    // Data Pekerjaan
-    document.getElementById('efCompanyEntity').value   = emp.companyEntity   || '';
-    document.getElementById('efType').value            = emp.employeeType    || '';
-    document.getElementById('efStatus').value          = emp.status          || 'Active';
-    document.getElementById('efDept').value            = emp.department      || '';
+    // SEKSI 2: Bank & BPJS
+    document.getElementById('efBankName').value        = emp.bankName        || '';
+    document.getElementById('efBankAccount').value     = emp.bankAccount     || '';
+    document.getElementById('efBankHolder').value      = emp.bankAccountHolder || '';
+    document.getElementById('efBpjsTk').value          = emp.bpjsKetenagakerjaan || '';
+    document.getElementById('efBpjsKes').value         = emp.bpjsKesehatan   || '';
+    document.getElementById('efWorkingEmail').value    = emp.workingEmail    || '';
+
+    // SEKSI 3: Struktur Organisasi & Pekerjaan
+    document.getElementById('efStatusEmployee').value  = emp.statusEmployee  || emp.employmentStatus || emp.status || 'Active';
+    document.getElementById('efBranch').value          = emp.branchName      || emp.branch || '';
     document.getElementById('efDivision').value        = emp.division        || '';
-    document.getElementById('efBranch').value          = emp.branch          || '';
-    document.getElementById('efPos').value             = emp.position        || '';
+    document.getElementById('efDept').value            = emp.department      || '';
+    document.getElementById('efCostCenter').value      = emp.costCenter      || '';
+    document.getElementById('efPos').value             = emp.positionCurrent  || emp.position || '';
+    document.getElementById('efPosNoLoc').value        = emp.positionNoLocCurrent || '';
     document.getElementById('efJoin').value            = toDateInputValue(emp.joinDate);
-    document.getElementById('efRecruitSource').value   = emp.recruitmentSource || '';
+    document.getElementById('efJobLevel').value        = emp.jobLevel        || '';
+    document.getElementById('efGrade').value           = emp.grade           || '';
+    document.getElementById('efDistrict').value        = emp.areaKerja       || emp.district || '';
+    document.getElementById('efCity').value            = emp.lokasiKerja     || emp.city || '';
+    document.getElementById('efDirectSup').value       = emp.directSuperior  || '';
+    document.getElementById('efIndirectSup').value     = emp.indirectSuperior || '';
 
-    // Kontrak & Gaji
-    document.getElementById('efEmpStatus').value       = emp.employmentStatus || '';
-    document.getElementById('efContractStart').value   = toDateInputValue(emp.contractStart);
+    // SEKSI 4: Kontrak & Status Kepegawaian
     document.getElementById('efContractEnd').value     = toDateInputValue(emp.contractEnd);
-    document.getElementById('efContractDuration').value= emp.contractDuration || '';
-    document.getElementById('efContractNumber').value  = emp.contractNumber  || '';
-    document.getElementById('efOutsourceVendor').value = emp.outsourceVendor || '';
-    document.getElementById('efSalary').value          = emp.salary          || '';
-    document.getElementById('efSalaryType').value      = emp.salaryType      || '';
 
-    // Catatan
-    document.getElementById('efHrNotes').value         = emp.hrNotes         || '';
-    document.getElementById('efNotes').value           = emp.notes           || '';
+    // SEKSI 5: Karier & Mutasi
+    document.getElementById('efFormerPos').value       = emp.positionFormer  || '';
+    document.getElementById('efRotationType').value    = emp.typeOfRotation  || '';
+    document.getElementById('efMutasiDate').value      = toDateInputValue(emp.mutasiDate);
+    document.getElementById('efNoSk').value            = emp.nomorSk         || '';
+    document.getElementById('efResignDate').value      = toDateInputValue(emp.resignDate);
 
     EMP.formModal.show();
   }
@@ -362,42 +366,61 @@
     }
 
     var data = {
-      // Data Pribadi
-      fullName:          name,
-      nik:               document.getElementById('efNik').value.trim(),
-      birthDate:         document.getElementById('efBirthDate').value,
-      age:               document.getElementById('efAge').value,
-      gender:            document.getElementById('efGender').value,
-      maritalStatus:     document.getElementById('efMarital').value,
-      email:             document.getElementById('efEmail').value.trim(),
-      phone:             document.getElementById('efPhone').value.trim(),
-      address:           document.getElementById('efAddress').value.trim(),
-      district:          document.getElementById('efDistrict').value.trim(),
-      city:              document.getElementById('efCity').value.trim(),
-      education:         document.getElementById('efEducation').value,
-      workExperience:    document.getElementById('efWorkExp').value,
-      // Data Pekerjaan
-      companyEntity:     document.getElementById('efCompanyEntity').value,
-      employeeType:      document.getElementById('efType').value,
-      status:            document.getElementById('efStatus').value,
-      department:        document.getElementById('efDept').value,
-      division:          document.getElementById('efDivision').value.trim(),
-      branch:            document.getElementById('efBranch').value.trim(),
-      position:          document.getElementById('efPos').value,
-      joinDate:          document.getElementById('efJoin').value,
-      recruitmentSource: document.getElementById('efRecruitSource').value,
-      // Kontrak & Gaji
-      employmentStatus:  document.getElementById('efEmpStatus').value,
-      contractStart:     document.getElementById('efContractStart').value,
-      contractEnd:       document.getElementById('efContractEnd').value,
-      contractDuration:  document.getElementById('efContractDuration').value,
-      contractNumber:    document.getElementById('efContractNumber').value.trim(),
-      outsourceVendor:   document.getElementById('efOutsourceVendor').value.trim(),
-      salary:            document.getElementById('efSalary').value,
-      salaryType:        document.getElementById('efSalaryType').value,
-      // Catatan
-      hrNotes:           document.getElementById('efHrNotes').value.trim(),
-      notes:             document.getElementById('efNotes').value.trim(),
+      // SEKSI 1: Identitas & Data Pribadi
+      fullName:                 name,
+      nik:                      document.getElementById('efNik').value.trim(),
+      npwp:                     document.getElementById('efNpwp').value.trim(),
+      birthPlace:               document.getElementById('efBirthPlace').value.trim(),
+      birthDate:                document.getElementById('efBirthDate').value,
+      bloodType:                document.getElementById('efBloodType').value,
+      gender:                   document.getElementById('efGender').value,
+      religion:                 document.getElementById('efReligion').value,
+      maritalStatus:            document.getElementById('efMarital').value,
+      ptkpStatus:               document.getElementById('efPtkp').value,
+      personalEmail:            document.getElementById('efEmail').value.trim(),
+      mobilePhone:              document.getElementById('efPhone').value.trim(),
+      citizenIdAddress:         document.getElementById('efAddress').value.trim(),
+      residentialAddress:       document.getElementById('efResidentialAddress').value.trim(),
+      // SEKSI 2: Bank & BPJS
+      bankName:                 document.getElementById('efBankName').value,
+      bankAccount:              document.getElementById('efBankAccount').value.trim(),
+      bankAccountHolder:        document.getElementById('efBankHolder').value.trim(),
+      bpjsKetenagakerjaan:      document.getElementById('efBpjsTk').value.trim(),
+      bpjsKesehatan:            document.getElementById('efBpjsKes').value.trim(),
+      workingEmail:             document.getElementById('efWorkingEmail').value.trim(),
+      // SEKSI 3: Struktur Organisasi & Pekerjaan
+      statusEmployee:           document.getElementById('efStatusEmployee').value,
+      branchName:               document.getElementById('efBranch').value.trim(),
+      division:                 document.getElementById('efDivision').value.trim(),
+      department:               document.getElementById('efDept').value,
+      costCenter:               document.getElementById('efCostCenter').value.trim(),
+      positionCurrent:          document.getElementById('efPos').value,
+      positionNoLocCurrent:     document.getElementById('efPosNoLoc').value.trim(),
+      joinDate:                 document.getElementById('efJoin').value,
+      jobLevel:                 document.getElementById('efJobLevel').value.trim(),
+      grade:                    document.getElementById('efGrade').value.trim(),
+      areaKerja:                document.getElementById('efDistrict').value.trim(),
+      lokasiKerja:              document.getElementById('efCity').value.trim(),
+      directSuperior:           document.getElementById('efDirectSup').value.trim(),
+      indirectSuperior:         document.getElementById('efIndirectSup').value.trim(),
+      // SEKSI 4: Kontrak & Status Kepegawaian
+      contractEnd:              document.getElementById('efContractEnd').value,
+      // SEKSI 5: Karier & Mutasi
+      positionFormer:           document.getElementById('efFormerPos').value.trim(),
+      typeOfRotation:           document.getElementById('efRotationType').value,
+      mutasiDate:               document.getElementById('efMutasiDate').value,
+      nomorSk:                  document.getElementById('efNoSk').value.trim(),
+      resignDate:               document.getElementById('efResignDate').value,
+      // Legacy aliases
+      status:                   document.getElementById('efStatusEmployee').value,
+      employmentStatus:         document.getElementById('efStatusEmployee').value,
+      email:                    document.getElementById('efEmail').value.trim(),
+      phone:                    document.getElementById('efPhone').value.trim(),
+      address:                  document.getElementById('efAddress').value.trim(),
+      district:                 document.getElementById('efDistrict').value.trim(),
+      city:                     document.getElementById('efCity').value.trim(),
+      branch:                   document.getElementById('efBranch').value.trim(),
+      position:                 document.getElementById('efPos').value,
     };
 
     var btn = document.getElementById('btnEmpSave');
