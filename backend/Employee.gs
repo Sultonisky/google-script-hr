@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // backend/Employee.gs — MASTER DATA KARYAWAN
 // Schema: defined in EMPLOYEE_HEADERS (Config.gs)
 // Column access: use EMPLOYEE_COL[headerName] — NEVER hardcoded indexes
@@ -13,69 +13,116 @@ function getEmployeeList() {
     var sheet = getOrCreateEmployeeSheet_();
     if (!sheet || sheet.getLastRow() < 2) return { success: true, data: [] };
 
-    var data     = sheet.getDataRange().getValues();
-    var headers  = data[0];
+    var data = sheet.getDataRange().getValues();
+    var headers = data[0];
     var colIndex = {};
-    headers.forEach(function(h, i) { colIndex[String(h).trim()] = i; });
+    headers.forEach(function (h, i) {
+      colIndex[String(h).trim()] = i;
+    });
+
+    function col(name) {
+      return colIndex[name] !== undefined ? colIndex[name] : -1;
+    }
+    function sval(row, name) {
+      var i = col(name);
+      return i === -1 ? "" : String(row[i] || "");
+    }
+    function dval(row, name) {
+      var i = col(name);
+      return i === -1 ? "" : fmtDateStr_(row[i]);
+    }
 
     var items = [];
     for (var r = 1; r < data.length; r++) {
       var row = data[r];
-      if (!row.join('').toString().trim()) continue;
+      if (!row.join("").toString().trim()) continue;
+
+      var statusEmployee = sval(row, "Status Employee");
+      var statusLegacy = sval(row, "Status");
+      var empStatusLegacy = sval(row, "Employment Status");
+      var finalStatus =
+        statusEmployee || empStatusLegacy || statusLegacy || "Active";
+
+      var createdAtRaw = col("Created At") === -1 ? "" : row[col("Created At")];
+      var updatedAtRaw = col("Updated At") === -1 ? "" : row[col("Updated At")];
 
       items.push({
-        employeeId:        String(row[colIndex['Employee ID']]         || ''),
-        recruitmentId:     String(row[colIndex['Recruitment ID']]      || ''),
-        fullName:          String(row[colIndex['Full Name']]           || ''),
-        position:          String(row[colIndex['Position']]            || ''),
-        email:             String(row[colIndex['Email']]               || ''),
-        phone:             String(row[colIndex['Phone']]               || ''),
-        joinDate:          fmtDateStr_(row[colIndex['Join Date']]),
-        status:            String(row[colIndex['Status']]              || ''),
-        notes:             String(row[colIndex['Notes']]               || ''),
-        createdAt:         row[colIndex['Created At']] instanceof Date
-                             ? Utilities.formatDate(row[colIndex['Created At']], 'GMT+7', 'dd/MM/yyyy HH:mm')
-                             : fmtDateStr_(String(row[colIndex['Created At']]      || '')),
-        _rawCreatedAt:     row[colIndex['Created At']] instanceof Date
-                             ? row[colIndex['Created At']].getTime()
-                             : (new Date(String(row[colIndex['Created At']] || ''))).getTime() || 0,
-        companyEntity:     String(row[colIndex['Company Entity']]      || ''),
-        employeeType:      String(row[colIndex['Employee Type']]       || ''),
-        nik:               String(row[colIndex['NIK']]                 || ''),
-        birthDate:         fmtDateStr_(row[colIndex['Birth Date']]),
-        age:               String(row[colIndex['Age']]                 || ''),
-        gender:            String(row[colIndex['Gender']]              || ''),
-        maritalStatus:     String(row[colIndex['Marital Status']]      || ''),
-        address:           String(row[colIndex['Address']]             || ''),
-        city:              String(row[colIndex['City']]                || ''),
-        education:         String(row[colIndex['Education']]           || ''),
-        workExperience:    String(row[colIndex['Work Experience']]     || ''),
-        department:        String(row[colIndex['Department']]          || ''),
-        division:          String(row[colIndex['Division']]            || ''),
-        branch:            String(row[colIndex['Branch']]              || ''),
-        contractStart:     fmtDateStr_(row[colIndex['Contract Start']]),
-        contractEnd:       fmtDateStr_(row[colIndex['Contract End']]),
-        contractDuration:  String(row[colIndex['Contract Duration']]   || ''),
-        employmentStatus:  String(row[colIndex['Employment Status']]   || ''),
-        salary:            row[colIndex['Salary']] || '',
-        salaryType:        String(row[colIndex['Salary Type']]         || ''),
-        outsourceVendor:   String(row[colIndex['Outsource Vendor']]    || ''),
-        contractNumber:    String(row[colIndex['Contract Number']]     || ''),
-        district:          String(row[colIndex['District']]            || ''),
-        recruitmentSource: String(row[colIndex['Recruitment Source']]  || ''),
-        hrNotes:           String(row[colIndex['HR Notes']]            || ''),
-        createdBy:         String(row[colIndex['Created By']]          || ''),
-        updatedAt:         row[colIndex['Updated At']] instanceof Date
-                             ? Utilities.formatDate(row[colIndex['Updated At']], 'GMT+7', 'dd/MM/yyyy HH:mm')
-                             : fmtDateStr_(String(row[colIndex['Updated At']]       || ''))
+        employeeId: sval(row, "Employee ID"),
+        fullName: sval(row, "Full Name"),
+        nik: sval(row, "NIK - NPWP 16 digit") || sval(row, "NIK"),
+        npwp: sval(row, "NPWP"),
+        birthPlace: sval(row, "Birth Place"),
+        birthDate: dval(row, "Birth Date"),
+        gender: sval(row, "Gender"),
+        religion: sval(row, "Religion"),
+        maritalStatus: sval(row, "Marital Status"),
+        bloodType: sval(row, "Blood Type"),
+        ptkpStatus: sval(row, "PTKP Status"),
+        citizenIdAddress:
+          sval(row, "Citizen ID Address") || sval(row, "Address"),
+        residentialAddress: sval(row, "Residential Address"),
+        mobilePhone: sval(row, "Mobile Phone") || sval(row, "Phone"),
+        personalEmail: sval(row, "Personal Email") || sval(row, "Email"),
+        workingEmail: sval(row, "Working Email"),
+        email: sval(row, "Personal Email") || sval(row, "Email"),
+        phone: sval(row, "Mobile Phone") || sval(row, "Phone"),
+        address: sval(row, "Citizen ID Address") || sval(row, "Address"),
+        city: sval(row, "Lokasi Kerja") || sval(row, "City"),
+        bankName: sval(row, "Bank Name"),
+        bankAccount: sval(row, "Bank Account"),
+        bankAccountHolder: sval(row, "Bank Account Holder"),
+        bpjsKetenagakerjaan: sval(row, "BPJS Ketenagakerjaan"),
+        bpjsKesehatan: sval(row, "BPJS Kesehatan"),
+        branchName: sval(row, "Branch Name") || sval(row, "Branch"),
+        branch: sval(row, "Branch Name") || sval(row, "Branch"),
+        division: sval(row, "Division"),
+        department: sval(row, "Department"),
+        position:
+          sval(row, "Job Position (Locaction)") || sval(row, "Position"),
+        positionCurrent:
+          sval(row, "Job Position (Locaction)") || sval(row, "Position"),
+        positionNoLocCurrent: sval(row, "Job Position"),
+        jobLevel: sval(row, "Job Level"),
+        grade: sval(row, "Grade"),
+        areaKerja: sval(row, "Area Kerja"),
+        lokasiKerja: sval(row, "Lokasi Kerja") || sval(row, "City"),
+        costCenter: sval(row, "Cost Center"),
+        directSuperior: sval(row, "Direct Superior"),
+        indirectSuperior: sval(row, "Indirect Superior"),
+        statusEmployee: finalStatus,
+        status: finalStatus,
+        employmentStatus: finalStatus,
+        joinDate: dval(row, "Join Date"),
+        contractEnd:
+          dval(row, "End Date (Contract)") || dval(row, "Contract End"),
+        positionFormer: sval(row, "Job Position (Former)"),
+        typeOfRotation: sval(row, "Type of Rotation"),
+        mutasiDate: dval(row, "Tanggal Mutasi/Demosi/Promosi"),
+        nomorSk: sval(row, "Nomor SK"),
+        resignDate: dval(row, "Resign Date"),
+        createdBy: sval(row, "Created By"),
+        createdAt:
+          createdAtRaw instanceof Date
+            ? Utilities.formatDate(createdAtRaw, "GMT+7", "dd/MM/yyyy HH:mm")
+            : fmtDateStr_(String(createdAtRaw || "")),
+        _rawCreatedAt:
+          createdAtRaw instanceof Date
+            ? createdAtRaw.getTime()
+            : new Date(String(createdAtRaw || "")).getTime() || 0,
+        updatedAt:
+          updatedAtRaw instanceof Date
+            ? Utilities.formatDate(updatedAtRaw, "GMT+7", "dd/MM/yyyy HH:mm")
+            : fmtDateStr_(String(updatedAtRaw || "")),
       });
     }
 
-    items.sort(function(a, b) {
+    items.sort(function (a, b) {
       return (b._rawCreatedAt || 0) - (a._rawCreatedAt || 0);
     });
 
-    items.forEach(function(item) { delete item._rawCreatedAt; });
+    items.forEach(function (item) {
+      delete item._rawCreatedAt;
+    });
 
     return { success: true, data: items };
   } catch (e) {
@@ -86,61 +133,90 @@ function getEmployeeList() {
 // ============= ADD EMPLOYEE =============
 function addEmployee(empData) {
   try {
-    if (!empData.fullName) return { success: false, message: 'Nama karyawan wajib diisi.' };
+    if (!empData.fullName)
+      return { success: false, message: "Nama karyawan wajib diisi." };
 
     var lock = LockService.getScriptLock();
     lock.waitLock(10000);
 
-    var now        = new Date();
-    var newId      = generateEmployeeId_(now);
-    var createdAt  = Utilities.formatDate(now, 'GMT+7', 'yyyy-MM-dd HH:mm:ss');
+    var now = new Date();
+    var newId = generateEmployeeId_(now);
+    var createdAt = Utilities.formatDate(now, "GMT+7", "yyyy-MM-dd HH:mm:ss");
 
     var sheet = getOrCreateEmployeeSheet_();
 
-    // Build row using EMPLOYEE_COL for column order alignment
-    var newRow = new Array(EMPLOYEE_HEADERS.length).fill('');
-    newRow[EMPLOYEE_COL['Employee ID'] - 1]         = newId;
-    newRow[EMPLOYEE_COL['Recruitment ID'] - 1]      = empData.recruitmentId   || '';
-    newRow[EMPLOYEE_COL['Full Name'] - 1]            = empData.fullName        || '';
-    newRow[EMPLOYEE_COL['Position'] - 1]             = empData.position        || '';
-    newRow[EMPLOYEE_COL['Email'] - 1]                = empData.email           || '';
-    newRow[EMPLOYEE_COL['Phone'] - 1]                = empData.phone           || '';
-    newRow[EMPLOYEE_COL['Join Date'] - 1]            = empData.joinDate        || createdAt;
-    newRow[EMPLOYEE_COL['Status'] - 1]               = empData.status          || 'Active';
-    newRow[EMPLOYEE_COL['Notes'] - 1]                = empData.notes           || '';
-    newRow[EMPLOYEE_COL['Created At'] - 1]           = createdAt;
-    newRow[EMPLOYEE_COL['Company Entity'] - 1]       = empData.companyEntity   || 'MITO Group';
-    newRow[EMPLOYEE_COL['Employee Type'] - 1]        = empData.employeeType    || '';
-    newRow[EMPLOYEE_COL['NIK'] - 1]                  = empData.nik             || '';
-    newRow[EMPLOYEE_COL['Birth Date'] - 1]           = empData.birthDate       || '';
-    newRow[EMPLOYEE_COL['Age'] - 1]                  = empData.age             || '';
-    newRow[EMPLOYEE_COL['Gender'] - 1]               = empData.gender          || '';
-    newRow[EMPLOYEE_COL['Marital Status'] - 1]       = empData.maritalStatus   || '';
-    newRow[EMPLOYEE_COL['Address'] - 1]              = empData.address         || '';
-    newRow[EMPLOYEE_COL['City'] - 1]                 = empData.city            || empData.workLocation || '';
-    newRow[EMPLOYEE_COL['Education'] - 1]            = empData.education       || '';
-    newRow[EMPLOYEE_COL['Work Experience'] - 1]      = empData.workExperience  || '';
-    newRow[EMPLOYEE_COL['Department'] - 1]           = empData.department      || '';
-    newRow[EMPLOYEE_COL['Division'] - 1]             = empData.division        || '';
-    newRow[EMPLOYEE_COL['Branch'] - 1]               = empData.branch          || '';
-    newRow[EMPLOYEE_COL['Contract Start'] - 1]       = empData.contractStart   || '';
-    newRow[EMPLOYEE_COL['Contract End'] - 1]         = empData.contractEnd     || '';
-    newRow[EMPLOYEE_COL['Contract Duration'] - 1]    = empData.contractDuration|| '';
-    newRow[EMPLOYEE_COL['Employment Status'] - 1]    = empData.employmentStatus|| 'Active';
-    newRow[EMPLOYEE_COL['Salary'] - 1]               = empData.salary          || '';
-    newRow[EMPLOYEE_COL['Salary Type'] - 1]          = empData.salaryType      || '';
-    newRow[EMPLOYEE_COL['Outsource Vendor'] - 1]     = empData.outsourceVendor || '';
-    newRow[EMPLOYEE_COL['Contract Number'] - 1]      = empData.contractNumber  || '';
-    newRow[EMPLOYEE_COL['District'] - 1]             = empData.district        || '';
-    newRow[EMPLOYEE_COL['Recruitment Source'] - 1]   = empData.recruitmentSource|| '';
-    newRow[EMPLOYEE_COL['HR Notes'] - 1]             = empData.hrNotes         || '';
-    newRow[EMPLOYEE_COL['Created By'] - 1]           = empData.createdBy       || '';
-    newRow[EMPLOYEE_COL['Updated At'] - 1]           = createdAt;
+    var newRow = new Array(EMPLOYEE_HEADERS.length).fill("");
+    newRow[EMPLOYEE_COL["Employee ID"] - 1] = newId;
+    newRow[EMPLOYEE_COL["Full Name"] - 1] = empData.fullName || "";
+    newRow[EMPLOYEE_COL["NIK - NPWP 16 digit"] - 1] = empData.nik || "";
+    newRow[EMPLOYEE_COL["NPWP"] - 1] = empData.npwp || "";
+    newRow[EMPLOYEE_COL["Birth Place"] - 1] = empData.birthPlace || "";
+    newRow[EMPLOYEE_COL["Birth Date"] - 1] = empData.birthDate || "";
+    newRow[EMPLOYEE_COL["Gender"] - 1] = empData.gender || "";
+    newRow[EMPLOYEE_COL["Religion"] - 1] = empData.religion || "";
+    newRow[EMPLOYEE_COL["Marital Status"] - 1] = empData.maritalStatus || "";
+    newRow[EMPLOYEE_COL["Blood Type"] - 1] = empData.bloodType || "";
+    newRow[EMPLOYEE_COL["PTKP Status"] - 1] = empData.ptkpStatus || "";
+    newRow[EMPLOYEE_COL["Citizen ID Address"] - 1] =
+      empData.citizenIdAddress || empData.address || "";
+    newRow[EMPLOYEE_COL["Residential Address"] - 1] =
+      empData.residentialAddress || empData.address || "";
+    newRow[EMPLOYEE_COL["Mobile Phone"] - 1] =
+      empData.mobilePhone || empData.phone || "";
+    newRow[EMPLOYEE_COL["Personal Email"] - 1] =
+      empData.personalEmail || empData.email || "";
+    newRow[EMPLOYEE_COL["Working Email"] - 1] = empData.workingEmail || "";
+    newRow[EMPLOYEE_COL["Bank Name"] - 1] = empData.bankName || "";
+    newRow[EMPLOYEE_COL["Bank Account"] - 1] = empData.bankAccount || "";
+    newRow[EMPLOYEE_COL["Bank Account Holder"] - 1] =
+      empData.bankAccountHolder || empData.fullName || "";
+    newRow[EMPLOYEE_COL["BPJS Ketenagakerjaan"] - 1] =
+      empData.bpjsKetenagakerjaan || "";
+    newRow[EMPLOYEE_COL["BPJS Kesehatan"] - 1] = empData.bpjsKesehatan || "";
+    newRow[EMPLOYEE_COL["Branch Name"] - 1] =
+      empData.branchName || empData.branch || "";
+    newRow[EMPLOYEE_COL["Division"] - 1] = empData.division || "";
+    newRow[EMPLOYEE_COL["Department"] - 1] = empData.department || "";
+    newRow[EMPLOYEE_COL["Job Position (Locaction)"] - 1] =
+      empData.positionCurrent || empData.position || "";
+    newRow[EMPLOYEE_COL["Job Position"] - 1] =
+      empData.positionNoLocCurrent || empData.position || "";
+    newRow[EMPLOYEE_COL["Job Level"] - 1] = empData.jobLevel || "";
+    newRow[EMPLOYEE_COL["Grade"] - 1] = empData.grade || "";
+    newRow[EMPLOYEE_COL["Area Kerja"] - 1] =
+      empData.areaKerja || empData.district || "";
+    newRow[EMPLOYEE_COL["Lokasi Kerja"] - 1] =
+      empData.lokasiKerja || empData.city || empData.workLocation || "";
+    newRow[EMPLOYEE_COL["Cost Center"] - 1] = empData.costCenter || "";
+    newRow[EMPLOYEE_COL["Direct Superior"] - 1] = empData.directSuperior || "";
+    newRow[EMPLOYEE_COL["Indirect Superior"] - 1] =
+      empData.indirectSuperior || "";
+    newRow[EMPLOYEE_COL["Status Employee"] - 1] =
+      empData.statusEmployee ||
+      empData.status ||
+      empData.employmentStatus ||
+      "Active";
+    newRow[EMPLOYEE_COL["Join Date"] - 1] = empData.joinDate || createdAt;
+    newRow[EMPLOYEE_COL["End Date (Contract)"] - 1] = empData.contractEnd || "";
+    newRow[EMPLOYEE_COL["Job Position (Former)"] - 1] =
+      empData.positionFormer || "";
+    newRow[EMPLOYEE_COL["Type of Rotation"] - 1] = empData.typeOfRotation || "";
+    newRow[EMPLOYEE_COL["Tanggal Mutasi/Demosi/Promosi"] - 1] =
+      empData.mutasiDate || "";
+    newRow[EMPLOYEE_COL["Nomor SK"] - 1] = empData.nomorSk || "";
+    newRow[EMPLOYEE_COL["Resign Date"] - 1] = empData.resignDate || "";
+    newRow[EMPLOYEE_COL["Created By"] - 1] = empData.createdBy || "";
+    newRow[EMPLOYEE_COL["Created At"] - 1] = createdAt;
+    newRow[EMPLOYEE_COL["Updated At"] - 1] = createdAt;
 
     sheet.appendRow(newRow);
     lock.releaseLock();
 
-    return { success: true, message: 'Karyawan "' + empData.fullName + '" berhasil ditambahkan.', id: newId };
+    return {
+      success: true,
+      message: 'Karyawan "' + empData.fullName + '" berhasil ditambahkan.',
+      id: newId,
+    };
   } catch (e) {
     return { success: false, message: e.toString() };
   }
@@ -148,19 +224,19 @@ function addEmployee(empData) {
 
 // ============= OFFBOARDING =============
 // Status karyawan yang memicu offboarding otomatis
-var OFFBOARDING_TRIGGER_STATUSES = ['Resigned', 'Terminated', 'On Leave'];
+var OFFBOARDING_TRIGGER_STATUSES = ["Resigned", "Terminated", "On Leave"];
 
 // Pemetaan status employee -> Offboarding Type
 var OFFBOARDING_TYPE_MAP = {
-  'Resigned':   'Resignation',
-  'Terminated': 'Termination',
-  'On Leave':   'On Leave'
+  Resigned: "Resignation",
+  Terminated: "Termination",
+  "On Leave": "On Leave",
 };
 
 // Kembalikan nama offboarding type untuk sebuah status, atau null jika
 // status tersebut tidak memicu offboarding.
 function resolveOffboardingType_(status) {
-  status = String(status || '').trim();
+  status = String(status || "").trim();
   return OFFBOARDING_TYPE_MAP[status] || null;
 }
 
@@ -171,20 +247,27 @@ function resolveOffboardingType_(status) {
 function offboardEmployee_(employeeId, offboardingType, reason, notes) {
   try {
     var sheet = getOrCreateEmployeeSheet_();
-    var data  = sheet.getDataRange().getValues();
+    var data = sheet.getDataRange().getValues();
     var headers = data[0];
     var colIndex = {};
-    headers.forEach(function (h, i) { colIndex[String(h).trim()] = i; });
+    headers.forEach(function (h, i) {
+      colIndex[String(h).trim()] = i;
+    });
 
     var row = null;
     for (var r = 1; r < data.length; r++) {
-      if (String(data[r][colIndex['Employee ID']] || '') === String(employeeId)) {
+      if (
+        String(data[r][colIndex["Employee ID"]] || "") === String(employeeId)
+      ) {
         row = data[r];
         break;
       }
     }
     if (!row)
-      return { success: false, message: 'Karyawan tidak ditemukan: ' + employeeId };
+      return {
+        success: false,
+        message: "Karyawan tidak ditemukan: " + employeeId,
+      };
 
     // Cegah duplikat: sudah ada offboarding bertipe sama untuk employee ini
     var offSheet = getOrCreateOffboardingSheet_();
@@ -194,52 +277,76 @@ function offboardEmployee_(employeeId, offboardingType, reason, notes) {
         .getValues();
       for (var i = 0; i < offData.length; i++) {
         if (
-          String(offData[i][OFFBOARD_COL['Employee ID'] - 1] || '') ===
+          String(offData[i][OFFBOARD_COL["Employee ID"] - 1] || "") ===
             String(employeeId) &&
-          String(offData[i][OFFBOARD_COL['Offboarding Type'] - 1] || '') ===
+          String(offData[i][OFFBOARD_COL["Offboarding Type"] - 1] || "") ===
             String(offboardingType)
         ) {
-          return { success: false, duplicate: true, offboardingId: String(offData[i][OFFBOARD_COL['Offboarding ID'] - 1] || '') };
+          return {
+            success: false,
+            duplicate: true,
+            offboardingId: String(
+              offData[i][OFFBOARD_COL["Offboarding ID"] - 1] || "",
+            ),
+          };
         }
       }
     }
 
-    var user = Session.getActiveUser().getEmail() || 'HR Dashboard';
+    var user = Session.getActiveUser().getEmail() || "HR Dashboard";
     var now = new Date();
-    var nowStr = Utilities.formatDate(now, 'GMT+7', 'yyyy-MM-dd HH:mm:ss');
+    var nowStr = Utilities.formatDate(now, "GMT+7", "yyyy-MM-dd HH:mm:ss");
     var offboardingId = generateOffboardingId_(now);
 
     function val(name) {
       var i = colIndex[name];
-      return i === undefined ? '' : String(row[i] || '');
+      if (i !== undefined) return String(row[i] || "");
+      // Fallback mapping for renamed headers during migration
+      var fallbackMap = {
+        Position: "Job Position (Locaction)",
+        Address: "Citizen ID Address",
+        Email: "Personal Email",
+        Phone: "Mobile Phone",
+        NIK: "NIK - NPWP 16 digit",
+        Branch: "Branch Name",
+        City: "Lokasi Kerja",
+        "Contract Start": "Start Date (Contract)",
+        "Contract End": "End Date (Contract)",
+        "Recruitment ID": "Recruitment ID (System Link)",
+      };
+      if (fallbackMap[name]) {
+        var j = colIndex[fallbackMap[name]];
+        return j === undefined ? "" : String(row[j] || "");
+      }
+      return "";
     }
 
-    var newRow = new Array(OFFBOARDING_HEADERS.length).fill('');
-    newRow[OFFBOARD_COL['Offboarding ID'] - 1]   = offboardingId;
-    newRow[OFFBOARD_COL['Employee ID'] - 1]      = employeeId;
-    newRow[OFFBOARD_COL['Full Name'] - 1]        = val('Full Name');
-    newRow[OFFBOARD_COL['Position'] - 1]         = val('Position');
-    newRow[OFFBOARD_COL['Department'] - 1]       = val('Department');
-    newRow[OFFBOARD_COL['Join Date'] - 1]        = val('Join Date');
-    newRow[OFFBOARD_COL['Last Working Date'] - 1] = nowStr;
-    newRow[OFFBOARD_COL['Offboarding Type'] - 1] = offboardingType;
-    newRow[OFFBOARD_COL['Reason'] - 1]           = reason || '';
-    newRow[OFFBOARD_COL['Approved By'] - 1]      = user;
-    newRow[OFFBOARD_COL['Notes'] - 1]            = notes || '';
-    newRow[OFFBOARD_COL['Status'] - 1]           = 'Active';
-    newRow[OFFBOARD_COL['Archived'] - 1]         = 'No';
-    newRow[OFFBOARD_COL['Created By'] - 1]       = user;
-    newRow[OFFBOARD_COL['Created At'] - 1]       = nowStr;
-    newRow[OFFBOARD_COL['Updated At'] - 1]       = nowStr;
+    var newRow = new Array(OFFBOARDING_HEADERS.length).fill("");
+    newRow[OFFBOARD_COL["Offboarding ID"] - 1] = offboardingId;
+    newRow[OFFBOARD_COL["Employee ID"] - 1] = employeeId;
+    newRow[OFFBOARD_COL["Full Name"] - 1] = val("Full Name");
+    newRow[OFFBOARD_COL["Position"] - 1] = val("Position");
+    newRow[OFFBOARD_COL["Department"] - 1] = val("Department");
+    newRow[OFFBOARD_COL["Join Date"] - 1] = val("Join Date");
+    newRow[OFFBOARD_COL["Last Working Date"] - 1] = nowStr;
+    newRow[OFFBOARD_COL["Offboarding Type"] - 1] = offboardingType;
+    newRow[OFFBOARD_COL["Reason"] - 1] = reason || "";
+    newRow[OFFBOARD_COL["Approved By"] - 1] = user;
+    newRow[OFFBOARD_COL["Notes"] - 1] = notes || "";
+    newRow[OFFBOARD_COL["Status"] - 1] = "Active";
+    newRow[OFFBOARD_COL["Archived"] - 1] = "No";
+    newRow[OFFBOARD_COL["Created By"] - 1] = user;
+    newRow[OFFBOARD_COL["Created At"] - 1] = nowStr;
+    newRow[OFFBOARD_COL["Updated At"] - 1] = nowStr;
 
     offSheet.appendRow(newRow);
 
     writeAuditLog_(
       employeeId,
-      'Offboarding',
-      'Employment Status',
+      "Offboarding",
+      "Status Employee",
       offboardingType,
-      offboardingType + ' -> ' + offboardingId,
+      offboardingType + " -> " + offboardingId,
     );
 
     return { success: true, offboardingId: offboardingId };
@@ -252,59 +359,101 @@ function offboardEmployee_(employeeId, offboardingType, reason, notes) {
 // ============= UPDATE EMPLOYEE =============
 function updateEmployee(id, updates) {
   try {
-    if (!id || !updates) return { success: false, message: 'ID dan data harus diisi.' };
+    if (!id || !updates)
+      return { success: false, message: "ID dan data harus diisi." };
 
     var lock = LockService.getScriptLock();
     lock.waitLock(5000);
 
     var sheet = getOrCreateEmployeeSheet_();
-    var data  = sheet.getDataRange().getValues();
+    var data = sheet.getDataRange().getValues();
 
     for (var i = 1; i < data.length; i++) {
       if (String(data[i][0]) === String(id)) {
-        var now = Utilities.formatDate(new Date(), 'GMT+7', 'yyyy-MM-dd HH:mm:ss');
+        var now = Utilities.formatDate(
+          new Date(),
+          "GMT+7",
+          "yyyy-MM-dd HH:mm:ss",
+        );
 
         // ---- Tangkap status lama untuk deteksi offboarding ----
-        var oldEmploymentStatus = String(
-          data[i][EMPLOYEE_COL['Employment Status'] - 1] || '',
-        );
-        var oldStatus = String(data[i][EMPLOYEE_COL['Status'] - 1] || '');
+        // Strategy: try new Status Employee header, fallback to old dual statuses
+        var hIdx = {};
+        data[0].forEach(function (h, idx) {
+          hIdx[String(h).trim()] = idx;
+        });
+        function gcol(name) {
+          return hIdx[name] !== undefined ? hIdx[name] : -1;
+        }
 
-        // Map camelCase update keys to header names
+        var oldStatusEmployee =
+          gcol("Status Employee") !== -1
+            ? String(data[i][gcol("Status Employee")] || "")
+            : "";
+        var oldEmploymentStatus =
+          gcol("Employment Status") !== -1
+            ? String(data[i][gcol("Employment Status")] || "")
+            : "";
+        var oldStatus =
+          gcol("Status") !== -1 ? String(data[i][gcol("Status")] || "") : "";
+        var finalOldStatus =
+          oldStatusEmployee || oldEmploymentStatus || oldStatus || "Active";
+
+        // Map camelCase update keys to header names (Schema v2)
+        // Legacy keys preserved for backward compat
         var keyMap = {
-          companyEntity:   'Company Entity',
-          employeeType:    'Employee Type',
-          fullName:        'Full Name',
-          nik:             'NIK',
-          workLocation:    'City',
-          age:             'Age',
-          gender:          'Gender',
-          maritalStatus:   'Marital Status',
-          email:           'Email',
-          phone:           'Phone',
-          address:         'Address',
-          education:       'Education',
-          workExperience:  'Work Experience',
-          department:      'Department',
-          division:        'Division',
-          branch:          'Branch',
-          position:        'Position',
-          joinDate:        'Join Date',
-          contractStart:   'Contract Start',
-          contractEnd:     'Contract End',
-          contractDuration:'Contract Duration',
-          employmentStatus:'Employment Status',
-          salary:          'Salary',
-          salaryType:      'Salary Type',
-          outsourceVendor: 'Outsource Vendor',
-          contractNumber:  'Contract Number',
-          district:        'District',
-          recruitmentId:   'Recruitment ID',
-          recruitmentSource:'Recruitment Source',
-          hrNotes:         'HR Notes',
-          notes:           'Notes',
-          status:          'Status',
-          createdBy:       'Created By'
+          employeeId: "Employee ID",
+          fullName: "Full Name",
+          nik: "NIK - NPWP 16 digit",
+          npwp: "NPWP",
+          birthPlace: "Birth Place",
+          birthDate: "Birth Date",
+          gender: "Gender",
+          religion: "Religion",
+          maritalStatus: "Marital Status",
+          bloodType: "Blood Type",
+          ptkpStatus: "PTKP Status",
+          citizenIdAddress: "Citizen ID Address",
+          address: "Citizen ID Address", // legacy alias
+          residentialAddress: "Residential Address",
+          mobilePhone: "Mobile Phone",
+          phone: "Mobile Phone", // legacy alias
+          personalEmail: "Personal Email",
+          email: "Personal Email", // legacy alias
+          workingEmail: "Working Email",
+          bankName: "Bank Name",
+          bankAccount: "Bank Account",
+          bankAccountHolder: "Bank Account Holder",
+          bpjsKetenagakerjaan: "BPJS Ketenagakerjaan",
+          bpjsKesehatan: "BPJS Kesehatan",
+          branchName: "Branch Name",
+          branch: "Branch Name", // legacy alias
+          division: "Division",
+          department: "Department",
+          positionCurrent: "Job Position (Locaction)",
+          position: "Job Position (Locaction)", // legacy alias
+          positionNoLocCurrent: "Job Position",
+          jobLevel: "Job Level",
+          grade: "Grade",
+          areaKerja: "Area Kerja",
+          district: "Area Kerja", // legacy alias
+          lokasiKerja: "Lokasi Kerja",
+          city: "Lokasi Kerja", // legacy alias
+          workLocation: "Lokasi Kerja", // legacy alias
+          costCenter: "Cost Center",
+          directSuperior: "Direct Superior",
+          indirectSuperior: "Indirect Superior",
+          statusEmployee: "Status Employee",
+          employmentStatus: "Status Employee", // legacy merge → single column
+          status: "Status Employee", // legacy merge → single column
+          joinDate: "Join Date",
+          contractEnd: "End Date (Contract)",
+          positionFormer: "Job Position (Former)",
+          typeOfRotation: "Type of Rotation",
+          mutasiDate: "Tanggal Mutasi/Demosi/Promosi",
+          nomorSk: "Nomor SK",
+          resignDate: "Resign Date",
+          createdBy: "Created By",
         };
 
         var col = -1;
@@ -316,38 +465,44 @@ function updateEmployee(id, updates) {
           }
         }
         // Always update "Updated At"
-        sheet.getRange(i + 1, EMPLOYEE_COL['Updated At']).setValue(now);
+        sheet.getRange(i + 1, EMPLOYEE_COL["Updated At"]).setValue(now);
 
         // ---- Trigger offboarding otomatis ----
         // Jika status baru masuk daftar pemicu (Resigned / Terminated / On Leave)
         // dan berbeda dari status lama, catat ke sheet Offboarding.
-        var newEmploymentStatus = updates.employmentStatus !== undefined
-          ? String(updates.employmentStatus)
-          : oldEmploymentStatus;
-        var newStatus = updates.status !== undefined
-          ? String(updates.status)
-          : oldStatus;
+        // Strategy: merge Status Employee (all sources) — perubahan apapun ke
+        // field statusEmployee / employmentStatus / status semuanya write ke
+        // kolom Status Employee (single source of truth v2).
+        var incomingStatusEmployee =
+          updates.statusEmployee !== undefined
+            ? String(updates.statusEmployee)
+            : updates.employmentStatus !== undefined
+              ? String(updates.employmentStatus)
+              : updates.status !== undefined
+                ? String(updates.status)
+                : finalOldStatus;
 
-        // Nilai status baru (perubahan pertama yang ditemukan).
-        // Hanya trigger jika field yang benar-benar berubah adalah trigger.
-        var changedEmployment = newEmploymentStatus !== oldEmploymentStatus;
-        var changedStatus = newStatus !== oldStatus;
+        var changedStatus = incomingStatusEmployee !== finalOldStatus;
         var offboardingType = null;
-        if (changedEmployment) offboardingType = resolveOffboardingType_(newEmploymentStatus);
-        if (!offboardingType && changedStatus) offboardingType = resolveOffboardingType_(newStatus);
+        if (changedStatus)
+          offboardingType = resolveOffboardingType_(incomingStatusEmployee);
 
         // Audit perubahan status (wajib sesuai AGENTS.md).
-        if (changedEmployment || changedStatus) {
-          var displayNewStatus = changedEmployment ? newEmploymentStatus : newStatus;
-          var displayOldStatus = changedEmployment ? oldEmploymentStatus : oldStatus;
-          writeAuditLog_(id, "Update Status", "Employment Status", displayOldStatus, displayNewStatus);
+        if (changedStatus) {
+          writeAuditLog_(
+            id,
+            "Update Status",
+            "Status Employee",
+            finalOldStatus,
+            incomingStatusEmployee,
+          );
         }
 
         var offboardResult = null;
         if (offboardingType) {
-          var reason = updates.reason || '';
-          var note = updates.notes || updates.hrNotes || '';
-          if (note === reason) note = '';
+          var reason = updates.reason || "";
+          var note = updates.notes || updates.hrNotes || "";
+          if (note === reason) note = "";
           offboardResult = offboardEmployee_(id, offboardingType, reason, note);
         }
 
@@ -355,16 +510,22 @@ function updateEmployee(id, updates) {
 
         return {
           success: true,
-          message: 'Data karyawan berhasil diperbarui.',
+          message: "Data karyawan berhasil diperbarui.",
           offboarding: offboardResult
-            ? { triggered: true, type: offboardingType, id: offboardResult.offboardingId || null, duplicate: !!offboardResult.duplicate, offboardId: offboardResult.offboardingId }
+            ? {
+                triggered: true,
+                type: offboardingType,
+                id: offboardResult.offboardingId || null,
+                duplicate: !!offboardResult.duplicate,
+                offboardId: offboardResult.offboardingId,
+              }
             : { triggered: false },
         };
       }
     }
 
     lock.releaseLock();
-    return { success: false, message: 'Karyawan tidak ditemukan.' };
+    return { success: false, message: "Karyawan tidak ditemukan." };
   } catch (e) {
     return { success: false, message: e.toString() };
   }
@@ -373,26 +534,29 @@ function updateEmployee(id, updates) {
 // ============= DELETE EMPLOYEE =============
 function deleteEmployee(id) {
   try {
-    if (!id) return { success: false, message: 'ID harus diisi.' };
+    if (!id) return { success: false, message: "ID harus diisi." };
 
     var lock = LockService.getScriptLock();
     lock.waitLock(5000);
 
     var sheet = getOrCreateEmployeeSheet_();
-    var data  = sheet.getDataRange().getValues();
+    var data = sheet.getDataRange().getValues();
     var colNameIdx = 0; // Employee ID is column 1
 
     for (var i = 1; i < data.length; i++) {
       if (String(data[i][colNameIdx]) === String(id)) {
-        var name = data[i][EMPLOYEE_COL['Full Name'] - 1];
+        var name = data[i][EMPLOYEE_COL["Full Name"] - 1];
         sheet.deleteRow(i + 1);
         lock.releaseLock();
-        return { success: true, message: 'Karyawan "' + name + '" berhasil dihapus.' };
+        return {
+          success: true,
+          message: 'Karyawan "' + name + '" berhasil dihapus.',
+        };
       }
     }
 
     lock.releaseLock();
-    return { success: false, message: 'Karyawan tidak ditemukan.' };
+    return { success: false, message: "Karyawan tidak ditemukan." };
   } catch (e) {
     return { success: false, message: e.toString() };
   }
@@ -411,20 +575,21 @@ function getEmployeeStats() {
       inactive: 0,
       byDepartment: {},
       byType: {},
-      byLocation: {}
+      byLocation: {},
     };
 
-    items.forEach(function(emp) {
-      if (emp.employmentStatus === 'Active' || emp.status === 'Active') stats.active++;
+    items.forEach(function (emp) {
+      var s = (emp.statusEmployee || "").toLowerCase();
+      if (s === "active" || s === "probation") stats.active++;
       else stats.inactive++;
 
-      var dept = emp.department || 'Belum Ditentukan';
+      var dept = emp.department || "Belum Ditentukan";
       stats.byDepartment[dept] = (stats.byDepartment[dept] || 0) + 1;
 
-      var type = emp.employeeType || 'Belum Ditentukan';
+      var type = emp.employeeType || "Belum Ditentukan";
       stats.byType[type] = (stats.byType[type] || 0) + 1;
 
-      var city = emp.city || 'Belum Ditentukan';
+      var city = emp.lokasiKerja || emp.city || "Belum Ditentukan";
       stats.byLocation[city] = (stats.byLocation[city] || 0) + 1;
     });
 
@@ -445,58 +610,72 @@ function getEmployeeStats() {
 //   contractStart, contractEnd, salary, salaryType, notes
 // }
 // ============================================================
-function processOnboardingProbation(recruitmentId, employeeId, contractData, processedBy) {
+function processOnboardingProbation(
+  recruitmentId,
+  employeeId,
+  contractData,
+  processedBy,
+) {
   var lock = LockService.getScriptLock();
   lock.waitLock(10000);
   try {
-    var ss      = SpreadsheetApp.getActiveSpreadsheet();
-    var now     = new Date();
-    var nowStr  = Utilities.formatDate(now, 'GMT+7', 'yyyy-MM-dd HH:mm:ss');
-    var user    = processedBy || Session.getActiveUser().getEmail() || 'HR Dashboard';
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var now = new Date();
+    var nowStr = Utilities.formatDate(now, "GMT+7", "yyyy-MM-dd HH:mm:ss");
+    var user =
+      processedBy || Session.getActiveUser().getEmail() || "HR Dashboard";
 
     // ── 1. Update Employee sheet ──────────────────────────────
     var empSheet = getOrCreateEmployeeSheet_();
     if (!empSheet || empSheet.getLastRow() < 2)
-      return { success: false, message: 'Sheet Employee tidak ditemukan.' };
+      return { success: false, message: "Sheet Employee tidak ditemukan." };
 
-    var empData  = empSheet.getDataRange().getValues();
-    var empHdr   = empData[0];
+    var empData = empSheet.getDataRange().getValues();
+    var empHdr = empData[0];
     var empColIdx = {};
-    empHdr.forEach(function(h, i) { empColIdx[String(h).trim()] = i; });
+    empHdr.forEach(function (h, i) {
+      empColIdx[String(h).trim()] = i;
+    });
 
     var empRow = -1;
     for (var r = 1; r < empData.length; r++) {
-      if (String(empData[r][empColIdx['Employee ID']] || '') === String(employeeId)) {
+      if (
+        String(empData[r][empColIdx["Employee ID"]] || "") ===
+        String(employeeId)
+      ) {
         empRow = r + 1; // 1-based
         break;
       }
     }
     if (empRow === -1)
-      return { success: false, message: 'Employee ID tidak ditemukan: ' + employeeId };
+      return {
+        success: false,
+        message: "Employee ID tidak ditemukan: " + employeeId,
+      };
 
-    // Field yang di-update di Employee sheet
+    // Field yang di-update di Employee sheet (Schema v2)
+    // Catatan: Salary/SalaryType TIDAK ADA lagi di sheet Employee v2 (keputusan user hapus)
     var empUpdates = {
-      'Company Entity':    contractData.companyEntity   || '',
-      'Department':        contractData.department       || '',
-      'Division':          contractData.division         || '',
-      'Branch':            contractData.branch           || '',
-      'Position':          contractData.position         || '',
-      'Employee Type':     contractData.employeeType     || 'PKWT',
-      'Contract Number':   contractData.contractNumber   || '',
-      'Contract Duration': contractData.contractDuration || '',
-      'Contract Start':    contractData.contractStart    || '',
-      'Contract End':      contractData.contractEnd      || '',
-      'Salary':            contractData.salary           ? Number(String(contractData.salary).replace(/\D/g, '')) || 0 : 0,
-      'Salary Type':       contractData.salaryType       || 'Monthly',
-      'Employment Status': 'Probation',
-      'Status':            'Probation',
-      'HR Notes':          contractData.notes            || '',
-      'Updated At':        nowStr,
+      "Company Entity": contractData.companyEntity || "",
+      Department: contractData.department || "",
+      Division: contractData.division || "",
+      "Branch Name": contractData.branch || "",
+      "Job Position (Locaction)": contractData.position || "",
+      "Job Position": contractData.position || "",
+      "Employee Type": contractData.employeeType || "PKWT",
+      "Contract Number": contractData.contractNumber || "",
+      "Contract Duration": contractData.contractDuration || "",
+      "Start Date (Contract)": contractData.contractStart || "",
+      "End Date (Contract)": contractData.contractEnd || "",
+      "Status Employee": "Probation",
+      "HR Notes": contractData.notes || "",
+      "Updated At": nowStr,
     };
 
-    Object.keys(empUpdates).forEach(function(colName) {
+    Object.keys(empUpdates).forEach(function (colName) {
       var colNum = EMPLOYEE_COL[colName];
-      if (colNum) empSheet.getRange(empRow, colNum).setValue(empUpdates[colName]);
+      if (colNum)
+        empSheet.getRange(empRow, colNum).setValue(empUpdates[colName]);
     });
 
     // ── 2. Update kandidat_accepted sheet ────────────────────
@@ -505,15 +684,17 @@ function processOnboardingProbation(recruitmentId, employeeId, contractData, pro
       ensureStatusSheetHeaders_(accSheet, ACCEPTED_HEADERS);
 
       var accData = accSheet.getDataRange().getValues();
-      var accHdr  = accData[0];
+      var accHdr = accData[0];
       var accColIdx = {};
-      accHdr.forEach(function(h, i) { accColIdx[String(h).trim()] = i; });
+      accHdr.forEach(function (h, i) {
+        accColIdx[String(h).trim()] = i;
+      });
 
       var accRow = -1;
-      var idCol = accColIdx['Recruitment ID'];
+      var idCol = accColIdx["Recruitment ID"];
       if (idCol !== undefined) {
         for (var ra = 1; ra < accData.length; ra++) {
-          if (String(accData[ra][idCol] || '') === String(recruitmentId)) {
+          if (String(accData[ra][idCol] || "") === String(recruitmentId)) {
             accRow = ra + 1;
             break;
           }
@@ -521,31 +702,34 @@ function processOnboardingProbation(recruitmentId, employeeId, contractData, pro
       }
 
       if (accRow !== -1) {
-        var onboardStatusCol = accColIdx['Onboarding Status'];
-        var onboardDateCol   = accColIdx['Onboarding Date'];
-        var onboardByCol     = accColIdx['Onboarding By'];
-        if (onboardStatusCol !== undefined) accSheet.getRange(accRow, onboardStatusCol + 1).setValue('Probation');
-        if (onboardDateCol   !== undefined) accSheet.getRange(accRow, onboardDateCol   + 1).setValue(nowStr);
-        if (onboardByCol     !== undefined) accSheet.getRange(accRow, onboardByCol     + 1).setValue(user);
+        var onboardStatusCol = accColIdx["Onboarding Status"];
+        var onboardDateCol = accColIdx["Onboarding Date"];
+        var onboardByCol = accColIdx["Onboarding By"];
+        if (onboardStatusCol !== undefined)
+          accSheet.getRange(accRow, onboardStatusCol + 1).setValue("Probation");
+        if (onboardDateCol !== undefined)
+          accSheet.getRange(accRow, onboardDateCol + 1).setValue(nowStr);
+        if (onboardByCol !== undefined)
+          accSheet.getRange(accRow, onboardByCol + 1).setValue(user);
       }
     }
 
     // ── 3. Audit log ─────────────────────────────────────────
     writeAuditLog_(
       recruitmentId,
-      'Onboarding Probation',
-      'Employment Status',
-      'Accepted',
-      'Probation — Employee ' + employeeId + ' by ' + user
+      "Onboarding Probation",
+      "Employment Status",
+      "Accepted",
+      "Probation — Employee " + employeeId + " by " + user,
     );
 
     return {
-      success:    true,
+      success: true,
       employeeId: employeeId,
       recruitmentId: recruitmentId,
-      status:     'Probation',
+      status: "Probation",
       onboardingDate: nowStr,
-      onboardingBy:   user,
+      onboardingBy: user,
     };
   } catch (err) {
     return { success: false, message: err.message };
@@ -564,55 +748,86 @@ function getProbationList() {
     var empSheet = getOrCreateEmployeeSheet_();
     if (!empSheet || empSheet.getLastRow() < 2) return [];
 
-    var data    = empSheet.getDataRange().getValues();
+    var data = empSheet.getDataRange().getValues();
     var headers = data[0];
-    var ci      = {};
-    headers.forEach(function(h, i) { ci[String(h).trim()] = i; });
+    var ci = {};
+    headers.forEach(function (h, i) {
+      ci[String(h).trim()] = i;
+    });
 
     function cell(row, name) {
       var idx = ci[name];
-      return idx !== undefined ? row[idx] : '';
+      if (idx !== undefined) return row[idx];
+      // Fallback for renamed headers during migration
+      var fallback = {
+        "Status Employee": ["Employment Status", "Status"],
+        "Employment Status": ["Status Employee", "Status"],
+        Status: ["Status Employee", "Employment Status"],
+        "Recruitment ID": ["Recruitment ID (System Link)"],
+        "Job Position (Locaction)": ["Position"],
+        Position: ["Job Position"],
+        "Branch Name": ["Branch"],
+        Branch: ["Branch Name"],
+        "Personal Email": ["Email"],
+        Email: ["Personal Email"],
+        "Mobile Phone": ["Phone"],
+        Phone: ["Mobile Phone"],
+        "NIK - NPWP 16 digit": ["NIK"],
+        NIK: ["NIK - NPWP 16 digit"],
+        "Start Date (Contract)": ["Contract Start"],
+        "Contract Start": ["Start Date (Contract)"],
+        "End Date (Contract)": ["Contract End"],
+        "Contract End": ["End Date (Contract)"],
+      };
+      if (fallback[name]) {
+        for (var f = 0; f < fallback[name].length; f++) {
+          var j = ci[fallback[name][f]];
+          if (j !== undefined) return row[j];
+        }
+      }
+      return "";
     }
 
     var items = [];
     for (var r = 1; r < data.length; r++) {
       var row = data[r];
-      if (!row.join('').toString().trim()) continue;
-      var st  = String(cell(row, 'Status')            || '').trim();
-      var est = String(cell(row, 'Employment Status') || '').trim();
-      if (st !== 'Probation' && est !== 'Probation') continue;
+      if (!row.join("").toString().trim()) continue;
+      var st = String(cell(row, "Status") || "").trim();
+      var est = String(cell(row, "Employment Status") || "").trim();
+      var semp = String(cell(row, "Status Employee") || "").trim();
+      if (st !== "Probation" && est !== "Probation" && semp !== "Probation")
+        continue;
 
       items.push({
-        employeeId:       String(cell(row, 'Employee ID')       || ''),
-        recruitmentId:    String(cell(row, 'Recruitment ID')    || ''),
-        fullName:         String(cell(row, 'Full Name')         || ''),
-        position:         String(cell(row, 'Position')          || ''),
-        email:            String(cell(row, 'Email')             || ''),
-        phone:            String(cell(row, 'Phone')             || ''),
-        nik:              String(cell(row, 'NIK')               || ''),
-        department:       String(cell(row, 'Department')        || ''),
-        division:         String(cell(row, 'Division')          || ''),
-        branch:           String(cell(row, 'Branch')            || ''),
-        companyEntity:    String(cell(row, 'Company Entity')    || ''),
-        employeeType:     String(cell(row, 'Employee Type')     || ''),
-        joinDate:         fmtDateStr_(cell(row, 'Join Date')),
-        contractStart:    fmtDateStr_(cell(row, 'Contract Start')),
-        contractEnd:      fmtDateStr_(cell(row, 'Contract End')),
-        contractDuration: String(cell(row, 'Contract Duration') || ''),
-        contractNumber:   String(cell(row, 'Contract Number')   || ''),
-        salary:           cell(row, 'Salary') || '',
-        salaryType:       String(cell(row, 'Salary Type')       || ''),
-        status:           st,
-        employmentStatus: est,
-        hrNotes:          String(cell(row, 'HR Notes')          || ''),
-        createdAt:        fmtDateStr_(cell(row, 'Created At')),
-        updatedAt:        fmtDateStr_(cell(row, 'Updated At')),
+        employeeId: String(cell(row, "Employee ID") || ""),
+        recruitmentId: String(cell(row, "Recruitment ID") || ""),
+        fullName: String(cell(row, "Full Name") || ""),
+        position: String(cell(row, "Position") || ""),
+        email: String(cell(row, "Email") || ""),
+        phone: String(cell(row, "Phone") || ""),
+        nik: String(cell(row, "NIK") || ""),
+        department: String(cell(row, "Department") || ""),
+        division: String(cell(row, "Division") || ""),
+        branch: String(cell(row, "Branch") || ""),
+        companyEntity: String(cell(row, "Company Entity") || ""),
+        employeeType: String(cell(row, "Employee Type") || ""),
+        joinDate: fmtDateStr_(cell(row, "Join Date")),
+        contractStart: fmtDateStr_(cell(row, "Contract Start")),
+        contractEnd: fmtDateStr_(cell(row, "Contract End")),
+        contractDuration: String(cell(row, "Contract Duration") || ""),
+        contractNumber: String(cell(row, "Contract Number") || ""),
+        status: semp || st || est || "Active",
+        employmentStatus: semp || est || st || "Active",
+        statusEmployee: semp || est || st || "Active",
+        hrNotes: String(cell(row, "HR Notes") || ""),
+        createdAt: fmtDateStr_(cell(row, "Created At")),
+        updatedAt: fmtDateStr_(cell(row, "Updated At")),
         // eval fields diisi di bawah
-        lastEvalDate:     '',
-        lastAvgScore:     '',
-        lastKeputusan:    '',
-        lastEvaluator:    '',
-        lastStatusSK:     '',
+        lastEvalDate: "",
+        lastAvgScore: "",
+        lastKeputusan: "",
+        lastEvaluator: "",
+        lastStatusSK: "",
       });
     }
 
@@ -623,40 +838,42 @@ function getProbationList() {
       var evalSheet = getOrCreateProbationEvalSheet_();
       if (evalSheet && evalSheet.getLastRow() >= 2) {
         var evalData = evalSheet.getDataRange().getValues();
-        var evalHdr  = evalData[0];
-        var eIdx     = {};
-        evalHdr.forEach(function(h, i) { eIdx[String(h).trim()] = i; });
-        var evalMap  = {};
+        var evalHdr = evalData[0];
+        var eIdx = {};
+        evalHdr.forEach(function (h, i) {
+          eIdx[String(h).trim()] = i;
+        });
+        var evalMap = {};
         for (var er = 1; er < evalData.length; er++) {
-          var erow  = evalData[er];
-          var empId = String(erow[eIdx['Employee ID']] || '');
+          var erow = evalData[er];
+          var empId = String(erow[eIdx["Employee ID"]] || "");
           if (!empId) continue;
           evalMap[empId] = {
-            evalDate:  fmtDateStr_(erow[eIdx['Eval Date']]),
-            avgScore:  erow[eIdx['Nilai Rata-rata']] || '',
-            keputusan: String(erow[eIdx['Keputusan']]   || ''),
-            evaluator: String(erow[eIdx['Evaluator']]   || ''),
-            statusSK:  String(erow[eIdx['Status SK']]   || ''),
+            evalDate: fmtDateStr_(erow[eIdx["Eval Date"]]),
+            avgScore: erow[eIdx["Nilai Rata-rata"]] || "",
+            keputusan: String(erow[eIdx["Keputusan"]] || ""),
+            evaluator: String(erow[eIdx["Evaluator"]] || ""),
+            statusSK: String(erow[eIdx["Status SK"]] || ""),
           };
         }
-        items.forEach(function(emp) {
+        items.forEach(function (emp) {
           var ev = evalMap[emp.employeeId];
           if (!ev) return;
-          emp.lastEvalDate  = ev.evalDate  || '';
-          emp.lastAvgScore  = ev.avgScore  !== '' ? Number(ev.avgScore) : '';
-          emp.lastKeputusan = ev.keputusan || '';
-          emp.lastEvaluator = ev.evaluator || '';
-          emp.lastStatusSK  = ev.statusSK  || '';
+          emp.lastEvalDate = ev.evalDate || "";
+          emp.lastAvgScore = ev.avgScore !== "" ? Number(ev.avgScore) : "";
+          emp.lastKeputusan = ev.keputusan || "";
+          emp.lastEvaluator = ev.evaluator || "";
+          emp.lastStatusSK = ev.statusSK || "";
         });
       }
-    } catch(evalErr) {
+    } catch (evalErr) {
       // eval sheet mungkin belum ada — biarkan items tanpa eval data
-      Logger.log('getProbationList evalSheet error: ' + evalErr);
+      Logger.log("getProbationList evalSheet error: " + evalErr);
     }
 
     return items;
-  } catch(e) {
-    Logger.log('getProbationList error: ' + e);
+  } catch (e) {
+    Logger.log("getProbationList error: " + e);
     return [];
   }
 }
@@ -670,40 +887,61 @@ function getProbationEvalHistory(employeeId) {
     var sheet = getOrCreateProbationEvalSheet_();
     if (sheet.getLastRow() < 2) return [];
 
-    var data    = sheet.getDataRange().getValues();
+    var data = sheet.getDataRange().getValues();
     var headers = data[0];
-    var colIdx  = {};
-    headers.forEach(function(h, i) { colIdx[String(h).trim()] = i; });
+    var colIdx = {};
+    headers.forEach(function (h, i) {
+      colIdx[String(h).trim()] = i;
+    });
 
     var result = [];
     for (var r = 1; r < data.length; r++) {
       var row = data[r];
-      if (String(row[colIdx['Employee ID']] || '') !== String(employeeId)) continue;
+      if (String(row[colIdx["Employee ID"]] || "") !== String(employeeId))
+        continue;
       result.push({
-        evalId:           String(row[colIdx['Eval ID']]           || ''),
-        evalDate:         fmtDateStr_(row[colIdx['Eval Date']]),
-        skorKinerja:      row[colIdx['Skor Kinerja']]      !== '' ? Number(row[colIdx['Skor Kinerja']])      : '',
-        skorKedisiplinan: row[colIdx['Skor Kedisiplinan']] !== '' ? Number(row[colIdx['Skor Kedisiplinan']]) : '',
-        skorKomunikasi:   row[colIdx['Skor Komunikasi']]   !== '' ? Number(row[colIdx['Skor Komunikasi']])   : '',
-        skorInisiatif:    row[colIdx['Skor Inisiatif']]    !== '' ? Number(row[colIdx['Skor Inisiatif']])    : '',
-        skorTeamwork:     row[colIdx['Skor Teamwork']]     !== '' ? Number(row[colIdx['Skor Teamwork']])     : '',
-        nilaiRataRata:    row[colIdx['Nilai Rata-rata']]   !== '' ? Number(row[colIdx['Nilai Rata-rata']])   : '',
-        keputusan:        String(row[colIdx['Keputusan']]         || ''),
-        durasiPerpanjang: String(row[colIdx['Durasi Perpanjang']] || ''),
-        kontrakBaruStart: fmtDateStr_(row[colIdx['Kontrak Baru Start']]),
-        kontrakBaruEnd:   fmtDateStr_(row[colIdx['Kontrak Baru End']]),
-        catatan:          String(row[colIdx['Catatan Evaluator']] || ''),
-        evaluator:        String(row[colIdx['Evaluator']]         || ''),
-        createdAt:        fmtDateStr_(row[colIdx['Created At']]),
-        statusSK:         String(row[colIdx['Status SK']]         || ''),
+        evalId: String(row[colIdx["Eval ID"]] || ""),
+        evalDate: fmtDateStr_(row[colIdx["Eval Date"]]),
+        skorKinerja:
+          row[colIdx["Skor Kinerja"]] !== ""
+            ? Number(row[colIdx["Skor Kinerja"]])
+            : "",
+        skorKedisiplinan:
+          row[colIdx["Skor Kedisiplinan"]] !== ""
+            ? Number(row[colIdx["Skor Kedisiplinan"]])
+            : "",
+        skorKomunikasi:
+          row[colIdx["Skor Komunikasi"]] !== ""
+            ? Number(row[colIdx["Skor Komunikasi"]])
+            : "",
+        skorInisiatif:
+          row[colIdx["Skor Inisiatif"]] !== ""
+            ? Number(row[colIdx["Skor Inisiatif"]])
+            : "",
+        skorTeamwork:
+          row[colIdx["Skor Teamwork"]] !== ""
+            ? Number(row[colIdx["Skor Teamwork"]])
+            : "",
+        nilaiRataRata:
+          row[colIdx["Nilai Rata-rata"]] !== ""
+            ? Number(row[colIdx["Nilai Rata-rata"]])
+            : "",
+        keputusan: String(row[colIdx["Keputusan"]] || ""),
+        durasiPerpanjang: String(row[colIdx["Durasi Perpanjang"]] || ""),
+        kontrakBaruStart: fmtDateStr_(row[colIdx["Kontrak Baru Start"]]),
+        kontrakBaruEnd: fmtDateStr_(row[colIdx["Kontrak Baru End"]]),
+        catatan: String(row[colIdx["Catatan Evaluator"]] || ""),
+        evaluator: String(row[colIdx["Evaluator"]] || ""),
+        createdAt: fmtDateStr_(row[colIdx["Created At"]]),
+        statusSK: String(row[colIdx["Status SK"]] || ""),
       });
     }
     // Urutkan terbaru dulu
-    result.sort(function(a, b) {
-      return (b.createdAt || '').localeCompare(a.createdAt || '');
+    result.sort(function (a, b) {
+      return (b.createdAt || "").localeCompare(a.createdAt || "");
     });
     return result;
-  } catch(e) {
+  } catch (e) {
     return [];
   }
 }
@@ -727,101 +965,173 @@ function saveProbationEval(evalData, evaluatedBy) {
   var lock = LockService.getScriptLock();
   lock.waitLock(10000);
   try {
-    var ss      = SpreadsheetApp.getActiveSpreadsheet();
-    var now     = new Date();
-    var nowStr  = Utilities.formatDate(now, 'GMT+7', 'yyyy-MM-dd HH:mm:ss');
-    var user    = evaluatedBy || Session.getActiveUser().getEmail() || 'HR Dashboard';
-    var evalId  = generateEvalId_(now);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var now = new Date();
+    var nowStr = Utilities.formatDate(now, "GMT+7", "yyyy-MM-dd HH:mm:ss");
+    var user =
+      evaluatedBy || Session.getActiveUser().getEmail() || "HR Dashboard";
+    var evalId = generateEvalId_(now);
 
     // ── 1. Ambil data employee dari Employee sheet ────────────
     var empSheet = getOrCreateEmployeeSheet_();
-    var empData  = empSheet.getDataRange().getValues();
-    var empHdr   = empData[0];
-    var empCI    = {};
-    empHdr.forEach(function(h, i) { empCI[String(h).trim()] = i; });
+    var empData = empSheet.getDataRange().getValues();
+    var empHdr = empData[0];
+    var empCI = {};
+    empHdr.forEach(function (h, i) {
+      empCI[String(h).trim()] = i;
+    });
 
     var empRow = -1;
     for (var r = 1; r < empData.length; r++) {
-      if (String(empData[r][empCI['Employee ID']] || '') === String(evalData.employeeId)) {
+      if (
+        String(empData[r][empCI["Employee ID"]] || "") ===
+        String(evalData.employeeId)
+      ) {
         empRow = r;
         break;
       }
     }
     if (empRow === -1)
-      return { success: false, message: 'Employee ID tidak ditemukan: ' + evalData.employeeId };
+      return {
+        success: false,
+        message: "Employee ID tidak ditemukan: " + evalData.employeeId,
+      };
 
     var emp = empData[empRow];
-    function empVal(col) { return empCI[col] !== undefined ? emp[empCI[col]] : ''; }
+    function empVal(col) {
+      if (empCI[col] !== undefined) return emp[empCI[col]];
+      var fallback = {
+        Position: "Job Position (Locaction)",
+        "Job Position": "Position",
+        Branch: "Branch Name",
+        "Branch Name": "Branch",
+        "Contract Start": "Start Date (Contract)",
+        "Start Date (Contract)": "Contract Start",
+        "Contract End": "End Date (Contract)",
+        "End Date (Contract)": "Contract End",
+      };
+      if (fallback[col] && empCI[fallback[col]] !== undefined)
+        return emp[empCI[fallback[col]]];
+      return "";
+    }
 
     // ── 2. Hitung nilai rata-rata ─────────────────────────────
     var scores = [
-      Number(evalData.skorKinerja      || 0),
+      Number(evalData.skorKinerja || 0),
       Number(evalData.skorKedisiplinan || 0),
-      Number(evalData.skorKomunikasi   || 0),
-      Number(evalData.skorInisiatif    || 0),
-      Number(evalData.skorTeamwork     || 0),
+      Number(evalData.skorKomunikasi || 0),
+      Number(evalData.skorInisiatif || 0),
+      Number(evalData.skorTeamwork || 0),
     ];
-    var avg = Math.round((scores.reduce(function(s, v) { return s + v; }, 0) / 5) * 10) / 10;
+    var avg =
+      Math.round(
+        (scores.reduce(function (s, v) {
+          return s + v;
+        }, 0) /
+          5) *
+          10,
+      ) / 10;
 
-    var isLulus       = evalData.keputusan === 'Lulus → Karyawan Tetap';
-    var isPerpanjang  = evalData.keputusan === 'Tidak Lulus → Perpanjang Probation';
+    var isLulus = evalData.keputusan === "Lulus → Karyawan Tetap";
+    var isPerpanjang =
+      evalData.keputusan === "Tidak Lulus → Perpanjang Probation";
 
     // ── 3. Simpan ke sheet Evaluasi_Probation ─────────────────
     var evalSheet = getOrCreateProbationEvalSheet_();
-    var newRow    = new Array(PROBATION_EVAL_HEADERS.length).fill('');
-    newRow[PROBATION_EVAL_COL['Eval ID']           - 1] = evalId;
-    newRow[PROBATION_EVAL_COL['Employee ID']        - 1] = evalData.employeeId    || '';
-    newRow[PROBATION_EVAL_COL['Recruitment ID']     - 1] = evalData.recruitmentId || '';
-    newRow[PROBATION_EVAL_COL['Full Name']          - 1] = empVal('Full Name');
-    newRow[PROBATION_EVAL_COL['Position']           - 1] = empVal('Position');
-    newRow[PROBATION_EVAL_COL['Department']         - 1] = empVal('Department');
-    newRow[PROBATION_EVAL_COL['Contract Start']     - 1] = empVal('Contract Start');
-    newRow[PROBATION_EVAL_COL['Contract End']       - 1] = empVal('Contract End');
-    newRow[PROBATION_EVAL_COL['Eval Date']          - 1] = nowStr;
-    newRow[PROBATION_EVAL_COL['Skor Kinerja']       - 1] = Number(evalData.skorKinerja      || 0);
-    newRow[PROBATION_EVAL_COL['Skor Kedisiplinan']  - 1] = Number(evalData.skorKedisiplinan || 0);
-    newRow[PROBATION_EVAL_COL['Skor Komunikasi']    - 1] = Number(evalData.skorKomunikasi   || 0);
-    newRow[PROBATION_EVAL_COL['Skor Inisiatif']     - 1] = Number(evalData.skorInisiatif    || 0);
-    newRow[PROBATION_EVAL_COL['Skor Teamwork']      - 1] = Number(evalData.skorTeamwork     || 0);
-    newRow[PROBATION_EVAL_COL['Nilai Rata-rata']    - 1] = avg;
-    newRow[PROBATION_EVAL_COL['Keputusan']          - 1] = evalData.keputusan        || '';
-    newRow[PROBATION_EVAL_COL['Durasi Perpanjang']  - 1] = evalData.durasiPerpanjang || '';
-    newRow[PROBATION_EVAL_COL['Kontrak Baru Start'] - 1] = evalData.kontrakBaruStart || '';
-    newRow[PROBATION_EVAL_COL['Kontrak Baru End']   - 1] = evalData.kontrakBaruEnd   || '';
-    newRow[PROBATION_EVAL_COL['Catatan Evaluator']  - 1] = evalData.catatan          || '';
-    newRow[PROBATION_EVAL_COL['Evaluator']          - 1] = user;
-    newRow[PROBATION_EVAL_COL['Created At']         - 1] = nowStr;
-    newRow[PROBATION_EVAL_COL['Status SK']          - 1] = 'Pending';
+    var newRow = new Array(PROBATION_EVAL_HEADERS.length).fill("");
+    newRow[PROBATION_EVAL_COL["Eval ID"] - 1] = evalId;
+    newRow[PROBATION_EVAL_COL["Employee ID"] - 1] = evalData.employeeId || "";
+    newRow[PROBATION_EVAL_COL["Recruitment ID"] - 1] =
+      evalData.recruitmentId || "";
+    newRow[PROBATION_EVAL_COL["Full Name"] - 1] = empVal("Full Name");
+    newRow[PROBATION_EVAL_COL["Position"] - 1] = empVal("Position");
+    newRow[PROBATION_EVAL_COL["Department"] - 1] = empVal("Department");
+    newRow[PROBATION_EVAL_COL["Contract Start"] - 1] = empVal("Contract Start");
+    newRow[PROBATION_EVAL_COL["Contract End"] - 1] = empVal("Contract End");
+    newRow[PROBATION_EVAL_COL["Eval Date"] - 1] = nowStr;
+    newRow[PROBATION_EVAL_COL["Skor Kinerja"] - 1] = Number(
+      evalData.skorKinerja || 0,
+    );
+    newRow[PROBATION_EVAL_COL["Skor Kedisiplinan"] - 1] = Number(
+      evalData.skorKedisiplinan || 0,
+    );
+    newRow[PROBATION_EVAL_COL["Skor Komunikasi"] - 1] = Number(
+      evalData.skorKomunikasi || 0,
+    );
+    newRow[PROBATION_EVAL_COL["Skor Inisiatif"] - 1] = Number(
+      evalData.skorInisiatif || 0,
+    );
+    newRow[PROBATION_EVAL_COL["Skor Teamwork"] - 1] = Number(
+      evalData.skorTeamwork || 0,
+    );
+    newRow[PROBATION_EVAL_COL["Nilai Rata-rata"] - 1] = avg;
+    newRow[PROBATION_EVAL_COL["Keputusan"] - 1] = evalData.keputusan || "";
+    newRow[PROBATION_EVAL_COL["Durasi Perpanjang"] - 1] =
+      evalData.durasiPerpanjang || "";
+    newRow[PROBATION_EVAL_COL["Kontrak Baru Start"] - 1] =
+      evalData.kontrakBaruStart || "";
+    newRow[PROBATION_EVAL_COL["Kontrak Baru End"] - 1] =
+      evalData.kontrakBaruEnd || "";
+    newRow[PROBATION_EVAL_COL["Catatan Evaluator"] - 1] =
+      evalData.catatan || "";
+    newRow[PROBATION_EVAL_COL["Evaluator"] - 1] = user;
+    newRow[PROBATION_EVAL_COL["Created At"] - 1] = nowStr;
+    newRow[PROBATION_EVAL_COL["Status SK"] - 1] = "Pending";
     evalSheet.appendRow(newRow);
 
     // ── 4. Update Employee sheet berdasarkan keputusan ────────
+    // Strategy: Write ke Status Employee (kolom utama v2). Tetap tulis ke
+    // Status + Employment Status JIKA kolom legacy masih ada di sheet, via
+    // direct hIdx-based update (backward-compat sampai sheet fully migrated).
     var empRowNum = empRow + 1; // 1-based
+    function safeSetEmp(colName, value) {
+      var cNum = EMPLOYEE_COL[colName];
+      if (cNum) empSheet.getRange(empRowNum, cNum).setValue(value);
+    }
     if (isLulus) {
-      // Angkat ke karyawan tetap
-      empSheet.getRange(empRowNum, EMPLOYEE_COL['Status']).setValue('Active');
-      empSheet.getRange(empRowNum, EMPLOYEE_COL['Employment Status']).setValue('Active');
-      empSheet.getRange(empRowNum, EMPLOYEE_COL['Updated At']).setValue(nowStr);
-      writeAuditLog_(evalData.employeeId, 'Probation Lulus', 'Employment Status', 'Probation', 'Active (Karyawan Tetap) - Eval ' + evalId);
+      safeSetEmp("Status Employee", "Active");
+      safeSetEmp("Status", "Active");
+      safeSetEmp("Employment Status", "Active");
+      safeSetEmp("Updated At", nowStr);
+      writeAuditLog_(
+        evalData.employeeId,
+        "Probation Lulus",
+        "Status Employee",
+        "Probation",
+        "Active (Karyawan Tetap) - Eval " + evalId,
+      );
     } else if (isPerpanjang) {
-      // Perpanjang probation — update contract end & duration
-      if (evalData.kontrakBaruEnd)      empSheet.getRange(empRowNum, EMPLOYEE_COL['Contract End']).setValue(evalData.kontrakBaruEnd);
-      if (evalData.kontrakBaruStart)    empSheet.getRange(empRowNum, EMPLOYEE_COL['Contract Start']).setValue(evalData.kontrakBaruStart);
-      if (evalData.durasiPerpanjang)    empSheet.getRange(empRowNum, EMPLOYEE_COL['Contract Duration']).setValue(evalData.durasiPerpanjang);
-      empSheet.getRange(empRowNum, EMPLOYEE_COL['Updated At']).setValue(nowStr);
-      writeAuditLog_(evalData.employeeId, 'Probation Diperpanjang', 'Contract End', String(empVal('Contract End')), evalData.kontrakBaruEnd + ' - Eval ' + evalId);
+      if (evalData.kontrakBaruEnd)
+        safeSetEmp("End Date (Contract)", evalData.kontrakBaruEnd);
+      if (evalData.kontrakBaruEnd)
+        safeSetEmp("Contract End", evalData.kontrakBaruEnd);
+      if (evalData.kontrakBaruStart)
+        safeSetEmp("Start Date (Contract)", evalData.kontrakBaruStart);
+      if (evalData.kontrakBaruStart)
+        safeSetEmp("Contract Start", evalData.kontrakBaruStart);
+      if (evalData.durasiPerpanjang)
+        safeSetEmp("Contract Duration", evalData.durasiPerpanjang);
+      safeSetEmp("Updated At", nowStr);
+      writeAuditLog_(
+        evalData.employeeId,
+        "Probation Diperpanjang",
+        "End Date (Contract)",
+        String(empVal("Contract End")),
+        evalData.kontrakBaruEnd + " - Eval " + evalId,
+      );
     }
 
     return {
-      success:       true,
-      evalId:        evalId,
-      employeeId:    evalData.employeeId,
-      keputusan:     evalData.keputusan,
+      success: true,
+      evalId: evalId,
+      employeeId: evalData.employeeId,
+      keputusan: evalData.keputusan,
       nilaiRataRata: avg,
-      isLulus:       isLulus,
-      isPerpanjang:  isPerpanjang,
-      nowStr:        nowStr,
+      isLulus: isLulus,
+      isPerpanjang: isPerpanjang,
+      nowStr: nowStr,
     };
-  } catch(err) {
+  } catch (err) {
     return { success: false, message: err.message };
   } finally {
     lock.releaseLock();
