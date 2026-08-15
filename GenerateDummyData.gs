@@ -266,15 +266,7 @@ var _GD_DEPT_MAP_ = {
   Security: ["GA", "Operations"],
   "Office Boy": ["Admin", "GA"],
 };
-var _GD_EDUCATION_ = [
-  "SD",
-  "SMP",
-  "SMA/SMK",
-  "D3",
-  "S1",
-  "S2",
-  "S3",
-];
+var _GD_EDUCATION_ = ["SD", "SMP", "SMA/SMK", "D3", "S1", "S2", "S3"];
 var _GD_WORK_EXP_ = [
   "Fresh Graduate",
   "1-2 Tahun",
@@ -607,13 +599,7 @@ var _GD_EMP_STATUSES_ = [
   "On Leave",
   "Probation",
 ];
-var _GD_CONTRACT_DUR_ = [
-  "3 Bulan",
-  "6 Bulan",
-  "1 Tahun",
-  "2 Tahun",
-  "3 Tahun",
-];
+var _GD_CONTRACT_DUR_ = ["3 Bulan", "6 Bulan", "1 Tahun", "2 Tahun", "3 Tahun"];
 var _GD_SALARY_TYPES_ = ["Bulanan", "Harian", "Per Proyek", "Per Jam"];
 var _GD_OS_VENDORS_ = [
   "PT Cipta Karya Mandiri",
@@ -622,6 +608,47 @@ var _GD_OS_VENDORS_ = [
   "PT Insan Mulia Nusantara",
   "PT Karya Tama Sejahtera",
 ];
+var _GD_BRANCHES_ = [
+  "PT Mahakarya Sukses Indonesia",
+  "PT Stein Perkasa Internasional",
+  "PT Perkasa Injeksi Indonesia",
+  "PT Mitra Elektro Perkasa",
+];
+var _GD_DIVISIONS_ = [
+  "RnD & aftersales",
+  "Sales",
+  "FAT & GA",
+  "Manufacture",
+  "E-Commerce",
+  "IT",
+  "Digital Marketing",
+  "Buyer - Import",
+  "Marketing",
+  "Creative",
+  "HR & Legal",
+];
+var _GD_AREAS_ = [
+  "Head Office (HO)",
+  "Depo Jakarta",
+  "Depo Bandung",
+  "Depo Surabaya",
+  "Pabrik",
+];
+var _GD_JOB_LEVELS_ = ["Associate", "Supervisor", "Manager"];
+var _GD_PTKP_ = ["TK/0", "TK/1", "K/0", "K/1", "K/2", "K/3"];
+var _GD_RELIGIONS_ = ["Islam", "Kristen", "Katolik", "Hindu", "Buddha"];
+var _GD_BLOOD_TYPES_ = ["A", "B", "AB", "O"];
+var _GD_SUPERIORS_ = [
+  "Budi Santoso",
+  "Siti Nurhaliza",
+  "Ahmad Wijaya",
+  "Dewi Lestari",
+  "Eko Prasetyo",
+  "Rina Marlina",
+  "Hadi Wijanto",
+];
+var _GD_STATUS_EMP_ = ["Permanent", "Contract", "Probation"];
+var _GD_ROTATION_TYPES_ = ["Promosi", "Mutasi", "Demosi", ""];
 
 function _gdDept_(pos) {
   return _gdPick_(_GD_DEPT_MAP_[pos] || _GD_DEPARTMENTS_);
@@ -634,8 +661,7 @@ function _gdName_(isMale) {
   );
 }
 function _gdAgeForExp_(exp) {
-  if (exp === "Fresh Graduate")
-    return _gdRandInt_(20, 25);
+  if (exp === "Fresh Graduate") return _gdRandInt_(20, 25);
   if (exp === "1-2 Tahun") return _gdRandInt_(22, 28);
   if (exp === "3-5 Tahun") return _gdRandInt_(26, 33);
   if (exp === "5-10 Tahun") return _gdRandInt_(28, 38);
@@ -666,10 +692,7 @@ function _gdBuildCandidatePool_(today) {
     var avail = _gdPick_(_GD_AVAILABLE_);
     var source = _gdPick_(_GD_SOURCES_);
     var salary = _gdRandSalary_(pos);
-    var company =
-      exp === "Fresh Graduate"
-        ? "-"
-        : _gdPick_(_GD_COMPANIES_);
+    var company = exp === "Fresh Graduate" ? "-" : _gdPick_(_GD_COMPANIES_);
 
     var phone;
     do {
@@ -929,93 +952,170 @@ function _gdWriteBlacklistSheet_(candidates, today) {
 }
 
 // ============================================================
-// WRITE: Employee — 30 dari accepted + 20 legacy outsource
+// WRITE: Employee — 30 dari accepted + 20 legacy (54 kolom)
+// Schema v3 (2026-08-14) sesuai EMPLOYEE_HEADERS
 // ============================================================
 function _gdWriteEmployeeSheet_(acceptedCandidates, today) {
   var sheet = getOrCreateEmployeeSheet_();
   var rows = [];
   var nowStr = _gdFmt_(today);
 
+  var usedNiksEmp = {};
+  var usedPhonesEmp = {};
+  var usedEmailsEmp = {};
+  var empSeqByDate = {};
+
+  function nextEmpId(joinDate) {
+    var key = joinDate.replace(/-/g, "");
+    if (!empSeqByDate[key]) empSeqByDate[key] = 0;
+    empSeqByDate[key]++;
+    return key + _gdPad_(empSeqByDate[key], 2);
+  }
+
+  function fillRow(row, opts) {
+    var joinDate = opts.joinDate;
+    var empId = nextEmpId(joinDate);
+    var empType = opts.empType;
+    var isContract =
+      empType === "PKWT" || empType === "Outsource" || empType === "Intern";
+    var statusEmp = opts.statusEmp;
+    var jobLevel = _gdPick_(_GD_JOB_LEVELS_);
+    var area = _gdPick_(_GD_AREAS_);
+    var division = _gdPick_(_GD_DIVISIONS_);
+    var department = division;
+    var location = opts.city;
+    var workingEmail =
+      opts.fullName.toLowerCase().replace(/\s+/g, ".") + "@mito.co.id";
+    var npwp = _gdRandDigits_(15);
+    var bpjsTk = _gdRandDigits_(11);
+    var bpjsKes = _gdRandDigits_(13);
+    var bankAcc = _gdRandDigits_(10);
+    var directSuperior = _gdPick_(_GD_SUPERIORS_);
+    var indirectSuperior = _gdPick_(_GD_SUPERIORS_);
+    var rotationType = _gdPick_(_GD_ROTATION_TYPES_);
+
+    var costCenter = area;
+    if (area === "Head Office (HO)")
+      costCenter = _gdPick_(["Accounting", "Finance", "HRD", "GA", "IT"]);
+    else if (area === "Pabrik") costCenter = "Manufacture " + location;
+    else if (area.indexOf("Depo") !== -1) costCenter = area;
+
+    var jobTitle = opts.position || _gdPick_(_GD_POSITIONS_);
+    var jobPosCurrent = jobTitle + " " + jobLevel + " (" + location + ")";
+    var jobPosNoLoc = jobTitle + " " + jobLevel;
+
+    var contStart = isContract ? joinDate : "";
+    var contEnd = isContract
+      ? _gdFmtDate_(_gdAddDays_(today, _gdRandInt_(180, 365)))
+      : "";
+    var contractDur = isContract ? _gdPick_(_GD_CONTRACT_DUR_) : "";
+    var contractNo = isContract
+      ? "MITO/PKT/" +
+        today.getFullYear() +
+        "/" +
+        _gdPad_(_gdRandInt_(1, 999), 3)
+      : "";
+    var vendor = empType === "Outsource" ? _gdPick_(_GD_OS_VENDORS_) : "";
+
+    row[EMPLOYEE_COL["Employee ID"] - 1] = "'" + empId;
+    row[EMPLOYEE_COL["Full Name"] - 1] = opts.fullName;
+    row[EMPLOYEE_COL["Branch Name"] - 1] =
+      opts.branch || _gdPick_(_GD_BRANCHES_);
+    row[EMPLOYEE_COL["Division"] - 1] = division;
+    row[EMPLOYEE_COL["Department"] - 1] = department;
+    row[EMPLOYEE_COL["Job Position (Locaction)"] - 1] = jobPosCurrent;
+    row[EMPLOYEE_COL["Job Position"] - 1] = jobPosNoLoc;
+    row[EMPLOYEE_COL["Area Kerja"] - 1] = area;
+    row[EMPLOYEE_COL["Lokasi Kerja"] - 1] = location;
+    row[EMPLOYEE_COL["Job Level"] - 1] = jobLevel;
+    row[EMPLOYEE_COL["Grade"] - 1] = "";
+    row[EMPLOYEE_COL["Join Date"] - 1] = joinDate;
+    row[EMPLOYEE_COL["Status Employee"] - 1] = statusEmp;
+    row[EMPLOYEE_COL["Direct Superior"] - 1] = directSuperior;
+    row[EMPLOYEE_COL["Indirect Superior"] - 1] = indirectSuperior;
+    row[EMPLOYEE_COL["Personal Email"] - 1] = opts.personalEmail;
+    row[EMPLOYEE_COL["Working Email"] - 1] = workingEmail;
+    row[EMPLOYEE_COL["End Date (Contract)"] - 1] = contEnd;
+    row[EMPLOYEE_COL["Birth Place"] - 1] = opts.birthPlace || location;
+    row[EMPLOYEE_COL["Birth Date"] - 1] = opts.birthDate;
+    row[EMPLOYEE_COL["Citizen ID Address"] - 1] = opts.address;
+    row[EMPLOYEE_COL["Residential Address"] - 1] = opts.address;
+    row[EMPLOYEE_COL["NIK - NPWP 16 digit"] - 1] = "'" + opts.nik;
+    row[EMPLOYEE_COL["NPWP"] - 1] = "'" + npwp;
+    row[EMPLOYEE_COL["PTKP Status"] - 1] = _gdPick_(_GD_PTKP_);
+    row[EMPLOYEE_COL["Bank Name"] - 1] = "BCA";
+    row[EMPLOYEE_COL["Bank Account"] - 1] = "'" + bankAcc;
+    row[EMPLOYEE_COL["Bank Account Holder"] - 1] = opts.fullName;
+    row[EMPLOYEE_COL["BPJS Ketenagakerjaan"] - 1] = "'" + bpjsTk;
+    row[EMPLOYEE_COL["BPJS Kesehatan"] - 1] = "'" + bpjsKes;
+    row[EMPLOYEE_COL["Mobile Phone"] - 1] = "'" + opts.phone;
+    row[EMPLOYEE_COL["Religion"] - 1] = _gdPick_(_GD_RELIGIONS_);
+    row[EMPLOYEE_COL["Gender"] - 1] = opts.gender;
+    row[EMPLOYEE_COL["Marital Status"] - 1] = opts.marital;
+    row[EMPLOYEE_COL["Blood Type"] - 1] = _gdPick_(_GD_BLOOD_TYPES_);
+    row[EMPLOYEE_COL["Cost Center"] - 1] = costCenter;
+    row[EMPLOYEE_COL["Job Position (Former)"] - 1] = "";
+    row[EMPLOYEE_COL["Type of Rotation"] - 1] = rotationType;
+    row[EMPLOYEE_COL["Tanggal Mutasi/Demosi/Promosi"] - 1] = "";
+    row[EMPLOYEE_COL["Nomor SK"] - 1] = "";
+    row[EMPLOYEE_COL["Resign Date"] - 1] = "";
+    row[EMPLOYEE_COL["Created By"] - 1] = "Demo Generator";
+    row[EMPLOYEE_COL["Created At"] - 1] = nowStr;
+    row[EMPLOYEE_COL["Updated At"] - 1] = nowStr;
+    return row;
+  }
+
   // --- 30 karyawan dari recruitment accepted ---
   acceptedCandidates.forEach(function (c) {
     var joinDate = _gdFmtDate_(_gdSubDays_(today, _gdRandInt_(30, 365)));
     var empType = _gdPick_(_GD_EMP_TYPES_);
-    var isContract =
-      empType === "PKWT" || empType === "Outsource" || empType === "Intern";
-    var contStart = joinDate;
-    var contEnd = isContract
-      ? _gdFmtDate_(_gdAddDays_(today, _gdRandInt_(30, 365)))
-      : "";
-    var contractDur = isContract ? _gdPick_(_GD_CONTRACT_DUR_) : "";
-    var contractNo = isContract
-      ? "CONT-" + today.getFullYear() + "-" + _gdPad_(_gdRandInt_(1, 999), 4)
-      : "";
-    var vendor = empType === "Outsource" ? _gdPick_(_GD_OS_VENDORS_) : "";
-    var salaryType = empType === "Project" ? "Per Proyek" : "Bulanan";
+    var statusEmp = _gdPick_(_GD_STATUS_EMP_);
+    var genderMap = { "Laki-laki": "Male", Perempuan: "Female" };
     var row = new Array(EMPLOYEE_HEADERS.length).fill("");
-    row[EMPLOYEE_COL["Employee ID"] - 1] = c.employeeId;
-    row[EMPLOYEE_COL["Recruitment ID"] - 1] = c.recruitmentId;
-    row[EMPLOYEE_COL["Full Name"] - 1] = c.fullName;
-    row[EMPLOYEE_COL["Position"] - 1] = c.positionApplied;
-    row[EMPLOYEE_COL["Email"] - 1] = c.email;
-    row[EMPLOYEE_COL["Phone"] - 1] = "'" + c.phone;
-    row[EMPLOYEE_COL["Join Date"] - 1] = joinDate;
-    row[EMPLOYEE_COL["Status"] - 1] = _gdPick_(_GD_EMP_STATUSES_);
-    row[EMPLOYEE_COL["Notes"] - 1] = c.hrNotes || "";
-    row[EMPLOYEE_COL["Created At"] - 1] = nowStr;
-    row[EMPLOYEE_COL["Company Entity"] - 1] = _gdPick_(_GD_COMPANIES_INTERNAL_);
-    row[EMPLOYEE_COL["Employee Type"] - 1] = empType;
-    row[EMPLOYEE_COL["NIK"] - 1] = "'" + c.nik;
-    row[EMPLOYEE_COL["Birth Date"] - 1] = c.birthDate;
-    row[EMPLOYEE_COL["Age"] - 1] = c.age;
-    row[EMPLOYEE_COL["Gender"] - 1] = c.gender;
-    row[EMPLOYEE_COL["Marital Status"] - 1] = c.maritalStatus;
-    row[EMPLOYEE_COL["Address"] - 1] = c.address;
-    row[EMPLOYEE_COL["City"] - 1] = c.city;
-    row[EMPLOYEE_COL["Education"] - 1] = c.education;
-    row[EMPLOYEE_COL["Work Experience"] - 1] = c.workExperience;
-    row[EMPLOYEE_COL["Department"] - 1] = c.department;
-    row[EMPLOYEE_COL["Division"] - 1] = "";
-    row[EMPLOYEE_COL["Branch"] - 1] = _gdPick_([
-      "Jakarta",
-      "Bandung",
-      "Surabaya",
-      "",
-    ]);
-    row[EMPLOYEE_COL["Contract Start"] - 1] = contStart;
-    row[EMPLOYEE_COL["Contract End"] - 1] = contEnd;
-    row[EMPLOYEE_COL["Contract Duration"] - 1] = contractDur;
-    row[EMPLOYEE_COL["Employment Status"] - 1] = "Active";
-    row[EMPLOYEE_COL["Salary"] - 1] = c.expectedSalary;
-    row[EMPLOYEE_COL["Salary Type"] - 1] = salaryType;
-    row[EMPLOYEE_COL["Outsource Vendor"] - 1] = vendor;
-    row[EMPLOYEE_COL["Contract Number"] - 1] = contractNo;
-    row[EMPLOYEE_COL["District"] - 1] = "";
-    row[EMPLOYEE_COL["Recruitment Source"] - 1] = c.recruitmentSource;
-    row[EMPLOYEE_COL["HR Notes"] - 1] = "";
-    row[EMPLOYEE_COL["Created By"] - 1] = "Demo Generator";
-    row[EMPLOYEE_COL["Updated At"] - 1] = nowStr;
+    fillRow(row, {
+      fullName: c.fullName,
+      nik: c.nik,
+      birthDate: c.birthDate,
+      birthPlace: c.city,
+      age: c.age,
+      gender: genderMap[c.gender] || c.gender,
+      marital:
+        c.maritalStatus === "Belum Menikah"
+          ? "Single"
+          : c.maritalStatus === "Menikah"
+            ? "Married"
+            : "Widow",
+      personalEmail: c.email,
+      phone: c.phone,
+      address: c.address,
+      city: c.city,
+      position: c.positionApplied,
+      branch: _gdPick_(_GD_BRANCHES_),
+      joinDate: joinDate,
+      empType: empType,
+      statusEmp: statusEmp,
+      recruitmentId: c.recruitmentId,
+      notes: c.hrNotes || "",
+    });
     rows.push(row);
   });
 
   // --- 20 legacy (bukan dari recruitment, tipe campuran) ---
-  var usedNiksEmp = {},
-    usedPhonesEmp = {},
-    usedEmailsEmp = {};
   for (var i = 0; i < 20; i++) {
     var isMale = Math.random() > 0.45;
     var fullName = _gdName_(isMale);
     var pos = _gdPick_(_GD_POSITIONS_);
-    var dept = _gdDept_(pos);
     var age = _gdRandInt_(22, 45);
-    var edu = _gdPick_(_GD_EDUCATION_);
     var city = _gdPick_(_GD_CITIES_);
-    var marital = _gdPick_(_GD_MARITAL_);
-    var salary = _gdRandSalary_(pos);
+    var maritalRaw = _gdPick_(_GD_MARITAL_);
+    var maritalMap = {
+      "Belum Menikah": "Single",
+      Menikah: "Married",
+      Cerai: "Widow",
+    };
+    var marital = maritalMap[maritalRaw] || "Single";
     var empType = _gdPick_(_GD_EMP_TYPES_);
-    var empStat = _gdPick_(_GD_EMP_STATUSES_);
-    var vendor = empType === "Outsource" ? _gdPick_(_GD_OS_VENDORS_) : "";
-    var company = _gdPick_(_GD_COMPANIES_INTERNAL_);
+    var statusEmp = _gdPick_(_GD_STATUS_EMP_);
 
     var nik;
     do {
@@ -1033,12 +1133,12 @@ function _gdWriteEmployeeSheet_(acceptedCandidates, today) {
     var emailBase =
       nameParts[0] + "." + (nameParts[1] || "x").replace(/[^a-z]/g, "");
     var emailIdx = _gdRandInt_(100, 999);
-    var email = emailBase + emailIdx + "@gmail.com";
-    while (usedEmailsEmp[email]) {
+    var personalEmail = emailBase + emailIdx + "@gmail.com";
+    while (usedEmailsEmp[personalEmail]) {
       emailIdx++;
-      email = emailBase + emailIdx + "@gmail.com";
+      personalEmail = emailBase + emailIdx + "@gmail.com";
     }
-    usedEmailsEmp[email] = true;
+    usedEmailsEmp[personalEmail] = true;
 
     var birthYear = new Date().getFullYear() - age;
     var birthDate =
@@ -1050,63 +1150,28 @@ function _gdWriteEmployeeSheet_(acceptedCandidates, today) {
     var address =
       _gdPick_(_GD_STREETS_) + " No. " + _gdRandInt_(1, 150) + ", " + city;
     var joinDate = _gdFmtDate_(_gdSubDays_(today, _gdRandInt_(90, 730)));
-    var empId = "EMP-" + today.getFullYear() + "-" + _gdPad_(100 + i + 1, 5);
-    var isContract =
-      empType === "PKWT" || empType === "Outsource" || empType === "Intern";
-    var contractDur = isContract ? _gdPick_(_GD_CONTRACT_DUR_) : "";
-    var contStart = joinDate;
-    var contEnd = isContract
-      ? _gdFmtDate_(_gdAddDays_(today, _gdRandInt_(30, 365)))
-      : "";
-    var contractNo = isContract
-      ? "CONT-" + today.getFullYear() + "-" + _gdPad_(_gdRandInt_(1, 999), 4)
-      : "";
-    var salaryType = empType === "Project" ? "Per Proyek" : "Bulanan";
 
     var row = new Array(EMPLOYEE_HEADERS.length).fill("");
-    row[EMPLOYEE_COL["Employee ID"] - 1] = empId;
-    row[EMPLOYEE_COL["Recruitment ID"] - 1] = "";
-    row[EMPLOYEE_COL["Full Name"] - 1] = fullName;
-    row[EMPLOYEE_COL["Position"] - 1] = pos;
-    row[EMPLOYEE_COL["Email"] - 1] = email;
-    row[EMPLOYEE_COL["Phone"] - 1] = "'" + phone;
-    row[EMPLOYEE_COL["Join Date"] - 1] = joinDate;
-    row[EMPLOYEE_COL["Status"] - 1] = empStat;
-    row[EMPLOYEE_COL["Notes"] - 1] = "";
-    row[EMPLOYEE_COL["Created At"] - 1] = nowStr;
-    row[EMPLOYEE_COL["Company Entity"] - 1] = company;
-    row[EMPLOYEE_COL["Employee Type"] - 1] = empType;
-    row[EMPLOYEE_COL["NIK"] - 1] = "'" + nik;
-    row[EMPLOYEE_COL["Birth Date"] - 1] = birthDate;
-    row[EMPLOYEE_COL["Age"] - 1] = age;
-    row[EMPLOYEE_COL["Gender"] - 1] = isMale ? "Laki-laki" : "Perempuan";
-    row[EMPLOYEE_COL["Marital Status"] - 1] = marital;
-    row[EMPLOYEE_COL["Address"] - 1] = address;
-    row[EMPLOYEE_COL["City"] - 1] = city;
-    row[EMPLOYEE_COL["Education"] - 1] = edu;
-    row[EMPLOYEE_COL["Work Experience"] - 1] = _gdPick_(_GD_WORK_EXP_);
-    row[EMPLOYEE_COL["Department"] - 1] = dept;
-    row[EMPLOYEE_COL["Division"] - 1] = "";
-    row[EMPLOYEE_COL["Branch"] - 1] = _gdPick_([
-      "Jakarta",
-      "Bandung",
-      "Surabaya",
-      "",
-    ]);
-    row[EMPLOYEE_COL["Contract Start"] - 1] = contStart;
-    row[EMPLOYEE_COL["Contract End"] - 1] = contEnd;
-    row[EMPLOYEE_COL["Contract Duration"] - 1] = contractDur;
-    row[EMPLOYEE_COL["Employment Status"] - 1] =
-      empStat === "Active" ? "Active" : empStat;
-    row[EMPLOYEE_COL["Salary"] - 1] = salary;
-    row[EMPLOYEE_COL["Salary Type"] - 1] = salaryType;
-    row[EMPLOYEE_COL["Outsource Vendor"] - 1] = vendor;
-    row[EMPLOYEE_COL["Contract Number"] - 1] = contractNo;
-    row[EMPLOYEE_COL["District"] - 1] = "";
-    row[EMPLOYEE_COL["Recruitment Source"] - 1] = _gdPick_(_GD_SOURCES_);
-    row[EMPLOYEE_COL["HR Notes"] - 1] = "";
-    row[EMPLOYEE_COL["Created By"] - 1] = "Demo Generator";
-    row[EMPLOYEE_COL["Updated At"] - 1] = nowStr;
+    fillRow(row, {
+      fullName: fullName,
+      nik: nik,
+      birthDate: birthDate,
+      birthPlace: city,
+      age: age,
+      gender: isMale ? "Male" : "Female",
+      marital: marital,
+      personalEmail: personalEmail,
+      phone: phone,
+      address: address,
+      city: city,
+      position: pos,
+      branch: _gdPick_(_GD_BRANCHES_),
+      joinDate: joinDate,
+      empType: empType,
+      statusEmp: statusEmp,
+      recruitmentId: "",
+      notes: "",
+    });
     rows.push(row);
   }
 
@@ -1114,7 +1179,9 @@ function _gdWriteEmployeeSheet_(acceptedCandidates, today) {
     sheet.getRange(2, 1, rows.length, EMPLOYEE_HEADERS.length).setValues(rows);
   }
   Logger.log(
-    "Employee: " + rows.length + " rows written (30 recruitment + 20 legacy)",
+    "Employee: " +
+      rows.length +
+      " rows written (30 recruitment + 20 legacy, 54 cols)",
   );
 }
 
