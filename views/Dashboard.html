@@ -48,6 +48,9 @@
           <?!= include('partials/EmployeeContent'); ?>
         </section>
 
+        <!-- ===== PAGE: PROBATION ===== -->
+        <?!= include('partials/ProbationPage'); ?>
+
         <!-- ===== PAGE: OUTSOURCE ===== -->
         <section class="page-section" id="pageOutsource">
           <?!= include('partials/OutsourceTable'); ?>
@@ -87,6 +90,7 @@
     <?!= include('partials/Drawer'); ?> <?!= include('partials/Modals'); ?>
     <?!= include('partials/EntityModals'); ?>
     <?!= include('partials/StatusPageModals'); ?>
+    <?!= include('partials/ProbationModals'); ?>
     <?!= include('partials/FloatingActionButton'); ?>
 
     <!-- CDN Scripts -->
@@ -104,7 +108,7 @@
     include('js/employee'); ?> <?!= include('js/userManagement'); ?> <?!=
     include('js/masterData'); ?> <?!= include('js/regions'); ?> <?!=
     include('js/auditLog'); ?> <?!= include('js/import'); ?> <?!=
-    include('js/statusPages'); ?> <?!= include('js/auth'); ?> <?!=
+    include('js/statusPages'); ?> <?!= include('js/probation'); ?> <?!= include('js/auth'); ?> <?!=
     include('js/router'); ?> <?!= include('js/app');
     ?>
   </body>

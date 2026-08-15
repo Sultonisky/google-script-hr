@@ -296,5 +296,419 @@
       showToast('Gagal membuat PDF: ' + error.message, 'error');
     }
   }
-</script>
+  // ============================================================
+  // OFFERING LETTER PDF EXPORT
+  // Params:
+  //   candidate  — object kandidat dari getAcceptedList()
+  //   offerData  — { companyEntity, position, department, salary,
+  //                  joinDate, benefit, notes }
+  //   callback   — function(success: boolean)
+  // ============================================================
+  function exportOfferingLetterPDF(candidate, offerData, callback) {
+    if (typeof window.jspdf === 'undefined') {
+      var script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      document.head.appendChild(script);
+      script.onload  = function() { exportOfferingLetterPDF(candidate, offerData, callback); };
+      script.onerror = function() {
+        showToast('Gagal memuat library PDF. Periksa koneksi internet.', 'error');
+        if (callback) callback(false);
+      };
+      return;
+    }
 
+    try {
+      var jsPDF       = window.jspdf.jsPDF;
+      var doc         = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      var pageWidth   = doc.internal.pageSize.getWidth();   // 210
+      var pageHeight  = doc.internal.pageSize.getHeight();  // 297
+      var margin      = 22;
+      var contentW    = pageWidth - margin * 2;
+      var yPos        = margin;
+
+      // ── Palet warna ────────────────────────────────────────
+      var colorPrimary = [0, 91, 172];     // #005BAC
+      var colorNavy    = [11, 37, 64];     // #0B2540
+      var colorAccent  = [253, 185, 19];   // #FDB913
+      var colorText    = [31, 41, 55];
+      var colorSoft    = [107, 114, 128];
+      var colorBorder  = [220, 226, 234];
+      var colorBg      = [248, 250, 252];
+
+      function setFill(c) { doc.setFillColor(c[0], c[1], c[2]); }
+      function setDraw(c) { doc.setDrawColor(c[0], c[1], c[2]); }
+      function setTxt(c)  { doc.setTextColor(c[0], c[1], c[2]); }
+      function bold()     { doc.setFont(undefined, 'bold'); }
+      function normal()   { doc.setFont(undefined, 'normal'); }
+      function italic()   { doc.setFont(undefined, 'italic'); }
+
+      function checkBreak(need) {
+        if (yPos + need > pageHeight - margin - 10) {
+          doc.addPage();
+          yPos = margin;
+          // Ulang navy strip kiri di halaman baru
+          setFill(colorNavy);
+          doc.rect(0, 0, 5, pageHeight, 'F');
+        }
+      }
+
+      // ── Helper tanggal → "DD Bulan YYYY" ──────────────────
+      function fmtDateId(isoStr) {
+        if (!isoStr) return '-';
+        var bulan = ['Januari','Februari','Maret','April','Mei','Juni',
+                     'Juli','Agustus','September','Oktober','November','Desember'];
+        var p = String(isoStr).split('-');
+        if (p.length < 3) return isoStr;
+        return parseInt(p[2], 10) + ' ' + (bulan[parseInt(p[1], 10) - 1] || '') + ' ' + p[0];
+      }
+
+      // ── Helper format Rupiah ───────────────────────────────
+      function fmtSalary(str) {
+        var num = Number(String(str || '').replace(/[^\d]/g, ''));
+        if (!num) return String(str || '-');
+        return 'Rp ' + num.toLocaleString('id-ID');
+      }
+
+      // ── Sanitasi teks kandidat ─────────────────────────────
+      var candName  = String(candidate.fullName  || '-');
+      var candNik   = String(candidate.nik       || '-').replace(/^'+/, '');
+      var candEmail = String(candidate.email     || '-');
+      var candPhone = String(candidate.phone     || '-').replace(/^'+/, '');
+      var candBirth = String(candidate.birthDate || '-');
+      var candAddr  = candidate.city
+        ? String(candidate.address || '-') + ', ' + candidate.city
+        : String(candidate.address || '-');
+
+      var offerCompany  = offerData.companyEntity || 'MITO Group';
+      var offerPosition = offerData.position      || '-';
+      var offerDept     = offerData.department    || '-';
+      var offerSalary   = fmtSalary(offerData.salary);
+      var offerJoin     = fmtDateId(offerData.joinDate);
+      var offerBenefit  = offerData.benefit || '';
+      var offerNotes    = offerData.notes   || '';
+
+      var today     = new Date();
+      var todayStr  = fmtDateId(today.toISOString().split('T')[0]);
+
+      // ════════════════════════════════════════════════════════
+      // DEKORASI HALAMAN
+      // ════════════════════════════════════════════════════════
+      // Navy strip kiri
+      setFill(colorNavy);
+      doc.rect(0, 0, 5, pageHeight, 'F');
+
+      // Accent bar atas
+      setFill(colorAccent);
+      doc.rect(5, 0, pageWidth - 5, 3.5, 'F');
+
+      // ════════════════════════════════════════════════════════
+      // KOP SURAT
+      // ════════════════════════════════════════════════════════
+      yPos = 13;
+
+      // Nama entitas perusahaan (besar)
+      doc.setFontSize(15);
+      bold(); setTxt(colorNavy);
+      doc.text(offerCompany.toUpperCase(), margin + 2, yPos);
+
+      // Sub-baris HRD
+      yPos += 5.5;
+      doc.setFontSize(8);
+      normal(); setTxt(colorSoft);
+      doc.text('Departemen Sumber Daya Manusia (Human Resources Department)', margin + 2, yPos);
+
+      // Tanggal surat di kanan atas
+      doc.setFontSize(8);
+      normal(); setTxt(colorSoft);
+      doc.text(todayStr, pageWidth - margin, 13, { align: 'right' });
+
+      // Garis pemisah kop
+      yPos += 4;
+      setDraw(colorAccent);
+      doc.setLineWidth(0.9);
+      doc.line(margin + 2, yPos, pageWidth - margin, yPos);
+      doc.setLineWidth(0.2);
+
+      // ════════════════════════════════════════════════════════
+      // JUDUL SURAT
+      // ════════════════════════════════════════════════════════
+      yPos += 10;
+      doc.setFontSize(13);
+      bold(); setTxt(colorPrimary);
+      doc.text('SURAT PENAWARAN KERJA', pageWidth / 2, yPos, { align: 'center' });
+      yPos += 5;
+      doc.setFontSize(8.5);
+      normal(); setTxt(colorSoft);
+      doc.text('( Offering Letter )', pageWidth / 2, yPos, { align: 'center' });
+
+      // ════════════════════════════════════════════════════════
+      // SALAM PEMBUKA
+      // ════════════════════════════════════════════════════════
+      yPos += 10;
+      doc.setFontSize(9.5);
+      normal(); setTxt(colorText);
+      doc.text('Kepada Yth.', margin + 2, yPos);
+      yPos += 5;
+      bold(); setTxt(colorNavy);
+      doc.setFontSize(10.5);
+      doc.text('Sdr./Sdri. ' + candName, margin + 2, yPos);
+      yPos += 5;
+      doc.setFontSize(9);
+      normal(); setTxt(colorSoft);
+      var addrLines = doc.splitTextToSize(candAddr, contentW - 4);
+      doc.text(addrLines, margin + 2, yPos);
+      yPos += addrLines.length * 5 + 6;
+
+      doc.setFontSize(9.5);
+      normal(); setTxt(colorText);
+      doc.text('Dengan hormat,', margin + 2, yPos);
+      yPos += 6;
+
+      // ════════════════════════════════════════════════════════
+      // PARAGRAF PEMBUKA
+      // ════════════════════════════════════════════════════════
+      var para1 = 'Sehubungan dengan proses seleksi penerimaan karyawan yang telah Anda ikuti, ' +
+        'kami dengan bangga menyampaikan bahwa Anda dinyatakan LULUS seleksi dan ' +
+        offerCompany + ' bermaksud menawarkan kesempatan bergabung bersama kami ' +
+        'dalam kapasitas sebagai berikut:';
+      var para1Lines = doc.splitTextToSize(para1, contentW - 4);
+      doc.text(para1Lines, margin + 2, yPos);
+      yPos += para1Lines.length * 5.5 + 6;
+
+      // ════════════════════════════════════════════════════════
+      // SECTION: DATA DIRI KANDIDAT
+      // ════════════════════════════════════════════════════════
+      checkBreak(52);
+
+      // Header section
+      setFill(colorNavy);
+      doc.roundedRect(margin + 2, yPos - 1.5, contentW - 2, 8, 1.5, 1.5, 'F');
+      doc.setFontSize(8.5);
+      bold(); setTxt([255, 255, 255]);
+      doc.text('DATA DIRI KANDIDAT', margin + 6, yPos + 4.5);
+      yPos += 12;
+
+      var LW = 44; // lebar label kolom
+      var candRows = [
+        ['Nama Lengkap',   candName],
+        ['NIK / KTP',      candNik],
+        ['Tanggal Lahir',  candBirth],
+        ['Email',          candEmail],
+        ['No. Telepon',    candPhone],
+        ['Alamat',         candAddr],
+      ];
+
+      candRows.forEach(function(f, idx) {
+        checkBreak(8);
+        setFill(idx % 2 === 0 ? colorBg : [255, 255, 255]);
+        doc.rect(margin + 2, yPos - 4, contentW - 2, 7, 'F');
+        doc.setFontSize(8.5);
+        bold(); setTxt(colorText);
+        doc.text(f[0], margin + 5, yPos);
+        normal(); setTxt(colorSoft);
+        doc.text(':', margin + LW, yPos);
+        setTxt(colorText);
+        var vLines = doc.splitTextToSize(String(f[1]), contentW - LW - 8);
+        doc.text(vLines, margin + LW + 4, yPos);
+        yPos += vLines.length > 1 ? vLines.length * 5 : 7;
+      });
+
+      yPos += 4;
+
+      // ════════════════════════════════════════════════════════
+      // SECTION: DETAIL PENAWARAN
+      // ════════════════════════════════════════════════════════
+      checkBreak(60);
+
+      setFill(colorPrimary);
+      doc.roundedRect(margin + 2, yPos - 1.5, contentW - 2, 8, 1.5, 1.5, 'F');
+      doc.setFontSize(8.5);
+      bold(); setTxt([255, 255, 255]);
+      doc.text('DETAIL PENAWARAN', margin + 6, yPos + 4.5);
+      yPos += 12;
+
+      var offerRows = [
+        ['Perusahaan',        offerCompany],
+        ['Posisi',            offerPosition],
+        ['Departemen',        offerDept],
+        ['Tanggal Bergabung', offerJoin],
+        ['Kompensasi',        offerSalary],
+      ];
+
+      offerRows.forEach(function(f, idx) {
+        checkBreak(8);
+        // Highlight baris kompensasi
+        var isGaji = f[0] === 'Kompensasi';
+        if (isGaji) {
+          setFill(colorAccent);
+          doc.rect(margin + 2, yPos - 4, contentW - 2, 8, 'F');
+        } else {
+          setFill(idx % 2 === 0 ? colorBg : [255, 255, 255]);
+          doc.rect(margin + 2, yPos - 4, contentW - 2, 7, 'F');
+        }
+        doc.setFontSize(8.5);
+        bold(); setTxt(isGaji ? colorNavy : colorText);
+        doc.text(f[0], margin + 5, yPos);
+        normal(); setTxt(isGaji ? colorNavy : colorSoft);
+        doc.text(':', margin + LW, yPos);
+        if (isGaji) bold();
+        setTxt(isGaji ? colorNavy : colorText);
+        var vLines = doc.splitTextToSize(String(f[1]), contentW - LW - 8);
+        doc.text(vLines, margin + LW + 4, yPos);
+        yPos += vLines.length > 1 ? vLines.length * 5 : (isGaji ? 8 : 7);
+      });
+
+      yPos += 4;
+
+      // ── Benefit ─────────────────────────────────────────────
+      if (offerBenefit.trim()) {
+        checkBreak(24);
+        doc.setFontSize(8.5);
+        bold(); setTxt(colorText);
+        doc.text('Fasilitas & Benefit:', margin + 5, yPos);
+        yPos += 5.5;
+        normal(); setTxt(colorText);
+        var bLines = doc.splitTextToSize(offerBenefit, contentW - 10);
+        bLines.forEach(function(line) {
+          checkBreak(6);
+          doc.text('•  ' + line, margin + 7, yPos);
+          yPos += 5;
+        });
+        yPos += 3;
+      }
+
+      // ── Catatan khusus ──────────────────────────────────────
+      if (offerNotes.trim()) {
+        checkBreak(20);
+        setFill([255, 252, 235]);
+        var noteHeight = Math.ceil(offerNotes.length / 80) * 5 + 14;
+        doc.roundedRect(margin + 2, yPos - 1, contentW - 2, noteHeight, 2, 2, 'F');
+        setDraw([253, 185, 19]);
+        doc.setLineWidth(0.5);
+        doc.roundedRect(margin + 2, yPos - 1, contentW - 2, noteHeight, 2, 2, 'S');
+        doc.setLineWidth(0.2);
+        doc.setFontSize(8);
+        bold(); setTxt([146, 64, 14]);
+        doc.text('Catatan:', margin + 5, yPos + 5);
+        normal(); setTxt([92, 45, 0]);
+        var nLines = doc.splitTextToSize(offerNotes, contentW - 10);
+        nLines.forEach(function(line, i) {
+          doc.text(line, margin + 5, yPos + 11 + i * 5);
+        });
+        yPos += noteHeight + 5;
+      }
+
+      // ════════════════════════════════════════════════════════
+      // PARAGRAF PENUTUP
+      // ════════════════════════════════════════════════════════
+      checkBreak(50);
+
+      var para2 = 'Surat penawaran ini merupakan undangan resmi dari ' + offerCompany +
+        ' untuk bergabung sebagai bagian dari keluarga besar kami. ' +
+        'Apabila Anda menyetujui tawaran ini, mohon menghubungi tim HR kami ' +
+        'untuk proses selanjutnya sebelum tanggal bergabung yang telah ditentukan.';
+      var para2Lines = doc.splitTextToSize(para2, contentW - 4);
+      doc.setFontSize(9.5);
+      normal(); setTxt(colorText);
+      doc.text(para2Lines, margin + 2, yPos);
+      yPos += para2Lines.length * 5.5 + 5;
+
+      var para3 = 'Kami sangat menantikan kehadiran dan kontribusi Anda di ' + offerCompany +
+        '. Apabila terdapat pertanyaan lebih lanjut, jangan ragu untuk menghubungi tim HR kami.';
+      var para3Lines = doc.splitTextToSize(para3, contentW - 4);
+      doc.text(para3Lines, margin + 2, yPos);
+      yPos += para3Lines.length * 5.5 + 8;
+
+      doc.text('Hormat kami,', margin + 2, yPos);
+      yPos += 5;
+      bold(); setTxt(colorNavy);
+      doc.setFontSize(10);
+      doc.text(offerCompany, margin + 2, yPos);
+      yPos += 4.5;
+      doc.setFontSize(8.5);
+      normal(); setTxt(colorSoft);
+      doc.text('Departemen Sumber Daya Manusia', margin + 2, yPos);
+
+      // ════════════════════════════════════════════════════════
+      // AREA TANDA TANGAN
+      // ════════════════════════════════════════════════════════
+      yPos += 10;
+      checkBreak(38);
+
+      var boxH   = 32;
+      var boxW   = 58;
+      var leftX  = margin + 2;
+      var rightX = pageWidth - margin - boxW;
+
+      setDraw(colorBorder);
+      // Kotak HR
+      doc.rect(leftX, yPos, boxW, boxH);
+      doc.setFontSize(8);
+      normal(); setTxt(colorSoft);
+      doc.text('Mengetahui,', leftX + 3, yPos + 5);
+      bold(); setTxt(colorText);
+      doc.text('HRD Manager', leftX + 3, yPos + 10);
+      normal(); setTxt(colorSoft);
+      doc.text(offerCompany.length > 28 ? offerCompany.substring(0, 26) + '...' : offerCompany,
+        leftX + 3, yPos + 14.5);
+      setDraw(colorText);
+      doc.line(leftX + 3, yPos + 26, leftX + boxW - 3, yPos + 26);
+      doc.setFontSize(7.5);
+      normal(); setTxt(colorSoft);
+      doc.text('(                              )', leftX + 3, yPos + 31);
+
+      // Kotak kandidat
+      doc.rect(rightX, yPos, boxW, boxH);
+      doc.setFontSize(8);
+      normal(); setTxt(colorSoft);
+      doc.text('Menyetujui,', rightX + 3, yPos + 5);
+      bold(); setTxt(colorText);
+      doc.text('Kandidat', rightX + 3, yPos + 10);
+      normal(); setTxt(colorSoft);
+      var shortName = candName.length > 28 ? candName.substring(0, 26) + '...' : candName;
+      doc.text(shortName, rightX + 3, yPos + 14.5);
+      setDraw(colorText);
+      doc.line(rightX + 3, yPos + 26, rightX + boxW - 3, yPos + 26);
+      doc.setFontSize(7.5);
+      normal(); setTxt(colorSoft);
+      doc.text('(                              )', rightX + 3, yPos + 31);
+
+      // ════════════════════════════════════════════════════════
+      // FOOTER TIAP HALAMAN
+      // ════════════════════════════════════════════════════════
+      var totalPages = doc.internal.getNumberOfPages();
+      for (var pg = 1; pg <= totalPages; pg++) {
+        doc.setPage(pg);
+        // Navy strip kiri (ulang tiap halaman)
+        setFill(colorNavy);
+        doc.rect(0, 0, 5, pageHeight, 'F');
+        // Garis footer
+        setDraw(colorBorder);
+        doc.setLineWidth(0.3);
+        doc.line(margin, pageHeight - 13, pageWidth - margin, pageHeight - 13);
+        doc.setLineWidth(0.2);
+        doc.setFontSize(7.5);
+        normal(); setTxt(colorSoft);
+        doc.text(offerCompany + '  |  Surat Penawaran Kerja  |  Dokumen Rahasia',
+          margin, pageHeight - 8);
+        doc.text('Hal. ' + pg + ' / ' + totalPages,
+          pageWidth - margin, pageHeight - 8, { align: 'right' });
+      }
+
+      // ════════════════════════════════════════════════════════
+      // SIMPAN FILE
+      // ════════════════════════════════════════════════════════
+      var safeName = candName.replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_');
+      var fileName = 'OfferingLetter_' + safeName + '_' +
+        (candidate.recruitmentId || '').replace(/[^a-zA-Z0-9]/g, '') + '.pdf';
+      doc.save(fileName);
+      showToast('Offering Letter berhasil diunduh: ' + fileName, 'success');
+      if (callback) callback(true);
+
+    } catch (err) {
+      console.error('Offering Letter PDF Error:', err);
+      showToast('Gagal membuat PDF: ' + err.message, 'error');
+      if (callback) callback(false);
+    }
+  }
+</script>

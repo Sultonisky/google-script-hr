@@ -47,3 +47,13 @@ function generateOffboardingId_(timestamp) {
   props.setProperty(key, String(counter));
   return 'OFB-' + datePart + '-' + ('0000' + counter).slice(-4);
 }
+
+// EVAL-YYYYMMDD-XXXX (counter reset harian, dipanggil dalam lock caller)
+function generateEvalId_(timestamp) {
+  var datePart = Utilities.formatDate(timestamp, 'GMT+7', 'yyyyMMdd');
+  var props    = PropertiesService.getScriptProperties();
+  var key      = 'EVAL_COUNTER_' + datePart;
+  var counter  = Number(props.getProperty(key) || '0') + 1;
+  props.setProperty(key, String(counter));
+  return 'EVAL-' + datePart + '-' + ('0000' + counter).slice(-4);
+}

@@ -62,6 +62,7 @@ function doGet(e) {
     "settings",
     "master-data",
     "user-management",
+    "probation",
   ];
   if (spaPages.indexOf(page) !== -1) {
     var titles = {
@@ -71,6 +72,7 @@ function doGet(e) {
       settings: "Pengaturan Portal — MITO HRIS",
       "master-data": "Master Data — MITO HRIS",
       "user-management": "Manajemen Pengguna — MITO HRIS",
+      "probation": "Probation — MITO HRIS",
     };
     return buildTemplate_("views/Dashboard")
       .evaluate()

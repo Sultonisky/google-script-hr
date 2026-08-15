@@ -579,6 +579,28 @@ function getStatusSheetList_(sheetName) {
       employeeId:              String(cell(row, 'Employee ID') || ''),
       processedDate:           fmtDate_(cell(row, 'Processed Date'), 'dd/MM/yyyy HH:mm'),
       processedBy:             String(cell(row, 'Processed By') || ''),
+      offeringCreated:         fmtDate_(cell(row, 'Offering Created'), 'dd/MM/yyyy HH:mm'),
+      offeringUpdated:         fmtDate_(cell(row, 'Offering Updated'), 'dd/MM/yyyy HH:mm'),
+      offeringCreatedBy:       String(cell(row, 'Offering Created By') || ''),
+      offeringUpdatedBy:       String(cell(row, 'Offering Updated By') || ''),
+      offeringCompanyEntity:   String(cell(row, 'Offering Company Entity') || ''),
+      offeringPosition:        String(cell(row, 'Offering Position') || ''),
+      offeringDepartment:      String(cell(row, 'Offering Department') || ''),
+      offeringSalary:          String(cell(row, 'Offering Salary') || ''),
+      offeringJoinDate:        String(cell(row, 'Offering Join Date') || ''),
+      offeringBenefit:         String(cell(row, 'Offering Benefit') || ''),
+      offeringNotes:           String(cell(row, 'Offering Notes') || ''),
+      offeringResponse:        (function() {
+        var v = String(cell(row, 'Offering Response') || '');
+        if (!v && cell(row, 'Offering Created')) v = 'Menunggu';
+        return v;
+      })(),
+      offeringResponseNotes:   String(cell(row, 'Offering Response Notes') || ''),
+      offeringResponseDate:    fmtDate_(cell(row, 'Offering Response Date'), 'dd/MM/yyyy HH:mm'),
+      offeringResponseBy:      String(cell(row, 'Offering Response By') || ''),
+      onboardingStatus:        String(cell(row, 'Onboarding Status') || ''),
+      onboardingDate:          fmtDate_(cell(row, 'Onboarding Date'), 'dd/MM/yyyy HH:mm'),
+      onboardingBy:            String(cell(row, 'Onboarding By') || ''),
     });
   }
 
@@ -695,6 +717,167 @@ function moveStatusCandidate(recruitmentId, fromStatus, toStatus, reason, hrNote
   }
 }
 
+// ============================================================
+// SAVE OFFERING STATUS — simpan/update timestamp, user, dan detail offering
+// Jika belum ada offering → isi Created + CreatedBy + detail offering
+// Jika sudah ada → update Updated + UpdatedBy + detail offering
+// offerData (opsional): { companyEntity, position, department, salary, joinDate, benefit, notes }
+// ============================================================
+function saveOfferingStatus(recruitmentId, generatedBy, offerData) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName(ACCEPTED_SHEET_NAME);
+    if (!sheet || sheet.getLastRow() < 2)
+      return { success: false, message: 'Sheet kandidat_accepted tidak ditemukan.' };
+
+    // Pastikan kolom offering tersedia
+    ensureStatusSheetHeaders_(sheet, ACCEPTED_HEADERS);
+
+    var lastRow = sheet.getLastRow();
+    var lastCol = sheet.getLastColumn();
+    var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0]
+      .map(function(h) { return String(h).trim(); });
+
+    var colIndex = {};
+    headers.forEach(function(h, i) { colIndex[h] = i + 1; }); // 1-based
+
+    var idCol              = colIndex['Recruitment ID'];
+    var offeringCreatedCol = colIndex['Offering Created'];
+    var offeringUpdatedCol = colIndex['Offering Updated'];
+    var offeringCreatedByCol = colIndex['Offering Created By'];
+    var offeringUpdatedByCol = colIndex['Offering Updated By'];
+    var companyCol = colIndex['Offering Company Entity'];
+    var posCol     = colIndex['Offering Position'];
+    var deptCol    = colIndex['Offering Department'];
+    var salaryCol  = colIndex['Offering Salary'];
+    var joinCol    = colIndex['Offering Join Date'];
+    var benefitCol = colIndex['Offering Benefit'];
+    var notesCol   = colIndex['Offering Notes'];
+    var respCol    = colIndex['Offering Response'];
+
+    if (!idCol)
+      return { success: false, message: 'Kolom Recruitment ID tidak ditemukan.' };
+
+    var idValues = sheet.getRange(2, idCol, lastRow - 1, 1).getValues();
+    var targetRow = -1;
+    for (var r = 0; r < idValues.length; r++) {
+      if (String(idValues[r][0]) === String(recruitmentId)) {
+        targetRow = r + 2;
+        break;
+      }
+    }
+    if (targetRow === -1)
+      return { success: false, message: 'Recruitment ID tidak ditemukan: ' + recruitmentId };
+
+    var nowStr = Utilities.formatDate(new Date(), 'GMT+7', 'yyyy-MM-dd HH:mm:ss');
+    var user   = generatedBy || Session.getActiveUser().getEmail() || 'HR Dashboard';
+
+    offerData = offerData || {};
+    // Simpan detail offering (selalu ditulis / diperbarui)
+    if (companyCol) sheet.getRange(targetRow, companyCol).setValue(offerData.companyEntity || '');
+    if (posCol)     sheet.getRange(targetRow, posCol).setValue(offerData.position || '');
+    if (deptCol)    sheet.getRange(targetRow, deptCol).setValue(offerData.department || '');
+    if (salaryCol)  sheet.getRange(targetRow, salaryCol).setValue(offerData.salary || '');
+    if (joinCol)    sheet.getRange(targetRow, joinCol).setValue(offerData.joinDate || '');
+    if (benefitCol) sheet.getRange(targetRow, benefitCol).setValue(offerData.benefit || '');
+    if (notesCol)   sheet.getRange(targetRow, notesCol).setValue(offerData.notes || '');
+
+    // Cek apakah sudah ada offering sebelumnya (Offering Created sudah terisi)
+    var existingCreated = '';
+    if (offeringCreatedCol) {
+      existingCreated = sheet.getRange(targetRow, offeringCreatedCol).getValue();
+    }
+
+    if (!existingCreated || String(existingCreated).trim() === '') {
+      // Belum ada offering → isi Created + CreatedBy + default response "Menunggu"
+      if (offeringCreatedCol)     sheet.getRange(targetRow, offeringCreatedCol).setValue(nowStr);
+      if (offeringCreatedByCol)   sheet.getRange(targetRow, offeringCreatedByCol).setValue(user);
+      if (respCol) {
+        var curResp = sheet.getRange(targetRow, respCol).getValue();
+        if (!curResp || String(curResp).trim() === '')
+          sheet.getRange(targetRow, respCol).setValue('Menunggu');
+      }
+      writeAuditLog_(recruitmentId, 'Offering Letter Created', 'Offering Created', '-', nowStr + ' by ' + user);
+      return { success: true, recruitmentId: recruitmentId, action: 'created', created: nowStr, createdBy: user };
+    } else {
+      // Sudah ada offering → update Updated + UpdatedBy
+      if (offeringUpdatedCol)     sheet.getRange(targetRow, offeringUpdatedCol).setValue(nowStr);
+      if (offeringUpdatedByCol)   sheet.getRange(targetRow, offeringUpdatedByCol).setValue(user);
+      writeAuditLog_(recruitmentId, 'Offering Letter Updated', 'Offering Updated', '-', nowStr + ' by ' + user);
+      return { success: true, recruitmentId: recruitmentId, action: 'updated', updated: nowStr, updatedBy: user };
+    }
+  } catch (err) {
+    return { success: false, message: err.message };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ============================================================
+// SAVE OFFERING RESPONSE — update respons kandidat terhadap
+// offering letter. Dipanggil manual oleh HR.
+// response: "Menunggu" | "Diterima" | "Ditolak"
+// ============================================================
+function saveOfferingResponse(recruitmentId, response, notes, updatedBy) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName(ACCEPTED_SHEET_NAME);
+    if (!sheet || sheet.getLastRow() < 2)
+      return { success: false, message: 'Sheet kandidat_accepted tidak ditemukan.' };
+
+    ensureStatusSheetHeaders_(sheet, ACCEPTED_HEADERS);
+
+    var lastRow = sheet.getLastRow();
+    var lastCol = sheet.getLastColumn();
+    var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0]
+      .map(function(h) { return String(h).trim(); });
+
+    var colIndex = {};
+    headers.forEach(function(h, i) { colIndex[h] = i + 1; });
+
+    var idCol          = colIndex['Recruitment ID'];
+    var respCol        = colIndex['Offering Response'];
+    var respNotesCol   = colIndex['Offering Response Notes'];
+    var respDateCol    = colIndex['Offering Response Date'];
+    var respByCol      = colIndex['Offering Response By'];
+
+    if (!idCol) return { success: false, message: 'Kolom Recruitment ID tidak ditemukan.' };
+
+    var idValues  = sheet.getRange(2, idCol, lastRow - 1, 1).getValues();
+    var targetRow = -1;
+    for (var r = 0; r < idValues.length; r++) {
+      if (String(idValues[r][0]) === String(recruitmentId)) {
+        targetRow = r + 2;
+        break;
+      }
+    }
+    if (targetRow === -1)
+      return { success: false, message: 'Recruitment ID tidak ditemukan: ' + recruitmentId };
+
+    var nowStr = Utilities.formatDate(new Date(), 'GMT+7', 'yyyy-MM-dd HH:mm:ss');
+    var user   = updatedBy || Session.getActiveUser().getEmail() || 'HR Dashboard';
+
+    if (respCol)      sheet.getRange(targetRow, respCol).setValue(response || 'Menunggu');
+    if (respNotesCol) sheet.getRange(targetRow, respNotesCol).setValue(notes || '');
+    if (respDateCol)  sheet.getRange(targetRow, respDateCol).setValue(nowStr);
+    if (respByCol)    sheet.getRange(targetRow, respByCol).setValue(user);
+
+    writeAuditLog_(recruitmentId, 'Offering Response', 'Offering Response',
+      '-', (response || 'Menunggu') + (notes ? ' — ' + notes : '') + ' by ' + user);
+
+    return { success: true, recruitmentId: recruitmentId, response: response, updatedBy: user };
+  } catch (err) {
+    return { success: false, message: err.message };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ---- Simpan HR Notes (tanpa ubah status) ----
 function saveHrNotes(recruitmentId, hrNotes) {
   var lock = LockService.getScriptLock();
   lock.waitLock(10000);

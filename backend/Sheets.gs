@@ -411,4 +411,23 @@ function setupSpreadsheet() {
   getOrCreateOffboardingSheet_();
   getOrCreateAuditLogSheet_();
   getOrCreateUsersSheet_();
+  getOrCreateProbationEvalSheet_();
+}
+
+// ============= Evaluasi_Probation =============
+function getOrCreateProbationEvalSheet_() {
+  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(PROBATION_EVAL_SHEET_NAME);
+  if (!sheet) sheet = ss.insertSheet(PROBATION_EVAL_SHEET_NAME);
+
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(PROBATION_EVAL_HEADERS);
+    sheet.getRange(1, 1, 1, PROBATION_EVAL_HEADERS.length)
+      .setFontWeight('bold').setBackground('#7c3aed').setFontColor('#FFFFFF');
+    sheet.setFrozenRows(1);
+    sheet.autoResizeColumns(1, PROBATION_EVAL_HEADERS.length);
+  } else {
+    ensureStatusSheetHeaders_(sheet, PROBATION_EVAL_HEADERS);
+  }
+  return sheet;
 }

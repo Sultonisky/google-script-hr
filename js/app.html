@@ -266,6 +266,9 @@
     // 3b. Init status pages (Hold / Accepted / Blacklist)
     if (typeof initStatusPages === "function") initStatusPages();
 
+    // 3c. Init probation page
+    if (typeof initProbationPage === "function") initProbationPage();
+
     // 4. SPA Router — after dashboard init, set up hash-based navigation
     if (typeof SPA !== "undefined" && typeof SPA.init === "function") {
       SPA.init();

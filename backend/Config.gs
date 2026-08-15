@@ -226,6 +226,24 @@ HOLD_HEADERS.forEach(function (h, i) {
 var ACCEPTED_HEADERS = SHEET_HEADERS.concat(EXTRA_HEADERS).concat([
   "Processed Date",
   "Processed By",
+  "Offering Created",        // timestamp saat offering pertama dibuat
+  "Offering Updated",        // timestamp jika ada update offering
+  "Offering Created By",     // user HR yang pertama membuat offering
+  "Offering Updated By",     // user HR yang terakhir update offering
+  "Offering Company Entity", // entitas perusahaan penawaran
+  "Offering Position",       // posisi yang ditawarkan
+  "Offering Department",     // departemen penawaran
+  "Offering Salary",         // gaji ditawarkan
+  "Offering Join Date",      // tanggal bergabung penawaran
+  "Offering Benefit",        // benefit/fasilitas
+  "Offering Notes",          // catatan tambahan offering
+  "Offering Response",       // "Menunggu" | "Diterima" | "Ditolak"
+  "Offering Response Notes", // catatan HR saat update respons
+  "Offering Response Date",  // timestamp update respons
+  "Offering Response By",    // user HR yang update respons
+  "Onboarding Status",       // "Belum Onboarding" | "Probation" | "Active"
+  "Onboarding Date",         // timestamp proses onboarding dilakukan
+  "Onboarding By",           // user HR yang proses onboarding
 ]);
 
 var ACCEPTED_COL = {};
@@ -276,7 +294,41 @@ OFFBOARDING_HEADERS.forEach(function (h, i) {
 });
 
 // ============================================================
-// MASTER DATA CONFIGURATION
+// SHEET: Evaluasi_Probation
+// Purpose: History evaluasi karyawan probation (bisa multiple per karyawan)
+// ============================================================
+var PROBATION_EVAL_SHEET_NAME = 'Evaluasi_Probation';
+
+var PROBATION_EVAL_HEADERS = [
+  'Eval ID',           // 1  — auto-generate
+  'Employee ID',       // 2
+  'Recruitment ID',    // 3
+  'Full Name',         // 4
+  'Position',          // 5
+  'Department',        // 6
+  'Contract Start',    // 7
+  'Contract End',      // 8
+  'Eval Date',         // 9  — tanggal evaluasi dilakukan
+  'Skor Kinerja',      // 10 — 1-10
+  'Skor Kedisiplinan', // 11 — 1-10
+  'Skor Komunikasi',   // 12 — 1-10
+  'Skor Inisiatif',    // 13 — 1-10
+  'Skor Teamwork',     // 14 — 1-10
+  'Nilai Rata-rata',   // 15 — auto-hitung (avg 5 skor)
+  'Keputusan',         // 16 — "Lulus → Karyawan Tetap" | "Tidak Lulus → Perpanjang Probation"
+  'Durasi Perpanjang', // 17 — diisi jika Tidak Lulus (e.g. "3 Bulan")
+  'Kontrak Baru Start',// 18 — diisi jika perpanjang
+  'Kontrak Baru End',  // 19 — diisi jika perpanjang
+  'Catatan Evaluator', // 20
+  'Evaluator',         // 21 — email HR yang evaluasi
+  'Created At',        // 22
+  'Status SK',         // 23 — "Pending" | "SK Diterbitkan"
+];
+
+var PROBATION_EVAL_COL = {};
+PROBATION_EVAL_HEADERS.forEach(function(h, i) {
+  PROBATION_EVAL_COL[h] = i + 1;
+});
 // ============================================================
 var MASTER_DATA_HEADERS = [
   "ID",
@@ -384,7 +436,7 @@ var DEFAULT_MASTER_DATA = {
   ],
   gender: ["Laki-laki", "Perempuan"],
   company_entity: [
-    "MITO Group",
+    "PT Mahakarya Sukses Indonesia",
     "PT Stein Perkasa Internasional",
     "PT Perkasa Injeksi Indonesia",
     "PT Mitra Elektro Perkasa",
