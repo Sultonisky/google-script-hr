@@ -19,9 +19,9 @@ function generateRecruitmentId_(timestamp) {
   }
 }
 
-// EMP-YYYY-0001 (counter reset per tahun)
+// YYYYMMDDNN (counter reset harian, 2 digit sequence)
 function generateEmployeeId_(timestamp) {
-  var datePart = Utilities.formatDate(timestamp, 'GMT+7', 'yyyy');
+  var datePart = Utilities.formatDate(timestamp, 'GMT+7', 'yyyyMMdd');
   var props    = PropertiesService.getScriptProperties();
   var key      = 'EMP_COUNTER_' + datePart;
 
@@ -30,7 +30,7 @@ function generateEmployeeId_(timestamp) {
   try {
     var counter = Number(props.getProperty(key) || '0') + 1;
     props.setProperty(key, String(counter));
-    return 'EMP-' + datePart + '-' + ('0000' + counter).slice(-4);
+    return datePart + ('00' + counter).slice(-2);
   } finally {
     lock.releaseLock();
   }

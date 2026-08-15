@@ -29,10 +29,6 @@
   var progressMessage      = document.getElementById('progressMessage');
   var phoneInput           = document.getElementById('phone');
   var salaryInput          = document.getElementById('salary');
-  var employeeTypeSelect   = document.getElementById('employee_type_display');
-  var vendorSection        = document.getElementById('vendorSection');
-  var vendorInput          = document.getElementById('outsource_vendor');
-  var contractDurationSel  = document.getElementById('contract_duration');
 
   var nikDebounceTimer       = null;
   var nikCheckTimer          = null;
@@ -61,51 +57,6 @@
   if(isAlreadySubmitted()){ showAlreadySubmittedPage(); }
 
   // ============================================================
-  // EMPLOYEE TYPE — show/hide vendor section & contract required
-  // ============================================================
-  function handleEmployeeTypeChange() {
-    var type = getEmployeeType();
-    var isOutsource   = type === 'Outsource';
-    var needsContract = type === 'Outsource' || type === 'PKWT' || type === 'Intern';
-
-    // Vendor section: show only for Outsource
-    if (vendorSection) vendorSection.style.display = isOutsource ? 'block' : 'none';
-
-    // Vendor field: required only for Outsource
-    if (vendorInput) {
-      vendorInput.required = isOutsource;
-      var vr = document.getElementById('vendorRequired');
-      if (vr) vr.style.display = isOutsource ? 'inline' : 'none';
-    }
-
-    // Contract duration & tanggal kontrak: required untuk Outsource & PKWT
-    if (contractDurationSel) {
-      contractDurationSel.required = (type === 'Outsource' || type === 'PKWT');
-      var cr = document.getElementById('contractDurationRequired');
-      if (cr) cr.style.display = (type === 'Outsource' || type === 'PKWT') ? 'inline' : 'none';
-    }
-    var csEl = document.getElementById('contract_start');
-    var ceEl = document.getElementById('contract_end');
-    if (csEl) csEl.required = (type === 'Outsource' || type === 'PKWT');
-    if (ceEl) ceEl.required = (type === 'Outsource' || type === 'PKWT');
-
-    // Contract date fields: show for time-limited contracts
-    var csg = document.getElementById('contractStartGroup');
-    var ceg = document.getElementById('contractEndGroup');
-    var cdg = document.getElementById('contractDurationGroup');
-    if (csg) csg.style.display = needsContract ? 'block' : 'none';
-    if (ceg) ceg.style.display = needsContract ? 'block' : 'none';
-    if (cdg) cdg.style.display = needsContract ? 'block' : 'none';
-
-    updateProgress();
-  }
-
-  var employeeTypeHidden = document.getElementById('employee_type');
-  function getEmployeeType() {
-    return employeeTypeHidden ? employeeTypeHidden.value : 'Outsource';
-  }
-
-  // ============================================================
   // FIELD VALIDATION HELPER
   // ============================================================
   function validateField(el){
@@ -127,25 +78,15 @@
 
   // ============================================================
   // PROGRESS & STRUCTURED VALIDATION
-  // Validasi dihitung per seksi. Checkbox persetujuan adalah
-  // LANGKAH TERAKHIR: hanya bisa dicentang setelah seluruh seksi
-  // lengkap. Tombol submit aktif hanya jika semua seksi lengkap
-  // DAN checkbox persetujuan dicentang.
+  // All fields are required
   // ============================================================
   var FORM_SECTIONS = [
-    { id:'sectionPersonal',   badgeId:'secBadgePersonal',   fields:['nik','full_name','birth_date','age','gender','marital_status','education'] },
-    { id:'sectionContact',    badgeId:'secBadgeContact',    fields:['email','phone','province','city','address'], district:true },
-    { id:'sectionEmployment', badgeId:'secBadgeEmployment', fields:['company_entity','employee_type','position','employment_status','join_date','salary','salary_type'], contract:true },
-    { id:'vendorSection',     badgeId:'secBadgeVendor',     fields:['outsource_vendor'], vendorOnly:true },
+    { id:'sectionPersonal',   badgeId:'secBadgePersonal',   fields:['nik','full_name','birth_date','birth_place','gender','religion','blood_type','marital_status'] },
+    { id:'sectionContact',    badgeId:'secBadgeContact',    fields:['email','working_email','phone','province','city','district','address','address_residential'] },
+    { id:'sectionEmployment', badgeId:'secBadgeEmployment', fields:['branch_name','division','department','area_kerja','cost_center','lokasi_kerja','position','job_level','employee_status','join_date','contract_end_date','direct_superior','indirect_superior'] },
+    { id:'sectionBank',      badgeId:'secBadgeBank',       fields:['bank_account','bank_account_holder','npwp','ptkp_status','bpjs_ketenagakerjaan','bpjs_kesehatan'] },
   ];
 
-  function isVendorRequired(){
-    return getEmployeeType() === 'Outsource';
-  }
-  function isContractRequired(){
-    var t = getEmployeeType();
-    return t === 'Outsource' || t === 'PKWT';
-  }
   function isDistrictValid(){
     if (districtManualWrap && districtManualWrap.style.display !== 'none') {
       return (districtManualInput.value || '').trim() !== '';
@@ -155,25 +96,21 @@
   function isFieldValid(el){
     if (!el) return false;
     if (el.type === 'checkbox') return !!el.checked;
+    if (el.tagName === 'SELECT') {
+      return el.value && el.value.trim() !== '';
+    }
     var v = (el.value || '').trim();
     if (v === '') return false;
     if (el.checkValidity) return el.checkValidity();
     return true;
   }
   function getSectionFieldIds(sec){
-    if (sec.vendorOnly && !isVendorRequired()) return [];
-    var ids = sec.fields.slice();
-    if (sec.district) ids.push('__district__');
-    if (sec.contract && isContractRequired()) {
-      ids = ids.concat(['contract_start','contract_end','contract_duration']);
-    }
-    return ids;
+    return sec.fields.slice();
   }
   function isSectionComplete(sec){
     var ids = getSectionFieldIds(sec);
     for (var i = 0; i < ids.length; i++) {
       var id = ids[i];
-      if (id === '__district__') { if (!isDistrictValid()) return false; continue; }
       if (!isFieldValid(document.getElementById(id))) return false;
     }
     return true;
@@ -182,9 +119,7 @@
     var ids = getSectionFieldIds(sec);
     var valid = 0;
     for (var i = 0; i < ids.length; i++) {
-      var id = ids[i];
-      if (id === '__district__') { if (isDistrictValid()) valid++; continue; }
-      var el = document.getElementById(id);
+      var el = document.getElementById(ids[i]);
       if (el && isFieldValid(el)) valid++;
     }
     return { total: ids.length, valid: valid };
@@ -199,13 +134,12 @@
   }
   function updateFormState(){
     var allComplete = true;
-    FORM_SECTIONS.forEach(function(sec){
+    FORM_SECTIONS.forEach(function (sec) {
       var done = isSectionComplete(sec);
       if (!done) allComplete = false;
       setSectionBadge(sec, done);
     });
 
-    // Checkbox persetujuan = langkah TERAKHIR
     agreementCheckbox.disabled = !allComplete;
     if (!allComplete) {
       agreementCheckbox.checked = false;
@@ -219,7 +153,7 @@
 
   var progressMessages = [
     {min:0,  text:'Mulai mengisi formulir...'},
-    {min:25, text:'Awal yang bagus! \uD83C\uDF89'},
+    {min:25, text:'Awal yang bagus!'},
     {min:50, text:'Form sudah setengah selesai.'},
     {min:75, text:'Hampir selesai. Centang persetujuan di langkah terakhir.'},
     {min:100,text:'Semua data telah lengkap. Silakan kirim.'}
@@ -231,7 +165,7 @@
       var c = countSection(sec);
       total += c.total; valid += c.valid;
     });
-    total += 1; // langkah terakhir: checkbox persetujuan
+    total += 1;
     if (agreementCheckbox.checked) valid += 1;
 
     var percent = total === 0 ? 0 : Math.min(100, Math.round((valid / total) * 100));
@@ -379,13 +313,12 @@
       .forEach(function(c){ citySelect.innerHTML+='<option value="'+c+'">'+REGIONS.cities[c]+'</option>'; });
   }
   function resetDistrict(){
-    districtInput.innerHTML='<option value="">-- Select City first --</option>';
+    districtInput.innerHTML='<option value="">-- Select District (optional) --</option>';
     districtInput.disabled=true; districtInput.value='';
     districtInput.classList.remove('is-valid','is-invalid');
     districtLoading.style.display='none';
     districtManualWrap.style.display='none';
-    districtManualInput.value=''; districtManualInput.required=false;
-    districtInput.required=true;
+    districtManualInput.value='';
   }
   function loadDistricts(cityCode){
     if(!cityCode){ resetDistrict(); return; }
@@ -394,7 +327,7 @@
     }
     districtInput.innerHTML='<option value="">Memuat kecamatan...</option>';
     districtInput.disabled=true; districtLoading.style.display='block';
-    districtManualWrap.style.display='none'; districtManualInput.required=false; districtInput.required=true;
+    districtManualWrap.style.display='none'; districtInput.required=false;
     google.script.run
       .withSuccessHandler(function(list){ districtLoading.style.display='none'; if(list&&list.length>0) populateDistrictOptions(list); else showDistrictManual(); })
       .withFailureHandler(function(){ districtLoading.style.display='none'; showDistrictManual(); })
@@ -403,37 +336,21 @@
   function populateDistrictOptions(list){
     var html='<option value="">-- Select District --</option>';
     list.forEach(function(item){ html+='<option value="'+item.nama+'">'+item.nama+'</option>'; });
-    districtInput.innerHTML=html; districtInput.disabled=false; districtInput.required=true;
-    districtManualWrap.style.display='none'; districtManualInput.required=false;
+    districtInput.innerHTML=html; districtInput.disabled=false;
   }
   function showDistrictManual(){
-    districtInput.innerHTML='<option value="">-</option>'; districtInput.disabled=true; districtInput.required=false;
-    districtManualWrap.style.display='block'; districtManualInput.required=true; districtManualInput.focus();
+    districtInput.innerHTML='<option value="">-</option>'; districtInput.disabled=true;
+    districtManualWrap.style.display='block'; districtManualInput.focus();
   }
 
   provinceSelect.addEventListener('change',function(){ populateCities(this.value); validateField(this); updateProgress(); });
   citySelect.addEventListener('change',    function(){ validateField(this); loadDistricts(this.value); updateProgress(); });
-  districtInput.addEventListener('change', function(){ validateField(this); updateProgress(); });
-  districtManualInput.addEventListener('input',function(){
-    this.classList.toggle('is-valid',this.value.trim()!=='');
-    if(this.value.trim()!=='') this.classList.remove('is-invalid');
-    updateProgress();
-  });
-  districtManualInput.addEventListener('blur',function(){
-    if(this.value.trim()!=='') this.classList.add('is-valid');
-    else if(this.required) this.classList.add('is-invalid');
-  });
 
   // ============================================================
   // PHONE & SALARY FORMATTING
   // ============================================================
   phoneInput.addEventListener('input',function(){
     this.value=this.value.replace(/[^0-9]/g,'').substring(0,13);
-    validateField(this); updateProgress();
-  });
-  salaryInput.addEventListener('input',function(){
-    var raw=this.value.replace(/[^0-9]/g,'');
-    this.value=raw.length>0?parseInt(raw,10).toLocaleString('id-ID'):'';
     validateField(this); updateProgress();
   });
 
@@ -477,37 +394,43 @@
 
     var enteredNIK   = nikInput.value.trim();
     var phoneVal     = phoneInput.value.replace(/[^0-9]/g,'');
-    var salaryVal    = salaryInput.value.replace(/[^0-9]/g,'');
     var cityCode     = citySelect.value;
     var cityName     = REGIONS.cities[cityCode] || cityCode;
-    var districtValue = districtInput.disabled ? districtManualInput.value.trim() : districtInput.value.trim();
 
     var formData = {
       full_name:          document.getElementById('full_name').value.trim(),
       nik:                enteredNIK,
       birth_date:         document.getElementById('birth_date').value,
-      age:                document.getElementById('age').value,
+      birth_place:        document.getElementById('birth_place').value.trim(),
       gender:             document.getElementById('gender').value,
+      religion:           document.getElementById('religion').value,
+      blood_type:         document.getElementById('blood_type').value,
       marital_status:     document.getElementById('marital_status').value,
       email:              document.getElementById('email').value.trim(),
+      working_email:      document.getElementById('working_email').value.trim(),
       phone:              '62' + phoneVal,
       address:            document.getElementById('address').value.trim(),
-      city:               cityName + (districtValue ? ', Kec. ' + districtValue : ''),
-      education:          document.getElementById('education').value,
-      work_experience:    document.getElementById('work_experience').value,
-      company_entity:     document.getElementById('company_entity').value,
-      employee_type:      document.getElementById('employee_type').value,
-      department:         document.getElementById('department').value.trim(),
+      address_residential: document.getElementById('address_residential').value.trim(),
+      branch_name:        document.getElementById('branch_name').value,
+      division:           document.getElementById('division').value.trim(),
+      department:         document.getElementById('department').value,
+      area_kerja:         document.getElementById('area_kerja').value,
+      cost_center:        document.getElementById('cost_center').value.trim(),
+      lokasi_kerja:       document.getElementById('lokasi_kerja').value.trim(),
       position:           document.getElementById('position').value.trim(),
-      employment_status:  document.getElementById('employment_status').value,
+      job_level:          document.getElementById('job_level').value,
+      employee_status:    document.getElementById('employee_status').value,
       join_date:          document.getElementById('join_date').value,
-      contract_start:     document.getElementById('contract_start') ? document.getElementById('contract_start').value : '',
-      contract_end:       document.getElementById('contract_end')   ? document.getElementById('contract_end').value   : '',
-      contract_duration:  document.getElementById('contract_duration') ? document.getElementById('contract_duration').value : '',
-      salary:             salaryVal,
-      salary_type:        document.getElementById('salary_type').value,
-      outsource_vendor:   document.getElementById('outsource_vendor') ? document.getElementById('outsource_vendor').value.trim() : '',
-      recruitment_source: document.getElementById('recruitment_source') ? document.getElementById('recruitment_source').value : ''
+      contract_end_date:  document.getElementById('contract_end_date').value,
+      direct_superior:    document.getElementById('direct_superior').value.trim(),
+      indirect_superior:  document.getElementById('indirect_superior').value.trim(),
+      bank_name:          document.getElementById('bank_name').value,
+      bank_account:       document.getElementById('bank_account').value.trim(),
+      bank_account_holder: document.getElementById('bank_account_holder').value.trim(),
+      npwp:               document.getElementById('npwp').value.trim(),
+      ptkp_status:        document.getElementById('ptkp_status').value,
+      bpjs_ketenagakerjaan: document.getElementById('bpjs_ketenagakerjaan').value.trim(),
+      bpjs_kesehatan:     document.getElementById('bpjs_kesehatan').value.trim(),
     };
 
     function doSubmit(){
@@ -527,7 +450,7 @@
         .simpanDataOutsource(formData);
     }
 
-    // Duplicate NIK check against Employee sheet
+    // Duplicate NIK check
     google.script.run
       .withSuccessHandler(function(list){
         var isDup=list&&list.some(function(c){ return String(c.nik||'').replace(/'/g,'').trim()===enteredNIK; });
@@ -541,17 +464,6 @@
       })
       .withFailureHandler(function(){ doSubmit(); })
       .getOutsourceList();
-  });
-
-  // ============================================================
-  // REAL-TIME VALIDATION
-  // ============================================================
-  var inputs=form.querySelectorAll('input[required],select[required],textarea[required]');
-  inputs.forEach(function(input){
-    if(input.id==='birth_date') return;
-    input.addEventListener('blur',   function(){ validateField(this); updateProgress(); });
-    input.addEventListener('input',  function(){ validateField(this); updateProgress(); });
-    input.addEventListener('change', function(){ validateField(this); updateProgress(); });
   });
 
   // ============================================================
@@ -576,7 +488,6 @@
             });
             sel.innerHTML = opts;
           }
-          handleEmployeeTypeChange();
         }
       })
       .withFailureHandler(function() {})
@@ -584,33 +495,23 @@
   }
 
   // ============================================================
-  // DYNAMIC-REQUIRED FIELDS — explicit listeners
-  // Field-field ini tidak punya attr `required` di HTML saat load
-  // (di-set dinamis via JS), sehingga querySelectorAll('input[required]')
-  // di atas tidak menangkap mereka. Listener di-attach secara eksplisit.
+  // ATTACH VALIDATION LISTENERS TO ALL FORM FIELDS
   // ============================================================
-  (function attachDynamicFieldListeners(){
-    var dynamicFields = [
-      'outsource_vendor',   // required hanya saat Outsource
-      'contract_number',    // opsional tapi perlu update progress
-      'contract_start',     // required saat Outsource/PKWT
-      'contract_end',       // required saat Outsource/PKWT
-      'contract_duration'   // required saat Outsource/PKWT
-    ];
-    dynamicFields.forEach(function(fid){
-      var el = document.getElementById(fid);
-      if (!el) return;
-      ['input', 'blur', 'change'].forEach(function(ev){
-        el.addEventListener(ev, function(){ validateField(this); updateProgress(); });
-      });
+  function attachFormFieldListeners() {
+    var allInputs = form.querySelectorAll('input, select, textarea');
+    allInputs.forEach(function(el) {
+      if (el.id === 'birth_date') return;
+      el.addEventListener('blur', function() { validateField(el); updateProgress(); });
+      el.addEventListener('input', function() { validateField(el); updateProgress(); });
+      el.addEventListener('change', function() { validateField(el); updateProgress(); });
     });
-  })();
+  }
 
   // ============================================================
   // INIT
   // ============================================================
   populateMasterDropdowns();
   populateProvinces();
-  handleEmployeeTypeChange(); // set initial state (vendor hidden, contract optional)
+  attachFormFieldListeners();
   updateProgress();
 </script>
