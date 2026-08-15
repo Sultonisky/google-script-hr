@@ -83,22 +83,32 @@
                 </div>
               </div>
               <div class="col-md-6">
+                <label class="form-label" for="birth_place"
+                  >Tempat Lahir <span class="required">*</span></label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="birth_place"
+                  name="birth_place"
+                  required
+                  placeholder="Contoh: Jakarta"
+                />
+                <div class="invalid-feedback">Tempat lahir wajib diisi.</div>
+              </div>
+              <div class="col-md-6">
                 <label class="form-label" for="age"
-                  >Usia <span class="required">*</span></label
+                  >Usia</label
                 >
                 <input
                   type="number"
                   class="form-control"
                   id="age"
                   name="age"
-                  required
-                  min="17"
-                  max="100"
                   readonly
                   style="background-color: #f8f9fa; cursor: default"
                   placeholder="Otomatis dari Tanggal Lahir"
                 />
-                <div class="invalid-feedback">Usia minimal 17 tahun.</div>
               </div>
               <div class="col-md-6">
                 <label class="form-label" for="gender"
@@ -110,6 +120,33 @@
                   <option value="Perempuan">Perempuan</option>
                 </select>
                 <div class="invalid-feedback">Jenis kelamin wajib dipilih.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="religion"
+                  >Agama <span class="required">*</span></label
+                >
+                <select class="form-select" id="religion" name="religion" required>
+                  <option value="">-- Pilih Agama --</option>
+                  <option value="Islam">Islam</option>
+                  <option value="Kristen">Kristen</option>
+                  <option value="Katolik">Katolik</option>
+                  <option value="Hindu">Hindu</option>
+                  <option value="Buddha">Buddha</option>
+                </select>
+                <div class="invalid-feedback">Agama wajib dipilih.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="blood_type"
+                  >Golongan Darah <span class="required">*</span></label
+                >
+                <select class="form-select" id="blood_type" name="blood_type" required>
+                  <option value="">-- Pilih Golongan Darah --</option>
+                  <option value="A">A</option>
+                  <option value="B">B</option>
+                  <option value="AB">AB</option>
+                  <option value="O">O</option>
+                </select>
+                <div class="invalid-feedback">Golongan darah wajib dipilih.</div>
               </div>
               <div class="col-md-6">
                 <label class="form-label" for="marital_status"
@@ -130,46 +167,7 @@
                   Status pernikahan wajib dipilih.
                 </div>
               </div>
-              <div class="col-md-6">
-                <label class="form-label" for="education"
-                  >Pendidikan Terakhir <span class="required">*</span></label
-                >
-                <select
-                  class="form-select"
-                  id="education"
-                  name="education"
-                  required
-                >
-                  <option value="">-- Pilih Pendidikan --</option>
-                  <option value="SD">SD</option>
-                  <option value="SMP">SMP</option>
-                  <option value="SMA/SMK">SMA/SMK</option>
-                  <option value="D3">D3</option>
-                  <option value="S1">S1</option>
-                  <option value="S2">S2</option>
-                  <option value="S3">S3</option>
-                </select>
-                <div class="invalid-feedback">
-                  Pendidikan terakhir wajib dipilih.
-                </div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label" for="work_experience"
-                  >Pengalaman Kerja</label
-                >
-                <select
-                  class="form-select"
-                  id="work_experience"
-                  name="work_experience"
-                >
-                  <option value="">-- Pilih Pengalaman Kerja --</option>
-                  <option value="Fresh Graduate">Fresh Graduate</option>
-                  <option value="1-2 Tahun">1-2 Tahun</option>
-                  <option value="3-5 Tahun">3-5 Tahun</option>
-                  <option value="5-10 Tahun">5-10 Tahun</option>
-                  <option value="Lebih dari 10 Tahun">Lebih dari 10 Tahun</option>
-                </select>
-              </div>
+
             </div>
           </div>
         </div>
@@ -190,7 +188,7 @@
             <div class="row g-3">
               <div class="col-md-6">
                 <label class="form-label" for="email"
-                  >Alamat Email <span class="required">*</span></label
+                  >Email Pribadi <span class="required">*</span></label
                 >
                 <input
                   type="email"
@@ -205,6 +203,28 @@
                 </div>
                 <div
                   id="emailValidation"
+                  class="email-validation"
+                  style="display: none"
+                ></div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="working_email"
+                  >Email Kantor (MITO) <span class="required">*</span></label
+                >
+                <input
+                  type="email"
+                  class="form-control"
+                  id="working_email"
+                  name="working_email"
+                  required
+                  autocomplete="off"
+                  placeholder="nama@mitogroup.co.id"
+                />
+                <div class="invalid-feedback">
+                  Email kantor wajib diisi.
+                </div>
+                <div
+                  id="workingEmailValidation"
                   class="email-validation"
                   style="display: none"
                 ></div>
@@ -267,43 +287,25 @@
                     id="district"
                     name="district"
                     required
-                    disabled
                   >
-                    <option value="">-- Select City first --</option>
+                    <option value="">-- Select District --</option>
                   </select>
                 </div>
-                <div class="invalid-feedback">Kecamatan wajib dipilih.</div>
                 <div
                   id="districtLoading"
-                  style="
-                    display: none;
-                    font-size: 12px;
-                    color: var(--color-text-soft);
-                    margin-top: 5px;
-                  "
+                  style="display: none; font-size: 12px; color: var(--color-text-soft); margin-top: 5px;"
                 >
-                  <span
-                    class="spinner-border spinner-border-sm me-1"
-                    role="status"
-                  ></span>
+                  <span class="spinner-border spinner-border-sm me-1" role="status"></span>
                   Loading districts...
                 </div>
-                <div
-                  id="districtManualWrap"
-                  style="display: none; margin-top: 6px"
-                >
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="districtManual"
-                    placeholder="Ketik nama kecamatan manual"
-                  />
+                <div id="districtManualWrap" style="display: none; margin-top: 6px">
+                  <input type="text" class="form-control" id="districtManual" placeholder="Ketik nama kecamatan manual" />
                   <div class="form-text">Data tidak tersedia, isi manual.</div>
                 </div>
               </div>
               <div class="col-12">
                 <label class="form-label" for="address"
-                  >Detail Alamat <span class="required">*</span></label
+                  >Alamat KTP <span class="required">*</span></label
                 >
                 <textarea
                   class="form-control"
@@ -313,13 +315,27 @@
                   required
                   placeholder="Nama jalan, nomor rumah, RT/RW, dll."
                 ></textarea>
-                <div class="invalid-feedback">Detail alamat wajib diisi.</div>
+                <div class="invalid-feedback">Alamat KTP wajib diisi.</div>
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="address_residential"
+                  >Alamat Tinggal (Domisili) <span class="required">*</span></label
+                >
+                <textarea
+                  class="form-control"
+                  id="address_residential"
+                  name="address_residential"
+                  rows="3"
+                  required
+                  placeholder="Kosongkan jika sama dengan alamat KTP"
+                ></textarea>
+                <div class="invalid-feedback">Alamat tinggal wajib diisi.</div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- SECTION 3: EMPLOYMENT AT MAHAKARYA -->
+        <!-- SECTION 3: DATA PENEMPATAN -->
         <div class="form-section" id="sectionEmployment">
           <div class="form-section-header">
             <i class="bi bi-briefcase-fill"></i>
@@ -334,50 +350,86 @@
           <div class="form-section-body">
             <div class="row g-3">
               <div class="col-md-6">
-                <label class="form-label" for="company_entity"
-                  >Entitas Perusahaan <span class="required">*</span></label
+                <label class="form-label" for="branch_name"
+                  >Entitas Perusahaan (Branch) <span class="required">*</span></label
                 >
-                <select
-                  class="form-select"
-                  id="company_entity"
-                  name="company_entity"
-                  required
-                >
-                  <option value="">-- Select Entity --</option>
+                <select class="form-select" id="branch_name" name="branch_name" required>
+                  <option value="">-- Pilih Entitas --</option>
                   <option value="PT Mahakarya Sukses Indonesia">PT Mahakarya Sukses Indonesia</option>
-                  <option value="PT Stein Perkasa Internasional">
-                    PT Stein Perkasa Internasional
-                  </option>
-                  <option value="PT Perkasa Injeksi Indonesia">
-                    PT Perkasa Injeksi Indonesia
-                  </option>
-                  <option value="PT Mitra Elektro Perkasa">
-                    PT Mitra Elektro Perkasa
-                  </option>
+                  <option value="PT Stein Perkasa Internasional">PT Stein Perkasa Internasional</option>
+                  <option value="PT Perkasa Injeksi Indonesia">PT Perkasa Injeksi Indonesia</option>
+                  <option value="PT Mitra Elektro Perkasa">PT Mitra Elektro Perkasa</option>
                 </select>
-                <div class="invalid-feedback">
-                  Entitas perusahaan wajib dipilih.
-                </div>
+                <div class="invalid-feedback">Entitas perusahaan wajib dipilih.</div>
               </div>
               <div class="col-md-6">
-                <label class="form-label" for="employee_type"
-                  >Tipe Karyawan <span class="required">*</span></label
+                <label class="form-label" for="division"
+                  >Divisi <span class="required">*</span></label
                 >
                 <input
                   type="text"
                   class="form-control"
-                  id="employee_type_display"
-                  value="Outsource"
-                  readonly
-                  style="background-color:#f8f9fa;cursor:default;"
+                  id="division"
+                  name="division"
+                  required
+                  placeholder="Contoh: Finance, IT, HRD"
                 />
+                <div class="invalid-feedback">Divisi wajib diisi.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="department"
+                  >Departemen <span class="required">*</span></label
+                >
+                <select
+                  class="form-select"
+                  id="department"
+                  name="department"
+                  data-master="department"
+                  required
+                >
+                  <option value="">-- Select Department --</option>
+                </select>
+                <div class="invalid-feedback">Departemen wajib dipilih.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="area_kerja"
+                  >Area Kerja <span class="required">*</span></label
+                >
+                <select class="form-select" id="area_kerja" name="area_kerja" required>
+                  <option value="">-- Pilih Area Kerja --</option>
+                  <option value="Head Office">Head Office</option>
+                  <option value="Cabang">Cabang</option>
+                  <option value="Pabrik">Pabrik</option>
+                </select>
+                <div class="invalid-feedback">Area kerja wajib dipilih.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="cost_center"
+                  >Cost Center <span class="required">*</span></label
+                >
                 <input
-                  type="hidden"
-                  id="employee_type"
-                  name="employee_type"
-                  value="Outsource"
+                  type="text"
+                  class="form-control"
+                  id="cost_center"
+                  name="cost_center"
+                  required
+                  placeholder="Contoh: IT, Finance, Manufacture"
                 />
-                <div class="invalid-feedback">Tipe karyawan wajib dipilih.</div>
+                <div class="invalid-feedback">Cost center wajib diisi.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="lokasi_kerja"
+                  >Lokasi Kerja <span class="required">*</span></label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="lokasi_kerja"
+                  name="lokasi_kerja"
+                  required
+                  placeholder="Contoh: Jakarta, Bandung, Surabaya"
+                />
+                <div class="invalid-feedback">Lokasi kerja wajib diisi.</div>
               </div>
               <div class="col-md-6">
                 <label class="form-label" for="position"
@@ -389,45 +441,38 @@
                   id="position"
                   name="position"
                   required
-                  placeholder="Contoh: Operator Produksi, Security, Admin"
+                  placeholder="Contoh: Staff, Supervisor, Manager"
                 />
                 <div class="invalid-feedback">Posisi/jabatan wajib diisi.</div>
               </div>
               <div class="col-md-6">
-                <label class="form-label" for="department"
-                  >Departemen / Unit</label
+                <label class="form-label" for="job_level"
+                  >Job Level <span class="required">*</span></label
                 >
-                <select
-                  class="form-select"
-                  id="department"
-                  name="department"
-                  data-master="department"
-                >
-                  <option value="">-- Select Department --</option>
+                <select class="form-select" id="job_level" name="job_level" required>
+                  <option value="">-- Pilih Job Level --</option>
+                  <option value="Associate">Associate</option>
+                  <option value="Supervisor">Supervisor</option>
+                  <option value="Manager">Manager</option>
                 </select>
+                <div class="invalid-feedback">Job level wajib dipilih.</div>
               </div>
               <div class="col-md-6">
-                <label class="form-label" for="employment_status"
-                  >Status Kepegawaian <span class="required">*</span></label
+                <label class="form-label" for="employee_status"
+                  >Status Karyawan <span class="required">*</span></label
                 >
-                <select
-                  class="form-select"
-                  id="employment_status"
-                  name="employment_status"
-                  required
-                >
-                  <option value="">-- Select Status --</option>
-                  <option value="Active">Active</option>
-                  <option value="On Leave">On Leave</option>
+                <select class="form-select" id="employee_status" name="employee_status" required>
+                  <option value="">-- Pilih Status --</option>
                   <option value="Probation">Probation</option>
+                  <option value="Contract">Contract</option>
+                  <option value="Permanent">Permanent</option>
+                  <option value="Outsource">Outsource</option>
                 </select>
-                <div class="invalid-feedback">
-                  Status kepegawaian wajib dipilih.
-                </div>
+                <div class="invalid-feedback">Status karyawan wajib dipilih.</div>
               </div>
               <div class="col-md-6">
                 <label class="form-label" for="join_date"
-                  >Tanggal Mulai Kerja <span class="required">*</span></label
+                  >Tanggal Masuk (Join Date) <span class="required">*</span></label
                 >
                 <input
                   type="date"
@@ -436,158 +481,173 @@
                   name="join_date"
                   required
                 />
-                <div class="invalid-feedback">
-                  Tanggal mulai kerja wajib diisi.
-                </div>
+                <div class="invalid-feedback">Tanggal masuk wajib diisi.</div>
               </div>
-              <div class="col-md-4" id="contractStartGroup">
-                <label class="form-label" for="contract_start"
-                  >Tanggal Mulai Kontrak</label
+              <div class="col-md-6">
+                <label class="form-label" for="contract_end_date"
+                  >Tanggal Berakhir Kontrak <span class="required">*</span></label
                 >
                 <input
                   type="date"
                   class="form-control"
-                  id="contract_start"
-                  name="contract_start"
-                />
-              </div>
-              <div class="col-md-4" id="contractEndGroup">
-                <label class="form-label" for="contract_end"
-                  >Tanggal Akhir Kontrak</label
-                >
-                <input
-                  type="date"
-                  class="form-control"
-                  id="contract_end"
-                  name="contract_end"
-                />
-              </div>
-              <div class="col-md-4" id="contractDurationGroup">
-                <label class="form-label" for="contract_duration"
-                  >Durasi Kontrak
-                  <span
-                    class="required"
-                    id="contractDurationRequired"
-                    style="display: none"
-                    >*</span
-                  ></label
-                >
-                <select
-                  class="form-select"
-                  id="contract_duration"
-                  name="contract_duration"
-                >
-                  <option value="">-- Pilih Durasi Kontrak --</option>
-                  <option value="3 Bulan">3 Bulan</option>
-                  <option value="6 Bulan">6 Bulan</option>
-                  <option value="1 Tahun">1 Tahun</option>
-                  <option value="2 Tahun">2 Tahun</option>
-                  <option value="3 Tahun">3 Tahun</option>
-                </select>
-                <div class="invalid-feedback">
-                  Durasi kontrak wajib dipilih.
-                </div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label" for="salary"
-                  >Gaji / Upah <span class="required">*</span></label
-                >
-                <div class="input-group-prefix">
-                  <span class="input-prefix">Rp</span>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="salary"
-                    name="salary"
-                    required
-                    inputmode="numeric"
-                    placeholder="5.000.000"
-                  />
-                </div>
-                <div class="invalid-feedback">
-                  Gaji wajib diisi dengan angka.
-                </div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label" for="salary_type"
-                  >Tipe Gaji <span class="required">*</span></label
-                >
-                <select
-                  class="form-select"
-                  id="salary_type"
-                  name="salary_type"
+                  id="contract_end_date"
+                  name="contract_end_date"
                   required
+                />
+                <div class="invalid-feedback">Tanggal berakhir kontrak wajib diisi.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="direct_superior"
+                  >Atasan Langsung (Direct Superior) <span class="required">*</span></label
                 >
-                  <option value="">-- Pilih Tipe Gaji --</option>
-                  <option value="Bulanan">Bulanan</option>
-                  <option value="Harian">Harian</option>
-                  <option value="Per Proyek">Per Proyek</option>
-                </select>
-                <div class="invalid-feedback">Tipe gaji wajib dipilih.</div>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="direct_superior"
+                  name="direct_superior"
+                  required
+                  placeholder="Nama atasan langsung"
+                />
+                <div class="invalid-feedback">Atasan langsung wajib diisi.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="indirect_superior"
+                  >Atasan Tidak Langsung (Indirect Superior) <span class="required">*</span></label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="indirect_superior"
+                  name="indirect_superior"
+                  required
+                  placeholder="Nama atasan tidak langsung"
+                />
+                <div class="invalid-feedback">Atasan tidak langsung wajib diisi.</div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- SECTION 4: VENDOR / OUTSOURCE INFO -->
-        <div class="form-section" id="vendorSection">
+        <!-- SECTION 4: BANK & PAYROLL -->
+        <div class="form-section" id="sectionBank">
           <div class="form-section-header">
-            <i class="bi bi-building-fill"></i>
+            <i class="bi bi-credit-card-fill"></i>
             <div>
-              <h5>Informasi Vendor Outsource</h5>
-              <p>Diisi jika tipe karyawan adalah Outsource</p>
+              <h5>Data Bank & Payroll</h5>
+              <p>Informasi rekening bank, NPWP, dan BPJS</p>
             </div>
-            <span class="section-status" id="secBadgeVendor"
+            <span class="section-status" id="secBadgeBank"
               ><i class="bi bi-hourglass-split"></i> Belum lengkap</span
             >
           </div>
           <div class="form-section-body">
             <div class="row g-3">
               <div class="col-md-6">
-                <label class="form-label" for="outsource_vendor"
-                  >Nama Outsource Vendor
-                  <span class="required" id="vendorRequired">*</span></label
+                <label class="form-label" for="bank_name"
+                  >Nama Bank</label
                 >
                 <input
                   type="text"
                   class="form-control"
-                  id="outsource_vendor"
-                  name="outsource_vendor"
-                  placeholder="Contoh: PT. Mitra Karya Utama"
+                  id="bank_name"
+                  name="bank_name"
+                  value="BCA"
+                  readonly
+                  style="background-color: #f8f9fa; cursor: default"
                 />
-                <div class="invalid-feedback">
-                  Nama outsource vendor wajib diisi untuk tipe Outsource.
-                </div>
               </div>
               <div class="col-md-6">
-                <label class="form-label" for="contract_number"
-                  >Nomor Kontrak / PKS</label
+                <label class="form-label" for="bank_account"
+                  >Nomor Rekening <span class="required">*</span></label
                 >
                 <input
                   type="text"
                   class="form-control"
-                  id="contract_number"
-                  name="contract_number"
-                  placeholder="Contoh: PKS/2025/001 (opsional)"
+                  id="bank_account"
+                  name="bank_account"
+                  required
+                  placeholder="Contoh: 1234567890"
+                  inputmode="numeric"
                 />
+                <div class="invalid-feedback">Nomor rekening wajib diisi.</div>
               </div>
               <div class="col-md-6">
-                <label class="form-label" for="recruitment_source"
-                  >Sumber Penempatan</label
+                <label class="form-label" for="bank_account_holder"
+                  >Nama Pemilik Rekening <span class="required">*</span></label
                 >
-                <select
-                  class="form-select"
-                  id="recruitment_source"
-                  name="recruitment_source"
+                <input
+                  type="text"
+                  class="form-control"
+                  id="bank_account_holder"
+                  name="bank_account_holder"
+                  required
+                  placeholder="Nama sesuai di buku rekening"
+                />
+                <div class="invalid-feedback">Nama pemilik rekening wajib diisi.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="npwp"
+                  >NPWP <span class="required">*</span></label
                 >
-                  <option value="">-- Select Source (optional) --</option>
-                  <option value="Vendor Referral">Vendor Referral</option>
-                  <option value="Internal Referral">Internal Referral</option>
-                  <option value="Job Fair">Job Fair</option>
-                  <option value="Walk In">Walk In</option>
-                  <option value="Agency">Agency</option>
-                  <option value="Other">Other</option>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="npwp"
+                  name="npwp"
+                  required
+                  placeholder="Contoh: 01.123.456.7-123.000"
+                  maxlength="20"
+                />
+                <div class="invalid-feedback">NPWP wajib diisi.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="ptkp_status"
+                  >Status PTKP <span class="required">*</span></label
+                >
+                <select class="form-select" id="ptkp_status" name="ptkp_status" required>
+                  <option value="">-- Pilih Status PTKP --</option>
+                  <option value="TK/0">TK/0 - Tidak Kawin Tanpa Tanggungan</option>
+                  <option value="TK/1">TK/1 - Tidak Kawin 1 Tanggungan</option>
+                  <option value="TK/2">TK/2 - Tidak Kawin 2 Tanggungan</option>
+                  <option value="TK/3">TK/3 - Tidak Kawin 3 Tanggungan</option>
+                  <option value="K/0">K/0 - Kawin Tanpa Tanggungan</option>
+                  <option value="K/1">K/1 - Kawin 1 Tanggungan</option>
+                  <option value="K/2">K/2 - Kawin 2 Tanggungan</option>
+                  <option value="K/3">K/3 - Kawin 3 Tanggungan</option>
                 </select>
+                <div class="invalid-feedback">Status PTKP wajib dipilih.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="bpjs_ketenagakerjaan"
+                  >BPJS Ketenagakerjaan <span class="required">*</span></label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="bpjs_ketenagakerjaan"
+                  name="bpjs_ketenagakerjaan"
+                  required
+                  placeholder="Contoh: 123456789012"
+                  maxlength="13"
+                  inputmode="numeric"
+                />
+                <div class="invalid-feedback">BPJS Ketenagakerjaan wajib diisi.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="bpjs_kesehatan"
+                  >BPJS Kesehatan <span class="required">*</span></label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="bpjs_kesehatan"
+                  name="bpjs_kesehatan"
+                  required
+                  placeholder="Contoh: 1234567890123"
+                  maxlength="13"
+                  inputmode="numeric"
+                />
+                <div class="invalid-feedback">BPJS Kesehatan wajib diisi.</div>
               </div>
             </div>
           </div>
