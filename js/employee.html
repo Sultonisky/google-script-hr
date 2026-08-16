@@ -59,7 +59,7 @@
     var inactive = 0;
     EMP.allItems.forEach(function(e) {
       var s = (e.statusEmployee || '').toLowerCase();
-      if (s === 'active' || s === 'probation') active++;
+      if (s === 'permanent' || s === 'contract' || s === 'probation' || s === 'active') active++;
       else inactive++;
     });
 
@@ -322,15 +322,15 @@
     document.getElementById('efResidentialAddress').value = emp.residentialAddress || '';
 
     // SEKSI 2: Bank & BPJS
-    document.getElementById('efBankName').value        = emp.bankName        || '';
-    document.getElementById('efBankAccount').value     = emp.bankAccount     || '';
-    document.getElementById('efBankHolder').value      = emp.bankAccountHolder || '';
-    document.getElementById('efBpjsTk').value          = emp.bpjsKetenagakerjaan || '';
-    document.getElementById('efBpjsKes').value         = emp.bpjsKesehatan   || '';
+    // efBankName disabled — BCA only, no need to set
+    document.getElementById('efBankAccount').value     = (emp.bankAccount || '').replace(/^'/, '');
+    document.getElementById('efBankHolder').value      = emp.bankAccountHolder || emp.fullName || '';
+    document.getElementById('efBpjsTk').value          = (emp.bpjsKetenagakerjaan || '').replace(/^'/, '');
+    document.getElementById('efBpjsKes').value         = (emp.bpjsKesehatan   || '').replace(/^'/, '');
     document.getElementById('efWorkingEmail').value    = emp.workingEmail    || '';
 
     // SEKSI 3: Struktur Organisasi & Pekerjaan
-    document.getElementById('efStatusEmployee').value  = emp.statusEmployee  || emp.employmentStatus || emp.status || 'Active';
+    document.getElementById('efStatusEmployee').value  = emp.statusEmployee  || emp.employmentStatus || emp.status || 'Contract';
     document.getElementById('efBranch').value          = emp.branchName      || emp.branch || '';
     document.getElementById('efDivision').value        = emp.division        || '';
     document.getElementById('efDept').value            = emp.department      || '';
@@ -344,16 +344,43 @@
     document.getElementById('efCity').value            = emp.lokasiKerja     || emp.city || '';
     document.getElementById('efDirectSup').value       = emp.directSuperior  || '';
     document.getElementById('efIndirectSup').value     = emp.indirectSuperior || '';
+    var vendorEl = document.getElementById('efOutsourceVendor');
+    if (vendorEl) vendorEl.value = emp.outsourceVendor || '';
 
-    // SEKSI 4: Kontrak & Status Kepegawaian
-    document.getElementById('efContractEnd').value     = toDateInputValue(emp.contractEnd);
+    // SEKSI 4: Kontrak
+    var contractStartEl = document.getElementById('efContractStart');
+    var contractDurEl   = document.getElementById('efContractDuration');
+    var contractNoEl    = document.getElementById('efContractNumber');
+    if (contractStartEl) contractStartEl.value = toDateInputValue(emp.contractStart || emp.startDateContract || '');
+    if (contractDurEl)   contractDurEl.value   = emp.contractDuration   || '';
+    if (contractNoEl)    contractNoEl.value    = emp.contractNumber     || '';
+    document.getElementById('efContractEnd').value = toDateInputValue(emp.contractEnd);
 
     // SEKSI 5: Karier & Mutasi
-    document.getElementById('efFormerPos').value       = emp.positionFormer  || '';
-    document.getElementById('efRotationType').value    = emp.typeOfRotation  || '';
-    document.getElementById('efMutasiDate').value      = toDateInputValue(emp.mutasiDate);
-    document.getElementById('efNoSk').value            = emp.nomorSk         || '';
-    document.getElementById('efResignDate').value      = toDateInputValue(emp.resignDate);
+    var hasMutasi = !!(emp.positionFormer || emp.typeOfRotation);
+    document.getElementById('efFormerPos').value    = emp.positionFormer  || '';
+    document.getElementById('efRotationType').value = emp.typeOfRotation  || '';
+    document.getElementById('efMutasiDate').value   = toDateInputValue(emp.mutasiDate);
+    document.getElementById('efNoSk').value         = emp.nomorSk         || '';
+    document.getElementById('efResignDate').value   = toDateInputValue(emp.resignDate);
+
+    // Banner info mutasi
+    var infoEl = document.getElementById('efNoMutasiInfo');
+    if (infoEl) infoEl.style.display = hasMutasi ? 'none' : 'flex';
+
+    // Resign date: tampilkan hanya jika status offboard
+    var resignWrap = document.getElementById('efResignDateWrap');
+    if (resignWrap) {
+      var s = (emp.statusEmployee || '').toLowerCase();
+      var isOffboard = s === 'resigned' || s === 'terminated' || s === 'retired';
+      resignWrap.style.display = isOffboard ? '' : 'none';
+    }
+
+    // SEKSI 6: Catatan
+    var hrNotesEl = document.getElementById('efHrNotes');
+    var notesEl   = document.getElementById('efNotes');
+    if (hrNotesEl) hrNotesEl.value = emp.hrNotes || '';
+    if (notesEl)   notesEl.value   = emp.notes   || '';
 
     EMP.formModal.show();
   }
@@ -381,8 +408,8 @@
       mobilePhone:              document.getElementById('efPhone').value.trim(),
       citizenIdAddress:         document.getElementById('efAddress').value.trim(),
       residentialAddress:       document.getElementById('efResidentialAddress').value.trim(),
-      // SEKSI 2: Bank & BPJS
-      bankName:                 document.getElementById('efBankName').value,
+      // SEKSI 2: Bank & BPJS — bankName selalu BCA
+      bankName:                 'BCA',
       bankAccount:              document.getElementById('efBankAccount').value.trim(),
       bankAccountHolder:        document.getElementById('efBankHolder').value.trim(),
       bpjsKetenagakerjaan:      document.getElementById('efBpjsTk').value.trim(),
@@ -403,14 +430,21 @@
       lokasiKerja:              document.getElementById('efCity').value.trim(),
       directSuperior:           document.getElementById('efDirectSup').value.trim(),
       indirectSuperior:         document.getElementById('efIndirectSup').value.trim(),
-      // SEKSI 4: Kontrak & Status Kepegawaian
+      outsourceVendor:          (document.getElementById('efOutsourceVendor') || {}).value || '',
+      // SEKSI 4: Kontrak
+      contractStart:            (document.getElementById('efContractStart')    || {}).value || '',
       contractEnd:              document.getElementById('efContractEnd').value,
+      contractDuration:         (document.getElementById('efContractDuration') || {}).value || '',
+      contractNumber:           (document.getElementById('efContractNumber')   || {}).value || '',
       // SEKSI 5: Karier & Mutasi
       positionFormer:           document.getElementById('efFormerPos').value.trim(),
       typeOfRotation:           document.getElementById('efRotationType').value,
       mutasiDate:               document.getElementById('efMutasiDate').value,
       nomorSk:                  document.getElementById('efNoSk').value.trim(),
       resignDate:               document.getElementById('efResignDate').value,
+      // SEKSI 6: Catatan
+      hrNotes:                  (document.getElementById('efHrNotes') || {}).value || '',
+      notes:                    (document.getElementById('efNotes')   || {}).value || '',
       // Legacy aliases
       status:                   document.getElementById('efStatusEmployee').value,
       employmentStatus:         document.getElementById('efStatusEmployee').value,
@@ -508,6 +542,207 @@
     }
   }
 
+  // ============ OFFBOARDING MODAL ============
+  var _offbActiveEmp = null;
+
+  function openOffboardingModal(emp) {
+    _offbActiveEmp = emp || null;
+    var searchEl = document.getElementById('offbEmpSearch');
+    var clearEl  = document.getElementById('offbEmpSearchClear');
+    var dropEl   = document.getElementById('offbEmpDropdown');
+    if (searchEl) searchEl.value = emp ? emp.fullName : '';
+    if (clearEl)  clearEl.style.display = emp ? 'block' : 'none';
+    if (dropEl)   dropEl.style.display  = 'none';
+    _fillOffbPreview(emp);
+    var lwdEl = document.getElementById('offbLastWorkingDate');
+    if (lwdEl) lwdEl.value = new Date().toISOString().split('T')[0];
+    ['offbType','offbReason','offbApprovedBy','offbNotes'].forEach(function(id) {
+      var el = document.getElementById(id); if (el) el.value = '';
+    });
+    var pakEl = document.getElementById('offbPaklaring');
+    if (pakEl) pakEl.value = 'Belum Ditentukan';
+    _updateOffbConfirmBtn();
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('offboardingModal')).show();
+  }
+
+  function _fillOffbPreview(emp) {
+    var previewEl = document.getElementById('offbEmpPreview');
+    if (!emp) { if (previewEl) previewEl.style.display = 'none'; return; }
+    if (previewEl) previewEl.style.display = 'block';
+    var av = document.getElementById('offbEmpAvatar');
+    var nm = document.getElementById('offbEmpName');
+    var ps = document.getElementById('offbEmpPosition');
+    var dp = document.getElementById('offbEmpDept');
+    var id = document.getElementById('offbEmpIdDisp');
+    var jd = document.getElementById('offbEmpJoinDate');
+    var hd = document.getElementById('offbEmployeeId');
+    var bt = document.getElementById('offbBpjsTk');
+    var bk = document.getElementById('offbBpjsKes');
+    if (av) av.innerText = initials(emp.fullName);
+    if (nm) nm.innerText = emp.fullName || '-';
+    if (ps) ps.innerText = emp.positionCurrent || emp.position || '-';
+    if (dp) dp.innerText = emp.department || '-';
+    if (id) id.innerText = emp.employeeId || '-';
+    if (jd) jd.innerText = emp.joinDate   || '-';
+    if (hd) hd.value     = emp.employeeId || '';
+    if (bt && !bt.value) bt.value = emp.bpjsKetenagakerjaan || '';
+    if (bk && !bk.value) bk.value = emp.bpjsKesehatan       || '';
+    setTimeout(_updateOffbConfirmBtn, 0);
+  }
+
+  function _updateOffbConfirmBtn() {
+    var btn = document.getElementById('btnConfirmOffboarding');
+    if (!btn) return;
+    btn.disabled = !(
+      _offbActiveEmp &&
+      ((document.getElementById('offbType')            || {}).value) &&
+      ((document.getElementById('offbLastWorkingDate') || {}).value) &&
+      ((document.getElementById('offbReason')          || {}).value || '').trim()
+    );
+  }
+
+  function initOffboardingModal() {
+    var searchEl = document.getElementById('offbEmpSearch');
+    var clearEl  = document.getElementById('offbEmpSearchClear');
+    var dropEl   = document.getElementById('offbEmpDropdown');
+
+    function renderDropdown(q) {
+      if (!dropEl) return;
+      q = (q || '').trim().toLowerCase();
+      if (!q) { dropEl.style.display = 'none'; return; }
+      var matched = EMP.allItems.filter(function(e) {
+        var s = (e.statusEmployee || '').toLowerCase();
+        return (s === 'permanent' || s === 'contract' || s === 'probation' || s === 'on leave' || s === 'active') &&
+          ((e.fullName || '').toLowerCase().indexOf(q) !== -1 ||
+           (e.employeeId || '').toLowerCase().indexOf(q) !== -1);
+      }).slice(0, 8);
+
+      if (!matched.length) {
+        dropEl.innerHTML = '<div class="px-3 py-2 text-muted" style="font-size:13px">Karyawan aktif tidak ditemukan</div>';
+      } else {
+        dropEl.innerHTML = matched.map(function(e) {
+          return '<div class="offb-item px-3 py-2 d-flex align-items-center gap-2"' +
+            ' style="cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:13px" data-id="' + escapeHtml(e.employeeId) + '">' +
+            '<div style="width:28px;height:28px;font-size:11px;flex-shrink:0;background:#991b1b;color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700">' +
+              escapeHtml(initials(e.fullName)) + '</div>' +
+            '<div><div class="fw-semibold">' + escapeHtml(e.fullName) + '</div>' +
+            '<div class="text-muted" style="font-size:11px">' + escapeHtml((e.positionCurrent || e.position) || '-') + ' · ' + escapeHtml(e.employeeId) + '</div></div>' +
+          '</div>';
+        }).join('');
+      }
+      dropEl.style.display = 'block';
+      dropEl.querySelectorAll('.offb-item').forEach(function(item) {
+        item.addEventListener('mouseenter', function() { item.style.background = '#fff5f5'; });
+        item.addEventListener('mouseleave', function() { item.style.background = ''; });
+        item.addEventListener('click', function() {
+          var found = EMP.allItems.find(function(e) { return e.employeeId === item.getAttribute('data-id'); });
+          if (found) {
+            _offbActiveEmp = found;
+            if (searchEl) searchEl.value = found.fullName;
+            if (clearEl)  clearEl.style.display = 'block';
+            dropEl.style.display = 'none';
+            _fillOffbPreview(found);
+          }
+        });
+      });
+    }
+
+    if (searchEl) searchEl.addEventListener('input', function() {
+      _offbActiveEmp = null; _fillOffbPreview(null); _updateOffbConfirmBtn();
+      if (clearEl) clearEl.style.display = searchEl.value ? 'block' : 'none';
+      renderDropdown(searchEl.value);
+    });
+    if (clearEl) clearEl.addEventListener('click', function() {
+      if (searchEl) searchEl.value = '';
+      clearEl.style.display = 'none';
+      if (dropEl) dropEl.style.display = 'none';
+      _offbActiveEmp = null; _fillOffbPreview(null); _updateOffbConfirmBtn();
+    });
+    document.addEventListener('click', function(e) {
+      if (dropEl && !dropEl.contains(e.target) && e.target !== searchEl) dropEl.style.display = 'none';
+    });
+
+    ['offbType','offbLastWorkingDate','offbReason'].forEach(function(fid) {
+      var el = document.getElementById(fid);
+      if (el) { el.addEventListener('input', _updateOffbConfirmBtn); el.addEventListener('change', _updateOffbConfirmBtn); }
+    });
+
+    var modalEl = document.getElementById('offboardingModal');
+    if (modalEl) {
+      modalEl.addEventListener('hidden.bs.modal', function() {
+        _offbActiveEmp = null;
+        if (searchEl) searchEl.value = '';
+        if (clearEl)  clearEl.style.display = 'none';
+        if (dropEl)   dropEl.style.display  = 'none';
+        var prev = document.getElementById('offbEmpPreview');
+        if (prev) prev.style.display = 'none';
+        var lwdEl = document.getElementById('offbLastWorkingDate');
+        if (lwdEl) lwdEl.value = '';
+        ['offbType','offbReason','offbBpjsTk','offbBpjsKes','offbApprovedBy','offbNotes'].forEach(function(fid) {
+          var el = document.getElementById(fid); if (el) el.value = '';
+        });
+        var pakEl = document.getElementById('offbPaklaring');
+        if (pakEl) pakEl.value = 'Belum Ditentukan';
+        var btn = document.getElementById('btnConfirmOffboarding');
+        if (btn) btn.disabled = true;
+        var tEl = document.getElementById('btnOffbText'); var lEl = document.getElementById('btnOffbLoading');
+        if (tEl) tEl.style.display = 'inline-flex';
+        if (lEl) lEl.style.display = 'none';
+      });
+    }
+
+    var confirmBtn = document.getElementById('btnConfirmOffboarding');
+    if (confirmBtn) {
+      confirmBtn.addEventListener('click', function() {
+        var empId = (document.getElementById('offbEmployeeId') || {}).value || '';
+        var type  = (document.getElementById('offbType') || {}).value || '';
+        var lwd   = (document.getElementById('offbLastWorkingDate') || {}).value || '';
+        var rsn   = ((document.getElementById('offbReason') || {}).value || '').trim();
+        if (!empId || !type || !lwd || !rsn) return;
+
+        var payload = {
+          employeeId:          empId,
+          offboardingType:     type,
+          lastWorkingDate:     lwd,
+          reason:              rsn,
+          bpjsKetenagakerjaan: (document.getElementById('offbBpjsTk')     || {}).value || '',
+          bpjsKesehatan:       (document.getElementById('offbBpjsKes')    || {}).value || '',
+          paklaring:           (document.getElementById('offbPaklaring')  || {}).value || '',
+          approvedBy:          (document.getElementById('offbApprovedBy') || {}).value || '',
+          notes:               (document.getElementById('offbNotes')      || {}).value || '',
+        };
+
+        var tEl = document.getElementById('btnOffbText');
+        var lEl = document.getElementById('btnOffbLoading');
+        confirmBtn.disabled = true;
+        if (tEl) tEl.style.display = 'none';
+        if (lEl) lEl.style.display = 'inline-flex';
+
+        google.script.run
+          .withSuccessHandler(function(res) {
+            confirmBtn.disabled = false;
+            if (tEl) tEl.style.display = 'inline-flex';
+            if (lEl) lEl.style.display = 'none';
+            bootstrap.Modal.getInstance(document.getElementById('offboardingModal')).hide();
+            if (res && res.success) {
+              showToast('Offboarding <strong>' + escapeHtml((_offbActiveEmp || {}).fullName || '') +
+                '</strong> berhasil — ' + escapeHtml(type), 'success', 5000);
+              empLoadAll();
+            } else {
+              showToast('Gagal: ' + (res ? res.message : 'Error'), 'error');
+            }
+          })
+          .withFailureHandler(function(err) {
+            confirmBtn.disabled = false;
+            if (tEl) tEl.style.display = 'inline-flex';
+            if (lEl) lEl.style.display = 'none';
+            showToast('Error: ' + (err ? err.message : 'Unknown'), 'error');
+          })
+          .processOffboarding(payload);
+      });
+    }
+  }
+
   // ============ INIT ============
   var empInitialized = false;
   function initEmployeePage() {
@@ -516,7 +751,6 @@
 
     EMP.formModal = new bootstrap.Modal(document.getElementById('empFormModal'));
 
-    var btnAdd  = document.getElementById('btnEmpAdd');
     var btnRef  = document.getElementById('btnEmpRefresh');
     var btnSav  = document.getElementById('btnEmpSave');
     var si      = document.getElementById('empSearchInput');
@@ -525,7 +759,7 @@
     var sf      = document.getElementById('empStatusFilter');
     var ss      = document.getElementById('empSortSelect');
 
-    // TOMBOL TAMBAH KARYAWAN DINONAKTIFKAN SEMENTARA — listener di-comment agar create tidak bisa dipanggil dari UI
+    // TOMBOL TAMBAH KARYAWAN DINONAKTIFKAN SEMENTARA
     // if (btnAdd) btnAdd.addEventListener('click', empOpenAdd);
     if (btnRef) btnRef.addEventListener('click', empLoadAll);
     if (btnSav) btnSav.addEventListener('click', empSave);
@@ -534,6 +768,11 @@
     if (tf) tf.addEventListener('change', empApplyFilters);
     if (sf) sf.addEventListener('change', empApplyFilters);
     if (ss) ss.addEventListener('change', empApplyFilters);
+
+    // Offboarding modal
+    var btnOffb = document.getElementById('btnOpenOffboardingModal');
+    if (btnOffb) btnOffb.addEventListener('click', function() { openOffboardingModal(null); });
+    initOffboardingModal();
 
     // Import CSV (Master Data)
     if (typeof initEmpImportModal === 'function') initEmpImportModal();
