@@ -27,7 +27,8 @@ function generateAllHRISDemoData() {
     _gdWriteHoldSheet_(pool.hold, today);
     _gdWriteAcceptedSheet_(pool.accepted, today);
     _gdWriteBlacklistSheet_(pool.blacklist, today);
-    _gdWriteEmployeeSheet_(pool.accepted, today);
+    var probationEmployees = _gdWriteEmployeeSheet_(pool.accepted, today);
+    _gdWriteProbationSheet_(probationEmployees, today);
     _gdWriteAuditLog_(pool.all, today);
 
     Logger.log("Pending:   " + pool.pending.length);
@@ -66,6 +67,7 @@ function _gdClearSheets_() {
     EMPLOYEE_SHEET_NAME,
     AUDIT_SHEET_NAME,
     OFFBOARDING_SHEET_NAME,
+    PROBATION_SHEET_NAME,
   ];
   targets.forEach(function (name) {
     var s = ss.getSheetByName(name);
@@ -74,10 +76,9 @@ function _gdClearSheets_() {
     var maxRows = s.getMaxRows();
     // Sheet hanya punya header atau kosong — tidak perlu apa-apa
     if (lastRow <= 1) return;
-    // Hapus konten baris data (baris 2 ke bawah)
-    s.getRange(2, 1, lastRow - 1, s.getLastColumn()).clearContent();
-    // Hapus baris kosong yang tersisa jika ada sisa row kosong di bawah
-    // supaya sheet kembali ke ukuran minimal (header + 1 baris kosong = 2 baris)
+    // Hapus konten baris data (baris 2 ke bawah) SEMUA kolom
+    s.getRange(2, 1, lastRow - 1, s.getMaxColumns()).clearContent();
+    // Hapus baris kosong yang tersisa
     if (maxRows > 2) {
       s.deleteRows(3, maxRows - 2);
     }
@@ -921,18 +922,100 @@ function _gdWriteHoldSheet_(candidates, today) {
 
 // ============================================================
 // WRITE: kandidat_accepted
+// Mengisi semua kolom termasuk Offering Letter dan Onboarding
+// sesuai ACCEPTED_HEADERS (Config.gs)
 // ============================================================
 function _gdWriteAcceptedSheet_(candidates, today) {
   var sheet = getOrCreateAcceptedSheet_();
   if (candidates.length === 0) return;
+
   var nowStr = _gdFmt_(today);
-  var rows = candidates.map(function (c) {
+
+  // Distribusi status offering:
+  // ~40% sudah offering diterima + onboarding, ~30% offering menunggu, ~30% belum offering
+  var rows = candidates.map(function (c, idx) {
     c.processedDate = nowStr;
-    c.processedBy = "Demo Generator";
-    return _gdCandidateRow_(c, true);
+    c.processedBy = 'Demo Generator';
+
+    // Base row: core + extra + processed
+    var base = _gdCandidateRow_(c, true);
+
+    // Tambah kolom Offering dan Onboarding sesuai ACCEPTED_HEADERS
+    var offeringCreated    = '';
+    var offeringUpdated    = '';
+    var offeringCreatedBy  = '';
+    var offeringUpdatedBy  = '';
+    var offerCompany       = '';
+    var offerPosition      = '';
+    var offerDept          = '';
+    var offerSalary        = '';
+    var offerJoinDate      = '';
+    var offerBenefit       = '';
+    var offerNotes         = '';
+    var offerResponse      = '';
+    var offerRespNotes     = '';
+    var offerRespDate      = '';
+    var offerRespBy        = '';
+    var onboardingStatus   = '';
+    var onboardingDate     = '';
+    var onboardingBy       = '';
+
+    var segment = idx % 3; // 0=belum offering, 1=menunggu, 2=diterima+onboarding
+
+    if (segment >= 1) {
+      // Punya offering letter
+      var offeringTs = _gdFmt_(_gdSubDays_(today, _gdRandInt_(5, 30)));
+      offeringCreated   = offeringTs;
+      offeringCreatedBy = 'Demo Generator';
+      offerCompany      = _gdPick_(_GD_COMPANIES_INTERNAL_);
+      offerPosition     = c.positionApplied;
+      offerDept         = _gdDept_(c.positionApplied);
+      offerSalary       = String(_gdRandSalary_(c.positionApplied));
+      offerJoinDate     = _gdFmtDate_(_gdSubDays_(today, _gdRandInt_(1, 20)));
+      offerBenefit      = 'BPJS Kesehatan & Ketenagakerjaan, THR Tahunan';
+      offerNotes        = '';
+      offerResponse     = 'Menunggu';
+    }
+
+    if (segment >= 2) {
+      // Offering diterima
+      var respTs = _gdFmt_(_gdSubDays_(today, _gdRandInt_(1, 15)));
+      offerResponse     = 'Diterima';
+      offerRespNotes    = 'Kandidat menyetujui semua syarat dan kondisi.';
+      offerRespDate     = respTs;
+      offerRespBy       = 'Demo Generator';
+      // Onboarding sudah dilakukan
+      onboardingStatus  = 'Probation';
+      onboardingDate    = respTs;
+      onboardingBy      = 'Demo Generator';
+      // Flag ke candidate agar Employee sheet ikut di-set Probation
+      c._onboardingDone = true;
+    }
+
+    return base.concat([
+      offeringCreated,
+      offeringUpdated,
+      offeringCreatedBy,
+      offeringUpdatedBy,
+      offerCompany,
+      offerPosition,
+      offerDept,
+      offerSalary,
+      offerJoinDate,
+      offerBenefit,
+      offerNotes,
+      offerResponse,
+      offerRespNotes,
+      offerRespDate,
+      offerRespBy,
+      onboardingStatus,
+      onboardingDate,
+      onboardingBy,
+    ]);
   });
+
   sheet.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
-  Logger.log("kandidat_accepted: " + rows.length + " rows written");
+  Logger.log('kandidat_accepted: ' + rows.length + ' rows written (with offering + onboarding data)');
 }
 
 // ============================================================
@@ -1066,10 +1149,13 @@ function _gdWriteEmployeeSheet_(acceptedCandidates, today) {
   }
 
   // --- 30 karyawan dari recruitment accepted ---
+  var probationList = []; // track untuk ditulis ke kandidat_probation
+
   acceptedCandidates.forEach(function (c) {
     var joinDate = _gdFmtDate_(_gdSubDays_(today, _gdRandInt_(30, 365)));
     var empType = _gdPick_(_GD_EMP_TYPES_);
-    var statusEmp = _gdPick_(_GD_STATUS_EMP_);
+    // Jika onboarding sudah dilakukan (segment 2), status HARUS Probation
+    var statusEmp = c._onboardingDone ? 'Probation' : _gdPick_(_GD_STATUS_EMP_);
     var genderMap = { "Laki-laki": "Male", Perempuan: "Female" };
     var row = new Array(EMPLOYEE_HEADERS.length).fill("");
     fillRow(row, {
@@ -1098,6 +1184,23 @@ function _gdWriteEmployeeSheet_(acceptedCandidates, today) {
       notes: c.hrNotes || "",
     });
     rows.push(row);
+    // Track untuk kandidat_probation
+    if (statusEmp === 'Probation') {
+      var empId = String(row[EMPLOYEE_COL["Employee ID"] - 1] || "").replace(/^'/, "");
+      var contractStart = String(row[EMPLOYEE_COL["Start Date (Contract)"] - 1] || joinDate);
+      var contractEnd   = String(row[EMPLOYEE_COL["End Date (Contract)"] - 1]   || "");
+      var contractNo    = String(row[EMPLOYEE_COL["Contract Number"] - 1]        || "");
+      var contractDur   = String(row[EMPLOYEE_COL["Contract Duration"] - 1]      || "3 Bulan");
+      probationList.push({
+        employeeId:       empId,
+        recruitmentId:    c.recruitmentId,
+        contractNumber:   contractNo,
+        contractDuration: contractDur,
+        contractStart:    contractStart,
+        contractEnd:      contractEnd,
+        joinDate:         joinDate,
+      });
+    }
   });
 
   // --- 20 legacy (bukan dari recruitment, tipe campuran) ---
@@ -1183,6 +1286,51 @@ function _gdWriteEmployeeSheet_(acceptedCandidates, today) {
       rows.length +
       " rows written (30 recruitment + 20 legacy, 54 cols)",
   );
+  return probationList; // kembalikan list untuk dipakai _gdWriteProbationSheet_
+}
+
+// ============================================================
+// WRITE: kandidat_probation — satu record per employee Probation
+// Eval fields dikosongkan (belum dievaluasi saat generate)
+// ============================================================
+function _gdWriteProbationSheet_(probationList, today) {
+  if (!probationList || probationList.length === 0) {
+    Logger.log("kandidat_probation: 0 rows (tidak ada employee Probation)");
+    return;
+  }
+
+  var sheet  = getOrCreateProbationSheet_();
+  var nowStr = _gdFmt_(today);
+  var seqMap = {};
+
+  function nextProbId() {
+    var key = _gdFmtDate_(today).replace(/-/g, "");
+    if (!seqMap[key]) seqMap[key] = 0;
+    seqMap[key]++;
+    return "PROB-" + key + "-" + _gdPad_(seqMap[key], 4);
+  }
+
+  var rows = probationList.map(function (p) {
+    var row = new Array(PROBATION_HEADERS.length).fill("");
+    row[PROBATION_COL["Probation ID"] - 1]      = nextProbId();
+    row[PROBATION_COL["Employee ID"] - 1]        = p.employeeId;
+    row[PROBATION_COL["Recruitment ID"] - 1]     = p.recruitmentId;
+    row[PROBATION_COL["Contract Number"] - 1]    = p.contractNumber;
+    row[PROBATION_COL["Contract Duration"] - 1]  = p.contractDuration;
+    row[PROBATION_COL["Contract Start"] - 1]     = p.contractStart;
+    row[PROBATION_COL["Contract End"] - 1]       = p.contractEnd;
+    row[PROBATION_COL["Join Date"] - 1]          = p.joinDate;
+    row[PROBATION_COL["Status"] - 1]             = "Probation";
+    row[PROBATION_COL["Onboarding Date"] - 1]    = nowStr;
+    row[PROBATION_COL["Onboarding By"] - 1]      = "Demo Generator";
+    row[PROBATION_COL["SK Status"] - 1]          = "Pending";
+    row[PROBATION_COL["Created At"] - 1]         = nowStr;
+    row[PROBATION_COL["Updated At"] - 1]         = nowStr;
+    return row;
+  });
+
+  sheet.getRange(2, 1, rows.length, PROBATION_HEADERS.length).setValues(rows);
+  Logger.log("kandidat_probation: " + rows.length + " rows written");
 }
 
 // ============================================================

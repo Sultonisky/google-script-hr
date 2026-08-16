@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // backend/Config.gs — SINGLE SOURCE OF TRUTH FOR ALL SCHEMAS
 // ============================================================
 // Every backend module MUST reference these constants.
@@ -127,45 +127,45 @@ EMPLOYEE_HEADERS.forEach(function (h, i) {
 
 // ============================================================
 // SHEET: kandidat_probation
-// Data dari hasil generate onboarding probation kandidat accepted
-// dan evaluasi probation
+// Transaksi evaluasi probation — referensi ke Employee sheet via Employee ID.
+// Data karyawan (nama, posisi, dept, dll.) dibaca dari Employee sheet saat runtime,
+// tidak disimpan ulang di sini untuk menghindari duplikasi.
 // ============================================================
 var PROBATION_HEADERS = [
+  // -- Identitas
   "Probation ID",
-  "Recruitment ID",
   "Employee ID",
-  "Full Name",
-  "NIK",
-  "Position",
-  "Department",
-  "Division",
-  "Branch",
-  "Company Entity",
-  "Employee Type",
+  "Recruitment ID",
+  // -- Kontrak Probation
   "Contract Number",
   "Contract Duration",
   "Contract Start",
   "Contract End",
   "Join Date",
+  // -- Status & Onboarding
   "Status",
   "Onboarding Date",
   "Onboarding By",
+  // -- Evaluasi
   "Eval ID",
   "Eval Date",
-  "Skor Kinerja",
-  "Skor Kedisiplinan",
-  "Skor Komunikasi",
-  "Skor Inisiatif",
-  "Skor Teamwork",
-  "Nilai Rata-rata",
-  "Keputusan",
-  "Durasi Perpanjang",
-  "Kontrak Baru Start",
-  "Kontrak Baru End",
-  "Catatan Evaluator",
+  "Score Performance",
+  "Score Discipline",
+  "Score Communication",
+  "Score Initiative",
+  "Score Teamwork",
+  "Average Score",
+  "Decision",
+  // -- Perpanjangan (diisi jika Decision = perpanjang)
+  "Extension Duration",
+  "New Contract Start",
+  "New Contract End",
+  // -- Catatan & SK
+  "Evaluator Notes",
   "Evaluator",
-  "Status SK",
+  "SK Status",
   "Notes",
+  // -- Audit
   "Created At",
   "Updated At",
 ];
@@ -298,42 +298,6 @@ var OFFBOARDING_HEADERS = [
 var OFFBOARD_COL = {};
 OFFBOARDING_HEADERS.forEach(function (h, i) {
   OFFBOARD_COL[h] = i + 1;
-});
-
-// ============================================================
-// SHEET: Evaluasi_Probation (DEPRECATED — will be removed)
-// ============================================================
-var PROBATION_EVAL_SHEET_NAME = "Evaluasi_Probation";
-
-var PROBATION_EVAL_HEADERS = [
-  "Eval ID",
-  "Employee ID",
-  "Recruitment ID",
-  "Full Name",
-  "Position",
-  "Department",
-  "Contract Start",
-  "Contract End",
-  "Eval Date",
-  "Skor Kinerja",
-  "Skor Kedisiplinan",
-  "Skor Komunikasi",
-  "Skor Inisiatif",
-  "Skor Teamwork",
-  "Nilai Rata-rata",
-  "Keputusan",
-  "Durasi Perpanjang",
-  "Kontrak Baru Start",
-  "Kontrak Baru End",
-  "Catatan Evaluator",
-  "Evaluator",
-  "Created At",
-  "Status SK",
-];
-
-var PROBATION_EVAL_COL = {};
-PROBATION_EVAL_HEADERS.forEach(function (h, i) {
-  PROBATION_EVAL_COL[h] = i + 1;
 });
 
 // ============================================================

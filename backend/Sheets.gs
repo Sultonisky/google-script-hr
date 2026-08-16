@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // backend/Sheets.gs — MANAJEMEN SEMUA SHEET
 // Uses Config.gs as single source of truth for all schemas.
 // No hardcoded headers or column indexes anywhere.
@@ -74,12 +74,6 @@ function getOrCreateEmployeeSheet_() {
   return sheet;
 }
 
-// ============================================================
-// ONETIME FIX — jalankan sekali dari Apps Script editor untuk
-// menyelaraskan header sheet Employee dengan EMPLOYEE_HEADERS.
-// Data lama dimigrasikan ke posisi kolom yang benar.
-// Aman dijalankan berulang kali.
-// ============================================================
 function fixEmployeeHeadersNow() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(EMPLOYEE_SHEET_NAME);
@@ -90,10 +84,15 @@ function fixEmployeeHeadersNow() {
   var before = {
     lastRow: sheet.getLastRow(),
     lastCol: sheet.getLastColumn(),
-    headers: sheet.getLastColumn() > 0
-      ? sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
-          .map(function(h) { return String(h).trim(); })
-      : [],
+    headers:
+      sheet.getLastColumn() > 0
+        ? sheet
+            .getRange(1, 1, 1, sheet.getLastColumn())
+            .getValues()[0]
+            .map(function (h) {
+              return String(h).trim();
+            })
+        : [],
   };
 
   ensureSheetHeadersMatch_(sheet, EMPLOYEE_HEADERS, null);
@@ -101,17 +100,21 @@ function fixEmployeeHeadersNow() {
   var afterHeaders = sheet
     .getRange(1, 1, 1, EMPLOYEE_HEADERS.length)
     .getValues()[0]
-    .map(function(h) { return String(h).trim(); });
+    .map(function (h) {
+      return String(h).trim();
+    });
 
-  var match = afterHeaders.join('|') === EMPLOYEE_HEADERS.join('|');
+  var match = afterHeaders.join("|") === EMPLOYEE_HEADERS.join("|");
   return {
     success: match,
     headerCount: afterHeaders.length,
     headers: afterHeaders,
     before: before,
     message: match
-      ? 'Header Employee berhasil diselaraskan menjadi ' + EMPLOYEE_HEADERS.length + ' kolom.'
-      : 'Header Employee masih tidak cocok, periksa kembali.',
+      ? "Header Employee berhasil diselaraskan menjadi " +
+        EMPLOYEE_HEADERS.length +
+        " kolom."
+      : "Header Employee masih tidak cocok, periksa kembali.",
   };
 }
 
@@ -136,12 +139,6 @@ function ensureEmployeeHeaders_(sheet) {
     .setFontColor("#FFFFFF");
 }
 
-// ============================================================
-// HEADER AUTO-FIX
-// Pastikan header sheet persis sesuai schema yang diharapkan.
-// Dipanggil setiap kali sheet terbuka, sehingga selisih header
-// (mis. sheet dibuat manual / versi lama) otomatis diperbaiki.
-// ============================================================
 function ensureSheetHeadersMatch_(sheet, expectedHeaders, legacyMap) {
   var lastCol = sheet.getLastColumn();
   var currentHeaders = [];
@@ -154,13 +151,11 @@ function ensureSheetHeadersMatch_(sheet, expectedHeaders, legacyMap) {
       });
   }
 
-  // APALAH: jika sheet kosong total tanpa baris, tulis header baru.
   if (sheet.getLastRow() === 0) {
     writeHeaderRow_(sheet, expectedHeaders);
     return;
   }
 
-  // Headers sudah persis sama? Tidak perlu apa-apa.
   var headersMatch = false;
   if (currentHeaders.length >= expectedHeaders.length) {
     headersMatch = true;
@@ -173,7 +168,6 @@ function ensureSheetHeadersMatch_(sheet, expectedHeaders, legacyMap) {
   }
   if (headersMatch) return;
 
-  // Simpan baris data yang sudah ada (jika sheet berisi data lama).
   var existingRows = [];
   var existingHeaders = currentHeaders.slice();
   if (sheet.getLastRow() >= 2) {
@@ -182,14 +176,11 @@ function ensureSheetHeadersMatch_(sheet, expectedHeaders, legacyMap) {
       .getValues();
   }
 
-  // Kosongkan lalu tulis ulang header baru.
   sheet.clearContents();
   sheet.clearFormats();
   writeHeaderRow_(sheet, expectedHeaders);
 
   if (existingRows.length > 0) {
-    // Petakan data lama ke kolom baru bila memungkinkan.
-    // legacyMap: header lama -> header baru. Balikkan jadi header baru -> header lama.
     var newToOld = {};
     if (legacyMap) {
       for (var oldName in legacyMap) {
@@ -219,7 +210,6 @@ function ensureSheetHeadersMatch_(sheet, expectedHeaders, legacyMap) {
           newRow[c] = val;
         }
       }
-      // Baris kosong sepenuhnya? Buang.
       if (hasData) migrated.push(newRow);
     }
     if (migrated.length > 0) {
@@ -251,11 +241,6 @@ function getOrCreateOffboardingSheet_() {
   return sheet;
 }
 
-// ============================================================
-// ONETIME FIX — jalankan sekali dari Apps Script editor untuk
-// menulis ulang header sheet Offboarding dengan 16 kolom
-// (OFFBOARDING_HEADERS). Aman dijalankan ulang.
-// ============================================================
 function fixOffboardingHeadersNow() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(OFFBOARDING_SHEET_NAME);
@@ -266,9 +251,12 @@ function fixOffboardingHeadersNow() {
     lastCol: sheet.getLastColumn(),
     headers:
       sheet.getLastColumn() > 0
-        ? sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(function (h) {
-            return String(h).trim();
-          })
+        ? sheet
+            .getRange(1, 1, 1, sheet.getLastColumn())
+            .getValues()[0]
+            .map(function (h) {
+              return String(h).trim();
+            })
         : [],
   };
 
@@ -341,8 +329,11 @@ function getOrCreateHoldSheet_() {
 
   if (sheet.getLastRow() === 0) {
     sheet.appendRow(HOLD_HEADERS);
-    sheet.getRange(1, 1, 1, HOLD_HEADERS.length)
-      .setFontWeight('bold').setBackground('#005BAC').setFontColor('#FFFFFF');
+    sheet
+      .getRange(1, 1, 1, HOLD_HEADERS.length)
+      .setFontWeight("bold")
+      .setBackground("#005BAC")
+      .setFontColor("#FFFFFF");
     sheet.setFrozenRows(1);
     sheet.autoResizeColumns(1, HOLD_HEADERS.length);
   } else {
@@ -359,8 +350,11 @@ function getOrCreateAcceptedSheet_() {
 
   if (sheet.getLastRow() === 0) {
     sheet.appendRow(ACCEPTED_HEADERS);
-    sheet.getRange(1, 1, 1, ACCEPTED_HEADERS.length)
-      .setFontWeight('bold').setBackground('#166534').setFontColor('#FFFFFF');
+    sheet
+      .getRange(1, 1, 1, ACCEPTED_HEADERS.length)
+      .setFontWeight("bold")
+      .setBackground("#166534")
+      .setFontColor("#FFFFFF");
     sheet.setFrozenRows(1);
     sheet.autoResizeColumns(1, ACCEPTED_HEADERS.length);
   } else {
@@ -377,8 +371,11 @@ function getOrCreateBlacklistSheet_() {
 
   if (sheet.getLastRow() === 0) {
     sheet.appendRow(BLACKLIST_HEADERS);
-    sheet.getRange(1, 1, 1, BLACKLIST_HEADERS.length)
-      .setFontWeight('bold').setBackground('#991b1b').setFontColor('#FFFFFF');
+    sheet
+      .getRange(1, 1, 1, BLACKLIST_HEADERS.length)
+      .setFontWeight("bold")
+      .setBackground("#991b1b")
+      .setFontColor("#FFFFFF");
     sheet.setFrozenRows(1);
     sheet.autoResizeColumns(1, BLACKLIST_HEADERS.length);
   } else {
@@ -391,14 +388,23 @@ function getOrCreateBlacklistSheet_() {
 function ensureStatusSheetHeaders_(sheet, expectedHeaders) {
   var lastCol = sheet.getLastColumn();
   if (lastCol === 0) return;
-  var headerRow = sheet.getRange(1, 1, 1, lastCol).getValues()[0]
-    .map(function(h) { return String(h).trim(); });
-  var missing = expectedHeaders.filter(function(h) { return headerRow.indexOf(h) === -1; });
+  var headerRow = sheet
+    .getRange(1, 1, 1, lastCol)
+    .getValues()[0]
+    .map(function (h) {
+      return String(h).trim();
+    });
+  var missing = expectedHeaders.filter(function (h) {
+    return headerRow.indexOf(h) === -1;
+  });
   if (missing.length === 0) return;
   var startCol = lastCol + 1;
   sheet.getRange(1, startCol, 1, missing.length).setValues([missing]);
-  sheet.getRange(1, startCol, 1, missing.length)
-    .setFontWeight('bold').setBackground('#005BAC').setFontColor('#FFFFFF');
+  sheet
+    .getRange(1, startCol, 1, missing.length)
+    .setFontWeight("bold")
+    .setBackground("#005BAC")
+    .setFontColor("#FFFFFF");
 }
 
 // ============= Setup All =============
@@ -411,23 +417,128 @@ function setupSpreadsheet() {
   getOrCreateOffboardingSheet_();
   getOrCreateAuditLogSheet_();
   getOrCreateUsersSheet_();
-  getOrCreateProbationEvalSheet_();
+  getOrCreateProbationSheet_();
 }
 
-// ============= Evaluasi_Probation =============
-function getOrCreateProbationEvalSheet_() {
-  var ss    = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(PROBATION_EVAL_SHEET_NAME);
-  if (!sheet) sheet = ss.insertSheet(PROBATION_EVAL_SHEET_NAME);
+// ============= kandidat_probation =============
+function getOrCreateProbationSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(PROBATION_SHEET_NAME);
+  if (!sheet) sheet = ss.insertSheet(PROBATION_SHEET_NAME);
 
   if (sheet.getLastRow() === 0) {
-    sheet.appendRow(PROBATION_EVAL_HEADERS);
-    sheet.getRange(1, 1, 1, PROBATION_EVAL_HEADERS.length)
-      .setFontWeight('bold').setBackground('#7c3aed').setFontColor('#FFFFFF');
+    sheet.appendRow(PROBATION_HEADERS);
+    sheet
+      .getRange(1, 1, 1, PROBATION_HEADERS.length)
+      .setFontWeight("bold")
+      .setBackground("#0e7490")
+      .setFontColor("#FFFFFF");
     sheet.setFrozenRows(1);
-    sheet.autoResizeColumns(1, PROBATION_EVAL_HEADERS.length);
+    sheet.autoResizeColumns(1, PROBATION_HEADERS.length);
   } else {
-    ensureStatusSheetHeaders_(sheet, PROBATION_EVAL_HEADERS);
+    ensureStatusSheetHeaders_(sheet, PROBATION_HEADERS);
   }
   return sheet;
+}
+
+
+// ============================================================
+// UTILITY: Hard-reset header kandidat_accepted ke ACCEPTED_HEADERS
+// Jalankan SEKALI: resetAcceptedSheetHeaders()
+// Data di baris 2+ TIDAK disentuh.
+// Kolom lama yang tidak ada di ACCEPTED_HEADERS diberi header kosong
+// dan background abu-abu sebagai penanda kolom orphan.
+// ============================================================
+function resetAcceptedSheetHeaders() {
+  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(ACCEPTED_SHEET_NAME);
+  if (!sheet) {
+    Browser.msgBox('Sheet "' + ACCEPTED_SHEET_NAME + '" tidak ditemukan.');
+    return;
+  }
+
+  var actualCols   = sheet.getLastColumn();
+  var expectedCols = ACCEPTED_HEADERS.length;
+  var totalCols    = Math.max(actualCols, expectedCols);
+
+  // Buat array header baru: isi dengan ACCEPTED_HEADERS, sisanya kosong
+  var newHeaders = [];
+  for (var i = 0; i < totalCols; i++) {
+    newHeaders.push(i < expectedCols ? ACCEPTED_HEADERS[i] : '');
+  }
+
+  // Tulis baris header
+  sheet.getRange(1, 1, 1, totalCols).setValues([newHeaders]);
+
+  // Styling: kolom aktif (1..expectedCols)
+  sheet.getRange(1, 1, 1, expectedCols)
+    .setFontWeight('bold')
+    .setBackground('#166534')
+    .setFontColor('#FFFFFF');
+
+  // Styling: kolom orphan (expectedCols+1..totalCols)
+  if (totalCols > expectedCols) {
+    sheet.getRange(1, expectedCols + 1, 1, totalCols - expectedCols)
+      .setFontWeight('normal')
+      .setBackground('#cccccc')
+      .setFontColor('#666666');
+  }
+
+  sheet.setFrozenRows(1);
+  sheet.autoResizeColumns(1, expectedCols);
+
+  var msg = 'Header "' + ACCEPTED_SHEET_NAME + '" berhasil direset.\n' +
+    expectedCols + ' kolom aktif.\n' +
+    (totalCols > expectedCols
+      ? (totalCols - expectedCols) + ' kolom lama diberi header kosong (abu-abu).'
+      : 'Tidak ada kolom orphan.');
+  Browser.msgBox(msg);
+}
+
+// ============================================================
+// UTILITY: Reset semua header sheet status sekaligus
+// (kandidat_accepted, kandidat_hold, kandidat_blacklist, kandidat_probation)
+// Jalankan: resetAllStatusSheetHeaders()
+// ============================================================
+function resetAllStatusSheetHeaders() {
+  resetAcceptedSheetHeaders();
+
+  var sheets = [
+    { name: HOLD_SHEET_NAME,      headers: HOLD_HEADERS,      color: '#005BAC' },
+    { name: BLACKLIST_SHEET_NAME, headers: BLACKLIST_HEADERS,  color: '#991b1b' },
+    { name: PROBATION_SHEET_NAME, headers: PROBATION_HEADERS,  color: '#0e7490' },
+  ];
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  sheets.forEach(function(cfg) {
+    var sheet = ss.getSheetByName(cfg.name);
+    if (!sheet) return;
+
+    var actualCols   = sheet.getLastColumn();
+    var expectedCols = cfg.headers.length;
+    var totalCols    = Math.max(actualCols, expectedCols);
+
+    var newHeaders = [];
+    for (var i = 0; i < totalCols; i++) {
+      newHeaders.push(i < expectedCols ? cfg.headers[i] : '');
+    }
+
+    sheet.getRange(1, 1, 1, totalCols).setValues([newHeaders]);
+    sheet.getRange(1, 1, 1, expectedCols)
+      .setFontWeight('bold')
+      .setBackground(cfg.color)
+      .setFontColor('#FFFFFF');
+
+    if (totalCols > expectedCols) {
+      sheet.getRange(1, expectedCols + 1, 1, totalCols - expectedCols)
+        .setFontWeight('normal')
+        .setBackground('#cccccc')
+        .setFontColor('#666666');
+    }
+
+    sheet.setFrozenRows(1);
+    sheet.autoResizeColumns(1, expectedCols);
+  });
+
+  Browser.msgBox('Semua header sheet status berhasil direset.');
 }

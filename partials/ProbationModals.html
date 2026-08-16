@@ -11,7 +11,7 @@
       <div class="modal-header" style="background:#7c3aed;border-radius:16px 16px 0 0">
         <div class="d-flex align-items-center gap-2">
           <i class="bi bi-clipboard-check text-white fs-5"></i>
-          <h6 class="modal-title mb-0 text-white fw-bold">Evaluasi Karyawan Probation</h6>
+          <h6 class="modal-title mb-0 text-white fw-bold">Probation Employee Evaluation</h6>
         </div>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
@@ -19,16 +19,17 @@
       <div class="modal-body p-4">
         <input type="hidden" id="evalEmployeeId" />
         <input type="hidden" id="evalRecruitmentId" />
+        <input type="hidden" id="evalProbationId" />
 
         <!-- Step 1: Search karyawan probation -->
         <div class="mb-3">
           <label class="form-label fw-semibold" style="font-size:13px">
-            <i class="bi bi-search me-1"></i>Cari Karyawan
+            <i class="bi bi-search me-1"></i>Search Employee
             <span class="text-muted fw-normal">(Status: Probation)</span>
           </label>
           <div class="position-relative">
             <input type="text" class="form-control" id="evalEmpSearch"
-              placeholder="Ketik nama atau Employee ID..." autocomplete="off"
+              placeholder="Type name or Employee ID..." autocomplete="off"
               style="font-size:13px;padding-right:36px" />
             <i class="bi bi-x-circle-fill position-absolute" id="evalEmpSearchClear"
               style="right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;display:none"></i>
@@ -57,7 +58,7 @@
               <div class="text-end flex-shrink-0" style="font-size:11.5px">
                 <div class="text-muted">Employee ID</div>
                 <div class="fw-semibold" id="evalEmpIdDisp">-</div>
-                <div class="text-muted mt-1">Kontrak S/D</div>
+                <div class="text-muted mt-1">Contract Until</div>
                 <div class="fw-semibold" id="evalEmpContractEnd">-</div>
               </div>
             </div>
@@ -65,89 +66,89 @@
 
           <!-- Penilaian 5 kriteria -->
           <p class="fw-bold mb-3" style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#7c3aed">
-            <i class="bi bi-star-fill me-1"></i>Penilaian (Skor 1–10)
+            <i class="bi bi-star-fill me-1"></i>Scoring (1–10 per criterion)
           </p>
 
           <div class="row g-3 mb-3">
-            <!-- Kinerja -->
+            <!-- Performance -->
             <div class="col-md-6">
               <label class="form-label fw-semibold" style="font-size:13px">
-                Kinerja & Hasil Kerja <span class="text-danger">*</span>
-                <span class="eval-score-badge ms-2" id="badgeKinerja">-</span>
+                Work Performance <span class="text-danger">*</span>
+                <span class="eval-score-badge ms-2" id="badgePerformance">-</span>
               </label>
-              <input type="range" class="form-range eval-score-range" id="evalSkorKinerja"
-                min="1" max="10" step="1" value="5" data-badge="badgeKinerja" />
+              <input type="range" class="form-range eval-score-range" id="evalScorePerformance"
+                min="1" max="10" step="1" value="5" />
               <div class="d-flex justify-content-between" style="font-size:10px;color:#9ca3af;margin-top:-2px">
-                <span>1 Buruk</span><span>5 Cukup</span><span>10 Sangat Baik</span>
+                <span>1 Poor</span><span>5 Average</span><span>10 Excellent</span>
               </div>
             </div>
-            <!-- Kedisiplinan -->
+            <!-- Discipline -->
             <div class="col-md-6">
               <label class="form-label fw-semibold" style="font-size:13px">
-                Kedisiplinan <span class="text-danger">*</span>
-                <span class="eval-score-badge ms-2" id="badgeKedisiplinan">-</span>
+                Discipline <span class="text-danger">*</span>
+                <span class="eval-score-badge ms-2" id="badgeDiscipline">-</span>
               </label>
-              <input type="range" class="form-range eval-score-range" id="evalSkorKedisiplinan"
-                min="1" max="10" step="1" value="5" data-badge="badgeKedisiplinan" />
+              <input type="range" class="form-range eval-score-range" id="evalScoreDiscipline"
+                min="1" max="10" step="1" value="5" />
               <div class="d-flex justify-content-between" style="font-size:10px;color:#9ca3af;margin-top:-2px">
-                <span>1 Buruk</span><span>5 Cukup</span><span>10 Sangat Baik</span>
+                <span>1 Poor</span><span>5 Average</span><span>10 Excellent</span>
               </div>
             </div>
-            <!-- Komunikasi -->
+            <!-- Communication -->
             <div class="col-md-6">
               <label class="form-label fw-semibold" style="font-size:13px">
-                Komunikasi <span class="text-danger">*</span>
-                <span class="eval-score-badge ms-2" id="badgeKomunikasi">-</span>
+                Communication <span class="text-danger">*</span>
+                <span class="eval-score-badge ms-2" id="badgeCommunication">-</span>
               </label>
-              <input type="range" class="form-range eval-score-range" id="evalSkorKomunikasi"
-                min="1" max="10" step="1" value="5" data-badge="badgeKomunikasi" />
+              <input type="range" class="form-range eval-score-range" id="evalScoreCommunication"
+                min="1" max="10" step="1" value="5" />
               <div class="d-flex justify-content-between" style="font-size:10px;color:#9ca3af;margin-top:-2px">
-                <span>1 Buruk</span><span>5 Cukup</span><span>10 Sangat Baik</span>
+                <span>1 Poor</span><span>5 Average</span><span>10 Excellent</span>
               </div>
             </div>
-            <!-- Inisiatif -->
+            <!-- Initiative -->
             <div class="col-md-6">
               <label class="form-label fw-semibold" style="font-size:13px">
-                Inisiatif & Kreativitas <span class="text-danger">*</span>
-                <span class="eval-score-badge ms-2" id="badgeInisiatif">-</span>
+                Initiative & Creativity <span class="text-danger">*</span>
+                <span class="eval-score-badge ms-2" id="badgeInitiative">-</span>
               </label>
-              <input type="range" class="form-range eval-score-range" id="evalSkorInisiatif"
-                min="1" max="10" step="1" value="5" data-badge="badgeInisiatif" />
+              <input type="range" class="form-range eval-score-range" id="evalScoreInitiative"
+                min="1" max="10" step="1" value="5" />
               <div class="d-flex justify-content-between" style="font-size:10px;color:#9ca3af;margin-top:-2px">
-                <span>1 Buruk</span><span>5 Cukup</span><span>10 Sangat Baik</span>
+                <span>1 Poor</span><span>5 Average</span><span>10 Excellent</span>
               </div>
             </div>
             <!-- Teamwork -->
             <div class="col-12 col-md-6">
               <label class="form-label fw-semibold" style="font-size:13px">
-                Kerjasama Tim <span class="text-danger">*</span>
+                Teamwork <span class="text-danger">*</span>
                 <span class="eval-score-badge ms-2" id="badgeTeamwork">-</span>
               </label>
-              <input type="range" class="form-range eval-score-range" id="evalSkorTeamwork"
-                min="1" max="10" step="1" value="5" data-badge="badgeTeamwork" />
+              <input type="range" class="form-range eval-score-range" id="evalScoreTeamwork"
+                min="1" max="10" step="1" value="5" />
               <div class="d-flex justify-content-between" style="font-size:10px;color:#9ca3af;margin-top:-2px">
-                <span>1 Buruk</span><span>5 Cukup</span><span>10 Sangat Baik</span>
+                <span>1 Poor</span><span>5 Average</span><span>10 Excellent</span>
               </div>
             </div>
-            <!-- Nilai rata-rata (auto) -->
+            <!-- Average Score (auto) -->
             <div class="col-12 col-md-6 d-flex align-items-end">
               <div class="w-100 p-3 rounded-3 text-center"
                 style="background:#f5f3ff;border:2px solid #7c3aed">
-                <div class="text-muted fw-semibold" style="font-size:11px;text-transform:uppercase;letter-spacing:.04em">Nilai Rata-rata</div>
+                <div class="text-muted fw-semibold" style="font-size:11px;text-transform:uppercase;letter-spacing:.04em">Average Score</div>
                 <div class="fw-bold mt-1" id="evalAvgScore"
                   style="font-size:28px;color:#7c3aed;line-height:1">5.0</div>
-                <div style="font-size:11px;color:#9ca3af">dari 10</div>
+                <div style="font-size:11px;color:#9ca3af">out of 10</div>
               </div>
             </div>
           </div>
 
-          <!-- Keputusan -->
+          <!-- Decision -->
           <p class="fw-bold mb-3" style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#7c3aed">
-            <i class="bi bi-check2-circle me-1"></i>Keputusan <span class="text-danger">*</span>
+            <i class="bi bi-check2-circle me-1"></i>Decision <span class="text-danger">*</span>
           </p>
           <div class="d-flex flex-column gap-2 mb-4" id="evalDecisionOptions">
 
-            <!-- Lulus -->
+            <!-- Pass -->
             <div class="eval-decision-opt p-3 rounded-3"
               data-value="Lulus → Karyawan Tetap"
               style="border:2px solid #e5e7eb;cursor:pointer;transition:border-color .15s,background .15s">
@@ -157,14 +158,14 @@
                 </div>
                 <div>
                   <div class="fw-semibold" style="font-size:13px">
-                    <i class="bi bi-trophy-fill me-1" style="color:#166534"></i>Lulus → Karyawan Tetap
+                    <i class="bi bi-trophy-fill me-1" style="color:#166534"></i>Pass → Permanent Employee
                   </div>
-                  <div class="text-muted" style="font-size:11px">Karyawan diangkat sebagai karyawan tetap, status berubah ke Active. SK Pengangkatan diterbitkan.</div>
+                  <div class="text-muted" style="font-size:11px">Employee is promoted to permanent status. SK Pengangkatan will be generated.</div>
                 </div>
               </div>
             </div>
 
-            <!-- Perpanjang -->
+            <!-- Extend -->
             <div class="eval-decision-opt p-3 rounded-3"
               data-value="Tidak Lulus → Perpanjang Probation"
               style="border:2px solid #e5e7eb;cursor:pointer;transition:border-color .15s,background .15s">
@@ -174,60 +175,59 @@
                 </div>
                 <div>
                   <div class="fw-semibold" style="font-size:13px">
-                    <i class="bi bi-arrow-repeat me-1" style="color:#d97706"></i>Tidak Lulus → Perpanjang Probation
+                    <i class="bi bi-arrow-repeat me-1" style="color:#d97706"></i>Not Pass → Extend Probation
                   </div>
-                  <div class="text-muted" style="font-size:11px">Kontrak probation diperpanjang. SK Perpanjangan diterbitkan.</div>
+                  <div class="text-muted" style="font-size:11px">Probation contract is extended. SK Perpanjangan will be generated.</div>
                 </div>
               </div>
             </div>
 
           </div>
 
-          <!-- Form perpanjang (conditional) -->
+          <!-- Extension detail (conditional) -->
           <div id="evalExtendSection" style="display:none">
             <p class="fw-bold mb-3" style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#d97706">
-              <i class="bi bi-calendar-range me-1"></i>Detail Perpanjangan
+              <i class="bi bi-calendar-range me-1"></i>Extension Details
             </p>
             <div class="row g-3 mb-4">
               <div class="col-md-4">
-                <label class="form-label fw-semibold" style="font-size:13px">Durasi Perpanjang <span class="text-danger">*</span></label>
+                <label class="form-label fw-semibold" style="font-size:13px">Extension Duration <span class="text-danger">*</span></label>
                 <select class="form-select form-select-sm" id="evalDurasiPerpanjang">
-                  <option value="">— Pilih —</option>
-                  <option value="1 Bulan">1 Bulan</option>
-                  <option value="2 Bulan">2 Bulan</option>
-                  <option value="3 Bulan">3 Bulan</option>
-                  <option value="6 Bulan">6 Bulan</option>
+                  <option value="">— Select —</option>
+                  <option value="1 Bulan">1 Month</option>
+                  <option value="3 Bulan">3 Months</option>
+                  <option value="6 Bulan">6 Months</option>
                 </select>
               </div>
               <div class="col-md-4">
-                <label class="form-label fw-semibold" style="font-size:13px">Mulai Kontrak Baru <span class="text-danger">*</span></label>
+                <label class="form-label fw-semibold" style="font-size:13px">New Contract Start <span class="text-danger">*</span></label>
                 <input type="date" class="form-control form-control-sm" id="evalKontrakBaruStart" />
               </div>
               <div class="col-md-4">
-                <label class="form-label fw-semibold" style="font-size:13px">Selesai Kontrak Baru</label>
+                <label class="form-label fw-semibold" style="font-size:13px">New Contract End</label>
                 <input type="date" class="form-control form-control-sm" id="evalKontrakBaruEnd" />
-                <div class="form-text" id="evalExtendEndHint" style="font-size:11px">Auto-hitung dari durasi</div>
+                <div class="form-text" id="evalExtendEndHint" style="font-size:11px">Auto-calculated from duration</div>
               </div>
             </div>
           </div>
 
-          <!-- Catatan -->
+          <!-- Evaluator Notes -->
           <div class="mb-0">
-            <label class="form-label fw-semibold" style="font-size:13px">Catatan Evaluator <span class="text-muted fw-normal">(opsional)</span></label>
+            <label class="form-label fw-semibold" style="font-size:13px">Evaluator Notes <span class="text-muted fw-normal">(optional)</span></label>
             <textarea class="form-control form-control-sm" id="evalCatatan" rows="2"
-              placeholder="Contoh: Perlu peningkatan di aspek komunikasi dan ketepatan waktu..."></textarea>
+              placeholder="e.g. Needs improvement in communication skills and punctuality..."></textarea>
           </div>
 
         </div><!-- /#evalEmpPreview -->
       </div>
 
       <div class="modal-footer">
-        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
         <button class="btn btn-sm text-white fw-semibold" style="background:#7c3aed"
           id="btnConfirmEval" disabled>
-          <span id="btnEvalText"><i class="bi bi-clipboard-check me-1"></i>Simpan & Generate SK</span>
+          <span id="btnEvalText"><i class="bi bi-clipboard-check me-1"></i>Save & Generate SK</span>
           <span id="btnEvalLoading" style="display:none">
-            <span class="spinner-border spinner-border-sm me-1"></span>Memproses...
+            <span class="spinner-border spinner-border-sm me-1"></span>Processing...
           </span>
         </button>
       </div>
@@ -237,25 +237,25 @@
 </div>
 
 <!-- ============================================================
-     RIWAYAT EVALUASI MODAL (untuk lihat history per karyawan)
+     RIWAYAT EVALUASI MODAL
 ============================================================ -->
 <div class="modal fade" id="evalHistoryModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
     <div class="modal-content" style="border-radius:16px">
       <div class="modal-header">
         <div>
-          <h6 class="modal-title mb-0 fw-bold">Riwayat Evaluasi</h6>
+          <h6 class="modal-title mb-0 fw-bold">Evaluation History</h6>
           <small class="text-muted" id="evalHistoryEmpName">-</small>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body p-3">
         <div id="evalHistoryBody">
-          <div class="text-center text-muted py-4" style="font-size:13px">Memuat riwayat...</div>
+          <div class="text-center text-muted py-4" style="font-size:13px">Loading history...</div>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
   </div>
