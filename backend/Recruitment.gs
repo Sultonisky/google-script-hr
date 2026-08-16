@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // backend/Recruitment.gs — CRUD KANDIDAT
 // ============================================================
 
@@ -455,7 +455,7 @@ function acceptCandidateToEmployee(recruitmentId, hrNotes) {
       newRow[EMPLOYEE_COL["Cost Center"] - 1] = "";
       newRow[EMPLOYEE_COL["Direct Superior"] - 1] = "";
       newRow[EMPLOYEE_COL["Indirect Superior"] - 1] = "";
-      newRow[EMPLOYEE_COL["Status Employee"] - 1] = "Active";
+      newRow[EMPLOYEE_COL["Status Employee"] - 1] = "Contract";
       newRow[EMPLOYEE_COL["Join Date"] - 1] = Utilities.formatDate(
         now,
         "GMT+7",
@@ -844,7 +844,7 @@ function moveStatusCandidate(
           "GMT+7",
           "yyyy-MM-dd",
         );
-        empRow[EMPLOYEE_COL["Status"] - 1] = "Active";
+        empRow[EMPLOYEE_COL["Status"] - 1] = "Contract";
         empRow[EMPLOYEE_COL["Created At"] - 1] = nowStr;
         empRow[EMPLOYEE_COL["NIK"] - 1] = found.values[found.colIndex["NIK"]];
         empRow[EMPLOYEE_COL["Birth Date"] - 1] =
@@ -859,7 +859,7 @@ function moveStatusCandidate(
           found.values[found.colIndex["Address"]] || "";
         empRow[EMPLOYEE_COL["Lokasi Kerja"] - 1] =
           found.values[found.colIndex["City"]] || "";
-        empRow[EMPLOYEE_COL["Status Employee"] - 1] = "Active";
+        empRow[EMPLOYEE_COL["Status Employee"] - 1] = "Contract";
         empRow[EMPLOYEE_COL["Created By"] - 1] = "System";
         empRow[EMPLOYEE_COL["Updated At"] - 1] = nowStr;
         empSheet.appendRow(empRow);

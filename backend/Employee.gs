@@ -41,7 +41,7 @@ function getEmployeeList() {
       var statusLegacy = sval(row, "Status");
       var empStatusLegacy = sval(row, "Employment Status");
       var finalStatus =
-        statusEmployee || empStatusLegacy || statusLegacy || "Active";
+        statusEmployee || empStatusLegacy || statusLegacy || "Contract";
 
       var createdAtRaw = col("Created At") === -1 ? "" : row[col("Created At")];
       var updatedAtRaw = col("Updated At") === -1 ? "" : row[col("Updated At")];
@@ -93,13 +93,17 @@ function getEmployeeList() {
         status: finalStatus,
         employmentStatus: finalStatus,
         joinDate: dval(row, "Join Date"),
-        contractEnd:
-          dval(row, "End Date (Contract)") || dval(row, "Contract End"),
+        contractStart:    sval(row, "Start Date (Contract)"),
+        contractEnd:      dval(row, "End Date (Contract)") || dval(row, "Contract End"),
+        contractDuration: sval(row, "Contract Duration"),
+        contractNumber:   sval(row, "Contract Number"),
         positionFormer: sval(row, "Job Position (Former)"),
         typeOfRotation: sval(row, "Type of Rotation"),
         mutasiDate: dval(row, "Tanggal Mutasi/Demosi/Promosi"),
         nomorSk: sval(row, "Nomor SK"),
         resignDate: dval(row, "Resign Date"),
+        hrNotes:          sval(row, "HR Notes"),
+        outsourceVendor:  sval(row, "Outsource Vendor"),
         createdBy: sval(row, "Created By"),
         createdAt:
           createdAtRaw instanceof Date
@@ -195,7 +199,7 @@ function addEmployee(empData) {
       empData.statusEmployee ||
       empData.status ||
       empData.employmentStatus ||
-      "Active";
+      "Contract";
     newRow[EMPLOYEE_COL["Join Date"] - 1] = empData.joinDate || createdAt;
     newRow[EMPLOYEE_COL["End Date (Contract)"] - 1] = empData.contractEnd || "";
     newRow[EMPLOYEE_COL["Job Position (Former)"] - 1] =
@@ -219,140 +223,6 @@ function addEmployee(empData) {
     };
   } catch (e) {
     return { success: false, message: e.toString() };
-  }
-}
-
-// ============= OFFBOARDING =============
-// Status karyawan yang memicu offboarding otomatis
-var OFFBOARDING_TRIGGER_STATUSES = ["Resigned", "Terminated", "On Leave"];
-
-// Pemetaan status employee -> Offboarding Type
-var OFFBOARDING_TYPE_MAP = {
-  Resigned: "Resignation",
-  Terminated: "Termination",
-  "On Leave": "On Leave",
-};
-
-// Kembalikan nama offboarding type untuk sebuah status, atau null jika
-// status tersebut tidak memicu offboarding.
-function resolveOffboardingType_(status) {
-  status = String(status || "").trim();
-  return OFFBOARDING_TYPE_MAP[status] || null;
-}
-
-// Simpan catatan offboarding ke sheet Offboarding (buat jika belum ada).
-// Dipanggil dari updateEmployee saat status berubah ke Resigned / Terminated /
-// On Leave. Mengirim lock dari caller (updateEmployee), jadi tidak mengambil
-// lock ulang.
-function offboardEmployee_(employeeId, offboardingType, reason, notes) {
-  try {
-    var sheet = getOrCreateEmployeeSheet_();
-    var data = sheet.getDataRange().getValues();
-    var headers = data[0];
-    var colIndex = {};
-    headers.forEach(function (h, i) {
-      colIndex[String(h).trim()] = i;
-    });
-
-    var row = null;
-    for (var r = 1; r < data.length; r++) {
-      if (
-        String(data[r][colIndex["Employee ID"]] || "") === String(employeeId)
-      ) {
-        row = data[r];
-        break;
-      }
-    }
-    if (!row)
-      return {
-        success: false,
-        message: "Karyawan tidak ditemukan: " + employeeId,
-      };
-
-    // Cegah duplikat: sudah ada offboarding bertipe sama untuk employee ini
-    var offSheet = getOrCreateOffboardingSheet_();
-    if (offSheet.getLastRow() > 1) {
-      var offData = offSheet
-        .getRange(2, 1, offSheet.getLastRow() - 1, OFFBOARDING_HEADERS.length)
-        .getValues();
-      for (var i = 0; i < offData.length; i++) {
-        if (
-          String(offData[i][OFFBOARD_COL["Employee ID"] - 1] || "") ===
-            String(employeeId) &&
-          String(offData[i][OFFBOARD_COL["Offboarding Type"] - 1] || "") ===
-            String(offboardingType)
-        ) {
-          return {
-            success: false,
-            duplicate: true,
-            offboardingId: String(
-              offData[i][OFFBOARD_COL["Offboarding ID"] - 1] || "",
-            ),
-          };
-        }
-      }
-    }
-
-    var user = Session.getActiveUser().getEmail() || "HR Dashboard";
-    var now = new Date();
-    var nowStr = Utilities.formatDate(now, "GMT+7", "yyyy-MM-dd HH:mm:ss");
-    var offboardingId = generateOffboardingId_(now);
-
-    function val(name) {
-      var i = colIndex[name];
-      if (i !== undefined) return String(row[i] || "");
-      // Fallback mapping for renamed headers during migration
-      var fallbackMap = {
-        Position: "Job Position (Locaction)",
-        Address: "Citizen ID Address",
-        Email: "Personal Email",
-        Phone: "Mobile Phone",
-        NIK: "NIK - NPWP 16 digit",
-        Branch: "Branch Name",
-        City: "Lokasi Kerja",
-        "Contract Start": "Start Date (Contract)",
-        "Contract End": "End Date (Contract)",
-        "Recruitment ID": "Recruitment ID (System Link)",
-      };
-      if (fallbackMap[name]) {
-        var j = colIndex[fallbackMap[name]];
-        return j === undefined ? "" : String(row[j] || "");
-      }
-      return "";
-    }
-
-    var newRow = new Array(OFFBOARDING_HEADERS.length).fill("");
-    newRow[OFFBOARD_COL["Offboarding ID"] - 1] = offboardingId;
-    newRow[OFFBOARD_COL["Employee ID"] - 1] = employeeId;
-    newRow[OFFBOARD_COL["Full Name"] - 1] = val("Full Name");
-    newRow[OFFBOARD_COL["Position"] - 1] = val("Position");
-    newRow[OFFBOARD_COL["Department"] - 1] = val("Department");
-    newRow[OFFBOARD_COL["Join Date"] - 1] = val("Join Date");
-    newRow[OFFBOARD_COL["Last Working Date"] - 1] = nowStr;
-    newRow[OFFBOARD_COL["Offboarding Type"] - 1] = offboardingType;
-    newRow[OFFBOARD_COL["Reason"] - 1] = reason || "";
-    newRow[OFFBOARD_COL["Approved By"] - 1] = user;
-    newRow[OFFBOARD_COL["Notes"] - 1] = notes || "";
-    newRow[OFFBOARD_COL["Status"] - 1] = "Active";
-    newRow[OFFBOARD_COL["Archived"] - 1] = "No";
-    newRow[OFFBOARD_COL["Created By"] - 1] = user;
-    newRow[OFFBOARD_COL["Created At"] - 1] = nowStr;
-    newRow[OFFBOARD_COL["Updated At"] - 1] = nowStr;
-
-    offSheet.appendRow(newRow);
-
-    writeAuditLog_(
-      employeeId,
-      "Offboarding",
-      "Status Employee",
-      offboardingType,
-      offboardingType + " -> " + offboardingId,
-    );
-
-    return { success: true, offboardingId: offboardingId };
-  } catch (err) {
-    Logger.log("offboardEmployee_ ERROR for " + employeeId + ": " + err);
-    return { success: false, message: err.toString() };
   }
 }
 
@@ -397,7 +267,7 @@ function updateEmployee(id, updates) {
         var oldStatus =
           gcol("Status") !== -1 ? String(data[i][gcol("Status")] || "") : "";
         var finalOldStatus =
-          oldStatusEmployee || oldEmploymentStatus || oldStatus || "Active";
+          oldStatusEmployee || oldEmploymentStatus || oldStatus || "Contract";
 
         // Map camelCase update keys to header names (Schema v2)
         // Legacy keys preserved for backward compat
@@ -444,16 +314,23 @@ function updateEmployee(id, updates) {
           directSuperior: "Direct Superior",
           indirectSuperior: "Indirect Superior",
           statusEmployee: "Status Employee",
-          employmentStatus: "Status Employee", // legacy merge ? single column
-          status: "Status Employee", // legacy merge ? single column
+          employmentStatus: "Status Employee", // legacy merge → single column
+          status: "Status Employee",           // legacy merge → single column
           joinDate: "Join Date",
-          contractEnd: "End Date (Contract)",
-          positionFormer: "Job Position (Former)",
-          typeOfRotation: "Type of Rotation",
-          mutasiDate: "Tanggal Mutasi/Demosi/Promosi",
-          nomorSk: "Nomor SK",
-          resignDate: "Resign Date",
-          createdBy: "Created By",
+          contractStart:    "Start Date (Contract)",
+          startDateContract:"Start Date (Contract)", // legacy alias
+          contractEnd:      "End Date (Contract)",
+          contractDuration: "Contract Duration",
+          contractNumber:   "Contract Number",
+          positionFormer:   "Job Position (Former)",
+          typeOfRotation:   "Type of Rotation",
+          mutasiDate:       "Tanggal Mutasi/Demosi/Promosi",
+          nomorSk:          "Nomor SK",
+          resignDate:       "Resign Date",
+          hrNotes:          "HR Notes",
+          notes:            "HR Notes",          // alias → same column
+          outsourceVendor:  "Outsource Vendor",  // kolom opsional di sheet
+          createdBy:        "Created By",
         };
 
         var col = -1;
@@ -483,9 +360,6 @@ function updateEmployee(id, updates) {
                 : finalOldStatus;
 
         var changedStatus = incomingStatusEmployee !== finalOldStatus;
-        var offboardingType = null;
-        if (changedStatus)
-          offboardingType = resolveOffboardingType_(incomingStatusEmployee);
 
         // Audit perubahan status (wajib sesuai AGENTS.md).
         if (changedStatus) {
@@ -497,29 +371,11 @@ function updateEmployee(id, updates) {
             incomingStatusEmployee,
           );
         }
-
-        var offboardResult = null;
-        if (offboardingType) {
-          var reason = updates.reason || "";
-          var note = updates.notes || updates.hrNotes || "";
-          if (note === reason) note = "";
-          offboardResult = offboardEmployee_(id, offboardingType, reason, note);
-        }
-
         lock.releaseLock();
 
         return {
           success: true,
           message: "Data karyawan berhasil diperbarui.",
-          offboarding: offboardResult
-            ? {
-                triggered: true,
-                type: offboardingType,
-                id: offboardResult.offboardingId || null,
-                duplicate: !!offboardResult.duplicate,
-                offboardId: offboardResult.offboardingId,
-              }
-            : { triggered: false },
         };
       }
     }
@@ -580,7 +436,7 @@ function getEmployeeStats() {
 
     items.forEach(function (emp) {
       var s = (emp.statusEmployee || "").toLowerCase();
-      if (s === "active" || s === "probation") stats.active++;
+      if (s === "permanent" || s === "contract" || s === "probation" || s === "active") stats.active++;
       else stats.inactive++;
 
       var dept = emp.department || "Belum Ditentukan";
@@ -940,9 +796,9 @@ function saveProbationEval(evalData, evaluatedBy) {
       if (cNum) empSheet.getRange(empRowNum, cNum).setValue(value);
     }
     if (isLulus) {
-      safeSetEmp("Status Employee", "Active");
-      safeSetEmp("Status", "Active");
-      safeSetEmp("Employment Status", "Active");
+      safeSetEmp("Status Employee", "Permanent");
+      safeSetEmp("Status", "Permanent");
+      safeSetEmp("Employment Status", "Permanent");
       safeSetEmp("Updated At", nowStr);
       writeAuditLog_(
         evalData.employeeId,
@@ -983,6 +839,163 @@ function saveProbationEval(evalData, evaluatedBy) {
       nowStr: nowStr,
     };
   } catch (err) {
+    return { success: false, message: err.message };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ============================================================
+// PROCESS OFFBOARDING — dipanggil dari modal Offboarding di Employee page
+//
+// payload: {
+//   employeeId, offboardingType, lastWorkingDate, reason,
+//   bpjsKetenagakerjaan, bpjsKesehatan, paklaring,
+//   approvedBy, notes
+// }
+// ============================================================
+function processOffboarding(payload) {
+  if (!payload || !payload.employeeId) {
+    return { success: false, message: 'Employee ID wajib diisi.' };
+  }
+  if (!payload.offboardingType) {
+    return { success: false, message: 'Tipe offboarding wajib diisi.' };
+  }
+  if (!payload.lastWorkingDate) {
+    return { success: false, message: 'Last Working Date wajib diisi.' };
+  }
+  if (!payload.reason) {
+    return { success: false, message: 'Alasan offboarding wajib diisi.' };
+  }
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var now    = new Date();
+    var nowStr = Utilities.formatDate(now, 'GMT+7', 'yyyy-MM-dd HH:mm:ss');
+    var user   = Session.getActiveUser().getEmail() || 'HR Dashboard';
+    var approvedBy = payload.approvedBy || user;
+
+    // -- 1. Ambil data employee -----------------------------------
+    var empSheet = getOrCreateEmployeeSheet_();
+    var empData  = empSheet.getDataRange().getValues();
+    var empHdr   = empData[0];
+    var empCI    = {};
+    empHdr.forEach(function(h, i) { empCI[String(h).trim()] = i; });
+
+    var empRowIdx = -1;
+    for (var r = 1; r < empData.length; r++) {
+      if (String(empData[r][empCI['Employee ID']] || '').trim() === String(payload.employeeId).trim()) {
+        empRowIdx = r;
+        break;
+      }
+    }
+    if (empRowIdx === -1) {
+      return { success: false, message: 'Employee ID tidak ditemukan: ' + payload.employeeId };
+    }
+
+    var empRow = empData[empRowIdx];
+    function ev(col) {
+      var idx = empCI[col];
+      if (idx !== undefined) return String(empRow[idx] || '');
+      // fallback untuk header lama
+      var fb = {
+        'Position': ['Job Position (Locaction)', 'Job Position'],
+        'NIK': ['NIK - NPWP 16 digit'],
+      };
+      if (fb[col]) {
+        for (var i = 0; i < fb[col].length; i++) {
+          var j = empCI[fb[col][i]];
+          if (j !== undefined) return String(empRow[j] || '');
+        }
+      }
+      return '';
+    }
+
+    // -- 2. Tentukan status baru berdasarkan tipe offboarding ----
+    var statusMap = {
+      'Resignation':   'Resigned',
+      'Termination':   'Terminated',
+      'Retirement':    'Retired',
+      'Contract End':  'Inactive',
+      'On Leave':      'On Leave',
+    };
+    var newStatus = statusMap[payload.offboardingType] || 'Inactive';
+    var oldStatus = ev('Status Employee') || ev('Status') || 'Active';
+
+    // -- 3. Update Employee sheet --------------------------------
+    var empRowNum = empRowIdx + 1; // 1-based
+    function safeSet(colName, value) {
+      var colNum = EMPLOYEE_COL[colName];
+      if (colNum) empSheet.getRange(empRowNum, colNum).setValue(value);
+    }
+    safeSet('Status Employee', newStatus);
+    safeSet('Resign Date',     payload.lastWorkingDate);
+    safeSet('Nomor SK',        payload.offboardingType + ' — ' + payload.reason.substring(0, 50));
+    safeSet('Updated At',      nowStr);
+
+    // -- 4. Tulis ke sheet Offboarding ---------------------------
+    var offSheet = getOrCreateOffboardingSheet_();
+
+    // Cek duplikat: cegah offboarding tipe sama untuk employee yang sama
+    if (offSheet.getLastRow() > 1) {
+      var offData = offSheet.getRange(2, 1, offSheet.getLastRow() - 1, OFFBOARDING_HEADERS.length).getValues();
+      for (var i = 0; i < offData.length; i++) {
+        if (String(offData[i][OFFBOARD_COL['Employee ID'] - 1] || '') === String(payload.employeeId) &&
+            String(offData[i][OFFBOARD_COL['Offboarding Type'] - 1] || '') === String(payload.offboardingType) &&
+            String(offData[i][OFFBOARD_COL['Status'] - 1] || '') === 'Active') {
+          return {
+            success: false,
+            message: 'Offboarding dengan tipe "' + payload.offboardingType + '" sudah ada dan masih aktif untuk karyawan ini.'
+          };
+        }
+      }
+    }
+
+    var offboardingId = generateOffboardingId_(now);
+    var newRow = new Array(OFFBOARDING_HEADERS.length).fill('');
+    newRow[OFFBOARD_COL['Offboarding ID'] - 1]    = offboardingId;
+    newRow[OFFBOARD_COL['Employee ID'] - 1]        = payload.employeeId;
+    newRow[OFFBOARD_COL['Full Name'] - 1]          = ev('Full Name');
+    newRow[OFFBOARD_COL['Position'] - 1]           = ev('Position');
+    newRow[OFFBOARD_COL['Department'] - 1]         = ev('Department');
+    newRow[OFFBOARD_COL['Join Date'] - 1]          = ev('Join Date');
+    newRow[OFFBOARD_COL['Last Working Date'] - 1]  = payload.lastWorkingDate;
+    newRow[OFFBOARD_COL['Offboarding Type'] - 1]   = payload.offboardingType;
+    newRow[OFFBOARD_COL['Reason'] - 1]             = payload.reason;
+    newRow[OFFBOARD_COL['Approved By'] - 1]        = approvedBy;
+    newRow[OFFBOARD_COL['Notes'] - 1]              = [
+      payload.notes          ? 'Notes: '   + payload.notes          : '',
+      payload.bpjsKetenagakerjaan ? 'BPJS TK: ' + payload.bpjsKetenagakerjaan : '',
+      payload.bpjsKesehatan  ? 'BPJS Kes: ' + payload.bpjsKesehatan  : '',
+      payload.paklaring      ? 'Paklaring: ' + payload.paklaring      : '',
+    ].filter(Boolean).join(' | ');
+    newRow[OFFBOARD_COL['Status'] - 1]             = 'Active';
+    newRow[OFFBOARD_COL['Archived'] - 1]           = 'No';
+    newRow[OFFBOARD_COL['Created By'] - 1]         = user;
+    newRow[OFFBOARD_COL['Created At'] - 1]         = nowStr;
+    newRow[OFFBOARD_COL['Updated At'] - 1]         = nowStr;
+
+    offSheet.appendRow(newRow);
+
+    // -- 5. Audit log --------------------------------------------
+    writeAuditLog_(
+      payload.employeeId,
+      'Offboarding',
+      'Status Employee',
+      oldStatus,
+      newStatus + ' — ' + payload.offboardingType + ' (' + offboardingId + ')'
+    );
+
+    return {
+      success:       true,
+      offboardingId: offboardingId,
+      employeeId:    payload.employeeId,
+      newStatus:     newStatus,
+      message:       'Offboarding berhasil diproses. Status karyawan diubah ke "' + newStatus + '".',
+    };
+  } catch (err) {
+    Logger.log('processOffboarding ERROR: ' + err);
     return { success: false, message: err.message };
   } finally {
     lock.releaseLock();

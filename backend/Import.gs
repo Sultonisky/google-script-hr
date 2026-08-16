@@ -185,7 +185,7 @@ function importEmployees(rows) {
         row.indirectSuperior || "",
       ).trim();
       newRow[EMPLOYEE_COL["Status Employee"] - 1] = String(
-        row.statusEmployee || row.employmentStatus || row.status || "Active",
+        row.statusEmployee || row.employmentStatus || row.status || "Contract",
       ).trim();
       newRow[EMPLOYEE_COL["Join Date"] - 1] = String(row.joinDate || "").trim();
       newRow[EMPLOYEE_COL["Start Date (Contract)"] - 1] = String(
