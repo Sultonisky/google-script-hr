@@ -86,8 +86,14 @@
   function _updateProbStats() {
     var total     = _probData.length;
     var evaluated = _probData.filter(function(r) { return r.lastEvalDate && r.lastEvalDate !== '-'; }).length;
-    var passed    = _probData.filter(function(r) { return r.lastKeputusan === 'Lulus → Karyawan Tetap'; }).length;
-    var extended  = _probData.filter(function(r) { return r.lastKeputusan === 'Tidak Lulus → Perpanjang Probation'; }).length;
+    var passed    = _probData.filter(function(r) {
+      var k = r.lastKeputusan || r.decision || '';
+      return k.indexOf('Lulus') === 0 || k.indexOf('Pass') === 0;
+    }).length;
+    var extended  = _probData.filter(function(r) {
+      var k = r.lastKeputusan || r.decision || '';
+      return k.indexOf('Tidak Lulus') !== -1 || k.indexOf('Perpanjang') !== -1 || k.indexOf('Extend') !== -1;
+    }).length;
     var elT = document.getElementById('probStatTotal');
     var elE = document.getElementById('probStatEvaluated');
     var elP = document.getElementById('probStatPassed');
@@ -159,11 +165,12 @@
         scoreHtml = '<span class="badge-status ' + cls + '" style="font-size:11px;padding:2px 8px">' + s.toFixed(1) + '</span>';
       }
       // Badge keputusan
-      var kepHtml = '<span style="color:#9ca3af;font-size:12px">Belum dievaluasi</span>';
-      if (r.lastKeputusan) {
-        var isLulus = r.lastKeputusan.indexOf('Lulus') === 0;
+      var kepHtml = '<span style="color:#9ca3af;font-size:12px">Not yet evaluated</span>';
+      var keputusan = r.lastKeputusan || r.decision || '';
+      if (keputusan) {
+        var isLulus = keputusan.indexOf('Lulus') === 0 || keputusan.indexOf('Pass') === 0;
         kepHtml = '<span class="badge-status ' + (isLulus ? 'accepted' : 'hold') + '" style="font-size:10px;padding:2px 8px">' +
-          (isLulus ? '<i class="bi bi-check-circle-fill me-1"></i>Lulus Tetap' : '<i class="bi bi-arrow-repeat me-1"></i>Diperpanjang') +
+          (isLulus ? '<i class="bi bi-check-circle-fill me-1"></i>Passed' : '<i class="bi bi-arrow-repeat me-1"></i>Extended') +
           '</span>';
       }
 
@@ -249,7 +256,7 @@
     if (dropEl)   dropEl.style.display  = 'none';
     _fillEvalEmpPreview(emp);
     // Reset sliders to 5
-    ['evalSkorKinerja','evalSkorKedisiplinan','evalSkorKomunikasi','evalSkorInisiatif','evalSkorTeamwork'].forEach(function(id) {
+    ['evalScorePerformance','evalScoreDiscipline','evalScoreCommunication','evalScoreInitiative','evalScoreTeamwork'].forEach(function(id) {
       var el = document.getElementById(id); if (el) el.value = 5;
     });
     _updateEvalBadgesAndAvg();
@@ -287,20 +294,22 @@
     var endEl     = document.getElementById('evalEmpContractEnd');
     var hidIdEl   = document.getElementById('evalEmployeeId');
     var hidRidEl  = document.getElementById('evalRecruitmentId');
+    var hidPidEl  = document.getElementById('evalProbationId');
     if (avatarEl)  avatarEl.innerText  = initials(emp.fullName);
-    if (nameEl)    nameEl.innerText    = emp.fullName     || '-';
-    if (posEl)     posEl.innerText     = emp.position     || '-';
-    if (deptEl)    deptEl.innerText    = emp.department   || '-';
-    if (idDispEl)  idDispEl.innerText  = emp.employeeId   || '-';
-    if (endEl)     endEl.innerText     = emp.contractEnd  || '-';
-    if (hidIdEl)   hidIdEl.value       = emp.employeeId   || '';
-    if (hidRidEl)  hidRidEl.value      = emp.recruitmentId|| '';
+    if (nameEl)    nameEl.innerText    = emp.fullName       || '-';
+    if (posEl)     posEl.innerText     = emp.position       || '-';
+    if (deptEl)    deptEl.innerText    = emp.department     || '-';
+    if (idDispEl)  idDispEl.innerText  = emp.employeeId     || '-';
+    if (endEl)     endEl.innerText     = emp.contractEnd    || '-';
+    if (hidIdEl)   hidIdEl.value       = emp.employeeId     || '';
+    if (hidRidEl)  hidRidEl.value      = emp.recruitmentId  || '';
+    if (hidPidEl)  hidPidEl.value      = emp.probationId    || '';
     setTimeout(_updateEvalConfirmBtn, 0);
   }
 
   function _updateEvalBadgesAndAvg() {
-    var ids = ['evalSkorKinerja','evalSkorKedisiplinan','evalSkorKomunikasi','evalSkorInisiatif','evalSkorTeamwork'];
-    var badgeIds = ['badgeKinerja','badgeKedisiplinan','badgeKomunikasi','badgeInisiatif','badgeTeamwork'];
+    var ids      = ['evalScorePerformance','evalScoreDiscipline','evalScoreCommunication','evalScoreInitiative','evalScoreTeamwork'];
+    var badgeIds = ['badgePerformance','badgeDiscipline','badgeCommunication','badgeInitiative','badgeTeamwork'];
     var sum = 0;
     ids.forEach(function(id, idx) {
       var el  = document.getElementById(id);
@@ -309,18 +318,18 @@
       sum += val;
       if (bEl) {
         bEl.innerText = val;
-        bEl.style.background = val >= 7 ? '#d1fae5' : val >= 5 ? '#fef3c7' : '#fee2e2';
-        bEl.style.color      = val >= 7 ? '#166534' : val >= 5 ? '#92400e' : '#991b1b';
+        bEl.style.background   = val >= 7 ? '#d1fae5' : val >= 5 ? '#fef3c7' : '#fee2e2';
+        bEl.style.color        = val >= 7 ? '#166534' : val >= 5 ? '#92400e' : '#991b1b';
         bEl.style.borderRadius = '6px';
-        bEl.style.padding    = '2px 6px';
-        bEl.style.fontSize   = '12px';
-        bEl.style.fontWeight = '700';
+        bEl.style.padding      = '2px 6px';
+        bEl.style.fontSize     = '12px';
+        bEl.style.fontWeight   = '700';
       }
     });
     var avg = Math.round((sum / 5) * 10) / 10;
     var avgEl = document.getElementById('evalAvgScore');
     if (avgEl) {
-      avgEl.innerText = avg.toFixed(1);
+      avgEl.innerText   = avg.toFixed(1);
       avgEl.style.color = avg >= 7 ? '#166534' : avg >= 5 ? '#d97706' : '#991b1b';
     }
   }
@@ -408,7 +417,7 @@
     });
 
     // ── Slider events ──────────────────────────────────────────
-    ['evalSkorKinerja','evalSkorKedisiplinan','evalSkorKomunikasi','evalSkorInisiatif','evalSkorTeamwork'].forEach(function(id) {
+    ['evalScorePerformance','evalScoreDiscipline','evalScoreCommunication','evalScoreInitiative','evalScoreTeamwork'].forEach(function(id) {
       var el = document.getElementById(id);
       if (el) el.addEventListener('input', _updateEvalBadgesAndAvg);
     });
@@ -485,7 +494,7 @@
         ['evalDurasiPerpanjang','evalKontrakBaruStart','evalKontrakBaruEnd','evalCatatan'].forEach(function(id) {
           var el = document.getElementById(id); if (el) el.value = '';
         });
-        ['evalSkorKinerja','evalSkorKedisiplinan','evalSkorKomunikasi','evalSkorInisiatif','evalSkorTeamwork'].forEach(function(id) {
+        ['evalScorePerformance','evalScoreDiscipline','evalScoreCommunication','evalScoreInitiative','evalScoreTeamwork'].forEach(function(id) {
           var el = document.getElementById(id); if (el) el.value = 5;
         });
         _updateEvalBadgesAndAvg();
@@ -509,16 +518,17 @@
         var evalData = {
           employeeId:        empId,
           recruitmentId:     ridId,
-          skorKinerja:       (document.getElementById('evalSkorKinerja')       || {}).value || 5,
-          skorKedisiplinan:  (document.getElementById('evalSkorKedisiplinan')  || {}).value || 5,
-          skorKomunikasi:    (document.getElementById('evalSkorKomunikasi')    || {}).value || 5,
-          skorInisiatif:     (document.getElementById('evalSkorInisiatif')     || {}).value || 5,
-          skorTeamwork:      (document.getElementById('evalSkorTeamwork')      || {}).value || 5,
+          probationId:       (document.getElementById('evalProbationId')        || {}).value || '',
+          skorKinerja:       (document.getElementById('evalScorePerformance')    || {}).value || 5,
+          skorKedisiplinan:  (document.getElementById('evalScoreDiscipline')     || {}).value || 5,
+          skorKomunikasi:    (document.getElementById('evalScoreCommunication')  || {}).value || 5,
+          skorInisiatif:     (document.getElementById('evalScoreInitiative')     || {}).value || 5,
+          skorTeamwork:      (document.getElementById('evalScoreTeamwork')       || {}).value || 5,
           keputusan:         decVal,
-          durasiPerpanjang:  (document.getElementById('evalDurasiPerpanjang')  || {}).value || '',
-          kontrakBaruStart:  (document.getElementById('evalKontrakBaruStart')  || {}).value || '',
-          kontrakBaruEnd:    (document.getElementById('evalKontrakBaruEnd')    || {}).value || '',
-          catatan:           (document.getElementById('evalCatatan')           || {}).value || '',
+          durasiPerpanjang:  (document.getElementById('evalDurasiPerpanjang')    || {}).value || '',
+          kontrakBaruStart:  (document.getElementById('evalKontrakBaruStart')    || {}).value || '',
+          kontrakBaruEnd:    (document.getElementById('evalKontrakBaruEnd')      || {}).value || '',
+          catatan:           (document.getElementById('evalCatatan')             || {}).value || '',
         };
         var evaluatedBy = (typeof currentUser !== 'undefined' && currentUser && currentUser.email)
           ? currentUser.email : 'HR Dashboard';
@@ -586,29 +596,42 @@
           return;
         }
         bodyEl.innerHTML = history.map(function(ev, idx) {
-          var isLulus  = ev.keputusan && ev.keputusan.indexOf('Lulus') === 0;
-          var kepClass = isLulus ? 'accepted' : 'hold';
-          var kepLabel = isLulus ? 'Lulus → Tetap' : 'Diperpanjang';
+          var keputusan = ev.keputusan || ev.decision || '';
+          var isLulus   = keputusan.indexOf('Lulus') === 0 || keputusan.indexOf('Pass') === 0;
+          var kepClass  = isLulus ? 'accepted' : 'hold';
+          var kepLabel  = isLulus ? 'Passed → Permanent' : 'Extended';
+          // support both old and new property names
+          var sPerf  = ev.scorePerformance   || ev.skorKinerja      || '-';
+          var sDisc  = ev.scoreDiscipline    || ev.skorKedisiplinan  || '-';
+          var sComm  = ev.scoreCommunication || ev.skorKomunikasi    || '-';
+          var sInit  = ev.scoreInitiative    || ev.skorInisiatif     || '-';
+          var sTeam  = ev.scoreTeamwork      || ev.skorTeamwork      || '-';
+          var sAvg   = ev.averageScore       || ev.nilaiRataRata     || 0;
+          var sDur   = ev.extensionDuration  || ev.durasiPerpanjang  || '';
+          var sStart = ev.newContractStart   || ev.kontrakBaruStart  || '-';
+          var sEnd   = ev.newContractEnd     || ev.kontrakBaruEnd    || '-';
+          var sNote  = ev.evaluatorNotes     || ev.catatan           || '';
+          var avgNum = Number(sAvg);
           return '<div class="p-3 rounded-3 mb-3" style="background:#f9fafb;border:1px solid #e5e7eb">' +
             '<div class="d-flex justify-content-between align-items-start mb-2">' +
               '<div>' +
                 '<span class="fw-bold" style="font-size:13px">#' + (idx + 1) + ' — ' + escapeHtml(ev.evalDate || '-') + '</span>' +
-                '<span class="text-muted ms-2" style="font-size:11px">oleh ' + escapeHtml(ev.evaluator || '-') + '</span>' +
+                '<span class="text-muted ms-2" style="font-size:11px">by ' + escapeHtml(ev.evaluator || '-') + '</span>' +
               '</div>' +
               '<span class="badge-status ' + kepClass + '" style="font-size:10px;padding:2px 8px">' + escapeHtml(kepLabel) + '</span>' +
             '</div>' +
             '<div class="row g-2 mb-2" style="font-size:12px">' +
-              '<div class="col-4"><div class="text-muted">Kinerja</div><strong>' + (ev.skorKinerja || '-') + '</strong></div>' +
-              '<div class="col-4"><div class="text-muted">Kedisiplinan</div><strong>' + (ev.skorKedisiplinan || '-') + '</strong></div>' +
-              '<div class="col-4"><div class="text-muted">Komunikasi</div><strong>' + (ev.skorKomunikasi || '-') + '</strong></div>' +
-              '<div class="col-4"><div class="text-muted">Inisiatif</div><strong>' + (ev.skorInisiatif || '-') + '</strong></div>' +
-              '<div class="col-4"><div class="text-muted">Teamwork</div><strong>' + (ev.skorTeamwork || '-') + '</strong></div>' +
-              '<div class="col-4"><div class="text-muted">Rata-rata</div>' +
-                '<strong style="font-size:14px;color:' + (Number(ev.nilaiRataRata) >= 7 ? '#166534' : Number(ev.nilaiRataRata) >= 5 ? '#d97706' : '#991b1b') + '">' +
-                Number(ev.nilaiRataRata).toFixed(1) + '</strong></div>' +
+              '<div class="col-4"><div class="text-muted">Performance</div><strong>' + escapeHtml(String(sPerf)) + '</strong></div>' +
+              '<div class="col-4"><div class="text-muted">Discipline</div><strong>' + escapeHtml(String(sDisc)) + '</strong></div>' +
+              '<div class="col-4"><div class="text-muted">Communication</div><strong>' + escapeHtml(String(sComm)) + '</strong></div>' +
+              '<div class="col-4"><div class="text-muted">Initiative</div><strong>' + escapeHtml(String(sInit)) + '</strong></div>' +
+              '<div class="col-4"><div class="text-muted">Teamwork</div><strong>' + escapeHtml(String(sTeam)) + '</strong></div>' +
+              '<div class="col-4"><div class="text-muted">Average</div>' +
+                '<strong style="font-size:14px;color:' + (avgNum >= 7 ? '#166534' : avgNum >= 5 ? '#d97706' : '#991b1b') + '">' +
+                avgNum.toFixed(1) + '</strong></div>' +
             '</div>' +
-            (ev.catatan ? '<div class="text-muted" style="font-size:11px;font-style:italic">"' + escapeHtml(ev.catatan) + '"</div>' : '') +
-            (ev.durasiPerpanjang ? '<div style="font-size:11px;color:#d97706" class="mt-1"><i class="bi bi-calendar-range me-1"></i>Perpanjang ' + escapeHtml(ev.durasiPerpanjang) + ' (' + escapeHtml(ev.kontrakBaruStart || '-') + ' s/d ' + escapeHtml(ev.kontrakBaruEnd || '-') + ')</div>' : '') +
+            (sNote ? '<div class="text-muted" style="font-size:11px;font-style:italic">"' + escapeHtml(sNote) + '"</div>' : '') +
+            (sDur  ? '<div style="font-size:11px;color:#d97706" class="mt-1"><i class="bi bi-calendar-range me-1"></i>Extended ' + escapeHtml(sDur) + ' (' + escapeHtml(sStart) + ' – ' + escapeHtml(sEnd) + ')</div>' : '') +
           '</div>';
         }).join('');
       })
@@ -723,14 +746,14 @@
       doc.text('HASIL EVALUASI', m + 6, yPos + 4.5);
       yPos += 12;
 
-      var avg = result.nilaiRataRata || '-';
+      var avg = result.nilaiRataRata || result.averageScore || '-';
       var evalRows = [
-        ['Kinerja & Hasil Kerja',    evalData.skorKinerja     || '-'],
-        ['Kedisiplinan',             evalData.skorKedisiplinan|| '-'],
-        ['Komunikasi',               evalData.skorKomunikasi  || '-'],
-        ['Inisiatif & Kreativitas',  evalData.skorInisiatif   || '-'],
-        ['Kerjasama Tim',            evalData.skorTeamwork    || '-'],
-        ['Nilai Rata-rata',          String(avg) + ' / 10'],
+        ['Work Performance',    evalData.skorKinerja     || '-'],
+        ['Discipline',          evalData.skorKedisiplinan|| '-'],
+        ['Communication',       evalData.skorKomunikasi  || '-'],
+        ['Initiative',          evalData.skorInisiatif   || '-'],
+        ['Teamwork',            evalData.skorTeamwork    || '-'],
+        ['Average Score',       String(avg) + ' / 10'],
       ];
       evalRows.forEach(function(f, idx) {
         var isAvg = f[0] === 'Nilai Rata-rata';
@@ -749,12 +772,12 @@
       if (!isAngkat && evalData.kontrakBaruStart) {
         sf(cPrimary); doc.roundedRect(m + 2, yPos - 1.5, pw - m * 2 - 2, 8, 1.5, 1.5, 'F');
         doc.setFontSize(8.5); bold(); st([255,255,255]);
-        doc.text('DETAIL PERPANJANGAN', m + 6, yPos + 4.5);
+        doc.text('EXTENSION DETAILS', m + 6, yPos + 4.5);
         yPos += 12;
         var extRows = [
-          ['Durasi Perpanjangan', evalData.durasiPerpanjang || '-'],
-          ['Mulai Kontrak Baru',  evalData.kontrakBaruStart || '-'],
-          ['Selesai Kontrak',     evalData.kontrakBaruEnd   || '-'],
+          ['Extension Duration', evalData.durasiPerpanjang || '-'],
+          ['New Contract Start',  evalData.kontrakBaruStart || '-'],
+          ['New Contract End',    evalData.kontrakBaruEnd   || '-'],
         ];
         extRows.forEach(function(f, idx) {
           sf(idx % 2 === 0 ? [248,250,252] : [255,255,255]);
@@ -771,7 +794,7 @@
       // ── Catatan ───────────────────────────────────────────
       if (evalData.catatan && evalData.catatan.trim()) {
         doc.setFontSize(8.5); bold(); st(cText);
-        doc.text('Catatan:', m + 5, yPos); yPos += 5;
+        doc.text('Notes:', m + 5, yPos); yPos += 5;
         normal(); st(cSoft);
         var cLines = doc.splitTextToSize(evalData.catatan, pw - m * 2 - 10);
         doc.text(cLines, m + 5, yPos); yPos += cLines.length * 5 + 5;
