@@ -11,9 +11,7 @@ var DASHBOARD_SHEET_NAME = "data_kandidat";
 var EMPLOYEE_SHEET_NAME = "Employee";
 var AUDIT_SHEET_NAME = "Audit_Log";
 var USERS_SHEET_NAME = "Users";
-var OFFBOARDING_SHEET_NAME = "Offboarding";
 var MASTER_DATA_SHEET = "master_data";
-
 // Sheet-sheet status kandidat
 var HOLD_SHEET_NAME = "kandidat_hold";
 var ACCEPTED_SHEET_NAME = "kandidat_accepted";
@@ -116,9 +114,12 @@ var EMPLOYEE_HEADERS = [
   "Nomor SK",
   "Resign Date",
   "HR Notes",
-  "Contract Number",
-  "Contract Duration",
-  "Start Date (Contract)",
+  // "Contract Number",
+  // "Contract Duration",
+  // "Start Date (Contract)",
+  "Offboarding Type",
+  "Offboarding Reason",
+  "Offboarding Approved By",
   "Outsource Vendor",
   "Created By",
   "Created At",
@@ -276,33 +277,6 @@ var BLACKLIST_HEADERS = SHEET_HEADERS.concat(EXTRA_HEADERS).concat([
 var BLACKLIST_COL = {};
 BLACKLIST_HEADERS.forEach(function (h, i) {
   BLACKLIST_COL[h] = i + 1;
-});
-
-// ============================================================
-// SHEET: Offboarding
-// ============================================================
-var OFFBOARDING_HEADERS = [
-  "Offboarding ID",
-  "Employee ID",
-  "Full Name",
-  "Position",
-  "Department",
-  "Join Date",
-  "Last Working Date",
-  "Offboarding Type",
-  "Reason",
-  "Approved By",
-  "Notes",
-  "Status",
-  "Archived",
-  "Created By",
-  "Created At",
-  "Updated At",
-];
-
-var OFFBOARD_COL = {};
-OFFBOARDING_HEADERS.forEach(function (h, i) {
-  OFFBOARD_COL[h] = i + 1;
 });
 
 // ============================================================
