@@ -105,10 +105,14 @@
   // ---- Stat cards ----
   function updateOsStats() {
     var ct = function(fn) { return OS.filtered.filter(fn).length; };
+    var permanent  = ct(function(r){ return (r.employmentStatus||r.status||'').toLowerCase() === 'permanent'; });
+    var contract   = ct(function(r){ return (r.employmentStatus||r.status||'').toLowerCase() === 'contract'; });
+    var probation  = ct(function(r){ return (r.employmentStatus||r.status||'').toLowerCase() === 'probation'; });
     var m = {
       osStatTotal:      OS.filtered.length,
-      osStatActive:     ct(function(r){ return (r.employmentStatus||r.status||'').toLowerCase() === 'active'; }),
-      osStatTerminated: ct(function(r){ return (r.employmentStatus||r.status||'').toLowerCase() === 'terminated'; })
+      osStatPermanent:  permanent,
+      osStatContract:   contract,
+      osStatProbation:  probation
     };
     Object.keys(m).forEach(function(id) {
       var el = document.getElementById(id);
