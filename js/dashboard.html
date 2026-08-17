@@ -132,6 +132,7 @@
           statAccepted:  counts.accepted,
           statHold:      counts.hold,
           statBlacklist: counts.blacklist,
+          statProbation: counts.probation || 0,
         };
         Object.keys(map).forEach(function(id) {
           var el = document.getElementById(id);
