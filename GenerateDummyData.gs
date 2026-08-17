@@ -66,7 +66,6 @@ function _gdClearSheets_() {
     BLACKLIST_SHEET_NAME,
     EMPLOYEE_SHEET_NAME,
     AUDIT_SHEET_NAME,
-    OFFBOARDING_SHEET_NAME,
     PROBATION_SHEET_NAME,
   ];
   targets.forEach(function (name) {
@@ -813,7 +812,8 @@ function _gdBuildCandidatePool_(today) {
 
   // 30 Accepted
   for (var i = 0; i < 30; i++) {
-    var empId = "EMP-" + today.getFullYear() + "-" + _gdPad_(i + 1, 5);
+    var empId =
+      Utilities.formatDate(today, "GMT+7", "yyyyMMdd") + _gdPad_(i + 1, 2);
     accepted.push(
       makeCandidate({
         status: "Accepted",
@@ -1100,7 +1100,7 @@ function _gdWriteEmployeeSheet_(acceptedCandidates, today) {
       : "";
     var vendor = empType === "Outsource" ? _gdPick_(_GD_OS_VENDORS_) : "";
 
-    row[EMPLOYEE_COL["Employee ID"] - 1] = "'" + empId;
+    row[EMPLOYEE_COL["Employee ID"] - 1] = empId;
     row[EMPLOYEE_COL["Full Name"] - 1] = opts.fullName;
     row[EMPLOYEE_COL["Branch Name"] - 1] =
       opts.branch || _gdPick_(_GD_BRANCHES_);

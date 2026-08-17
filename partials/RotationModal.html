@@ -1,0 +1,105 @@
+<!-- partials/RotationModal.html — MODAL ROTASI KARYAWAN -->
+
+<div class="modal fade" id="rotationModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content" style="border-radius:16px">
+      <div class="modal-header" style="background:#0B2540;border-radius:16px 16px 0 0">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-arrow-left-right text-white fs-5"></i>
+          <h6 class="modal-title mb-0 text-white fw-bold">Proses Rotasi / Mutasi Karyawan</h6>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body p-4">
+        <input type="hidden" id="rotEmployeeId" />
+
+        <!-- STEP 1: Search karyawan -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold" style="font-size:13px">
+            <i class="bi bi-search me-1"></i>Cari Karyawan Aktif
+          </label>
+          <div class="position-relative">
+            <input type="text" class="form-control" id="rotEmpSearch"
+                   placeholder="Ketik nama atau Employee ID..."
+                   autocomplete="off" style="font-size:13px;padding-right:36px" />
+            <i class="bi bi-x-circle-fill position-absolute" id="rotEmpSearchClear"
+               style="right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;display:none"></i>
+          </div>
+          <div id="rotEmpDropdown" class="border rounded-3 mt-1 shadow-sm"
+               style="display:none;max-height:220px;overflow-y:auto;background:#fff;z-index:9999;position:relative">
+          </div>
+        </div>
+
+        <!-- STEP 2: Preview karyawan terpilih + form -->
+        <div id="rotEmpPreview" style="display:none">
+          <div class="p-3 rounded-3 mb-4" style="background:#f0f7ff;border:1px solid #b8d4ff">
+            <div class="d-flex align-items-center gap-3">
+              <div id="rotEmpAvatar" style="width:44px;height:44px;font-size:16px;flex-shrink:0;background:#0B2540;color:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800">?</div>
+              <div class="flex-grow-1">
+                <div class="fw-bold" id="rotEmpName" style="font-size:15px">-</div>
+                <div class="text-muted" style="font-size:12px">
+                  <span id="rotEmpPosition">-</span> <span class="mx-1">·</span> <span id="rotEmpDept">-</span>
+                </div>
+              </div>
+              <div class="text-end flex-shrink-0" style="font-size:11.5px">
+                <div class="text-muted">Employee ID</div>
+                <div class="fw-semibold" id="rotEmpIdDisp">-</div>
+                <div class="text-muted mt-1">Join Date</div>
+                <div class="fw-semibold" id="rotEmpJoinDate">-</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Form rotasi -->
+          <div id="rotFormSection">
+            <p class="fw-bold mb-3" style="font-size:12px;text-transform:uppercase;letter-spacing:0.05em;color:#0B2540">
+              <i class="bi bi-pencil-square me-1"></i>Detail Rotasi
+            </p>
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold" style="font-size:13px">Tipe Rotasi <span class="text-danger">*</span></label>
+                <select class="form-select form-select-sm" id="rotType">
+                  <option value="">— Pilih —</option>
+                  <option value="Promosi">Promosi</option>
+                  <option value="Demosi">Demosi</option>
+                  <option value="Mutasi">Mutasi</option>
+                  <option value="Rotasi">Rotasi</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold" style="font-size:13px">Tanggal Efektif <span class="text-danger">*</span></label>
+                <input type="date" class="form-control form-control-sm" id="rotEffectiveDate" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold" style="font-size:13px">Jabatan Baru <span class="text-danger">*</span></label>
+                <input type="text" class="form-control form-control-sm" id="rotNewPosition" placeholder="Contoh: HR Manager (Jakarta)" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold" style="font-size:13px">Departemen Baru</label>
+                <input type="text" class="form-control form-control-sm" id="rotNewDepartment" placeholder="Kosongkan jika tidak berubah" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold" style="font-size:13px">Nomor SK</label>
+                <input type="text" class="form-control form-control-sm" id="rotSkNumber" placeholder="SK.001/KPT/2026" />
+              </div>
+              <div class="col-md-12">
+                <label class="form-label fw-semibold" style="font-size:13px">Alasan Rotasi <span class="text-danger">*</span></label>
+                <textarea class="form-control form-control-sm" id="rotReason" rows="2" placeholder="Contoh: Penyesuaian struktur organisasi..."></textarea>
+              </div>
+            </div>
+            <input type="hidden" id="rotFormerPosition" />
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+        <button class="btn btn-sm text-white fw-semibold" style="background:#0B2540" id="btnConfirmRotation" disabled>
+          <span id="btnRotText"><i class="bi bi-check2-circle me-1"></i>Proses Rotasi</span>
+          <span id="btnRotLoading" style="display:none"><span class="spinner-border spinner-border-sm me-1"></span>Memproses...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
