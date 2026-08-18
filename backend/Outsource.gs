@@ -20,6 +20,8 @@ function validateOutsourceForm_(f) {
   if (!f.address || f.address.trim() === "") return "Alamat KTP wajib diisi.";
   if (!f.lokasi_kerja || f.lokasi_kerja.trim() === "")
     return "Lokasi kerja wajib diisi.";
+  if (!f.outsource_vendor || f.outsource_vendor.trim().length < 3)
+    return "Vendor outsource wajib diisi (minimal 3 karakter).";
   if (!f.position || f.position.trim() === "")
     return "Posisi/jabatan wajib diisi.";
   if (!f.join_date) return "Tanggal masuk wajib diisi.";
@@ -122,6 +124,8 @@ function simpanDataOutsource(formObject) {
       formObject.marital_status || "";
     newRow[EMPLOYEE_COL["Blood Type"] - 1] = formObject.blood_type || "";
     newRow[EMPLOYEE_COL["Cost Center"] - 1] = formObject.cost_center || "";
+    newRow[EMPLOYEE_COL["Outsource Vendor"] - 1] =
+      formObject.outsource_vendor || formObject.vendor || "";
     newRow[EMPLOYEE_COL["Created By"] - 1] = "System (Outsource Form)";
     newRow[EMPLOYEE_COL["Created At"] - 1] = createdAt;
     newRow[EMPLOYEE_COL["Updated At"] - 1] = createdAt;
@@ -143,7 +147,18 @@ function simpanDataOutsource(formObject) {
   }
 }
 
-// ---- Get outsource list (from Employee sheet, filtered by Branch Name presence as proxy for outsource) ----
+// ---- Helper: apakah baris Employee termasuk outsource ----
+function isOutsourceEmployeeRow_(row, colIndex) {
+  function gc(name) {
+    var i = colIndex[name];
+    return i !== undefined ? String(row[i] || "").trim() : "";
+  }
+  if (gc("Outsource Vendor")) return true;
+  if (gc("Created By") === "System (Outsource Form)") return true;
+  return false;
+}
+
+// ---- Get outsource list (Employee sheet — kolom Outsource Vendor terisi) ----
 function getOutsourceList() {
   try {
     var sheet =
@@ -173,8 +188,7 @@ function getOutsourceList() {
         return i === undefined ? "" : fmtDateStr_(row[i]);
       }
 
-      var branch = gc("Branch Name").trim();
-      if (!branch) continue;
+      if (!isOutsourceEmployeeRow_(row, colIndex)) continue;
 
       var createdAtRaw =
         colIndex["Created At"] !== undefined ? row[colIndex["Created At"]] : "";
@@ -206,6 +220,9 @@ function getOutsourceList() {
         position: gc("Job Position (Locaction)") || gc("Job Position"),
         jobLevel: gc("Job Level"),
         employeeStatus: gc("Status Employee"),
+        status: gc("Status Employee"),
+        employmentStatus: gc("Status Employee"),
+        outsourceVendor: gc("Outsource Vendor"),
         joinDate: gcd("Join Date"),
         contractEndDate: gcd("End Date (Contract)"),
         directSuperior: gc("Direct Superior"),
@@ -257,8 +274,7 @@ function getOutsourceById(id) {
     for (var r = 1; r < data.length; r++) {
       if (String(data[r][colIndex["Employee ID"]] || "") !== String(id))
         continue;
-      var branch = String(data[r][colIndex["Branch Name"]] || "").trim();
-      if (!branch)
+      if (!isOutsourceEmployeeRow_(data[r], colIndex))
         return {
           success: false,
           message: "Bukan karyawan outsource.",
@@ -367,8 +383,7 @@ function updateOutsourceStatus(id, status, notes) {
     for (var r = 1; r < data.length; r++) {
       if (String(data[r][colIndex["Employee ID"]] || "") !== String(id))
         continue;
-      var branch = String(data[r][colIndex["Branch Name"]] || "").trim();
-      if (!branch)
+      if (!isOutsourceEmployeeRow_(data[r], colIndex))
         return {
           success: false,
           message: "Bukan karyawan outsource.",
@@ -424,8 +439,7 @@ function deleteOutsourceById(id) {
     for (var r = 1; r < data.length; r++) {
       if (String(data[r][colIndex["Employee ID"]] || "") !== String(id))
         continue;
-      var branch = String(data[r][colIndex["Branch Name"]] || "").trim();
-      if (!branch)
+      if (!isOutsourceEmployeeRow_(data[r], colIndex))
         return {
           success: false,
           message: "Bukan karyawan outsource.",
