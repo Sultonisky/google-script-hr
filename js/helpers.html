@@ -32,15 +32,19 @@
     return 'pending';
   }
 
-  // Badge class untuk status karyawan/outsource (lebih kaya dari kandidat)
+  // Badge class untuk status karyawan/outsource
   function entityStatusBadgeClass(status) {
     var s = (status || '').toLowerCase().replace(/_/g, ' ');
-    if (s === 'active')     return 'accepted';      // hijau
-    if (s === 'probation')  return 'hold';           // biru
-    if (s === 'on leave')   return 'pending';        // kuning/gold
-    if (s === 'resigned')   return 'blacklist';      // merah
-    if (s === 'terminated') return 'blacklist';      // merah
-    if (s === 'inactive')   return 'blacklist';      // merah
+    if (s === 'permanent')      return 'accepted';   // hijau — karyawan tetap
+    if (s === 'contract')       return 'accepted';   // hijau — kontrak aktif
+    if (s === 'probation')      return 'hold';        // biru/amber — masa percobaan
+    if (s === 'on leave')       return 'pending';     // kuning — cuti panjang
+    if (s === 'resigned')       return 'blacklist';   // merah
+    if (s === 'terminated')     return 'blacklist';   // merah
+    if (s === 'retired')        return 'blacklist';   // merah/abu
+    if (s === 'inactive')       return 'blacklist';   // merah/abu
+    // legacy fallback
+    if (s === 'active')         return 'accepted';
     return 'pending';
   }
 
