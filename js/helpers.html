@@ -139,4 +139,68 @@
     }
     requestAnimationFrame(step);
   }
+
+  // Set nilai <select> dengan pencocokan cerdas (exact value, case-insensitive, text match, atau pemetaan sinonim)
+  function setSelectSmart(el, value) {
+    if (!el) return;
+    if (value === undefined || value === null) { el.value = ''; return; }
+    var raw = String(value).trim();
+    if (!raw) { el.value = ''; return; }
+
+    // 1. Coba set langsung
+    el.value = raw;
+    if (el.value === raw && el.selectedIndex > -1) return;
+
+    var lower = raw.toLowerCase();
+
+    // 2. Mapping sinonim khusus (Status Pernikahan, Gender, dll)
+    var synonyms = {
+      'single': 'belum menikah',
+      'lajang': 'belum menikah',
+      'belum menikah': 'belum menikah',
+      'belum nikah': 'belum menikah',
+      'married': 'menikah',
+      'kawin': 'menikah',
+      'menikah': 'menikah',
+      'nikah': 'menikah',
+      'divorced': 'cerai',
+      'cerai': 'cerai',
+      'cerai hidup': 'cerai',
+      'cerai mati': 'cerai',
+      'janda': 'cerai',
+      'duda': 'cerai',
+      'widowed': 'cerai',
+      'laki-laki': 'male',
+      'pria': 'male',
+      'laki': 'male',
+      'male': 'male',
+      'perempuan': 'female',
+      'wanita': 'female',
+      'female': 'female'
+    };
+
+    var targetSynonym = synonyms[lower] || lower;
+
+    // 3. Cari di options (value atau text)
+    for (var i = 0; i < el.options.length; i++) {
+      var optVal = el.options[i].value.toLowerCase();
+      var optTxt = el.options[i].text.toLowerCase();
+
+      if (optVal === lower || optTxt === lower) {
+        el.selectedIndex = i;
+        return;
+      }
+      if (optVal === targetSynonym || optTxt.indexOf(targetSynonym) !== -1 || (synonyms[optVal] && synonyms[optVal] === targetSynonym)) {
+        el.selectedIndex = i;
+        return;
+      }
+    }
+
+    // 4. Fallback: jika value tidak ada di options namun ada isi, tambahkan option baru agar tidak hilang
+    var opt = document.createElement('option');
+    opt.value = raw;
+    opt.text = raw;
+    el.appendChild(opt);
+    el.value = raw;
+  }
 </script>

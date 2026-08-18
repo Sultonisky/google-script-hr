@@ -62,11 +62,20 @@
 
     EMP.allItems.forEach(function(e) {
       var s = (e.statusEmployee || '').toLowerCase();
-      var t = (e.employmentType || '').toLowerCase();
-      if (s === 'permanent') permanent++;
-      else if (s === 'contract') contract++;
-      else if (s === 'probation') probation++;
-      else if (t === 'outsource' || s === 'outsource') outsource++;
+      var isOutsource = Boolean(
+        (e.outsourceVendor && e.outsourceVendor.trim()) ||
+        e.createdBy === 'System (Outsource Form)' ||
+        s === 'outsource'
+      );
+      if (isOutsource) {
+        outsource++;
+      } else if (s === 'permanent') {
+        permanent++;
+      } else if (s === 'contract') {
+        contract++;
+      } else if (s === 'probation') {
+        probation++;
+      }
     });
 
     var totalEl       = document.getElementById('empStatTotal');
@@ -135,9 +144,15 @@
         (e.bpjsKesehatan || '').replace(/'/g, '').toLowerCase().indexOf(kw) !== -1 ||
         (e.areaKerja || '').toLowerCase().indexOf(kw) !== -1 ||
         (e.lokasiKerja || e.city || '').toLowerCase().indexOf(kw) !== -1 ||
+        (e.outsourceVendor || '').toLowerCase().indexOf(kw) !== -1 ||
         (e.employeeId || '').toLowerCase().indexOf(kw) !== -1;
       var md = !dept || e.department === dept;
-      var ms = !status || (e.statusEmployee || '').toLowerCase() === status.toLowerCase();
+      var isOutsource = Boolean(
+        (e.outsourceVendor && e.outsourceVendor.trim()) ||
+        e.createdBy === 'System (Outsource Form)' ||
+        (e.statusEmployee || '').toLowerCase() === 'outsource'
+      );
+      var ms = !status || (status.toLowerCase() === 'outsource' ? isOutsource : (e.statusEmployee || '').toLowerCase() === status.toLowerCase());
       return mk && md && ms;
     });
 
@@ -322,11 +337,11 @@
     document.getElementById('efNpwp').value            = emp.npwp            || '';
     document.getElementById('efBirthPlace').value      = emp.birthPlace      || '';
     document.getElementById('efBirthDate').value       = toDateInputValue(emp.birthDate);
-    document.getElementById('efBloodType').value       = emp.bloodType       || '';
-    document.getElementById('efGender').value          = emp.gender          || '';
-    document.getElementById('efReligion').value        = emp.religion        || '';
-    document.getElementById('efMarital').value         = emp.maritalStatus   || '';
-    document.getElementById('efPtkp').value            = emp.ptkpStatus      || '';
+    setSelectSmart(document.getElementById('efGender'), emp.gender);
+    setSelectSmart(document.getElementById('efBloodType'), emp.bloodType);
+    setSelectSmart(document.getElementById('efReligion'), emp.religion);
+    setSelectSmart(document.getElementById('efMarital'), emp.maritalStatus);
+    setSelectSmart(document.getElementById('efPtkp'), emp.ptkpStatus);
     document.getElementById('efEmail').value           = emp.personalEmail   || emp.email || '';
     document.getElementById('efPhone').value           = emp.mobilePhone     || emp.phone || '';
     document.getElementById('efAddress').value         = emp.citizenIdAddress || emp.address || '';
@@ -341,12 +356,12 @@
     document.getElementById('efWorkingEmail').value    = emp.workingEmail    || '';
 
     // SEKSI 3: Struktur Organisasi & Pekerjaan
-    document.getElementById('efStatusEmployee').value  = emp.statusEmployee  || emp.employmentStatus || emp.status || 'Contract';
+    setSelectSmart(document.getElementById('efStatusEmployee'), emp.statusEmployee || emp.employmentStatus || emp.status || 'Contract');
     document.getElementById('efBranch').value          = emp.branchName      || emp.branch || '';
     document.getElementById('efDivision').value        = emp.division        || '';
-    document.getElementById('efDept').value            = emp.department      || '';
+    setSelectSmart(document.getElementById('efDept'), emp.department);
     document.getElementById('efCostCenter').value      = emp.costCenter      || '';
-    document.getElementById('efPos').value             = emp.positionCurrent  || emp.position || '';
+    setSelectSmart(document.getElementById('efPos'), emp.positionCurrent || emp.position);
     document.getElementById('efPosNoLoc').value        = emp.positionNoLocCurrent || '';
     document.getElementById('efJoin').value            = toDateInputValue(emp.joinDate);
     document.getElementById('efJobLevel').value        = emp.jobLevel        || '';
@@ -363,14 +378,14 @@
     var contractDurEl   = document.getElementById('efContractDuration');
     var contractNoEl    = document.getElementById('efContractNumber');
     if (contractStartEl) contractStartEl.value = toDateInputValue(emp.contractStart || emp.startDateContract || '');
-    if (contractDurEl)   contractDurEl.value   = emp.contractDuration   || '';
+    if (contractDurEl)   setSelectSmart(contractDurEl, emp.contractDuration);
     if (contractNoEl)    contractNoEl.value    = emp.contractNumber     || '';
     document.getElementById('efContractEnd').value = toDateInputValue(emp.contractEnd);
 
     // SEKSI 5: Karier & Mutasi
     var hasMutasi = !!(emp.positionFormer || emp.typeOfRotation);
     document.getElementById('efFormerPos').value    = emp.positionFormer  || '';
-    document.getElementById('efRotationType').value = emp.typeOfRotation  || '';
+    setSelectSmart(document.getElementById('efRotationType'), emp.typeOfRotation);
     document.getElementById('efMutasiDate').value   = toDateInputValue(emp.mutasiDate);
     document.getElementById('efNoSk').value         = emp.nomorSk         || '';
     document.getElementById('efResignDate').value   = toDateInputValue(emp.resignDate);
@@ -948,7 +963,7 @@
       var el = document.getElementById(id); if (el) el.value = '';
     });
     var pakEl = document.getElementById('offbPaklaring');
-    if (pakEl) pakEl.value = 'Belum Ditentukan';
+    if (pakEl) pakEl.value = '';
     _resetOffbDocuments();
     _fillOffbPreview(emp);
     _updateOffbConfirmBtn();
@@ -1099,7 +1114,7 @@
           var el = document.getElementById(fid); if (el) el.value = '';
         });
         var pakEl = document.getElementById('offbPaklaring');
-        if (pakEl) pakEl.value = 'Belum Ditentukan';
+        if (pakEl) pakEl.value = '';
         _resetOffbDocuments();
         var btn = document.getElementById('btnConfirmOffboarding');
         if (btn) btn.disabled = true;
