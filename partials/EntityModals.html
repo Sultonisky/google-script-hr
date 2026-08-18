@@ -34,7 +34,7 @@
         <div class="row g-3 mb-3">
           <div class="col-md-6">
             <label class="form-label fw-semibold">Nama Lengkap *</label>
-            <input type="text" class="form-control" id="efName" />
+            <input type="text" class="form-control" id="efName" required />
           </div>
           <div class="col-md-3">
             <label class="form-label fw-semibold">NIK (16 Digit)</label>
@@ -70,6 +70,14 @@
             <input type="date" class="form-control" id="efBirthDate" />
           </div>
           <div class="col-md-2">
+            <label class="form-label fw-semibold">Jenis Kelamin</label>
+            <select class="form-select" id="efGender">
+              <option value="">— Pilih —</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </div>
+          <div class="col-md-2">
             <label class="form-label fw-semibold">Golongan Darah</label>
             <select class="form-select" id="efBloodType">
               <option value="">—</option>
@@ -77,14 +85,6 @@
               <option value="B">B</option>
               <option value="AB">AB</option>
               <option value="O">O</option>
-            </select>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Jenis Kelamin</label>
-            <select class="form-select" id="efGender">
-              <option value="">— Pilih —</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
             </select>
           </div>
           <div class="col-md-4">
@@ -104,9 +104,9 @@
             <label class="form-label fw-semibold">Status Pernikahan</label>
             <select class="form-select" id="efMarital">
               <option value="">— Pilih —</option>
-              <option value="Belum Menikah">Single</option>
-              <option value="Menikah">Married</option>
-              <option value="Cerai">Divorced</option>
+              <option value="Belum Menikah">Belum Menikah (Single)</option>
+              <option value="Menikah">Menikah (Married)</option>
+              <option value="Cerai">Cerai (Divorced)</option>
             </select>
           </div>
           <div class="col-md-4">
@@ -123,35 +123,40 @@
               <option value="K/3">K/3 — Menikah, 3 tanggungan</option>
             </select>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-6">
             <label class="form-label fw-semibold">Email Pribadi</label>
-            <input type="email" class="form-control" id="efEmail" />
+            <input type="email" class="form-control" id="efEmail" placeholder="nama@email.com" />
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">No. Handphone</label>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">No. Handphone / WhatsApp</label>
             <input
               type="text"
               class="form-control"
               id="efPhone"
-              placeholder="628xxx"
+              placeholder="08xxxxxxxxxx"
             />
           </div>
           <div class="col-md-6">
             <label class="form-label fw-semibold"
               >Alamat KTP (Sesuai KTP)</label
             >
-            <input type="text" class="form-control" id="efAddress" />
+            <textarea
+              class="form-control"
+              id="efAddress"
+              rows="2"
+              placeholder="Alamat lengkap sesuai identitas KTP..."
+            ></textarea>
           </div>
           <div class="col-md-6">
             <label class="form-label fw-semibold"
               >Alamat Domisili (Tempat Tinggal Saat Ini)</label
             >
-            <input
-              type="text"
+            <textarea
               class="form-control"
               id="efResidentialAddress"
-              placeholder="Kosongkan jika sama dengan KTP"
-            />
+              rows="2"
+              placeholder="Kosongkan jika sama dengan alamat KTP..."
+            ></textarea>
           </div>
         </div>
 
@@ -249,7 +254,7 @@
           Pekerjaan
         </p>
         <div class="row g-3 mb-3">
-          <div class="col-md-4">
+          <div class="col-md-3">
             <label class="form-label fw-semibold">Status Karyawan *</label>
             <select class="form-select" id="efStatusEmployee">
               <option value="Permanent">Permanent</option>
@@ -276,15 +281,6 @@
               <option value="">— Pilih —</option>
             </select>
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Cost Center</label>
-            <input
-              type="text"
-              class="form-control"
-              id="efCostCenter"
-              placeholder="CC-HR-001"
-            />
-          </div>
           <div class="col-md-5">
             <label class="form-label fw-semibold"
               >Jabatan (Current + Lokasi)</label
@@ -294,56 +290,65 @@
             </select>
           </div>
           <div class="col-md-4">
-            <label class="form-label fw-semibold">Jabatan</label>
+            <label class="form-label fw-semibold">Jabatan (Standar)</label>
             <input
               type="text"
               class="form-control"
               id="efPosNoLoc"
-              placeholder="Ambil dari Jabatan di atas, hapus nama cabang"
+              placeholder="Tanpa nama cabang"
+            />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Cost Center</label>
+            <input
+              type="text"
+              class="form-control"
+              id="efCostCenter"
+              placeholder="CC-HR-001"
             />
           </div>
           <div class="col-md-3">
             <label class="form-label fw-semibold">Tanggal Masuk Kerja</label>
             <input type="date" class="form-control" id="efJoin" />
           </div>
-          <div class="col-md-4">
+          <div class="col-md-3">
             <label class="form-label fw-semibold"
-              >Job Level (Existing Grading)</label
+              >Job Level</label
             >
             <input
               type="text"
               class="form-control"
               id="efJobLevel"
-              placeholder="Menunggu grading system baru"
+              placeholder="Level jabatan"
             />
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Grade (New Grading)</label>
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Grade</label>
             <input
               type="text"
               class="form-control"
               id="efGrade"
-              placeholder="Kosongkan dulu"
+              placeholder="Grade"
             />
           </div>
-          <div class="col-md-4">
+          <div class="col-md-2">
             <label class="form-label fw-semibold">Area Kerja</label>
             <input
               type="text"
               class="form-control"
               id="efDistrict"
-              placeholder="Area kerja / wilayah"
+              placeholder="Area / wilayah"
             />
           </div>
-          <div class="col-md-4">
+          <div class="col-md-2">
             <label class="form-label fw-semibold"
-              >Lokasi Kerja (Kota/Kab)</label
+              >Lokasi Kerja</label
             >
             <input
               type="text"
               class="form-control"
               id="efCity"
-              placeholder="Jakarta Selatan"
+              placeholder="Kota/Kab"
             />
           </div>
           <div class="col-md-4">
@@ -357,7 +362,7 @@
               placeholder="Nama atau Employee ID"
             />
           </div>
-          <div class="col-md-6">
+          <div class="col-md-4">
             <label class="form-label fw-semibold"
               >Atasan Tidak Langsung (Indirect Superior)</label
             >
@@ -368,7 +373,7 @@
               placeholder="Atasan dari atasan langsung"
             />
           </div>
-          <div class="col-md-6">
+          <div class="col-md-4">
             <label class="form-label fw-semibold">Vendor Outsource</label>
             <input
               type="text"
@@ -449,7 +454,7 @@
           >
         </div>
         <div class="row g-3 mb-3">
-          <div class="col-md-5">
+          <div class="col-md-6">
             <label class="form-label fw-semibold"
               >Jabatan Sebelumnya (Former)</label
             >
@@ -473,11 +478,11 @@
               <option value="Rotasi">Rotasi</option>
             </select>
           </div>
-          <div class="col-md-2">
+          <div class="col-md-3">
             <label class="form-label fw-semibold">Tanggal Efektif</label>
             <input type="date" class="form-control" id="efMutasiDate" />
           </div>
-          <div class="col-md-2">
+          <div class="col-md-6">
             <label class="form-label fw-semibold">Nomor SK</label>
             <input
               type="text"
@@ -486,13 +491,13 @@
               placeholder="SK.001/KPT/2026"
             />
           </div>
-          <div class="col-md-4" id="efResignDateWrap">
+          <div class="col-md-6" id="efResignDateWrap">
             <label class="form-label fw-semibold"
               >Tanggal Resign / Keluar</label
             >
             <input type="date" class="form-control" id="efResignDate" />
             <div class="form-text" style="font-size: 10px">
-              Diisi jika status Resigned/Terminated/Retired
+              Diisi jika status Resigned / Terminated / Retired
             </div>
           </div>
         </div>
@@ -514,11 +519,11 @@
         <div class="row g-3">
           <div class="col-md-6">
             <label class="form-label fw-semibold">Catatan HR</label>
-            <textarea class="form-control" id="efHrNotes" rows="2"></textarea>
+            <textarea class="form-control" id="efHrNotes" rows="3" placeholder="Catatan internal HR..."></textarea>
           </div>
           <div class="col-md-6">
             <label class="form-label fw-semibold">Catatan Umum</label>
-            <textarea class="form-control" id="efNotes" rows="2"></textarea>
+            <textarea class="form-control" id="efNotes" rows="3" placeholder="Catatan umum tambahan..."></textarea>
           </div>
         </div>
       </div>
@@ -611,6 +616,14 @@
             <input type="date" class="form-control" id="osfBirthDate" />
           </div>
           <div class="col-md-2">
+            <label class="form-label fw-semibold">Jenis Kelamin</label>
+            <select class="form-select" id="osfGender">
+              <option value="">— Pilih —</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </div>
+          <div class="col-md-2">
             <label class="form-label fw-semibold">Golongan Darah</label>
             <select class="form-select" id="osfBloodType">
               <option value="">—</option>
@@ -618,14 +631,6 @@
               <option value="B">B</option>
               <option value="AB">AB</option>
               <option value="O">O</option>
-            </select>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Jenis Kelamin</label>
-            <select class="form-select" id="osfGender">
-              <option value="">— Pilih —</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
             </select>
           </div>
           <div class="col-md-4">
@@ -645,9 +650,9 @@
             <label class="form-label fw-semibold">Status Pernikahan</label>
             <select class="form-select" id="osfMarital">
               <option value="">— Pilih —</option>
-              <option value="Belum Menikah">Single</option>
-              <option value="Menikah">Married</option>
-              <option value="Cerai">Divorced</option>
+              <option value="Belum Menikah">Belum Menikah (Single)</option>
+              <option value="Menikah">Menikah (Married)</option>
+              <option value="Cerai">Cerai (Divorced)</option>
             </select>
           </div>
           <div class="col-md-4">
@@ -664,31 +669,36 @@
               <option value="K/3">K/3 — Menikah, 3 tanggungan</option>
             </select>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-6">
             <label class="form-label fw-semibold">Email Pribadi</label>
-            <input type="email" class="form-control" id="osfEmail" />
+            <input type="email" class="form-control" id="osfEmail" placeholder="nama@email.com" />
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">No. Handphone</label>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">No. Handphone / WhatsApp</label>
             <input
               type="text"
               class="form-control"
               id="osfPhone"
-              placeholder="628xxx"
+              placeholder="08xxxxxxxxxx"
             />
           </div>
           <div class="col-md-6">
             <label class="form-label fw-semibold">Alamat KTP (Sesuai KTP)</label>
-            <input type="text" class="form-control" id="osfAddress" />
+            <textarea
+              class="form-control"
+              id="osfAddress"
+              rows="2"
+              placeholder="Alamat lengkap sesuai identitas KTP..."
+            ></textarea>
           </div>
           <div class="col-md-6">
             <label class="form-label fw-semibold">Alamat Domisili (Tempat Tinggal Saat Ini)</label>
-            <input
-              type="text"
+            <textarea
               class="form-control"
               id="osfResidentialAddress"
-              placeholder="Kosongkan jika sama dengan KTP"
-            />
+              rows="2"
+              placeholder="Kosongkan jika sama dengan alamat KTP..."
+            ></textarea>
           </div>
         </div>
 
@@ -781,7 +791,7 @@
           <i class="bi bi-briefcase-fill me-1"></i> Struktur Organisasi &amp; Pekerjaan
         </p>
         <div class="row g-3 mb-3">
-          <div class="col-md-4">
+          <div class="col-md-3">
             <label class="form-label fw-semibold">Status Karyawan *</label>
             <select class="form-select" id="osfStatusEmployee">
               <option value="Permanent">Permanent</option>
@@ -808,6 +818,21 @@
               <option value="">— Pilih —</option>
             </select>
           </div>
+          <div class="col-md-5">
+            <label class="form-label fw-semibold">Jabatan (Current + Lokasi)</label>
+            <select class="form-select" id="osfPos">
+              <option value="">— Pilih —</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Jabatan (Standar)</label>
+            <input
+              type="text"
+              class="form-control"
+              id="osfPosNoLoc"
+              placeholder="Tanpa nama cabang"
+            />
+          </div>
           <div class="col-md-3">
             <label class="form-label fw-semibold">Cost Center</label>
             <input
@@ -817,59 +842,44 @@
               placeholder="CC-HR-001"
             />
           </div>
-          <div class="col-md-5">
-            <label class="form-label fw-semibold">Jabatan (Current + Lokasi)</label>
-            <select class="form-select" id="osfPos">
-              <option value="">— Pilih —</option>
-            </select>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Jabatan</label>
-            <input
-              type="text"
-              class="form-control"
-              id="osfPosNoLoc"
-              placeholder="Ambil dari Jabatan di atas, hapus nama cabang"
-            />
-          </div>
           <div class="col-md-3">
             <label class="form-label fw-semibold">Tanggal Masuk Kerja</label>
             <input type="date" class="form-control" id="osfJoin" />
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Job Level (Existing Grading)</label>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Job Level</label>
             <input
               type="text"
               class="form-control"
               id="osfJobLevel"
-              placeholder="Menunggu grading system baru"
+              placeholder="Level jabatan"
             />
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Grade (New Grading)</label>
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Grade</label>
             <input
               type="text"
               class="form-control"
               id="osfGrade"
-              placeholder="Kosongkan dulu"
+              placeholder="Grade"
             />
           </div>
-          <div class="col-md-4">
+          <div class="col-md-2">
             <label class="form-label fw-semibold">Area Kerja</label>
             <input
               type="text"
               class="form-control"
               id="osfDistrict"
-              placeholder="Area kerja / wilayah"
+              placeholder="Area / wilayah"
             />
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Lokasi Kerja (Kota/Kab)</label>
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Lokasi Kerja</label>
             <input
               type="text"
               class="form-control"
               id="osfCity"
-              placeholder="Jakarta Selatan"
+              placeholder="Kota/Kab"
             />
           </div>
           <div class="col-md-4">
@@ -881,7 +891,7 @@
               placeholder="Nama atau Employee ID"
             />
           </div>
-          <div class="col-md-6">
+          <div class="col-md-4">
             <label class="form-label fw-semibold">Atasan Tidak Langsung (Indirect Superior)</label>
             <input
               type="text"
@@ -890,7 +900,7 @@
               placeholder="Atasan dari atasan langsung"
             />
           </div>
-          <div class="col-md-6">
+          <div class="col-md-4">
             <label class="form-label fw-semibold">Vendor Outsource</label>
             <input
               type="text"
@@ -956,7 +966,7 @@
           <i class="bi bi-arrow-up-left-right me-1"></i> Riwayat Karier &amp; Mutasi
         </p>
         <div class="row g-3 mb-3">
-          <div class="col-md-5">
+          <div class="col-md-6">
             <label class="form-label fw-semibold">Jabatan Sebelumnya (Former)</label>
             <input
               type="text"
@@ -978,11 +988,11 @@
               <option value="Rotasi">Rotasi</option>
             </select>
           </div>
-          <div class="col-md-2">
+          <div class="col-md-3">
             <label class="form-label fw-semibold">Tanggal Efektif</label>
             <input type="date" class="form-control" id="osfMutasiDate" />
           </div>
-          <div class="col-md-2">
+          <div class="col-md-6">
             <label class="form-label fw-semibold">Nomor SK</label>
             <input
               type="text"
@@ -991,11 +1001,11 @@
               placeholder="SK.001/KPT/2026"
             />
           </div>
-          <div class="col-md-4" id="osfResignDateWrap">
+          <div class="col-md-6" id="osfResignDateWrap">
             <label class="form-label fw-semibold">Tanggal Resign / Keluar</label>
             <input type="date" class="form-control" id="osfResignDate" />
             <div class="form-text" style="font-size: 10px">
-              Diisi jika status Resigned/Terminated/Retired
+              Diisi jika status Resigned / Terminated / Retired
             </div>
           </div>
         </div>
@@ -1017,11 +1027,11 @@
         <div class="row g-3">
           <div class="col-md-6">
             <label class="form-label fw-semibold">Catatan HR</label>
-            <textarea class="form-control" id="osfHrNotes" rows="2"></textarea>
+            <textarea class="form-control" id="osfHrNotes" rows="3" placeholder="Catatan internal HR..."></textarea>
           </div>
           <div class="col-md-6">
             <label class="form-label fw-semibold">Catatan Umum</label>
-            <textarea class="form-control" id="osfNotes" rows="2"></textarea>
+            <textarea class="form-control" id="osfNotes" rows="3" placeholder="Catatan umum tambahan..."></textarea>
           </div>
         </div>
       </div>
@@ -1428,9 +1438,9 @@
                   >Paklaring Dibutuhkan?</label
                 >
                 <select class="form-select form-select-sm" id="offbPaklaring">
-                  <option value="Ya">Ya</option>
-                  <option value="Tidak">Tidak</option>
-                  <option value="Belum Ditentukan">Belum Ditentukan</option>
+                  <option value="">— Belum Ditentukan —</option>
+                  <option value="Ya">Ya (Dibutuhkan)</option>
+                  <option value="Tidak">Tidak Perlu</option>
                 </select>
               </div>
               <div class="col-md-6">

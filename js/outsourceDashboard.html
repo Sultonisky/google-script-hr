@@ -1,4 +1,4 @@
-﻿<script>
+<script>
   // ============================================================
   // js/outsourceDashboard.html — OUTSOURCE DATA IN DASHBOARD
   // Fetches from Employee sheet (Outsource Vendor terisi)
@@ -281,11 +281,11 @@
         document.getElementById('osfNpwp').value               = os.npwp            || '';
         document.getElementById('osfBirthPlace').value         = os.birthPlace      || '';
         document.getElementById('osfBirthDate').value          = toDateInputValue(os.birthDate);
-        document.getElementById('osfBloodType').value          = os.bloodType       || '';
-        document.getElementById('osfGender').value             = os.gender          || '';
-        document.getElementById('osfReligion').value           = os.religion        || '';
-        document.getElementById('osfMarital').value            = os.maritalStatus   || '';
-        document.getElementById('osfPtkp').value               = os.ptkpStatus      || '';
+        setSelectSmart(document.getElementById('osfGender'), os.gender);
+        setSelectSmart(document.getElementById('osfBloodType'), os.bloodType);
+        setSelectSmart(document.getElementById('osfReligion'), os.religion);
+        setSelectSmart(document.getElementById('osfMarital'), os.maritalStatus);
+        setSelectSmart(document.getElementById('osfPtkp'), os.ptkpStatus);
         document.getElementById('osfEmail').value              = os.email           || '';
         document.getElementById('osfPhone').value              = os.phone           || '';
         document.getElementById('osfAddress').value            = os.address         || '';
@@ -296,12 +296,12 @@
         document.getElementById('osfBankHolder').value         = os.bankAccountHolder || '';
         document.getElementById('osfBpjsTk').value             = os.bpjsKetenagakerjaan || '';
         document.getElementById('osfBpjsKes').value            = os.bpjsKesehatan   || '';
-        document.getElementById('osfStatusEmployee').value     = os.employeeStatus  || os.employmentStatus || os.status || '';
+        setSelectSmart(document.getElementById('osfStatusEmployee'), os.employeeStatus || os.employmentStatus || os.status || '');
         document.getElementById('osfBranch').value             = os.branchName      || os.branch || '';
         document.getElementById('osfDivision').value           = os.division        || '';
-        document.getElementById('osfDept').value               = os.department      || '';
+        setSelectSmart(document.getElementById('osfDept'), os.department);
         document.getElementById('osfCostCenter').value         = os.costCenter      || '';
-        document.getElementById('osfPos').value                = os.position        || '';
+        setSelectSmart(document.getElementById('osfPos'), os.position);
         document.getElementById('osfPosNoLoc').value           = os.positionNoLocCurrent || '';
         document.getElementById('osfJoin').value               = toDateInputValue(os.joinDate);
         document.getElementById('osfJobLevel').value           = os.jobLevel        || '';
@@ -313,10 +313,10 @@
         document.getElementById('osfOutsourceVendor').value    = os.outsourceVendor || '';
         document.getElementById('osfContractStart').value      = toDateInputValue(os.contractStart || os.contractStartDate);
         document.getElementById('osfContractEnd').value        = toDateInputValue(os.contractEnd || os.contractEndDate);
-        document.getElementById('osfContractDuration').value   = os.contractDuration || '';
+        setSelectSmart(document.getElementById('osfContractDuration'), os.contractDuration);
         document.getElementById('osfContractNumber').value     = os.contractNumber  || '';
         document.getElementById('osfFormerPos').value          = os.positionFormer  || '';
-        document.getElementById('osfRotationType').value       = os.typeOfRotation  || '';
+        setSelectSmart(document.getElementById('osfRotationType'), os.typeOfRotation);
         document.getElementById('osfMutasiDate').value         = toDateInputValue(os.mutasiDate);
         document.getElementById('osfNoSk').value               = os.nomorSk         || '';
         document.getElementById('osfResignDate').value         = toDateInputValue(os.resignDate);
