@@ -431,7 +431,8 @@ function exportRotationLetterPDF(rotationData, callback) {
     doc.text('Tanggal: ' + fmtDateId(new Date().toISOString().split('T')[0]), margin + 2, yPos);
 
     yPos += 14;
-    var user = Session.getActiveUser().getEmail() || 'HR Manager';
+    var user = (typeof currentUser !== 'undefined' && currentUser && currentUser.email)
+      ? currentUser.email : 'HR Manager';
     doc.setFontSize(9.5);
     bold(); setTxt(colorNavy);
     doc.text(user, margin + 2, yPos);
@@ -553,7 +554,7 @@ function exportOffboardingLetterPDF(offboardData, callback) {
     yPos += 6;
     doc.setFontSize(9);
     normal(); setTxt(colorSoft);
-    doc.text('Nomor: ' + (data.employeeId || '-'), pageWidth / 2, yPos, { align: 'center' });
+    doc.text('Nomor: ' + (data.skNumber || data.employeeId || '-'), pageWidth / 2, yPos, { align: 'center' });
 
     yPos += 10;
     doc.setFontSize(9.5);
@@ -611,7 +612,8 @@ function exportOffboardingLetterPDF(offboardData, callback) {
     doc.text('Tanggal: ' + fmtDateId(new Date().toISOString().split('T')[0]), margin + 2, yPos);
 
     yPos += 14;
-    var user = Session.getActiveUser().getEmail() || 'HR Manager';
+    var user = (typeof currentUser !== 'undefined' && currentUser && currentUser.email)
+      ? currentUser.email : 'HR Manager';
     doc.setFontSize(9.5);
     bold(); setTxt(colorNavy);
     doc.text(user, margin + 2, yPos);
@@ -724,9 +726,13 @@ function exportOfferingLetterPDF(candidate, offerData, callback) {
         ? String(candidate.address || '-') + ', ' + candidate.city
         : String(candidate.address || '-');
 
-      var offerCompany  = offerData.companyEntity || 'MITO Group';
+      var offerCompany  = offerData.branchName || offerData.companyEntity || 'MITO Group';
       var offerPosition = offerData.position      || '-';
       var offerDept     = offerData.department    || '-';
+      var offerDivision = offerData.division      || '';
+      var offerJobLevel = offerData.jobLevel      || '';
+      var offerArea     = offerData.areaKerja     || '';
+      var offerLokasi   = offerData.lokasiKerja   || '';
       var offerSalary   = fmtSalary(offerData.salary);
       var offerJoin     = fmtDateId(offerData.joinDate);
       var offerBenefit  = offerData.benefit || '';
@@ -873,10 +879,14 @@ function exportOfferingLetterPDF(candidate, offerData, callback) {
       yPos += 12;
 
       var offerRows = [
-        ['Perusahaan',        offerCompany],
-        ['Posisi',            offerPosition],
-        ['Departemen',        offerDept],
-        ['Tanggal Bergabung', offerJoin],
+        ['Branch Name',       offerCompany],
+        ['Job Position',      offerPosition],
+        ['Department',        offerDept],
+        ['Division',          offerDivision || '-'],
+        ['Job Level',         offerJobLevel || '-'],
+        ['Area Kerja',        offerArea || '-'],
+        ['Lokasi Kerja',      offerLokasi || '-'],
+        ['Join Date',         offerJoin],
         ['Kompensasi',        offerSalary],
       ];
 
