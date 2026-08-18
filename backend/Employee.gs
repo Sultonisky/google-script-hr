@@ -454,7 +454,12 @@ function getEmployeeStats() {
       var dept = emp.department || "Belum Ditentukan";
       stats.byDepartment[dept] = (stats.byDepartment[dept] || 0) + 1;
 
-      var type = emp.employeeType || "Belum Ditentukan";
+      var isOutsource = Boolean(
+        (emp.outsourceVendor && emp.outsourceVendor.trim()) ||
+        emp.createdBy === "System (Outsource Form)" ||
+        s === "outsource"
+      );
+      var type = isOutsource ? "Outsource" : (emp.statusEmployee || "Belum Ditentukan");
       stats.byType[type] = (stats.byType[type] || 0) + 1;
 
       var city = emp.lokasiKerja || emp.city || "Belum Ditentukan";
@@ -1151,14 +1156,38 @@ var OFFBOARDING_DOC_ALLOWED_MIME_ = {
     "docx",
 };
 
-function parseOffboardingDocuments_(jsonStr) {
-  if (!jsonStr) return [];
-  try {
-    var parsed = JSON.parse(jsonStr);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (e) {
-    return [];
+function parseOffboardingDocuments_(val) {
+  if (!val) return [];
+  var str = String(val).trim();
+  if (!str) return [];
+
+  // 1. Backward compatibility: JSON format lama
+  if (str.charAt(0) === '[' || str.charAt(0) === '{') {
+    try {
+      var parsed = JSON.parse(str);
+      if (Array.isArray(parsed)) return parsed;
+      if (parsed && typeof parsed === 'object') return [parsed];
+    } catch (e) {
+      /* parse sebagai plain URL text */
+    }
   }
+
+  // 2. Format link plain Google Drive (dipisahkan baris baru / koma)
+  var lines = str.split(/[\r\n,]+/);
+  var docs = [];
+  lines.forEach(function (item) {
+    var rawUrl = item.trim();
+    if (!rawUrl) return;
+    if (rawUrl.indexOf('http://') === 0 || rawUrl.indexOf('https://') === 0 || rawUrl.indexOf('drive.google.com') !== -1) {
+      docs.push({
+        type: 'Dokumen Offboarding',
+        fileName: 'Buka Dokumen di Google Drive',
+        driveFileName: 'Google Drive File',
+        url: rawUrl,
+      });
+    }
+  });
+  return docs;
 }
 
 function validateOffboardingDocuments_(offboardingType, documents) {
@@ -1307,13 +1336,14 @@ function uploadOffboardingDocuments_(
   fullName,
   documents,
   existingFolderUrl,
-  existingLinksJson,
+  existingLinksVal,
   uploadedBy,
 ) {
   if (!documents || !documents.length) {
     return {
       folderUrl: existingFolderUrl || "",
-      linksJson: existingLinksJson || "[]",
+      linksString: existingLinksVal || "",
+      linksJson: existingLinksVal || "",
       uploaded: [],
     };
   }
@@ -1323,8 +1353,9 @@ function uploadOffboardingDocuments_(
     existingFolderUrl,
   );
   var nowStr = Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd HH:mm:ss");
-  var existing = parseOffboardingDocuments_(existingLinksJson);
+  var existing = parseOffboardingDocuments_(existingLinksVal);
   var uploaded = [];
+  var newUrls = [];
 
   documents.forEach(function (doc) {
     var bytes = Utilities.base64Decode(doc.dataBase64);
@@ -1342,21 +1373,34 @@ function uploadOffboardingDocuments_(
       ext;
     var blob = Utilities.newBlob(bytes, mime, fileName);
     var file = folder.createFile(blob);
+    var fileUrl = file.getUrl();
+    newUrls.push(fileUrl);
     uploaded.push({
       type: doc.type,
       fileName: doc.fileName,
       driveFileName: fileName,
-      url: file.getUrl(),
+      url: fileUrl,
       fileId: file.getId(),
       uploadedAt: nowStr,
       uploadedBy: uploadedBy || "HR Dashboard",
     });
   });
 
+  // Ambil semua URL Google Drive (hanya link bersih, tanpa metadata JSON developer)
+  var existingUrls = existing
+    .map(function (d) {
+      return d.url || (typeof d === "string" ? d : "");
+    })
+    .filter(Boolean);
+  var allUrls = existingUrls.concat(newUrls);
+  var cleanLinksText = allUrls.join("\n");
+
   var merged = existing.concat(uploaded);
   return {
     folderUrl: folder.getUrl(),
-    linksJson: JSON.stringify(merged),
+    linksString: cleanLinksText,
+    linksJson: cleanLinksText,
+    mergedDocs: merged,
     uploaded: uploaded,
   };
 }
@@ -1471,20 +1515,26 @@ function processOffboarding(payload) {
     if (payload.bpjsKesehatan) {
       safeSet('BPJS Kesehatan', payload.bpjsKesehatan);
     }
-    if (payload.notes) {
-      var prevNotes = ev('HR Notes');
-      var noteLine =
-        '[Offboarding ' +
-        nowStr +
-        '] ' +
-        payload.notes +
-        (payload.paklaring ? ' | Paklaring: ' + payload.paklaring : '');
-      safeSet('HR Notes', prevNotes ? prevNotes + '\n' + noteLine : noteLine);
-    } else if (payload.paklaring) {
-      var prevNotes2 = ev('HR Notes');
-      var pakLine = '[Offboarding ' + nowStr + '] Paklaring: ' + payload.paklaring;
-      safeSet('HR Notes', prevNotes2 ? prevNotes2 + '\n' + pakLine : pakLine);
+
+    // -- Catatan HR: hanya ditambahkan jika ada catatan atau paklaring ditentukan khusus --
+    var offbNotes = String(payload.notes || '').trim();
+    var pakVal = String(payload.paklaring || '').trim();
+    var isPaklaringSpecified = pakVal && pakVal !== 'Belum Ditentukan' && pakVal !== '—' && pakVal !== '-';
+
+    var noteParts = [];
+    if (offbNotes) {
+      noteParts.push(offbNotes);
     }
+    if (isPaklaringSpecified) {
+      noteParts.push('Paklaring: ' + pakVal);
+    }
+
+    if (noteParts.length > 0) {
+      var prevNotes = ev('HR Notes');
+      var noteLine = '[Offboarding ' + nowStr + '] ' + noteParts.join(' | ');
+      safeSet('HR Notes', prevNotes ? prevNotes + '\n' + noteLine : noteLine);
+    }
+
     safeSet('Updated At',      nowStr);
 
     // -- 4. Upload dokumen offboarding ke Drive ------------------
@@ -1501,8 +1551,8 @@ function processOffboarding(payload) {
     if (uploadResult.folderUrl) {
       safeSet('Offboarding Documents Folder', uploadResult.folderUrl);
     }
-    if (uploadResult.linksJson) {
-      safeSet('Offboarding Document Links', uploadResult.linksJson);
+    if (uploadResult.linksString || uploadResult.linksJson) {
+      safeSet('Offboarding Document Links', uploadResult.linksString || uploadResult.linksJson);
     }
 
     // -- 5. Audit log --------------------------------------------
