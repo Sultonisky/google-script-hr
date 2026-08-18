@@ -98,6 +98,33 @@ function _gdPad_(n, s) {
   while (r.length < (s || 2)) r = "0" + r;
   return r;
 }
+// Selaraskan Employee ID di sheet kandidat_accepted dengan Employee ID yang
+// dihasilkan sheet Employee (join date + sequence).
+function _gdSyncAcceptedEmployeeId_(recruitmentId, employeeId) {
+  if (!recruitmentId || !employeeId) return;
+  try {
+    var sheet = getOrCreateAcceptedSheet_();
+    if (!sheet || sheet.getLastRow() < 2) return;
+    var data = sheet.getDataRange().getValues();
+    var hdr = data[0];
+    var ridIdx = -1,
+      empIdx = -1;
+    hdr.forEach(function (h, i) {
+      if (String(h).trim() === "Recruitment ID") ridIdx = i;
+      if (String(h).trim() === "Employee ID") empIdx = i;
+    });
+    if (ridIdx === -1 || empIdx === -1) return;
+    for (var r = 1; r < data.length; r++) {
+      if (
+        String(data[r][ridIdx] || "").trim() ===
+        String(recruitmentId).trim()
+      ) {
+        sheet.getRange(r + 1, empIdx + 1).setValue(employeeId);
+        break;
+      }
+    }
+  } catch (e) {}
+}
 function _gdShuffle_(arr) {
   for (var i = arr.length - 1; i > 0; i--) {
     var j = Math.floor(Math.random() * (i + 1));
@@ -810,14 +837,12 @@ function _gdBuildCandidatePool_(today) {
     );
   }
 
-  // 30 Accepted
+  // 30 Accepted — Employee ID diisi saat _gdWriteEmployeeSheet_ (join date + sequence)
   for (var i = 0; i < 30; i++) {
-    var empId =
-      Utilities.formatDate(today, "GMT+7", "yyyyMMdd") + _gdPad_(i + 1, 2);
     accepted.push(
       makeCandidate({
         status: "Accepted",
-        employeeId: empId,
+        employeeId: "",
       }),
     );
   }
@@ -952,6 +977,12 @@ function _gdWriteAcceptedSheet_(candidates, today) {
     var offerJoinDate      = '';
     var offerBenefit       = '';
     var offerNotes         = '';
+    var offerDivision      = '';
+    var offerJobLevel      = '';
+    var offerAreaKerja     = '';
+    var offerLokasiKerja   = '';
+    var offerDirectSup     = '';
+    var offerGrade         = '';
     var offerResponse      = '';
     var offerRespNotes     = '';
     var offerRespDate      = '';
@@ -970,6 +1001,12 @@ function _gdWriteAcceptedSheet_(candidates, today) {
       offerCompany      = _gdPick_(_GD_COMPANIES_INTERNAL_);
       offerPosition     = c.positionApplied;
       offerDept         = _gdDept_(c.positionApplied);
+      offerDivision     = _gdPick_(_GD_DIVISIONS_);
+      offerJobLevel     = _gdPick_(_GD_JOB_LEVELS_);
+      offerAreaKerja    = _gdPick_(_GD_AREAS_);
+      offerLokasiKerja  = c.city || _gdPick_(_GD_CITIES_);
+      offerDirectSup    = _gdPick_(_GD_SUPERIORS_);
+      offerGrade        = '';
       offerSalary       = String(_gdRandSalary_(c.positionApplied));
       offerJoinDate     = _gdFmtDate_(_gdSubDays_(today, _gdRandInt_(1, 20)));
       offerBenefit      = 'BPJS Kesehatan & Ketenagakerjaan, THR Tahunan';
@@ -1011,6 +1048,12 @@ function _gdWriteAcceptedSheet_(candidates, today) {
       onboardingStatus,
       onboardingDate,
       onboardingBy,
+      offerDivision,
+      offerJobLevel,
+      offerAreaKerja,
+      offerLokasiKerja,
+      offerDirectSup,
+      offerGrade,
     ]);
   });
 
@@ -1057,7 +1100,7 @@ function _gdWriteEmployeeSheet_(acceptedCandidates, today) {
 
   function fillRow(row, opts) {
     var joinDate = opts.joinDate;
-    var empId = nextEmpId(joinDate);
+    var empId = opts.empId || nextEmpId(joinDate);
     var empType = opts.empType;
     var isContract =
       empType === "PKWT" || empType === "Outsource" || empType === "Intern";
@@ -1139,9 +1182,16 @@ function _gdWriteEmployeeSheet_(acceptedCandidates, today) {
     row[EMPLOYEE_COL["Cost Center"] - 1] = costCenter;
     row[EMPLOYEE_COL["Job Position (Former)"] - 1] = "";
     row[EMPLOYEE_COL["Type of Rotation"] - 1] = rotationType;
-    row[EMPLOYEE_COL["Tanggal Mutasi/Demosi/Promosi"] - 1] = "";
-    row[EMPLOYEE_COL["Nomor SK"] - 1] = "";
+    row[EMPLOYEE_COL["Tanggal Mutasi/Demosi/Promosi"] - 1] = rotationType
+      ? _gdFmtDate_(_gdSubDays_(today, _gdRandInt_(30, 365)))
+      : "";
+    row[EMPLOYEE_COL["Nomor SK"] - 1] =
+      "SK." +
+      _gdPad_(_gdRandInt_(1, 999), 3) +
+      "/MITO/" +
+      today.getFullYear();
     row[EMPLOYEE_COL["Resign Date"] - 1] = "";
+    row[EMPLOYEE_COL["Outsource Vendor"] - 1] = vendor;
     row[EMPLOYEE_COL["Created By"] - 1] = "Demo Generator";
     row[EMPLOYEE_COL["Created At"] - 1] = nowStr;
     row[EMPLOYEE_COL["Updated At"] - 1] = nowStr;
@@ -1183,10 +1233,15 @@ function _gdWriteEmployeeSheet_(acceptedCandidates, today) {
       recruitmentId: c.recruitmentId,
       notes: c.hrNotes || "",
     });
+    // Employee ID = join date + sequence (nextEmpId). Selaraskan ke sheet
+    // kandidat_accepted dan objek candidate agar semua referensi konsisten.
+    var generatedEmpId = String(row[EMPLOYEE_COL["Employee ID"] - 1] || "").replace(/^'/, "");
+    c.employeeId = generatedEmpId;
+    _gdSyncAcceptedEmployeeId_(c.recruitmentId, generatedEmpId);
     rows.push(row);
     // Track untuk kandidat_probation
     if (statusEmp === 'Probation') {
-      var empId = String(row[EMPLOYEE_COL["Employee ID"] - 1] || "").replace(/^'/, "");
+      var empId = generatedEmpId;
       var contractStart = String(row[EMPLOYEE_COL["Start Date (Contract)"] - 1] || joinDate);
       var contractEnd   = String(row[EMPLOYEE_COL["End Date (Contract)"] - 1]   || "");
       var contractNo    = String(row[EMPLOYEE_COL["Contract Number"] - 1]        || "");
