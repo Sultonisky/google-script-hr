@@ -120,6 +120,8 @@ var EMPLOYEE_HEADERS = [
   "Offboarding Type",
   "Offboarding Reason",
   "Offboarding Approved By",
+  "Offboarding Documents Folder",
+  "Offboarding Document Links",
   "Outsource Vendor",
   "Created By",
   "Created At",
@@ -259,6 +261,13 @@ var ACCEPTED_HEADERS = SHEET_HEADERS.concat(EXTRA_HEADERS).concat([
   "Onboarding Status",
   "Onboarding Date",
   "Onboarding By",
+  // Extra job-offer fields — appended so existing sheets stay compatible
+  "Offering Division",
+  "Offering Job Level",
+  "Offering Area Kerja",
+  "Offering Lokasi Kerja",
+  "Offering Direct Superior",
+  "Offering Grade",
 ]);
 
 var ACCEPTED_COL = {};

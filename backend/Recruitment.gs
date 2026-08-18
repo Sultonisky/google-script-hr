@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // backend/Recruitment.gs — CRUD KANDIDAT
 // ============================================================
 
@@ -692,8 +692,14 @@ function getStatusSheetList_(sheetName) {
       offeringCreatedBy: String(cell(row, "Offering Created By") || ""),
       offeringUpdatedBy: String(cell(row, "Offering Updated By") || ""),
       offeringCompanyEntity: String(cell(row, "Offering Company Entity") || ""),
+      offeringBranchName: String(cell(row, "Offering Company Entity") || ""),
       offeringPosition: String(cell(row, "Offering Position") || ""),
       offeringDepartment: String(cell(row, "Offering Department") || ""),
+      offeringDivision: String(cell(row, "Offering Division") || ""),
+      offeringJobLevel: String(cell(row, "Offering Job Level") || ""),
+      offeringAreaKerja: String(cell(row, "Offering Area Kerja") || ""),
+      offeringLokasiKerja: String(cell(row, "Offering Lokasi Kerja") || ""),
+      offeringGrade: String(cell(row, "Offering Grade") || ""),
       offeringSalary: String(cell(row, "Offering Salary") || ""),
       offeringJoinDate: String(cell(row, "Offering Join Date") || ""),
       offeringBenefit: String(cell(row, "Offering Benefit") || ""),
@@ -885,7 +891,11 @@ function moveStatusCandidate(
 // SAVE OFFERING STATUS — simpan/update timestamp, user, dan detail offering
 // Jika belum ada offering → isi Created + CreatedBy + detail offering
 // Jika sudah ada → update Updated + UpdatedBy + detail offering
-// offerData (opsional): { companyEntity, position, department, salary, joinDate, benefit, notes }
+// offerData: {
+//   branchName|companyEntity, position, department, division, jobLevel,
+//   areaKerja, lokasiKerja, grade,
+//   salary, joinDate, benefit, notes
+// }
 // ============================================================
 function saveOfferingStatus(recruitmentId, generatedBy, offerData) {
   var lock = LockService.getScriptLock();
@@ -929,6 +939,11 @@ function saveOfferingStatus(recruitmentId, generatedBy, offerData) {
     var benefitCol = colIndex["Offering Benefit"];
     var notesCol = colIndex["Offering Notes"];
     var respCol = colIndex["Offering Response"];
+    var divisionCol = colIndex["Offering Division"];
+    var jobLevelCol = colIndex["Offering Job Level"];
+    var areaCol = colIndex["Offering Area Kerja"];
+    var lokasiCol = colIndex["Offering Lokasi Kerja"];
+    var gradeCol = colIndex["Offering Grade"];
 
     if (!idCol)
       return {
@@ -959,11 +974,11 @@ function saveOfferingStatus(recruitmentId, generatedBy, offerData) {
       generatedBy || Session.getActiveUser().getEmail() || "HR Dashboard";
 
     offerData = offerData || {};
+    var branchName = offerData.branchName || offerData.companyEntity || "";
     // Simpan detail offering (selalu ditulis / diperbarui)
+    // Offering Company Entity = Branch Name (schema Employee)
     if (companyCol)
-      sheet
-        .getRange(targetRow, companyCol)
-        .setValue(offerData.companyEntity || "");
+      sheet.getRange(targetRow, companyCol).setValue(branchName);
     if (posCol)
       sheet.getRange(targetRow, posCol).setValue(offerData.position || "");
     if (deptCol)
@@ -976,6 +991,18 @@ function saveOfferingStatus(recruitmentId, generatedBy, offerData) {
       sheet.getRange(targetRow, benefitCol).setValue(offerData.benefit || "");
     if (notesCol)
       sheet.getRange(targetRow, notesCol).setValue(offerData.notes || "");
+    if (divisionCol)
+      sheet.getRange(targetRow, divisionCol).setValue(offerData.division || "");
+    if (jobLevelCol)
+      sheet.getRange(targetRow, jobLevelCol).setValue(offerData.jobLevel || "");
+    if (areaCol)
+      sheet.getRange(targetRow, areaCol).setValue(offerData.areaKerja || "");
+    if (lokasiCol)
+      sheet
+        .getRange(targetRow, lokasiCol)
+        .setValue(offerData.lokasiKerja || "");
+    if (gradeCol)
+      sheet.getRange(targetRow, gradeCol).setValue(offerData.grade || "");
 
     // Cek apakah sudah ada offering sebelumnya (Offering Created sudah terisi)
     var existingCreated = "";
@@ -1193,8 +1220,21 @@ function deleteCandidate(recruitmentId) {
 // ============================================================
 // getDashboardStatusCounts — hitung jumlah record di setiap
 // sheet status untuk stat cards di halaman Dashboard utama.
-// Termasuk jumlah employee dengan status Probation dari sheet Employee.
+// Accepted/Hold/Blacklist sudah dipindah dari data_kandidat ke
+// sheet masing-masing, jadi dihitung dari sheet status.
 // ============================================================
+function countNonEmptySheetRows_(sheetName) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet || sheet.getLastRow() < 2) return 0;
+  var data = sheet.getDataRange().getValues();
+  var count = 0;
+  for (var i = 1; i < data.length; i++) {
+    if (data[i].join("").toString().trim()) count++;
+  }
+  return count;
+}
+
 function getDashboardStatusCounts() {
   try {
     var sheet = getOrCreateSheet_();
@@ -1204,31 +1244,26 @@ function getDashboardStatusCounts() {
     headers.forEach(function (h, i) {
       if (String(h).trim() === "Status") statusIdx = i;
     });
-    if (statusIdx === -1)
-      return {
-        total: 0,
-        pending: 0,
-        accepted: 0,
-        hold: 0,
-        blacklist: 0,
-        probation: 0,
-      };
 
-    var total = data.length - 1;
-    var pending = 0,
-      accepted = 0,
-      hold = 0,
-      blacklist = 0;
-
+    var activeCount = 0;
+    var pending = 0;
     for (var i = 1; i < data.length; i++) {
+      if (!data[i].join("").toString().trim()) continue;
+      activeCount++;
+      if (statusIdx === -1) {
+        pending++;
+        continue;
+      }
       var status = String(data[i][statusIdx] || "")
         .trim()
         .toLowerCase();
-      if (status === "pending") pending++;
-      else if (status === "accepted") accepted++;
-      else if (status === "hold") hold++;
-      else if (status === "blacklist") blacklist++;
+      if (status === "pending" || status === "") pending++;
     }
+
+    var accepted = countNonEmptySheetRows_(ACCEPTED_SHEET_NAME);
+    var hold = countNonEmptySheetRows_(HOLD_SHEET_NAME);
+    var blacklist = countNonEmptySheetRows_(BLACKLIST_SHEET_NAME);
+    var total = activeCount + accepted + hold + blacklist;
 
     // Hitung employee probation dari sheet Employee
     var probation = 0;

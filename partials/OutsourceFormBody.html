@@ -252,7 +252,7 @@
                   Nomor HP tidak valid. Gunakan format 8xxxxxxxxxx.
                 </div>
               </div>
-              <div class="col-md-4">
+              <div class="col-md-6">
                 <label class="form-label" for="province"
                   >Provinsi <span class="required">*</span></label
                 >
@@ -266,7 +266,7 @@
                 </select>
                 <div class="invalid-feedback">Provinsi wajib dipilih.</div>
               </div>
-              <div class="col-md-4">
+              <div class="col-md-6">
                 <label class="form-label" for="city"
                   >Kota/Kabupaten <span class="required">*</span></label
                 >
@@ -277,7 +277,7 @@
                   Kota/Kabupaten wajib dipilih.
                 </div>
               </div>
-              <div class="col-md-4">
+              <div class="col-md-6">
                 <label class="form-label" for="district"
                   >Kecamatan <span class="required">*</span></label
                 >
@@ -361,6 +361,22 @@
                   <option value="PT Mitra Elektro Perkasa">PT Mitra Elektro Perkasa</option>
                 </select>
                 <div class="invalid-feedback">Entitas perusahaan wajib dipilih.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="outsource_vendor"
+                  >Vendor Outsource <span class="required">*</span></label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="outsource_vendor"
+                  name="outsource_vendor"
+                  required
+                  placeholder="Contoh: PT Nama Vendor Outsource"
+                  minlength="3"
+                  maxlength="120"
+                />
+                <div class="invalid-feedback">Vendor outsource wajib diisi (min. 3 karakter).</div>
               </div>
               <div class="col-md-6">
                 <label class="form-label" for="division"

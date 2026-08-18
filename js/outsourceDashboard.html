@@ -1,7 +1,7 @@
 ﻿<script>
   // ============================================================
   // js/outsourceDashboard.html — OUTSOURCE DATA IN DASHBOARD
-  // Fetches from Employee sheet (Employee Type = "Outsource")
+  // Fetches from Employee sheet (Outsource Vendor terisi)
   // Depends on: helpers.html (escapeHtml, initials, animateCounter, showToast)
   // ============================================================
 
@@ -105,9 +105,9 @@
   // ---- Stat cards ----
   function updateOsStats() {
     var ct = function(fn) { return OS.filtered.filter(fn).length; };
-    var permanent  = ct(function(r){ return (r.employmentStatus||r.status||'').toLowerCase() === 'permanent'; });
-    var contract   = ct(function(r){ return (r.employmentStatus||r.status||'').toLowerCase() === 'contract'; });
-    var probation  = ct(function(r){ return (r.employmentStatus||r.status||'').toLowerCase() === 'probation'; });
+    var permanent  = ct(function(r){ return (r.employeeStatus||r.employmentStatus||r.status||'').toLowerCase() === 'permanent'; });
+    var contract   = ct(function(r){ return (r.employeeStatus||r.employmentStatus||r.status||'').toLowerCase() === 'contract'; });
+    var probation  = ct(function(r){ return (r.employeeStatus||r.employmentStatus||r.status||'').toLowerCase() === 'probation'; });
     var m = {
       osStatTotal:      OS.filtered.length,
       osStatPermanent:  permanent,
@@ -145,7 +145,7 @@
     var pageData = OS.filtered.slice(start, start + ps);
 
     if (tbody) tbody.innerHTML = pageData.map(function(r) {
-      var empStatus   = r.employmentStatus || r.status || 'Active';
+      var empStatus   = r.employeeStatus || r.employmentStatus || r.status || 'Active';
       var statusClass = entityStatusBadgeClass(empStatus);
       return '<tr class="os-row-link" data-id="' + escapeHtml(r.employeeId) + '" style="cursor:pointer;">' +
         '<td><div class="avatar-sm" style="background:rgba(8,145,178,0.1);color:#0e7490;">' + escapeHtml(initials(r.fullName)) + '</div></td>' +
@@ -258,8 +258,8 @@
 
     // Populate master data selects
     var osMasterSelects = {
-      'department':        'osfDept',
-      'employment_status': 'osfEmpStatus',
+      'department': 'osfDept',
+      'position':   'osfPos',
     };
     var masterData = OS.masterData || {};
     Object.keys(osMasterSelects).forEach(function (cat) {
@@ -276,61 +276,128 @@
     if (id) {
       var os = OS.allItems.find(function(x) { return x.employeeId === id; });
       if (os) {
-        document.getElementById('osfNama').value          = os.fullName        || '';
-        document.getElementById('osfNik').value           = os.nik             || '';
-        document.getElementById('osfBirthDate').value     = toDateInputValue(os.birthDate);
-        document.getElementById('osfGender').value        = os.gender          || '';
-        document.getElementById('osfMarital').value       = os.maritalStatus   || '';
-        document.getElementById('osfEmail').value         = os.email           || '';
-        document.getElementById('osfPhone').value         = os.phone           || '';
-        document.getElementById('osfAddress').value       = os.address         || '';
-        document.getElementById('osfCity').value          = os.city            || '';
-        document.getElementById('osfPosisi').value        = os.position        || '';
-        document.getElementById('osfDept').value          = os.department      || '';
-        document.getElementById('osfDivision').value      = os.division        || '';
-        document.getElementById('osfBranch').value        = os.branch          || '';
-        document.getElementById('osfTglMasuk').value      = toDateInputValue(os.joinDate);
-        document.getElementById('osfEmpStatus').value     = os.employmentStatus || '';
-        document.getElementById('osfContractEnd').value   = toDateInputValue(os.contractEnd);
-        document.getElementById('osfStatus').value        = os.status          || 'Active';
+        document.getElementById('osfNama').value               = os.fullName        || '';
+        document.getElementById('osfNik').value                = os.nik             || '';
+        document.getElementById('osfNpwp').value               = os.npwp            || '';
+        document.getElementById('osfBirthPlace').value         = os.birthPlace      || '';
+        document.getElementById('osfBirthDate').value          = toDateInputValue(os.birthDate);
+        document.getElementById('osfBloodType').value          = os.bloodType       || '';
+        document.getElementById('osfGender').value             = os.gender          || '';
+        document.getElementById('osfReligion').value           = os.religion        || '';
+        document.getElementById('osfMarital').value            = os.maritalStatus   || '';
+        document.getElementById('osfPtkp').value               = os.ptkpStatus      || '';
+        document.getElementById('osfEmail').value              = os.email           || '';
+        document.getElementById('osfPhone').value              = os.phone           || '';
+        document.getElementById('osfAddress').value            = os.address         || '';
+        document.getElementById('osfResidentialAddress').value = os.addressResidential || '';
+        document.getElementById('osfWorkingEmail').value       = os.workingEmail    || '';
+        document.getElementById('osfBankName').value           = os.bankName        || 'BCA';
+        document.getElementById('osfBankAccount').value        = os.bankAccount     || '';
+        document.getElementById('osfBankHolder').value         = os.bankAccountHolder || '';
+        document.getElementById('osfBpjsTk').value             = os.bpjsKetenagakerjaan || '';
+        document.getElementById('osfBpjsKes').value            = os.bpjsKesehatan   || '';
+        document.getElementById('osfStatusEmployee').value     = os.employeeStatus  || os.employmentStatus || os.status || '';
+        document.getElementById('osfBranch').value             = os.branchName      || os.branch || '';
+        document.getElementById('osfDivision').value           = os.division        || '';
+        document.getElementById('osfDept').value               = os.department      || '';
+        document.getElementById('osfCostCenter').value         = os.costCenter      || '';
+        document.getElementById('osfPos').value                = os.position        || '';
+        document.getElementById('osfPosNoLoc').value           = os.positionNoLocCurrent || '';
+        document.getElementById('osfJoin').value               = toDateInputValue(os.joinDate);
+        document.getElementById('osfJobLevel').value           = os.jobLevel        || '';
+        document.getElementById('osfGrade').value              = os.grade           || '';
+        document.getElementById('osfDistrict').value           = os.areaKerja       || os.district || '';
+        document.getElementById('osfCity').value               = os.lokasiKerja     || os.city || '';
+        document.getElementById('osfDirectSup').value          = os.directSuperior  || '';
+        document.getElementById('osfIndirectSup').value        = os.indirectSuperior || '';
+        document.getElementById('osfOutsourceVendor').value    = os.outsourceVendor || '';
+        document.getElementById('osfContractStart').value      = toDateInputValue(os.contractStart || os.contractStartDate);
+        document.getElementById('osfContractEnd').value        = toDateInputValue(os.contractEnd || os.contractEndDate);
+        document.getElementById('osfContractDuration').value   = os.contractDuration || '';
+        document.getElementById('osfContractNumber').value     = os.contractNumber  || '';
+        document.getElementById('osfFormerPos').value          = os.positionFormer  || '';
+        document.getElementById('osfRotationType').value       = os.typeOfRotation  || '';
+        document.getElementById('osfMutasiDate').value         = toDateInputValue(os.mutasiDate);
+        document.getElementById('osfNoSk').value               = os.nomorSk         || '';
+        document.getElementById('osfResignDate').value         = toDateInputValue(os.resignDate);
+        document.getElementById('osfHrNotes').value            = os.hrNotes         || '';
+        document.getElementById('osfNotes').value              = os.notes           || '';
       }
     } else {
-      ['osfNama','osfNik','osfEmail','osfPhone','osfAddress','osfCity',
-       'osfPosisi','osfDivision','osfBranch'].forEach(function(id) {
+      var resetIds = [
+        'osfNama','osfNik','osfNpwp','osfBirthPlace','osfBirthDate','osfBloodType',
+        'osfGender','osfReligion','osfMarital','osfPtkp','osfEmail','osfPhone',
+        'osfAddress','osfResidentialAddress','osfWorkingEmail','osfBankAccount',
+        'osfBankHolder','osfBpjsTk','osfBpjsKes','osfBranch','osfDivision','osfDept',
+        'osfCostCenter','osfPos','osfPosNoLoc','osfJoin','osfJobLevel','osfGrade',
+        'osfDistrict','osfCity','osfDirectSup','osfIndirectSup','osfOutsourceVendor',
+        'osfContractStart','osfContractEnd','osfContractDuration','osfContractNumber',
+        'osfFormerPos','osfRotationType','osfMutasiDate','osfNoSk','osfResignDate',
+        'osfHrNotes','osfNotes'
+      ];
+      resetIds.forEach(function(id) {
         var el = document.getElementById(id); if (el) el.value = '';
       });
-      ['osfBirthDate','osfTglMasuk','osfContractEnd'].forEach(function(id) {
-        var el = document.getElementById(id); if (el) el.value = '';
-      });
-      ['osfGender','osfMarital','osfDept','osfEmpStatus'].forEach(function(id) {
-        var el = document.getElementById(id); if (el) el.value = '';
-      });
-      document.getElementById('osfStatus').value = 'Active';
+      var bankNameEl = document.getElementById('osfBankName');
+      if (bankNameEl) bankNameEl.value = 'BCA';
+      var stEl = document.getElementById('osfStatusEmployee');
+      if (stEl) stEl.value = 'Contract';
     }
     OS.formModal.show();
   }
 
   function saveOsData() {
-    var name = document.getElementById('osfNama').value.trim();
+    var nameEl = document.getElementById('osfNama');
+    var name = nameEl ? nameEl.value.trim() : '';
     if (!name) { showToast('Nama lengkap harus diisi.', 'warning'); return; }
 
     var data = {
-      fullName:          name,
-      nik:               document.getElementById('osfNik').value.trim(),
-      birthDate:         document.getElementById('osfBirthDate').value,
-      gender:            document.getElementById('osfGender').value,
-      maritalStatus:     document.getElementById('osfMarital').value,
-      email:             document.getElementById('osfEmail').value.trim(),
-      phone:             document.getElementById('osfPhone').value.trim(),
-      address:           document.getElementById('osfAddress').value.trim(),
-      city:              document.getElementById('osfCity').value.trim(),
-      position:          document.getElementById('osfPosisi').value.trim(),
-      department:        document.getElementById('osfDept').value,
-      division:          document.getElementById('osfDivision').value.trim(),
-      branch:            document.getElementById('osfBranch').value.trim(),
-      joinDate:          document.getElementById('osfTglMasuk').value,
-      employmentStatus:  document.getElementById('osfEmpStatus').value,
-      contractEnd:       document.getElementById('osfContractEnd').value,
+      fullName:            name,
+      nik:                 document.getElementById('osfNik').value.trim(),
+      npwp:                document.getElementById('osfNpwp').value.trim(),
+      birthPlace:          document.getElementById('osfBirthPlace').value.trim(),
+      birthDate:           document.getElementById('osfBirthDate').value,
+      bloodType:           document.getElementById('osfBloodType').value,
+      gender:              document.getElementById('osfGender').value,
+      religion:            document.getElementById('osfReligion').value,
+      maritalStatus:       document.getElementById('osfMarital').value,
+      ptkpStatus:          document.getElementById('osfPtkp').value,
+      email:               document.getElementById('osfEmail').value.trim(),
+      phone:               document.getElementById('osfPhone').value.trim(),
+      address:             document.getElementById('osfAddress').value.trim(),
+      residentialAddress:  document.getElementById('osfResidentialAddress').value.trim(),
+      workingEmail:        document.getElementById('osfWorkingEmail').value.trim(),
+      bankName:            document.getElementById('osfBankName').value || 'BCA',
+      bankAccount:         document.getElementById('osfBankAccount').value.trim(),
+      bankAccountHolder:   document.getElementById('osfBankHolder').value.trim(),
+      bpjsKetenagakerjaan: document.getElementById('osfBpjsTk').value.trim(),
+      bpjsKesehatan:       document.getElementById('osfBpjsKes').value.trim(),
+      statusEmployee:      document.getElementById('osfStatusEmployee').value,
+      branchName:          document.getElementById('osfBranch').value.trim(),
+      division:            document.getElementById('osfDivision').value.trim(),
+      department:          document.getElementById('osfDept').value,
+      costCenter:          document.getElementById('osfCostCenter').value.trim(),
+      position:            document.getElementById('osfPos').value || document.getElementById('osfPosNoLoc').value.trim(),
+      positionNoLocCurrent: document.getElementById('osfPosNoLoc').value.trim(),
+      joinDate:            document.getElementById('osfJoin').value,
+      jobLevel:            document.getElementById('osfJobLevel').value.trim(),
+      grade:               document.getElementById('osfGrade').value.trim(),
+      areaKerja:           document.getElementById('osfDistrict').value.trim(),
+      lokasiKerja:         document.getElementById('osfCity').value.trim(),
+      directSuperior:      document.getElementById('osfDirectSup').value.trim(),
+      indirectSuperior:    document.getElementById('osfIndirectSup').value.trim(),
+      outsourceVendor:     document.getElementById('osfOutsourceVendor').value.trim(),
+      contractStart:       document.getElementById('osfContractStart').value,
+      contractEnd:         document.getElementById('osfContractEnd').value,
+      contractDuration:    document.getElementById('osfContractDuration').value,
+      contractNumber:      document.getElementById('osfContractNumber').value.trim(),
+      positionFormer:      document.getElementById('osfFormerPos').value.trim(),
+      typeOfRotation:      document.getElementById('osfRotationType').value,
+      mutasiDate:          document.getElementById('osfMutasiDate').value,
+      nomorSk:             document.getElementById('osfNoSk').value.trim(),
+      resignDate:          document.getElementById('osfResignDate').value,
+      hrNotes:             document.getElementById('osfHrNotes').value.trim(),
+      notes:               document.getElementById('osfNotes').value.trim(),
     };
 
     var btn = document.getElementById('btnOsSave');

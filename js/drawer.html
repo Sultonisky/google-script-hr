@@ -93,6 +93,39 @@
     el.innerText = formatRupiah(value);
   }
 
+  function renderOffboardingDocsHtml(emp) {
+    var docs = (emp && emp.offboardingDocuments) || [];
+    var folder = emp && emp.offboardingDocumentsFolder;
+    if ((!docs || !docs.length) && !folder) {
+      return '-';
+    }
+    var html = '';
+    if (folder) {
+      html += '<div class="mb-2"><a href="' + escapeHtml(folder) +
+        '" target="_blank" rel="noopener"><i class="bi bi-folder2-open me-1"></i>Buka folder Drive</a></div>';
+    }
+    if (docs && docs.length) {
+      html += '<ul class="list-unstyled mb-0" style="font-size:13px">';
+      docs.forEach(function(doc) {
+        var label = (doc.type || 'Dokumen') + ' — ' + (doc.fileName || doc.driveFileName || 'file');
+        if (doc.url) {
+          html += '<li class="mb-1"><a href="' + escapeHtml(doc.url) +
+            '" target="_blank" rel="noopener"><i class="bi bi-file-earmark-arrow-down me-1"></i>' +
+            escapeHtml(label) + '</a></li>';
+        } else {
+          html += '<li class="mb-1">' + escapeHtml(label) + '</li>';
+        }
+      });
+      html += '</ul>';
+    }
+    return html || '-';
+  }
+
+  function setDrawerHtml(id, html) {
+    var el = document.getElementById(id);
+    if (el) el.innerHTML = html || '-';
+  }
+
   // ============================================================
   // MODE: CANDIDATE
   // ============================================================
@@ -205,7 +238,6 @@
     setDrawerMode('employee');
 
     var displayStatus = emp.statusEmployee || emp.employmentStatus || emp.status || 'Active';
-    var badgeClass    = entityStatusBadgeClass(displayStatus);
     var displayPos    = emp.positionCurrent || emp.position || '-';
     var displayEmail  = emp.personalEmail || emp.email || '-';
 
@@ -216,11 +248,9 @@
     if (nameEl) nameEl.innerText = emp.fullName || '-';
     var posEl = document.getElementById('drawerPosition');
     if (posEl) posEl.innerText = displayPos + (emp.department ? ' · ' + emp.department : '');
+    // Badge status di header dihapus — status sudah tampil di field empDrStatusEmployee
     var badgeWrap = document.getElementById('drawerStatusBadgeWrap');
-    if (badgeWrap) {
-      badgeWrap.innerHTML =
-        '<span class="badge-status lg ' + badgeClass + '">' + escapeHtml(displayStatus) + '</span>';
-    }
+    if (badgeWrap) badgeWrap.innerHTML = '';
     setDrawerMeta([
       { label: 'Employee ID',   value: emp.employeeId || '-' },
       { label: 'Tanggal Masuk', value: emp.joinDate   || '-' }
@@ -278,6 +308,10 @@
     setDrawerText('empDrMutasiDate',       emp.mutasiDate);
     setDrawerText('empDrNoSk',             emp.nomorSk);
     setDrawerText('empDrResignDate',       emp.resignDate);
+    setDrawerText('empDrOffbType',         emp.offboardingType);
+    setDrawerText('empDrOffbReason',       emp.offboardingReason);
+    setDrawerText('empDrOffbApprovedBy',   emp.offboardingApprovedBy);
+    setDrawerHtml('empDrOffbDocs',         renderOffboardingDocsHtml(emp));
     setDrawerText('empDrEmpStatus',        emp.statusEmployee || '-');
 
     // Catatan & Metadata
@@ -311,24 +345,19 @@
     setDrawerMode('outsource');
 
     // Header
-    var empStatus   = os.employmentStatus || os.status || 'Active';
-    var statusClass = entityStatusBadgeClass(empStatus);
+    var empStatus   = os.employeeStatus || os.employmentStatus || os.status || 'Active';
     var avatarEl = document.getElementById('drawerAvatar');
     if (avatarEl) avatarEl.innerText = initials(os.fullName);
     var nameEl = document.getElementById('drawerCandidateName');
     if (nameEl) nameEl.innerText = os.fullName || '-';
     var posEl = document.getElementById('drawerPosition');
     if (posEl) posEl.innerText = (os.position || '-') + (os.outsourceVendor || os.vendorCompany ? ' · ' + (os.outsourceVendor || os.vendorCompany) : '');
+    // Badge status di header dihapus — status sudah tampil di field osDrStatusEmployee
     var badgeWrap = document.getElementById('drawerStatusBadgeWrap');
-    if (badgeWrap) {
-      badgeWrap.innerHTML =
-        '<span class="badge-status lg ' + statusClass + '">' + escapeHtml(empStatus) + '</span>' +
-        ' <span class="badge-status lg hold" style="margin-left:4px;font-size:10px;opacity:0.85;">Outsource</span>';
-    }
+    if (badgeWrap) badgeWrap.innerHTML = '';
     setDrawerMeta([
-      { label: 'Employee ID', value: os.employeeId || '-' },
-      { label: 'Outsource ID', value: os.outsourceId || '-' },
-      { label: 'Tanggal Masuk', value: os.joinDate || '-' }
+      { label: 'Employee ID',   value: os.employeeId || '-' },
+      { label: 'Tanggal Masuk', value: os.joinDate   || '-' }
     ]);
 
     // SEKSI 1: Identitas & Data Pribadi

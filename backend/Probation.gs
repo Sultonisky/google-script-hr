@@ -4,23 +4,60 @@
 // Uses sheet: kandidat_probation (PROBATION_SHEET_NAME)
 // ============================================================
 
+function normEmployeeId_(v) {
+  return String(v || "").replace(/^'/, "").trim();
+}
+
+function isProbationEmployeeStatus_(status) {
+  return String(status || "").trim().toLowerCase() === "probation";
+}
+
+function isActiveProbationSheetStatus_(status) {
+  var s = String(status || "").trim();
+  return s === "Probation" || s === "Probation Extended";
+}
+
 // ============= CREATE PROBATION RECORD =============
-function createProbationRecord(recruitmentId) {
+// options.skipLock — dipakai saat dipanggil dari processOnboardingProbation (lock sudah dipegang)
+function createProbationRecord(recruitmentId, extraData, options) {
+  var lock = LockService.getScriptLock();
+  var lockAcquiredHere = false;
   try {
-    var lock = LockService.getScriptLock();
-    lock.waitLock(15000);
+    options = options || {};
+    if (!options.skipLock) {
+      lock.waitLock(15000);
+      lockAcquiredHere = true;
+    }
+
+    extraData = extraData || {};
+    recruitmentId = String(recruitmentId || "").trim();
+    if (!recruitmentId) {
+      return { success: false, message: "Recruitment ID wajib diisi." };
+    }
 
     var now = new Date();
     var nowStr = Utilities.formatDate(now, "GMT+7", "yyyy-MM-dd HH:mm:ss");
     var probationId = generateProbationId_(now);
 
-    // Ambil data kontrak dari kandidat_accepted untuk Contract Start/End/Join Date
     var acceptedSheet = getOrCreateAcceptedSheet_();
+    ensureStatusSheetHeaders_(acceptedSheet, ACCEPTED_HEADERS);
     var acceptedData = acceptedSheet.getDataRange().getValues();
+    if (acceptedData.length < 2) {
+      return { success: false, message: "Sheet kandidat_accepted kosong." };
+    }
+
     var headers = acceptedData[0];
     var candidateRow = null;
+    var colIdx = {};
+    headers.forEach(function (h, idx) { colIdx[String(h).trim()] = idx; });
+
+    var ridIdx = colIdx["Recruitment ID"];
+    if (ridIdx === undefined) {
+      return { success: false, message: "Kolom Recruitment ID tidak ditemukan di kandidat_accepted." };
+    }
+
     for (var i = 1; i < acceptedData.length; i++) {
-      if (String(acceptedData[i][0]).trim() === recruitmentId) {
+      if (String(acceptedData[i][ridIdx] || "").trim() === recruitmentId) {
         candidateRow = acceptedData[i];
         break;
       }
@@ -28,65 +65,108 @@ function createProbationRecord(recruitmentId) {
     if (!candidateRow) {
       return { success: false, message: "Recruitment ID tidak ditemukan di sheet accepted." };
     }
-    var colIdx = {};
-    headers.forEach(function (h, idx) { colIdx[h.trim()] = idx; });
 
-    var joinDate        = candidateRow[colIdx["Offering Join Date"]] || "";
-    var contractStart   = candidateRow[colIdx["Offering Join Date"]] || "";
-    var contractEnd     = "";
-    var contractNumber  = "";
-    var contractDuration = "";
-    var onboardingBy    = Session.getActiveUser().getEmail();
+    var empId = normEmployeeId_(
+      extraData.employeeId || candidateRow[colIdx["Employee ID"]]
+    );
+    if (!empId) {
+      return { success: false, message: "Employee ID tidak ditemukan untuk onboarding." };
+    }
 
-    // Ambil Employee ID yang sudah dibuat saat onboarding
-    // (diisi oleh processOnboardingProbation sebelum memanggil createProbationRecord)
-    var empId = "";
+    var joinDate = extraData.joinDate || extraData.contractStart ||
+      String(candidateRow[colIdx["Offering Join Date"]] || "");
+    var contractStart = extraData.contractStart || joinDate;
+    var contractEnd = extraData.contractEnd || "";
+    var contractNumber = extraData.contractNumber || "";
+    var contractDuration = extraData.contractDuration || "";
+    var onboardingBy =
+      extraData.onboardingBy ||
+      Session.getActiveUser().getEmail() ||
+      "HR Dashboard";
+
+    // Lengkapi kontrak dari sheet Employee
     var empSheet = getOrCreateEmployeeSheet_();
-    var empData  = empSheet.getDataRange().getValues();
-    var empHdr   = empData[0];
-    var empCI    = {};
-    empHdr.forEach(function (h, i) { empCI[String(h).trim()] = i; });
-    for (var e = 1; e < empData.length; e++) {
-      var empRec = empData[e];
-      var recRid = empCI["Recruitment ID (System Link)"] !== undefined
-        ? String(empRec[empCI["Recruitment ID (System Link)"]] || "")
-        : String(empRec[empCI["Recruitment ID"]] || "");
-      if (recRid.trim() === recruitmentId) {
-        empId           = String(empRec[empCI["Employee ID"]] || "");
-        contractStart   = String(empRec[empCI["Start Date (Contract)"]] || contractStart);
-        contractEnd     = String(empRec[empCI["End Date (Contract)"]] || "");
-        contractNumber  = String(empRec[empCI["Contract Number"]] || "");
-        contractDuration = String(empRec[empCI["Contract Duration"]] || "");
-        break;
+    if (empSheet && empSheet.getLastRow() >= 2) {
+      var empData = empSheet.getDataRange().getValues();
+      var empHdr = empData[0];
+      var empCI = {};
+      empHdr.forEach(function (h, i) { empCI[String(h).trim()] = i; });
+      var empIdIdx = empCI["Employee ID"];
+      if (empIdIdx !== undefined) {
+        for (var e = 1; e < empData.length; e++) {
+          if (normEmployeeId_(empData[e][empIdIdx]) === empId) {
+            var empRec = empData[e];
+            if (!contractEnd && empCI["End Date (Contract)"] !== undefined) {
+              contractEnd = String(empRec[empCI["End Date (Contract)"]] || "");
+            }
+            if (!joinDate && empCI["Join Date"] !== undefined) {
+              joinDate = String(empRec[empCI["Join Date"]] || "");
+            }
+            if (!contractStart) contractStart = joinDate;
+            break;
+          }
+        }
       }
     }
 
-    var newRow = new Array(PROBATION_HEADERS.length).fill("");
-    newRow[PROBATION_COL["Probation ID"] - 1]      = probationId;
-    newRow[PROBATION_COL["Employee ID"] - 1]        = empId;
-    newRow[PROBATION_COL["Recruitment ID"] - 1]     = recruitmentId;
-    newRow[PROBATION_COL["Contract Number"] - 1]    = contractNumber;
-    newRow[PROBATION_COL["Contract Duration"] - 1]  = contractDuration;
-    newRow[PROBATION_COL["Contract Start"] - 1]     = contractStart;
-    newRow[PROBATION_COL["Contract End"] - 1]       = contractEnd;
-    newRow[PROBATION_COL["Join Date"] - 1]          = joinDate;
-    newRow[PROBATION_COL["Status"] - 1]             = "Probation";
-    newRow[PROBATION_COL["Onboarding Date"] - 1]    = nowStr;
-    newRow[PROBATION_COL["Onboarding By"] - 1]      = onboardingBy;
-    newRow[PROBATION_COL["SK Status"] - 1]          = "Pending";
-    newRow[PROBATION_COL["Created At"] - 1]         = nowStr;
-    newRow[PROBATION_COL["Updated At"] - 1]         = nowStr;
-
     var sheet = getOrCreateProbationSheet_();
-    sheet.appendRow(newRow);
+    var existingRow = -1;
+    if (sheet.getLastRow() >= 2) {
+      var probScan = sheet.getDataRange().getValues();
+      for (var pr = 1; pr < probScan.length; pr++) {
+        var prRid = String(probScan[pr][PROBATION_COL["Recruitment ID"] - 1] || "").trim();
+        var prSt = String(probScan[pr][PROBATION_COL["Status"] - 1] || "").trim();
+        if (prRid === recruitmentId && isActiveProbationSheetStatus_(prSt)) {
+          existingRow = pr + 1;
+          var existingPid = String(probScan[pr][PROBATION_COL["Probation ID"] - 1] || "").trim();
+          if (existingPid) probationId = existingPid;
+          break;
+        }
+      }
+    }
+
+    if (existingRow !== -1) {
+      sheet.getRange(existingRow, PROBATION_COL["Employee ID"]).setValue(empId);
+      sheet.getRange(existingRow, PROBATION_COL["Contract Number"]).setValue(contractNumber);
+      sheet.getRange(existingRow, PROBATION_COL["Contract Duration"]).setValue(contractDuration);
+      sheet.getRange(existingRow, PROBATION_COL["Contract Start"]).setValue(contractStart);
+      sheet.getRange(existingRow, PROBATION_COL["Contract End"]).setValue(contractEnd);
+      sheet.getRange(existingRow, PROBATION_COL["Join Date"]).setValue(joinDate);
+      sheet.getRange(existingRow, PROBATION_COL["Status"]).setValue("Probation");
+      sheet.getRange(existingRow, PROBATION_COL["Onboarding Date"]).setValue(nowStr);
+      sheet.getRange(existingRow, PROBATION_COL["Onboarding By"]).setValue(onboardingBy);
+      sheet.getRange(existingRow, PROBATION_COL["Updated At"]).setValue(nowStr);
+    } else {
+      var newRow = new Array(PROBATION_HEADERS.length).fill("");
+      newRow[PROBATION_COL["Probation ID"] - 1] = probationId;
+      newRow[PROBATION_COL["Employee ID"] - 1] = empId;
+      newRow[PROBATION_COL["Recruitment ID"] - 1] = recruitmentId;
+      newRow[PROBATION_COL["Contract Number"] - 1] = contractNumber;
+      newRow[PROBATION_COL["Contract Duration"] - 1] = contractDuration;
+      newRow[PROBATION_COL["Contract Start"] - 1] = contractStart;
+      newRow[PROBATION_COL["Contract End"] - 1] = contractEnd;
+      newRow[PROBATION_COL["Join Date"] - 1] = joinDate;
+      newRow[PROBATION_COL["Status"] - 1] = "Probation";
+      newRow[PROBATION_COL["Onboarding Date"] - 1] = nowStr;
+      newRow[PROBATION_COL["Onboarding By"] - 1] = onboardingBy;
+      newRow[PROBATION_COL["SK Status"] - 1] = "Pending";
+      newRow[PROBATION_COL["Created At"] - 1] = nowStr;
+      newRow[PROBATION_COL["Updated At"] - 1] = nowStr;
+      sheet.appendRow(newRow);
+    }
 
     writeAuditLog_(recruitmentId, "Create Probation", "Status", "-", "Probation");
 
-    return { success: true, probationId: probationId, message: "Record probation berhasil dibuat." };
+    return {
+      success: true,
+      probationId: probationId,
+      employeeId: empId,
+      message: "Record probation berhasil dibuat.",
+    };
   } catch (err) {
     return { success: false, message: err.message };
   } finally {
-    lock.releaseLock();
+    if (lockAcquiredHere) lock.releaseLock();
   }
 }
 // ============= SUBMIT PROBATION EVALUATION =============
@@ -156,38 +236,28 @@ function submitProbationEvaluation(data) {
   }
 }
 // ============= GET PROBATION LIST =============
-// Sumber utama: Employee sheet (filter Status Employee = "Probation").
-// Join dengan kandidat_probation untuk data kontrak & eval.
-// Return: array langsung (bukan object) -- sesuai ekspektasi frontend.
+// Sumber utama: kandidat_probation (workflow onboarding).
+// Join ke Employee untuk data pekerjaan. Tambahkan Employee Probation tanpa record workflow (legacy).
 function getProbationList() {
   try {
-    // -- 1. Baca Employee sheet, filter status Probation ---------
-    var empSheet = getOrCreateEmployeeSheet_();
-    if (!empSheet || empSheet.getLastRow() < 2) return [];
-
-    var empData = empSheet.getDataRange().getValues();
-    var empHdr  = empData[0];
-    var empCI   = {};
-    empHdr.forEach(function (h, i) { empCI[String(h).trim()] = i; });
-
-    function eCell(row, name) {
+    function eCell(row, name, empCI) {
       var idx = empCI[name];
       if (idx !== undefined) return row[idx];
       var fallback = {
-        "Status Employee":          ["Employment Status", "Status"],
-        "Employment Status":        ["Status Employee", "Status"],
-        "Status":                   ["Status Employee", "Employment Status"],
-        "Position":                 ["Job Position (Locaction)", "Job Position"],
-        "Branch":                   ["Branch Name"],
-        "Email":                    ["Personal Email", "Working Email"],
-        "Phone":                    ["Mobile Phone"],
-        "NIK":                      ["NIK - NPWP 16 digit"],
-        "Contract Start":           ["Start Date (Contract)"],
-        "Contract End":             ["End Date (Contract)"],
-        "Recruitment ID":           ["Recruitment ID (System Link)"],
-        "Company Entity":           ["Company Entity"],
-        "Contract Duration":        ["Contract Duration"],
-        "Contract Number":          ["Contract Number"],
+        "Status Employee": ["Employment Status", "Status"],
+        "Employment Status": ["Status Employee", "Status"],
+        "Status": ["Status Employee", "Employment Status"],
+        "Position": ["Job Position (Locaction)", "Job Position"],
+        "Branch": ["Branch Name"],
+        "Email": ["Personal Email", "Working Email"],
+        "Phone": ["Mobile Phone"],
+        "NIK": ["NIK - NPWP 16 digit"],
+        "Contract Start": ["Start Date (Contract)"],
+        "Contract End": ["End Date (Contract)"],
+        "Recruitment ID": ["Recruitment ID (System Link)"],
+        "Company Entity": ["Branch Name"],
+        "Contract Duration": ["Contract Duration"],
+        "Contract Number": ["Contract Number"],
       };
       if (fallback[name]) {
         for (var f = 0; f < fallback[name].length; f++) {
@@ -198,129 +268,166 @@ function getProbationList() {
       return "";
     }
 
-    var employees = [];
-    for (var r = 1; r < empData.length; r++) {
-      var row = empData[r];
-      if (!row.join("").toString().trim()) continue;
-      var st   = String(eCell(row, "Status") || "").trim();
-      var est  = String(eCell(row, "Employment Status") || "").trim();
-      var semp = String(eCell(row, "Status Employee") || "").trim();
-      if (st !== "Probation" && est !== "Probation" && semp !== "Probation") continue;
-
-      employees.push({
-        employeeId:       String(eCell(row, "Employee ID")       || ""),
-        recruitmentId:    String(eCell(row, "Recruitment ID")    || ""),
-        fullName:         String(eCell(row, "Full Name")         || ""),
-        nik:              String(eCell(row, "NIK")               || "").replace(/^'/, ""),
-        position:         String(eCell(row, "Position")          || ""),
-        department:       String(eCell(row, "Department")        || ""),
-        division:         String(eCell(row, "Division")          || ""),
-        branch:           String(eCell(row, "Branch")            || ""),
-        companyEntity:    String(eCell(row, "Company Entity")    || ""),
-        email:            String(eCell(row, "Email")             || ""),
-        phone:            String(eCell(row, "Phone")             || ""),
-        joinDate:         String(eCell(row, "Join Date")         || ""),
-        contractStart:    String(eCell(row, "Contract Start")    || ""),
-        contractEnd:      String(eCell(row, "Contract End")      || ""),
-        contractDuration: String(eCell(row, "Contract Duration") || ""),
-        contractNumber:   String(eCell(row, "Contract Number")   || ""),
-        status:           semp || st || est || "Probation",
-        statusEmployee:   semp || st || est || "Probation",
-        hrNotes:          String(eCell(row, "HR Notes")          || ""),
-        createdAt:        String(eCell(row, "Created At")        || ""),
-        updatedAt:        String(eCell(row, "Updated At")        || ""),
-        // probation & eval fields -- diisi dari join di bawah
-        probationId:       "",
-        onboardingDate:    "",
-        onboardingBy:      "",
-        evalId:            "",
-        evalDate:          "",
-        scorePerformance:  "",
-        scoreDiscipline:   "",
-        scoreCommunication:"",
-        scoreInitiative:   "",
-        scoreTeamwork:     "",
-        averageScore:      "",
-        decision:          "",
+    function buildEmpItem(row, empCI) {
+      var st = String(eCell(row, "Status", empCI) || "").trim();
+      var est = String(eCell(row, "Employment Status", empCI) || "").trim();
+      var semp = String(eCell(row, "Status Employee", empCI) || "").trim();
+      return {
+        employeeId: normEmployeeId_(eCell(row, "Employee ID", empCI)),
+        recruitmentId: String(eCell(row, "Recruitment ID", empCI) || ""),
+        fullName: String(eCell(row, "Full Name", empCI) || ""),
+        nik: String(eCell(row, "NIK - NPWP 16 digit", empCI) || eCell(row, "NIK", empCI) || "").replace(/^'/, ""),
+        position: String(eCell(row, "Job Position (Locaction)", empCI) || eCell(row, "Job Position", empCI) || eCell(row, "Position", empCI) || ""),
+        department: String(eCell(row, "Department", empCI) || ""),
+        division: String(eCell(row, "Division", empCI) || ""),
+        branch: String(eCell(row, "Branch Name", empCI) || eCell(row, "Branch", empCI) || ""),
+        companyEntity: String(eCell(row, "Branch Name", empCI) || eCell(row, "Company Entity", empCI) || ""),
+        email: String(eCell(row, "Personal Email", empCI) || eCell(row, "Email", empCI) || ""),
+        phone: String(eCell(row, "Mobile Phone", empCI) || eCell(row, "Phone", empCI) || ""),
+        joinDate: String(eCell(row, "Join Date", empCI) || ""),
+        contractStart: String(eCell(row, "Join Date", empCI) || eCell(row, "Start Date (Contract)", empCI) || eCell(row, "Contract Start", empCI) || ""),
+        contractEnd: String(eCell(row, "End Date (Contract)", empCI) || eCell(row, "Contract End", empCI) || ""),
+        contractDuration: String(eCell(row, "Contract Duration", empCI) || ""),
+        contractNumber: String(eCell(row, "Contract Number", empCI) || ""),
+        status: semp || st || est || "Probation",
+        statusEmployee: semp || st || est || "Probation",
+        hrNotes: String(eCell(row, "HR Notes", empCI) || ""),
+        createdAt: String(eCell(row, "Created At", empCI) || ""),
+        updatedAt: String(eCell(row, "Updated At", empCI) || ""),
+        probationId: "",
+        onboardingDate: "",
+        onboardingBy: "",
+        evalId: "",
+        evalDate: "",
+        scorePerformance: "",
+        scoreDiscipline: "",
+        scoreCommunication: "",
+        scoreInitiative: "",
+        scoreTeamwork: "",
+        averageScore: "",
+        decision: "",
         extensionDuration: "",
-        newContractStart:  "",
-        newContractEnd:    "",
-        evaluatorNotes:    "",
-        evaluator:         "",
-        skStatus:          "",
-        notes:             "",
-        // alias lama
-        lastEvalDate:      "",
-        lastAvgScore:      "",
-        lastKeputusan:     "",
-        lastEvaluator:     "",
-        lastStatusSK:      "",
-      });
+        newContractStart: "",
+        newContractEnd: "",
+        evaluatorNotes: "",
+        evaluator: "",
+        skStatus: "",
+        notes: "",
+        lastEvalDate: "",
+        lastAvgScore: "",
+        lastKeputusan: "",
+        lastEvaluator: "",
+        lastStatusSK: "",
+        fromOnboardingWorkflow: false,
+      };
     }
 
-    if (employees.length === 0) return [];
+    function mergeProbRow(emp, pr) {
+      emp.probationId = String(pr[PROBATION_COL["Probation ID"] - 1] || "");
+      emp.recruitmentId = String(pr[PROBATION_COL["Recruitment ID"] - 1] || "") || emp.recruitmentId;
+      emp.onboardingDate = String(pr[PROBATION_COL["Onboarding Date"] - 1] || "");
+      emp.onboardingBy = String(pr[PROBATION_COL["Onboarding By"] - 1] || "");
+      emp.contractNumber = String(pr[PROBATION_COL["Contract Number"] - 1] || "") || emp.contractNumber;
+      emp.contractDuration = String(pr[PROBATION_COL["Contract Duration"] - 1] || "") || emp.contractDuration;
+      emp.contractStart = String(pr[PROBATION_COL["Contract Start"] - 1] || "") || emp.contractStart;
+      emp.contractEnd = String(pr[PROBATION_COL["Contract End"] - 1] || "") || emp.contractEnd;
+      emp.joinDate = String(pr[PROBATION_COL["Join Date"] - 1] || "") || emp.joinDate;
+      emp.notes = String(pr[PROBATION_COL["Notes"] - 1] || "");
+      emp.fromOnboardingWorkflow = true;
 
-    // -- 2. Join dari kandidat_probation -------------------------
+      var evalDate = pr[PROBATION_COL["Eval Date"] - 1];
+      if (evalDate) {
+        emp.evalId = String(pr[PROBATION_COL["Eval ID"] - 1] || "");
+        emp.evalDate = String(evalDate);
+        emp.scorePerformance = pr[PROBATION_COL["Score Performance"] - 1] || "";
+        emp.scoreDiscipline = pr[PROBATION_COL["Score Discipline"] - 1] || "";
+        emp.scoreCommunication = pr[PROBATION_COL["Score Communication"] - 1] || "";
+        emp.scoreInitiative = pr[PROBATION_COL["Score Initiative"] - 1] || "";
+        emp.scoreTeamwork = pr[PROBATION_COL["Score Teamwork"] - 1] || "";
+        emp.averageScore = pr[PROBATION_COL["Average Score"] - 1] || "";
+        emp.decision = String(pr[PROBATION_COL["Decision"] - 1] || "");
+        emp.extensionDuration = String(pr[PROBATION_COL["Extension Duration"] - 1] || "");
+        emp.newContractStart = String(pr[PROBATION_COL["New Contract Start"] - 1] || "");
+        emp.newContractEnd = String(pr[PROBATION_COL["New Contract End"] - 1] || "");
+        emp.evaluatorNotes = String(pr[PROBATION_COL["Evaluator Notes"] - 1] || "");
+        emp.evaluator = String(pr[PROBATION_COL["Evaluator"] - 1] || "");
+        emp.skStatus = String(pr[PROBATION_COL["SK Status"] - 1] || "");
+        emp.lastEvalDate = String(evalDate);
+        emp.lastAvgScore = emp.averageScore !== "" ? Number(emp.averageScore) : "";
+        emp.lastKeputusan = emp.decision;
+        emp.lastEvaluator = emp.evaluator;
+        emp.lastStatusSK = emp.skStatus;
+      }
+      return emp;
+    }
+
+    // Map Employee sheet
+    var empMap = {};
+    var empSheet = getOrCreateEmployeeSheet_();
+    if (empSheet && empSheet.getLastRow() >= 2) {
+      var empData = empSheet.getDataRange().getValues();
+      var empHdr = empData[0];
+      var empCI = {};
+      empHdr.forEach(function (h, i) { empCI[String(h).trim()] = i; });
+
+      for (var r = 1; r < empData.length; r++) {
+        var row = empData[r];
+        if (!row.join("").toString().trim()) continue;
+        var item = buildEmpItem(row, empCI);
+        if (!item.employeeId) continue;
+        empMap[item.employeeId] = item;
+      }
+    }
+
+    var employees = [];
+    var seen = {};
+
+    // 1) Workflow onboarding — kandidat_probation aktif (sumber utama)
     try {
       var probSheet = getOrCreateProbationSheet_();
       if (probSheet && probSheet.getLastRow() >= 2) {
         var probData = probSheet.getDataRange().getValues();
-
-        // Untuk tiap employee ambil row probation terbaru (by Onboarding Date / Created At)
         var probMap = {};
         for (var p = 1; p < probData.length; p++) {
-          var pRow   = probData[p];
-          var pEmpId = String(pRow[PROBATION_COL["Employee ID"] - 1] || "").trim();
+          var pRow = probData[p];
+          var pStatus = String(pRow[PROBATION_COL["Status"] - 1] || "").trim();
+          if (!isActiveProbationSheetStatus_(pStatus)) continue;
+
+          var pEmpId = normEmployeeId_(pRow[PROBATION_COL["Employee ID"] - 1]);
           if (!pEmpId) continue;
-          var pDate  = pRow[PROBATION_COL["Created At"] - 1] || "";
+
+          var pDate = pRow[PROBATION_COL["Created At"] - 1] || "";
           if (!probMap[pEmpId] || String(pDate) > String(probMap[pEmpId]._date)) {
             probMap[pEmpId] = { _date: pDate, row: pRow };
           }
         }
 
-        employees.forEach(function (emp) {
-          var entry = probMap[emp.employeeId];
-          if (!entry) return;
-          var pr = entry.row;
-          emp.probationId       = String(pr[PROBATION_COL["Probation ID"] - 1]      || "");
-          emp.onboardingDate    = String(pr[PROBATION_COL["Onboarding Date"] - 1]   || "");
-          emp.onboardingBy      = String(pr[PROBATION_COL["Onboarding By"] - 1]     || "");
-          // Gunakan kontrak dari kandidat_probation jika lebih lengkap
-          emp.contractNumber    = String(pr[PROBATION_COL["Contract Number"] - 1]   || "") || emp.contractNumber;
-          emp.contractDuration  = String(pr[PROBATION_COL["Contract Duration"] - 1] || "") || emp.contractDuration;
-          emp.contractStart     = String(pr[PROBATION_COL["Contract Start"] - 1]    || "") || emp.contractStart;
-          emp.contractEnd       = String(pr[PROBATION_COL["Contract End"] - 1]      || "") || emp.contractEnd;
-          emp.notes             = String(pr[PROBATION_COL["Notes"] - 1]             || "");
-          // Eval fields
-          var evalDate = pr[PROBATION_COL["Eval Date"] - 1];
-          if (evalDate) {
-            emp.evalId            = String(pr[PROBATION_COL["Eval ID"] - 1]           || "");
-            emp.evalDate          = String(evalDate);
-            emp.scorePerformance  = pr[PROBATION_COL["Score Performance"] - 1]        || "";
-            emp.scoreDiscipline   = pr[PROBATION_COL["Score Discipline"] - 1]         || "";
-            emp.scoreCommunication= pr[PROBATION_COL["Score Communication"] - 1]      || "";
-            emp.scoreInitiative   = pr[PROBATION_COL["Score Initiative"] - 1]         || "";
-            emp.scoreTeamwork     = pr[PROBATION_COL["Score Teamwork"] - 1]           || "";
-            emp.averageScore      = pr[PROBATION_COL["Average Score"] - 1]            || "";
-            emp.decision          = String(pr[PROBATION_COL["Decision"] - 1]          || "");
-            emp.extensionDuration = String(pr[PROBATION_COL["Extension Duration"] - 1]|| "");
-            emp.newContractStart  = String(pr[PROBATION_COL["New Contract Start"] - 1]|| "");
-            emp.newContractEnd    = String(pr[PROBATION_COL["New Contract End"] - 1]  || "");
-            emp.evaluatorNotes    = String(pr[PROBATION_COL["Evaluator Notes"] - 1]   || "");
-            emp.evaluator         = String(pr[PROBATION_COL["Evaluator"] - 1]         || "");
-            emp.skStatus          = String(pr[PROBATION_COL["SK Status"] - 1]         || "");
-            // alias lama
-            emp.lastEvalDate   = String(evalDate);
-            emp.lastAvgScore   = emp.averageScore !== "" ? Number(emp.averageScore) : "";
-            emp.lastKeputusan  = emp.decision;
-            emp.lastEvaluator  = emp.evaluator;
-            emp.lastStatusSK   = emp.skStatus;
-          }
+        Object.keys(probMap).forEach(function (eid) {
+          var base = empMap[eid] || {
+            employeeId: eid,
+            recruitmentId: String(probMap[eid].row[PROBATION_COL["Recruitment ID"] - 1] || ""),
+            fullName: "",
+            status: "Probation",
+            statusEmployee: "Probation",
+            fromOnboardingWorkflow: true,
+          };
+          employees.push(mergeProbRow(base, probMap[eid].row));
+          seen[eid] = true;
         });
       }
     } catch (joinErr) {
-      Logger.log("getProbationList join error: " + joinErr);
+      Logger.log("getProbationList probation join error: " + joinErr);
     }
+
+    // 2) Legacy — Employee Probation tanpa record workflow aktif
+    Object.keys(empMap).forEach(function (eid) {
+      if (seen[eid]) return;
+      var emp = empMap[eid];
+      if (!isProbationEmployeeStatus_(emp.statusEmployee || emp.status)) return;
+      emp.fromOnboardingWorkflow = false;
+      employees.push(emp);
+      seen[eid] = true;
+    });
 
     return employees;
   } catch (err) {

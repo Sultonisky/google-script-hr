@@ -221,14 +221,20 @@
 
   function updateStats(data) {
     function ct(fn) { return data.filter(fn).length; }
-    var elems = {
-      statTotal:      data.length,
-      recStatPending: ct(function(r){ return (r.status||'Pending').toLowerCase() === 'pending'; }),
-    };
-    Object.keys(elems).forEach(function(id) {
-      var el = document.getElementById(id);
-      if (el) animateCounter(el, elems[id]);
-    });
+    var recPending = ct(function(r){ return (r.status||'Pending').toLowerCase() === 'pending'; });
+    var recEl = document.getElementById('recStatPending');
+    if (recEl) animateCounter(recEl, recPending);
+
+    // Stat cards global (total, pending, accepted, hold, blacklist) dari backend
+    if (typeof loadDashboardStatusCounts === 'function') {
+      loadDashboardStatusCounts();
+    } else {
+      var elTotal = document.getElementById('statTotal');
+      if (elTotal) animateCounter(elTotal, data.length);
+      var elPending = document.getElementById('statPending');
+      if (elPending) animateCounter(elPending, recPending);
+    }
+
     var navCount = document.getElementById('navRecruitmentCount');
     if (navCount) navCount.innerText = data.length;
   }

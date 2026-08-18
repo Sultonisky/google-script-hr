@@ -59,7 +59,6 @@
     var contract   = 0;
     var probation  = 0;
     var outsource  = 0;
-    var inactive   = 0;
 
     EMP.allItems.forEach(function(e) {
       var s = (e.statusEmployee || '').toLowerCase();
@@ -68,7 +67,6 @@
       else if (s === 'contract') contract++;
       else if (s === 'probation') probation++;
       else if (t === 'outsource' || s === 'outsource') outsource++;
-      else inactive++;
     });
 
     var totalEl       = document.getElementById('empStatTotal');
@@ -82,8 +80,6 @@
     if (contractEl)  animateCounter(contractEl,  contract);
     if (probEl)      animateCounter(probEl,      probation);
     if (outsourceEl) animateCounter(outsourceEl, outsource);
-    if (outsourceEl) animateCounter(outsourceEl, outsource);
-    if (inactiveEl)  animateCounter(inactiveEl,  inactive);
   }
 
   // ============ FILTERS ============
@@ -568,12 +564,12 @@
     if (searchEl) searchEl.value = emp ? emp.fullName : '';
     if (clearEl)  clearEl.style.display = emp ? 'block' : 'none';
     if (dropEl)   dropEl.style.display  = 'none';
-    _fillRotPreview(emp);
     var dateEl = document.getElementById('rotEffectiveDate');
     if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];
-    ['rotType','rotNewPosition','rotNewDepartment','rotSkNumber','rotReason'].forEach(function(id) {
+    ['rotType','rotNewPosition','rotNewDepartment','rotReason'].forEach(function(id) {
       var el = document.getElementById(id); if (el) el.value = '';
     });
+    _fillRotPreview(emp);
     _updateRotConfirmBtn();
     bootstrap.Modal.getOrCreateInstance(document.getElementById('rotationModal')).show();
   }
@@ -590,6 +586,7 @@
     var jd = document.getElementById('rotEmpJoinDate');
     var hd = document.getElementById('rotEmployeeId');
     var fp = document.getElementById('rotFormerPosition');
+    var sk = document.getElementById('rotSkNumber');
     if (av) av.innerText = initials(emp.fullName);
     if (nm) nm.innerText = emp.fullName || '-';
     if (ps) ps.innerText = emp.positionCurrent || emp.position || '-';
@@ -598,6 +595,7 @@
     if (jd) jd.innerText = emp.joinDate   || '-';
     if (hd) hd.value     = emp.employeeId || '';
     if (fp) fp.value     = emp.positionCurrent || emp.position || '';
+    if (sk) sk.value     = emp.nomorSk || '';
     setTimeout(_updateRotConfirmBtn, 0);
   }
 
@@ -772,6 +770,169 @@
 
   // ============ OFFBOARDING MODAL ============
   var _offbActiveEmp = null;
+  var _offbDocRowSeq = 0;
+  var _OFFB_DOC_TYPES = {
+    Resignation: ['Surat Resign', 'Paklaring', 'Dokumen Lainnya'],
+    Termination: ['SK PHK', 'Paklaring', 'Dokumen Lainnya'],
+    Retirement: ['SK Pensiun', 'Paklaring', 'Dokumen Lainnya'],
+    Death: ['Surat Kematian', 'Dokumen Lainnya'],
+    'Contract End': ['Surat Kontrak Berakhir', 'Paklaring', 'Dokumen Lainnya'],
+    'On Leave': ['Surat Cuti', 'Dokumen Lainnya']
+  };
+  var _OFFB_DOC_MAX_BYTES = 5 * 1024 * 1024;
+  var _OFFB_DOC_ACCEPT = '.pdf,.jpg,.jpeg,.png,.doc,.docx,application/pdf,image/jpeg,image/png,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+  function _resetOffbDocuments() {
+    var rowsEl = document.getElementById('offbDocRows');
+    if (rowsEl) rowsEl.innerHTML = '';
+    _offbDocRowSeq = 0;
+    _updateOffbDocHint();
+  }
+
+  function _getOffbDocTypeOptions(offbType) {
+    return _OFFB_DOC_TYPES[offbType] || ['Dokumen Lainnya'];
+  }
+
+  function _updateOffbDocHint() {
+    var hint = document.getElementById('offbDocHint');
+    var type = ((document.getElementById('offbType') || {}).value) || '';
+    if (hint) hint.style.display = type === 'Death' ? 'block' : 'none';
+  }
+
+  function _renderOffbDocRow(selectedType) {
+    var rowsEl = document.getElementById('offbDocRows');
+    if (!rowsEl) return;
+    var offbType = ((document.getElementById('offbType') || {}).value) || '';
+    var types = _getOffbDocTypeOptions(offbType);
+    var rowId = 'offbDocRow_' + (++_offbDocRowSeq);
+    var opts = types.map(function(t) {
+      return '<option value="' + escapeHtml(t) + '"' +
+        (t === selectedType ? ' selected' : '') + '>' + escapeHtml(t) + '</option>';
+    }).join('');
+    var row = document.createElement('div');
+    row.className = 'offb-doc-row border rounded p-2';
+    row.id = rowId;
+    row.innerHTML =
+      '<div class="row g-2 align-items-end">' +
+        '<div class="col-md-4">' +
+          '<label class="form-label mb-1" style="font-size:12px">Tipe Dokumen</label>' +
+          '<select class="form-select form-select-sm offb-doc-type">' + opts + '</select>' +
+        '</div>' +
+        '<div class="col-md-7">' +
+          '<label class="form-label mb-1" style="font-size:12px">File (max 5 MB)</label>' +
+          '<input type="file" class="form-control form-control-sm offb-doc-file" accept="' + _OFFB_DOC_ACCEPT + '">' +
+        '</div>' +
+        '<div class="col-md-1 text-end">' +
+          '<button type="button" class="btn btn-outline-secondary btn-sm offb-doc-remove" title="Hapus">' +
+            '<i class="bi bi-trash"></i>' +
+          '</button>' +
+        '</div>' +
+      '</div>';
+    rowsEl.appendChild(row);
+    row.querySelector('.offb-doc-remove').addEventListener('click', function() {
+      row.remove();
+      _updateOffbConfirmBtn();
+    });
+    row.querySelector('.offb-doc-type').addEventListener('change', _updateOffbConfirmBtn);
+    row.querySelector('.offb-doc-file').addEventListener('change', _updateOffbConfirmBtn);
+  }
+
+  function _addOffbDocRow(selectedType) {
+    _renderOffbDocRow(selectedType || '');
+    _updateOffbConfirmBtn();
+  }
+
+  function _refreshOffbDocTypeOptions() {
+    var offbType = ((document.getElementById('offbType') || {}).value) || '';
+    var types = _getOffbDocTypeOptions(offbType);
+    document.querySelectorAll('#offbDocRows .offb-doc-row').forEach(function(row) {
+      var sel = row.querySelector('.offb-doc-type');
+      if (!sel) return;
+      var current = sel.value;
+      sel.innerHTML = types.map(function(t) {
+        return '<option value="' + escapeHtml(t) + '">' + escapeHtml(t) + '</option>';
+      }).join('');
+      if (types.indexOf(current) !== -1) sel.value = current;
+      else if (types.length) sel.value = types[0];
+    });
+    _updateOffbDocHint();
+    _updateOffbConfirmBtn();
+  }
+
+  function _hasRequiredDeathDocument_() {
+    var rows = document.querySelectorAll('#offbDocRows .offb-doc-row');
+    for (var i = 0; i < rows.length; i++) {
+      var typeEl = rows[i].querySelector('.offb-doc-type');
+      var fileEl = rows[i].querySelector('.offb-doc-file');
+      if (
+        typeEl && fileEl &&
+        typeEl.value === 'Surat Kematian' &&
+        fileEl.files && fileEl.files.length
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function _readFileAsBase64_(file, callback) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var result = String(e.target.result || '');
+      var base64 = result.indexOf(',') !== -1 ? result.split(',')[1] : result;
+      callback(null, base64);
+    };
+    reader.onerror = function() {
+      callback(new Error('Gagal membaca file "' + file.name + '".'));
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function _collectOffbDocuments_(callback) {
+    var rows = document.querySelectorAll('#offbDocRows .offb-doc-row');
+    var docs = [];
+    var pending = 0;
+    var hadError = null;
+
+    if (!rows.length) {
+      callback(null, []);
+      return;
+    }
+
+    rows.forEach(function(row) {
+      var typeEl = row.querySelector('.offb-doc-type');
+      var fileEl = row.querySelector('.offb-doc-file');
+      if (!typeEl || !fileEl || !fileEl.files || !fileEl.files.length) return;
+      pending++;
+      var file = fileEl.files[0];
+      if (file.size > _OFFB_DOC_MAX_BYTES) {
+        hadError = 'File "' + file.name + '" melebihi batas 5 MB.';
+        pending--;
+        return;
+      }
+      _readFileAsBase64_(file, function(err, base64) {
+        if (err && !hadError) hadError = err.message;
+        else if (!err) {
+          docs.push({
+            type: typeEl.value,
+            fileName: file.name,
+            mimeType: file.type || 'application/octet-stream',
+            dataBase64: base64
+          });
+        }
+        pending--;
+        if (pending === 0) {
+          if (hadError) callback(new Error(hadError), null);
+          else callback(null, docs);
+        }
+      });
+    });
+
+    if (pending === 0) {
+      if (hadError) callback(new Error(hadError), null);
+      else callback(null, docs);
+    }
+  }
 
   function openOffboardingModal(emp) {
     _offbActiveEmp = emp || null;
@@ -781,7 +942,6 @@
     if (searchEl) searchEl.value = emp ? emp.fullName : '';
     if (clearEl)  clearEl.style.display = emp ? 'block' : 'none';
     if (dropEl)   dropEl.style.display  = 'none';
-    _fillOffbPreview(emp);
     var lwdEl = document.getElementById('offbLastWorkingDate');
     if (lwdEl) lwdEl.value = new Date().toISOString().split('T')[0];
     ['offbType','offbReason','offbApprovedBy','offbNotes'].forEach(function(id) {
@@ -789,6 +949,8 @@
     });
     var pakEl = document.getElementById('offbPaklaring');
     if (pakEl) pakEl.value = 'Belum Ditentukan';
+    _resetOffbDocuments();
+    _fillOffbPreview(emp);
     _updateOffbConfirmBtn();
     bootstrap.Modal.getOrCreateInstance(document.getElementById('offboardingModal')).show();
   }
@@ -806,6 +968,7 @@
     var hd = document.getElementById('offbEmployeeId');
     var bt = document.getElementById('offbBpjsTk');
     var bk = document.getElementById('offbBpjsKes');
+    var sk = document.getElementById('offbSkNumber');
     if (av) av.innerText = initials(emp.fullName);
     if (nm) nm.innerText = emp.fullName || '-';
     if (ps) ps.innerText = emp.positionCurrent || emp.position || '-';
@@ -815,18 +978,22 @@
     if (hd) hd.value     = emp.employeeId || '';
     if (bt && !bt.value) bt.value = emp.bpjsKetenagakerjaan || '';
     if (bk && !bk.value) bk.value = emp.bpjsKesehatan       || '';
+    if (sk) sk.value     = emp.nomorSk || '';
     setTimeout(_updateOffbConfirmBtn, 0);
   }
 
   function _updateOffbConfirmBtn() {
     var btn = document.getElementById('btnConfirmOffboarding');
     if (!btn) return;
-    btn.disabled = !(
+    var type = ((document.getElementById('offbType') || {}).value) || '';
+    var baseOk = !!(
       _offbActiveEmp &&
-      ((document.getElementById('offbType')            || {}).value) &&
+      type &&
       ((document.getElementById('offbLastWorkingDate') || {}).value) &&
       ((document.getElementById('offbReason')          || {}).value || '').trim()
     );
+    var deathOk = type !== 'Death' || _hasRequiredDeathDocument_();
+    btn.disabled = !(baseOk && deathOk);
   }
 
   function initOffboardingModal() {
@@ -892,8 +1059,30 @@
 
     ['offbType','offbLastWorkingDate','offbReason'].forEach(function(fid) {
       var el = document.getElementById(fid);
-      if (el) { el.addEventListener('input', _updateOffbConfirmBtn); el.addEventListener('change', _updateOffbConfirmBtn); }
+      if (el) {
+        el.addEventListener('input', function() {
+          if (fid === 'offbType') _refreshOffbDocTypeOptions();
+          _updateOffbConfirmBtn();
+        });
+        el.addEventListener('change', function() {
+          if (fid === 'offbType') _refreshOffbDocTypeOptions();
+          _updateOffbConfirmBtn();
+        });
+      }
     });
+
+    var btnAddDoc = document.getElementById('btnAddOffbDoc');
+    if (btnAddDoc) {
+      btnAddDoc.addEventListener('click', function() {
+        var offbType = ((document.getElementById('offbType') || {}).value) || '';
+        if (!offbType) {
+          showToast('Pilih tipe offboarding terlebih dahulu.', 'warning');
+          return;
+        }
+        var defaults = _getOffbDocTypeOptions(offbType);
+        _addOffbDocRow(defaults[0] || 'Dokumen Lainnya');
+      });
+    }
 
     var modalEl = document.getElementById('offboardingModal');
     if (modalEl) {
@@ -906,11 +1095,12 @@
         if (prev) prev.style.display = 'none';
         var lwdEl = document.getElementById('offbLastWorkingDate');
         if (lwdEl) lwdEl.value = '';
-        ['offbType','offbReason','offbBpjsTk','offbBpjsKes','offbApprovedBy','offbNotes'].forEach(function(fid) {
+        ['offbType','offbReason','offbBpjsTk','offbBpjsKes','offbApprovedBy','offbSkNumber','offbNotes'].forEach(function(fid) {
           var el = document.getElementById(fid); if (el) el.value = '';
         });
         var pakEl = document.getElementById('offbPaklaring');
         if (pakEl) pakEl.value = 'Belum Ditentukan';
+        _resetOffbDocuments();
         var btn = document.getElementById('btnConfirmOffboarding');
         if (btn) btn.disabled = true;
         var tEl = document.getElementById('btnOffbText'); var lEl = document.getElementById('btnOffbLoading');
@@ -927,18 +1117,10 @@
         var lwd   = (document.getElementById('offbLastWorkingDate') || {}).value || '';
         var rsn   = ((document.getElementById('offbReason') || {}).value || '').trim();
         if (!empId || !type || !lwd || !rsn) return;
-
-        var payload = {
-          employeeId:          empId,
-          offboardingType:     type,
-          lastWorkingDate:     lwd,
-          reason:              rsn,
-          bpjsKetenagakerjaan: (document.getElementById('offbBpjsTk')     || {}).value || '',
-          bpjsKesehatan:       (document.getElementById('offbBpjsKes')    || {}).value || '',
-          paklaring:           (document.getElementById('offbPaklaring')  || {}).value || '',
-          approvedBy:          (document.getElementById('offbApprovedBy') || {}).value || '',
-          notes:               (document.getElementById('offbNotes')      || {}).value || '',
-        };
+        if (type === 'Death' && !_hasRequiredDeathDocument_()) {
+          showToast('Tipe Meninggal wajib melampirkan dokumen Surat Kematian.', 'warning');
+          return;
+        }
 
         var tEl = document.getElementById('btnOffbText');
         var lEl = document.getElementById('btnOffbLoading');
@@ -946,45 +1128,72 @@
         if (tEl) tEl.style.display = 'none';
         if (lEl) lEl.style.display = 'inline-flex';
 
-        google.script.run
-          .withSuccessHandler(function(res) {
+        _collectOffbDocuments_(function(docErr, documents) {
+          if (docErr) {
             confirmBtn.disabled = false;
             if (tEl) tEl.style.display = 'inline-flex';
             if (lEl) lEl.style.display = 'none';
-            bootstrap.Modal.getInstance(document.getElementById('offboardingModal')).hide();
-            if (res && res.success) {
-              showToast('Offboarding <strong>' + escapeHtml((_offbActiveEmp || {}).fullName || '') +
-                '</strong> berhasil — ' + escapeHtml(type), 'success', 5000);
-              empLoadAll();
-              // Generate PDF surat offboarding — data diambil langsung dari form & karyawan terpilih
-              var emp = _offbActiveEmp || {};
-              exportOffboardingLetterPDF({
-                employeeId:        emp.employeeId || payload.employeeId,
-                fullName:          emp.fullName || '',
-                position:          emp.positionCurrent || emp.position || '',
-                department:        emp.department || '',
-                joinDate:          emp.joinDate || '',
-                lastWorkingDate:   payload.lastWorkingDate,
-                offboardingType:   payload.offboardingType,
-                reason:            payload.reason,
-                approvedBy:        payload.approvedBy || '',
-                notes:             payload.notes || '',
-              }, function(success) {
-                if (!success) {
-                  showToast('Gagal membuat PDF surat offboarding.', 'error');
-                }
-              });
-            } else {
-              showToast('Gagal: ' + (res ? res.message : 'Error'), 'error');
-            }
-          })
-          .withFailureHandler(function(err) {
-            confirmBtn.disabled = false;
-            if (tEl) tEl.style.display = 'inline-flex';
-            if (lEl) lEl.style.display = 'none';
-            showToast('Error: ' + (err ? err.message : 'Unknown'), 'error');
-          })
-          .processOffboarding(payload);
+            showToast(docErr.message || 'Gagal membaca dokumen.', 'error');
+            return;
+          }
+
+          var payload = {
+            employeeId:          empId,
+            offboardingType:     type,
+            lastWorkingDate:     lwd,
+            reason:              rsn,
+            skNumber:            (document.getElementById('offbSkNumber') || {}).value || '',
+            bpjsKetenagakerjaan: (document.getElementById('offbBpjsTk')     || {}).value || '',
+            bpjsKesehatan:       (document.getElementById('offbBpjsKes')    || {}).value || '',
+            paklaring:           (document.getElementById('offbPaklaring')  || {}).value || '',
+            approvedBy:          (document.getElementById('offbApprovedBy') || {}).value || '',
+            notes:               (document.getElementById('offbNotes')      || {}).value || '',
+            documents:           documents || []
+          };
+
+          google.script.run
+            .withSuccessHandler(function(res) {
+              confirmBtn.disabled = false;
+              if (tEl) tEl.style.display = 'inline-flex';
+              if (lEl) lEl.style.display = 'none';
+              bootstrap.Modal.getInstance(document.getElementById('offboardingModal')).hide();
+              if (res && res.success) {
+                var docMsg = res.documentsUploaded
+                  ? ' · ' + res.documentsUploaded + ' dokumen diunggah'
+                  : '';
+                showToast('Offboarding <strong>' + escapeHtml((_offbActiveEmp || {}).fullName || '') +
+                  '</strong> berhasil — ' + escapeHtml(type) + docMsg, 'success', 5000);
+                empLoadAll();
+                var emp = _offbActiveEmp || {};
+                exportOffboardingLetterPDF({
+                  employeeId:        emp.employeeId || payload.employeeId,
+                  fullName:          emp.fullName || '',
+                  position:          emp.positionCurrent || emp.position || '',
+                  department:        emp.department || '',
+                  joinDate:          emp.joinDate || '',
+                  lastWorkingDate:   payload.lastWorkingDate,
+                  offboardingType:   payload.offboardingType,
+                  reason:            payload.reason,
+                  skNumber:          payload.skNumber || '',
+                  approvedBy:        payload.approvedBy || '',
+                  notes:             payload.notes || '',
+                }, function(success) {
+                  if (!success) {
+                    showToast('Gagal membuat PDF surat offboarding.', 'error');
+                  }
+                });
+              } else {
+                showToast('Gagal: ' + (res ? res.message : 'Error'), 'error');
+              }
+            })
+            .withFailureHandler(function(err) {
+              confirmBtn.disabled = false;
+              if (tEl) tEl.style.display = 'inline-flex';
+              if (lEl) lEl.style.display = 'none';
+              showToast('Error: ' + (err ? err.message : 'Unknown'), 'error');
+            })
+            .processOffboarding(payload);
+        });
       });
     }
   }

@@ -83,7 +83,7 @@
   var FORM_SECTIONS = [
     { id:'sectionPersonal',   badgeId:'secBadgePersonal',   fields:['nik','full_name','birth_date','birth_place','gender','religion','blood_type','marital_status'] },
     { id:'sectionContact',    badgeId:'secBadgeContact',    fields:['email','working_email','phone','province','city','district','address','address_residential'] },
-    { id:'sectionEmployment', badgeId:'secBadgeEmployment', fields:['branch_name','division','department','area_kerja','cost_center','lokasi_kerja','position','job_level','employee_status','join_date','contract_end_date','direct_superior','indirect_superior'] },
+    { id:'sectionEmployment', badgeId:'secBadgeEmployment', fields:['branch_name','outsource_vendor','division','department','area_kerja','cost_center','lokasi_kerja','position','job_level','employee_status','join_date','contract_end_date','direct_superior','indirect_superior'] },
     { id:'sectionBank',      badgeId:'secBadgeBank',       fields:['bank_account','bank_account_holder','npwp','ptkp_status','bpjs_ketenagakerjaan','bpjs_kesehatan'] },
   ];
 
@@ -412,6 +412,7 @@
       address:            document.getElementById('address').value.trim(),
       address_residential: document.getElementById('address_residential').value.trim(),
       branch_name:        document.getElementById('branch_name').value,
+      outsource_vendor:   document.getElementById('outsource_vendor').value.trim(),
       division:           document.getElementById('division').value.trim(),
       department:         document.getElementById('department').value,
       area_kerja:         document.getElementById('area_kerja').value,

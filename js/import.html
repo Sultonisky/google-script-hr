@@ -42,6 +42,7 @@
     var startBtn = document.getElementById('btnEmpImportStart');
     var backBtn = document.getElementById('btnEmpImportBack');
     var tplBtn = document.getElementById('btnEmpDownloadTemplate');
+    var tplXlsBtn = document.getElementById('btnEmpDownloadExcelTemplate');
 
     if (dropZone && fileInput) {
       dropZone.addEventListener('click', function() { fileInput.click(); });
@@ -80,16 +81,13 @@
     });
 
     if (tplBtn) tplBtn.addEventListener('click', downloadEmpCsvTemplate);
+    if (tplXlsBtn) tplXlsBtn.addEventListener('click', downloadEmpExcelTemplate);
   }
 
   function handleEmpImportFile(file) {
     var fname = file.name.toLowerCase();
     if (!fname.endsWith('.csv') && !fname.endsWith('.xlsx') && !fname.endsWith('.xls')) {
-      showToast('Hanya file CSV yang didukung.', 'error');
-      return;
-    }
-    if (!fname.endsWith('.csv')) {
-      showToast('Format Excel (.xlsx/.xls) belum didukung langsung — harap simpan sebagai CSV terlebih dahulu.', 'error');
+      showToast('Hanya file CSV atau Excel (.csv/.xlsx/.xls) yang didukung.', 'error');
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
@@ -103,13 +101,10 @@
     document.getElementById('empImportFileInfo').style.display = '';
     document.getElementById('empImportDropZone').style.display = 'none';
 
-    var reader = new FileReader();
-    reader.onload = function(e) {
-      var text = e.target.result;
-      empImportRows = parseEmpCSV(text);
-
+    function done(rows) {
+      empImportRows = rows;
       if (empImportRows.length === 0) {
-        showToast('File CSV kosong atau format tidak sesuai.', 'error');
+        showToast('File kosong atau format tidak sesuai (baris pertama = header).', 'error');
         return;
       }
       if (empImportRows.length > 500) {
@@ -117,223 +112,249 @@
         empImportRows = [];
         return;
       }
-
       showEmpImportPreview(empImportRows);
-    };
-    reader.readAsText(file, 'UTF-8');
+    }
+
+    if (fname.endsWith('.csv')) {
+      var reader = new FileReader();
+      reader.onload = function(e) { done(parseEmpCSV(e.target.result)); };
+      reader.onerror = function() { showToast('Gagal membaca file CSV.', 'error'); };
+      reader.readAsText(file, 'UTF-8');
+    } else {
+      parseEmpExcel(file, done);
+    }
   }
 
   // ============================================================
-  // parseEmpCSV — Normalize header → camelCase key yang diterima
-  // importEmployees() backend (schema v2).
-  //
-  // Setiap entry: normHeader(kolom CSV) → camelCase key.
-  // Support: header bahasa Indonesia & Inggris, dengan/tanpa spasi.
+  // PARSING IMPORT — CSV & Excel (.xlsx/.xls)
+  // Normalisasi header → camelCase key yang diterima importEmployees()
+  // backend (schema sesuai EMPLOYEE_HEADERS saat ini).
   // ============================================================
-  function parseEmpCSV(text) {
-    var lines = text.split(/\r?\n/).filter(function(l) { return l.trim() !== ''; });
-    if (lines.length < 2) return [];
 
-    // Normalize: lowercase, strip quotes, strip whitespace/underscore/slash/dash/dot/bracket
-    function normHeader(h) {
-      return h.trim()
-        .replace(/^["']|["']$/g, '')
-        .toLowerCase()
-        .replace(/[\s_\-\/\.\(\)]/g, '');
-    }
+  // Field map: normalizedHeader → camelCaseKey
+  var empImportFieldMap = {
+    // BLOK 1 — Identitas
+    'employeeid':                     'employeeId',          // opsional, diabaikan saat import (auto-generate)
+    'recruitmentid':                  'recruitmentId',
+    'recruitmentsystemlink':          'recruitmentId',
+    'namalengkap':                    'fullName',
+    'fullname':                       'fullName',
+    'nama':                           'fullName',
+    'nik':                            'nik',
+    'niknpwp16digit':                 'nik',
+    'niknpwp':                        'nik',
+    'nomorinduk':                     'nik',
+    'npwp':                           'npwp',
+    'npwp16digit':                    'npwp',
+    'tempatlahir':                    'birthPlace',
+    'birthplace':                     'birthPlace',
+    'tanggallahir':                   'birthDate',
+    'birthdate':                      'birthDate',
+    'tgllahir':                       'birthDate',
 
-    var headers = splitCsvLine(lines[0]).map(normHeader);
+    // BLOK 2 — Data Pribadi
+    'jeniskelamin':                   'gender',
+    'gender':                         'gender',
+    'agama':                          'religion',
+    'religion':                       'religion',
+    'statuspernikahan':               'maritalStatus',
+    'maritalstatus':                  'maritalStatus',
+    'golongandarah':                  'bloodType',
+    'bloodtype':                      'bloodType',
+    'statusptkp':                     'ptkpStatus',
+    'ptkp':                           'ptkpStatus',
+    'ptkpstatus':                     'ptkpStatus',
+    'alamatktp':                      'citizenIdAddress',
+    'alamatsesuaiktp':                'citizenIdAddress',
+    'citizenidaddress':               'citizenIdAddress',
+    'address':                        'citizenIdAddress',    // fallback lama
+    'alamat':                         'citizenIdAddress',    // fallback lama
+    'alamatdomisili':                 'residentialAddress',
+    'alamattempattinggal':            'residentialAddress',
+    'residentialaddress':             'residentialAddress',
+    'nohp':                           'mobilePhone',
+    'hp':                             'mobilePhone',
+    'nomortelepon':                   'mobilePhone',
+    'telepon':                        'mobilePhone',
+    'phone':                          'mobilePhone',
+    'mobilephone':                    'mobilePhone',
+    'emailpribadi':                   'personalEmail',
+    'personalemail':                  'personalEmail',
+    'email':                          'personalEmail',       // fallback lama
+    'emailkantor':                    'workingEmail',
+    'workingemail':                   'workingEmail',
 
-    // ── Schema v2 field map ───────────────────────────────────
-    // Format: 'normalizedHeader': 'camelCaseKeyForBackend'
-    var fieldMap = {
-      // BLOK 1 — Identitas
-      'employeeid':                     'employeeId',          // opsional, diabaikan saat import (auto-generate)
-      'recruitmentid':                  'recruitmentId',
-      'recruitmentsystemlink':          'recruitmentId',
-      'namalengkap':                    'fullName',
-      'fullname':                       'fullName',
-      'nama':                           'fullName',
-      'nik':                            'nik',
-      'niknpwp16digit':                 'nik',
-      'niknpwp':                        'nik',
-      'nomorinduk':                     'nik',
-      'npwp':                           'npwp',
-      'npwp16digit':                    'npwp',
-      'tempatlahir':                    'birthPlace',
-      'birthplace':                     'birthPlace',
-      'tanggallahir':                   'birthDate',
-      'birthdate':                      'birthDate',
-      'tgllahir':                       'birthDate',
-      // Age removed — no longer in Employee sheet schema
+    // BLOK 3 — Bank & BPJS
+    'namabank':                       'bankName',
+    'bankname':                       'bankName',
+    'bank':                           'bankName',
+    'nomorrekening':                  'bankAccount',
+    'bankaccount':                    'bankAccount',
+    'rekening':                       'bankAccount',
+    'atasnama':                       'bankAccountHolder',
+    'atasnamamekening':               'bankAccountHolder',
+    'bankaccountholder':              'bankAccountHolder',
+    'nomorbpjsketenagakerjaan':       'bpjsKetenagakerjaan',
+    'bpjsketenagakerjaan':            'bpjsKetenagakerjaan',
+    'bpjstk':                         'bpjsKetenagakerjaan',
+    'nomorbpjskesehatan':             'bpjsKesehatan',
+    'bpjskesehatan':                  'bpjsKesehatan',
+    'bpjskes':                        'bpjsKesehatan',
 
-      // BLOK 2 — Data Pribadi
-      'jeniskelamin':                   'gender',
-      'gender':                         'gender',
-      'agama':                          'religion',
-      'religion':                       'religion',
-      'statuspernikahan':               'maritalStatus',
-      'maritalstatus':                  'maritalStatus',
-      'golongandarah':                  'bloodType',
-      'bloodtype':                      'bloodType',
-      'statusptkp':                     'ptkpStatus',
-      'ptkp':                           'ptkpStatus',
-      'ptkpstatus':                     'ptkpStatus',
-      'alamatktp':                      'citizenIdAddress',
-      'alamatsesuaiktp':                'citizenIdAddress',
-      'citizenidaddress':               'citizenIdAddress',
-      'address':                        'citizenIdAddress',    // fallback lama
-      'alamat':                         'citizenIdAddress',    // fallback lama
-      'alamatdomisili':                 'residentialAddress',
-      'alamattempattinggal':            'residentialAddress',
-      'residentialaddress':             'residentialAddress',
-      'nohp':                           'mobilePhone',
-      'hp':                             'mobilePhone',
-      'nomortelepon':                   'mobilePhone',
-      'telepon':                        'mobilePhone',
-      'phone':                          'mobilePhone',
-      'mobilephone':                    'mobilePhone',
-      'emailpribadi':                   'personalEmail',
-      'personalemail':                  'personalEmail',
-      'email':                          'personalEmail',       // fallback lama
-      'emailkantor':                    'workingEmail',
-      'workingemail':                   'workingEmail',
+    // BLOK 4 — Organisasi & Pekerjaan
+    'cabang':                         'branchName',
+    'namacanabng':                    'branchName',           // typo-safe
+    'branchname':                     'branchName',
+    'branch':                         'branchName',
+    'divisi':                         'division',
+    'division':                       'division',
+    'departemen':                     'department',
+    'department':                     'department',
+    'dept':                           'department',
+    'jabatan':                        'positionCurrent',
+    'jabatancurrent':                 'positionCurrent',
+    'jobpositioncurrent':             'positionCurrent',
+    'positioncurrent':                'positionCurrent',
+    'position':                       'positionCurrent',     // fallback lama
+    'posisi':                         'positionCurrent',     // fallback lama
+    'jabatantanpalokasikerja':        'positionNoLocCurrent',
+    'jabatannoloc':                   'positionNoLocCurrent',
+    'positionnoloccurrent':           'positionNoLocCurrent',
+    'positionnoloc':                  'positionNoLocCurrent',
+    'joblevel':                       'jobLevel',
+    'level':                          'jobLevel',
+    'grade':                          'grade',
+    'gradekaryawan':                  'grade',
+    'areakerja':                      'areaKerja',
+    'kecamatan':                      'areaKerja',
+    'district':                       'areaKerja',           // fallback lama
+    'lokasikerja':                    'lokasiKerja',
+    'kota':                           'lokasiKerja',
+    'city':                           'lokasiKerja',         // fallback lama
+    'costcenter':                     'costCenter',
+    'pusatbiaya':                     'costCenter',
+    'atasanlangsung':                 'directSuperior',
+    'directsuperior':                 'directSuperior',
+    'atasantidaklangsung':            'indirectSuperior',
+    'indirectsuperior':               'indirectSuperior',
 
-      // BLOK 3 — Bank & BPJS
-      'namabank':                       'bankName',
-      'bankname':                       'bankName',
-      'bank':                           'bankName',
-      'nomorrekening':                  'bankAccount',
-      'bankaccount':                    'bankAccount',
-      'rekening':                       'bankAccount',
-      'atasnama':                       'bankAccountHolder',
-      'atasnamamekening':               'bankAccountHolder',
-      'bankaccountholder':              'bankAccountHolder',
-      'nomorbpjsketenagakerjaan':       'bpjsKetenagakerjaan',
-      'bpjsketenagakerjaan':            'bpjsKetenagakerjaan',
-      'bpjstk':                         'bpjsKetenagakerjaan',
-      'nomorbpjskesehatan':             'bpjsKesehatan',
-      'bpjskesehatan':                  'bpjsKesehatan',
-      'bpjskes':                        'bpjsKesehatan',
+    // BLOK 5 — Status & Kontrak
+    'statuskaryawan':                 'statusEmployee',
+    'statusemployee':                 'statusEmployee',
+    'status':                         'statusEmployee',      // fallback lama
+    'statuskepegawaian':              'statusEmployee',
+    'employmentstatus':               'statusEmployee',      // fallback lama
+    'statuskerja':                    'statusEmployee',      // fallback lama
+    'tanggalmasuk':                   'joinDate',
+    'joindate':                       'joinDate',
+    'tglmasuk':                       'joinDate',
+    'akhirkontrak':                   'endDateContract',
+    'tanggalberakhirkontrak':         'endDateContract',
+    'enddatecontract':                'endDateContract',
+    'contractend':                    'endDateContract',     // fallback lama
+    'kontrakberakhir':                'endDateContract',     // fallback lama
+    'vendoroutsource':                'outsourceVendor',
+    'outsourcevendor':                'outsourceVendor',
+    'vendor':                         'outsourceVendor',
 
-      // BLOK 4 — Organisasi & Pekerjaan
-      'tipekaryawan':                   'employeeType',
-      'employeetype':                   'employeeType',
-      'tipe':                           'employeeType',
-      'entitasperusahaan':              'companyEntity',
-      'companyentity':                  'companyEntity',
-      'perusahaan':                     'companyEntity',
-      'cabang':                         'branchName',
-      'namacanabng':                    'branchName',           // typo-safe
-      'branchname':                     'branchName',
-      'branch':                         'branchName',
-      'divisi':                         'division',
-      'division':                       'division',
-      'departemen':                     'department',
-      'department':                     'department',
-      'dept':                           'department',
-      'jabatan':                        'positionCurrent',
-      'jabatancurrent':                 'positionCurrent',
-      'jobpositioncurrent':             'positionCurrent',
-      'positioncurrent':                'positionCurrent',
-      'position':                       'positionCurrent',     // fallback lama
-      'posisi':                         'positionCurrent',     // fallback lama
-      'jabatantanpalokasikerja':        'positionNoLocCurrent',
-      'jabatannoloc':                   'positionNoLocCurrent',
-      'positionnoloccurrent':           'positionNoLocCurrent',
-      'positionnoloc':                  'positionNoLocCurrent',
-      'joblevel':                       'jobLevel',
-      'level':                          'jobLevel',
-      'grade':                          'grade',
-      'gradekaryawan':                  'grade',
-      'areakerja':                      'areaKerja',
-      'kecamatan':                      'areaKerja',
-      'district':                       'areaKerja',           // fallback lama
-      'lokasikerja':                    'lokasiKerja',
-      'kota':                           'lokasiKerja',
-      'city':                           'lokasiKerja',         // fallback lama
-      'costcenter':                     'costCenter',
-      'pusatbiaya':                     'costCenter',
-      'atasanlangsung':                 'directSuperior',
-      'directsuperior':                 'directSuperior',
-      'atasantidaklangsung':            'indirectSuperior',
-      'indirectsuperior':               'indirectSuperior',
+    // BLOK 6 — Karier & Mutasi
+    'jabatansebelumnya':              'positionFormer',
+    'jabatanformer':                  'positionFormer',
+    'positionformer':                 'positionFormer',
+    'jenisrotasi':                    'typeOfRotation',
+    'typeofrotation':                 'typeOfRotation',
+    'rotasi':                         'typeOfRotation',
+    'tanggalmutasi':                  'mutasiDate',
+    'tanggalmutasidemosipromosi':     'mutasiDate',
+    'mutasidate':                     'mutasiDate',
+    'nomorsk':                        'nomorSk',
+    'nosk':                           'nomorSk',
+    'nomorsurat':                     'nomorSk',
+    'tanggalresign':                  'resignDate',
+    'resigndate':                     'resignDate',
 
-      // BLOK 5 — Status & Kontrak
-      'statuskaryawan':                 'statusEmployee',
-      'statusemployee':                 'statusEmployee',
-      'status':                         'statusEmployee',      // fallback lama
-      'statuskepegawaian':              'statusEmployee',
-      'employmentstatus':               'statusEmployee',      // fallback lama
-      'statuskerja':                    'statusEmployee',      // fallback lama
-      'tanggalmasuk':                   'joinDate',
-      'joindate':                       'joinDate',
-      'tglmasuk':                       'joinDate',
-      'mulaikontrak':                   'startDateContract',
-      'tanggalmulaikontrak':            'startDateContract',
-      'startdatecontract':              'startDateContract',
-      'contractstart':                  'startDateContract',   // fallback lama
-      'kontrakmulai':                   'startDateContract',   // fallback lama
-      'akhirkontrak':                   'endDateContract',
-      'tanggalberakhirkontrak':         'endDateContract',
-      'enddatecontract':                'endDateContract',
-      'contractend':                    'endDateContract',     // fallback lama
-      'kontrakberakhir':                'endDateContract',     // fallback lama
-      'durasikontrak':                  'contractDuration',
-      'contractduration':               'contractDuration',
-      'nokontrak':                      'contractNumber',
-      'nomorkontrak':                   'contractNumber',
-      'contractnumber':                 'contractNumber',
-      'vendoroutsource':                'outsourceVendor',
-      'outsourcevendor':                'outsourceVendor',
-      'vendor':                         'outsourceVendor',
+    // BLOK 7 — Catatan (semua diarahkan ke HR Notes — satu-satunya kolom catatan)
+    'catatan':                        'hrNotes',
+    'notes':                          'hrNotes',
+    'catatanumum':                    'hrNotes',
+    'catatanhr':                      'hrNotes',
+    'hrnotes':                        'hrNotes',
+  };
 
-      // BLOK 6 — Karier & Mutasi
-      'jabatansebelumnya':              'positionFormer',
-      'jabatanformer':                  'positionFormer',
-      'positionformer':                 'positionFormer',
-      'jenisrotasi':                    'typeOfRotation',
-      'typeofrotation':                 'typeOfRotation',
-      'rotasi':                         'typeOfRotation',
-      'tanggalmutasi':                  'mutasiDate',
-      'tanggalmutasidemosipromosi':     'mutasiDate',
-      'mutasidate':                     'mutasiDate',
-      'nomorsk':                        'nomorSk',
-      'nosk':                           'nomorSk',
-      'nomorsurat':                     'nomorSk',
-      'tanggalresign':                  'resignDate',
-      'resigndate':                     'resignDate',
+  function empImportNormalizeHeader(h) {
+    return String(h || '')
+      .trim()
+      .replace(/^["']|["']$/g, '')
+      .toLowerCase()
+      .replace(/[\s_\-\/\.\(\)]/g, '');
+  }
 
-      // BLOK 7 — Catatan
-      'catatan':                        'notes',
-      'notes':                          'notes',
-      'catatanumum':                    'notes',
-      'catatanhr':                      'hrNotes',
-      'hrnotes':                        'hrNotes',
-
-      // Kolom lama yang masih diizinkan sebagai alias (backward compat)
-      'pendidikan':                     'education',           // dikirim ke backend tapi diabaikan di v2
-      'education':                      'education',
-      'pengalamankerja':                'workExperience',
-      'workexperience':                 'workExperience',
-      'pengalaman':                     'workExperience',
-      'gaji':                           'salary',
-      'salary':                         'salary',
-      'tipegaji':                       'salaryType',
-      'salarytype':                     'salaryType',
-    };
-
+  // Ubah matriks [baris header, baris data...] menjadi array objek
+  function empRowsFromMatrix(matrix) {
+    if (!matrix || matrix.length < 2) return [];
+    var headers = (matrix[0] || []).map(empImportNormalizeHeader);
     var rows = [];
-    for (var i = 1; i < lines.length; i++) {
-      var vals = splitCsvLine(lines[i]);
+    for (var i = 1; i < matrix.length; i++) {
+      var vals = matrix[i] || [];
+      var any = vals.some(function (v) {
+        return v !== '' && v !== null && v !== undefined;
+      });
+      if (!any) continue; // skip baris kosong
       var row = {};
       for (var j = 0; j < headers.length; j++) {
-        var key = fieldMap[headers[j]] || headers[j];
-        row[key] = (vals[j] || '').trim().replace(/^["']|["']$/g, '');
+        var key = empImportFieldMap[headers[j]] || headers[j];
+        if (!key) continue;
+        var val = vals[j];
+        row[key] = String(val == null ? '' : val)
+          .trim()
+          .replace(/^["']|["']$/g, '');
       }
       rows.push(row);
     }
     return rows;
+  }
+
+  function parseEmpCSV(text) {
+    var lines = text.split(/\r?\n/).filter(function (l) {
+      return l.trim() !== '';
+    });
+    if (lines.length < 2) return [];
+    var matrix = lines.map(splitCsvLine);
+    return empRowsFromMatrix(matrix);
+  }
+
+  // Parsing file Excel (.xlsx/.xls) via SheetJS (CDN), hasilnya sama
+  // dengan parseEmpCSV (diproses empRowsFromMatrix).
+  function parseEmpExcel(file, callback) {
+    if (typeof XLSX === 'undefined') {
+      var s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      document.head.appendChild(s);
+      s.onload = function () { parseEmpExcel(file, callback); };
+      s.onerror = function () {
+        showToast('Gagal memuat library Excel. Periksa koneksi internet.', 'error');
+        if (callback) callback([]);
+      };
+      return;
+    }
+    var fr = new FileReader();
+    fr.onload = function (e) {
+      try {
+        var wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+        var ws = wb.Sheets[wb.SheetNames[0]];
+        if (!ws) { if (callback) callback([]); return; }
+        var matrix = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' });
+        if (callback) callback(empRowsFromMatrix(matrix));
+      } catch (err) {
+        showToast('Gagal membaca file Excel: ' + err.message, 'error');
+        if (callback) callback([]);
+      }
+    };
+    fr.onerror = function () {
+      showToast('Gagal membaca file Excel.', 'error');
+      if (callback) callback([]);
+    };
+    fr.readAsArrayBuffer(file);
   }
 
   // ---- Proper CSV line splitter (handles quoted fields with commas) ----
@@ -358,90 +379,48 @@
   }
 
   // ============================================================
-  // downloadEmpCsvTemplate — Download CSV template dengan semua
-  // kolom schema v2 yang dapat diimport.
+  // TEMPLATE IMPORT — kolom disesuaikan dengan EMPLOYEE_HEADERS
+  // saat ini (Contract Number/Duration & Start Date (Contract)
+  // dihapus karena tidak aktif di sheet).
   // ============================================================
-  function downloadEmpCsvTemplate() {
-    var headers = [
-      // WAJIB
+
+  function empImportTemplateHeaders() {
+    return [
       'fullName',
-      // Data Pribadi
-      'nik', 'npwp', 'birthPlace', 'birthDate', 'age', 'gender',
+      'nik', 'npwp', 'birthPlace', 'birthDate', 'gender',
       'religion', 'maritalStatus', 'bloodType', 'ptkpStatus',
       'citizenIdAddress', 'residentialAddress', 'mobilePhone', 'personalEmail', 'workingEmail',
-      // Bank & BPJS
       'bankName', 'bankAccount', 'bankAccountHolder',
       'bpjsKetenagakerjaan', 'bpjsKesehatan',
-      // Organisasi
-      'companyEntity', 'employeeType', 'branchName', 'division', 'department',
+      'branchName', 'division', 'department',
       'positionCurrent', 'positionNoLocCurrent', 'jobLevel', 'grade',
       'areaKerja', 'lokasiKerja', 'costCenter', 'directSuperior', 'indirectSuperior',
-      // Status & Kontrak
-      'statusEmployee', 'joinDate',
-      'startDateContract', 'endDateContract', 'contractDuration', 'contractNumber',
-      'outsourceVendor',
-      // Karier & Mutasi
+      'statusEmployee', 'joinDate', 'endDateContract', 'outsourceVendor',
       'positionFormer', 'typeOfRotation', 'mutasiDate', 'nomorSk', 'resignDate',
-      // Catatan
-      'hrNotes', 'notes',
-      // System (opsional)
-      'recruitmentId',
+      'hrNotes',
     ];
+  }
 
-    // Baris contoh
-    var example = [
-      'Budi Santoso',                          // fullName
-      '3201234567890001',                      // nik
-      '',                                      // npwp
-      'Jakarta',                               // birthPlace
-      '1995-03-15',                            // birthDate (YYYY-MM-DD)
-      '29',                                    // age
-      'Laki-laki',                             // gender
-      'Islam',                                 // religion
-      'Menikah',                               // maritalStatus
-      'O',                                     // bloodType
-      'K/1',                                   // ptkpStatus
-      'Jl. Contoh No. 1 Jakarta',             // citizenIdAddress
-      '',                                      // residentialAddress
-      '628123456789',                          // mobilePhone
-      'budi@gmail.com',                        // personalEmail
-      'budi@mitogroup.co.id',                  // workingEmail
-      'BCA',                                   // bankName
-      '1234567890',                            // bankAccount
-      'Budi Santoso',                          // bankAccountHolder
-      '',                                      // bpjsKetenagakerjaan
-      '',                                      // bpjsKesehatan
-      'PT Mahakarya Sukses Indonesia',         // companyEntity
-      'PKWTT',                                 // employeeType
-      'Jakarta',                               // branchName
-      'Operations',                            // division
-      'Human Resources',                       // department
-      'Staff HR - Jakarta',                    // positionCurrent
-      'Staff HR',                              // positionNoLocCurrent
-      '',                                      // jobLevel
-      '',                                      // grade
-      'Jakarta Selatan',                       // areaKerja
-      'Jakarta',                               // lokasiKerja
-      '',                                      // costCenter
-      '',                                      // directSuperior
-      '',                                      // indirectSuperior
-      'Contract',                              // statusEmployee
-      '2024-01-15',                            // joinDate
-      '',                                      // startDateContract
-      '',                                      // endDateContract
-      '',                                      // contractDuration
-      '',                                      // contractNumber
-      '',                                      // outsourceVendor
-      '',                                      // positionFormer
-      '',                                      // typeOfRotation
-      '',                                      // mutasiDate
-      '',                                      // nomorSk
-      '',                                      // resignDate
-      '',                                      // hrNotes
-      '',                                      // notes
-      '',                                      // recruitmentId
+  function empImportTemplateExample() {
+    return [
+      'Budi Santoso',
+      '3201234567890001', '', 'Jakarta', '1995-03-15', 'Laki-laki',
+      'Islam', 'Menikah', 'O', 'K/1',
+      'Jl. Contoh No. 1 Jakarta', '', '628123456789', 'budi@gmail.com', 'budi@mitogroup.co.id',
+      'BCA', '1234567890', 'Budi Santoso',
+      '', '',
+      'Jakarta', 'Operations', 'Human Resources',
+      'Staff HR - Jakarta', 'Staff HR', '', '',
+      'Jakarta Selatan', 'Jakarta', '', '', '',
+      'Contract', '2024-01-15', '', '',
+      '', '', '', '', '',
+      '',
     ];
+  }
 
+  function downloadEmpCsvTemplate() {
+    var headers = empImportTemplateHeaders();
+    var example = empImportTemplateExample();
     var csvContent = headers.join(',') + '\n' +
       example.map(function(v) {
         // Quote fields containing commas or quotes
@@ -455,11 +434,31 @@
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = 'template_import_karyawan_v2.csv';
+    a.download = 'template_import_karyawan.csv';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  }
+
+  function downloadEmpExcelTemplate() {
+    if (typeof XLSX === 'undefined') {
+      var s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      document.head.appendChild(s);
+      s.onload = function () { downloadEmpExcelTemplate(); };
+      s.onerror = function () {
+        showToast('Gagal memuat library Excel. Periksa koneksi internet.', 'error');
+      };
+      return;
+    }
+    var headers = empImportTemplateHeaders();
+    var example = empImportTemplateExample();
+    var ws = XLSX.utils.aoa_to_sheet([headers, example]);
+    ws['!cols'] = headers.map(function () { return { wch: 24 }; });
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Template Karyawan');
+    XLSX.writeFile(wb, 'template_import_karyawan.xlsx');
   }
 
   function showEmpImportPreview(rows) {

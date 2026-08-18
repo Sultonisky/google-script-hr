@@ -56,6 +56,24 @@
     function updateStats() {
       var totalEl = el('StatTotal');
       if (totalEl) animateCounter(totalEl, data.length);
+
+      // Stat tambahan khusus page Accepted
+      if (cfg.statusName === 'accepted') {
+        var offeringEl = el('StatOffering');
+        if (offeringEl) {
+          var offeringCount = data.filter(function (r) {
+            return r.offeringCreated && r.offeringCreated !== '-' && r.offeringCreated !== '';
+          }).length;
+          animateCounter(offeringEl, offeringCount);
+        }
+        var onboardingEl = el('StatOnboarding');
+        if (onboardingEl) {
+          var onboardingCount = data.filter(function (r) {
+            return String(r.onboardingStatus || '').trim().toLowerCase() === 'probation';
+          }).length;
+          animateCounter(onboardingEl, onboardingCount);
+        }
+      }
     }
 
     function applyFilter() {
@@ -491,6 +509,100 @@
   // Memory store: { recruitmentId: { candidate, offerData, generatedBy } }
   var _offeringDataStore = {};
 
+  function _setSelectOrValue(el, value) {
+    if (!el || value == null || value === '') return;
+    var val = String(value);
+    if (el.tagName === 'SELECT') {
+      var exists = Array.prototype.some.call(el.options, function (o) {
+        return o.value === val;
+      });
+      if (!exists) {
+        var opt = document.createElement('option');
+        opt.value = val;
+        opt.textContent = val;
+        el.appendChild(opt);
+      }
+    }
+    el.value = val;
+  }
+
+  function _suggestWorkingEmail(fullName) {
+    if (!fullName) return '';
+    var slug = String(fullName).toLowerCase().replace(/[^a-z0-9\s]/g, '').trim().replace(/\s+/g, '.');
+    return slug ? slug + '@mito.co.id' : '';
+  }
+
+  function _suggestCostCenter(areaKerja, lokasiKerja) {
+    var area = String(areaKerja || '');
+    if (area === 'Head Office (HO)') return 'HRD';
+    if (area === 'Pabrik') return 'Manufacture ' + (lokasiKerja || '');
+    if (area.indexOf('Depo') !== -1) return area;
+    return area;
+  }
+
+  function _normalizeOfferData(src, row) {
+    src = src || {};
+    row = row || {};
+    var branchName = src.branchName || src.companyEntity || row.offeringBranchName || row.offeringCompanyEntity || '';
+    return {
+      branchName: branchName,
+      companyEntity: branchName,
+      position: src.position || row.offeringPosition || (row.positionApplied || ''),
+      department: src.department || row.offeringDepartment || '',
+      division: src.division || row.offeringDivision || '',
+      jobLevel: src.jobLevel || row.offeringJobLevel || '',
+      areaKerja: src.areaKerja || row.offeringAreaKerja || '',
+      lokasiKerja: src.lokasiKerja || row.offeringLokasiKerja || row.city || '',
+      grade: src.grade || row.offeringGrade || '',
+      salary: src.salary || row.offeringSalary || '',
+      joinDate: src.joinDate || row.offeringJoinDate || '',
+      benefit: src.benefit || row.offeringBenefit || '',
+      notes: src.notes || row.offeringNotes || '',
+    };
+  }
+
+  function _readOfferingForm() {
+    var branchName = (document.getElementById('offerBranchName') || {}).value || '';
+    return {
+      branchName: branchName,
+      companyEntity: branchName,
+      position: (document.getElementById('offerPosition') || {}).value || '',
+      department: (document.getElementById('offerDepartment') || {}).value || '',
+      division: (document.getElementById('offerDivision') || {}).value || '',
+      jobLevel: (document.getElementById('offerJobLevel') || {}).value || '',
+      areaKerja: (document.getElementById('offerAreaKerja') || {}).value || '',
+      lokasiKerja: (document.getElementById('offerLokasiKerja') || {}).value || '',
+      salary: (document.getElementById('offerSalary') || {}).value || '',
+      joinDate: (document.getElementById('offerJoinDate') || {}).value || '',
+      benefit: (document.getElementById('offerBenefit') || {}).value || '',
+      notes: (document.getElementById('offerNotes') || {}).value || '',
+    };
+  }
+
+  function _fillOfferingForm(src, row) {
+    var data = _normalizeOfferData(src, row);
+    _setSelectOrValue(document.getElementById('offerBranchName'), data.branchName);
+    var posEl = document.getElementById('offerPosition');
+    if (posEl) posEl.value = data.position || '';
+    _setSelectOrValue(document.getElementById('offerDepartment'), data.department);
+    _setSelectOrValue(document.getElementById('offerDivision'), data.division);
+    _setSelectOrValue(document.getElementById('offerJobLevel'), data.jobLevel);
+    _setSelectOrValue(document.getElementById('offerAreaKerja'), data.areaKerja);
+    var lokEl = document.getElementById('offerLokasiKerja');
+    if (lokEl) lokEl.value = data.lokasiKerja || '';
+    var salEl = document.getElementById('offerSalary');
+    if (salEl) salEl.value = data.salary || '';
+    var joinEl = document.getElementById('offerJoinDate');
+    if (joinEl) {
+      var normJoin = data.joinDate ? (typeof toDateInputValue === 'function' ? toDateInputValue(data.joinDate) : data.joinDate) : '';
+      joinEl.value = normJoin || joinEl.value || '';
+    }
+    var benEl = document.getElementById('offerBenefit');
+    if (benEl) benEl.value = data.benefit || '';
+    var notesEl = document.getElementById('offerNotes');
+    if (notesEl) notesEl.value = data.notes || '';
+  }
+
   // Buka modal offering — row bisa null (dari tombol panel) atau object kandidat (dari baris)
   function openOfferingModal(row) {
     _offeringCurrentCandidate = row || null;
@@ -511,11 +623,7 @@
     if (joinDateEl && !joinDateEl.value) {
       joinDateEl.value = new Date().toISOString().split('T')[0];
     }
-    // Pre-fill posisi dari kandidat yang dipilih
-    if (row) {
-      var posEl = document.getElementById('offerPosition');
-      if (posEl && !posEl.value) posEl.value = row.positionApplied || '';
-    }
+    if (row) _fillOfferingForm(null, row);
 
     var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('offeringModal'));
     modal.show();
@@ -527,20 +635,12 @@
 
     // Tentukan sumber data: dari memory store jika ada, fallback ke row (data dari spreadsheet)
     function hasData(d) {
-      return d && (d.companyEntity || d.position || d.department || d.salary || d.joinDate);
+      return d && (d.branchName || d.companyEntity || d.position || d.department || d.salary || d.joinDate);
     }
     var hasStoreData = !!(store && hasData(store.offerData));
-    var ssOffer = {
-      companyEntity: row.offeringCompanyEntity || '',
-      position:      row.offeringPosition      || '',
-      department:    row.offeringDepartment    || '',
-      salary:        row.offeringSalary        || '',
-      joinDate:      row.offeringJoinDate      || '',
-      benefit:       row.offeringBenefit       || '',
-      notes:         row.offeringNotes         || '',
-    };
+    var ssOffer = _normalizeOfferData(null, row);
     var hasSsData = hasData(ssOffer);
-    var offerData = hasStoreData ? store.offerData : (hasSsData ? ssOffer : null);
+    var offerData = hasStoreData ? _normalizeOfferData(store.offerData, row) : (hasSsData ? ssOffer : null);
 
     // Isi header preview
     var avatarEl  = document.getElementById('prevOfferCandAvatar');
@@ -562,13 +662,17 @@
     // Isi detail penawaran (dari offerData jika ada)
     function disp(v) { return v ? v : '-'; }
     var fields = {
-      prevOfferCompany:   offerData ? disp(offerData.companyEntity) : '-',
-      prevOfferPosition:  offerData ? disp(offerData.position)      : '-',
-      prevOfferDept:      offerData ? disp(offerData.department)    : '-',
-      prevOfferSalary:    offerData ? disp(offerData.salary)        : '-',
-      prevOfferJoinDate:  offerData ? disp(offerData.joinDate)      : '-',
-      prevOfferBenefit:   offerData ? (offerData.benefit || '-')    : '-',
-      prevOfferNotes:     offerData ? (offerData.notes   || '-')    : '-',
+      prevOfferCompany:         offerData ? disp(offerData.branchName || offerData.companyEntity) : '-',
+      prevOfferPosition:        offerData ? disp(offerData.position)      : '-',
+      prevOfferDept:            offerData ? disp(offerData.department)    : '-',
+      prevOfferDivision:        offerData ? disp(offerData.division)      : '-',
+      prevOfferJobLevel:        offerData ? disp(offerData.jobLevel)      : '-',
+      prevOfferAreaKerja:       offerData ? disp(offerData.areaKerja)     : '-',
+      prevOfferLokasiKerja:     offerData ? disp(offerData.lokasiKerja)   : '-',
+      prevOfferSalary:          offerData ? disp(offerData.salary)        : '-',
+      prevOfferJoinDate:        offerData ? disp(offerData.joinDate)      : '-',
+      prevOfferBenefit:         offerData ? (offerData.benefit || '-')    : '-',
+      prevOfferNotes:           offerData ? (offerData.notes   || '-')    : '-',
     };
     Object.keys(fields).forEach(function(id) {
       var el = document.getElementById(id);
@@ -611,21 +715,7 @@
         if (previewModal) previewModal.hide();
         setTimeout(function() {
           openOfferingModal(row);
-          // Pre-fill semua field dari data yang tersedia (store > spreadsheet)
-          var src = offerData || {};
-          var fieldMap = {
-            offerCompanyEntity: src.companyEntity || '',
-            offerPosition:      src.position      || (row.positionApplied || ''),
-            offerDepartment:    src.department    || '',
-            offerSalary:        src.salary        || '',
-            offerJoinDate:      src.joinDate      || '',
-            offerBenefit:       src.benefit       || '',
-            offerNotes:         src.notes         || '',
-          };
-          Object.keys(fieldMap).forEach(function(id) {
-            var el = document.getElementById(id);
-            if (el) el.value = fieldMap[id] || '';
-          });
+          _fillOfferingForm(offerData, row);
           _updateOfferingGenerateBtn();
         }, 350);
       };
@@ -664,6 +754,13 @@
     if (phoneEl)  phoneEl.innerText  = (row.phone || '-').replace(/^'+/, '');
     if (cityEl)   cityEl.innerText   = row.city            || '-';
 
+    if (row) {
+      var lokEl = document.getElementById('offerLokasiKerja');
+      if (lokEl && !lokEl.value) lokEl.value = row.city || '';
+      var posEl = document.getElementById('offerPosition');
+      if (posEl && !posEl.value) posEl.value = row.positionApplied || '';
+    }
+
     // Panggil update button setelah step2 visible agar field terbaca
     setTimeout(_updateOfferingGenerateBtn, 0);
   }
@@ -672,7 +769,7 @@
     var btn = document.getElementById('btnGenerateOffering');
     if (!btn) return;
     var hasCand   = !!_offeringCurrentCandidate;
-    var hasEntity = !!((document.getElementById('offerCompanyEntity') || {}).value);
+    var hasEntity = !!((document.getElementById('offerBranchName') || {}).value);
     var hasPos    = !!((document.getElementById('offerPosition')      || {}).value);
     var hasDept   = !!((document.getElementById('offerDepartment')    || {}).value);
     var hasSal    = !!((document.getElementById('offerSalary')        || {}).value);
@@ -693,6 +790,10 @@
 
       var accData = (ACC_PAGE && ACC_PAGE._getData) ? ACC_PAGE._getData() : [];
       var matched = accData.filter(function(r) {
+        // Kandidat yang sudah memiliki offering tidak boleh dibuatkan offering baru —
+        // revisi dilakukan lewat tombol Edit (drawer / preview offering).
+        var hasOffer = r.offeringCreated && r.offeringCreated !== '-' && r.offeringCreated !== '';
+        if (hasOffer) return false;
         return (r.fullName || '').toLowerCase().indexOf(q) !== -1 ||
                (r.recruitmentId || '').toLowerCase().indexOf(q) !== -1;
       }).slice(0, 8);
@@ -735,8 +836,7 @@
             if (clearEl)  clearEl.style.display = 'block';
             dropEl.style.display = 'none';
             _fillOfferingCandidatePreview(found);
-            var posEl = document.getElementById('offerPosition');
-            if (posEl) posEl.value = found.positionApplied || '';
+            _fillOfferingForm(null, found);
             _updateOfferingGenerateBtn();
           }
         });
@@ -770,7 +870,7 @@
     });
 
     // ── Live validation field wajib ──────────────────────────
-    ['offerCompanyEntity', 'offerPosition', 'offerDepartment', 'offerSalary', 'offerJoinDate'].forEach(function(id) {
+    ['offerBranchName', 'offerPosition', 'offerDepartment', 'offerSalary', 'offerJoinDate'].forEach(function(id) {
       var el = document.getElementById(id);
       if (el) { el.addEventListener('input', _updateOfferingGenerateBtn); el.addEventListener('change', _updateOfferingGenerateBtn); }
     });
@@ -780,11 +880,14 @@
     if (modalEl) {
       modalEl.addEventListener('hidden.bs.modal', function() {
         _offeringCurrentCandidate = null;
-        ['offerPosition','offerDepartment','offerSalary','offerJoinDate','offerBenefit','offerNotes'].forEach(function(id) {
+        ['offerPosition','offerDepartment','offerSalary','offerJoinDate','offerBenefit','offerNotes',
+         'offerLokasiKerja'].forEach(function(id) {
           var el = document.getElementById(id); if (el) el.value = '';
         });
-        var entityEl = document.getElementById('offerCompanyEntity');
-        if (entityEl) entityEl.value = '';
+        ['offerBranchName','offerDivision','offerJobLevel','offerAreaKerja'].forEach(function(id) {
+          var sel = document.getElementById(id);
+          if (sel) sel.value = '';
+        });
         var previewEl = document.getElementById('offeringCandidatePreview');
         if (previewEl) previewEl.style.display = 'none';
         var step2El = document.getElementById('offeringStep2');
@@ -802,15 +905,7 @@
     if (genBtn) {
       genBtn.addEventListener('click', function() {
         if (!_offeringCurrentCandidate) return;
-        var offerData = {
-          companyEntity: (document.getElementById('offerCompanyEntity') || {}).value || 'MITO Group',
-          position:      (document.getElementById('offerPosition')      || {}).value || '',
-          department:    (document.getElementById('offerDepartment')    || {}).value || '',
-          salary:        (document.getElementById('offerSalary')        || {}).value || '',
-          joinDate:      (document.getElementById('offerJoinDate')      || {}).value || '',
-          benefit:       (document.getElementById('offerBenefit')       || {}).value || '',
-          notes:         (document.getElementById('offerNotes')         || {}).value || '',
-        };
+        var offerData = _readOfferingForm();
 
         var textEl = document.getElementById('btnOfferingText');
         var loadEl = document.getElementById('btnOfferingLoading');
@@ -1016,9 +1111,9 @@
     _fillOnboardingCandPreview(row);
     _updateOnboardingConfirmBtn();
 
-    // Default tanggal mulai = hari ini
-    var startEl = document.getElementById('onbContractStart');
-    if (startEl && !startEl.value) startEl.value = new Date().toISOString().split('T')[0];
+    // Default join date = hari ini
+    var joinEl = document.getElementById('onbJoinDate');
+    if (joinEl && !joinEl.value) joinEl.value = new Date().toISOString().split('T')[0];
 
     var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('onboardingModal'));
     modal.show();
@@ -1050,9 +1145,57 @@
     if (hidRidEl) hidRidEl.value      = row.recruitmentId   || '';
     if (hidEmpEl) hidEmpEl.value      = row.employeeId      || '';
 
-    // Pre-fill posisi dari kandidat
+    // Pre-fill dari Offering Letter — field selaras EMPLOYEE_HEADERS
+    var offer = _normalizeOfferData(null, row);
+
+    _setSelectOrValue(document.getElementById('onbBranchName'), offer.branchName);
+    _setSelectOrValue(document.getElementById('onbDivision'), offer.division);
+    _setSelectOrValue(document.getElementById('onbDepartment'), offer.department);
+
     var posInput = document.getElementById('onbPosition');
-    if (posInput && row.positionApplied) posInput.value = row.positionApplied;
+    if (posInput) posInput.value = offer.position || '';
+
+    _setSelectOrValue(document.getElementById('onbJobLevel'), offer.jobLevel);
+
+    var gradeEl = document.getElementById('onbGrade');
+    if (gradeEl) gradeEl.value = offer.grade || '';
+
+    _setSelectOrValue(document.getElementById('onbAreaKerja'), offer.areaKerja);
+
+    var lokEl = document.getElementById('onbLokasiKerja');
+    if (lokEl) lokEl.value = offer.lokasiKerja || row.city || '';
+
+    var costEl = document.getElementById('onbCostCenter');
+    if (costEl) costEl.value = _suggestCostCenter(offer.areaKerja, offer.lokasiKerja || row.city);
+
+    var directSup = document.getElementById('onbDirectSuperior');
+    if (directSup) directSup.value = offer.directSuperior || '';
+
+    var workEmail = document.getElementById('onbWorkingEmail');
+    if (workEmail && !workEmail.value) workEmail.value = _suggestWorkingEmail(row.fullName);
+
+    var joinInput = document.getElementById('onbJoinDate');
+    if (joinInput && offer.joinDate) {
+      var normJoin = typeof toDateInputValue === 'function' ? toDateInputValue(offer.joinDate) : offer.joinDate;
+      if (normJoin) joinInput.value = normJoin;
+    }
+
+    var durSel = document.getElementById('onbContractDuration');
+    if (durSel && !durSel.value) durSel.value = '3 Bulan';
+
+    var notesTa = document.getElementById('onbNotes');
+    if (notesTa) {
+      var noteParts = [];
+      if (offer.salary) {
+        var salNum = String(offer.salary).replace(/[^\d]/g, '');
+        if (salNum) noteParts.push('Gaji offering: Rp ' + salNum);
+      }
+      if (offer.benefit) noteParts.push('Benefit: ' + offer.benefit);
+      if (offer.notes) noteParts.push(offer.notes);
+      notesTa.value = noteParts.join('\n');
+    }
+
+    if (typeof _calcOnboardingEndDate === 'function') _calcOnboardingEndDate();
 
     setTimeout(_updateOnboardingConfirmBtn, 0);
   }
@@ -1061,18 +1204,16 @@
     var confirmBtn = document.getElementById('btnConfirmOnboarding');
     if (!confirmBtn) return;
     var hasCand      = !!_activeOnboardingRow;
-    var hasCompany   = !!((document.getElementById('onbCompanyEntity')    || {}).value);
-    var hasType      = !!((document.getElementById('onbEmployeeType')     || {}).value);
+    var hasBranch    = !!((document.getElementById('onbBranchName')       || {}).value);
     var hasDept      = !!((document.getElementById('onbDepartment')       || {}).value);
     var hasPos       = !!((document.getElementById('onbPosition')         || {}).value);
     var hasDuration  = !!((document.getElementById('onbContractDuration') || {}).value);
-    var hasStart     = !!((document.getElementById('onbContractStart')    || {}).value);
-    var hasSalary    = !!((document.getElementById('onbSalary')           || {}).value);
-    confirmBtn.disabled = !(hasCand && hasCompany && hasType && hasDept && hasPos && hasDuration && hasStart && hasSalary);
+    var hasJoin      = !!((document.getElementById('onbJoinDate')        || {}).value);
+    confirmBtn.disabled = !(hasCand && hasBranch && hasDept && hasPos && hasDuration && hasJoin);
   }
 
   function _calcOnboardingEndDate() {
-    var startEl    = document.getElementById('onbContractStart');
+    var startEl    = document.getElementById('onbJoinDate');
     var durationEl = document.getElementById('onbContractDuration');
     var endEl      = document.getElementById('onbContractEnd');
     var hintEl     = document.getElementById('onbContractEndHint');
@@ -1178,7 +1319,7 @@
     });
 
     // ── Live validation field wajib ──────────────────────────
-    ['onbCompanyEntity','onbEmployeeType','onbDepartment','onbPosition','onbContractDuration','onbContractStart','onbSalary'].forEach(function(id) {
+    ['onbBranchName','onbDepartment','onbPosition','onbContractDuration','onbJoinDate'].forEach(function(id) {
       var el = document.getElementById(id);
       if (el) {
         el.addEventListener('input',  _updateOnboardingConfirmBtn);
@@ -1186,11 +1327,20 @@
       }
     });
 
+  var areaKerjaEl = document.getElementById('onbAreaKerja');
+  if (areaKerjaEl) {
+    areaKerjaEl.addEventListener('change', function() {
+      var lok = (document.getElementById('onbLokasiKerja') || {}).value || '';
+      var costEl = document.getElementById('onbCostCenter');
+      if (costEl) costEl.value = _suggestCostCenter(areaKerjaEl.value, lok);
+    });
+  }
+
     // ── Auto-hitung end date ─────────────────────────────────
     var durationEl = document.getElementById('onbContractDuration');
-    var startEl    = document.getElementById('onbContractStart');
+    var joinDateEl = document.getElementById('onbJoinDate');
     if (durationEl) durationEl.addEventListener('change', function() { _calcOnboardingEndDate(); _updateOnboardingConfirmBtn(); });
-    if (startEl)    startEl.addEventListener('change',    function() { _calcOnboardingEndDate(); _updateOnboardingConfirmBtn(); });
+    if (joinDateEl) joinDateEl.addEventListener('change', function() { _calcOnboardingEndDate(); _updateOnboardingConfirmBtn(); });
 
     // ── Reset saat modal ditutup ─────────────────────────────
     var modalEl = document.getElementById('onboardingModal');
@@ -1202,15 +1352,14 @@
         if (dropEl)   dropEl.style.display  = 'none';
         var previewEl = document.getElementById('onboardingCandPreview');
         if (previewEl) previewEl.style.display = 'none';
-        ['onbCompanyEntity','onbEmployeeType','onbDepartment','onbPosition','onbDivision',
-         'onbBranch','onbContractNumber','onbContractDuration','onbContractStart',
-         'onbContractEnd','onbSalary','onbNotes'].forEach(function(fid) {
+        ['onbBranchName','onbDivision','onbDepartment','onbPosition','onbJobLevel','onbGrade',
+         'onbAreaKerja','onbLokasiKerja','onbCostCenter','onbDirectSuperior','onbIndirectSuperior',
+         'onbWorkingEmail','onbJoinDate','onbContractNumber','onbContractDuration',
+         'onbContractEnd','onbNotes'].forEach(function(fid) {
           var el = document.getElementById(fid); if (el) el.value = '';
         });
-        var salaryTypeEl = document.getElementById('onbSalaryType');
-        if (salaryTypeEl) salaryTypeEl.value = 'Monthly';
         var hintEl = document.getElementById('onbContractEndHint');
-        if (hintEl) hintEl.innerText = 'Isi manual atau terisi otomatis dari durasi';
+        if (hintEl) hintEl.innerText = 'Terisi otomatis dari durasi probation';
         var confirmBtn = document.getElementById('btnConfirmOnboarding');
         if (confirmBtn) confirmBtn.disabled = true;
         var textEl = document.getElementById('btnOnboardingText');
@@ -1229,18 +1378,23 @@
         if (!recruitmentId || !employeeId) return;
 
         var contractData = {
-          companyEntity:    (document.getElementById('onbCompanyEntity')    || {}).value || '',
-          employeeType:     (document.getElementById('onbEmployeeType')     || {}).value || '',
+          branchName:       (document.getElementById('onbBranchName')       || {}).value || '',
+          division:         (document.getElementById('onbDivision')         || {}).value || '',
           department:       (document.getElementById('onbDepartment')       || {}).value || '',
           position:         (document.getElementById('onbPosition')         || {}).value || '',
-          division:         (document.getElementById('onbDivision')         || {}).value || '',
-          branch:           (document.getElementById('onbBranch')           || {}).value || '',
+          jobLevel:         (document.getElementById('onbJobLevel')         || {}).value || '',
+          grade:            (document.getElementById('onbGrade')            || {}).value || '',
+          areaKerja:        (document.getElementById('onbAreaKerja')        || {}).value || '',
+          lokasiKerja:      (document.getElementById('onbLokasiKerja')      || {}).value || '',
+          costCenter:       (document.getElementById('onbCostCenter')       || {}).value || '',
+          directSuperior:   (document.getElementById('onbDirectSuperior')   || {}).value || '',
+          indirectSuperior: (document.getElementById('onbIndirectSuperior') || {}).value || '',
+          workingEmail:     (document.getElementById('onbWorkingEmail')     || {}).value || '',
+          joinDate:         (document.getElementById('onbJoinDate')         || {}).value || '',
           contractNumber:   (document.getElementById('onbContractNumber')   || {}).value || '',
           contractDuration: (document.getElementById('onbContractDuration') || {}).value || '',
-          contractStart:    (document.getElementById('onbContractStart')    || {}).value || '',
+          contractStart:    (document.getElementById('onbJoinDate')         || {}).value || '',
           contractEnd:      (document.getElementById('onbContractEnd')      || {}).value || '',
-          salary:           (document.getElementById('onbSalary')           || {}).value || '',
-          salaryType:       (document.getElementById('onbSalaryType')       || {}).value || 'Monthly',
           notes:            (document.getElementById('onbNotes')            || {}).value || '',
         };
 
@@ -1277,6 +1431,7 @@
               );
               // Reload tabel agar kolom status onboarding sinkron
               if (ACC_PAGE) ACC_PAGE.loadData(true);
+              if (typeof _loadProbationData === 'function') _loadProbationData(true);
             } else {
               showToast('Gagal onboarding: ' + (res ? res.message : 'Error'), 'error');
             }

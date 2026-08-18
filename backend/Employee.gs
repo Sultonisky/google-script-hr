@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // backend/Employee.gs � MASTER DATA KARYAWAN
 // Schema: defined in EMPLOYEE_HEADERS (Config.gs)
 // Column access: use EMPLOYEE_COL[headerName] � NEVER hardcoded indexes
@@ -107,6 +107,10 @@ function getEmployeeList() {
         offboardingType:      sval(row, "Offboarding Type"),
         offboardingReason:    sval(row, "Offboarding Reason"),
         offboardingApprovedBy: sval(row, "Offboarding Approved By"),
+        offboardingDocumentsFolder: sval(row, "Offboarding Documents Folder"),
+        offboardingDocuments: parseOffboardingDocuments_(
+          sval(row, "Offboarding Document Links"),
+        ),
         createdBy: sval(row, "Created By"),
         createdAt:
           createdAtRaw instanceof Date
@@ -336,6 +340,8 @@ function updateEmployee(id, updates) {
           offboardingType:      "Offboarding Type",
           offboardingReason:    "Offboarding Reason",
           offboardingApprovedBy: "Offboarding Approved By",
+          offboardingDocumentsFolder: "Offboarding Documents Folder",
+          offboardingDocumentLinks: "Offboarding Document Links",
           createdBy:        "Created By",
         };
 
@@ -462,14 +468,113 @@ function getEmployeeStats() {
 }
 
 // ============================================================
+// CREATE EMPLOYEE FROM ACCEPTED — fallback saat record Employee
+// belum ada di sheet Employee ketika onboarding diproses.
+// Membuat record Employee minimal dari data kandidat_accepted.
+// ============================================================
+function composeEmployeeJobTitles_(position, jobLevel, lokasiKerja) {
+  var title = String(position || "").trim();
+  var level = String(jobLevel || "").trim();
+  var loc = String(lokasiKerja || "").trim();
+  var noLoc = title;
+  if (level && title && title.toLowerCase().indexOf(level.toLowerCase()) === -1) {
+    noLoc = title + " " + level;
+  } else if (!title && level) {
+    noLoc = level;
+  }
+  var withLoc = noLoc;
+  if (loc && noLoc && noLoc.indexOf("(" + loc + ")") === -1) {
+    withLoc = noLoc + " (" + loc + ")";
+  } else if (!noLoc && loc) {
+    withLoc = loc;
+  }
+  return { jobPosition: noLoc, jobPositionLocation: withLoc };
+}
+
+function _createEmployeeFromAccepted_(recruitmentId, employeeId, now, nowStr, user) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var accSheet = ss.getSheetByName(ACCEPTED_SHEET_NAME);
+    if (!accSheet || accSheet.getLastRow() < 2) return -1;
+
+    var accData = accSheet.getDataRange().getValues();
+    var accHdr = accData[0];
+    var accCI = {};
+    accHdr.forEach(function (h, i) { accCI[String(h).trim()] = i; });
+
+    var ridIdx = accCI["Recruitment ID"];
+    if (ridIdx === undefined) return -1;
+
+    var accRow = null;
+    for (var r = 1; r < accData.length; r++) {
+      if (String(accData[r][ridIdx] || "") === String(recruitmentId)) {
+        accRow = accData[r];
+        break;
+      }
+    }
+    if (!accRow) return -1;
+
+    function cv(name) {
+      var i = accCI[name];
+      if (i === undefined) return "";
+      return String(accRow[i] || "");
+    }
+
+    var position = cv("Offering Position") || cv("Position Applied");
+    var jobLevel = cv("Offering Job Level");
+    var lokasiKerja = cv("Offering Lokasi Kerja") || cv("City");
+    var titles = composeEmployeeJobTitles_(position, jobLevel, lokasiKerja);
+
+    var empSheet = getOrCreateEmployeeSheet_();
+    var newRow = new Array(EMPLOYEE_HEADERS.length).fill("");
+    newRow[EMPLOYEE_COL["Employee ID"] - 1]       = employeeId;
+    newRow[EMPLOYEE_COL["Full Name"] - 1]         = cv("Full Name");
+    newRow[EMPLOYEE_COL["NIK - NPWP 16 digit"] - 1] = cv("NIK");
+    newRow[EMPLOYEE_COL["NPWP"] - 1]              = "";
+    newRow[EMPLOYEE_COL["Birth Place"] - 1]       = cv("City");
+    newRow[EMPLOYEE_COL["Birth Date"] - 1]        = cv("Birth Date");
+    newRow[EMPLOYEE_COL["Gender"] - 1]            = cv("Gender");
+    newRow[EMPLOYEE_COL["Marital Status"] - 1]    = cv("Marital Status");
+    newRow[EMPLOYEE_COL["Personal Email"] - 1]    = cv("Email");
+    newRow[EMPLOYEE_COL["Working Email"] - 1]     = "";
+    newRow[EMPLOYEE_COL["Mobile Phone"] - 1]      = cv("Phone");
+    newRow[EMPLOYEE_COL["Religion"] - 1]          = "";
+    newRow[EMPLOYEE_COL["Branch Name"] - 1]       = cv("Offering Company Entity");
+    newRow[EMPLOYEE_COL["Division"] - 1]          = cv("Offering Division");
+    newRow[EMPLOYEE_COL["Department"] - 1]        = cv("Offering Department");
+    newRow[EMPLOYEE_COL["Job Position"] - 1]      = titles.jobPosition;
+    newRow[EMPLOYEE_COL["Job Position (Locaction)"] - 1] = titles.jobPositionLocation;
+    newRow[EMPLOYEE_COL["Job Level"] - 1]         = jobLevel;
+    newRow[EMPLOYEE_COL["Grade"] - 1]             = cv("Offering Grade");
+    newRow[EMPLOYEE_COL["Area Kerja"] - 1]        = cv("Offering Area Kerja");
+    newRow[EMPLOYEE_COL["Lokasi Kerja"] - 1]      = lokasiKerja;
+    newRow[EMPLOYEE_COL["Direct Superior"] - 1]   = "";
+    newRow[EMPLOYEE_COL["Citizen ID Address"] - 1] = cv("Address");
+    newRow[EMPLOYEE_COL["Residential Address"] - 1] = cv("Address");
+    newRow[EMPLOYEE_COL["Join Date"] - 1]         = cv("Offering Join Date") ||
+      Utilities.formatDate(now, "GMT+7", "yyyy-MM-dd");
+    newRow[EMPLOYEE_COL["Status Employee"] - 1]   = "Probation";
+    newRow[EMPLOYEE_COL["Created By"] - 1]        = user;
+    newRow[EMPLOYEE_COL["Created At"] - 1]        = nowStr;
+    newRow[EMPLOYEE_COL["Updated At"] - 1]        = nowStr;
+    empSheet.appendRow(newRow);
+    return empSheet.getLastRow(); // 1-based row number
+  } catch (e) {
+    Logger.log("_createEmployeeFromAccepted_ ERROR: " + e);
+    return -1;
+  }
+}
+
+// ============================================================
 // PROCESS ONBOARDING PROBATION
 // Dipanggil ketika HR memproses kandidat Accepted (offeringResponse
 // = "Diterima") menjadi Employee Probation.
 //
 // contractData: {
-//   companyEntity, department, division, branch, position,
-//   employeeType, contractNumber, contractDuration,
-//   contractStart, contractEnd, salary, salaryType, notes
+//   branchName, division, department, position, jobLevel, grade,
+//   areaKerja, lokasiKerja, directSuperior, indirectSuperior,
+//   costCenter, workingEmail, joinDate,
+//   contractNumber, contractDuration, contractStart, contractEnd, notes
 // }
 // ============================================================
 function processOnboardingProbation(
@@ -509,25 +614,55 @@ function processOnboardingProbation(
         break;
       }
     }
-    if (empRow === -1)
-      return {
-        success: false,
-        message: "Employee ID tidak ditemukan: " + employeeId,
-      };
+    if (empRow === -1) {
+      // Fallback: buat record Employee minimal dari data kandidat_accepted
+      empRow = _createEmployeeFromAccepted_(
+        recruitmentId,
+        employeeId,
+        now,
+        nowStr,
+        user,
+      );
+      if (empRow === -1) {
+        return {
+          success: false,
+          message: "Employee ID tidak ditemukan: " + employeeId,
+        };
+      }
+    }
 
-    // Field yang di-update di Employee sheet (Schema v2)
-    // Catatan: Salary/SalaryType TIDAK ADA lagi di sheet Employee v2 (keputusan user hapus)
+    // Hanya tulis kolom yang ADA di EMPLOYEE_HEADERS — hindari mismatch
+    // seperti "Company Entity" / "Cabang" yang tidak punya header di sheet.
+    contractData = contractData || {};
+    var branchName =
+      contractData.branchName ||
+      contractData.branch ||
+      contractData.companyEntity ||
+      "";
+    var lokasiKerja = contractData.lokasiKerja || "";
+    var titles = composeEmployeeJobTitles_(
+      contractData.position,
+      contractData.jobLevel,
+      lokasiKerja,
+    );
+    var joinDate =
+      contractData.joinDate || contractData.contractStart || "";
+
     var empUpdates = {
-      "Company Entity": contractData.companyEntity || "",
-      Department: contractData.department || "",
+      "Branch Name": branchName,
       Division: contractData.division || "",
-      "Branch Name": contractData.branch || "",
-      "Job Position (Locaction)": contractData.position || "",
-      "Job Position": contractData.position || "",
-      "Employee Type": contractData.employeeType || "PKWT",
-      "Contract Number": contractData.contractNumber || "",
-      "Contract Duration": contractData.contractDuration || "",
-      "Start Date (Contract)": contractData.contractStart || "",
+      Department: contractData.department || "",
+      "Job Position": titles.jobPosition,
+      "Job Position (Locaction)": titles.jobPositionLocation,
+      "Job Level": contractData.jobLevel || "",
+      Grade: contractData.grade || "",
+      "Area Kerja": contractData.areaKerja || "",
+      "Lokasi Kerja": lokasiKerja,
+      "Direct Superior": contractData.directSuperior || "",
+      "Indirect Superior": contractData.indirectSuperior || "",
+      "Cost Center": contractData.costCenter || "",
+      "Working Email": contractData.workingEmail || "",
+      "Join Date": joinDate,
       "End Date (Contract)": contractData.contractEnd || "",
       "Status Employee": "Probation",
       "HR Notes": contractData.notes || "",
@@ -585,12 +720,34 @@ function processOnboardingProbation(
       "Probation � Employee " + employeeId + " by " + user,
     );
 
-    createProbationRecord(recruitmentId);
+    var probResult = createProbationRecord(
+      recruitmentId,
+      {
+        employeeId: employeeId,
+        contractNumber: contractData.contractNumber || "",
+        contractDuration: contractData.contractDuration || "",
+        contractStart: joinDate,
+        contractEnd: contractData.contractEnd || "",
+        joinDate: joinDate,
+        onboardingBy: user,
+      },
+      { skipLock: true }
+    );
+
+    if (!probResult || !probResult.success) {
+      return {
+        success: false,
+        message:
+          "Employee diperbarui, tetapi record probation gagal dibuat: " +
+          (probResult ? probResult.message : "Error"),
+      };
+    }
 
     return {
       success: true,
       employeeId: employeeId,
       recruitmentId: recruitmentId,
+      probationId: probResult.probationId || "",
       status: "Probation",
       onboardingDate: nowStr,
       onboardingBy: user,
@@ -980,12 +1137,238 @@ function processRotation(payload) {
 }
 
 // ============================================================
+// OFFBOARDING DOCUMENTS — upload ke Google Drive, metadata di Employee sheet
+// ============================================================
+var OFFBOARDING_DOC_MAX_BYTES_ = 5 * 1024 * 1024;
+var OFFBOARDING_ROOT_FOLDER_PROP_ = "OFFBOARDING_ROOT_FOLDER_ID";
+var OFFBOARDING_DOC_ALLOWED_MIME_ = {
+  "application/pdf": "pdf",
+  "image/jpeg": "jpg",
+  "image/jpg": "jpg",
+  "image/png": "png",
+  "application/msword": "doc",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+    "docx",
+};
+
+function parseOffboardingDocuments_(jsonStr) {
+  if (!jsonStr) return [];
+  try {
+    var parsed = JSON.parse(jsonStr);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function validateOffboardingDocuments_(offboardingType, documents) {
+  documents = documents || [];
+  if (offboardingType === "Death") {
+    var hasDeathCert = documents.some(function (d) {
+      return (
+        d &&
+        String(d.type || "").trim() === "Surat Kematian" &&
+        d.dataBase64
+      );
+    });
+    if (!hasDeathCert) {
+      return {
+        valid: false,
+        message:
+          "Tipe Meninggal wajib melampirkan dokumen Surat Kematian.",
+      };
+    }
+  }
+  for (var i = 0; i < documents.length; i++) {
+    var doc = documents[i];
+    if (!doc || !doc.type || !doc.fileName || !doc.dataBase64) {
+      return {
+        valid: false,
+        message: "Setiap dokumen wajib memiliki tipe, nama file, dan isi file.",
+      };
+    }
+    var bytes = Utilities.base64Decode(doc.dataBase64).length;
+    if (bytes > OFFBOARDING_DOC_MAX_BYTES_) {
+      return {
+        valid: false,
+        message:
+          'File "' + doc.fileName + '" melebihi batas 5 MB.',
+      };
+    }
+    if (
+      doc.mimeType &&
+      !OFFBOARDING_DOC_ALLOWED_MIME_[String(doc.mimeType).toLowerCase()]
+    ) {
+      return {
+        valid: false,
+        message:
+          'Format file "' +
+          doc.fileName +
+          '" tidak didukung. Gunakan PDF, JPG, PNG, DOC, atau DOCX.',
+      };
+    }
+  }
+  return { valid: true };
+}
+
+function sanitizeDriveName_(name) {
+  return (
+    String(name || "Unknown")
+      .replace(/[^\w\s\-_.]/g, "")
+      .replace(/\s+/g, "_")
+      .substring(0, 80) || "Unknown"
+  );
+}
+
+function getSpreadsheetParentFolder_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var file = DriveApp.getFileById(ss.getId());
+  var parents = file.getParents();
+  if (parents.hasNext()) return parents.next();
+  return DriveApp.getRootFolder();
+}
+
+function getOrCreateOffboardingRootFolder_() {
+  var props = PropertiesService.getScriptProperties();
+  var cachedId = props.getProperty(OFFBOARDING_ROOT_FOLDER_PROP_);
+  if (cachedId) {
+    try {
+      return DriveApp.getFolderById(cachedId);
+    } catch (e) {
+      props.deleteProperty(OFFBOARDING_ROOT_FOLDER_PROP_);
+    }
+  }
+
+  var parent = getSpreadsheetParentFolder_();
+  var iter = parent.getFoldersByName("MITO HRIS Offboarding");
+  var folder = iter.hasNext() ? iter.next() : parent.createFolder("MITO HRIS Offboarding");
+  props.setProperty(OFFBOARDING_ROOT_FOLDER_PROP_, folder.getId());
+  return folder;
+}
+
+function formatDriveAuthError_(err) {
+  var msg = String((err && err.message) || err || "");
+  if (
+    msg.indexOf("Izin") !== -1 ||
+    msg.indexOf("permission") !== -1 ||
+    msg.indexOf("Authorization") !== -1 ||
+    msg.indexOf("DriveApp") !== -1
+  ) {
+    return (
+      "Izin Google Drive belum diberikan. Buka Apps Script → jalankan fungsi " +
+      "authorizeOffboardingDrive() → setujui akses Drive, lalu deploy ulang web app " +
+      "versi baru sebagai user yang sama."
+    );
+  }
+  return msg;
+}
+
+/**
+ * Jalankan sekali dari Apps Script Editor untuk meminta izin Drive
+ * setelah scope di appsscript.json diperbarui.
+ */
+function authorizeOffboardingDrive() {
+  var folder = getOrCreateOffboardingRootFolder_();
+  return (
+    "OK — folder offboarding siap: " +
+    folder.getName() +
+    " (" +
+    folder.getUrl() +
+    ")"
+  );
+}
+
+function getOrCreateEmployeeOffboardingFolder_(
+  employeeId,
+  fullName,
+  existingFolderUrl,
+) {
+  if (existingFolderUrl) {
+    try {
+      var match = String(existingFolderUrl).match(/[-\w]{25,}/);
+      if (match) {
+        var folder = DriveApp.getFolderById(match[0]);
+        if (folder) return folder;
+      }
+    } catch (e) {
+      /* fallback create */
+    }
+  }
+  var root = getOrCreateOffboardingRootFolder_();
+  var folderName =
+    sanitizeDriveName_(employeeId) + "_" + sanitizeDriveName_(fullName);
+  var iter = root.getFoldersByName(folderName);
+  if (iter.hasNext()) return iter.next();
+  return root.createFolder(folderName);
+}
+
+function uploadOffboardingDocuments_(
+  employeeId,
+  fullName,
+  documents,
+  existingFolderUrl,
+  existingLinksJson,
+  uploadedBy,
+) {
+  if (!documents || !documents.length) {
+    return {
+      folderUrl: existingFolderUrl || "",
+      linksJson: existingLinksJson || "[]",
+      uploaded: [],
+    };
+  }
+  var folder = getOrCreateEmployeeOffboardingFolder_(
+    employeeId,
+    fullName,
+    existingFolderUrl,
+  );
+  var nowStr = Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd HH:mm:ss");
+  var existing = parseOffboardingDocuments_(existingLinksJson);
+  var uploaded = [];
+
+  documents.forEach(function (doc) {
+    var bytes = Utilities.base64Decode(doc.dataBase64);
+    var mime = String(doc.mimeType || "application/octet-stream").toLowerCase();
+    var ext = OFFBOARDING_DOC_ALLOWED_MIME_[mime] || "bin";
+    var safeType = sanitizeDriveName_(doc.type);
+    var safeName = sanitizeDriveName_(doc.fileName).replace(/\.[^.]+$/, "");
+    var fileName =
+      safeType +
+      "_" +
+      Utilities.formatDate(new Date(), "GMT+7", "yyyyMMdd_HHmmss") +
+      "_" +
+      safeName +
+      "." +
+      ext;
+    var blob = Utilities.newBlob(bytes, mime, fileName);
+    var file = folder.createFile(blob);
+    uploaded.push({
+      type: doc.type,
+      fileName: doc.fileName,
+      driveFileName: fileName,
+      url: file.getUrl(),
+      fileId: file.getId(),
+      uploadedAt: nowStr,
+      uploadedBy: uploadedBy || "HR Dashboard",
+    });
+  });
+
+  var merged = existing.concat(uploaded);
+  return {
+    folderUrl: folder.getUrl(),
+    linksJson: JSON.stringify(merged),
+    uploaded: uploaded,
+  };
+}
+
+// ============================================================
 // PROCESS OFFBOARDING — dipanggil dari modal Offboarding di Employee page
 //
 // payload: {
 //   employeeId, offboardingType, lastWorkingDate, reason,
 //   bpjsKetenagakerjaan, bpjsKesehatan, paklaring,
-//   approvedBy, notes
+//   approvedBy, notes, skNumber,
+//   documents: [{ type, fileName, mimeType, dataBase64 }]
 // }
 // ============================================================
 function processOffboarding(payload) {
@@ -1000,6 +1383,14 @@ function processOffboarding(payload) {
   }
   if (!payload.reason) {
     return { success: false, message: 'Alasan offboarding wajib diisi.' };
+  }
+
+  var docValidation = validateOffboardingDocuments_(
+    payload.offboardingType,
+    payload.documents || [],
+  );
+  if (!docValidation.valid) {
+    return { success: false, message: docValidation.message };
   }
 
   var lock = LockService.getScriptLock();
@@ -1066,13 +1457,55 @@ function processOffboarding(payload) {
     }
     safeSet('Status Employee', newStatus);
     safeSet('Resign Date',     payload.lastWorkingDate);
-    safeSet('Nomor SK',        payload.offboardingType + ' — ' + payload.reason.substring(0, 50));
+    var skNumber = String(payload.skNumber || '').trim();
+    if (!skNumber) {
+      skNumber = payload.offboardingType + ' — ' + payload.reason.substring(0, 50);
+    }
+    safeSet('Nomor SK',        skNumber);
     safeSet('Offboarding Type', payload.offboardingType);
     safeSet('Offboarding Reason', payload.reason);
     safeSet('Offboarding Approved By', approvedBy);
+    if (payload.bpjsKetenagakerjaan) {
+      safeSet('BPJS Ketenagakerjaan', payload.bpjsKetenagakerjaan);
+    }
+    if (payload.bpjsKesehatan) {
+      safeSet('BPJS Kesehatan', payload.bpjsKesehatan);
+    }
+    if (payload.notes) {
+      var prevNotes = ev('HR Notes');
+      var noteLine =
+        '[Offboarding ' +
+        nowStr +
+        '] ' +
+        payload.notes +
+        (payload.paklaring ? ' | Paklaring: ' + payload.paklaring : '');
+      safeSet('HR Notes', prevNotes ? prevNotes + '\n' + noteLine : noteLine);
+    } else if (payload.paklaring) {
+      var prevNotes2 = ev('HR Notes');
+      var pakLine = '[Offboarding ' + nowStr + '] Paklaring: ' + payload.paklaring;
+      safeSet('HR Notes', prevNotes2 ? prevNotes2 + '\n' + pakLine : pakLine);
+    }
     safeSet('Updated At',      nowStr);
 
-    // -- 4. Audit log --------------------------------------------
+    // -- 4. Upload dokumen offboarding ke Drive ------------------
+    var existingFolder = ev('Offboarding Documents Folder');
+    var existingLinks = ev('Offboarding Document Links');
+    var uploadResult = uploadOffboardingDocuments_(
+      payload.employeeId,
+      ev('Full Name'),
+      payload.documents || [],
+      existingFolder,
+      existingLinks,
+      approvedBy,
+    );
+    if (uploadResult.folderUrl) {
+      safeSet('Offboarding Documents Folder', uploadResult.folderUrl);
+    }
+    if (uploadResult.linksJson) {
+      safeSet('Offboarding Document Links', uploadResult.linksJson);
+    }
+
+    // -- 5. Audit log --------------------------------------------
     writeAuditLog_(
       payload.employeeId,
       'Offboarding',
@@ -1081,15 +1514,32 @@ function processOffboarding(payload) {
       newStatus + ' — ' + payload.offboardingType
     );
 
+    if (uploadResult.uploaded && uploadResult.uploaded.length) {
+      var docSummary = uploadResult.uploaded
+        .map(function (d) {
+          return d.type + ': ' + d.fileName;
+        })
+        .join('; ');
+      writeAuditLog_(
+        payload.employeeId,
+        'Offboarding Document',
+        'Offboarding Document Links',
+        existingLinks ? String(existingLinks).substring(0, 200) : '-',
+        docSummary,
+      );
+    }
+
     return {
       success:       true,
       employeeId:    payload.employeeId,
       newStatus:     newStatus,
+      documentsUploaded: (uploadResult.uploaded || []).length,
+      documentsFolder: uploadResult.folderUrl || existingFolder,
       message:       'Offboarding berhasil diproses. Status karyawan diubah ke "' + newStatus + '".',
     };
   } catch (err) {
     Logger.log('processOffboarding ERROR: ' + err);
-    return { success: false, message: err.message };
+    return { success: false, message: formatDriveAuthError_(err) };
   } finally {
     lock.releaseLock();
   }

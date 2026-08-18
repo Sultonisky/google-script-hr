@@ -40,7 +40,11 @@
   }
 
   function probationOnNavigate() {
-    if (_probData.length === 0) _loadProbationData(false);
+    _loadProbationData(true);
+  }
+
+  function _normProbEmpId(id) {
+    return String(id || '').replace(/^'+/, '').trim();
   }
 
   // ============================================================
@@ -85,6 +89,8 @@
 
   function _updateProbStats() {
     var total     = _probData.length;
+    var workflow  = _probData.filter(function(r) { return r.fromOnboardingWorkflow; }).length;
+    var legacy    = total - workflow;
     var evaluated = _probData.filter(function(r) { return r.lastEvalDate && r.lastEvalDate !== '-'; }).length;
     var passed    = _probData.filter(function(r) {
       var k = r.lastKeputusan || r.decision || '';
@@ -95,13 +101,22 @@
       return k.indexOf('Tidak Lulus') !== -1 || k.indexOf('Perpanjang') !== -1 || k.indexOf('Extend') !== -1;
     }).length;
     var elT = document.getElementById('probStatTotal');
+    var elW = document.getElementById('probStatWorkflow');
     var elE = document.getElementById('probStatEvaluated');
     var elP = document.getElementById('probStatPassed');
     var elX = document.getElementById('probStatExtended');
     if (elT) animateCounter(elT, total);
+    if (elW) animateCounter(elW, workflow);
     if (elE) animateCounter(elE, evaluated);
     if (elP) animateCounter(elP, passed);
     if (elX) animateCounter(elX, extended);
+
+    var subEl = document.getElementById('probPanelSubtitle');
+    if (subEl && subEl.innerText.indexOf('Terakhir dimuat') !== -1) {
+      subEl.innerText =
+        'Terakhir dimuat: ' + new Date().toLocaleString('id-ID') +
+        ' · Onboarding: ' + workflow + ' · Legacy: ' + legacy;
+    }
   }
 
   function _probApplyFilter() {
@@ -228,7 +243,7 @@
     document.querySelectorAll('#probTableBody .prob-btn-eval').forEach(function(btn) {
       btn.addEventListener('click', function() {
         var id  = btn.getAttribute('data-id');
-        var emp = _probData.find(function(r) { return r.employeeId === id; });
+        var emp = _probData.find(function(r) { return _normProbEmpId(r.employeeId) === _normProbEmpId(id); });
         if (emp) openEvalModal(emp);
       });
     });
@@ -385,7 +400,7 @@
         item.addEventListener('mouseleave', function() { item.style.background = ''; });
         item.addEventListener('click', function() {
           var id   = item.getAttribute('data-id');
-          var found = _probData.find(function(r) { return r.employeeId === id; });
+          var found = _probData.find(function(r) { return _normProbEmpId(r.employeeId) === _normProbEmpId(id); });
           if (found) {
             _activeEvalEmp = found;
             if (searchEl) searchEl.value = found.fullName;

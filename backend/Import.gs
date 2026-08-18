@@ -91,9 +91,6 @@ function importEmployees(rows) {
       // Build row matching EMPLOYEE_HEADERS order via EMPLOYEE_COL
       var newRow = new Array(EMPLOYEE_HEADERS.length).fill("");
       newRow[EMPLOYEE_COL["Employee ID"] - 1] = empId;
-      newRow[EMPLOYEE_COL["Recruitment ID (System Link)"] - 1] = String(
-        row.recruitmentId || "",
-      ).trim();
       newRow[EMPLOYEE_COL["Full Name"] - 1] = String(row.fullName || "").trim();
       newRow[EMPLOYEE_COL["NIK - NPWP 16 digit"] - 1] = row.nik
         ? "'" + String(row.nik).trim()
@@ -148,12 +145,6 @@ function importEmployees(rows) {
       newRow[EMPLOYEE_COL["BPJS Kesehatan"] - 1] = row.bpjsKesehatan
         ? "'" + String(row.bpjsKesehatan).trim()
         : "";
-      newRow[EMPLOYEE_COL["Employee Type"] - 1] = String(
-        row.employeeType || "",
-      ).trim();
-      newRow[EMPLOYEE_COL["Company Entity"] - 1] = String(
-        row.companyEntity || "MITO Group",
-      ).trim();
       newRow[EMPLOYEE_COL["Branch Name"] - 1] = String(
         row.branchName || row.branch || "",
       ).trim();
@@ -188,17 +179,8 @@ function importEmployees(rows) {
         row.statusEmployee || row.employmentStatus || row.status || "Contract",
       ).trim();
       newRow[EMPLOYEE_COL["Join Date"] - 1] = String(row.joinDate || "").trim();
-      newRow[EMPLOYEE_COL["Start Date (Contract)"] - 1] = String(
-        row.startDateContract || row.contractStart || "",
-      ).trim();
       newRow[EMPLOYEE_COL["End Date (Contract)"] - 1] = String(
         row.endDateContract || row.contractEnd || "",
-      ).trim();
-      newRow[EMPLOYEE_COL["Contract Duration"] - 1] = String(
-        row.contractDuration || "",
-      ).trim();
-      newRow[EMPLOYEE_COL["Contract Number"] - 1] = String(
-        row.contractNumber || "",
       ).trim();
       newRow[EMPLOYEE_COL["Outsource Vendor"] - 1] = String(
         row.outsourceVendor || "",
@@ -216,7 +198,6 @@ function importEmployees(rows) {
       newRow[EMPLOYEE_COL["Resign Date"] - 1] = String(
         row.resignDate || "",
       ).trim();
-      newRow[EMPLOYEE_COL["Notes"] - 1] = String(row.notes || "").trim();
       newRow[EMPLOYEE_COL["HR Notes"] - 1] = String(row.hrNotes || "").trim();
       newRow[EMPLOYEE_COL["Created By"] - 1] = "system";
       newRow[EMPLOYEE_COL["Created At"] - 1] = nowStr;
