@@ -3,7 +3,7 @@
 
 <!-- Stat Cards — ditampilkan di atas tabel -->
 <div class="row g-3 mb-4" id="employeeStatsPanel">
-  <div class="col-6 col-md-4">
+  <div class="col-6 col-md-3">
     <div class="stat-card">
       <div class="stat-icon bg-blue"><i class="bi bi-people-fill"></i></div>
       <div>
@@ -12,21 +12,39 @@
       </div>
     </div>
   </div>
-  <div class="col-6 col-md-4">
+  <div class="col-6 col-md-3">
     <div class="stat-card">
-      <div class="stat-icon bg-green"><i class="bi bi-check-circle-fill"></i></div>
+      <div class="stat-icon bg-success" style="background:#166534"><i class="bi bi-person-check-fill"></i></div>
       <div>
-        <div class="stat-label">Active</div>
-        <div class="stat-value" data-current="0" id="empStatActive">0</div>
+        <div class="stat-label">Permanent</div>
+        <div class="stat-value" data-current="0" id="empStatPermanent">0</div>
       </div>
     </div>
   </div>
-  <div class="col-6 col-md-4">
+  <div class="col-6 col-md-3">
     <div class="stat-card">
-      <div class="stat-icon bg-red"><i class="bi bi-slash-circle-fill"></i></div>
+      <div class="stat-icon bg-primary" style="background:#005BAC"><i class="bi bi-file-earmark-person-fill"></i></div>
       <div>
-        <div class="stat-label">Inactive</div>
-        <div class="stat-value" data-current="0" id="empStatInactive">0</div>
+        <div class="stat-label">Contract</div>
+        <div class="stat-value" data-current="0" id="empStatContract">0</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="stat-icon bg-gold" style="background:#FDB913"><i class="bi bi-hourglass-split"></i></div>
+      <div>
+        <div class="stat-label">Probation</div>
+        <div class="stat-value" data-current="0" id="empStatProbation">0</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="stat-icon bg-navy" style="background:#0B2540"><i class="bi bi-person-workspace"></i></div>
+      <div>
+        <div class="stat-label">Outsource</div>
+        <div class="stat-value" data-current="0" id="empStatOutsource">0</div>
       </div>
     </div>
   </div>
@@ -41,6 +59,9 @@
     </div>
     <div class="export-btns">
       <button class="btn-export" style="background:var(--color-primary);color:#fff;border:1px solid var(--color-primary)" type="button" onclick="openEmpImportModal()"><i class="bi bi-upload"></i> Import</button>
+      <button class="btn btn-sm ms-2 fw-semibold text-white" style="background:#0B2540;border:none;border-radius:8px;padding:6px 14px;font-size:13px" type="button" id="btnOpenRotationModal">
+        <i class="bi bi-arrow-left-right me-1"></i>Rotasi
+      </button>
       <button class="btn btn-sm ms-2 fw-semibold text-white" style="background:#991b1b;border:none;border-radius:8px;padding:6px 14px;font-size:13px" type="button" id="btnOpenOffboardingModal">
         <i class="bi bi-box-arrow-right me-1"></i>Offboarding
       </button>
@@ -66,6 +87,7 @@
       <option value="Resigned">Resigned</option>
       <option value="Terminated">Terminated</option>
       <option value="Retired">Retired</option>
+      <option value="Deceased">Deceased</option>
       <option value="Inactive">Inactive</option>
     </select>
     <select class="filter-select" id="empSortSelect">

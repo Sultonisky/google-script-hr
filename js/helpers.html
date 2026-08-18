@@ -42,6 +42,7 @@
     if (s === 'resigned')       return 'blacklist';   // merah
     if (s === 'terminated')     return 'blacklist';   // merah
     if (s === 'retired')        return 'blacklist';   // merah/abu
+    if (s === 'deceased')       return 'blacklist';   // merah/abu — meninggal dunia
     if (s === 'inactive')       return 'blacklist';   // merah/abu
     // legacy fallback
     if (s === 'active')         return 'accepted';
@@ -77,8 +78,33 @@
   function toDateInputValue(dateStr) {
     if (!dateStr) return '';
     var p = String(dateStr).split(' ')[0].split('/');
-    if (p.length !== 3 || p[2].length !== 4) return '';
-    return p[2] + '-' + p[1] + '-' + p[0];
+    if (p.length === 3 && p[2].length === 4) {
+      return p[2] + '-' + p[1] + '-' + p[0];
+    }
+    var d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      var y = d.getFullYear();
+      var m = String(d.getMonth() + 1).padStart(2, '0');
+      var day = String(d.getDate()).padStart(2, '0');
+      return y + '-' + m + '-' + day;
+    }
+    return '';
+  }
+
+  function formatDisplayDate(dateStr) {
+    if (!dateStr || dateStr === '-') return '-';
+    var d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      var day = String(d.getDate()).padStart(2, '0');
+      var m = String(d.getMonth() + 1).padStart(2, '0');
+      var y = d.getFullYear();
+      return day + '/' + m + '/' + y;
+    }
+    var parts = String(dateStr).split(' ')[0].split('/');
+    if (parts.length === 3 && parts[2].length === 4) {
+      return parts[0] + '/' + parts[1] + '/' + parts[2];
+    }
+    return dateStr;
   }
 
   function showToast(message, type) {

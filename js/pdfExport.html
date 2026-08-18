@@ -304,7 +304,352 @@
   //                  joinDate, benefit, notes }
   //   callback   — function(success: boolean)
   // ============================================================
-  function exportOfferingLetterPDF(candidate, offerData, callback) {
+  // ============================================================
+// ROTATION LETTER PDF EXPORT
+// ============================================================
+function exportRotationLetterPDF(rotationData, callback) {
+  if (typeof window.jspdf === 'undefined') {
+    var script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    document.head.appendChild(script);
+    script.onload = function() { exportRotationLetterPDF(rotationData, callback); };
+    script.onerror = function() {
+      showToast('Gagal memuat library PDF. Periksa koneksi internet.', 'error');
+      if (callback) callback(false);
+    };
+    return;
+  }
+
+  try {
+    var jsPDF = window.jspdf.jsPDF;
+    var doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    var pageWidth = doc.internal.pageSize.getWidth();
+    var pageHeight = doc.internal.pageSize.getHeight();
+    var margin = 22;
+    var contentW = pageWidth - margin * 2;
+    var yPos = margin;
+
+    var colorPrimary = [0, 91, 172];
+    var colorNavy = [11, 37, 64];
+    var colorAccent = [253, 185, 19];
+    var colorText = [31, 41, 55];
+    var colorSoft = [107, 114, 128];
+    var colorBorder = [220, 226, 234];
+
+    function setFill(c) { doc.setFillColor(c[0], c[1], c[2]); }
+    function setDraw(c) { doc.setDrawColor(c[0], c[1], c[2]); }
+    function setTxt(c) { doc.setTextColor(c[0], c[1], c[2]); }
+    function bold() { doc.setFont(undefined, 'bold'); }
+    function normal() { doc.setFont(undefined, 'normal'); }
+
+    function fmtDateId(isoStr) {
+      if (!isoStr) return '-';
+      var bulan = ['Januari','Februari','Maret','April','Mei','Juni',
+                   'Juli','Agustus','September','Oktober','November','Desember'];
+      var p = String(isoStr).split('-');
+      if (p.length < 3) return isoStr;
+      return parseInt(p[2], 10) + ' ' + (bulan[parseInt(p[1], 10) - 1] || '') + ' ' + p[0];
+    }
+
+    var data = rotationData;
+    var typeMap = {
+      'Promosi': 'PROMOSI',
+      'Demosi': 'DEMOSI',
+      'Mutasi': 'MUTASI',
+      'Rotasi': 'ROTASI'
+    };
+    var typeLabel = typeMap[data.rotationType] || data.rotationType || 'ROTASI';
+
+    // Navy strip kiri
+    setFill(colorNavy);
+    doc.rect(0, 0, 5, pageHeight, 'F');
+    setFill(colorAccent);
+    doc.rect(5, 0, pageWidth - 5, 3.5, 'F');
+
+    yPos = 13;
+    doc.setFontSize(15);
+    bold(); setTxt(colorNavy);
+    doc.text('MITO GROUP', margin + 2, yPos);
+    yPos += 5.5;
+    doc.setFontSize(8);
+    normal(); setTxt(colorSoft);
+    doc.text('Departemen Sumber Daya Manusia', margin + 2, yPos);
+    yPos += 4;
+    setDraw(colorAccent);
+    doc.setLineWidth(0.9);
+    doc.line(margin + 2, yPos, pageWidth - margin, yPos);
+    doc.setLineWidth(0.2);
+
+    yPos += 10;
+    doc.setFontSize(14);
+    bold(); setTxt(colorPrimary);
+    doc.text('SURAT KEPUTUSAN ' + typeLabel, pageWidth / 2, yPos, { align: 'center' });
+    yPos += 6;
+    doc.setFontSize(9);
+    normal(); setTxt(colorSoft);
+    doc.text('Nomor: ' + (data.skNumber || '-'), pageWidth / 2, yPos, { align: 'center' });
+
+    yPos += 10;
+    doc.setFontSize(9.5);
+    normal(); setTxt(colorText);
+    doc.text('Yang bertanda tangan di bawah ini, HR Manager MITO Group, dengan ini menyatakan:', margin + 2, yPos);
+    yPos += 8;
+
+    var rows = [
+      ['Nama Karyawan', data.fullName],
+      ['Employee ID', data.employeeId],
+      ['Jabatan Lama', data.formerPosition],
+      ['Jabatan Baru', data.newPosition],
+      ['Departemen Lama', data.formerDepartment],
+      ['Departemen Baru', data.newDepartment],
+      ['Tipe Rotasi', data.rotationType],
+      ['Tanggal Efektif', fmtDateId(data.effectiveDate)],
+      ['Alasan', data.reason],
+    ];
+
+    rows.forEach(function(f, idx) {
+      setFill(idx % 2 === 0 ? [248, 250, 252] : [255, 255, 255]);
+      doc.rect(margin + 2, yPos - 4, contentW - 2, 7, 'F');
+      doc.setFontSize(8.5);
+      bold(); setTxt(colorText);
+      doc.text(f[0], margin + 5, yPos);
+      normal(); setTxt(colorSoft);
+      doc.text(':', margin + 40, yPos);
+      setTxt(colorText);
+      var vLines = doc.splitTextToSize(String(f[1]), contentW - 48);
+      doc.text(vLines, margin + 44, yPos);
+      yPos += vLines.length > 1 ? vLines.length * 5 : 7;
+    });
+
+    yPos += 6;
+    doc.setFontSize(9.5);
+    normal(); setTxt(colorText);
+    doc.text('Demikian surat keputusan ini dibuat untuk diketahui dan dilaksanakan sebagaimana mestinya.', margin + 2, yPos);
+    yPos += 6;
+    doc.text('Ditetapkan di Jakarta', margin + 2, yPos);
+    yPos += 5;
+    doc.text('Tanggal: ' + fmtDateId(new Date().toISOString().split('T')[0]), margin + 2, yPos);
+
+    yPos += 14;
+    var user = Session.getActiveUser().getEmail() || 'HR Manager';
+    doc.setFontSize(9.5);
+    bold(); setTxt(colorNavy);
+    doc.text(user, margin + 2, yPos);
+    yPos += 4.5;
+    doc.setFontSize(8.5);
+    normal(); setTxt(colorSoft);
+    doc.text('HR Manager', margin + 2, yPos);
+
+    var totalPages = doc.internal.getNumberOfPages();
+    for (var pg = 1; pg <= totalPages; pg++) {
+      doc.setPage(pg);
+      setFill(colorNavy);
+      doc.rect(0, 0, 5, pageHeight, 'F');
+      setDraw(colorBorder);
+      doc.setLineWidth(0.3);
+      doc.line(margin, pageHeight - 13, pageWidth - margin, pageHeight - 13);
+      doc.setLineWidth(0.2);
+      doc.setFontSize(7.5);
+      normal(); setTxt(colorSoft);
+      doc.text('MITO GROUP  |  Surat Keputusan ' + typeLabel + '  |  Dokumen Internal',
+        margin, pageHeight - 8);
+      doc.text('Hal. ' + pg + ' / ' + totalPages,
+        pageWidth - margin, pageHeight - 8, { align: 'right' });
+    }
+
+    var fileName = 'Surat_Keputusan_' + typeLabel + '_' + data.fullName.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf';
+    doc.save(fileName);
+    showToast('PDF surat ' + typeLabel + ' berhasil diunduh: ' + fileName, 'success');
+    if (callback) callback(true);
+
+  } catch (err) {
+    console.error('Rotation PDF Error:', err);
+    showToast('Gagal membuat PDF: ' + err.message, 'error');
+    if (callback) callback(false);
+  }
+}
+
+// ============================================================
+// OFFBOARDING LETTER PDF EXPORT
+// ============================================================
+function exportOffboardingLetterPDF(offboardData, callback) {
+  if (typeof window.jspdf === 'undefined') {
+    var script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    document.head.appendChild(script);
+    script.onload = function() { exportOffboardingLetterPDF(offboardData, callback); };
+    script.onerror = function() {
+      showToast('Gagal memuat library PDF. Periksa koneksi internet.', 'error');
+      if (callback) callback(false);
+    };
+    return;
+  }
+
+  try {
+    var jsPDF = window.jspdf.jsPDF;
+    var doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    var pageWidth = doc.internal.pageSize.getWidth();
+    var pageHeight = doc.internal.pageSize.getHeight();
+    var margin = 22;
+    var contentW = pageWidth - margin * 2;
+    var yPos = margin;
+
+    var colorPrimary = [0, 91, 172];
+    var colorNavy = [11, 37, 64];
+    var colorAccent = [253, 185, 19];
+    var colorText = [31, 41, 55];
+    var colorSoft = [107, 114, 128];
+    var colorBorder = [220, 226, 234];
+    var colorDanger = [153, 27, 27];
+
+    function setFill(c) { doc.setFillColor(c[0], c[1], c[2]); }
+    function setDraw(c) { doc.setDrawColor(c[0], c[1], c[2]); }
+    function setTxt(c) { doc.setTextColor(c[0], c[1], c[2]); }
+    function bold() { doc.setFont(undefined, 'bold'); }
+    function normal() { doc.setFont(undefined, 'normal'); }
+
+    function fmtDateId(isoStr) {
+      if (!isoStr) return '-';
+      var bulan = ['Januari','Februari','Maret','April','Mei','Juni',
+                   'Juli','Agustus','September','Oktober','November','Desember'];
+      var p = String(isoStr).split('-');
+      if (p.length < 3) return isoStr;
+      return parseInt(p[2], 10) + ' ' + (bulan[parseInt(p[1], 10) - 1] || '') + ' ' + p[0];
+    }
+
+    var data = offboardData;
+    var typeMap = {
+      'Resignation': 'RESIGNASI',
+      'Termination': 'PHK',
+      'Retirement': 'PENSIUN',
+      'Contract End': 'AKHIR KONTRAK',
+      'On Leave': 'CUTI'
+    };
+    var typeLabel = typeMap[data.offboardingType] || data.offboardingType || 'OFFBOARDING';
+
+    setFill(colorNavy);
+    doc.rect(0, 0, 5, pageHeight, 'F');
+    setFill(colorDanger);
+    doc.rect(5, 0, pageWidth - 5, 3.5, 'F');
+
+    yPos = 13;
+    doc.setFontSize(15);
+    bold(); setTxt(colorNavy);
+    doc.text('MITO GROUP', margin + 2, yPos);
+    yPos += 5.5;
+    doc.setFontSize(8);
+    normal(); setTxt(colorSoft);
+    doc.text('Departemen Sumber Daya Manusia', margin + 2, yPos);
+    yPos += 4;
+    setDraw(colorDanger);
+    doc.setLineWidth(0.9);
+    doc.line(margin + 2, yPos, pageWidth - margin, yPos);
+    doc.setLineWidth(0.2);
+
+    yPos += 10;
+    doc.setFontSize(14);
+    bold(); setTxt(colorDanger);
+    doc.text('SURAT KEPUTUSAN OFFBOARDING', pageWidth / 2, yPos, { align: 'center' });
+    yPos += 6;
+    doc.setFontSize(9);
+    normal(); setTxt(colorSoft);
+    doc.text('Nomor: ' + (data.employeeId || '-'), pageWidth / 2, yPos, { align: 'center' });
+
+    yPos += 10;
+    doc.setFontSize(9.5);
+    normal(); setTxt(colorText);
+    doc.text('Yang bertanda tangan di bawah ini, HR Manager MITO Group, dengan ini menyatakan:', margin + 2, yPos);
+    yPos += 8;
+
+    var rows = [
+      ['Nama Karyawan', data.fullName],
+      ['Employee ID', data.employeeId],
+      ['Position', data.position],
+      ['Department', data.department],
+      ['Join Date', fmtDateId(data.joinDate)],
+      ['Last Working Date', fmtDateId(data.lastWorkingDate)],
+      ['Offboarding Type', data.offboardingType],
+      ['Reason', data.reason],
+      ['Approved By', data.approvedBy],
+    ];
+
+    rows.forEach(function(f, idx) {
+      setFill(idx % 2 === 0 ? [248, 250, 252] : [255, 255, 255]);
+      doc.rect(margin + 2, yPos - 4, contentW - 2, 7, 'F');
+      doc.setFontSize(8.5);
+      bold(); setTxt(colorText);
+      doc.text(f[0], margin + 5, yPos);
+      normal(); setTxt(colorSoft);
+      doc.text(':', margin + 45, yPos);
+      setTxt(colorText);
+      var vLines = doc.splitTextToSize(String(f[1]), contentW - 53);
+      doc.text(vLines, margin + 49, yPos);
+      yPos += vLines.length > 1 ? vLines.length * 5 : 7;
+    });
+
+    if (data.notes && data.notes.trim()) {
+      yPos += 4;
+      doc.setFontSize(8.5);
+      bold(); setTxt(colorText);
+      doc.text('Catatan:', margin + 5, yPos);
+      yPos += 5;
+      normal(); setTxt(colorSoft);
+      var noteLines = doc.splitTextToSize(data.notes, contentW - 10);
+      noteLines.forEach(function(line) {
+        doc.text('• ' + line, margin + 7, yPos);
+        yPos += 5;
+      });
+    }
+
+    yPos += 6;
+    doc.setFontSize(9.5);
+    normal(); setTxt(colorText);
+    doc.text('Demikian surat keputusan ini dibuat untuk diketahui dan dilaksanakan sebagaimana mestinya.', margin + 2, yPos);
+    yPos += 6;
+    doc.text('Ditetapkan di Jakarta', margin + 2, yPos);
+    yPos += 5;
+    doc.text('Tanggal: ' + fmtDateId(new Date().toISOString().split('T')[0]), margin + 2, yPos);
+
+    yPos += 14;
+    var user = Session.getActiveUser().getEmail() || 'HR Manager';
+    doc.setFontSize(9.5);
+    bold(); setTxt(colorNavy);
+    doc.text(user, margin + 2, yPos);
+    yPos += 4.5;
+    doc.setFontSize(8.5);
+    normal(); setTxt(colorSoft);
+    doc.text('HR Manager', margin + 2, yPos);
+
+    var totalPages = doc.internal.getNumberOfPages();
+    for (var pg = 1; pg <= totalPages; pg++) {
+      doc.setPage(pg);
+      setFill(colorNavy);
+      doc.rect(0, 0, 5, pageHeight, 'F');
+      setDraw(colorBorder);
+      doc.setLineWidth(0.3);
+      doc.line(margin, pageHeight - 13, pageWidth - margin, pageHeight - 13);
+      doc.setLineWidth(0.2);
+      doc.setFontSize(7.5);
+      normal(); setTxt(colorSoft);
+      doc.text('MITO GROUP  |  Surat Keputusan Offboarding  |  Dokumen Internal',
+        margin, pageHeight - 8);
+      doc.text('Hal. ' + pg + ' / ' + totalPages,
+        pageWidth - margin, pageHeight - 8, { align: 'right' });
+    }
+
+    var fileName = 'Surat_Offboarding_' + data.fullName.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf';
+    doc.save(fileName);
+    showToast('PDF surat offboarding berhasil diunduh: ' + fileName, 'success');
+    if (callback) callback(true);
+
+  } catch (err) {
+    console.error('Offboarding PDF Error:', err);
+    showToast('Gagal membuat PDF: ' + err.message, 'error');
+    if (callback) callback(false);
+  }
+}
+
+function exportOfferingLetterPDF(candidate, offerData, callback) {
     if (typeof window.jspdf === 'undefined') {
       var script = document.createElement('script');
       script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';

@@ -104,10 +104,9 @@
             <label class="form-label fw-semibold">Status Pernikahan</label>
             <select class="form-select" id="efMarital">
               <option value="">— Pilih —</option>
-              <option value="Single">Single</option>
-              <option value="Married">Married</option>
-              <option value="Divorced">Divorced</option>
-              <option value="Widowed">Widowed</option>
+              <option value="Belum Menikah">Single</option>
+              <option value="Menikah">Married</option>
+              <option value="Cerai">Divorced</option>
             </select>
           </div>
           <div class="col-md-4">
@@ -173,9 +172,15 @@
         <div class="row g-3 mb-3">
           <div class="col-md-3">
             <label class="form-label fw-semibold">Nama Bank</label>
-            <input type="text" class="form-control" id="efBankName" value="BCA" disabled
-              style="background:#f8f9fa;color:#6c757d;cursor:not-allowed" />
-            <div class="form-text" style="font-size:10px">Hanya BCA</div>
+            <input
+              type="text"
+              class="form-control"
+              id="efBankName"
+              value="BCA"
+              disabled
+              style="background: #f8f9fa; color: #6c757d; cursor: not-allowed"
+            />
+            <div class="form-text" style="font-size: 10px">Hanya BCA</div>
           </div>
           <div class="col-md-5">
             <label class="form-label fw-semibold">Nomor Rekening</label>
@@ -422,22 +427,39 @@
         <!-- ── SEKSI: Karier & Mutasi ── -->
         <p
           class="fw-bold mb-2"
-          style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#eb1c24"
+          style="
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #eb1c24;
+          "
         >
-          <i class="bi bi-arrow-up-left-right me-1"></i> Riwayat Karier &amp; Mutasi
+          <i class="bi bi-arrow-up-left-right me-1"></i> Riwayat Karier &amp;
+          Mutasi
         </p>
         <!-- Info banner: muncul jika tidak ada riwayat mutasi -->
-        <div id="efNoMutasiInfo" class="alert alert-light border d-flex align-items-center gap-2 mb-3 py-2"
-          style="font-size:12px;display:none!important">
+        <div
+          id="efNoMutasiInfo"
+          class="alert alert-light border d-flex align-items-center gap-2 mb-3 py-2"
+          style="font-size: 12px; display: none !important"
+        >
           <i class="bi bi-info-circle text-muted"></i>
-          <span class="text-muted">Belum ada riwayat mutasi/promosi/demosi untuk karyawan ini.</span>
+          <span class="text-muted"
+            >Belum ada riwayat mutasi/promosi/demosi untuk karyawan ini.</span
+          >
         </div>
         <div class="row g-3 mb-3">
           <div class="col-md-5">
-            <label class="form-label fw-semibold">Jabatan Sebelumnya (Former)</label>
-            <input type="text" class="form-control" id="efFormerPos"
-              placeholder="Diisi jika ada mutasi / promosi / demosi" />
-            <div class="form-text" style="font-size:10px" id="efFormerPosHint">
+            <label class="form-label fw-semibold"
+              >Jabatan Sebelumnya (Former)</label
+            >
+            <input
+              type="text"
+              class="form-control"
+              id="efFormerPos"
+              placeholder="Diisi jika ada mutasi / promosi / demosi"
+            />
+            <div class="form-text" style="font-size: 10px" id="efFormerPosHint">
               Otomatis terisi dari jabatan saat ini sebelum diubah.
             </div>
           </div>
@@ -457,13 +479,21 @@
           </div>
           <div class="col-md-2">
             <label class="form-label fw-semibold">Nomor SK</label>
-            <input type="text" class="form-control" id="efNoSk"
-              placeholder="SK.001/KPT/2026" />
+            <input
+              type="text"
+              class="form-control"
+              id="efNoSk"
+              placeholder="SK.001/KPT/2026"
+            />
           </div>
           <div class="col-md-4" id="efResignDateWrap">
-            <label class="form-label fw-semibold">Tanggal Resign / Keluar</label>
+            <label class="form-label fw-semibold"
+              >Tanggal Resign / Keluar</label
+            >
             <input type="date" class="form-control" id="efResignDate" />
-            <div class="form-text" style="font-size:10px">Diisi jika status Resigned/Terminated/Retired</div>
+            <div class="form-text" style="font-size: 10px">
+              Diisi jika status Resigned/Terminated/Retired
+            </div>
           </div>
         </div>
 
@@ -530,7 +560,7 @@
       <div class="modal-body">
         <input type="hidden" id="osfId" />
 
-        <!-- ── SEKSI: Data Pribadi ── -->
+        <!-- ── SEKSI: Identitas & Data Pribadi ── -->
         <p
           class="fw-bold mb-2 mt-1"
           style="
@@ -540,37 +570,55 @@
             color: #0e7490;
           "
         >
-          <i class="bi bi-person-fill me-1"></i> Data Pribadi
+          <i class="bi bi-person-fill me-1"></i> Identitas &amp; Data Pribadi
         </p>
         <div class="row g-3 mb-3">
           <div class="col-md-6">
             <label class="form-label fw-semibold">Nama Lengkap *</label>
             <input type="text" class="form-control" id="osfNama" required />
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">NIK *</label>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">NIK (16 Digit)</label>
             <input
               type="text"
               class="form-control"
               id="osfNik"
               maxlength="16"
               placeholder="16 digit"
-              required
+            />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">NPWP (16 Digit)</label>
+            <input
+              type="text"
+              class="form-control"
+              id="osfNpwp"
+              maxlength="16"
+              placeholder="16 digit"
+            />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Tempat Lahir</label>
+            <input
+              type="text"
+              class="form-control"
+              id="osfBirthPlace"
+              placeholder="Jakarta"
             />
           </div>
           <div class="col-md-4">
             <label class="form-label fw-semibold">Tanggal Lahir</label>
             <input type="date" class="form-control" id="osfBirthDate" />
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Usia</label>
-            <input
-              type="number"
-              class="form-control"
-              id="osfAge"
-              min="17"
-              max="99"
-            />
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Golongan Darah</label>
+            <select class="form-select" id="osfBloodType">
+              <option value="">—</option>
+              <option value="A">A</option>
+              <option value="B">B</option>
+              <option value="AB">AB</option>
+              <option value="O">O</option>
+            </select>
           </div>
           <div class="col-md-4">
             <label class="form-label fw-semibold">Jenis Kelamin</label>
@@ -581,17 +629,43 @@
             </select>
           </div>
           <div class="col-md-4">
-            <label class="form-label fw-semibold">Status Pernikahan</label>
-            <select class="form-select" id="osfMarital">
+            <label class="form-label fw-semibold">Agama</label>
+            <select class="form-select" id="osfReligion">
               <option value="">— Pilih —</option>
-              <option value="Single">Single</option>
-              <option value="Married">Married</option>
-              <option value="Divorced">Divorced</option>
-              <option value="Widowed">Widowed</option>
+              <option value="Islam">Islam</option>
+              <option value="Kristen">Kristen</option>
+              <option value="Katolik">Katolik</option>
+              <option value="Hindu">Hindu</option>
+              <option value="Buddha">Buddha</option>
+              <option value="Konghucu">Konghucu</option>
+              <option value="Lainnya">Lainnya</option>
             </select>
           </div>
           <div class="col-md-4">
-            <label class="form-label fw-semibold">Email</label>
+            <label class="form-label fw-semibold">Status Pernikahan</label>
+            <select class="form-select" id="osfMarital">
+              <option value="">— Pilih —</option>
+              <option value="Belum Menikah">Single</option>
+              <option value="Menikah">Married</option>
+              <option value="Cerai">Divorced</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Status PTKP</label>
+            <select class="form-select" id="osfPtkp">
+              <option value="">— Pilih —</option>
+              <option value="TK/0">TK/0 — Single, 0 tanggungan</option>
+              <option value="TK/1">TK/1 — Single, 1 tanggungan</option>
+              <option value="TK/2">TK/2 — Single, 2 tanggungan</option>
+              <option value="TK/3">TK/3 — Single, 3 tanggungan</option>
+              <option value="K/0">K/0 — Menikah, 0 tanggungan</option>
+              <option value="K/1">K/1 — Menikah, 1 tanggungan</option>
+              <option value="K/2">K/2 — Menikah, 2 tanggungan</option>
+              <option value="K/3">K/3 — Menikah, 3 tanggungan</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Email Pribadi</label>
             <input type="email" class="form-control" id="osfEmail" />
           </div>
           <div class="col-md-4">
@@ -603,35 +677,24 @@
               placeholder="628xxx"
             />
           </div>
-          <div class="col-md-8">
-            <label class="form-label fw-semibold">Alamat</label>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Alamat KTP (Sesuai KTP)</label>
             <input type="text" class="form-control" id="osfAddress" />
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Kecamatan / Distrik</label>
-            <input type="text" class="form-control" id="osfDistrict" />
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Kota / Kabupaten</label>
-            <input type="text" class="form-control" id="osfCity" />
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Pendidikan Terakhir</label>
-            <select class="form-select" id="osfEducation">
-              <option value="">— Pilih —</option>
-            </select>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Pengalaman Kerja</label>
-            <select class="form-select" id="osfWorkExp">
-              <option value="">— Pilih —</option>
-            </select>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Alamat Domisili (Tempat Tinggal Saat Ini)</label>
+            <input
+              type="text"
+              class="form-control"
+              id="osfResidentialAddress"
+              placeholder="Kosongkan jika sama dengan KTP"
+            />
           </div>
         </div>
 
         <hr class="my-2" />
 
-        <!-- ── SEKSI: Data Pekerjaan ── -->
+        <!-- ── SEKSI: Bank & BPJS ── -->
         <p
           class="fw-bold mb-2"
           style="
@@ -641,69 +704,206 @@
             color: #0e7490;
           "
         >
-          <i class="bi bi-briefcase-fill me-1"></i> Data Pekerjaan
+          <i class="bi bi-wallet2 me-1"></i> Bank &amp; BPJS
         </p>
         <div class="row g-3 mb-3">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Entitas Perusahaan</label>
-            <select class="form-select" id="osfCompanyEntity">
-              <option value="">— Pilih —</option>
-            </select>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Posisi *</label>
-            <input type="text" class="form-control" id="osfPosisi" required />
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Departemen</label>
-            <select class="form-select" id="osfDept">
-              <option value="">— Pilih —</option>
-            </select>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Divisi</label>
-            <input type="text" class="form-control" id="osfDivision" />
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Cabang</label>
-            <input type="text" class="form-control" id="osfBranch" />
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Tanggal Masuk *</label>
-            <input type="date" class="form-control" id="osfTglMasuk" required />
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Perusahaan / Vendor *</label>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Nama Bank</label>
             <input
               type="text"
               class="form-control"
-              id="osfPerusahaan"
-              required
+              id="osfBankName"
+              value="BCA"
+              disabled
+              style="background: #f8f9fa; color: #6c757d; cursor: not-allowed"
+            />
+            <div class="form-text" style="font-size: 10px">Hanya BCA</div>
+          </div>
+          <div class="col-md-5">
+            <label class="form-label fw-semibold">Nomor Rekening</label>
+            <input
+              type="text"
+              class="form-control"
+              id="osfBankAccount"
+              placeholder="Nomor rekening"
             />
           </div>
           <div class="col-md-4">
-            <label class="form-label fw-semibold">Sumber Rekrutmen</label>
-            <select class="form-select" id="osfRecruitSource">
-              <option value="">— Pilih —</option>
-            </select>
+            <label class="form-label fw-semibold">Atas Nama Rekening</label>
+            <input
+              type="text"
+              class="form-control"
+              id="osfBankHolder"
+              placeholder="Sesuai buku tabungan"
+            />
           </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Nomor BPJS Ketenagakerjaan</label>
+            <input
+              type="text"
+              class="form-control"
+              id="osfBpjsTk"
+              placeholder="Jamsostek"
+            />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Nomor BPJS Kesehatan</label>
+            <input
+              type="text"
+              class="form-control"
+              id="osfBpjsKes"
+              placeholder="JKN-KIS"
+            />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Email Kantor (Working Email)</label>
+            <input
+              type="email"
+              class="form-control"
+              id="osfWorkingEmail"
+              placeholder="nama@mitogroup.co.id"
+            />
+          </div>
+        </div>
+
+        <hr class="my-2" />
+
+        <!-- ── SEKSI: Struktur Organisasi & Pekerjaan ── -->
+        <p
+          class="fw-bold mb-2"
+          style="
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #0e7490;
+          "
+        >
+          <i class="bi bi-briefcase-fill me-1"></i> Struktur Organisasi &amp; Pekerjaan
+        </p>
+        <div class="row g-3 mb-3">
           <div class="col-md-4">
-            <label class="form-label fw-semibold">Status</label>
-            <select class="form-select" id="osfStatus">
+            <label class="form-label fw-semibold">Status Karyawan *</label>
+            <select class="form-select" id="osfStatusEmployee">
               <option value="Permanent">Permanent</option>
               <option value="Contract">Contract</option>
               <option value="Probation">Probation</option>
               <option value="On Leave">On Leave</option>
               <option value="Resigned">Resigned</option>
               <option value="Terminated">Terminated</option>
+              <option value="Retired">Retired</option>
               <option value="Inactive">Inactive</option>
             </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Nama Cabang (Branch)</label>
+            <input type="text" class="form-control" id="osfBranch" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Divisi</label>
+            <input type="text" class="form-control" id="osfDivision" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Departemen</label>
+            <select class="form-select" id="osfDept">
+              <option value="">— Pilih —</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Cost Center</label>
+            <input
+              type="text"
+              class="form-control"
+              id="osfCostCenter"
+              placeholder="CC-HR-001"
+            />
+          </div>
+          <div class="col-md-5">
+            <label class="form-label fw-semibold">Jabatan (Current + Lokasi)</label>
+            <select class="form-select" id="osfPos">
+              <option value="">— Pilih —</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Jabatan</label>
+            <input
+              type="text"
+              class="form-control"
+              id="osfPosNoLoc"
+              placeholder="Ambil dari Jabatan di atas, hapus nama cabang"
+            />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Tanggal Masuk Kerja</label>
+            <input type="date" class="form-control" id="osfJoin" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Job Level (Existing Grading)</label>
+            <input
+              type="text"
+              class="form-control"
+              id="osfJobLevel"
+              placeholder="Menunggu grading system baru"
+            />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Grade (New Grading)</label>
+            <input
+              type="text"
+              class="form-control"
+              id="osfGrade"
+              placeholder="Kosongkan dulu"
+            />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Area Kerja</label>
+            <input
+              type="text"
+              class="form-control"
+              id="osfDistrict"
+              placeholder="Area kerja / wilayah"
+            />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Lokasi Kerja (Kota/Kab)</label>
+            <input
+              type="text"
+              class="form-control"
+              id="osfCity"
+              placeholder="Jakarta Selatan"
+            />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Atasan Langsung (Direct Superior)</label>
+            <input
+              type="text"
+              class="form-control"
+              id="osfDirectSup"
+              placeholder="Nama atau Employee ID"
+            />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Atasan Tidak Langsung (Indirect Superior)</label>
+            <input
+              type="text"
+              class="form-control"
+              id="osfIndirectSup"
+              placeholder="Atasan dari atasan langsung"
+            />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Vendor Outsource</label>
+            <input
+              type="text"
+              class="form-control"
+              id="osfOutsourceVendor"
+              placeholder="Kosongkan jika bukan outsource"
+            />
           </div>
         </div>
 
         <hr class="my-2" />
 
-        <!-- ── SEKSI: Kontrak & Gaji ── -->
+        <!-- ── SEKSI: Kontrak Kerja ── -->
         <p
           class="fw-bold mb-2"
           style="
@@ -713,48 +913,90 @@
             color: #0e7490;
           "
         >
-          <i class="bi bi-file-earmark-text-fill me-1"></i> Kontrak &amp; Gaji
+          <i class="bi bi-file-earmark-text-fill me-1"></i> Kontrak &amp; Status Kepegawaian
         </p>
         <div class="row g-3 mb-3">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Status Employment</label>
-            <select class="form-select" id="osfEmpStatus">
-              <option value="">— Pilih —</option>
-            </select>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Mulai Kontrak</label>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Tanggal Mulai Kontrak</label>
             <input type="date" class="form-control" id="osfContractStart" />
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Akhir Kontrak</label>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Tanggal Berakhir Kontrak</label>
             <input type="date" class="form-control" id="osfContractEnd" />
           </div>
-          <div class="col-md-4">
+          <div class="col-md-3">
             <label class="form-label fw-semibold">Durasi Kontrak</label>
             <select class="form-select" id="osfContractDuration">
               <option value="">— Pilih —</option>
             </select>
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">No. Kontrak</label>
-            <input type="text" class="form-control" id="osfContractNumber" />
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Nomor Kontrak / SK</label>
+            <input
+              type="text"
+              class="form-control"
+              id="osfContractNumber"
+              placeholder="No. kontrak kerja"
+            />
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Tipe Gaji</label>
-            <select class="form-select" id="osfSalaryType">
-              <option value="">— Pilih —</option>
+        </div>
+
+        <hr class="my-2" />
+
+        <!-- ── SEKSI: Karier & Mutasi ── -->
+        <p
+          class="fw-bold mb-2"
+          style="
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #0e7490;
+          "
+        >
+          <i class="bi bi-arrow-up-left-right me-1"></i> Riwayat Karier &amp; Mutasi
+        </p>
+        <div class="row g-3 mb-3">
+          <div class="col-md-5">
+            <label class="form-label fw-semibold">Jabatan Sebelumnya (Former)</label>
+            <input
+              type="text"
+              class="form-control"
+              id="osfFormerPos"
+              placeholder="Diisi jika ada mutasi / promosi / demosi"
+            />
+            <div class="form-text" style="font-size: 10px" id="osfFormerPosHint">
+              Otomatis terisi dari jabatan saat ini sebelum diubah.
+            </div>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Jenis Rotasi / Mutasi</label>
+            <select class="form-select" id="osfRotationType">
+              <option value="">— Tidak Ada —</option>
+              <option value="Promosi">Promosi</option>
+              <option value="Demosi">Demosi</option>
+              <option value="Mutasi">Mutasi</option>
+              <option value="Rotasi">Rotasi</option>
             </select>
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Gaji</label>
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Tanggal Efektif</label>
+            <input type="date" class="form-control" id="osfMutasiDate" />
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Nomor SK</label>
             <input
-              type="number"
+              type="text"
               class="form-control"
-              id="osfSalary"
-              min="0"
-              placeholder="Nominal angka"
+              id="osfNoSk"
+              placeholder="SK.001/KPT/2026"
             />
+          </div>
+          <div class="col-md-4" id="osfResignDateWrap">
+            <label class="form-label fw-semibold">Tanggal Resign / Keluar</label>
+            <input type="date" class="form-control" id="osfResignDate" />
+            <div class="form-text" style="font-size: 10px">
+              Diisi jika status Resigned/Terminated/Retired
+            </div>
           </div>
         </div>
 
@@ -984,18 +1226,27 @@
   </div>
 </div>
 
-
 <!-- ===== OFFBOARDING MODAL ===== -->
 <div class="modal fade" id="offboardingModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-    <div class="modal-content" style="border-radius:16px">
-
-      <div class="modal-header" style="background:#991b1b;border-radius:16px 16px 0 0">
+  <div
+    class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"
+  >
+    <div class="modal-content" style="border-radius: 16px">
+      <div
+        class="modal-header"
+        style="background: #991b1b; border-radius: 16px 16px 0 0"
+      >
         <div class="d-flex align-items-center gap-2">
           <i class="bi bi-box-arrow-right text-white fs-5"></i>
-          <h6 class="modal-title mb-0 text-white fw-bold">Proses Offboarding Karyawan</h6>
+          <h6 class="modal-title mb-0 text-white fw-bold">
+            Proses Offboarding Karyawan
+          </h6>
         </div>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <button
+          type="button"
+          class="btn-close btn-close-white"
+          data-bs-dismiss="modal"
+        ></button>
       </div>
 
       <div class="modal-body p-4">
@@ -1003,35 +1254,81 @@
 
         <!-- Step 1: Search karyawan -->
         <div class="mb-3">
-          <label class="form-label fw-semibold" style="font-size:13px">
+          <label class="form-label fw-semibold" style="font-size: 13px">
             <i class="bi bi-search me-1"></i>Cari Karyawan
           </label>
           <div class="position-relative">
-            <input type="text" class="form-control" id="offbEmpSearch"
-              placeholder="Ketik nama atau Employee ID..." autocomplete="off"
-              style="font-size:13px;padding-right:36px" />
-            <i class="bi bi-x-circle-fill position-absolute" id="offbEmpSearchClear"
-              style="right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;display:none"></i>
+            <input
+              type="text"
+              class="form-control"
+              id="offbEmpSearch"
+              placeholder="Ketik nama atau Employee ID..."
+              autocomplete="off"
+              style="font-size: 13px; padding-right: 36px"
+            />
+            <i
+              class="bi bi-x-circle-fill position-absolute"
+              id="offbEmpSearchClear"
+              style="
+                right: 10px;
+                top: 50%;
+                transform: translateY(-50%);
+                cursor: pointer;
+                color: #aaa;
+                display: none;
+              "
+            ></i>
           </div>
-          <div id="offbEmpDropdown" class="border rounded-3 mt-1 shadow-sm"
-            style="display:none;max-height:220px;overflow-y:auto;background:#fff;z-index:9999;position:relative"></div>
+          <div
+            id="offbEmpDropdown"
+            class="border rounded-3 mt-1 shadow-sm"
+            style="
+              display: none;
+              max-height: 220px;
+              overflow-y: auto;
+              background: #fff;
+              z-index: 9999;
+              position: relative;
+            "
+          ></div>
         </div>
 
         <!-- Preview karyawan terpilih -->
-        <div id="offbEmpPreview" style="display:none">
-          <div class="p-3 rounded-3 mb-4" style="background:#fff5f5;border:1px solid #fecaca">
+        <div id="offbEmpPreview" style="display: none">
+          <div
+            class="p-3 rounded-3 mb-4"
+            style="background: #fff5f5; border: 1px solid #fecaca"
+          >
             <div class="d-flex align-items-center gap-3">
-              <div id="offbEmpAvatar"
-                style="width:44px;height:44px;font-size:16px;flex-shrink:0;background:#991b1b;color:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800">?</div>
+              <div
+                id="offbEmpAvatar"
+                style="
+                  width: 44px;
+                  height: 44px;
+                  font-size: 16px;
+                  flex-shrink: 0;
+                  background: #991b1b;
+                  color: #fff;
+                  border-radius: 12px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-weight: 800;
+                "
+              >
+                ?
+              </div>
               <div class="flex-grow-1">
-                <div class="fw-bold" id="offbEmpName" style="font-size:15px">-</div>
-                <div class="text-muted" style="font-size:12px">
+                <div class="fw-bold" id="offbEmpName" style="font-size: 15px">
+                  -
+                </div>
+                <div class="text-muted" style="font-size: 12px">
                   <span id="offbEmpPosition">-</span>
                   <span class="mx-1">·</span>
                   <span id="offbEmpDept">-</span>
                 </div>
               </div>
-              <div class="text-end flex-shrink-0" style="font-size:11.5px">
+              <div class="text-end flex-shrink-0" style="font-size: 11.5px">
                 <div class="text-muted">Employee ID</div>
                 <div class="fw-semibold" id="offbEmpIdDisp">-</div>
                 <div class="text-muted mt-1">Join Date</div>
@@ -1042,49 +1339,94 @@
 
           <!-- Form offboarding -->
           <div id="offbFormSection">
-
             <!-- Tipe Offboarding -->
-            <p class="fw-bold mb-3" style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#991b1b">
+            <p
+              class="fw-bold mb-3"
+              style="
+                font-size: 12px;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: #991b1b;
+              "
+            >
               <i class="bi bi-info-circle me-1"></i>Detail Offboarding
             </p>
             <div class="row g-3 mb-4">
               <div class="col-md-6">
-                <label class="form-label fw-semibold" style="font-size:13px">Tipe Offboarding <span class="text-danger">*</span></label>
-                <select class="form-select form-select-sm" id="offbType">
+                <label class="form-label fw-semibold" style="font-size: 13px"
+                  >Tipe Offboarding <span class="text-danger">*</span></label
+                >
+<select class="form-select form-select-sm" id="offbType">
                   <option value="">— Pilih —</option>
-                  <option value="Resignation">Resignation (Mengundurkan Diri)</option>
+                  <option value="Resignation">
+                    Resignation (Mengundurkan Diri)</option>
                   <option value="Termination">Termination (PHK)</option>
                   <option value="Retirement">Retirement (Pensiun)</option>
+                  <option value="Death">Meninggal (Wafat)</option>
                 </select>
               </div>
               <div class="col-md-6">
-                <label class="form-label fw-semibold" style="font-size:13px">Last Working Date <span class="text-danger">*</span></label>
-                <input type="date" class="form-control form-control-sm" id="offbLastWorkingDate" />
+                <label class="form-label fw-semibold" style="font-size: 13px"
+                  >Last Working Date <span class="text-danger">*</span></label
+                >
+                <input
+                  type="date"
+                  class="form-control form-control-sm"
+                  id="offbLastWorkingDate"
+                />
               </div>
               <div class="col-12">
-                <label class="form-label fw-semibold" style="font-size:13px">Alasan <span class="text-danger">*</span></label>
-                <textarea class="form-control form-control-sm" id="offbReason" rows="2"
-                  placeholder="Contoh: Mengundurkan diri untuk melanjutkan studi..."></textarea>
+                <label class="form-label fw-semibold" style="font-size: 13px"
+                  >Alasan <span class="text-danger">*</span></label
+                >
+                <textarea
+                  class="form-control form-control-sm"
+                  id="offbReason"
+                  rows="2"
+                  placeholder="Contoh: Mengundurkan diri untuk melanjutkan studi..."
+                ></textarea>
               </div>
             </div>
 
             <!-- Administrasi -->
-            <p class="fw-bold mb-3" style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#991b1b">
+            <p
+              class="fw-bold mb-3"
+              style="
+                font-size: 12px;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: #991b1b;
+              "
+            >
               <i class="bi bi-file-earmark-check me-1"></i>Administrasi
             </p>
             <div class="row g-3 mb-4">
               <div class="col-md-6">
-                <label class="form-label fw-semibold" style="font-size:13px">No. BPJS Ketenagakerjaan</label>
-                <input type="text" class="form-control form-control-sm" id="offbBpjsTk"
-                  placeholder="Diisi jika perlu proses klaim" />
+                <label class="form-label fw-semibold" style="font-size: 13px"
+                  >No. BPJS Ketenagakerjaan</label
+                >
+                <input
+                  type="text"
+                  class="form-control form-control-sm"
+                  id="offbBpjsTk"
+                  placeholder="Diisi jika perlu proses klaim"
+                />
               </div>
               <div class="col-md-6">
-                <label class="form-label fw-semibold" style="font-size:13px">No. BPJS Kesehatan</label>
-                <input type="text" class="form-control form-control-sm" id="offbBpjsKes"
-                  placeholder="Untuk proses nonaktivasi" />
+                <label class="form-label fw-semibold" style="font-size: 13px"
+                  >No. BPJS Kesehatan</label
+                >
+                <input
+                  type="text"
+                  class="form-control form-control-sm"
+                  id="offbBpjsKes"
+                  placeholder="Untuk proses nonaktivasi"
+                />
               </div>
               <div class="col-md-6">
-                <label class="form-label fw-semibold" style="font-size:13px">Paklaring Dibutuhkan?</label>
+                <label class="form-label fw-semibold" style="font-size: 13px"
+                  >Paklaring Dibutuhkan?</label
+                >
                 <select class="form-select form-select-sm" id="offbPaklaring">
                   <option value="Ya">Ya</option>
                   <option value="Tidak">Tidak</option>
@@ -1092,35 +1434,59 @@
                 </select>
               </div>
               <div class="col-md-6">
-                <label class="form-label fw-semibold" style="font-size:13px">Approved By</label>
-                <input type="text" class="form-control form-control-sm" id="offbApprovedBy"
-                  placeholder="Nama atasan / HR Manager" />
+                <label class="form-label fw-semibold" style="font-size: 13px"
+                  >Approved By</label
+                >
+                <input
+                  type="text"
+                  class="form-control form-control-sm"
+                  id="offbApprovedBy"
+                  placeholder="Nama atasan / HR Manager"
+                />
               </div>
             </div>
 
             <!-- Catatan -->
             <div class="mb-0">
-              <label class="form-label fw-semibold" style="font-size:13px">Catatan HR <span class="text-muted fw-normal">(opsional)</span></label>
-              <textarea class="form-control form-control-sm" id="offbNotes" rows="2"
-                placeholder="Catatan tambahan proses offboarding..."></textarea>
+              <label class="form-label fw-semibold" style="font-size: 13px"
+                >Catatan HR
+                <span class="text-muted fw-normal">(opsional)</span></label
+              >
+              <textarea
+                class="form-control form-control-sm"
+                id="offbNotes"
+                rows="2"
+                placeholder="Catatan tambahan proses offboarding..."
+              ></textarea>
             </div>
-
-          </div><!-- /#offbFormSection -->
-        </div><!-- /#offbEmpPreview -->
-
+          </div>
+          <!-- /#offbFormSection -->
+        </div>
+        <!-- /#offbEmpPreview -->
       </div>
 
       <div class="modal-footer">
-        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
-        <button class="btn btn-sm text-white fw-semibold" style="background:#991b1b"
-          id="btnConfirmOffboarding" disabled>
-          <span id="btnOffbText"><i class="bi bi-box-arrow-right me-1"></i>Proses Offboarding</span>
-          <span id="btnOffbLoading" style="display:none">
-            <span class="spinner-border spinner-border-sm me-1"></span>Memproses...
+        <button
+          class="btn btn-outline-secondary btn-sm"
+          data-bs-dismiss="modal"
+        >
+          Batal
+        </button>
+        <button
+          class="btn btn-sm text-white fw-semibold"
+          style="background: #991b1b"
+          id="btnConfirmOffboarding"
+          disabled
+        >
+          <span id="btnOffbText"
+            ><i class="bi bi-box-arrow-right me-1"></i>Proses Offboarding</span
+          >
+          <span id="btnOffbLoading" style="display: none">
+            <span class="spinner-border spinner-border-sm me-1"></span
+            >Memproses...
           </span>
         </button>
       </div>
-
     </div>
   </div>
 </div>

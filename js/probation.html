@@ -181,8 +181,8 @@
              '<div class="cand-sub">' + escapeHtml(r.email || '') + '</div></td>' +
         '<td><div style="font-size:13px">' + escapeHtml(r.position || '-') + '</div>' +
              '<div class="cand-sub">' + escapeHtml(r.department || '-') + '</div></td>' +
-        '<td><small>' + escapeHtml(r.contractStart || r.joinDate || '-') + '</small></td>' +
-        '<td><small>' + escapeHtml(r.contractEnd || '-') + '</small></td>' +
+        '<td><small>' + escapeHtml(formatDisplayDate(r.contractStart || r.joinDate)) + '</small></td>' +
+        '<td><small>' + escapeHtml(formatDisplayDate(r.contractEnd)) + '</small></td>' +
         '<td>' + scoreHtml + '</td>' +
         '<td>' + kepHtml + '</td>' +
         '<td>' +
@@ -300,7 +300,7 @@
     if (posEl)     posEl.innerText     = emp.position       || '-';
     if (deptEl)    deptEl.innerText    = emp.department     || '-';
     if (idDispEl)  idDispEl.innerText  = emp.employeeId     || '-';
-    if (endEl)     endEl.innerText     = emp.contractEnd    || '-';
+    if (endEl)     endEl.innerText     = formatDisplayDate(emp.contractEnd);
     if (hidIdEl)   hidIdEl.value       = emp.employeeId     || '';
     if (hidRidEl)  hidRidEl.value      = emp.recruitmentId  || '';
     if (hidPidEl)  hidPidEl.value      = emp.probationId    || '';
@@ -615,7 +615,7 @@
           return '<div class="p-3 rounded-3 mb-3" style="background:#f9fafb;border:1px solid #e5e7eb">' +
             '<div class="d-flex justify-content-between align-items-start mb-2">' +
               '<div>' +
-                '<span class="fw-bold" style="font-size:13px">#' + (idx + 1) + ' — ' + escapeHtml(ev.evalDate || '-') + '</span>' +
+                '<span class="fw-bold" style="font-size:13px">#' + (idx + 1) + ' — ' + escapeHtml(formatDisplayDate(ev.evalDate)) + '</span>' +
                 '<span class="text-muted ms-2" style="font-size:11px">by ' + escapeHtml(ev.evaluator || '-') + '</span>' +
               '</div>' +
               '<span class="badge-status ' + kepClass + '" style="font-size:10px;padding:2px 8px">' + escapeHtml(kepLabel) + '</span>' +
@@ -727,7 +727,7 @@
         ['NIK',            emp ? emp.nik         : '-'],
         ['Jabatan',        emp ? emp.position    : '-'],
         ['Departemen',     emp ? emp.department  : '-'],
-        ['Mulai Bergabung',emp ? emp.joinDate    : '-'],
+        ['Mulai Bergabung', emp ? formatDisplayDate(emp.joinDate) : '-'],
       ];
       empRows.forEach(function(f, idx) {
         sf(idx % 2 === 0 ? [248,250,252] : [255,255,255]);
@@ -756,7 +756,7 @@
         ['Average Score',       String(avg) + ' / 10'],
       ];
       evalRows.forEach(function(f, idx) {
-        var isAvg = f[0] === 'Nilai Rata-rata';
+        var isAvg = f[0] === 'Average Score';
         if (isAvg) { sf(cAccent); doc.rect(m + 2, yPos - 4, pw - m * 2 - 2, 8, 'F'); }
         else { sf(idx % 2 === 0 ? [248,250,252] : [255,255,255]); doc.rect(m + 2, yPos - 4, pw - m * 2 - 2, 7, 'F'); }
         doc.setFontSize(8.5); bold(); st(isAvg ? cNavy : cText);
@@ -768,27 +768,58 @@
       });
       yPos += 4;
 
-      // ── Keputusan ─────────────────────────────────────────
-      if (!isAngkat && evalData.kontrakBaruStart) {
+      // ── Detail Berbeda: Pengangkatan vs Perpanjangan ─────
+      if (isAngkat) {
+        // SK Pengangkatan — tambahan pasal-pasal
         sf(cPrimary); doc.roundedRect(m + 2, yPos - 1.5, pw - m * 2 - 2, 8, 1.5, 1.5, 'F');
         doc.setFontSize(8.5); bold(); st([255,255,255]);
-        doc.text('EXTENSION DETAILS', m + 6, yPos + 4.5);
+        doc.text('KETENTUAN PENGANGKATAN', m + 6, yPos + 4.5);
         yPos += 12;
-        var extRows = [
-          ['Extension Duration', evalData.durasiPerpanjang || '-'],
-          ['New Contract Start',  evalData.kontrakBaruStart || '-'],
-          ['New Contract End',    evalData.kontrakBaruEnd   || '-'],
+
+        var pasalRows = [
+          ['Pasal 1', 'Dinyatakan LULUS masa probation dan diangkat menjadi Karyawan Tetap.'],
+          ['Pasal 2', 'Status kepegawaian berubah dari "Probation" menjadi "Permanent".'],
+          ['Pasal 3', 'Masa kerja dihitung sejak tanggal bergabung (' + (emp ? formatDisplayDate(emp.joinDate) : '-') + ').'],
+          ['Pasal 4', 'Hak dan kewajiban mengikuti ketentuan Peraturan Perusahaan yang berlaku.'],
+          ['Pasal 5', 'SK ini berlaku sejak tanggal ditetapkan.'],
         ];
-        extRows.forEach(function(f, idx) {
+        pasalRows.forEach(function(f, idx) {
           sf(idx % 2 === 0 ? [248,250,252] : [255,255,255]);
           doc.rect(m + 2, yPos - 4, pw - m * 2 - 2, 7, 'F');
           doc.setFontSize(8.5); bold(); st(cText);
-          doc.text(String(f[0]), m + 5, yPos); normal(); st(cSoft);
-          doc.text(':', m + LW, yPos); st(cText);
-          doc.text(String(f[1]), m + LW + 4, yPos);
-          yPos += 7;
+          doc.text(String(f[0]), m + 5, yPos);
+          normal(); st(cSoft);
+          doc.text(':', m + LW - 6, yPos);
+          st(cText);
+          var txt = String(f[1]);
+          var lines = doc.splitTextToSize(txt, pw - m * 2 - LW - 8);
+          doc.text(lines, m + LW - 2, yPos);
+          yPos += lines.length > 1 ? lines.length * 5 + 2 : 7;
         });
         yPos += 4;
+      } else {
+        // SK Perpanjangan — detail perpanjangan
+        if (evalData.kontrakBaruStart) {
+          sf(cPrimary); doc.roundedRect(m + 2, yPos - 1.5, pw - m * 2 - 2, 8, 1.5, 1.5, 'F');
+          doc.setFontSize(8.5); bold(); st([255,255,255]);
+          doc.text('DETAIL PERPANJANGAN', m + 6, yPos + 4.5);
+          yPos += 12;
+          var extRows = [
+          ['Durasi Perpanjang', evalData.durasiPerpanjang || '-'],
+          ['Kontrak Baru Mulai',  formatDisplayDate(evalData.kontrakBaruStart)],
+          ['Kontrak Baru Berakhir', formatDisplayDate(evalData.kontrakBaruEnd)],
+          ];
+          extRows.forEach(function(f, idx) {
+            sf(idx % 2 === 0 ? [248,250,252] : [255,255,255]);
+            doc.rect(m + 2, yPos - 4, pw - m * 2 - 2, 7, 'F');
+            doc.setFontSize(8.5); bold(); st(cText);
+            doc.text(String(f[0]), m + 5, yPos); normal(); st(cSoft);
+            doc.text(':', m + LW, yPos); st(cText);
+            doc.text(String(f[1]), m + LW + 4, yPos);
+            yPos += 7;
+          });
+          yPos += 4;
+        }
       }
 
       // ── Catatan ───────────────────────────────────────────

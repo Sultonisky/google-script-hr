@@ -104,6 +104,9 @@ function getEmployeeList() {
         resignDate: dval(row, "Resign Date"),
         hrNotes:          sval(row, "HR Notes"),
         outsourceVendor:  sval(row, "Outsource Vendor"),
+        offboardingType:      sval(row, "Offboarding Type"),
+        offboardingReason:    sval(row, "Offboarding Reason"),
+        offboardingApprovedBy: sval(row, "Offboarding Approved By"),
         createdBy: sval(row, "Created By"),
         createdAt:
           createdAtRaw instanceof Date
@@ -330,6 +333,9 @@ function updateEmployee(id, updates) {
           hrNotes:          "HR Notes",
           notes:            "HR Notes",          // alias → same column
           outsourceVendor:  "Outsource Vendor",  // kolom opsional di sheet
+          offboardingType:      "Offboarding Type",
+          offboardingReason:    "Offboarding Reason",
+          offboardingApprovedBy: "Offboarding Approved By",
           createdBy:        "Created By",
         };
 
@@ -738,9 +744,8 @@ function saveProbationEval(evalData, evaluatedBy) {
           10,
       ) / 10;
 
-    var isLulus = evalData.keputusan === "Lulus ? Karyawan Tetap";
-    var isPerpanjang =
-      evalData.keputusan === "Tidak Lulus ? Perpanjang Probation";
+    var isLulus = evalData.keputusan.indexOf("Lulus") !== -1 || evalData.keputusan.indexOf("Tetap") !== -1;
+    var isPerpanjang = evalData.keputusan.indexOf("Perpanjang") !== -1 || evalData.keputusan.indexOf("Tidak Lulus") !== -1;
 
     // -- 3. Update row di kandidat_probation dengan hasil evaluasi -----
     // Cari row berdasarkan probationId (dari evalData.probationId)
@@ -807,6 +812,25 @@ function saveProbationEval(evalData, evaluatedBy) {
         "Probation",
         "Active (Karyawan Tetap) - Eval " + evalId,
       );
+
+      // Update status di kandidat_probation
+      if (probRowIndex !== -1) {
+        probSheet.getRange(probRowIndex + 1, PROBATION_COL["Status"]).setValue("Completed - Passed");
+        probSheet.getRange(probRowIndex + 1, PROBATION_COL["SK Status"]).setValue("Generated");
+      }
+
+      // Update status di kandidat_accepted (jika ada)
+      try {
+        var accSheet = getOrCreateAcceptedSheet_();
+        var accData = accSheet.getDataRange().getValues();
+        for (var a = 1; a < accData.length; a++) {
+          if (String(accData[a][0] || '').trim() === String(evalData.recruitmentId || '').trim()) {
+            accSheet.getRange(a + 1, 1).setValue("Completed - Passed Probation");
+            break;
+          }
+        }
+      } catch (e) {}
+
     } else if (isPerpanjang) {
       if (evalData.kontrakBaruEnd)
         safeSetEmp("End Date (Contract)", evalData.kontrakBaruEnd);
@@ -826,6 +850,12 @@ function saveProbationEval(evalData, evaluatedBy) {
         String(empVal("Contract End")),
         evalData.kontrakBaruEnd + " - Eval " + evalId,
       );
+
+      // Update status di kandidat_probation
+      if (probRowIndex !== -1) {
+        probSheet.getRange(probRowIndex + 1, PROBATION_COL["Status"]).setValue("Extended");
+        probSheet.getRange(probRowIndex + 1, PROBATION_COL["SK Status"]).setValue("Generated");
+      }
     }
 
     return {
@@ -839,6 +869,110 @@ function saveProbationEval(evalData, evaluatedBy) {
       nowStr: nowStr,
     };
   } catch (err) {
+    return { success: false, message: err.message };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ============================================================
+// PROCESS ROTATION — dipanggil dari modal Rotation di Employee page
+// ============================================================
+function processRotation(payload) {
+  if (!payload || !payload.employeeId) {
+    return { success: false, message: 'Employee ID wajib diisi.' };
+  }
+  if (!payload.rotationType) {
+    return { success: false, message: 'Tipe rotasi wajib diisi.' };
+  }
+  if (!payload.effectiveDate) {
+    return { success: false, message: 'Tanggal efektif wajib diisi.' };
+  }
+  if (!payload.newPosition) {
+    return { success: false, message: 'Jabatan baru wajib diisi.' };
+  }
+  if (!payload.reason) {
+    return { success: false, message: 'Alasan rotasi wajib diisi.' };
+  }
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var now    = new Date();
+    var nowStr = Utilities.formatDate(now, 'GMT+7', 'yyyy-MM-dd HH:mm:ss');
+    var user   = Session.getActiveUser().getEmail() || 'HR Dashboard';
+
+    var empSheet = getOrCreateEmployeeSheet_();
+    var empData  = empSheet.getDataRange().getValues();
+    var empHdr   = empData[0];
+    var empCI    = {};
+    empHdr.forEach(function(h, i) { empCI[String(h).trim()] = i; });
+
+    var empRowIdx = -1;
+    for (var r = 1; r < empData.length; r++) {
+      if (String(empData[r][empCI['Employee ID']] || '').trim() === String(payload.employeeId).trim()) {
+        empRowIdx = r;
+        break;
+      }
+    }
+    if (empRowIdx === -1) {
+      return { success: false, message: 'Employee ID tidak ditemukan: ' + payload.employeeId };
+    }
+
+    var empRow = empData[empRowIdx];
+    function ev(col) {
+      var idx = empCI[col];
+      if (idx !== undefined) return String(empRow[idx] || '');
+      var fb = {
+        'Position': ['Job Position (Locaction)', 'Job Position'],
+        'Department': ['Department'],
+      };
+      if (fb[col]) {
+        for (var i = 0; i < fb[col].length; i++) {
+          var j = empCI[fb[col][i]];
+          if (j !== undefined) return String(empRow[j] || '');
+        }
+      }
+      return '';
+    }
+
+    var oldPosition = ev('Position') || ev('Job Position (Locaction)') || '';
+    var oldDept     = ev('Department') || '';
+
+    var empRowNum = empRowIdx + 1;
+    function safeSet(colName, value) {
+      var colNum = EMPLOYEE_COL[colName];
+      if (colNum) empSheet.getRange(empRowNum, colNum).setValue(value);
+    }
+
+    safeSet('Job Position (Locaction)', payload.newPosition);
+    safeSet('Job Position', payload.newPosition);
+    if (payload.newDepartment) {
+      safeSet('Department', payload.newDepartment);
+    }
+    safeSet('Job Position (Former)', oldPosition);
+    safeSet('Type of Rotation', payload.rotationType);
+    safeSet('Tanggal Mutasi/Demosi/Promosi', payload.effectiveDate);
+    safeSet('Nomor SK', payload.skNumber || '');
+    safeSet('Updated At', nowStr);
+
+    writeAuditLog_(
+      payload.employeeId,
+      'Rotation: ' + payload.rotationType,
+      'Position',
+      oldPosition || '-',
+      payload.newPosition + ' (Effective: ' + payload.effectiveDate + ')'
+    );
+
+    return {
+      success: true,
+      employeeId: payload.employeeId,
+      oldPosition: oldPosition,
+      newPosition: payload.newPosition,
+      message: 'Rotasi "' + payload.rotationType + '" berhasil diproses untuk ' + ev('Full Name') + '.',
+    };
+  } catch (err) {
+    Logger.log('processRotation ERROR: ' + err);
     return { success: false, message: err.message };
   } finally {
     lock.releaseLock();
@@ -919,6 +1053,7 @@ function processOffboarding(payload) {
       'Retirement':    'Retired',
       'Contract End':  'Inactive',
       'On Leave':      'On Leave',
+      'Death':         'Deceased',
     };
     var newStatus = statusMap[payload.offboardingType] || 'Inactive';
     var oldStatus = ev('Status Employee') || ev('Status') || 'Active';
@@ -932,64 +1067,22 @@ function processOffboarding(payload) {
     safeSet('Status Employee', newStatus);
     safeSet('Resign Date',     payload.lastWorkingDate);
     safeSet('Nomor SK',        payload.offboardingType + ' — ' + payload.reason.substring(0, 50));
+    safeSet('Offboarding Type', payload.offboardingType);
+    safeSet('Offboarding Reason', payload.reason);
+    safeSet('Offboarding Approved By', approvedBy);
     safeSet('Updated At',      nowStr);
 
-    // -- 4. Tulis ke sheet Offboarding ---------------------------
-    var offSheet = getOrCreateOffboardingSheet_();
-
-    // Cek duplikat: cegah offboarding tipe sama untuk employee yang sama
-    if (offSheet.getLastRow() > 1) {
-      var offData = offSheet.getRange(2, 1, offSheet.getLastRow() - 1, OFFBOARDING_HEADERS.length).getValues();
-      for (var i = 0; i < offData.length; i++) {
-        if (String(offData[i][OFFBOARD_COL['Employee ID'] - 1] || '') === String(payload.employeeId) &&
-            String(offData[i][OFFBOARD_COL['Offboarding Type'] - 1] || '') === String(payload.offboardingType) &&
-            String(offData[i][OFFBOARD_COL['Status'] - 1] || '') === 'Active') {
-          return {
-            success: false,
-            message: 'Offboarding dengan tipe "' + payload.offboardingType + '" sudah ada dan masih aktif untuk karyawan ini.'
-          };
-        }
-      }
-    }
-
-    var offboardingId = generateOffboardingId_(now);
-    var newRow = new Array(OFFBOARDING_HEADERS.length).fill('');
-    newRow[OFFBOARD_COL['Offboarding ID'] - 1]    = offboardingId;
-    newRow[OFFBOARD_COL['Employee ID'] - 1]        = payload.employeeId;
-    newRow[OFFBOARD_COL['Full Name'] - 1]          = ev('Full Name');
-    newRow[OFFBOARD_COL['Position'] - 1]           = ev('Position');
-    newRow[OFFBOARD_COL['Department'] - 1]         = ev('Department');
-    newRow[OFFBOARD_COL['Join Date'] - 1]          = ev('Join Date');
-    newRow[OFFBOARD_COL['Last Working Date'] - 1]  = payload.lastWorkingDate;
-    newRow[OFFBOARD_COL['Offboarding Type'] - 1]   = payload.offboardingType;
-    newRow[OFFBOARD_COL['Reason'] - 1]             = payload.reason;
-    newRow[OFFBOARD_COL['Approved By'] - 1]        = approvedBy;
-    newRow[OFFBOARD_COL['Notes'] - 1]              = [
-      payload.notes          ? 'Notes: '   + payload.notes          : '',
-      payload.bpjsKetenagakerjaan ? 'BPJS TK: ' + payload.bpjsKetenagakerjaan : '',
-      payload.bpjsKesehatan  ? 'BPJS Kes: ' + payload.bpjsKesehatan  : '',
-      payload.paklaring      ? 'Paklaring: ' + payload.paklaring      : '',
-    ].filter(Boolean).join(' | ');
-    newRow[OFFBOARD_COL['Status'] - 1]             = 'Active';
-    newRow[OFFBOARD_COL['Archived'] - 1]           = 'No';
-    newRow[OFFBOARD_COL['Created By'] - 1]         = user;
-    newRow[OFFBOARD_COL['Created At'] - 1]         = nowStr;
-    newRow[OFFBOARD_COL['Updated At'] - 1]         = nowStr;
-
-    offSheet.appendRow(newRow);
-
-    // -- 5. Audit log --------------------------------------------
+    // -- 4. Audit log --------------------------------------------
     writeAuditLog_(
       payload.employeeId,
       'Offboarding',
       'Status Employee',
       oldStatus,
-      newStatus + ' — ' + payload.offboardingType + ' (' + offboardingId + ')'
+      newStatus + ' — ' + payload.offboardingType
     );
 
     return {
       success:       true,
-      offboardingId: offboardingId,
       employeeId:    payload.employeeId,
       newStatus:     newStatus,
       message:       'Offboarding berhasil diproses. Status karyawan diubah ke "' + newStatus + '".',

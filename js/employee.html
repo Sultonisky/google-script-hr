@@ -54,21 +54,36 @@
 
   // ============ STATS ============
   function empRenderStats() {
-    var total    = EMP.allItems.length;
-    var active   = 0;
-    var inactive = 0;
+    var total      = EMP.allItems.length;
+    var permanent  = 0;
+    var contract   = 0;
+    var probation  = 0;
+    var outsource  = 0;
+    var inactive   = 0;
+
     EMP.allItems.forEach(function(e) {
       var s = (e.statusEmployee || '').toLowerCase();
-      if (s === 'permanent' || s === 'contract' || s === 'probation' || s === 'active') active++;
+      var t = (e.employmentType || '').toLowerCase();
+      if (s === 'permanent') permanent++;
+      else if (s === 'contract') contract++;
+      else if (s === 'probation') probation++;
+      else if (t === 'outsource' || s === 'outsource') outsource++;
       else inactive++;
     });
 
-    var totalEl    = document.getElementById('empStatTotal');
-    var activeEl   = document.getElementById('empStatActive');
-    var inactiveEl = document.getElementById('empStatInactive');
-    if (totalEl)    animateCounter(totalEl,    total);
-    if (activeEl)   animateCounter(activeEl,   active);
-    if (inactiveEl) animateCounter(inactiveEl, inactive);
+    var totalEl       = document.getElementById('empStatTotal');
+    var permEl        = document.getElementById('empStatPermanent');
+    var contractEl    = document.getElementById('empStatContract');
+    var probEl        = document.getElementById('empStatProbation');
+    var outsourceEl   = document.getElementById('empStatOutsource');
+
+    if (totalEl)     animateCounter(totalEl,     total);
+    if (permEl)      animateCounter(permEl,      permanent);
+    if (contractEl)  animateCounter(contractEl,  contract);
+    if (probEl)      animateCounter(probEl,      probation);
+    if (outsourceEl) animateCounter(outsourceEl, outsource);
+    if (outsourceEl) animateCounter(outsourceEl, outsource);
+    if (inactiveEl)  animateCounter(inactiveEl,  inactive);
   }
 
   // ============ FILTERS ============
@@ -542,6 +557,219 @@
     }
   }
 
+  // ============ ROTATION MODAL ============
+  var _rotActiveEmp = null;
+
+  function openRotationModal(emp) {
+    _rotActiveEmp = emp || null;
+    var searchEl = document.getElementById('rotEmpSearch');
+    var clearEl  = document.getElementById('rotEmpSearchClear');
+    var dropEl   = document.getElementById('rotEmpDropdown');
+    if (searchEl) searchEl.value = emp ? emp.fullName : '';
+    if (clearEl)  clearEl.style.display = emp ? 'block' : 'none';
+    if (dropEl)   dropEl.style.display  = 'none';
+    _fillRotPreview(emp);
+    var dateEl = document.getElementById('rotEffectiveDate');
+    if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];
+    ['rotType','rotNewPosition','rotNewDepartment','rotSkNumber','rotReason'].forEach(function(id) {
+      var el = document.getElementById(id); if (el) el.value = '';
+    });
+    _updateRotConfirmBtn();
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('rotationModal')).show();
+  }
+
+  function _fillRotPreview(emp) {
+    var previewEl = document.getElementById('rotEmpPreview');
+    if (!emp) { if (previewEl) previewEl.style.display = 'none'; return; }
+    if (previewEl) previewEl.style.display = 'block';
+    var av = document.getElementById('rotEmpAvatar');
+    var nm = document.getElementById('rotEmpName');
+    var ps = document.getElementById('rotEmpPosition');
+    var dp = document.getElementById('rotEmpDept');
+    var id = document.getElementById('rotEmpIdDisp');
+    var jd = document.getElementById('rotEmpJoinDate');
+    var hd = document.getElementById('rotEmployeeId');
+    var fp = document.getElementById('rotFormerPosition');
+    if (av) av.innerText = initials(emp.fullName);
+    if (nm) nm.innerText = emp.fullName || '-';
+    if (ps) ps.innerText = emp.positionCurrent || emp.position || '-';
+    if (dp) dp.innerText = emp.department || '-';
+    if (id) id.innerText = emp.employeeId || '-';
+    if (jd) jd.innerText = emp.joinDate   || '-';
+    if (hd) hd.value     = emp.employeeId || '';
+    if (fp) fp.value     = emp.positionCurrent || emp.position || '';
+    setTimeout(_updateRotConfirmBtn, 0);
+  }
+
+  function _updateRotConfirmBtn() {
+    var btn = document.getElementById('btnConfirmRotation');
+    if (!btn) return;
+    btn.disabled = !(
+      _rotActiveEmp &&
+      ((document.getElementById('rotType') || {}).value) &&
+      ((document.getElementById('rotEffectiveDate') || {}).value) &&
+      ((document.getElementById('rotNewPosition') || {}).value || '').trim() &&
+      ((document.getElementById('rotReason') || {}).value || '').trim()
+    );
+  }
+
+  function initRotationModal() {
+    var searchEl = document.getElementById('rotEmpSearch');
+    var clearEl  = document.getElementById('rotEmpSearchClear');
+    var dropEl   = document.getElementById('rotEmpDropdown');
+
+    function renderDropdown(q) {
+      if (!dropEl) return;
+      q = (q || '').trim().toLowerCase();
+      if (!q) { dropEl.style.display = 'none'; return; }
+      var matched = EMP.allItems.filter(function(e) {
+        var s = (e.statusEmployee || '').toLowerCase();
+        return (s === 'permanent' || s === 'contract' || s === 'probation' || s === 'on leave' || s === 'active') &&
+          ((e.fullName || '').toLowerCase().indexOf(q) !== -1 ||
+           (e.employeeId || '').toLowerCase().indexOf(q) !== -1);
+      }).slice(0, 8);
+
+      if (!matched.length) {
+        dropEl.innerHTML = '<div class="px-3 py-2 text-muted" style="font-size:13px">Karyawan aktif tidak ditemukan</div>';
+      } else {
+        dropEl.innerHTML = matched.map(function(e) {
+          return '<div class="rot-item px-3 py-2 d-flex align-items-center gap-2"' +
+            ' style="cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:13px" data-id="' + escapeHtml(e.employeeId) + '">' +
+            '<div style="width:28px;height:28px;font-size:11px;flex-shrink:0;background:#0B2540;color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700">' +
+              escapeHtml(initials(e.fullName)) + '</div>' +
+            '<div><div class="fw-semibold">' + escapeHtml(e.fullName) + '</div>' +
+            '<div class="text-muted" style="font-size:11px">' + escapeHtml((e.positionCurrent || e.position) || '-') + ' · ' + escapeHtml(e.employeeId) + '</div></div>' +
+          '</div>';
+        }).join('');
+      }
+      dropEl.style.display = 'block';
+      dropEl.querySelectorAll('.rot-item').forEach(function(item) {
+        item.addEventListener('mouseenter', function() { item.style.background = '#f0f7ff'; });
+        item.addEventListener('mouseleave', function() { item.style.background = ''; });
+        item.addEventListener('click', function() {
+          var found = EMP.allItems.find(function(e) { return e.employeeId === item.getAttribute('data-id'); });
+          if (found) {
+            _rotActiveEmp = found;
+            if (searchEl) searchEl.value = found.fullName;
+            if (clearEl)  clearEl.style.display = 'block';
+            dropEl.style.display = 'none';
+            _fillRotPreview(found);
+          }
+        });
+      });
+    }
+
+    if (searchEl) searchEl.addEventListener('input', function() {
+      _rotActiveEmp = null; _fillRotPreview(null); _updateRotConfirmBtn();
+      if (clearEl) clearEl.style.display = searchEl.value ? 'block' : 'none';
+      renderDropdown(searchEl.value);
+    });
+    if (clearEl) clearEl.addEventListener('click', function() {
+      if (searchEl) searchEl.value = '';
+      clearEl.style.display = 'none';
+      if (dropEl) dropEl.style.display = 'none';
+      _rotActiveEmp = null; _fillRotPreview(null); _updateRotConfirmBtn();
+    });
+    document.addEventListener('click', function(e) {
+      if (dropEl && !dropEl.contains(e.target) && e.target !== searchEl) dropEl.style.display = 'none';
+    });
+
+    ['rotType','rotEffectiveDate','rotNewPosition','rotReason'].forEach(function(fid) {
+      var el = document.getElementById(fid);
+      if (el) { el.addEventListener('input', _updateRotConfirmBtn); el.addEventListener('change', _updateRotConfirmBtn); }
+    });
+
+    var modalEl = document.getElementById('rotationModal');
+    if (modalEl) {
+      modalEl.addEventListener('hidden.bs.modal', function() {
+        _rotActiveEmp = null;
+        if (searchEl) searchEl.value = '';
+        if (clearEl)  clearEl.style.display = 'none';
+        if (dropEl)   dropEl.style.display  = 'none';
+        var prev = document.getElementById('rotEmpPreview');
+        if (prev) prev.style.display = 'none';
+        var dateEl = document.getElementById('rotEffectiveDate');
+        if (dateEl) dateEl.value = '';
+        ['rotType','rotNewPosition','rotNewDepartment','rotSkNumber','rotReason','rotFormerPosition'].forEach(function(fid) {
+          var el = document.getElementById(fid); if (el) el.value = '';
+        });
+        var btn = document.getElementById('btnConfirmRotation');
+        if (btn) btn.disabled = true;
+        var tEl = document.getElementById('btnRotText'); var lEl = document.getElementById('btnRotLoading');
+        if (tEl) tEl.style.display = 'inline-flex';
+        if (lEl) lEl.style.display = 'none';
+      });
+    }
+
+    var confirmBtn = document.getElementById('btnConfirmRotation');
+    if (confirmBtn) {
+      confirmBtn.addEventListener('click', function() {
+        var empId = (document.getElementById('rotEmployeeId') || {}).value || '';
+        var type  = (document.getElementById('rotType') || {}).value || '';
+        var date  = (document.getElementById('rotEffectiveDate') || {}).value || '';
+        var newPos = ((document.getElementById('rotNewPosition') || {}).value || '').trim();
+        var reason = ((document.getElementById('rotReason') || {}).value || '').trim();
+        if (!empId || !type || !date || !newPos || !reason) return;
+
+        var payload = {
+          employeeId: empId,
+          rotationType: type,
+          effectiveDate: date,
+          newPosition: newPos,
+          newDepartment: (document.getElementById('rotNewDepartment') || {}).value || '',
+          skNumber: (document.getElementById('rotSkNumber') || {}).value || '',
+          reason: reason,
+        };
+
+        var tEl = document.getElementById('btnRotText');
+        var lEl = document.getElementById('btnRotLoading');
+        confirmBtn.disabled = true;
+        if (tEl) tEl.style.display = 'none';
+        if (lEl) lEl.style.display = 'inline-flex';
+
+        google.script.run
+          .withSuccessHandler(function(res) {
+            confirmBtn.disabled = false;
+            if (tEl) tEl.style.display = 'inline-flex';
+            if (lEl) lEl.style.display = 'none';
+            bootstrap.Modal.getInstance(document.getElementById('rotationModal')).hide();
+            if (res && res.success) {
+              showToast('Rotasi <strong>' + escapeHtml((_rotActiveEmp || {}).fullName || '') +
+                '</strong> berhasil — ' + escapeHtml(type), 'success', 5000);
+              empLoadAll();
+              // Generate PDF surat rotasi — data diambil langsung dari form & karyawan terpilih
+              var emp = _rotActiveEmp || {};
+              exportRotationLetterPDF({
+                employeeId:        emp.employeeId || payload.employeeId,
+                fullName:          emp.fullName || '',
+                rotationType:      payload.rotationType,
+                formerPosition:    emp.positionCurrent || emp.position || '',
+                newPosition:       payload.newPosition,
+                formerDepartment:  emp.department || '',
+                newDepartment:     payload.newDepartment || emp.department || '',
+                effectiveDate:     payload.effectiveDate,
+                skNumber:          payload.skNumber || '',
+                reason:            payload.reason,
+              }, function(success) {
+                if (!success) {
+                  showToast('Gagal membuat PDF surat rotasi.', 'error');
+                }
+              });
+            } else {
+              showToast('Gagal: ' + (res ? res.message : 'Error'), 'error');
+            }
+          })
+          .withFailureHandler(function(err) {
+            confirmBtn.disabled = false;
+            if (tEl) tEl.style.display = 'inline-flex';
+            if (lEl) lEl.style.display = 'none';
+            showToast('Error: ' + (err ? err.message : 'Unknown'), 'error');
+          })
+          .processRotation(payload);
+      });
+    }
+  }
+
   // ============ OFFBOARDING MODAL ============
   var _offbActiveEmp = null;
 
@@ -728,6 +956,24 @@
               showToast('Offboarding <strong>' + escapeHtml((_offbActiveEmp || {}).fullName || '') +
                 '</strong> berhasil — ' + escapeHtml(type), 'success', 5000);
               empLoadAll();
+              // Generate PDF surat offboarding — data diambil langsung dari form & karyawan terpilih
+              var emp = _offbActiveEmp || {};
+              exportOffboardingLetterPDF({
+                employeeId:        emp.employeeId || payload.employeeId,
+                fullName:          emp.fullName || '',
+                position:          emp.positionCurrent || emp.position || '',
+                department:        emp.department || '',
+                joinDate:          emp.joinDate || '',
+                lastWorkingDate:   payload.lastWorkingDate,
+                offboardingType:   payload.offboardingType,
+                reason:            payload.reason,
+                approvedBy:        payload.approvedBy || '',
+                notes:             payload.notes || '',
+              }, function(success) {
+                if (!success) {
+                  showToast('Gagal membuat PDF surat offboarding.', 'error');
+                }
+              });
             } else {
               showToast('Gagal: ' + (res ? res.message : 'Error'), 'error');
             }
@@ -768,6 +1014,11 @@
     if (tf) tf.addEventListener('change', empApplyFilters);
     if (sf) sf.addEventListener('change', empApplyFilters);
     if (ss) ss.addEventListener('change', empApplyFilters);
+
+    // Rotation modal
+    var btnRot = document.getElementById('btnOpenRotationModal');
+    if (btnRot) btnRot.addEventListener('click', function() { openRotationModal(null); });
+    initRotationModal();
 
     // Offboarding modal
     var btnOffb = document.getElementById('btnOpenOffboardingModal');

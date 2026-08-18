@@ -1193,25 +1193,85 @@ function deleteCandidate(recruitmentId) {
 // ============================================================
 // getDashboardStatusCounts — hitung jumlah record di setiap
 // sheet status untuk stat cards di halaman Dashboard utama.
+// Termasuk jumlah employee dengan status Probation dari sheet Employee.
 // ============================================================
 function getDashboardStatusCounts() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  function count(name) {
-    var s = ss.getSheetByName(name);
-    if (!s || s.getLastRow() < 2) return 0;
-    return s.getLastRow() - 1;
+  try {
+    var sheet = getOrCreateSheet_();
+    var data = sheet.getDataRange().getValues();
+    var headers = data[0];
+    var statusIdx = -1;
+    headers.forEach(function (h, i) {
+      if (String(h).trim() === "Status") statusIdx = i;
+    });
+    if (statusIdx === -1)
+      return {
+        total: 0,
+        pending: 0,
+        accepted: 0,
+        hold: 0,
+        blacklist: 0,
+        probation: 0,
+      };
+
+    var total = data.length - 1;
+    var pending = 0,
+      accepted = 0,
+      hold = 0,
+      blacklist = 0;
+
+    for (var i = 1; i < data.length; i++) {
+      var status = String(data[i][statusIdx] || "")
+        .trim()
+        .toLowerCase();
+      if (status === "pending") pending++;
+      else if (status === "accepted") accepted++;
+      else if (status === "hold") hold++;
+      else if (status === "blacklist") blacklist++;
+    }
+
+    // Hitung employee probation dari sheet Employee
+    var probation = 0;
+    try {
+      var empSheet = getOrCreateEmployeeSheet_();
+      if (empSheet && empSheet.getLastRow() > 1) {
+        var empData = empSheet.getDataRange().getValues();
+        var empHdr = empData[0];
+        var empCI = {};
+        empHdr.forEach(function (h, j) {
+          empCI[String(h).trim()] = j;
+        });
+        var stEmpIdx = empCI["Status Employee"] !== undefined ? empCI["Status Employee"] : -1;
+        var stLegacyIdx = empCI["Status"] !== undefined ? empCI["Status"] : -1;
+        var empStatusIdx = empCI["Employment Status"] !== undefined ? empCI["Employment Status"] : -1;
+        for (var e = 1; e < empData.length; e++) {
+          var sEmp = stEmpIdx !== -1 ? String(empData[e][stEmpIdx] || "") : "";
+          var sLegacy = empStatusIdx !== -1 ? String(empData[e][empStatusIdx] || "") : "";
+          var sStatus = stLegacyIdx !== -1 ? String(empData[e][stLegacyIdx] || "") : "";
+          var finalStatus = sEmp || sLegacy || sStatus || "";
+          if (finalStatus.toLowerCase() === "probation") probation++;
+        }
+      }
+    } catch (e) {}
+
+    return {
+      total: total,
+      pending: pending,
+      accepted: accepted,
+      hold: hold,
+      blacklist: blacklist,
+      probation: probation,
+    };
+  } catch (e) {
+    return {
+      total: 0,
+      pending: 0,
+      accepted: 0,
+      hold: 0,
+      blacklist: 0,
+      probation: 0,
+    };
   }
-  return {
-    pending: count(SHEET_NAME),
-    hold: count(HOLD_SHEET_NAME),
-    accepted: count(ACCEPTED_SHEET_NAME),
-    blacklist: count(BLACKLIST_SHEET_NAME),
-    total:
-      count(SHEET_NAME) +
-      count(HOLD_SHEET_NAME) +
-      count(ACCEPTED_SHEET_NAME) +
-      count(BLACKLIST_SHEET_NAME),
-  };
 }
 
 // ============================================================

@@ -231,77 +231,6 @@ function writeHeaderRow_(sheet, headers) {
   sheet.autoResizeColumns(1, headers.length);
 }
 
-// ============= Offboarding =============
-function getOrCreateOffboardingSheet_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(OFFBOARDING_SHEET_NAME);
-  if (!sheet) sheet = ss.insertSheet(OFFBOARDING_SHEET_NAME);
-
-  ensureSheetHeadersMatch_(sheet, OFFBOARDING_HEADERS, null);
-  return sheet;
-}
-
-function fixOffboardingHeadersNow() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(OFFBOARDING_SHEET_NAME);
-  if (!sheet) sheet = ss.insertSheet(OFFBOARDING_SHEET_NAME);
-
-  var before = {
-    lastRow: sheet.getLastRow(),
-    lastCol: sheet.getLastColumn(),
-    headers:
-      sheet.getLastColumn() > 0
-        ? sheet
-            .getRange(1, 1, 1, sheet.getLastColumn())
-            .getValues()[0]
-            .map(function (h) {
-              return String(h).trim();
-            })
-        : [],
-  };
-
-  ensureSheetHeadersMatch_(sheet, OFFBOARDING_HEADERS, null);
-
-  var afterHeaders = sheet
-    .getRange(1, 1, 1, OFFBOARDING_HEADERS.length)
-    .getValues()[0]
-    .map(function (h) {
-      return String(h).trim();
-    });
-
-  return {
-    success: afterHeaders.join("|") === OFFBOARDING_HEADERS.join("|"),
-    headerCount: afterHeaders.length,
-    headers: afterHeaders,
-    before: before,
-    message:
-      afterHeaders.join("|") === OFFBOARDING_HEADERS.join("|")
-        ? "Header Offboarding berhasil ditulis ulang menjadi 16 kolom."
-        : "Header Offboarding masih tidak cocok, periksa kembali.",
-  };
-}
-
-function ensureOffboardingHeaders_(sheet) {
-  var lastCol = sheet.getLastColumn();
-  var headerRow = sheet
-    .getRange(1, 1, 1, lastCol)
-    .getValues()[0]
-    .map(function (h) {
-      return String(h).trim();
-    });
-  var missing = OFFBOARDING_HEADERS.filter(function (h) {
-    return headerRow.indexOf(h) === -1;
-  });
-  if (missing.length === 0) return;
-  var startCol = lastCol + 1;
-  sheet.getRange(1, startCol, 1, missing.length).setValues([missing]);
-  sheet
-    .getRange(1, startCol, 1, missing.length)
-    .setFontWeight("bold")
-    .setBackground("#005BAC")
-    .setFontColor("#FFFFFF");
-}
-
 // ============= Users =============
 function getOrCreateUsersSheet_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -414,7 +343,6 @@ function setupSpreadsheet() {
   getOrCreateHoldSheet_();
   getOrCreateAcceptedSheet_();
   getOrCreateBlacklistSheet_();
-  getOrCreateOffboardingSheet_();
   getOrCreateAuditLogSheet_();
   getOrCreateUsersSheet_();
   getOrCreateProbationSheet_();
