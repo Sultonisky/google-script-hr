@@ -45,6 +45,9 @@
     if (footerCand)   footerCand.style.display   = (mode === 'candidate') ? '' : 'none';
     if (footerEntity) footerEntity.style.display = (mode !== 'candidate') ? '' : 'none';
 
+    var contractWrap = document.getElementById('drawerContractActionsWrap');
+    if (contractWrap && mode !== 'employee') contractWrap.style.display = 'none';
+
     // Header buttons
     var btnPrint = document.getElementById('btnDrawerPrint');
     var btnEdit  = document.getElementById('btnDrawerEdit');
@@ -96,10 +99,26 @@
   function renderOffboardingDocsHtml(emp) {
     var docs = (emp && emp.offboardingDocuments) || [];
     var folder = emp && emp.offboardingDocumentsFolder;
-    if ((!docs || !docs.length) && !folder) {
-      return '-';
-    }
+    var isOffboarded = emp && (emp.offboardingType || emp.resignDate || emp.statusEmployee === 'Terminated' || emp.statusEmployee === 'Resigned' || emp.statusEmployee === 'Retired' || emp.statusEmployee === 'Inactive');
+
+    var st = String((emp && (emp.statusEmployee || emp.employmentStatus || emp.status)) || '').toLowerCase();
+    var isPerm = st.indexOf('permanent') !== -1 || st.indexOf('pkwtt') !== -1 || st.indexOf('tetap') !== -1;
+
     var html = '';
+    if (isOffboarded) {
+      html += '<div class="d-flex flex-wrap gap-2 mb-2">';
+      if (isPerm) {
+        html += '<button type="button" class="btn btn-outline-danger btn-sm" style="font-size:12px;padding:3px 8px" onclick="exportOffboardingLetterPDFFromEmp(\'' + escapeHtml(emp.employeeId || '') + '\')">' +
+          '<i class="bi bi-file-earmark-pdf me-1"></i>Unduh SK Offboarding</button>';
+        html += '<button type="button" class="btn btn-outline-secondary btn-sm" style="font-size:12px;padding:3px 8px" onclick="exportPaklaringPDFFromEmp(\'' + escapeHtml(emp.employeeId || '') + '\')">' +
+          '<i class="bi bi-file-earmark-text me-1"></i>Unduh Paklaring</button>';
+      } else {
+        html += '<button type="button" class="btn btn-outline-secondary btn-sm" style="font-size:12px;padding:3px 8px" onclick="exportPaklaringPDFFromEmp(\'' + escapeHtml(emp.employeeId || '') + '\')">' +
+          '<i class="bi bi-file-earmark-text me-1"></i>Unduh Paklaring</button>';
+      }
+      html += '</div>';
+    }
+
     if (folder) {
       html += '<div class="mb-2"><a href="' + escapeHtml(folder) +
         '" target="_blank" rel="noopener"><i class="bi bi-folder2-open me-1"></i>Buka folder Drive</a></div>';
@@ -306,7 +325,12 @@
     setDrawerText('empDrFormerPos',        emp.positionFormer);
     setDrawerText('empDrRotationType',     emp.typeOfRotation);
     setDrawerText('empDrMutasiDate',       emp.mutasiDate);
-    setDrawerText('empDrNoSk',             emp.nomorSk);
+    if (emp.typeOfRotation && (emp.nomorSk || emp.mutasiDate)) {
+      var noSkText = escapeHtml(emp.nomorSk || '-');
+      setDrawerHtml('empDrNoSk', noSkText + ' <button class="btn btn-xs btn-outline-primary ms-2 py-0 px-2" style="font-size:11px;border-radius:4px" onclick="downloadEmployeeRotationSK(\'' + escapeHtml(emp.employeeId) + '\')" title="Unduh SK"><i class="bi bi-file-earmark-pdf me-1"></i>Unduh SK</button>');
+    } else {
+      setDrawerText('empDrNoSk',           emp.nomorSk);
+    }
     setDrawerText('empDrResignDate',       emp.resignDate);
     setDrawerText('empDrOffbType',         emp.offboardingType);
     setDrawerText('empDrOffbReason',       emp.offboardingReason);
@@ -326,6 +350,29 @@
     var btnDel  = document.getElementById('btnDrawerEntityDelete');
     if (btnEdit) { btnEdit.onclick = function() { empOpenEdit(); }; }
     if (btnDel)  { btnDel.onclick  = function() { empDelete();  }; }
+
+    // Kontrak actions wrap (Ajukan Onboarding Probation & Unduh PKWT)
+    var contractWrap = document.getElementById('drawerContractActionsWrap');
+    var isContract = String(displayStatus).toLowerCase().indexOf('contract') !== -1 || String(displayStatus).toLowerCase().indexOf('kontrak') !== -1;
+    if (contractWrap) {
+      contractWrap.style.display = isContract ? 'block' : 'none';
+      var btnPromote = document.getElementById('btnDrawerPromoteProbation');
+      if (btnPromote) {
+        btnPromote.onclick = function() {
+          if (typeof openPromoteToProbationModal === 'function') {
+            openPromoteToProbationModal(emp);
+          }
+        };
+      }
+      var btnEndContract = document.getElementById('btnDrawerEndContract');
+      if (btnEndContract) {
+        btnEndContract.onclick = function() {
+          if (typeof openContractEndModal === 'function') {
+            openContractEndModal(emp);
+          }
+        };
+      }
+    }
 
     // Edit icon in header
     var headerEdit = document.getElementById('btnDrawerEdit');
@@ -493,4 +540,31 @@
       })
       .saveHrNotes(activeCandidateId, value);
   }
+
+  // ============================================================
+  // HELPER: UNDUH SK ROTASI / MUTASI / PROMOSI DARI DRAWER
+  // ============================================================
+  window.downloadEmployeeRotationSK = function(empId) {
+    var emp = (EMP && EMP.allItems) ? EMP.allItems.find(function(x) { return x.employeeId === empId; }) : null;
+    if (!emp) {
+      showToast('Data karyawan tidak ditemukan.', 'warning');
+      return;
+    }
+    if (typeof exportRotationLetterPDF === 'function') {
+      exportRotationLetterPDF({
+        employeeId:        emp.employeeId,
+        fullName:          emp.fullName || '',
+        nik:               emp.nik || '',
+        branchName:        emp.branchName || emp.branch || '',
+        rotationType:      emp.typeOfRotation || 'Rotasi',
+        formerPosition:    emp.positionFormer || '',
+        newPosition:       emp.positionCurrent || emp.position || '',
+        formerDepartment:  '',
+        newDepartment:     emp.department || '',
+        effectiveDate:     emp.mutasiDate || '',
+        skNumber:          emp.nomorSk || '',
+        reason:            'Penyesuaian organisasi / jenjang karier',
+      });
+    }
+  };
 </script>

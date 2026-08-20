@@ -601,7 +601,7 @@
     var jd = document.getElementById('rotEmpJoinDate');
     var hd = document.getElementById('rotEmployeeId');
     var fp = document.getElementById('rotFormerPosition');
-    var sk = document.getElementById('rotSkNumber');
+
     if (av) av.innerText = initials(emp.fullName);
     if (nm) nm.innerText = emp.fullName || '-';
     if (ps) ps.innerText = emp.positionCurrent || emp.position || '-';
@@ -703,7 +703,7 @@
         if (prev) prev.style.display = 'none';
         var dateEl = document.getElementById('rotEffectiveDate');
         if (dateEl) dateEl.value = '';
-        ['rotType','rotNewPosition','rotNewDepartment','rotSkNumber','rotReason','rotFormerPosition'].forEach(function(fid) {
+        ['rotType','rotNewPosition','rotNewDepartment','rotReason','rotFormerPosition'].forEach(function(fid) {
           var el = document.getElementById(fid); if (el) el.value = '';
         });
         var btn = document.getElementById('btnConfirmRotation');
@@ -730,7 +730,7 @@
           effectiveDate: date,
           newPosition: newPos,
           newDepartment: (document.getElementById('rotNewDepartment') || {}).value || '',
-          skNumber: (document.getElementById('rotSkNumber') || {}).value || '',
+
           reason: reason,
         };
 
@@ -755,6 +755,8 @@
               exportRotationLetterPDF({
                 employeeId:        emp.employeeId || payload.employeeId,
                 fullName:          emp.fullName || '',
+                nik:               emp.nik || '',
+                branchName:        emp.branchName || emp.branch || '',
                 rotationType:      payload.rotationType,
                 formerPosition:    emp.positionCurrent || emp.position || '',
                 newPosition:       payload.newPosition,
@@ -962,8 +964,7 @@
     ['offbType','offbReason','offbApprovedBy','offbNotes'].forEach(function(id) {
       var el = document.getElementById(id); if (el) el.value = '';
     });
-    var pakEl = document.getElementById('offbPaklaring');
-    if (pakEl) pakEl.value = '';
+
     _resetOffbDocuments();
     _fillOffbPreview(emp);
     _updateOffbConfirmBtn();
@@ -1020,15 +1021,16 @@
       if (!dropEl) return;
       q = (q || '').trim().toLowerCase();
       if (!q) { dropEl.style.display = 'none'; return; }
+      // Filter hanya karyawan Permanent untuk offboarding modal
       var matched = EMP.allItems.filter(function(e) {
         var s = (e.statusEmployee || '').toLowerCase();
-        return (s === 'permanent' || s === 'contract' || s === 'probation' || s === 'on leave' || s === 'active') &&
+        return (s === 'permanent' || s.indexOf('permanent') !== -1 || s === 'pkwtt' || s.indexOf('tetap') !== -1) &&
           ((e.fullName || '').toLowerCase().indexOf(q) !== -1 ||
            (e.employeeId || '').toLowerCase().indexOf(q) !== -1);
       }).slice(0, 8);
 
       if (!matched.length) {
-        dropEl.innerHTML = '<div class="px-3 py-2 text-muted" style="font-size:13px">Karyawan aktif tidak ditemukan</div>';
+        dropEl.innerHTML = '<div class="px-3 py-2 text-muted" style="font-size:13px">Karyawan Permanent tidak ditemukan</div>';
       } else {
         dropEl.innerHTML = matched.map(function(e) {
           return '<div class="offb-item px-3 py-2 d-flex align-items-center gap-2"' +
@@ -1110,7 +1112,7 @@
         if (prev) prev.style.display = 'none';
         var lwdEl = document.getElementById('offbLastWorkingDate');
         if (lwdEl) lwdEl.value = '';
-        ['offbType','offbReason','offbBpjsTk','offbBpjsKes','offbApprovedBy','offbSkNumber','offbNotes'].forEach(function(fid) {
+        ['offbType','offbReason','offbBpjsTk','offbBpjsKes','offbApprovedBy','offbNotes'].forEach(function(fid) {
           var el = document.getElementById(fid); if (el) el.value = '';
         });
         var pakEl = document.getElementById('offbPaklaring');
@@ -1157,10 +1159,8 @@
             offboardingType:     type,
             lastWorkingDate:     lwd,
             reason:              rsn,
-            skNumber:            (document.getElementById('offbSkNumber') || {}).value || '',
             bpjsKetenagakerjaan: (document.getElementById('offbBpjsTk')     || {}).value || '',
             bpjsKesehatan:       (document.getElementById('offbBpjsKes')    || {}).value || '',
-            paklaring:           (document.getElementById('offbPaklaring')  || {}).value || '',
             approvedBy:          (document.getElementById('offbApprovedBy') || {}).value || '',
             notes:               (document.getElementById('offbNotes')      || {}).value || '',
             documents:           documents || []
@@ -1179,24 +1179,91 @@
                 showToast('Offboarding <strong>' + escapeHtml((_offbActiveEmp || {}).fullName || '') +
                   '</strong> berhasil — ' + escapeHtml(type) + docMsg, 'success', 5000);
                 empLoadAll();
+
                 var emp = _offbActiveEmp || {};
-                exportOffboardingLetterPDF({
-                  employeeId:        emp.employeeId || payload.employeeId,
-                  fullName:          emp.fullName || '',
-                  position:          emp.positionCurrent || emp.position || '',
-                  department:        emp.department || '',
-                  joinDate:          emp.joinDate || '',
-                  lastWorkingDate:   payload.lastWorkingDate,
+                var empDataObj = res.employeeData || {};
+                var prevStatusStr = empDataObj.prevStatus || emp.statusEmployee || emp.employmentStatus || emp.status || '';
+                var isPermanent = (typeof empDataObj.isPermanent === 'boolean')
+                  ? empDataObj.isPermanent
+                  : (String(prevStatusStr).toLowerCase().indexOf('permanent') !== -1 ||
+                     String(prevStatusStr).toLowerCase().indexOf('pkwtt') !== -1 ||
+                     String(prevStatusStr).toLowerCase().indexOf('tetap') !== -1);
+
+                var offbData = {
+                  employeeId:        emp.employeeId || empDataObj.employeeId || payload.employeeId,
+                  fullName:          emp.fullName || empDataObj.fullName || '',
+                  nik:               emp.nik || empDataObj.nik || '',
+                  position:          emp.positionCurrent || emp.position || empDataObj.position || '',
+                  department:        emp.department || empDataObj.department || '',
+                  joinDate:          emp.joinDate || empDataObj.joinDate || '',
+                  lastWorkingDate:   payload.lastWorkingDate || '',
+                  branchName:        emp.branchName || empDataObj.branchName || '',
+                  division:          emp.division || empDataObj.division || '',
+                  citizenIdAddress:  emp.citizenIdAddress || emp.address || empDataObj.citizenIdAddress || empDataObj.address || '',
+                  residentialAddress: emp.residentialAddress || empDataObj.residentialAddress || '',
+                  skNumber:          res.skNumber || payload.skNumber || '',
                   offboardingType:   payload.offboardingType,
                   reason:            payload.reason,
-                  skNumber:          payload.skNumber || '',
-                  approvedBy:        payload.approvedBy || '',
+                  isPermanent:       isPermanent,
+                  prevStatus:        prevStatusStr,
                   notes:             payload.notes || '',
-                }, function(success) {
+                  approvedBy:        payload.approvedBy || '',
+                };
+
+
+
+                var offbEmpData = {
+                  fullName:        offbData.fullName,
+                  employeeId:      offbData.employeeId,
+                  nik:             offbData.nik,
+                  position:        offbData.position,
+                  department:      offbData.department,
+                  division:        offbData.division,
+                  branch:          offbData.branchName,
+                  branchName:      offbData.branchName,
+                  joinDate:        offbData.joinDate,
+                  lastWorkingDate: offbData.lastWorkingDate,
+                  citizenIdAddress:   offbData.citizenIdAddress || offbData.residentialAddress || '',
+                  residentialAddress: offbData.residentialAddress || offbData.citizenIdAddress || '',
+                  address:            offbData.citizenIdAddress || offbData.residentialAddress || '',
+                  suratNumber:     offbData.skNumber || '001/HRD-SKK/MSI/VII/2026',
+                };
+
+                // 1. Selalu generate SK Offboarding (untuk semua status)
+                exportOffboardingLetterPDF(offbData, function(success) {
                   if (!success) {
-                    showToast('Gagal membuat PDF surat offboarding.', 'error');
+                    showToast('Gagal membuat PDF SK Offboarding.', 'error');
                   }
                 });
+
+                if (isPermanent) {
+                  // 2. Karyawan Permanent (Tetap): selalu generate Paklaring
+                  setTimeout(function() {
+                    exportPaklaringPDF(offbEmpData, {
+                      catatan: offbData.notes,
+                    }, {
+                      evalId: (offbData.skNumber || '').replace(/[^a-zA-Z0-9]/g, '') || offbData.employeeId,
+                    });
+                  }, 800);
+                } else {
+                  // 3. Karyawan Kontrak / PKWT / Probation: selalu generate Paklaring
+                  exportPaklaringPDF(offbEmpData, {
+                    catatan: offbData.notes,
+                  }, {
+                    evalId: (offbData.skNumber || '').replace(/[^a-zA-Z0-9]/g, '') || offbData.employeeId,
+                  }, function(success) {
+                    if (!success) {
+                      showToast('Gagal membuat PDF Paklaring.', 'error');
+                    }
+                  });
+                }
+
+                // 4. Generate Surat Keterangan BPJS Ketenagakerjaan (untuk semua)
+                setTimeout(function() {
+                  if (typeof exportSuratBPJS === 'function') {
+                    exportSuratBPJS(offbEmpData);
+                  }
+                }, 500);
               } else {
                 showToast('Gagal: ' + (res ? res.message : 'Error'), 'error');
               }
@@ -1212,6 +1279,66 @@
       });
     }
   }
+
+  // ============================================================
+  // GLOBAL EXPORT SHORTCUTS FOR OFFBOARDED EMPLOYEES
+  // ============================================================
+  window.exportOffboardingLetterPDFFromEmp = function(empId) {
+    var emp = (EMP.allItems || []).find(function(e) { return String(e.employeeId) === String(empId); });
+    if (!emp) { showToast('Data karyawan tidak ditemukan.', 'error'); return; }
+
+    // Gunakan lastWorkingDate dari berbagai sumber yang tersedia
+    var lwd = emp.resignDate || emp.lastWorkingDate || emp.offboardingDate || '';
+
+    exportOffboardingLetterPDF({
+      employeeId:      emp.employeeId,
+      fullName:        emp.fullName,
+      nik:             emp.nik,
+      position:        emp.positionCurrent || emp.position,
+      department:      emp.department,
+      division:        emp.division,
+      branchName:      emp.branchName || emp.branch,
+      joinDate:        emp.joinDate,
+      lastWorkingDate: lwd,
+      resignDate:      lwd,
+      offboardingType: emp.offboardingType || 'Offboarding',
+      reason:          emp.offboardingReason || 'Pengakhiran Hubungan Kerja',
+      skNumber:        emp.nomorSk || '',
+      approvedBy:      emp.offboardingApprovedBy || '',
+      notes:           emp.notes || emp.hrNotes || '',
+      statusEmployee:  emp.statusEmployee || emp.employmentStatus || '',
+    }, function(ok) {
+      if (!ok) showToast('Gagal membuat PDF SK Offboarding.', 'error');
+    });
+  };
+
+  window.exportPaklaringPDFFromEmp = function(empId) {
+    var emp = (EMP.allItems || []).find(function(e) { return String(e.employeeId) === String(empId); });
+    if (!emp) { showToast('Data karyawan tidak ditemukan.', 'error'); return; }
+
+    var lwd = emp.resignDate || emp.lastWorkingDate || emp.offboardingDate || '';
+
+    exportPaklaringPDF({
+      fullName:           emp.fullName,
+      employeeId:         emp.employeeId,
+      nik:                emp.nik,
+      position:           emp.positionCurrent || emp.position,
+      department:         emp.department,
+      division:           emp.division,
+      branch:             emp.branchName || emp.branch,
+      branchName:         emp.branchName || emp.branch,
+      joinDate:           emp.joinDate,
+      lastWorkingDate:    lwd,
+      citizenIdAddress:   emp.citizenIdAddress || emp.address || '',
+      residentialAddress: emp.residentialAddress || '',
+    }, {
+      catatan: emp.notes || emp.hrNotes || '',
+    }, {
+      evalId: (emp.nomorSk || '').replace(/[^a-zA-Z0-9]/g, '') || emp.employeeId,
+    }, function(ok) {
+      if (!ok) showToast('Gagal membuat PDF Paklaring.', 'error');
+    });
+  };
 
   // ============ INIT ============
   var empInitialized = false;
@@ -1249,8 +1376,314 @@
     if (btnOffb) btnOffb.addEventListener('click', function() { openOffboardingModal(null); });
     initOffboardingModal();
 
+    // Contract End modal
+    initContractEndModal();
+
+    // Promote Contract to Probation modal
+    initPromoteToProbationModal();
+
     // Import CSV (Master Data)
     if (typeof initEmpImportModal === 'function') initEmpImportModal();
+  }
+
+  // ============================================================
+  // CONTRACT END MODAL
+  // ============================================================
+  var _ceActiveEmp = null;
+
+  function openContractEndModal(emp) {
+    _ceActiveEmp = emp || null;
+    // Fill info karyawan
+    var av = document.getElementById('ceAvatar');
+    var nm = document.getElementById('ceName');
+    var ps = document.getElementById('cePosition');
+    var dp = document.getElementById('ceDept');
+    var id = document.getElementById('ceEmpIdDisp');
+    var jd = document.getElementById('ceJoinDate');
+    var hd = document.getElementById('ceEmployeeId');
+    var ceEnd = document.getElementById('ceContractEndDisp');
+    var lwdEl = document.getElementById('ceLastWorkingDate');
+    var bt = document.getElementById('ceBpjsTk');
+    var bk = document.getElementById('ceBpjsKes');
+
+    if (av) av.innerText = initials((emp || {}).fullName || '');
+    if (nm) nm.innerText = (emp && emp.fullName) || '-';
+    if (ps) ps.innerText = (emp && (emp.positionCurrent || emp.position)) || '-';
+    if (dp) dp.innerText = (emp && emp.department) || '-';
+    if (id) id.innerText = (emp && emp.employeeId) || '-';
+    if (jd) jd.innerText = (emp && emp.joinDate) || '-';
+    if (hd) hd.value     = (emp && emp.employeeId) || '';
+
+    // Tanggal akhir kontrak — prioritas: contractEnd dari emp, fallback today
+    var contractEndVal = (emp && (emp.contractEnd || emp.endDateContract || emp.endDate)) || '';
+    if (ceEnd) ceEnd.textContent = contractEndVal || '(tidak terdaftar)';
+    if (lwdEl) {
+      // Coba format ke YYYY-MM-DD untuk input[type=date]
+      var lwdForInput = '';
+      if (contractEndVal) {
+        // Coba parse DD/MM/YYYY
+        var mDMY = contractEndVal.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        if (mDMY) {
+          lwdForInput = mDMY[3] + '-' + ('0'+mDMY[2]).slice(-2) + '-' + ('0'+mDMY[1]).slice(-2);
+        } else {
+          // Coba parse YYYY-MM-DD atau via Date
+          var d = new Date(contractEndVal);
+          if (!isNaN(d.getTime())) lwdForInput = d.toISOString().split('T')[0];
+        }
+      }
+      lwdEl.value = lwdForInput || new Date().toISOString().split('T')[0];
+    }
+
+    // Auto-fill BPJS dari data karyawan
+    if (bt && emp) bt.value = emp.bpjsKetenagakerjaan || '';
+    if (bk && emp) bk.value = emp.bpjsKesehatan       || '';
+
+    // Reset catatan & approved by
+    ['ceNotes', 'ceApprovedBy'].forEach(function(id) {
+      var el = document.getElementById(id); if (el) el.value = '';
+    });
+    // Reset toggle BPJS ke default aktif
+    var bpjsToggle = document.getElementById('ceGenerateBpjs');
+    if (bpjsToggle) bpjsToggle.checked = true;
+
+    _updateCeConfirmBtn();
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('contractEndModal')).show();
+  }
+
+  function _updateCeConfirmBtn() {
+    var btn = document.getElementById('btnConfirmContractEnd');
+    if (!btn) return;
+    var lwd = ((document.getElementById('ceLastWorkingDate') || {}).value || '').trim();
+    btn.disabled = !(_ceActiveEmp && lwd);
+  }
+
+  function initContractEndModal() {
+    var lwdEl = document.getElementById('ceLastWorkingDate');
+    if (lwdEl) lwdEl.addEventListener('input', _updateCeConfirmBtn);
+
+    var confirmBtn = document.getElementById('btnConfirmContractEnd');
+    if (!confirmBtn) return;
+
+    confirmBtn.addEventListener('click', function() {
+      if (!_ceActiveEmp) return;
+      var empId = (document.getElementById('ceEmployeeId') || {}).value || '';
+      var lwd   = ((document.getElementById('ceLastWorkingDate') || {}).value || '').trim();
+      if (!empId || !lwd) return;
+
+      var tEl = document.getElementById('btnCeText');
+      var lEl = document.getElementById('btnCeLoading');
+      confirmBtn.disabled = true;
+      if (tEl) tEl.style.display = 'none';
+      if (lEl) lEl.style.display = 'inline-flex';
+
+      var payload = {
+        employeeId:      empId,
+        offboardingType: 'Contract Finished',
+        lastWorkingDate: lwd,
+        reason:          'Kontrak PKWT berakhir dan tidak diperpanjang',
+        bpjsKetenagakerjaan: ((document.getElementById('ceBpjsTk') || {}).value || '').trim(),
+        bpjsKesehatan:       ((document.getElementById('ceBpjsKes') || {}).value || '').trim(),
+        approvedBy:          ((document.getElementById('ceApprovedBy') || {}).value || '').trim(),
+        notes:               ((document.getElementById('ceNotes') || {}).value || '').trim(),
+        documents:           [],
+      };
+
+      google.script.run
+        .withSuccessHandler(function(res) {
+          confirmBtn.disabled = false;
+          if (tEl) tEl.style.display = 'inline-flex';
+          if (lEl) lEl.style.display = 'none';
+          bootstrap.Modal.getInstance(document.getElementById('contractEndModal')).hide();
+
+          if (res && res.success) {
+            showToast('Akhir kontrak <strong>' + escapeHtml((_ceActiveEmp || {}).fullName || '') + '</strong> berhasil diproses.', 'success', 5000);
+            empLoadAll();
+
+            var emp = _ceActiveEmp || {};
+            var empDataObj = res.employeeData || {};
+
+            var offbEmpData = {
+              fullName:           emp.fullName || empDataObj.fullName || '',
+              employeeId:         emp.employeeId || empDataObj.employeeId || payload.employeeId,
+              nik:                emp.nik || empDataObj.nik || '',
+              position:           emp.positionCurrent || emp.position || empDataObj.position || '',
+              department:         emp.department || empDataObj.department || '',
+              division:           emp.division || empDataObj.division || '',
+              branch:             emp.branchName || empDataObj.branchName || '',
+              branchName:         emp.branchName || empDataObj.branchName || '',
+              joinDate:           emp.joinDate || empDataObj.joinDate || '',
+              lastWorkingDate:    payload.lastWorkingDate,
+              citizenIdAddress:   emp.citizenIdAddress || emp.address || empDataObj.citizenIdAddress || '',
+              residentialAddress: emp.residentialAddress || empDataObj.residentialAddress || '',
+              address:            emp.citizenIdAddress || emp.address || empDataObj.citizenIdAddress || '',
+              suratNumber:        res.skNumber || '',
+            };
+
+            var offbData = Object.assign({}, offbEmpData, {
+              offboardingType: payload.offboardingType,
+              reason:          payload.reason,
+              isPermanent:     false,
+              skNumber:        res.skNumber || '',
+              notes:           payload.notes,
+              approvedBy:      payload.approvedBy,
+            });
+
+            // TIDAK GENERATE SK OFFBOARDING untuk Contract Finished
+            // Hanya generate: Paklaring + Surat BPJS (opsional)
+
+            // 1. Paklaring
+            exportPaklaringPDF(offbEmpData, { catatan: payload.notes }, {
+              evalId: (res.skNumber || '').replace(/[^a-zA-Z0-9]/g, '') || emp.employeeId,
+            }, function(ok) {
+              if (!ok) showToast('Gagal membuat PDF Paklaring.', 'error');
+            });
+
+            // 2. Surat BPJS — hanya jika checkbox dicentang
+            var generateBpjs = (document.getElementById('ceGenerateBpjs') || {}).checked !== false;
+            if (generateBpjs) {
+              setTimeout(function() {
+                if (typeof exportSuratBPJS === 'function') exportSuratBPJS(offbEmpData);
+              }, 500);
+            }
+
+          } else {
+            showToast('Gagal: ' + (res ? res.message : 'Error tidak diketahui'), 'error');
+          }
+        })
+        .withFailureHandler(function(err) {
+          confirmBtn.disabled = false;
+          if (tEl) tEl.style.display = 'inline-flex';
+          if (lEl) lEl.style.display = 'none';
+          showToast('Error: ' + (err.message || err), 'error');
+        })
+        .processOffboarding(payload);
+    });
+  }
+
+  // ============================================================
+  // AJUKAN ONBOARDING PROBATION MODAL
+  // ============================================================
+  var _promoteProbTargetEmp = null;
+
+  function openPromoteToProbationModal(emp) {
+    if (!emp) return;
+    _promoteProbTargetEmp = emp;
+
+    var empIdEl = document.getElementById('promoteProbEmpId');
+    var nameEl  = document.getElementById('promoteProbEmpName');
+    var posEl   = document.getElementById('promoteProbPosition');
+    var avEl    = document.getElementById('promoteProbAvatar');
+    var badgeEl = document.getElementById('promoteProbBadge');
+    var startEl = document.getElementById('promoteProbStart');
+    var durEl   = document.getElementById('promoteProbDuration');
+    var endEl   = document.getElementById('promoteProbEnd');
+    var notesEl = document.getElementById('promoteProbNotes');
+
+    if (empIdEl) empIdEl.value = emp.employeeId || '';
+    if (nameEl)  nameEl.innerText = emp.fullName || '-';
+    if (posEl)   posEl.innerText = (emp.positionCurrent || emp.position || '-') + (emp.department ? ' · ' + emp.department : '');
+    if (avEl)    avEl.innerText = (typeof initials === 'function' ? initials(emp.fullName || 'K') : 'K');
+    if (badgeEl) badgeEl.innerText = emp.statusEmployee || 'Contract';
+    if (startEl) startEl.value = new Date().toISOString().substring(0, 10);
+    if (durEl)   durEl.value = '3 Bulan';
+    if (notesEl) notesEl.value = '';
+
+    _calcPromoteProbEndDate();
+
+    var modalEl = document.getElementById('promoteToProbationModal');
+    if (modalEl) {
+      var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+      modal.show();
+    }
+  }
+
+  function _calcPromoteProbEndDate() {
+    var startEl = document.getElementById('promoteProbStart');
+    var durEl   = document.getElementById('promoteProbDuration');
+    var endEl   = document.getElementById('promoteProbEnd');
+    if (!startEl || !durEl || !endEl || !startEl.value || !durEl.value) return;
+
+    var months = 3;
+    var durMatch = durEl.value.match(/^(\d+)\s*Bulan/i);
+    if (durMatch) months = parseInt(durMatch[1], 10);
+
+    var startDate = new Date(startEl.value);
+    startDate.setMonth(startDate.getMonth() + months);
+    startDate.setDate(startDate.getDate() - 1);
+    var yyyy = startDate.getFullYear();
+    var mm   = String(startDate.getMonth() + 1).padStart(2, '0');
+    var dd   = String(startDate.getDate()).padStart(2, '0');
+    endEl.value = yyyy + '-' + mm + '-' + dd;
+  }
+
+  function initPromoteToProbationModal() {
+    var startEl = document.getElementById('promoteProbStart');
+    var durEl   = document.getElementById('promoteProbDuration');
+    if (startEl) startEl.addEventListener('change', _calcPromoteProbEndDate);
+    if (durEl)   durEl.addEventListener('change', _calcPromoteProbEndDate);
+
+    var btnSubmit = document.getElementById('btnConfirmPromoteProbation');
+    if (btnSubmit) {
+      btnSubmit.addEventListener('click', function() {
+        var empId = (document.getElementById('promoteProbEmpId') || {}).value;
+        if (!empId) return;
+
+        var probStart = (document.getElementById('promoteProbStart') || {}).value;
+        var probDur   = (document.getElementById('promoteProbDuration') || {}).value;
+        var probEnd   = (document.getElementById('promoteProbEnd') || {}).value;
+        var notes     = (document.getElementById('promoteProbNotes') || {}).value;
+
+        if (!probStart || !probDur) {
+          showToast('Tanggal mulai dan durasi probation wajib diisi.', 'warning');
+          return;
+        }
+
+        var payload = {
+          probationStart: probStart,
+          probationDuration: probDur,
+          probationEnd: probEnd,
+          notes: notes,
+        };
+
+        var user = (typeof currentUser !== 'undefined' && currentUser && currentUser.email)
+          ? currentUser.email : 'HR Dashboard';
+
+        var textEl = document.getElementById('btnPromoteProbText');
+        var loadEl = document.getElementById('btnPromoteProbLoading');
+        btnSubmit.disabled = true;
+        if (textEl) textEl.style.display = 'none';
+        if (loadEl) loadEl.style.display = 'inline-flex';
+
+        google.script.run
+          .withSuccessHandler(function(res) {
+            btnSubmit.disabled = false;
+            if (textEl) textEl.style.display = 'inline-flex';
+            if (loadEl) loadEl.style.display = 'none';
+
+            var modalEl = document.getElementById('promoteToProbationModal');
+            if (modalEl) {
+              var modal = bootstrap.Modal.getInstance(modalEl);
+              if (modal) modal.hide();
+            }
+
+            if (res && res.success) {
+              showToast(res.message || 'Karyawan berhasil didaftarkan ke Onboarding Probation!', 'success', 5000);
+              if (typeof closeDrawer === 'function') closeDrawer();
+              empLoadAll();
+              if (typeof _loadProbationData === 'function') _loadProbationData(true);
+            } else {
+              showToast('Gagal mengajukan probation: ' + (res ? res.message : 'Error'), 'error');
+            }
+          })
+          .withFailureHandler(function(err) {
+            btnSubmit.disabled = false;
+            if (textEl) textEl.style.display = 'inline-flex';
+            if (loadEl) loadEl.style.display = 'none';
+            showToast('Error: ' + (err ? err.message : 'Unknown'), 'error');
+          })
+          .promoteEmployeeToProbation(empId, payload, user);
+      });
+    }
   }
 
   // SPA navigation hook — dipanggil oleh js/dashboard.html empOnNavigate()
