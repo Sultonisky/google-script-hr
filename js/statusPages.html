@@ -548,21 +548,44 @@
       branchName: branchName,
       companyEntity: branchName,
       position: src.position || row.offeringPosition || (row.positionApplied || ''),
-      department: src.department || row.offeringDepartment || '',
+      department: src.department || row.offeringDepartment || row.department || '',
       division: src.division || row.offeringDivision || '',
       jobLevel: src.jobLevel || row.offeringJobLevel || '',
       areaKerja: src.areaKerja || row.offeringAreaKerja || '',
       lokasiKerja: src.lokasiKerja || row.offeringLokasiKerja || row.city || '',
-      grade: src.grade || row.offeringGrade || '',
       salary: src.salary || row.offeringSalary || '',
+      salaryBasic: src.salaryBasic || row.offeringSalaryBasic || '',
+      allowPulsa: src.allowPulsa || row.offeringAllowPulsa || '',
+      allowTransport: src.allowTransport || row.offeringAllowTransport || '',
+      employmentStatus: src.employmentStatus || row.offeringEmploymentStatus || 'Perjanjian Kerja Waktu Tertentu',
+      contractDuration: src.contractDuration || row.offeringContractDuration || '12 bulan',
+      workingHours: src.workingHours || row.offeringWorkingHours || '',
       joinDate: src.joinDate || row.offeringJoinDate || '',
-      benefit: src.benefit || row.offeringBenefit || '',
       notes: src.notes || row.offeringNotes || '',
     };
   }
 
+  function _syncOfferSalaryTotal() {
+    var basicEl = document.getElementById('offerSalaryBasic');
+    var pulsaEl = document.getElementById('offerAllowPulsa');
+    var transpEl = document.getElementById('offerAllowTransport');
+    var totalEl = document.getElementById('offerSalary');
+    if (!totalEl) return;
+    function numOf(el) { return Number(String((el && el.value) || '').replace(/[^\d]/g, '')) || 0; }
+    var total = numOf(basicEl) + numOf(pulsaEl) + numOf(transpEl);
+    totalEl.value = total ? String(total) : '';
+  }
+
+  function _getMoney(id) {
+    var el = document.getElementById(id);
+    return el ? String(el.value).replace(/[^\d]/g, '') : '';
+  }
+
   function _readOfferingForm() {
     var branchName = (document.getElementById('offerBranchName') || {}).value || '';
+    var workingHoursInput = (document.getElementById('offerWorkingHours') || {}).value || '';
+    var whPreset = (document.getElementById('offerWorkingHoursPreset') || {}).value || '';
+    var workingHours = workingHoursInput || (whPreset === 'custom' ? '' : whPreset);
     return {
       branchName: branchName,
       companyEntity: branchName,
@@ -570,12 +593,15 @@
       department: (document.getElementById('offerDepartment') || {}).value || '',
       division: (document.getElementById('offerDivision') || {}).value || '',
       jobLevel: (document.getElementById('offerJobLevel') || {}).value || '',
-      areaKerja: (document.getElementById('offerAreaKerja') || {}).value || '',
       lokasiKerja: (document.getElementById('offerLokasiKerja') || {}).value || '',
       salary: (document.getElementById('offerSalary') || {}).value || '',
+      salaryBasic: _getMoney('offerSalaryBasic'),
+      allowPulsa: _getMoney('offerAllowPulsa'),
+      allowTransport: _getMoney('offerAllowTransport'),
+      employmentStatus: (document.getElementById('offerEmploymentStatus') || {}).value || '',
+      contractDuration: (document.getElementById('offerContractDuration') || {}).value || '',
+      workingHours: workingHours,
       joinDate: (document.getElementById('offerJoinDate') || {}).value || '',
-      benefit: (document.getElementById('offerBenefit') || {}).value || '',
-      notes: (document.getElementById('offerNotes') || {}).value || '',
     };
   }
 
@@ -584,7 +610,7 @@
     _setSelectOrValue(document.getElementById('offerBranchName'), data.branchName);
     var posEl = document.getElementById('offerPosition');
     if (posEl) posEl.value = data.position || '';
-    _setSelectOrValue(document.getElementById('offerDepartment'), data.department);
+    
     _setSelectOrValue(document.getElementById('offerDivision'), data.division);
     _setSelectOrValue(document.getElementById('offerJobLevel'), data.jobLevel);
     _setSelectOrValue(document.getElementById('offerAreaKerja'), data.areaKerja);
@@ -592,13 +618,22 @@
     if (lokEl) lokEl.value = data.lokasiKerja || '';
     var salEl = document.getElementById('offerSalary');
     if (salEl) salEl.value = data.salary || '';
+    var basicEl = document.getElementById('offerSalaryBasic');
+    if (basicEl) basicEl.value = data.salaryBasic || '';
+    var pulsaEl = document.getElementById('offerAllowPulsa');
+    if (pulsaEl) pulsaEl.value = data.allowPulsa || '';
+    var transpEl = document.getElementById('offerAllowTransport');
+    if (transpEl) transpEl.value = data.allowTransport || '';
+    _setSelectOrValue(document.getElementById('offerEmploymentStatus'), data.employmentStatus || 'Perjanjian Kerja Waktu Tertentu');
+    _setSelectOrValue(document.getElementById('offerContractDuration'), data.contractDuration || '12 bulan');
+    var whEl = document.getElementById('offerWorkingHours');
+    if (whEl) whEl.value = data.workingHours || '';
+    if (typeof _syncOfferSalaryTotal === 'function') _syncOfferSalaryTotal();
     var joinEl = document.getElementById('offerJoinDate');
     if (joinEl) {
       var normJoin = data.joinDate ? (typeof toDateInputValue === 'function' ? toDateInputValue(data.joinDate) : data.joinDate) : '';
       joinEl.value = normJoin || joinEl.value || '';
     }
-    var benEl = document.getElementById('offerBenefit');
-    if (benEl) benEl.value = data.benefit || '';
     var notesEl = document.getElementById('offerNotes');
     if (notesEl) notesEl.value = data.notes || '';
   }
@@ -661,18 +696,27 @@
 
     // Isi detail penawaran (dari offerData jika ada)
     function disp(v) { return v ? v : '-'; }
+    function dispRp(v) {
+      if (!v || v === '-') return '-';
+      var n = Number(String(v).replace(/[^\d]/g, ''));
+      return isNaN(n) || n === 0 ? (String(v) || '-') : 'Rp ' + n.toLocaleString('id-ID');
+    }
     var fields = {
-      prevOfferCompany:         offerData ? disp(offerData.branchName || offerData.companyEntity) : '-',
-      prevOfferPosition:        offerData ? disp(offerData.position)      : '-',
-      prevOfferDept:            offerData ? disp(offerData.department)    : '-',
-      prevOfferDivision:        offerData ? disp(offerData.division)      : '-',
-      prevOfferJobLevel:        offerData ? disp(offerData.jobLevel)      : '-',
-      prevOfferAreaKerja:       offerData ? disp(offerData.areaKerja)     : '-',
-      prevOfferLokasiKerja:     offerData ? disp(offerData.lokasiKerja)   : '-',
-      prevOfferSalary:          offerData ? disp(offerData.salary)        : '-',
-      prevOfferJoinDate:        offerData ? disp(offerData.joinDate)      : '-',
-      prevOfferBenefit:         offerData ? (offerData.benefit || '-')    : '-',
-      prevOfferNotes:           offerData ? (offerData.notes   || '-')    : '-',
+      prevOfferCompany:          offerData ? disp(offerData.branchName || offerData.companyEntity) : '-',
+      prevOfferPosition:         offerData ? disp(offerData.position)          : '-',
+      prevOfferDept:             offerData ? disp(offerData.department)         : '-',
+      prevOfferDivision:         offerData ? disp(offerData.division)           : '-',
+      prevOfferJobLevel:         offerData ? disp(offerData.jobLevel)           : '-',
+      prevOfferLokasiKerja:      offerData ? disp(offerData.lokasiKerja)        : '-',
+      prevOfferSalaryBasic:      offerData ? dispRp(offerData.salaryBasic)      : '-',
+      prevOfferAllowPulsa:       offerData ? dispRp(offerData.allowPulsa)       : '-',
+      prevOfferAllowTransport:   offerData ? dispRp(offerData.allowTransport)   : '-',
+      prevOfferSalary:           offerData ? dispRp(offerData.salary || offerData.salaryBasic) : '-',
+      prevOfferJoinDate:         offerData ? disp(offerData.joinDate)           : '-',
+      prevOfferContractDuration: offerData ? disp(offerData.contractDuration)   : '-',
+      prevOfferEmploymentStatus: offerData ? disp(offerData.employmentStatus)   : '-',
+      prevOfferWorkingHours:     offerData ? disp(offerData.workingHours)       : '-',
+      prevOfferNotes:            offerData ? (offerData.notes   || '-')         : '-',
     };
     Object.keys(fields).forEach(function(id) {
       var el = document.getElementById(id);
@@ -682,7 +726,8 @@
     // Tampilkan warning hanya jika data TIDAK ADA di store DAN TIDAK ADA di spreadsheet
     var warningEl = document.getElementById('prevOfferNoDataWarn');
     if (warningEl) {
-      warningEl.style.display = (!store && !hasSsData) ? 'flex' : 'none';
+      warningEl.classList.toggle('d-none', !(!store && !hasSsData));
+      warningEl.classList.toggle('d-flex', !store && !hasSsData);
     }
 
     // Candidate object untuk PDF: pakai store.candidate jika ada, fallback ke row
@@ -771,10 +816,10 @@
     var hasCand   = !!_offeringCurrentCandidate;
     var hasEntity = !!((document.getElementById('offerBranchName') || {}).value);
     var hasPos    = !!((document.getElementById('offerPosition')      || {}).value);
-    var hasDept   = !!((document.getElementById('offerDepartment')    || {}).value);
-    var hasSal    = !!((document.getElementById('offerSalary')        || {}).value);
+    var basicEl   = document.getElementById('offerSalaryBasic');
+    var hasSal    = !!((basicEl && basicEl.value) || (document.getElementById('offerSalary') || {}).value);
     var hasDate   = !!((document.getElementById('offerJoinDate')      || {}).value);
-    btn.disabled  = !(hasCand && hasEntity && hasPos && hasDept && hasSal && hasDate);
+    btn.disabled  = !(hasCand && hasEntity && hasPos && hasSal && hasDate);
   }
 
   function initOfferingModal() {
@@ -870,7 +915,7 @@
     });
 
     // ── Live validation field wajib ──────────────────────────
-    ['offerBranchName', 'offerPosition', 'offerDepartment', 'offerSalary', 'offerJoinDate'].forEach(function(id) {
+    ['offerBranchName', 'offerPosition', 'offerDepartment', 'offerSalary', 'offerSalaryBasic', 'offerJoinDate'].forEach(function(id) {
       var el = document.getElementById(id);
       if (el) { el.addEventListener('input', _updateOfferingGenerateBtn); el.addEventListener('change', _updateOfferingGenerateBtn); }
     });
@@ -880,11 +925,12 @@
     if (modalEl) {
       modalEl.addEventListener('hidden.bs.modal', function() {
         _offeringCurrentCandidate = null;
-        ['offerPosition','offerDepartment','offerSalary','offerJoinDate','offerBenefit','offerNotes',
-         'offerLokasiKerja'].forEach(function(id) {
+        ['offerPosition','offerSalary','offerSalaryBasic','offerAllowPulsa','offerAllowTransport',
+         'offerJobLevel','offerAreaKerja','offerLokasiKerja','offerNotes','offerWorkingHours',
+         'offerWorkingHoursPreset','offerJoinDate','offerEmploymentStatus','offerContractDuration'].forEach(function(id) {
           var el = document.getElementById(id); if (el) el.value = '';
         });
-        ['offerBranchName','offerDivision','offerJobLevel','offerAreaKerja'].forEach(function(id) {
+        ['offerBranchName','offerDivision'].forEach(function(id) {
           var sel = document.getElementById(id);
           if (sel) sel.value = '';
         });
@@ -900,7 +946,42 @@
       });
     }
 
-    // ── Submit: simpan ke memory + backend, TIDAK auto-download ────
+    // ── Auto-hitung Total Gaji (Gaji Pokok + Tunjangan) → offerSalary ──
+    ['offerSalaryBasic','offerAllowPulsa','offerAllowTransport'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', function() { _syncOfferSalaryTotal(); });
+        el.addEventListener('change', function() { _syncOfferSalaryTotal(); });
+      }
+    });
+
+    // ── Preset Jam Kerja ──
+    var whPresetEl = document.getElementById('offerWorkingHoursPreset');
+    var whInputEl  = document.getElementById('offerWorkingHours');
+    if (whPresetEl && whInputEl) {
+      whPresetEl.addEventListener('change', function() {
+        var v = whPresetEl.value;
+        if (v && v !== 'custom') whInputEl.value = v;
+        else if (v === 'custom' && !whInputEl.value) whInputEl.value = whInputEl.getAttribute('placeholder') || '';
+      });
+    }
+
+    // ── Helper format mata uang ──
+    function getMoney(id) {
+      var el = document.getElementById(id);
+      return el ? String(el.value).replace(/[^\d]/g, '') : '';
+    }
+
+    // Listener untuk input angka otomatis (pemisah ribuan)
+    document.querySelectorAll('.money-input').forEach(function(el) {
+      el.addEventListener('input', function(e) {
+        var raw = e.target.value.replace(/[^\d]/g, '');
+        e.target.value = raw ? raw.replace(/\B(?=(\d{3})+(?!\d))/g, ".") : '';
+        _syncOfferSalaryTotal();
+      });
+    });
+
+    // ── Submit: simpan ke memory + backend ────
     var genBtn = document.getElementById('btnGenerateOffering');
     if (genBtn) {
       genBtn.addEventListener('click', function() {
@@ -1155,47 +1236,57 @@
     var posInput = document.getElementById('onbPosition');
     if (posInput) posInput.value = offer.position || '';
 
-    _setSelectOrValue(document.getElementById('onbJobLevel'), offer.jobLevel);
-
-    var gradeEl = document.getElementById('onbGrade');
-    if (gradeEl) gradeEl.value = offer.grade || '';
-
-    _setSelectOrValue(document.getElementById('onbAreaKerja'), offer.areaKerja);
-
-    var lokEl = document.getElementById('onbLokasiKerja');
-    if (lokEl) lokEl.value = offer.lokasiKerja || row.city || '';
-
-    var costEl = document.getElementById('onbCostCenter');
-    if (costEl) costEl.value = _suggestCostCenter(offer.areaKerja, offer.lokasiKerja || row.city);
-
     var directSup = document.getElementById('onbDirectSuperior');
     if (directSup) directSup.value = offer.directSuperior || '';
-
-    var workEmail = document.getElementById('onbWorkingEmail');
-    if (workEmail && !workEmail.value) workEmail.value = _suggestWorkingEmail(row.fullName);
 
     var joinInput = document.getElementById('onbJoinDate');
     if (joinInput && offer.joinDate) {
       var normJoin = typeof toDateInputValue === 'function' ? toDateInputValue(offer.joinDate) : offer.joinDate;
       if (normJoin) joinInput.value = normJoin;
+    } else if (joinInput && !joinInput.value) {
+      joinInput.value = new Date().toISOString().substring(0, 10);
     }
 
     var durSel = document.getElementById('onbContractDuration');
-    if (durSel && !durSel.value) durSel.value = '3 Bulan';
+    if (durSel && !durSel.value) durSel.value = '12 Bulan';
 
-    var notesTa = document.getElementById('onbNotes');
-    if (notesTa) {
-      var noteParts = [];
-      if (offer.salary) {
-        var salNum = String(offer.salary).replace(/[^\d]/g, '');
-        if (salNum) noteParts.push('Gaji offering: Rp ' + salNum);
-      }
-      if (offer.benefit) noteParts.push('Benefit: ' + offer.benefit);
-      if (offer.notes) noteParts.push(offer.notes);
-      notesTa.value = noteParts.join('\n');
+    var docDateEl = document.getElementById('onbDocDate');
+    if (docDateEl && !docDateEl.value) {
+      docDateEl.value = new Date().toISOString().substring(0, 10);
     }
 
+    var jamEl = document.getElementById('onbJamMasuk');
+    if (jamEl && !jamEl.value) jamEl.value = 'mulai pukul 07.00 WIB dan selambat-lambatnya sampai dengan pukul 07.15 WIB';
+
+    var wsEl = document.getElementById('onbWorkSchedule');
+    if (wsEl && !wsEl.value) wsEl.value = 'Normal';
+
+    var salInput = document.getElementById('onbSalaryBasic');
+    if (salInput) salInput.value = offer.salary ? 'Rp ' + String(offer.salary).replace(/[^\d]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.') : (row.expectedSalary || '');
+
+    var allowInput = document.getElementById('onbSalaryAllowance');
+    if (allowInput) allowInput.value = offer.allowTransport || offer.allowPulsa || '';
+
     if (typeof _calcOnboardingEndDate === 'function') _calcOnboardingEndDate();
+
+    // Klausul jangka waktu (free text) — di-generate dari join/durasi/akhir kontrak
+    // (dibuat setelah end date terhitung agar tanggal akhir kontrak terisi)
+    var tenorEl = document.getElementById('onbTenorText');
+    var joinV = (document.getElementById('onbJoinDate') || {}).value || '';
+    var durV = (durSel && durSel.value) || '12 Bulan';
+    var endV = (document.getElementById('onbContractEnd') || {}).value || '';
+    if (tenorEl && !tenorEl.value) {
+      var monthsNum = 12;
+      var mm = String(durV).match(/^(\d+)\s*bulan/i);
+      var yy = String(durV).match(/^(\d+)\s*tahun/i);
+      if (mm) monthsNum = parseInt(mm[1], 10);
+      else if (yy) monthsNum = parseInt(yy[1], 10) * 12;
+      var durWords = numToWords(monthsNum);
+      var clause = 'PIHAK PERTAMA dengan ini menyatakan persetujuannya untuk mempekerjakan PIHAK KEDUA sebagai Karyawan PIHAK PERTAMA dengan jangka waktu ' +
+        monthsNum + ' (' + durWords + ') bulan terhitung sejak tanggal ' + fmtDateLongIndonesia(joinV) +
+        ' sampai dengan tanggal ' + fmtDateLongIndonesia(endV) + '.';
+      tenorEl.value = clause;
+    }
 
     setTimeout(_updateOnboardingConfirmBtn, 0);
   }
@@ -1218,11 +1309,20 @@
     var endEl      = document.getElementById('onbContractEnd');
     var hintEl     = document.getElementById('onbContractEndHint');
     if (!startEl || !durationEl || !endEl || !startEl.value || !durationEl.value) return;
-    var monthMatch = durationEl.value.match(/^(\d+)\s*Bulan/i);
-    if (!monthMatch) return;
-    var months    = parseInt(monthMatch[1], 10);
+    var months = 12;
+    var durVal = durationEl.value.toLowerCase();
+    var monthMatch = durVal.match(/^(\d+)\s*bulan/i);
+    var yearMatch = durVal.match(/^(\d+)\s*tahun/i);
+    if (monthMatch) {
+      months = parseInt(monthMatch[1], 10);
+    } else if (yearMatch) {
+      months = parseInt(yearMatch[1], 10) * 12;
+    }
+
     var startDate = new Date(startEl.value);
     startDate.setMonth(startDate.getMonth() + months);
+    // kurangi 1 hari agar tepat akhir periode kontrak
+    startDate.setDate(startDate.getDate() - 1);
     var yyyy = startDate.getFullYear();
     var mm   = String(startDate.getMonth() + 1).padStart(2, '0');
     var dd   = String(startDate.getDate()).padStart(2, '0');
@@ -1252,7 +1352,7 @@
       }).slice(0, 8);
 
       if (matched.length === 0) {
-        dropEl.innerHTML = '<div class="px-3 py-2 text-muted" style="font-size:13px">Tidak ada kandidat yang memenuhi syarat (harus: Accepted + Diterima + belum onboarding)</div>';
+        dropEl.innerHTML = '<div class="px-3 py-2 text-muted" style="font-size:13px">Tidak ada kandidat yang memenuhi syarat (harus: Accepted + Offering Diterima + belum kontrak PKWT)</div>';
         dropEl.style.display = 'block';
         return;
       }
@@ -1267,7 +1367,7 @@
             '<div class="fw-semibold">' + escapeHtml(r.fullName) + '</div>' +
             '<div class="text-muted" style="font-size:11px">' +
               escapeHtml(r.positionApplied || '-') + ' · ' + escapeHtml(r.recruitmentId) +
-              ' · <span style="color:#166534">Diterima</span>' +
+              ' · <span style="color:#166534">Offering Diterima</span>' +
             '</div>' +
           '</div></div>';
       }).join('');
@@ -1327,16 +1427,7 @@
       }
     });
 
-  var areaKerjaEl = document.getElementById('onbAreaKerja');
-  if (areaKerjaEl) {
-    areaKerjaEl.addEventListener('change', function() {
-      var lok = (document.getElementById('onbLokasiKerja') || {}).value || '';
-      var costEl = document.getElementById('onbCostCenter');
-      if (costEl) costEl.value = _suggestCostCenter(areaKerjaEl.value, lok);
-    });
-  }
-
-    // ── Auto-hitung end date ─────────────────────────────────
+  // ── Auto-hitung end date ─────────────────────────────────
     var durationEl = document.getElementById('onbContractDuration');
     var joinDateEl = document.getElementById('onbJoinDate');
     if (durationEl) durationEl.addEventListener('change', function() { _calcOnboardingEndDate(); _updateOnboardingConfirmBtn(); });
@@ -1352,14 +1443,14 @@
         if (dropEl)   dropEl.style.display  = 'none';
         var previewEl = document.getElementById('onboardingCandPreview');
         if (previewEl) previewEl.style.display = 'none';
-        ['onbBranchName','onbDivision','onbDepartment','onbPosition','onbJobLevel','onbGrade',
-         'onbAreaKerja','onbLokasiKerja','onbCostCenter','onbDirectSuperior','onbIndirectSuperior',
-         'onbWorkingEmail','onbJoinDate','onbContractNumber','onbContractDuration',
-         'onbContractEnd','onbNotes'].forEach(function(fid) {
+        ['onbBranchName','onbDivision','onbDepartment','onbPosition','onbDirectSuperior',
+         'onbJoinDate','onbContractNumber','onbContractDuration',
+         'onbContractEnd','onbSalaryBasic','onbSalaryAllowance','onbDocDate','onbJamMasuk',
+         'onbWorkSchedule','onbTenorText'].forEach(function(fid) {
           var el = document.getElementById(fid); if (el) el.value = '';
         });
         var hintEl = document.getElementById('onbContractEndHint');
-        if (hintEl) hintEl.innerText = 'Terisi otomatis dari durasi probation';
+        if (hintEl) hintEl.innerText = 'Terisi otomatis dari durasi kontrak';
         var confirmBtn = document.getElementById('btnConfirmOnboarding');
         if (confirmBtn) confirmBtn.disabled = true;
         var textEl = document.getElementById('btnOnboardingText');
@@ -1369,33 +1460,31 @@
       });
     }
 
-    // ── Submit ────────────────────────────────────────────────
+    // ── Submit Kontrak PKWT ──────────────────────────────────
     var confirmBtn = document.getElementById('btnConfirmOnboarding');
     if (confirmBtn) {
       confirmBtn.addEventListener('click', function() {
         var recruitmentId = (document.getElementById('onboardingRecruitmentId') || {}).value;
-        var employeeId    = (document.getElementById('onboardingEmployeeId')    || {}).value;
-        if (!recruitmentId || !employeeId) return;
+        if (!recruitmentId) return;
 
         var contractData = {
+          employeeId:       (document.getElementById('onboardingEmployeeId') || {}).value || '',
           branchName:       (document.getElementById('onbBranchName')       || {}).value || '',
           division:         (document.getElementById('onbDivision')         || {}).value || '',
           department:       (document.getElementById('onbDepartment')       || {}).value || '',
           position:         (document.getElementById('onbPosition')         || {}).value || '',
-          jobLevel:         (document.getElementById('onbJobLevel')         || {}).value || '',
-          grade:            (document.getElementById('onbGrade')            || {}).value || '',
-          areaKerja:        (document.getElementById('onbAreaKerja')        || {}).value || '',
-          lokasiKerja:      (document.getElementById('onbLokasiKerja')      || {}).value || '',
-          costCenter:       (document.getElementById('onbCostCenter')       || {}).value || '',
           directSuperior:   (document.getElementById('onbDirectSuperior')   || {}).value || '',
-          indirectSuperior: (document.getElementById('onbIndirectSuperior') || {}).value || '',
-          workingEmail:     (document.getElementById('onbWorkingEmail')     || {}).value || '',
           joinDate:         (document.getElementById('onbJoinDate')         || {}).value || '',
           contractNumber:   (document.getElementById('onbContractNumber')   || {}).value || '',
           contractDuration: (document.getElementById('onbContractDuration') || {}).value || '',
           contractStart:    (document.getElementById('onbJoinDate')         || {}).value || '',
           contractEnd:      (document.getElementById('onbContractEnd')      || {}).value || '',
-          notes:            (document.getElementById('onbNotes')            || {}).value || '',
+          salaryBasic:      (document.getElementById('onbSalaryBasic')      || {}).value || '',
+          salaryAllowance:  (document.getElementById('onbSalaryAllowance')  || {}).value || '',
+          docDate:          (document.getElementById('onbDocDate')          || {}).value || '',
+          jamMasuk:         (document.getElementById('onbJamMasuk')         || {}).value || '',
+          workSchedule:     (document.getElementById('onbWorkSchedule')     || {}).value || '',
+          tenorText:        (document.getElementById('onbTenorText')        || {}).value || '',
         };
 
         var processedBy = (typeof currentUser !== 'undefined' && currentUser && currentUser.email)
@@ -1417,23 +1506,27 @@
             if (modal) modal.hide();
 
             if (res && res.success) {
-              // Update in-memory row agar tidak muncul lagi di dropdown
               if (_activeOnboardingRow) {
-                _activeOnboardingRow.onboardingStatus = 'Probation';
+                _activeOnboardingRow.onboardingStatus = 'Contract';
                 _activeOnboardingRow.onboardingDate   = res.onboardingDate || '';
                 _activeOnboardingRow.onboardingBy     = res.onboardingBy   || '';
               }
-              var candidateName = (_activeOnboardingRow || {}).fullName || '';
+              var candidateName = (_activeOnboardingRow || {}).fullName || (res.candidateData || {}).fullName || 'Karyawan';
               showToast(
-                'Onboarding berhasil! <strong>' + escapeHtml(candidateName) +
-                '</strong> kini berstatus <strong>Probation</strong>.',
+                'Kontrak PKWT berhasil diproses! <strong>' + escapeHtml(candidateName) +
+                '</strong> kini berstatus <strong>Contract</strong>.',
                 'success', 5000
               );
-              // Reload tabel agar kolom status onboarding sinkron
+
+              // Auto-generate dan download PDF Kontrak PKWT
+              if (typeof exportKontrakPKWTPDF === 'function') {
+                exportKontrakPKWTPDF(res.candidateData || _activeOnboardingRow, res.contractData || contractData);
+              }
+
               if (ACC_PAGE) ACC_PAGE.loadData(true);
-              if (typeof _loadProbationData === 'function') _loadProbationData(true);
+              if (typeof empLoadAll === 'function') empLoadAll();
             } else {
-              showToast('Gagal onboarding: ' + (res ? res.message : 'Error'), 'error');
+              showToast('Gagal proses kontrak: ' + (res ? res.message : 'Error'), 'error');
             }
           })
           .withFailureHandler(function(err) {
@@ -1442,7 +1535,7 @@
             if (loadEl) loadEl.style.display = 'none';
             showToast('Error: ' + (err ? err.message : 'Unknown'), 'error');
           })
-          .processOnboardingProbation(recruitmentId, employeeId, contractData, processedBy);
+          .processContractOnboarding(recruitmentId, contractData.employeeId, contractData, processedBy);
       });
     }
   }

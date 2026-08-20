@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // backend/Probation.gs — PROBATION MANAGEMENT
 // Handles probation records, evaluations, and SK status updates.
 // Uses sheet: kandidat_probation (PROBATION_SHEET_NAME)
@@ -52,29 +52,24 @@ function createProbationRecord(recruitmentId, extraData, options) {
     headers.forEach(function (h, idx) { colIdx[String(h).trim()] = idx; });
 
     var ridIdx = colIdx["Recruitment ID"];
-    if (ridIdx === undefined) {
-      return { success: false, message: "Kolom Recruitment ID tidak ditemukan di kandidat_accepted." };
-    }
-
-    for (var i = 1; i < acceptedData.length; i++) {
-      if (String(acceptedData[i][ridIdx] || "").trim() === recruitmentId) {
-        candidateRow = acceptedData[i];
-        break;
+    if (ridIdx !== undefined) {
+      for (var i = 1; i < acceptedData.length; i++) {
+        if (String(acceptedData[i][ridIdx] || "").trim() === recruitmentId) {
+          candidateRow = acceptedData[i];
+          break;
+        }
       }
-    }
-    if (!candidateRow) {
-      return { success: false, message: "Recruitment ID tidak ditemukan di sheet accepted." };
     }
 
     var empId = normEmployeeId_(
-      extraData.employeeId || candidateRow[colIdx["Employee ID"]]
+      extraData.employeeId || (candidateRow ? candidateRow[colIdx["Employee ID"]] : "") || recruitmentId
     );
     if (!empId) {
-      return { success: false, message: "Employee ID tidak ditemukan untuk onboarding." };
+      return { success: false, message: "Employee ID tidak ditemukan untuk onboarding probation." };
     }
 
     var joinDate = extraData.joinDate || extraData.contractStart ||
-      String(candidateRow[colIdx["Offering Join Date"]] || "");
+      (candidateRow && colIdx["Offering Join Date"] !== undefined ? String(candidateRow[colIdx["Offering Join Date"]] || "") : "");
     var contractStart = extraData.contractStart || joinDate;
     var contractEnd = extraData.contractEnd || "";
     var contractNumber = extraData.contractNumber || "";
@@ -247,7 +242,7 @@ function getProbationList() {
         "Status Employee": ["Employment Status", "Status"],
         "Employment Status": ["Status Employee", "Status"],
         "Status": ["Status Employee", "Employment Status"],
-        "Position": ["Job Position (Locaction)", "Job Position"],
+        "Position": ["Job Position (Location)", "Job Position"],
         "Branch": ["Branch Name"],
         "Email": ["Personal Email", "Working Email"],
         "Phone": ["Mobile Phone"],
@@ -277,7 +272,7 @@ function getProbationList() {
         recruitmentId: String(eCell(row, "Recruitment ID", empCI) || ""),
         fullName: String(eCell(row, "Full Name", empCI) || ""),
         nik: String(eCell(row, "NIK - NPWP 16 digit", empCI) || eCell(row, "NIK", empCI) || "").replace(/^'/, ""),
-        position: String(eCell(row, "Job Position (Locaction)", empCI) || eCell(row, "Job Position", empCI) || eCell(row, "Position", empCI) || ""),
+        position: String(eCell(row, "Job Position (Location)", empCI) || eCell(row, "Job Position", empCI) || eCell(row, "Position", empCI) || ""),
         department: String(eCell(row, "Department", empCI) || ""),
         division: String(eCell(row, "Division", empCI) || ""),
         branch: String(eCell(row, "Branch Name", empCI) || eCell(row, "Branch", empCI) || ""),

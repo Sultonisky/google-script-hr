@@ -5,137 +5,246 @@
   // ============================================================
 
   // Polyfill google.script.run untuk dev preview lokal
-  if (typeof google === 'undefined' || typeof google.script === 'undefined') {
+  if (typeof google === "undefined" || typeof google.script === "undefined") {
     window.google = window.google || {};
     google.script = {
-      run: new Proxy({}, {
-        get: function(_, fnName) {
-          return function() {
-            return {
-              withSuccessHandler: function(fn) { return this; },
-              withFailureHandler: function(fn) {
-                console.warn('[Dev] google.script.run.' + fnName + '() — tidak tersedia di luar Apps Script.');
-                return this;
-              }
+      run: new Proxy(
+        {},
+        {
+          get: function (_, fnName) {
+            return function () {
+              return {
+                withSuccessHandler: function (fn) {
+                  return this;
+                },
+                withFailureHandler: function (fn) {
+                  console.warn(
+                    "[Dev] google.script.run." +
+                      fnName +
+                      "() — tidak tersedia di luar Apps Script.",
+                  );
+                  return this;
+                },
+              };
             };
-          };
-        }
-      })
+          },
+        },
+      ),
     };
   }
 
   function statusBadgeClass(status) {
-    var s = (status || '').toLowerCase();
-    if (s === 'accepted') return 'accepted';
-    if (s === 'hold')     return 'hold';
-    if (s === 'blacklist') return 'blacklist';
-    return 'pending';
+    var s = (status || "").toLowerCase();
+    if (s === "accepted") return "accepted";
+    if (s === "hold") return "hold";
+    if (s === "blacklist") return "blacklist";
+    return "pending";
   }
 
   // Badge class untuk status karyawan/outsource
   function entityStatusBadgeClass(status) {
-    var s = (status || '').toLowerCase().replace(/_/g, ' ');
-    if (s === 'permanent')      return 'accepted';   // hijau — karyawan tetap
-    if (s === 'contract')       return 'accepted';   // hijau — kontrak aktif
-    if (s === 'probation')      return 'hold';        // biru/amber — masa percobaan
-    if (s === 'on leave')       return 'pending';     // kuning — cuti panjang
-    if (s === 'resigned')       return 'blacklist';   // merah
-    if (s === 'terminated')     return 'blacklist';   // merah
-    if (s === 'retired')        return 'blacklist';   // merah/abu
-    if (s === 'deceased')       return 'blacklist';   // merah/abu — meninggal dunia
-    if (s === 'inactive')       return 'blacklist';   // merah/abu
+    var s = (status || "").toLowerCase().replace(/_/g, " ");
+    if (s === "permanent") return "accepted"; // hijau — karyawan tetap
+    if (s === "contract") return "accepted"; // hijau — kontrak aktif
+    if (s === "probation") return "hold"; // biru/amber — masa percobaan
+    if (s === "on leave") return "pending"; // kuning — cuti panjang
+    if (s === "resigned") return "blacklist"; // merah
+    if (s === "terminated") return "blacklist"; // merah
+    if (s === "retired") return "blacklist"; // merah/abu
+    if (s === "deceased") return "blacklist"; // merah/abu — meninggal dunia
+    if (s === "inactive") return "blacklist"; // merah/abu
     // legacy fallback
-    if (s === 'active')         return 'accepted';
-    return 'pending';
+    if (s === "active") return "accepted";
+    return "pending";
   }
 
   function initials(name) {
-    if (!name) return '?';
+    if (!name) return "?";
     var parts = name.trim().split(/\s+/);
-    return ((parts[0] || '')[0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+    return ((parts[0] || "")[0] + (parts[1] ? parts[1][0] : "")).toUpperCase();
   }
 
   function escapeHtml(str) {
-    if (str === null || str === undefined) return '';
+    if (str === null || str === undefined) return "";
     return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
   }
 
   function formatRupiah(num) {
-    return 'Rp ' + new Intl.NumberFormat('id-ID').format(Number(num) || 0);
+    return "Rp " + new Intl.NumberFormat("id-ID").format(Number(num) || 0);
   }
 
   function parseDdMmYyyy(dateStr) {
     if (!dateStr) return null;
-    var d = dateStr.split(' ')[0].split('/');
+    var d = dateStr.split(" ")[0].split("/");
     if (d.length !== 3) return null;
     return new Date(Number(d[2]), Number(d[1]) - 1, Number(d[0]));
   }
 
   // Konversi tampilan dd/MM/yyyy[ HH:mm] menjadi nilai yyyy-MM-dd untuk input type="date"
   function toDateInputValue(dateStr) {
-    if (!dateStr) return '';
-    var p = String(dateStr).split(' ')[0].split('/');
+    if (!dateStr) return "";
+    var p = String(dateStr).split(" ")[0].split("/");
     if (p.length === 3 && p[2].length === 4) {
-      return p[2] + '-' + p[1] + '-' + p[0];
+      return p[2] + "-" + p[1] + "-" + p[0];
     }
     var d = new Date(dateStr);
     if (!isNaN(d.getTime())) {
       var y = d.getFullYear();
-      var m = String(d.getMonth() + 1).padStart(2, '0');
-      var day = String(d.getDate()).padStart(2, '0');
-      return y + '-' + m + '-' + day;
+      var m = String(d.getMonth() + 1).padStart(2, "0");
+      var day = String(d.getDate()).padStart(2, "0");
+      return y + "-" + m + "-" + day;
     }
-    return '';
+    return "";
   }
 
   function formatDisplayDate(dateStr) {
-    if (!dateStr || dateStr === '-') return '-';
+    if (!dateStr || dateStr === "-") return "-";
     var d = new Date(dateStr);
     if (!isNaN(d.getTime())) {
-      var day = String(d.getDate()).padStart(2, '0');
-      var m = String(d.getMonth() + 1).padStart(2, '0');
+      var day = String(d.getDate()).padStart(2, "0");
+      var m = String(d.getMonth() + 1).padStart(2, "0");
       var y = d.getFullYear();
-      return day + '/' + m + '/' + y;
+      return day + "/" + m + "/" + y;
     }
-    var parts = String(dateStr).split(' ')[0].split('/');
+    var parts = String(dateStr).split(" ")[0].split("/");
     if (parts.length === 3 && parts[2].length === 4) {
-      return parts[0] + '/' + parts[1] + '/' + parts[2];
+      return parts[0] + "/" + parts[1] + "/" + parts[2];
     }
     return dateStr;
   }
 
+  // Format tanggal panjang Indonesia (contoh: "29 Januari 2026")
+  function fmtDateLongIndonesia(isoStr) {
+    if (!isoStr) return "-";
+    var bulan = [
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember",
+    ];
+    var p = String(isoStr).split("-");
+    if (p.length >= 3 && /^\d{4}$/.test(p[0])) {
+      return (
+        parseInt(p[2], 10) +
+        " " +
+        (bulan[parseInt(p[1], 10) - 1] || "") +
+        " " +
+        p[0]
+      );
+    }
+    var d = new Date(isoStr);
+    if (!isNaN(d.getTime())) {
+      return d.getDate() + " " + bulan[d.getMonth()] + " " + d.getFullYear();
+    }
+    return isoStr;
+  }
+
+  // Konversi angka ke kata (Indonesia) — untuk durasi kontrak
+  function numToWords(num) {
+    var ones = [
+      "nol",
+      "satu",
+      "dua",
+      "tiga",
+      "empat",
+      "lima",
+      "enam",
+      "tujuh",
+      "delapan",
+      "sembilan",
+      "sepuluh",
+      "sebelas",
+      "dua belas",
+      "tiga belas",
+      "empat belas",
+      "lima belas",
+      "enam belas",
+      "tujuh belas",
+      "delapan belas",
+      "sembilan belas",
+    ];
+    var tens = [
+      "",
+      "sepuluh",
+      "dua puluh",
+      "tiga puluh",
+      "empat puluh",
+      "lima puluh",
+      "enam puluh",
+      "tujuh puluh",
+      "delapan puluh",
+      "sembilan puluh",
+    ];
+    num = Number(num) || 0;
+    if (num < 20) return ones[num] || String(num);
+    if (num < 100) {
+      var t = Math.floor(num / 10);
+      var o = num % 10;
+      return tens[t] + (o ? " " + ones[o] : "");
+    }
+    if (num < 200)
+      return "seratus" + (num % 100 ? " " + numToWords(num % 100) : "");
+    if (num < 1000) {
+      var h = Math.floor(num / 100);
+      var rem = num % 100;
+      return (
+        (h === 1 ? "seratus" : ones[h] + " ratus") +
+        (rem ? " " + numToWords(rem) : "")
+      );
+    }
+    return String(num);
+  }
+
   function showToast(message, type) {
-    type = type || 'success';
-    var iconMap  = { success: 'bi-check-circle-fill', warning: 'bi-exclamation-triangle-fill', error: 'bi-x-circle-fill' };
-    var colorMap = { success: '#166534', warning: '#8a6100', error: '#991b1b' };
-    var bgMap    = { success: '#ecfdf3', warning: '#fff8e6', error: '#fef2f2' };
-    var el = document.createElement('div');
-    el.className = 'toast toast-custom align-items-center border-0';
+    type = type || "success";
+    var iconMap = {
+      success: "bi-check-circle-fill",
+      warning: "bi-exclamation-triangle-fill",
+      error: "bi-x-circle-fill",
+    };
+    var colorMap = { success: "#166534", warning: "#8a6100", error: "#991b1b" };
+    var bgMap = { success: "#ecfdf3", warning: "#fff8e6", error: "#fef2f2" };
+    var el = document.createElement("div");
+    el.className = "toast toast-custom align-items-center border-0";
     el.style.background = bgMap[type];
     el.style.color = colorMap[type];
-    el.setAttribute('role', 'alert');
-    el.innerHTML = '<div class="d-flex"><div class="toast-body"><i class="bi ' + iconMap[type] + ' me-2"></i>' +
-      escapeHtml(message) + '</div>' +
+    el.setAttribute("role", "alert");
+    el.innerHTML =
+      '<div class="d-flex"><div class="toast-body"><i class="bi ' +
+      iconMap[type] +
+      ' me-2"></i>' +
+      escapeHtml(message) +
+      "</div>" +
       '<button type="button" class="btn-close btn-close-sm me-2 m-auto" data-bs-dismiss="toast"></button></div>';
-    document.getElementById('toastContainer').appendChild(el);
+    document.getElementById("toastContainer").appendChild(el);
     var t = new bootstrap.Toast(el, { delay: 4000 });
     t.show();
-    el.addEventListener('hidden.bs.toast', function() { el.remove(); });
+    el.addEventListener("hidden.bs.toast", function () {
+      el.remove();
+    });
   }
 
   function animateCounter(el, toValue) {
-    var fromValue = Number(el.getAttribute('data-current') || 0);
+    var fromValue = Number(el.getAttribute("data-current") || 0);
     var startTime = null;
     function step(ts) {
       if (!startTime) startTime = ts;
       var progress = Math.min(1, (ts - startTime) / 600);
-      var eased    = 1 - Math.pow(1 - progress, 3);
+      var eased = 1 - Math.pow(1 - progress, 3);
       el.innerText = Math.round(fromValue + (toValue - fromValue) * eased);
       if (progress < 1) requestAnimationFrame(step);
-      else el.setAttribute('data-current', toValue);
+      else el.setAttribute("data-current", toValue);
     }
     requestAnimationFrame(step);
   }
@@ -143,9 +252,15 @@
   // Set nilai <select> dengan pencocokan cerdas (exact value, case-insensitive, text match, atau pemetaan sinonim)
   function setSelectSmart(el, value) {
     if (!el) return;
-    if (value === undefined || value === null) { el.value = ''; return; }
+    if (value === undefined || value === null) {
+      el.value = "";
+      return;
+    }
     var raw = String(value).trim();
-    if (!raw) { el.value = ''; return; }
+    if (!raw) {
+      el.value = "";
+      return;
+    }
 
     // 1. Coba set langsung
     el.value = raw;
@@ -155,28 +270,28 @@
 
     // 2. Mapping sinonim khusus (Status Pernikahan, Gender, dll)
     var synonyms = {
-      'single': 'belum menikah',
-      'lajang': 'belum menikah',
-      'belum menikah': 'belum menikah',
-      'belum nikah': 'belum menikah',
-      'married': 'menikah',
-      'kawin': 'menikah',
-      'menikah': 'menikah',
-      'nikah': 'menikah',
-      'divorced': 'cerai',
-      'cerai': 'cerai',
-      'cerai hidup': 'cerai',
-      'cerai mati': 'cerai',
-      'janda': 'cerai',
-      'duda': 'cerai',
-      'widowed': 'cerai',
-      'laki-laki': 'male',
-      'pria': 'male',
-      'laki': 'male',
-      'male': 'male',
-      'perempuan': 'female',
-      'wanita': 'female',
-      'female': 'female'
+      single: "belum menikah",
+      lajang: "belum menikah",
+      "belum menikah": "belum menikah",
+      "belum nikah": "belum menikah",
+      married: "menikah",
+      kawin: "menikah",
+      menikah: "menikah",
+      nikah: "menikah",
+      divorced: "cerai",
+      cerai: "cerai",
+      "cerai hidup": "cerai",
+      "cerai mati": "cerai",
+      janda: "cerai",
+      duda: "cerai",
+      widowed: "cerai",
+      "laki-laki": "male",
+      pria: "male",
+      laki: "male",
+      male: "male",
+      perempuan: "female",
+      wanita: "female",
+      female: "female",
     };
 
     var targetSynonym = synonyms[lower] || lower;
@@ -190,17 +305,123 @@
         el.selectedIndex = i;
         return;
       }
-      if (optVal === targetSynonym || optTxt.indexOf(targetSynonym) !== -1 || (synonyms[optVal] && synonyms[optVal] === targetSynonym)) {
+      if (
+        optVal === targetSynonym ||
+        optTxt.indexOf(targetSynonym) !== -1 ||
+        (synonyms[optVal] && synonyms[optVal] === targetSynonym)
+      ) {
         el.selectedIndex = i;
         return;
       }
     }
 
     // 4. Fallback: jika value tidak ada di options namun ada isi, tambahkan option baru agar tidak hilang
-    var opt = document.createElement('option');
+    var opt = document.createElement("option");
     opt.value = raw;
     opt.text = raw;
     el.appendChild(opt);
     el.value = raw;
+  }
+
+  // ============================================================
+  // KOP SURAT DINAMIS — dipakai semua dokumen PDF yang digenerate
+  // (kontrak PKWT, SK tetap, Paklaring, Rotasi/Mutasi, Offering,
+  //  Offboarding). Isi kop: hanya nama perusahaan + alamat, rata tengah.
+  // ============================================================
+  function renderKopSuratPDF(doc, comp, pageWidth, margin, opts) {
+    opts = opts || {};
+    var pw = pageWidth;
+    var m = margin || 18;
+    var ph = doc.internal.pageSize.getHeight();
+    var cx = pw / 2;
+
+    if (opts.drawTopBar) {
+      var barColor = opts.barColor || [0, 0, 0];
+      doc.setFillColor(barColor[0], barColor[1], barColor[2]);
+      doc.rect(0, 0, pw, 5, "F");
+      doc.setFillColor(barColor[0], barColor[1], barColor[2]);
+      doc.rect(0, 5, pw, 1.5, "F");
+    }
+
+    var y = 15;
+    // Nama perusahaan: bold + warna merah primary tema (#eb1c24)
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.setTextColor(235, 28, 36);
+    doc.text(comp.name, cx, y, { align: "center" });
+    y += 5;
+
+    // Alamat dibuat 2 baris maksimal dengan maxWidth yang lebih besar
+    var addrFull = comp.address || "";
+    // Pisahkan alamat menjadi 2 baris: baris 1 lebih panjang
+    var addrLines = [];
+    // Coba split di koma pertama atau di tengah untuk membuat baris 1 lebih panjang
+    var splitIdx = addrFull.indexOf(',');
+    if (splitIdx !== -1 && splitIdx < addrFull.length * 0.6) {
+      // Jika koma di bagian awal, gunakan koma kedua atau cari spasi setelah 60% panjang
+      var secondComma = addrFull.indexOf(',', splitIdx + 1);
+      if (secondComma !== -1 && secondComma < addrFull.length * 0.8) {
+        splitIdx = secondComma;
+      } else {
+        // cari spasi setelah 50% panjang
+        var mid = Math.floor(addrFull.length * 0.5);
+        var spaceIdx = addrFull.indexOf(' ', mid);
+        if (spaceIdx !== -1) splitIdx = spaceIdx;
+      }
+    } else {
+      // Tidak ada koma, split di spasi terakhir sebelum 60%
+      var mid = Math.floor(addrFull.length * 0.6);
+      var spaceIdx = addrFull.lastIndexOf(' ', mid);
+      if (spaceIdx !== -1) splitIdx = spaceIdx;
+      else splitIdx = Math.floor(addrFull.length * 0.6);
+    }
+    if (splitIdx > 0 && splitIdx < addrFull.length) {
+      var line1 = addrFull.substring(0, splitIdx).trim();
+      var line2 = addrFull.substring(splitIdx).trim();
+      addrLines = doc.splitTextToSize(line1, pw - m * 2 - 20);
+      if (addrLines.length > 1) {
+        // jika line1 masih kebanyakan, gabung dengan line2
+        line1 = addrFull.substring(0, splitIdx + 1).trim();
+        line2 = addrFull.substring(splitIdx + 1).trim();
+        addrLines = doc.splitTextToSize(line1, pw - m * 2 - 20);
+        if (addrLines.length > 1) {
+          // fallback: gabung semua, split ke 2 baris proporsional
+          var words = addrFull.split(' ');
+          var half = Math.ceil(words.length * 0.6);
+          line1 = words.slice(0, half).join(' ');
+          line2 = words.slice(half).join(' ');
+          addrLines = [line1, line2];
+        } else {
+          addrLines = [line1, line2];
+        }
+      } else {
+        addrLines = [line1, line2];
+      }
+    } else {
+      // fallback: split dengan splitTextToSize lalu atur 2 baris
+      addrLines = doc.splitTextToSize(addrFull, pw - m * 2 - 20);
+      if (addrLines.length > 2) {
+        var half = Math.ceil(addrLines.length * 0.6);
+        var line1 = addrLines.slice(0, half).join(' ');
+        var line2 = addrLines.slice(half).join(' ');
+        addrLines = [line1, line2];
+      }
+    }
+    // Pastikan hanya 2 baris
+    if (addrLines.length > 2) addrLines = addrLines.slice(0, 2);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9.5);
+    doc.setTextColor(30, 30, 30);
+    doc.text(addrLines, cx, y, { align: "center" });
+    y += addrLines.length * 4.2 + 1.5;
+
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.7);
+    doc.line(m, y, pw - m, y);
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.2);
+    doc.line(m, y + 0.8, pw - m, y + 0.8);
+
+    return y + 4;
   }
 </script>

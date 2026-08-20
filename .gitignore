@@ -62,3 +62,6 @@ temp/
 # ============================================
 *.log
 npm-debug.log*
+
+mito-hris-laravel/*
+LARAVEL_MIGRATION*

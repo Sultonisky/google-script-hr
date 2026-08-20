@@ -77,7 +77,7 @@ var EMPLOYEE_HEADERS = [
   "Branch Name",
   "Division",
   "Department",
-  "Job Position (Locaction)",
+  "Job Position (Location)",
   "Job Position",
   "Area Kerja",
   "Lokasi Kerja",
@@ -249,10 +249,8 @@ var ACCEPTED_HEADERS = SHEET_HEADERS.concat(EXTRA_HEADERS).concat([
   "Offering Updated By",
   "Offering Company Entity",
   "Offering Position",
-  "Offering Department",
   "Offering Salary",
   "Offering Join Date",
-  "Offering Benefit",
   "Offering Notes",
   "Offering Response",
   "Offering Response Notes",
@@ -264,10 +262,14 @@ var ACCEPTED_HEADERS = SHEET_HEADERS.concat(EXTRA_HEADERS).concat([
   // Extra job-offer fields — appended so existing sheets stay compatible
   "Offering Division",
   "Offering Job Level",
-  "Offering Area Kerja",
   "Offering Lokasi Kerja",
-  "Offering Direct Superior",
-  "Offering Grade",
+  // Extra offering fields — appended for compatibility
+  "Offering Salary Basic",
+  "Offering Allow Pulsa",
+  "Offering Allow Transport",
+  "Offering Employment Status",
+  "Offering Contract Duration",
+  "Offering Working Hours",
 ]);
 
 var ACCEPTED_COL = {};
@@ -426,7 +428,7 @@ var DEFAULT_MASTER_DATA = {
 
 var MASTER_DATA_EMPLOYEE_COL_MAP = {
   department: "Department",
-  position: "Job Position (Locaction)",
+  position: "Job Position (Location)",
   marital_status: "Marital Status",
   gender: "Gender",
 };

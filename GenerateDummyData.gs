@@ -1149,7 +1149,7 @@ function _gdWriteEmployeeSheet_(acceptedCandidates, today) {
       opts.branch || _gdPick_(_GD_BRANCHES_);
     row[EMPLOYEE_COL["Division"] - 1] = division;
     row[EMPLOYEE_COL["Department"] - 1] = department;
-    row[EMPLOYEE_COL["Job Position (Locaction)"] - 1] = jobPosCurrent;
+    row[EMPLOYEE_COL["Job Position (Location)"] - 1] = jobPosCurrent;
     row[EMPLOYEE_COL["Job Position"] - 1] = jobPosNoLoc;
     row[EMPLOYEE_COL["Area Kerja"] - 1] = area;
     row[EMPLOYEE_COL["Lokasi Kerja"] - 1] = location;
