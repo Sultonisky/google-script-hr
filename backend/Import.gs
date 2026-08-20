@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // backend/Import.gs — BULK IMPORT KARYAWAN (Master Data)
 // Validates rows and inserts into the Employee sheet.
 // ============================================================
@@ -7,7 +7,7 @@
  * Validates and imports an array of employee objects into the Employee sheet.
  * Each object should have keys matching the employee column headers.
  * @param {Array<Object>} rows - Array of employee data objects
- * @returns {Object} { success, imported, errors, warnings }
+ * @returns {Object} { success, imported, errors, warnings, message }
  */
 function importEmployees(rows) {
   if (!rows || !Array.isArray(rows) || rows.length === 0) {
@@ -16,6 +16,7 @@ function importEmployees(rows) {
       imported: 0,
       errors: ["Tidak ada data untuk diimport."],
       warnings: [],
+      message: "Tidak ada data untuk diimport.",
     };
   }
 
@@ -29,29 +30,47 @@ function importEmployees(rows) {
     return {
       success: false,
       imported: 0,
-      errors: ["Server sedang sibuk, coba lagi."],
+      errors: ["Server sedang sibuk, silakan coba lagi."],
       warnings: [],
+      message: "Server sedang sibuk, silakan coba lagi.",
     };
   }
 
   try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName(EMPLOYEE_SHEET_NAME);
+    var sheet = getOrCreateEmployeeSheet_();
     if (!sheet) {
       return {
         success: false,
         imported: 0,
-        errors: ['Sheet "' + EMPLOYEE_SHEET_NAME + '" tidak ditemukan.'],
+        errors: ['Sheet "' + EMPLOYEE_SHEET_NAME + '" tidak dapat dibuat atau diakses.'],
         warnings: [],
+        message: 'Sheet "' + EMPLOYEE_SHEET_NAME + '" tidak dapat diakses.',
       };
     }
 
+    // Pastikan semua header dari EMPLOYEE_HEADERS ada di sheet
+    ensureEmployeeHeaders_(sheet);
+    SpreadsheetApp.flush();
+
+    // Baca ulang lastCol dan headerRow setelah ensureEmployeeHeaders_
+    var lastCol = sheet.getLastColumn();
+    if (lastCol < EMPLOYEE_HEADERS.length) {
+      lastCol = EMPLOYEE_HEADERS.length;
+    }
+    var headerRow = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    var colMap = {};
+    headerRow.forEach(function (h, idx) {
+      var headerName = String(h).trim();
+      if (headerName) {
+        colMap[headerName] = idx;
+      }
+    });
+
     var existingIds = [];
     var lastRow = sheet.getLastRow();
+    var empIdColIdx = colMap["Employee ID"] !== undefined ? colMap["Employee ID"] + 1 : (EMPLOYEE_COL["Employee ID"] || 1);
     if (lastRow > 1) {
-      var idData = sheet
-        .getRange(2, EMPLOYEE_COL["Employee ID"], lastRow - 1, 1)
-        .getValues();
+      var idData = sheet.getRange(2, empIdColIdx, lastRow - 1, 1).getValues();
       existingIds = idData.map(function (r) {
         return String(r[0]).trim().toUpperCase();
       });
@@ -59,149 +78,135 @@ function importEmployees(rows) {
 
     var imported = 0;
     var batchData = [];
+    var now = new Date();
+    var nowStr = Utilities.formatDate(now, "GMT+7", "yyyy-MM-dd HH:mm:ss");
+
+    // Batch generate Employee IDs in one lock acquisition
+    var batchIds = generateEmployeeIdBatch(rows.length);
+    var idIdx = 0;
+
+    // Helper case-insensitive value fetcher
+    function getVal(obj, keys) {
+      if (!obj || typeof obj !== 'object') return "";
+      for (var i = 0; i < keys.length; i++) {
+        var key = keys[i];
+        if (obj[key] !== undefined && obj[key] !== null && obj[key] !== "") return String(obj[key]);
+        var lowerKey = key.toLowerCase();
+        for (var prop in obj) {
+          if (prop.toLowerCase() === lowerKey) {
+            var val = obj[prop];
+            if (val !== undefined && val !== null && val !== "") return String(val);
+          }
+        }
+      }
+      return "";
+    }
 
     for (var i = 0; i < rows.length; i++) {
       var row = rows[i];
       var rowNum = i + 1;
 
-      // Required field validation
-      if (!row.fullName || String(row.fullName).trim() === "") {
+      // Required field validation: Full Name
+      var fullName = String(row.fullName || row.name || row.nama || "").trim();
+      if (!fullName) {
         errors.push("Baris " + rowNum + ": Nama lengkap wajib diisi.");
         continue;
       }
 
-      // Generate Employee ID
-      var empId = generateEmployeeId_(new Date());
-
-      // Ensure uniqueness
-      if (existingIds.indexOf(empId.toUpperCase()) !== -1) {
-        warnings.push(
-          "Baris " + rowNum + ": ID duplikat terdeteksi, ID baru dibuat.",
-        );
-        empId = generateEmployeeId_(new Date());
+      // Determine Employee ID: prioritaskan dari file import, fallback generate
+      var rawId = String(row.employeeId || row.empId || row.idKaryawan || "").trim();
+      var empId;
+      if (rawId) {
+        if (existingIds.indexOf(rawId.toUpperCase()) !== -1) {
+          errors.push("Baris " + rowNum + ": Employee ID '" + rawId + "' sudah ada di sheet.");
+          continue;
+        }
+        empId = rawId;
+      } else {
+        empId = batchIds[idIdx++];
+        if (!empId || existingIds.indexOf(String(empId).toUpperCase()) !== -1) {
+          empId = generateEmployeeId_(new Date());
+          while (existingIds.indexOf(String(empId).toUpperCase()) !== -1) {
+            empId = generateEmployeeId_(new Date());
+          }
+        }
       }
-      existingIds.push(empId.toUpperCase());
+      existingIds.push(String(empId).toUpperCase());
 
-      var nowStr = Utilities.formatDate(
-        new Date(),
-        "GMT+7",
-        "yyyy-MM-dd HH:mm:ss",
-      );
+      // Build row array with length matching sheet columns
+      var newRow = new Array(lastCol).fill("");
+      function setVal(colName, val) {
+        var idx = colMap[colName];
+        if (idx !== undefined) {
+          newRow[idx] = val;
+        } else if (EMPLOYEE_COL[colName]) {
+          newRow[EMPLOYEE_COL[colName] - 1] = val;
+        } else {
+          // Column not found in sheet - log as warning
+          if (val && String(val).trim() !== "") {
+            warnings.push("Baris " + rowNum + ": Kolom '" + colName + "' tidak ditemukan di sheet.");
+          }
+        }
+      }
 
-      // Build row matching EMPLOYEE_HEADERS order via EMPLOYEE_COL
-      var newRow = new Array(EMPLOYEE_HEADERS.length).fill("");
-      newRow[EMPLOYEE_COL["Employee ID"] - 1] = empId;
-      newRow[EMPLOYEE_COL["Full Name"] - 1] = String(row.fullName || "").trim();
-      newRow[EMPLOYEE_COL["NIK - NPWP 16 digit"] - 1] = row.nik
-        ? "'" + String(row.nik).trim()
-        : "";
-      newRow[EMPLOYEE_COL["NPWP"] - 1] = row.npwp
-        ? "'" + String(row.npwp).trim()
-        : "";
-      newRow[EMPLOYEE_COL["Birth Place"] - 1] = String(
-        row.birthPlace || "",
-      ).trim();
-      newRow[EMPLOYEE_COL["Birth Date"] - 1] = String(
-        row.birthDate || "",
-      ).trim();
-      // Age column removed - do not import
-      newRow[EMPLOYEE_COL["Gender"] - 1] = String(row.gender || "").trim();
-      newRow[EMPLOYEE_COL["Religion"] - 1] = String(row.religion || "").trim();
-      newRow[EMPLOYEE_COL["Marital Status"] - 1] = String(
-        row.maritalStatus || "",
-      ).trim();
-      newRow[EMPLOYEE_COL["Blood Type"] - 1] = String(
-        row.bloodType || "",
-      ).trim();
-      newRow[EMPLOYEE_COL["PTKP Status"] - 1] = String(
-        row.ptkpStatus || "",
-      ).trim();
-      newRow[EMPLOYEE_COL["Citizen ID Address"] - 1] = String(
-        row.citizenIdAddress || row.address || "",
-      ).trim();
-      newRow[EMPLOYEE_COL["Residential Address"] - 1] = String(
-        row.residentialAddress || row.address || "",
-      ).trim();
-      newRow[EMPLOYEE_COL["Mobile Phone"] - 1] =
-        row.mobilePhone || row.phone
-          ? "'" + String(row.mobilePhone || row.phone).trim()
-          : "";
-      newRow[EMPLOYEE_COL["Personal Email"] - 1] = String(
-        row.personalEmail || row.email || "",
-      ).trim();
-      newRow[EMPLOYEE_COL["Working Email"] - 1] = String(
-        row.workingEmail || "",
-      ).trim();
-      newRow[EMPLOYEE_COL["Bank Name"] - 1] = String(row.bankName || "").trim();
-      newRow[EMPLOYEE_COL["Bank Account"] - 1] = row.bankAccount
-        ? "'" + String(row.bankAccount).trim()
-        : "";
-      newRow[EMPLOYEE_COL["Bank Account Holder"] - 1] = String(
-        row.bankAccountHolder || row.fullName || "",
-      ).trim();
-      newRow[EMPLOYEE_COL["BPJS Ketenagakerjaan"] - 1] = row.bpjsKetenagakerjaan
-        ? "'" + String(row.bpjsKetenagakerjaan).trim()
-        : "";
-      newRow[EMPLOYEE_COL["BPJS Kesehatan"] - 1] = row.bpjsKesehatan
-        ? "'" + String(row.bpjsKesehatan).trim()
-        : "";
-      newRow[EMPLOYEE_COL["Branch Name"] - 1] = String(
-        row.branchName || row.branch || "",
-      ).trim();
-      newRow[EMPLOYEE_COL["Division"] - 1] = String(row.division || "").trim();
-      newRow[EMPLOYEE_COL["Department"] - 1] = String(
-        row.department || "",
-      ).trim();
-      newRow[EMPLOYEE_COL["Job Position (Locaction)"] - 1] = String(
-        row.positionCurrent || row.positionApplied || row.position || "",
-      ).trim();
-      newRow[EMPLOYEE_COL["Job Position"] - 1] = String(
-        row.positionNoLocCurrent || row.position || "",
-      ).trim();
-      newRow[EMPLOYEE_COL["Job Level"] - 1] = String(row.jobLevel || "").trim();
-      newRow[EMPLOYEE_COL["Grade"] - 1] = String(row.grade || "").trim();
-      newRow[EMPLOYEE_COL["Area Kerja"] - 1] = String(
-        row.areaKerja || row.district || "",
-      ).trim();
-      newRow[EMPLOYEE_COL["Lokasi Kerja"] - 1] = String(
-        row.lokasiKerja || row.city || "",
-      ).trim();
-      newRow[EMPLOYEE_COL["Cost Center"] - 1] = String(
-        row.costCenter || "",
-      ).trim();
-      newRow[EMPLOYEE_COL["Direct Superior"] - 1] = String(
-        row.directSuperior || "",
-      ).trim();
-      newRow[EMPLOYEE_COL["Indirect Superior"] - 1] = String(
-        row.indirectSuperior || "",
-      ).trim();
-      newRow[EMPLOYEE_COL["Status Employee"] - 1] = String(
-        row.statusEmployee || row.employmentStatus || row.status || "Contract",
-      ).trim();
-      newRow[EMPLOYEE_COL["Join Date"] - 1] = String(row.joinDate || "").trim();
-      newRow[EMPLOYEE_COL["End Date (Contract)"] - 1] = String(
-        row.endDateContract || row.contractEnd || "",
-      ).trim();
-      newRow[EMPLOYEE_COL["Outsource Vendor"] - 1] = String(
-        row.outsourceVendor || "",
-      ).trim();
-      newRow[EMPLOYEE_COL["Job Position (Former)"] - 1] = String(
-        row.positionFormer || "",
-      ).trim();
-      newRow[EMPLOYEE_COL["Type of Rotation"] - 1] = String(
-        row.typeOfRotation || "",
-      ).trim();
-      newRow[EMPLOYEE_COL["Tanggal Mutasi/Demosi/Promosi"] - 1] = String(
-        row.mutasiDate || "",
-      ).trim();
-      newRow[EMPLOYEE_COL["Nomor SK"] - 1] = String(row.nomorSk || "").trim();
-      newRow[EMPLOYEE_COL["Resign Date"] - 1] = String(
-        row.resignDate || "",
-      ).trim();
-      newRow[EMPLOYEE_COL["HR Notes"] - 1] = String(row.hrNotes || "").trim();
-      newRow[EMPLOYEE_COL["Created By"] - 1] = "system";
-      newRow[EMPLOYEE_COL["Created At"] - 1] = nowStr;
-      newRow[EMPLOYEE_COL["Updated At"] - 1] = nowStr;
+      setVal("Employee ID", empId);
+      setVal("Full Name", fullName);
+      setVal("NIK - NPWP 16 digit", row.nik ? "'" + String(row.nik).replace(/^'+/, "").trim() : "");
+      setVal("NPWP", row.npwp ? "'" + String(row.npwp).replace(/^'+/, "").trim() : "");
+      setVal("Birth Place", String(row.birthPlace || row.tempatLahir || "").trim());
+      setVal("Birth Date", String(row.birthDate || row.tanggalLahir || "").trim());
+      setVal("Gender", String(row.gender || row.jenisKelamin || "").trim());
+      setVal("Religion", String(row.religion || row.agama || "").trim());
+      setVal("Marital Status", String(row.maritalStatus || row.statusPernikahan || "").trim());
+      setVal("Blood Type", String(row.bloodType || row.golonganDarah || "").trim());
+      setVal("PTKP Status", String(row.ptkpStatus || row.ptkp || "").trim());
+      setVal("Citizen ID Address", String(row.citizenIdAddress || row.alamatKtp || row.address || "").trim());
+      setVal("Residential Address", String(row.residentialAddress || row.alamatDomisili || row.address || "").trim());
+      
+      var phoneVal = getVal(row, ['mobilePhone', 'phone', 'hp', 'noHp', 'Mobile Phone', 'Phone', 'HP', 'NoHP']);
+      // Strip leading apostrophe (Excel text prefix), whitespace, and normalize +62 → 0
+      phoneVal = phoneVal.replace(/^'+/, '').trim();
+      setVal("Mobile Phone", phoneVal ? "'" + phoneVal : "");
+
+      setVal("Personal Email", String(row.personalEmail || row.email || "").trim());
+      setVal("Working Email", String(row.workingEmail || row.emailKantor || "").trim());
+      setVal("Bank Name", String(row.bankName || row.namaBank || "BCA").trim());
+      
+      var bankAccVal = String(row.bankAccount || row.nomorRekening || row.rekening || "").replace(/^'+/, "").trim();
+      setVal("Bank Account", bankAccVal ? "'" + bankAccVal : "");
+      setVal("Bank Account Holder", String(row.bankAccountHolder || row.atasNama || fullName).trim());
+
+      var bpjsTkVal = String(row.bpjsKetenagakerjaan || row.bpjsTk || "").replace(/^'+/, "").trim();
+      setVal("BPJS Ketenagakerjaan", bpjsTkVal ? "'" + bpjsTkVal : "");
+
+      var bpjsKesVal = String(row.bpjsKesehatan || row.bpjsKes || "").replace(/^'+/, "").trim();
+      setVal("BPJS Kesehatan", bpjsKesVal ? "'" + bpjsKesVal : "");
+
+      setVal("Branch Name", String(row.branchName || row.branch || row.cabang || "").trim());
+      setVal("Division", getVal(row, ['division', 'divisi', 'Division', 'Divisi', 'div', 'bagian']));
+      setVal("Department", getVal(row, ['department', 'dept', 'departemen', 'Department', 'Dept', 'Departemen', 'dept']));
+      setVal("Job Position (Location)", getVal(row, ['positionCurrent', 'jobPositionLocation', 'position', 'jabatan', 'Job Position (location)', 'Job Position (Locaction)', 'posisi_lokasi']));
+      setVal("Job Position", getVal(row, ['positionNoLocCurrent', 'positionNoLoc', 'jobPosition', 'position', 'Job Position', 'posisi', 'jabatan', 'JobPosition', 'job_position', 'Posisi', 'Jabatan', 'no_location']));
+      setVal("Job Level", String(row.jobLevel || row.level || "").trim());
+      setVal("Grade", String(row.grade || "").trim());
+      setVal("Area Kerja", String(row.areaKerja || row.district || "").trim());
+      setVal("Lokasi Kerja", String(row.lokasiKerja || row.city || "").trim());
+      setVal("Cost Center", String(row.costCenter || "").trim());
+      setVal("Direct Superior", getVal(row, ['directSuperior', 'atasanLangsung', 'Direct Superior', 'direct_superior', 'atasan_langsung']));
+      setVal("Indirect Superior", getVal(row, ['indirectSuperior', 'atasanTidakLangsung', 'Indirect Superior', 'indirect_superior', 'atasan_tidak_langsung']));
+      setVal("Status Employee", String(row.statusEmployee || row.employmentStatus || row.status || "Contract").trim());
+      setVal("Join Date", String(row.joinDate || row.tanggalMasuk || "").trim());
+      setVal("End Date (Contract)", String(row.endDateContract || row.contractEnd || row.akhirKontrak || "").trim());
+      setVal("Outsource Vendor", String(row.outsourceVendor || row.vendor || "").trim());
+      setVal("Job Position (Former)", String(row.positionFormer || "").trim());
+      setVal("Type of Rotation", String(row.typeOfRotation || row.jenisRotasi || "").trim());
+      setVal("Tanggal Mutasi/Demosi/Promosi", String(row.mutasiDate || "").trim());
+      setVal("Nomor SK", String(row.nomorSk || "").trim());
+      setVal("Resign Date", String(row.resignDate || row.tanggalResign || "").trim());
+      setVal("HR Notes", String(row.hrNotes || row.notes || row.catatan || "").trim());
+      setVal("Created By", "system");
+      setVal("Created At", nowStr);
+      setVal("Updated At", nowStr);
 
       batchData.push(newRow);
       imported++;
@@ -210,19 +215,28 @@ function importEmployees(rows) {
     // Batch write all valid rows
     if (batchData.length > 0) {
       var startRow = sheet.getLastRow() + 1;
-      sheet
-        .getRange(startRow, 1, batchData.length, batchData[0].length)
-        .setValues(batchData);
+      sheet.getRange(startRow, 1, batchData.length, batchData[0].length).setValues(batchData);
 
-      // Audit log for import
+      // Batch write audit logs in one setValues call
+      var auditSheet = getOrCreateAuditLogSheet_();
+      var auditRows = [];
+      var auditUser = Session.getActiveUser().getEmail() || "HR Dashboard";
+      var empIdColIdx = colMap["Employee ID"] !== undefined ? colMap["Employee ID"] : 0;
       for (var j = 0; j < batchData.length; j++) {
-        writeAuditLog_(
-          batchData[j][0],
+        auditRows.push([
+          String(batchData[j][empIdColIdx] || ""),
           "Import",
           "Status Employee",
           "-",
           "Active",
-        );
+          auditUser,
+          nowStr,
+        ]);
+      }
+      if (auditRows.length > 0) {
+        var auditStartRow = auditSheet.getLastRow() + 1;
+        auditSheet.getRange(auditStartRow, 1, auditRows.length, AUDIT_LOG_HEADERS.length).setValues(auditRows);
+        SpreadsheetApp.flush();
       }
     }
 
@@ -237,11 +251,13 @@ function importEmployees(rows) {
         (errors.length > 0 ? " " + errors.length + " baris gagal." : ""),
     };
   } catch (err) {
+    Logger.log("importEmployees ERROR: " + err);
     return {
       success: false,
       imported: 0,
       errors: ["Kesalahan server: " + err.message],
       warnings: [],
+      message: "Kesalahan server: " + err.message,
     };
   } finally {
     lock.releaseLock();
