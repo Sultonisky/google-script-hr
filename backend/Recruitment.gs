@@ -443,19 +443,18 @@ function acceptCandidateToEmployee(recruitmentId, hrNotes) {
       newRow[EMPLOYEE_COL["Branch Name"] - 1] = "";
       newRow[EMPLOYEE_COL["Division"] - 1] = "";
       newRow[EMPLOYEE_COL["Department"] - 1] = "";
-      newRow[EMPLOYEE_COL["Job Position (Locaction)"] - 1] =
-        found.values[found.colIndex["Position Applied"]];
-      newRow[EMPLOYEE_COL["Job Position"] - 1] =
-        found.values[found.colIndex["Position Applied"]] || "";
-      newRow[EMPLOYEE_COL["Job Level"] - 1] = "";
-      newRow[EMPLOYEE_COL["Grade"] - 1] = "";
-      newRow[EMPLOYEE_COL["Area Kerja"] - 1] = "";
-      newRow[EMPLOYEE_COL["Lokasi Kerja"] - 1] =
-        found.values[found.colIndex["City"]];
-      newRow[EMPLOYEE_COL["Cost Center"] - 1] = "";
-      newRow[EMPLOYEE_COL["Direct Superior"] - 1] = "";
-      newRow[EMPLOYEE_COL["Indirect Superior"] - 1] = "";
-      newRow[EMPLOYEE_COL["Status Employee"] - 1] = "Contract";
+      newRow[EMPLOYEE_COL["Job Position (Location)"] - 1] =
+         found.values[found.colIndex["Position Applied"]];
+       newRow[EMPLOYEE_COL["Job Position"] - 1] =
+         found.values[found.colIndex["Position Applied"]] || "";
+       newRow[EMPLOYEE_COL["Job Level"] - 1] = "";
+       newRow[EMPLOYEE_COL["Area Kerja"] - 1] = "";
+       newRow[EMPLOYEE_COL["Lokasi Kerja"] - 1] =
+         found.values[found.colIndex["City"]];
+       newRow[EMPLOYEE_COL["Cost Center"] - 1] = "";
+       newRow[EMPLOYEE_COL["Direct Superior"] - 1] = "";
+       newRow[EMPLOYEE_COL["Indirect Superior"] - 1] = "";
+       newRow[EMPLOYEE_COL["Status Employee"] - 1] = "Contract";
       newRow[EMPLOYEE_COL["Join Date"] - 1] = Utilities.formatDate(
         now,
         "GMT+7",
@@ -699,7 +698,6 @@ function getStatusSheetList_(sheetName) {
       offeringJobLevel: String(cell(row, "Offering Job Level") || ""),
       offeringAreaKerja: String(cell(row, "Offering Area Kerja") || ""),
       offeringLokasiKerja: String(cell(row, "Offering Lokasi Kerja") || ""),
-      offeringGrade: String(cell(row, "Offering Grade") || ""),
       offeringSalary: String(cell(row, "Offering Salary") || ""),
       offeringJoinDate: String(cell(row, "Offering Join Date") || ""),
       offeringBenefit: String(cell(row, "Offering Benefit") || ""),
@@ -893,7 +891,7 @@ function moveStatusCandidate(
 // Jika sudah ada → update Updated + UpdatedBy + detail offering
 // offerData: {
 //   branchName|companyEntity, position, department, division, jobLevel,
-//   areaKerja, lokasiKerja, grade,
+//   areaKerja, lokasiKerja,
 //   salary, joinDate, benefit, notes
 // }
 // ============================================================
@@ -933,17 +931,20 @@ function saveOfferingStatus(recruitmentId, generatedBy, offerData) {
     var offeringUpdatedByCol = colIndex["Offering Updated By"];
     var companyCol = colIndex["Offering Company Entity"];
     var posCol = colIndex["Offering Position"];
-    var deptCol = colIndex["Offering Department"];
     var salaryCol = colIndex["Offering Salary"];
     var joinCol = colIndex["Offering Join Date"];
-    var benefitCol = colIndex["Offering Benefit"];
     var notesCol = colIndex["Offering Notes"];
     var respCol = colIndex["Offering Response"];
     var divisionCol = colIndex["Offering Division"];
     var jobLevelCol = colIndex["Offering Job Level"];
-    var areaCol = colIndex["Offering Area Kerja"];
     var lokasiCol = colIndex["Offering Lokasi Kerja"];
-    var gradeCol = colIndex["Offering Grade"];
+    var salaryBasicCol = colIndex["Offering Salary Basic"];
+    var allowPulsaCol = colIndex["Offering Allow Pulsa"];
+    var allowTransportCol = colIndex["Offering Allow Transport"];
+    var empStatusCol = colIndex["Offering Employment Status"];
+    var contractDurCol = colIndex["Offering Contract Duration"];
+    var workingHoursCol = colIndex["Offering Working Hours"];
+    var departmentCol = colIndex["Offering Department"];
 
     if (!idCol)
       return {
@@ -981,28 +982,34 @@ function saveOfferingStatus(recruitmentId, generatedBy, offerData) {
       sheet.getRange(targetRow, companyCol).setValue(branchName);
     if (posCol)
       sheet.getRange(targetRow, posCol).setValue(offerData.position || "");
-    if (deptCol)
-      sheet.getRange(targetRow, deptCol).setValue(offerData.department || "");
     if (salaryCol)
       sheet.getRange(targetRow, salaryCol).setValue(offerData.salary || "");
     if (joinCol)
       sheet.getRange(targetRow, joinCol).setValue(offerData.joinDate || "");
-    if (benefitCol)
-      sheet.getRange(targetRow, benefitCol).setValue(offerData.benefit || "");
     if (notesCol)
       sheet.getRange(targetRow, notesCol).setValue(offerData.notes || "");
     if (divisionCol)
       sheet.getRange(targetRow, divisionCol).setValue(offerData.division || "");
     if (jobLevelCol)
       sheet.getRange(targetRow, jobLevelCol).setValue(offerData.jobLevel || "");
-    if (areaCol)
-      sheet.getRange(targetRow, areaCol).setValue(offerData.areaKerja || "");
+    if (salaryBasicCol)
+      sheet.getRange(targetRow, salaryBasicCol).setValue(offerData.salaryBasic || "");
+    if (allowPulsaCol)
+      sheet.getRange(targetRow, allowPulsaCol).setValue(offerData.allowPulsa || "");
+    if (allowTransportCol)
+      sheet.getRange(targetRow, allowTransportCol).setValue(offerData.allowTransport || "");
+    if (empStatusCol)
+      sheet.getRange(targetRow, empStatusCol).setValue(offerData.employmentStatus || "Perjanjian Kerja Waktu Tertentu");
+    if (contractDurCol)
+      sheet.getRange(targetRow, contractDurCol).setValue(offerData.contractDuration || "12 bulan");
+    if (workingHoursCol)
+      sheet.getRange(targetRow, workingHoursCol).setValue(offerData.workingHours || "");
     if (lokasiCol)
       sheet
         .getRange(targetRow, lokasiCol)
         .setValue(offerData.lokasiKerja || "");
-    if (gradeCol)
-      sheet.getRange(targetRow, gradeCol).setValue(offerData.grade || "");
+    if (departmentCol)
+      sheet.getRange(targetRow, departmentCol).setValue(offerData.department || "");
 
     // Cek apakah sudah ada offering sebelumnya (Offering Created sudah terisi)
     var existingCreated = "";

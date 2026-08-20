@@ -78,7 +78,7 @@ function simpanDataOutsource(formObject) {
     newRow[EMPLOYEE_COL["Branch Name"] - 1] = formObject.branch_name || "";
     newRow[EMPLOYEE_COL["Division"] - 1] = formObject.division || "";
     newRow[EMPLOYEE_COL["Department"] - 1] = formObject.department || "";
-    newRow[EMPLOYEE_COL["Job Position (Locaction)"] - 1] = formObject.position;
+    newRow[EMPLOYEE_COL["Job Position (Location)"] - 1] = formObject.position;
     newRow[EMPLOYEE_COL["Personal Email"] - 1] = formObject.email;
     newRow[EMPLOYEE_COL["Working Email"] - 1] = formObject.working_email || "";
     newRow[EMPLOYEE_COL["Area Kerja"] - 1] = formObject.area_kerja || "";
@@ -217,7 +217,7 @@ function getOutsourceList() {
         areaKerja: gc("Area Kerja"),
         lokasiKerja: gc("Lokasi Kerja"),
         costCenter: gc("Cost Center"),
-        position: gc("Job Position (Locaction)") || gc("Job Position"),
+        position: gc("Job Position (Location)") || gc("Job Position"),
         jobLevel: gc("Job Level"),
         employeeStatus: gc("Status Employee"),
         status: gc("Status Employee"),
@@ -311,7 +311,7 @@ function getOutsourceById(id) {
           lokasiKerja: String(row[colIndex["Lokasi Kerja"]] || ""),
           costCenter: String(row[colIndex["Cost Center"]] || ""),
           position: String(
-            row[colIndex["Job Position (Locaction)"]] ||
+            row[colIndex["Job Position (Location)"]] ||
               row[colIndex["Job Position"]] ||
               "",
           ),
