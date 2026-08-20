@@ -355,12 +355,34 @@
     var hasCand = !!_activeEvalEmp;
     var decVal  = (document.getElementById('evalDecisionValue') || {}).value || '';
     var hasDecision = !!decVal;
-    var hasExtend = true;
-    if (decVal === 'Tidak Lulus → Perpanjang Probation') {
-      hasExtend = !!((document.getElementById('evalDurasiPerpanjang') || {}).value) &&
-                  !!((document.getElementById('evalKontrakBaruStart')  || {}).value);
+    var isExtend = decVal === 'Tidak Lolos → Perpanjang Probation (Evaluasi Ulang)';
+    var isPass   = decVal === 'Lulus → Karyawan Tetap';
+    var isTerm   = decVal === 'Tidak Lolos → Putus Kontrak (Paklaring)';
+
+    var hasExtendValid = true;
+    if (isExtend) {
+      hasExtendValid = !!((document.getElementById('evalDurasiPerpanjang') || {}).value) &&
+                       !!((document.getElementById('evalKontrakBaruStart')  || {}).value);
     }
-    btn.disabled = !(hasCand && hasDecision && hasExtend);
+
+    var tEl = document.getElementById('btnEvalText');
+    if (tEl) {
+      if (isPass) {
+        btn.style.background = '#166534';
+        tEl.innerHTML = '<i class="bi bi-file-earmark-pdf me-1"></i>Save &amp; Generate SK Tetap';
+      } else if (isTerm) {
+        btn.style.background = '#991b1b';
+        tEl.innerHTML = '<i class="bi bi-file-earmark-pdf me-1"></i>Save &amp; Generate Paklaring';
+      } else if (isExtend) {
+        btn.style.background = '#d97706';
+        tEl.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Save Extension';
+      } else {
+        btn.style.background = '#7c3aed';
+        tEl.innerHTML = '<i class="bi bi-clipboard-check me-1"></i>Save Evaluation';
+      }
+    }
+
+    btn.disabled = !(hasCand && hasDecision && hasExtendValid);
   }
 
   // ============================================================
@@ -441,11 +463,14 @@
     document.querySelectorAll('.eval-decision-opt').forEach(function(opt) {
       opt.addEventListener('click', function() {
         var val     = opt.getAttribute('data-value');
-        var isPerp  = val === 'Tidak Lulus → Perpanjang Probation';
+        var isPerp  = val === 'Tidak Lolos → Perpanjang Probation (Evaluasi Ulang)';
         var isLulus = val === 'Lulus → Karyawan Tetap';
+        var isTerm  = val === 'Tidak Lolos → Putus Kontrak (Paklaring)';
+
         var colorMap = {
-          'Lulus → Karyawan Tetap':              { border: '#166534', bg: '#f0fdf4' },
-          'Tidak Lulus → Perpanjang Probation':  { border: '#d97706', bg: '#fffbeb' },
+          'Lulus → Karyawan Tetap':                           { border: '#166534', bg: '#f0fdf4' },
+          'Tidak Lolos → Putus Kontrak (Paklaring)':          { border: '#991b1b', bg: '#fef2f2' },
+          'Tidak Lolos → Perpanjang Probation (Evaluasi Ulang)': { border: '#d97706', bg: '#fffbeb' },
         };
         document.querySelectorAll('.eval-decision-opt').forEach(function(o) {
           var isThis = o === opt;
@@ -483,7 +508,7 @@
       var d = new Date(startEl.value);
       d.setMonth(d.getMonth() + parseInt(m[1], 10));
       endEl.value = d.toISOString().split('T')[0];
-      if (hintEl) hintEl.innerText = 'Auto-hitung dari durasi ' + durEl.value;
+      if (hintEl) hintEl.innerText = 'Auto-dihitung dari durasi ' + durEl.value;
     }
     if (durEl)   durEl.addEventListener('change',   function() { calcExtendEnd(); _updateEvalConfirmBtn(); });
     if (startEl) startEl.addEventListener('change', function() { calcExtendEnd(); _updateEvalConfirmBtn(); });
@@ -514,9 +539,15 @@
         });
         _updateEvalBadgesAndAvg();
         var btn = document.getElementById('btnConfirmEval');
-        if (btn) btn.disabled = true;
+        if (btn) {
+          btn.disabled = true;
+          btn.style.background = '#7c3aed';
+        }
         var tEl = document.getElementById('btnEvalText'); var lEl = document.getElementById('btnEvalLoading');
-        if (tEl) tEl.style.display = 'inline-flex';
+        if (tEl) {
+          tEl.style.display = 'inline-flex';
+          tEl.innerHTML = '<i class="bi bi-clipboard-check me-1"></i>Simpan Evaluasi';
+        }
         if (lEl) lEl.style.display = 'none';
       });
     }
@@ -561,24 +592,34 @@
             var modal = bootstrap.Modal.getInstance(document.getElementById('evalProbationModal'));
             if (modal) modal.hide();
             if (res && res.success) {
-              var isLulus = res.isLulus;
-              showToast(
-                'Evaluasi berhasil! <strong>' + escapeHtml((_activeEvalEmp || {}).fullName || '') + '</strong> — ' +
-                (isLulus ? '<span style="color:#166534">Lulus → Karyawan Tetap</span>' : '<span style="color:#d97706">Diperpanjang</span>') +
-                ' | Skor: <strong>' + (res.nilaiRataRata || '-') + '</strong>',
-                'success', 6000
-              );
-              if (isLulus) {
-                // Generate SK Pengangkatan PDF
-                exportSKProbationPDF(_activeEvalEmp, evalData, res, 'pengangkatan');
-              } else {
-                // Generate SK Perpanjangan PDF
-                exportSKProbationPDF(_activeEvalEmp, evalData, res, 'perpanjangan');
+              if (res.isLulus) {
+                showToast(
+                  'Evaluation submitted! <strong>' + escapeHtml((_activeEvalEmp || {}).fullName || '') + '</strong> — ' +
+                  '<span style="color:#166534">Passed → Permanent Employee</span> | Score: <strong>' + (res.nilaiRataRata || '-') + '</strong>',
+                  'success', 6000
+                );
+                // Generate SK Pengangkatan Tetap PDF
+                exportSKTetapPDF(_activeEvalEmp, evalData, res);
+              } else if (res.isPutusKontrak) {
+                showToast(
+                  'Evaluation submitted! <strong>' + escapeHtml((_activeEvalEmp || {}).fullName || '') + '</strong> — ' +
+                  '<span style="color:#991b1b">Terminated &amp; Paklaring Issued</span> | Score: <strong>' + (res.nilaiRataRata || '-') + '</strong>',
+                  'success', 6000
+                );
+                // Generate Surat Keterangan Kerja (Paklaring) PDF
+                exportPaklaringPDF(_activeEvalEmp, evalData, res);
+              } else if (res.isPerpanjang) {
+                showToast(
+                  'Evaluation submitted! Probation period for <strong>' + escapeHtml((_activeEvalEmp || {}).fullName || '') + '</strong> ' +
+                  'extended by <strong>' + escapeHtml(evalData.durasiPerpanjang || 'extension period') + '</strong>.',
+                  'success', 6000
+                );
+                // Tanpa generate PDF untuk opsi perpanjang/evaluasi ulang
               }
               // Reload tabel probation
               _loadProbationData(true);
             } else {
-              showToast('Gagal menyimpan evaluasi: ' + (res ? res.message : 'Error'), 'error');
+              showToast('Failed to save evaluation: ' + (res ? res.message : 'Error'), 'error');
             }
           })
           .withFailureHandler(function(err) {
@@ -613,9 +654,10 @@
         bodyEl.innerHTML = history.map(function(ev, idx) {
           var keputusan = ev.keputusan || ev.decision || '';
           var isLulus   = keputusan.indexOf('Lulus') === 0 || keputusan.indexOf('Pass') === 0;
-          var kepClass  = isLulus ? 'accepted' : 'hold';
-          var kepLabel  = isLulus ? 'Passed → Permanent' : 'Extended';
-          // support both old and new property names
+          var isTerm    = keputusan.indexOf('Putus Kontrak') !== -1 || keputusan.indexOf('Paklaring') !== -1;
+          var kepClass  = isLulus ? 'accepted' : (isTerm ? 'rejected' : 'hold');
+          var kepLabel  = isLulus ? 'Passed → Permanent' : (isTerm ? 'Terminated → Paklaring' : 'Extended');
+          
           var sPerf  = ev.scorePerformance   || ev.skorKinerja      || '-';
           var sDisc  = ev.scoreDiscipline    || ev.skorKedisiplinan  || '-';
           var sComm  = ev.scoreCommunication || ev.skorKomunikasi    || '-';
@@ -657,230 +699,404 @@
   }
 
   // ============================================================
-  // PDF EXPORT — SK Pengangkatan / SK Perpanjangan Probation
+  // HELPER: PROFIL PERUSAHAAN (KOP SURAT) BERDASARKAN BRANCH
   // ============================================================
-  function exportSKProbationPDF(emp, evalData, result, type) {
+  function getCompanyProfile(branchName) {
+    var b = String(branchName || '').trim();
+    var profiles = {
+      'PT Mahakarya Sukses Indonesia': {
+        name: 'PT MAHAKARYA SUKSES INDONESIA',
+        tagline: 'MITO Electronic & Home Appliances',
+        address: 'Jl. Gajah Tunggal, Kp. Gembor, RT.004/RW.001, Kel. Pasir Jaya, Kec. Jatiuwung, Kota Tangerang, Banten 15135',
+        contact: 'Telp: (021) 66677888 | Email: hrd@mitogroup.co.id | Web: www.mito.co.id',
+        brand: 'MITO',
+        color: [235, 28, 36], // #eb1c24
+        navy: [11, 37, 64],   // #0B2540
+        accent: [253, 185, 19] // #FDB913
+      },
+      'PT Stein Perkasa Internasional': {
+        name: 'PT STEIN PERKASA INTERNASIONAL',
+        tagline: 'Steincookware Indonesia - Premium Cookware & Kitchen Appliances',
+        address: 'Rukan Mangga Dua Square Blok H No. 18-21, Jl. Gunung Sahari Raya Nomor 1, Kel. Ancol, Kec. Pademangan, Kota Jakarta Utara, DKI Jakarta - 14430',
+        contact: 'Telp: (021) 22570088 | Email: hrd@steincookware.id | Web: www.steincookware.id',
+        brand: 'STEINCOOKWARE',
+        color: [30, 41, 59], // #1e293b
+        navy: [15, 23, 42],
+        accent: [217, 119, 6]
+      },
+      'PT Perkasa Injeksi Indonesia': {
+        name: 'PT PERKASA INJEKSI INDONESIA',
+        tagline: 'Plastic Injection & Precision Manufacturing Industry',
+        address: 'Jl. Gajah Tunggal, Kp. Gembor, RT.004/RW.001, Kel. Pasir Jaya, Kec. Jatiuwung, Kota Tangerang, Banten 15135',
+        contact: 'Telp: (021) 5919988 | Email: hrd@perkasainjeksi.co.id',
+        brand: 'PERKASA INJEKSI',
+        color: [14, 116, 144], // #0e7490
+        navy: [8, 47, 73],
+        accent: [253, 185, 19]
+      },
+      'PT Mitra Elektro Perkasa': {
+        name: 'PT MITRA ELEKTRO PERKASA',
+        tagline: 'Electronics Distribution & After Sales Service Network',
+        address: 'Rukan Mangga Dua Square Blok H No. 18-21, Jln. Gunung Sahari Raya Nomor 1, Kel. Ancol/Kec. Pademangan, Kota Jakarta Utara, DKI Jakarta',
+        contact: 'Telp: (021) 54378899 | Email: hrd@mitraelektro.co.id',
+        brand: 'MITRA ELEKTRO',
+        color: [0, 91, 172], // #005BAC
+        navy: [11, 37, 64],
+        accent: [253, 185, 19]
+      }
+    };
+
+    if (profiles[b]) return profiles[b];
+
+    var lower = b.toLowerCase();
+    for (var key in profiles) {
+      if (lower.indexOf(key.toLowerCase()) !== -1 || key.toLowerCase().indexOf(lower) !== -1) {
+        return profiles[key];
+      }
+    }
+
+    return {
+      name: b ? b.toUpperCase() : 'PT MAHAKARYA SUKSES INDONESIA',
+      tagline: 'Human Resources & People Operations Department',
+      address: 'Jl. Gajah Tunggal, Kp. Gembor, RT.004/RW.001, Kel. Pasir Jaya, Kec. Jatiuwung, Kota Tangerang, Banten 15135',
+      contact: 'Email: hrd@mitogroup.co.id | Portal HRIS Internal',
+      brand: 'MITO GROUP',
+      color: [235, 28, 36],
+      navy: [11, 37, 64],
+      accent: [253, 185, 19]
+    };
+  }
+
+  // ============================================================
+  // PDF EXPORT 1: SK PENGANGKATAN KARYAWAN TETAP (PKWTT)
+  // ============================================================
+  function exportSKTetapPDF(emp, evalData, result) {
     if (typeof window.jspdf === 'undefined') {
       var s = document.createElement('script');
       s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
       document.head.appendChild(s);
-      s.onload = function() { exportSKProbationPDF(emp, evalData, result, type); };
+      s.onload = function() { exportSKTetapPDF(emp, evalData, result); };
       return;
     }
     try {
-      var jsPDF      = window.jspdf.jsPDF;
-      var doc        = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      var pw         = doc.internal.pageSize.getWidth();
-      var ph         = doc.internal.pageSize.getHeight();
-      var m          = 22;
-      var yPos       = m;
-      var isAngkat   = type === 'pengangkatan';
+      var jsPDF = window.jspdf.jsPDF;
+      var doc   = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      var pw    = doc.internal.pageSize.getWidth();
+      var ph    = doc.internal.pageSize.getHeight();
+      var m     = 20;
+      var yPos  = m;
 
-      var cPrimary = isAngkat ? [22, 101, 52]  : [124, 58, 237]; // hijau atau ungu
-      var cNavy    = [11, 37, 64];
-      var cAccent  = [253, 185, 19];
-      var cText    = [31, 41, 55];
-      var cSoft    = [107, 114, 128];
+      var branchName = (emp && (emp.branch || emp.companyEntity || emp.branchName)) || '';
+      var comp       = getCompanyProfile(branchName);
+
+      var cNavy    = [0, 0, 0];
+      var cText    = [0, 0, 0];
+      var cSoft    = [0, 0, 0];
 
       function sf(c) { doc.setFillColor(c[0],c[1],c[2]); }
       function sd(c) { doc.setDrawColor(c[0],c[1],c[2]); }
       function st(c) { doc.setTextColor(c[0],c[1],c[2]); }
-      function bold()   { doc.setFont(undefined,'bold'); }
-      function normal() { doc.setFont(undefined,'normal'); }
+      function bold()   { doc.setFont('helvetica','bold'); }
+      function normal() { doc.setFont('helvetica','normal'); }
+
+      function fmtDateId(isoStr) {
+        if (!isoStr) return '-';
+        var bulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+        var p = String(isoStr).split('-');
+        if (p.length < 3) return isoStr;
+        return parseInt(p[2], 10) + ' ' + (bulan[parseInt(p[1], 10) - 1] || '') + ' ' + p[0];
+      }
+
+      function getCityFromAddress(addr) {
+        var match = addr && addr.match(/Kota\s+([\w\s]+?)(,|$)/i);
+        if (match && match[1]) return match[1].trim();
+        match = addr && addr.match(/(\w+)\s*,\s*[A-Z]{2}\s+\d{5}/);
+        if (match) return match[1].trim();
+        return 'Jakarta';
+      }
 
       var today = new Date();
-      var bulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-      var todayStr = today.getDate() + ' ' + bulan[today.getMonth()] + ' ' + today.getFullYear();
+      var todayStr = fmtDateId(today.toISOString().split('T')[0]);
+      var yearStr  = String(today.getFullYear());
 
-      // ── Dekorasi ───────────────────────────────────────────
-      sf(cNavy); doc.rect(0, 0, 5, ph, 'F');
-      sf(cAccent); doc.rect(5, 0, pw - 5, 3.5, 'F');
+      var fullName = emp ? emp.fullName : '-';
+      var position = emp ? emp.position || emp.positionCurrent || 'Jabatan' : 'Jabatan';
+      var department = emp ? emp.department || 'Departemen' : 'Departemen';
+      var division = emp ? emp.division || 'Divisi' : 'Divisi';
+      var joinDate = emp ? fmtDateId(emp.joinDate) : '-';
+      var companyName = comp.name;
+      var city = getCityFromAddress(comp.address);
 
-      // ── Header ─────────────────────────────────────────────
-      yPos = 13;
-      doc.setFontSize(13); bold(); st(cNavy);
-      doc.text((emp && emp.companyEntity ? emp.companyEntity.toUpperCase() : 'MITO GROUP'), m + 2, yPos);
+      // SK number from backend (already generated) or fallback
+      var skNumber = result && result.skNumber ? result.skNumber : (result && result.evalId ? result.evalId : '001/HRD-PK/MSI/VII/2026');
+
+      // ── KOP SURAT ────────────────────────────────────────────────
+      yPos = renderKopSuratPDF(doc, comp, pw, m);
+
+      // ── JUDUL ──────────────────────────────────────────────────
+      yPos += 6;
+      doc.setFontSize(12); bold(); st(cNavy);
+      doc.text('SURAT KEPUTUSAN', pw / 2, yPos, { align: 'center' });
       yPos += 5;
-      doc.setFontSize(8); normal(); st(cSoft);
-      doc.text('Departemen Sumber Daya Manusia', m + 2, yPos);
-      doc.text(todayStr, pw - m, 13, { align: 'right' });
-      yPos += 4;
-      sf(cAccent); doc.setLineWidth(0.9);
-      doc.setDrawColor(cAccent[0],cAccent[1],cAccent[2]);
-      doc.line(m + 2, yPos, pw - m, yPos);
-      doc.setLineWidth(0.2);
 
-      // ── Judul ─────────────────────────────────────────────
-      yPos += 10;
-      var judulText = isAngkat ? 'SURAT KEPUTUSAN PENGANGKATAN KARYAWAN TETAP' : 'SURAT KEPUTUSAN PERPANJANGAN MASA PROBATION';
-      doc.setFontSize(12); bold(); st(cPrimary);
-      doc.text(judulText, pw / 2, yPos, { align: 'center' });
-      yPos += 5;
-      doc.setFontSize(8); normal(); st(cSoft);
-      doc.text('No. ' + escapeHtml(result.evalId || '-'), pw / 2, yPos, { align: 'center' });
-      yPos += 10;
+      doc.setFontSize(8.5); bold(); st(cSoft);
+      doc.text('Nomor: ' + skNumber, pw / 2, yPos, { align: 'center' });
+      yPos += 6;
 
-      // ── Pembuka ────────────────────────────────────────────
-      doc.setFontSize(9.5); normal(); st(cText);
-      var paraOpen = isAngkat
-        ? 'Berdasarkan hasil evaluasi masa probation dan dengan mempertimbangkan kinerja, kedisiplinan, serta kontribusi yang telah diberikan, manajemen ' + (emp && emp.companyEntity ? emp.companyEntity : 'Perusahaan') + ' memutuskan untuk mengangkat karyawan berikut sebagai Karyawan Tetap:'
-        : 'Berdasarkan hasil evaluasi masa probation, manajemen ' + (emp && emp.companyEntity ? emp.companyEntity : 'Perusahaan') + ' memutuskan untuk memperpanjang masa probation karyawan berikut dengan ketentuan sebagai tercantum di bawah ini:';
-      var paraLines = doc.splitTextToSize(paraOpen, pw - m * 2 - 4);
-      doc.text(paraLines, m + 2, yPos);
-      yPos += paraLines.length * 5.5 + 6;
+      doc.setFontSize(10); bold(); st(cNavy);
+      doc.text('Perusahaan ' + companyName, pw / 2, yPos, { align: 'center' });
+      yPos += 7;
 
-      // ── Data Karyawan ─────────────────────────────────────
-      sf(cNavy); doc.roundedRect(m + 2, yPos - 1.5, pw - m * 2 - 2, 8, 1.5, 1.5, 'F');
-      doc.setFontSize(8.5); bold(); st([255,255,255]);
-      doc.text('DATA KARYAWAN', m + 6, yPos + 4.5);
-      yPos += 12;
+      // ── MENIMBANG ──────────────────────────────────────────────
+      var lblW = 30;
+      var label = 'Menimbang';
+      var value = 'Bahwa berdasarkan hasil evaluasi masa percobaan serta kebutuhan Perusahaan, dipandang perlu mengangkat karyawan sebagai Karyawan Tetap sesuai dengan Peraturan Perusahaan dan ketentuan peraturan perundang-undangan yang berlaku.';
 
-      var LW = 48;
-      var empRows = [
-        ['Nama Lengkap',   emp ? emp.fullName   : '-'],
-        ['Employee ID',    emp ? emp.employeeId  : '-'],
-        ['NIK',            emp ? emp.nik         : '-'],
-        ['Jabatan',        emp ? emp.position    : '-'],
-        ['Departemen',     emp ? emp.department  : '-'],
-        ['Mulai Bergabung', emp ? formatDisplayDate(emp.joinDate) : '-'],
+      doc.setFontSize(8.5); bold(); st(cText);
+      doc.text(label, m, yPos);
+      normal(); st(cSoft);
+      doc.text(':', m + lblW, yPos);
+      st(cText);
+      var valLines = doc.splitTextToSize(value, pw - m * 2 - lblW - 6);
+      doc.text(valLines, m + lblW + 4, yPos);
+      yPos += valLines.length * 4.5 + 2;
+
+      // ── MENGINGAT ──────────────────────────────────────────────
+      label = 'Mengingat';
+      var values = [
+        'Undang-Undang Ketenagakerjaan beserta peraturan pelaksanaannya.',
+        'Peraturan Perusahaan ' + companyName + '.',
+        'Hasil evaluasi kinerja selama masa percobaan.'
       ];
-      empRows.forEach(function(f, idx) {
-        sf(idx % 2 === 0 ? [248,250,252] : [255,255,255]);
-        doc.rect(m + 2, yPos - 4, pw - m * 2 - 2, 7, 'F');
-        doc.setFontSize(8.5); bold(); st(cText);
-        doc.text(String(f[0]), m + 5, yPos);
-        normal(); st(cSoft); doc.text(':', m + LW, yPos);
-        st(cText); doc.text(String(f[1] || '-'), m + LW + 4, yPos);
-        yPos += 7;
-      });
-      yPos += 4;
-
-      // ── Hasil Evaluasi ────────────────────────────────────
-      sf(cPrimary); doc.roundedRect(m + 2, yPos - 1.5, pw - m * 2 - 2, 8, 1.5, 1.5, 'F');
-      doc.setFontSize(8.5); bold(); st([255,255,255]);
-      doc.text('HASIL EVALUASI', m + 6, yPos + 4.5);
-      yPos += 12;
-
-      var avg = result.nilaiRataRata || result.averageScore || '-';
-      var evalRows = [
-        ['Work Performance',    evalData.skorKinerja     || '-'],
-        ['Discipline',          evalData.skorKedisiplinan|| '-'],
-        ['Communication',       evalData.skorKomunikasi  || '-'],
-        ['Initiative',          evalData.skorInisiatif   || '-'],
-        ['Teamwork',            evalData.skorTeamwork    || '-'],
-        ['Average Score',       String(avg) + ' / 10'],
-      ];
-      evalRows.forEach(function(f, idx) {
-        var isAvg = f[0] === 'Average Score';
-        if (isAvg) { sf(cAccent); doc.rect(m + 2, yPos - 4, pw - m * 2 - 2, 8, 'F'); }
-        else { sf(idx % 2 === 0 ? [248,250,252] : [255,255,255]); doc.rect(m + 2, yPos - 4, pw - m * 2 - 2, 7, 'F'); }
-        doc.setFontSize(8.5); bold(); st(isAvg ? cNavy : cText);
-        doc.text(String(f[0]), m + 5, yPos);
-        normal(); st(cSoft); doc.text(':', m + LW, yPos);
-        if (isAvg) bold();
-        st(isAvg ? cNavy : cText); doc.text(String(f[1]), m + LW + 4, yPos);
-        yPos += isAvg ? 8 : 7;
-      });
-      yPos += 4;
-
-      // ── Detail Berbeda: Pengangkatan vs Perpanjangan ─────
-      if (isAngkat) {
-        // SK Pengangkatan — tambahan pasal-pasal
-        sf(cPrimary); doc.roundedRect(m + 2, yPos - 1.5, pw - m * 2 - 2, 8, 1.5, 1.5, 'F');
-        doc.setFontSize(8.5); bold(); st([255,255,255]);
-        doc.text('KETENTUAN PENGANGKATAN', m + 6, yPos + 4.5);
-        yPos += 12;
-
-        var pasalRows = [
-          ['Pasal 1', 'Dinyatakan LULUS masa probation dan diangkat menjadi Karyawan Tetap.'],
-          ['Pasal 2', 'Status kepegawaian berubah dari "Probation" menjadi "Permanent".'],
-          ['Pasal 3', 'Masa kerja dihitung sejak tanggal bergabung (' + (emp ? formatDisplayDate(emp.joinDate) : '-') + ').'],
-          ['Pasal 4', 'Hak dan kewajiban mengikuti ketentuan Peraturan Perusahaan yang berlaku.'],
-          ['Pasal 5', 'SK ini berlaku sejak tanggal ditetapkan.'],
-        ];
-        pasalRows.forEach(function(f, idx) {
-          sf(idx % 2 === 0 ? [248,250,252] : [255,255,255]);
-          doc.rect(m + 2, yPos - 4, pw - m * 2 - 2, 7, 'F');
+      values.forEach(function(v, idx) {
+        if (idx > 0) {
           doc.setFontSize(8.5); bold(); st(cText);
-          doc.text(String(f[0]), m + 5, yPos);
+          doc.text('', m, yPos);
           normal(); st(cSoft);
-          doc.text(':', m + LW - 6, yPos);
+          doc.text(':', m + lblW, yPos);
           st(cText);
-          var txt = String(f[1]);
-          var lines = doc.splitTextToSize(txt, pw - m * 2 - LW - 8);
-          doc.text(lines, m + LW - 2, yPos);
-          yPos += lines.length > 1 ? lines.length * 5 + 2 : 7;
-        });
-        yPos += 4;
-      } else {
-        // SK Perpanjangan — detail perpanjangan
-        if (evalData.kontrakBaruStart) {
-          sf(cPrimary); doc.roundedRect(m + 2, yPos - 1.5, pw - m * 2 - 2, 8, 1.5, 1.5, 'F');
-          doc.setFontSize(8.5); bold(); st([255,255,255]);
-          doc.text('DETAIL PERPANJANGAN', m + 6, yPos + 4.5);
-          yPos += 12;
-          var extRows = [
-          ['Durasi Perpanjang', evalData.durasiPerpanjang || '-'],
-          ['Kontrak Baru Mulai',  formatDisplayDate(evalData.kontrakBaruStart)],
-          ['Kontrak Baru Berakhir', formatDisplayDate(evalData.kontrakBaruEnd)],
-          ];
-          extRows.forEach(function(f, idx) {
-            sf(idx % 2 === 0 ? [248,250,252] : [255,255,255]);
-            doc.rect(m + 2, yPos - 4, pw - m * 2 - 2, 7, 'F');
-            doc.setFontSize(8.5); bold(); st(cText);
-            doc.text(String(f[0]), m + 5, yPos); normal(); st(cSoft);
-            doc.text(':', m + LW, yPos); st(cText);
-            doc.text(String(f[1]), m + LW + 4, yPos);
-            yPos += 7;
-          });
-          yPos += 4;
+        } else {
+          doc.setFontSize(8.5); bold(); st(cText);
+          doc.text(label, m, yPos);
+          normal(); st(cSoft);
+          doc.text(':', m + lblW, yPos);
+          st(cText);
         }
-      }
+        var vLines = doc.splitTextToSize(v, pw - m * 2 - lblW - 6);
+        doc.text(vLines, m + lblW + 4, yPos);
+        yPos += vLines.length * 4.5 + 1;
+      });
+      yPos += 4;
 
-      // ── Catatan ───────────────────────────────────────────
-      if (evalData.catatan && evalData.catatan.trim()) {
-        doc.setFontSize(8.5); bold(); st(cText);
-        doc.text('Notes:', m + 5, yPos); yPos += 5;
-        normal(); st(cSoft);
-        var cLines = doc.splitTextToSize(evalData.catatan, pw - m * 2 - 10);
-        doc.text(cLines, m + 5, yPos); yPos += cLines.length * 5 + 5;
-      }
+      // ── MEMUTUSKAN ─────────────────────────────────────────────
+      doc.setFontSize(10); bold(); st(cNavy);
+      doc.text('MEMUTUSKAN', pw / 2, yPos, { align: 'center' });
+      yPos += 5;
 
-      // ── Tanda tangan ──────────────────────────────────────
-      yPos = Math.max(yPos + 10, ph - 65);
-      var bW = 58, bH = 32, lX = m + 2, rX = pw - m - bW;
-      sd(cSoft); doc.setLineWidth(0.3);
-      doc.rect(lX, yPos, bW, bH); doc.rect(rX, yPos, bW, bH);
-      doc.setFontSize(8); normal(); st(cSoft);
-      doc.text('Mengetahui,', lX + 3, yPos + 5); bold(); st(cText);
-      doc.text('HRD Manager', lX + 3, yPos + 10);
-      sd(cText); doc.line(lX + 3, yPos + 26, lX + bW - 3, yPos + 26);
-      doc.setFontSize(7.5); normal(); st(cSoft); doc.text('(                              )', lX + 3, yPos + 31);
-      doc.setFontSize(8); normal(); st(cSoft);
-      doc.text('Karyawan Bersangkutan,', rX + 3, yPos + 5); bold(); st(cText);
-      doc.text(emp ? (emp.fullName.length > 28 ? emp.fullName.substring(0,26)+'...' : emp.fullName) : '-', rX + 3, yPos + 10);
-      sd(cText); doc.line(rX + 3, yPos + 26, rX + bW - 3, yPos + 26);
-      doc.setFontSize(7.5); normal(); st(cSoft); doc.text('(                              )', rX + 3, yPos + 31);
+      // ── MENETAPKAN ─────────────────────────────────────────────
+      doc.setFontSize(8.5); bold(); st(cText);
+      doc.text('Menetapkan', m, yPos);
+      normal(); st(cSoft);
+      doc.text(':', m + lblW, yPos);
+      yPos += 5;
 
-      // ── Footer ─────────────────────────────────────────────
-      var totPg = doc.internal.getNumberOfPages();
-      for (var pg = 1; pg <= totPg; pg++) {
-        doc.setPage(pg);
-        sf(cNavy); doc.rect(0, 0, 5, ph, 'F');
-        sd([220,226,234]); doc.setLineWidth(0.3);
-        doc.line(m, ph - 13, pw - m, ph - 13); doc.setLineWidth(0.2);
-        doc.setFontSize(7.5); normal(); st(cSoft);
-        doc.text((emp && emp.companyEntity ? emp.companyEntity : 'MITO GROUP') + '  |  ' + judulText, m, ph - 8);
-        doc.text('Hal. ' + pg + ' / ' + totPg, pw - m, ph - 8, { align: 'right' });
-      }
+      var ketetapan = 'Mengangkat ' + fullName + ' sebagai Karyawan Tetap dengan jabatan ' + position + ', Departemen ' + department + ', Divisi ' + division + ', terhitung sejak surat keputusan ini ditetapkan dan ditandatangani.';
+      var ketetapanLines = doc.splitTextToSize(ketetapan, pw - m * 2 - lblW - 6);
+      doc.setFontSize(8.5); bold(); st(cText);
+      doc.text('', m, yPos);
+      normal(); st(cSoft);
+      doc.text(':', m + lblW, yPos);
+      st(cText);
+      doc.text(ketetapanLines, m + lblW + 4, yPos);
+      yPos += ketetapanLines.length * 4.5 + 6;
+
+      // ── PENUTUP ──────────────────────────────────────────────────
+      var penutup = 'Demikian Surat Keputusan ini dibuat, untuk dilaksanakan sesuai Peraturan Perusahaan yang berlaku.';
+      doc.setFontSize(8.5); normal(); st(cText);
+      var penutupLines = doc.splitTextToSize(penutup, pw - m * 2);
+      doc.text(penutupLines, m, yPos);
+      yPos += penutupLines.length * 4.5 + 4;
+
+      // ── TANDA TANGAN ────────────────────────────────────────────
+      var sigLineW = 60;
+      var sigX = pw - m - sigLineW;
+
+      doc.setFontSize(8.5); normal(); st(cText);
+      doc.text(city + ', ' + todayStr, sigX, yPos);
+      yPos += 6;
+
+      doc.setFontSize(9); normal(); st(cText);
+      doc.text('Hormat Kami,', sigX, yPos);
+      yPos += 5;
+
+      doc.setFontSize(9.5); bold(); st(cNavy);
+      doc.text(companyName, sigX, yPos);
+      yPos += 12;
+
+      sd([0, 0, 0]);
+      doc.setLineWidth(0.4);
+      doc.line(sigX, yPos, sigX + sigLineW, yPos);
+      doc.setLineWidth(0.2);
+      yPos += 6;
+
+      doc.setFontSize(9.5); bold(); st(cNavy);
+      doc.text('Hisar Hesti', sigX, yPos);
+      yPos += 4.5;
+      doc.setFontSize(8.5); normal(); st(cSoft);
+      doc.text('Human Resources (HR) & Legal Manager', sigX, yPos);
+      yPos += 3;
+
+
 
       var safeName = (emp && emp.fullName ? emp.fullName.replace(/[^a-zA-Z0-9 ]/g,'').replace(/\s+/g,'_') : 'Karyawan');
-      var fileName = (isAngkat ? 'SK_Pengangkatan_' : 'SK_Perpanjangan_Probation_') + safeName + '_' + (result.evalId || '').replace(/[^a-zA-Z0-9]/g,'') + '.pdf';
+      var fileName = 'SK_Tetap_' + safeName + '_' + (result.evalId || '').replace(/[^a-zA-Z0-9]/g,'') + '.pdf';
       doc.save(fileName);
-      showToast('SK berhasil diunduh: ' + fileName, 'success');
+      showToast('SK Pengangkatan Tetap berhasil diunduh: ' + fileName, 'success');
     } catch(err) {
-      console.error('SK PDF Error:', err);
-      showToast('Gagal generate SK PDF: ' + err.message, 'error');
+      console.error('SK Tetap PDF Error:', err);
+      showToast('Gagal generate SK Tetap PDF: ' + err.message, 'error');
+    }
+  }
+
+  // ============================================================
+  // PDF EXPORT 2: SURAT KETERANGAN KERJA (PAKLARING)
+  // ============================================================
+  function exportPaklaringPDF(emp, evalData, result) {
+    if (typeof window.jspdf === 'undefined') {
+      var s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      document.head.appendChild(s);
+      s.onload = function() { exportPaklaringPDF(emp, evalData, result); };
+      return;
+    }
+    try {
+      var jsPDF = window.jspdf.jsPDF;
+      var doc   = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      var pw    = doc.internal.pageSize.getWidth();
+      var ph    = doc.internal.pageSize.getHeight();
+      var m     = 20;
+      var yPos  = m;
+
+      var branchName = (emp && (emp.branch || emp.companyEntity || emp.branchName)) || '';
+      var comp       = getCompanyProfile(branchName);
+
+      var cNavy    = comp.navy;
+      var cText    = [31, 41, 55];
+      var cSoft    = [107, 114, 128];
+
+      function sd(c) { doc.setDrawColor(c[0],c[1],c[2]); }
+      function st(c) { doc.setTextColor(c[0],c[1],c[2]); }
+      function bold()   { doc.setFont('helvetica','bold'); }
+      function normal() { doc.setFont('helvetica','normal'); }
+
+      function fmtDateId(isoStr) {
+        if (!isoStr) return '-';
+        var bulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+        var p = String(isoStr).split('-');
+        if (p.length < 3) return isoStr;
+        return parseInt(p[2], 10) + ' ' + (bulan[parseInt(p[1], 10) - 1] || '') + ' ' + p[0];
+      }
+
+      var today = new Date();
+      var bulanArr = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+      var todayStr = today.getDate() + ' ' + bulanArr[today.getMonth()] + ' ' + today.getFullYear();
+
+      // ── KOP SURAT ────────────────────────────────────────────────
+      yPos = renderKopSuratPDF(doc, comp, pw, m);
+
+      // ── JUDUL SURAT KETERANGAN KERJA ───────────────────────────
+      yPos += 6;
+      doc.setFontSize(12.5); bold(); st(cNavy);
+      doc.text('SURAT KETERANGAN KERJA', pw / 2, yPos, { align: 'center' });
+      yPos += 7;
+
+      // ── PEMBUKA ────────────────────────────────────────────────
+      doc.setFontSize(9); normal(); st(cText);
+      doc.text('Yang bertandatangan di bawah ini:', m, yPos);
+      yPos += 5;
+
+      // Signer table
+      var signerRows = [
+        ['Nama', 'Hisar Hesti'],
+        ['Jabatan', 'Human Resources (HR) & Legal Manager']
+      ];
+      var lblW = 30;
+      signerRows.forEach(function(f) {
+        doc.setFontSize(8.5); bold(); st(cText);
+        doc.text(f[0], m, yPos);
+        normal(); st(cSoft);
+        doc.text(':', m + lblW, yPos);
+        st(cText);
+        doc.text(f[1], m + lblW + 4, yPos);
+        yPos += 5.5;
+      });
+      yPos += 3;
+
+      doc.setFontSize(9); normal(); st(cText);
+      doc.text('Dengan ini menerangkan bahwa:', m, yPos);
+      yPos += 5;
+
+      // Employee name
+      var empName = emp && emp.fullName ? emp.fullName : '-';
+      doc.setFontSize(8.5); bold(); st(cText);
+      doc.text('Nama', m, yPos);
+      normal(); st(cSoft);
+      doc.text(':', m + lblW, yPos);
+      st(cText);
+      doc.text(empName, m + lblW + 4, yPos);
+      yPos += 7;
+
+      // ── PARAGRAF UTAMA ───────────────────────────────────────────
+      doc.setFontSize(9); normal(); st(cText);
+
+      var joinDateStr = emp && emp.joinDate ? fmtDateId(emp.joinDate) : '-';
+      var positionStr = emp && (emp.position || emp.positionCurrent) ? (emp.position || emp.positionCurrent) : 'Karyawan';
+      var endDateStr = emp && (emp.lastWorkingDate || emp.resignDate) ? fmtDateId(emp.lastWorkingDate || emp.resignDate) : todayStr;
+
+      var para1 = 'Telah bekerja di ' + comp.name + ' terhitung sejak ' + joinDateStr + ' dengan jabatan terakhir sebagai ' + positionStr + '. Masa kerja di ' + comp.name + ' telah berakhir pada tanggal ' + endDateStr + '.';
+      var para1Lines = doc.splitTextToSize(para1, pw - m * 2);
+      doc.text(para1Lines, m, yPos);
+      yPos += para1Lines.length * 4.8 + 5;
+
+      var para2 = 'Demikian surat keterangan ini dibuat dan digunakan sebagaimana mestinya.';
+      var para2Lines = doc.splitTextToSize(para2, pw - m * 2);
+      doc.text(para2Lines, m, yPos);
+      yPos += para2Lines.length * 4.8 + 8;
+
+      // ── TANDA TANGAN ─────────────────────────────────────────────
+      var sigLineW = 60;
+      var sigX = pw - m - sigLineW;
+
+      doc.setFontSize(8.5); normal(); st(cText);
+      doc.text('Jakarta, ' + todayStr, sigX, yPos);
+      yPos += 6;
+
+      doc.setFontSize(9); normal(); st(cText);
+      doc.text('Hormat Kami,', sigX, yPos);
+      yPos += 14;
+
+      sd([0, 0, 0]);
+      doc.setLineWidth(0.4);
+      doc.line(sigX, yPos, sigX + sigLineW, yPos);
+      doc.setLineWidth(0.2);
+      yPos += 6;
+
+      doc.setFontSize(9.5); bold(); st(cNavy);
+      doc.text('Hisar Hesti', sigX, yPos);
+      yPos += 4.5;
+      doc.setFontSize(8.5); normal(); st(cSoft);
+      doc.text('HR & Legal Manager', sigX, yPos);
+      yPos += 3;
+
+
+
+      var safeName = (emp && emp.fullName ? emp.fullName.replace(/[^a-zA-Z0-9 ]/g,'').replace(/\s+/g,'_') : 'Karyawan');
+      var fileName = 'Paklaring_' + safeName + '_' + (result.evalId || '').replace(/[^a-zA-Z0-9]/g,'') + '.pdf';
+      doc.save(fileName);
+      showToast('Surat Keterangan Kerja (Paklaring) berhasil diunduh: ' + fileName, 'success');
+    } catch(err) {
+      console.error('Paklaring PDF Error:', err);
+      showToast('Gagal generate Paklaring PDF: ' + err.message, 'error');
     }
   }
 </script>
