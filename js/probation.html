@@ -184,9 +184,19 @@
       var keputusan = r.lastKeputusan || r.decision || '';
       if (keputusan) {
         var isLulus = keputusan.indexOf('Lulus') === 0 || keputusan.indexOf('Pass') === 0;
-        kepHtml = '<span class="badge-status ' + (isLulus ? 'accepted' : 'hold') + '" style="font-size:10px;padding:2px 8px">' +
-          (isLulus ? '<i class="bi bi-check-circle-fill me-1"></i>Passed' : '<i class="bi bi-arrow-repeat me-1"></i>Extended') +
-          '</span>';
+        var isTerm  = keputusan.indexOf('Putus Kontrak') !== -1 || keputusan.indexOf('Paklaring') !== -1;
+        var isExt   = !isLulus && !isTerm;
+        
+        if (isLulus) {
+          kepHtml = '<span class="badge-status accepted" style="font-size:10px;padding:2px 8px">' +
+            '<i class="bi bi-check-circle-fill me-1"></i>Passed</span>';
+        } else if (isTerm) {
+          kepHtml = '<span class="badge-status rejected" style="font-size:10px;padding:2px 8px">' +
+            '<i class="bi bi-x-circle-fill me-1"></i>Terminated</span>';
+        } else {
+          kepHtml = '<span class="badge-status hold" style="font-size:10px;padding:2px 8px">' +
+            '<i class="bi bi-arrow-repeat me-1"></i>Extended</span>';
+        }
       }
 
       return '<tr>' +
@@ -346,6 +356,56 @@
     if (avgEl) {
       avgEl.innerText   = avg.toFixed(1);
       avgEl.style.color = avg >= 7 ? '#166534' : avg >= 5 ? '#d97706' : '#991b1b';
+    }
+    
+    // Update decision buttons state based on score
+    _updateDecisionButtonsState(avg);
+  }
+
+  function _updateDecisionButtonsState(avg) {
+    var passBtn = document.querySelector('.eval-decision-opt[data-value="Lulus → Karyawan Tetap"]');
+    var termBtn = document.querySelector('.eval-decision-opt[data-value="Tidak Lolos → Putus Kontrak (Paklaring)"]');
+    var extBtn = document.querySelector('.eval-decision-opt[data-value="Tidak Lolos → Perpanjang Probation (Evaluasi Ulang)"]');
+
+    // Passing score: >= 7.0 (dapat pilih Lulus)
+    // Failing score: < 5.0 (harus Putus Kontrak atau Perpanjang, tidak boleh Lulus)
+    // Middle score: 5.0 - 6.9 (dapat pilih Perpanjang atau Putus Kontrak)
+    
+    if (passBtn) {
+      if (avg >= 7.0) {
+        passBtn.style.opacity = '1';
+        passBtn.style.pointerEvents = 'auto';
+        passBtn.style.cursor = 'pointer';
+      } else {
+        passBtn.style.opacity = '0.4';
+        passBtn.style.pointerEvents = 'none';
+        passBtn.style.cursor = 'not-allowed';
+        // Deselect if currently selected
+        var currentDecision = (document.getElementById('evalDecisionValue') || {}).value;
+        if (currentDecision === 'Lulus → Karyawan Tetap') {
+          passBtn.style.borderColor = '#e5e7eb';
+          passBtn.style.background = '';
+          var dot = passBtn.querySelector('.eval-dec-dot');
+          var inner = passBtn.querySelector('.eval-dec-dot > div');
+          if (dot) { dot.style.borderColor = '#d1d5db'; dot.style.background = 'transparent'; }
+          if (inner) inner.style.background = 'transparent';
+          var decEl = document.getElementById('evalDecisionValue');
+          if (decEl) decEl.value = '';
+          _updateEvalConfirmBtn();
+        }
+      }
+    }
+
+    // Term and Extend always enabled
+    if (termBtn) {
+      termBtn.style.opacity = '1';
+      termBtn.style.pointerEvents = 'auto';
+      termBtn.style.cursor = 'pointer';
+    }
+    if (extBtn) {
+      extBtn.style.opacity = '1';
+      extBtn.style.pointerEvents = 'auto';
+      extBtn.style.cursor = 'pointer';
     }
   }
 

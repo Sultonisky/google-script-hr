@@ -1376,8 +1376,10 @@
     if (btnOffb) btnOffb.addEventListener('click', function() { openOffboardingModal(null); });
     initOffboardingModal();
 
-    // Contract End modal
-    initContractEndModal();
+    // Off Contract modal
+    var btnOffContract = document.getElementById('btnOpenOffContractModal');
+    if (btnOffContract) btnOffContract.addEventListener('click', function() { openOffContractModal(null); });
+    initOffContractModal();
 
     // Promote Contract to Probation modal
     initPromoteToProbationModal();
@@ -1387,46 +1389,60 @@
   }
 
   // ============================================================
-  // CONTRACT END MODAL
+  // OFF CONTRACT MODAL (Search + Form)
   // ============================================================
-  var _ceActiveEmp = null;
+  var _ocActiveEmp = null;
 
-  function openContractEndModal(emp) {
-    _ceActiveEmp = emp || null;
-    // Fill info karyawan
-    var av = document.getElementById('ceAvatar');
-    var nm = document.getElementById('ceName');
-    var ps = document.getElementById('cePosition');
-    var dp = document.getElementById('ceDept');
-    var id = document.getElementById('ceEmpIdDisp');
-    var jd = document.getElementById('ceJoinDate');
-    var hd = document.getElementById('ceEmployeeId');
-    var ceEnd = document.getElementById('ceContractEndDisp');
-    var lwdEl = document.getElementById('ceLastWorkingDate');
-    var bt = document.getElementById('ceBpjsTk');
-    var bk = document.getElementById('ceBpjsKes');
+  function openOffContractModal(emp) {
+    if (emp) {
+      _ocActiveEmp = emp;
+      _fillOcPreview(emp);
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('offContractModal')).show();
+    } else {
+      _ocActiveEmp = null;
+      var prev = document.getElementById('ocEmpPreview');
+      if (prev) prev.style.display = 'none';
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('offContractModal')).show();
+    }
+  }
 
-    if (av) av.innerText = initials((emp || {}).fullName || '');
-    if (nm) nm.innerText = (emp && emp.fullName) || '-';
-    if (ps) ps.innerText = (emp && (emp.positionCurrent || emp.position)) || '-';
-    if (dp) dp.innerText = (emp && emp.department) || '-';
-    if (id) id.innerText = (emp && emp.employeeId) || '-';
-    if (jd) jd.innerText = (emp && emp.joinDate) || '-';
-    if (hd) hd.value     = (emp && emp.employeeId) || '';
+  function _fillOcPreview(emp) {
+    if (!emp) {
+      var prev = document.getElementById('ocEmpPreview');
+      if (prev) prev.style.display = 'none';
+      return;
+    }
 
-    // Tanggal akhir kontrak — prioritas: contractEnd dari emp, fallback today
-    var contractEndVal = (emp && (emp.contractEnd || emp.endDateContract || emp.endDate)) || '';
+    var av = document.getElementById('ocEmpAvatar');
+    var nm = document.getElementById('ocEmpName');
+    var ps = document.getElementById('ocEmpPosition');
+    var dp = document.getElementById('ocEmpDept');
+    var id = document.getElementById('ocEmpIdDisp');
+    var jd = document.getElementById('ocEmpJoinDate');
+    var hd = document.getElementById('ocEmployeeId');
+    var ceEnd = document.getElementById('ocContractEndDisp');
+    var lwdEl = document.getElementById('ocLastWorkingDate');
+    var bt = document.getElementById('ocBpjsTk');
+    var bk = document.getElementById('ocBpjsKes');
+
+    if (av) av.innerText = initials(emp.fullName || '');
+    if (nm) nm.innerText = emp.fullName || '-';
+    if (ps) ps.innerText = (emp.positionCurrent || emp.position) || '-';
+    if (dp) dp.innerText = emp.department || '-';
+    if (id) id.innerText = emp.employeeId || '-';
+    if (jd) jd.innerText = emp.joinDate || '-';
+    if (hd) hd.value = emp.employeeId || '';
+
+    // Tanggal akhir kontrak
+    var contractEndVal = emp.contractEnd || emp.endDateContract || emp.endDate || '';
     if (ceEnd) ceEnd.textContent = contractEndVal || '(tidak terdaftar)';
     if (lwdEl) {
-      // Coba format ke YYYY-MM-DD untuk input[type=date]
       var lwdForInput = '';
       if (contractEndVal) {
-        // Coba parse DD/MM/YYYY
         var mDMY = contractEndVal.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
         if (mDMY) {
           lwdForInput = mDMY[3] + '-' + ('0'+mDMY[2]).slice(-2) + '-' + ('0'+mDMY[1]).slice(-2);
         } else {
-          // Coba parse YYYY-MM-DD atau via Date
           var d = new Date(contractEndVal);
           if (!isNaN(d.getTime())) lwdForInput = d.toISOString().split('T')[0];
         }
@@ -1434,44 +1450,122 @@
       lwdEl.value = lwdForInput || new Date().toISOString().split('T')[0];
     }
 
-    // Auto-fill BPJS dari data karyawan
-    if (bt && emp) bt.value = emp.bpjsKetenagakerjaan || '';
-    if (bk && emp) bk.value = emp.bpjsKesehatan       || '';
+    // Auto-fill BPJS
+    if (bt) bt.value = emp.bpjsKetenagakerjaan || '';
+    if (bk) bk.value = emp.bpjsKesehatan || '';
 
-    // Reset catatan & approved by
-    ['ceNotes', 'ceApprovedBy'].forEach(function(id) {
-      var el = document.getElementById(id); if (el) el.value = '';
-    });
-    // Reset toggle BPJS ke default aktif
-    var bpjsToggle = document.getElementById('ceGenerateBpjs');
-    if (bpjsToggle) bpjsToggle.checked = true;
+    var prev = document.getElementById('ocEmpPreview');
+    if (prev) prev.style.display = 'block';
 
-    _updateCeConfirmBtn();
-    bootstrap.Modal.getOrCreateInstance(document.getElementById('contractEndModal')).show();
+    _updateOcConfirmBtn();
   }
 
-  function _updateCeConfirmBtn() {
-    var btn = document.getElementById('btnConfirmContractEnd');
+  function _updateOcConfirmBtn() {
+    var btn = document.getElementById('btnConfirmOffContract');
     if (!btn) return;
-    var lwd = ((document.getElementById('ceLastWorkingDate') || {}).value || '').trim();
-    btn.disabled = !(_ceActiveEmp && lwd);
+    var lwd = ((document.getElementById('ocLastWorkingDate') || {}).value || '').trim();
+    btn.disabled = !(_ocActiveEmp && lwd);
   }
 
-  function initContractEndModal() {
-    var lwdEl = document.getElementById('ceLastWorkingDate');
-    if (lwdEl) lwdEl.addEventListener('input', _updateCeConfirmBtn);
+  function initOffContractModal() {
+    var searchEl = document.getElementById('ocEmpSearch');
+    var clearEl  = document.getElementById('ocEmpSearchClear');
+    var dropEl   = document.getElementById('ocEmpDropdown');
 
-    var confirmBtn = document.getElementById('btnConfirmContractEnd');
+    function renderDropdown(q) {
+      if (!dropEl) return;
+      q = (q || '').trim().toLowerCase();
+      if (!q) { dropEl.style.display = 'none'; return; }
+      // Filter hanya karyawan Contract untuk off contract modal
+      var matched = EMP.allItems.filter(function(e) {
+        var s = (e.statusEmployee || '').toLowerCase();
+        return (s === 'contract' || s.indexOf('contract') !== -1 || s === 'pkwt' || s.indexOf('pkwt') !== -1) &&
+          ((e.fullName || '').toLowerCase().indexOf(q) !== -1 ||
+           (e.employeeId || '').toLowerCase().indexOf(q) !== -1);
+      }).slice(0, 8);
+
+      if (!matched.length) {
+        dropEl.innerHTML = '<div class="px-3 py-2 text-muted" style="font-size:13px">Karyawan Contract tidak ditemukan</div>';
+      } else {
+        dropEl.innerHTML = matched.map(function(e) {
+          return '<div class="oc-item px-3 py-2 d-flex align-items-center gap-2"' +
+            ' style="cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:13px" data-id="' + escapeHtml(e.employeeId) + '">' +
+            '<div style="width:28px;height:28px;font-size:11px;flex-shrink:0;background:#d97706;color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700">' +
+              escapeHtml(initials(e.fullName)) + '</div>' +
+            '<div><div class="fw-semibold">' + escapeHtml(e.fullName) + '</div>' +
+            '<div class="text-muted" style="font-size:11px">' + escapeHtml((e.positionCurrent || e.position) || '-') + ' · ' + escapeHtml(e.employeeId) + '</div></div>' +
+          '</div>';
+        }).join('');
+      }
+      dropEl.style.display = 'block';
+      dropEl.querySelectorAll('.oc-item').forEach(function(item) {
+        item.addEventListener('mouseenter', function() { item.style.background = '#f0f7ff'; });
+        item.addEventListener('mouseleave', function() { item.style.background = ''; });
+        item.addEventListener('click', function() {
+          var found = EMP.allItems.find(function(e) { return e.employeeId === item.getAttribute('data-id'); });
+          if (found) {
+            _ocActiveEmp = found;
+            if (searchEl) searchEl.value = found.fullName;
+            if (clearEl)  clearEl.style.display = 'block';
+            dropEl.style.display = 'none';
+            _fillOcPreview(found);
+          }
+        });
+      });
+    }
+
+    if (searchEl) searchEl.addEventListener('input', function() {
+      _ocActiveEmp = null; _fillOcPreview(null); _updateOcConfirmBtn();
+      if (clearEl) clearEl.style.display = searchEl.value ? 'block' : 'none';
+      renderDropdown(searchEl.value);
+    });
+    if (clearEl) clearEl.addEventListener('click', function() {
+      if (searchEl) searchEl.value = '';
+      clearEl.style.display = 'none';
+      if (dropEl) dropEl.style.display = 'none';
+      _ocActiveEmp = null; _fillOcPreview(null); _updateOcConfirmBtn();
+    });
+    document.addEventListener('click', function(e) {
+      if (dropEl && !dropEl.contains(e.target) && e.target !== searchEl) dropEl.style.display = 'none';
+    });
+
+    var lwdEl = document.getElementById('ocLastWorkingDate');
+    if (lwdEl) lwdEl.addEventListener('input', _updateOcConfirmBtn);
+
+    var modalEl = document.getElementById('offContractModal');
+    if (modalEl) {
+      modalEl.addEventListener('hidden.bs.modal', function() {
+        _ocActiveEmp = null;
+        if (searchEl) searchEl.value = '';
+        if (clearEl)  clearEl.style.display = 'none';
+        if (dropEl)   dropEl.style.display  = 'none';
+        var prev = document.getElementById('ocEmpPreview');
+        if (prev) prev.style.display = 'none';
+        if (lwdEl) lwdEl.value = '';
+        ['ocNotes','ocBpjsTk','ocBpjsKes','ocApprovedBy'].forEach(function(fid) {
+          var el = document.getElementById(fid); if (el) el.value = '';
+        });
+        var bpjsToggle = document.getElementById('ocGenerateBpjs');
+        if (bpjsToggle) bpjsToggle.checked = true;
+        var btn = document.getElementById('btnConfirmOffContract');
+        if (btn) btn.disabled = true;
+        var tEl = document.getElementById('btnOcText'); var lEl = document.getElementById('btnOcLoading');
+        if (tEl) tEl.style.display = 'inline-flex';
+        if (lEl) lEl.style.display = 'none';
+      });
+    }
+
+    var confirmBtn = document.getElementById('btnConfirmOffContract');
     if (!confirmBtn) return;
 
     confirmBtn.addEventListener('click', function() {
-      if (!_ceActiveEmp) return;
-      var empId = (document.getElementById('ceEmployeeId') || {}).value || '';
-      var lwd   = ((document.getElementById('ceLastWorkingDate') || {}).value || '').trim();
+      if (!_ocActiveEmp) return;
+      var empId = (document.getElementById('ocEmployeeId') || {}).value || '';
+      var lwd   = ((document.getElementById('ocLastWorkingDate') || {}).value || '').trim();
       if (!empId || !lwd) return;
 
-      var tEl = document.getElementById('btnCeText');
-      var lEl = document.getElementById('btnCeLoading');
+      var tEl = document.getElementById('btnOcText');
+      var lEl = document.getElementById('btnOcLoading');
       confirmBtn.disabled = true;
       if (tEl) tEl.style.display = 'none';
       if (lEl) lEl.style.display = 'inline-flex';
@@ -1481,10 +1575,10 @@
         offboardingType: 'Contract Finished',
         lastWorkingDate: lwd,
         reason:          'Kontrak PKWT berakhir dan tidak diperpanjang',
-        bpjsKetenagakerjaan: ((document.getElementById('ceBpjsTk') || {}).value || '').trim(),
-        bpjsKesehatan:       ((document.getElementById('ceBpjsKes') || {}).value || '').trim(),
-        approvedBy:          ((document.getElementById('ceApprovedBy') || {}).value || '').trim(),
-        notes:               ((document.getElementById('ceNotes') || {}).value || '').trim(),
+        bpjsKetenagakerjaan: ((document.getElementById('ocBpjsTk') || {}).value || '').trim(),
+        bpjsKesehatan:       ((document.getElementById('ocBpjsKes') || {}).value || '').trim(),
+        approvedBy:          ((document.getElementById('ocApprovedBy') || {}).value || '').trim(),
+        notes:               ((document.getElementById('ocNotes') || {}).value || '').trim(),
         documents:           [],
       };
 
@@ -1493,13 +1587,13 @@
           confirmBtn.disabled = false;
           if (tEl) tEl.style.display = 'inline-flex';
           if (lEl) lEl.style.display = 'none';
-          bootstrap.Modal.getInstance(document.getElementById('contractEndModal')).hide();
+          bootstrap.Modal.getInstance(document.getElementById('offContractModal')).hide();
 
           if (res && res.success) {
-            showToast('Akhir kontrak <strong>' + escapeHtml((_ceActiveEmp || {}).fullName || '') + '</strong> berhasil diproses.', 'success', 5000);
+            showToast('Off Contract <strong>' + escapeHtml((_ocActiveEmp || {}).fullName || '') + '</strong> berhasil diproses.', 'success', 5000);
             empLoadAll();
 
-            var emp = _ceActiveEmp || {};
+            var emp = _ocActiveEmp || {};
             var empDataObj = res.employeeData || {};
 
             var offbEmpData = {
@@ -1519,18 +1613,6 @@
               suratNumber:        res.skNumber || '',
             };
 
-            var offbData = Object.assign({}, offbEmpData, {
-              offboardingType: payload.offboardingType,
-              reason:          payload.reason,
-              isPermanent:     false,
-              skNumber:        res.skNumber || '',
-              notes:           payload.notes,
-              approvedBy:      payload.approvedBy,
-            });
-
-            // TIDAK GENERATE SK OFFBOARDING untuk Contract Finished
-            // Hanya generate: Paklaring + Surat BPJS (opsional)
-
             // 1. Paklaring
             exportPaklaringPDF(offbEmpData, { catatan: payload.notes }, {
               evalId: (res.skNumber || '').replace(/[^a-zA-Z0-9]/g, '') || emp.employeeId,
@@ -1539,7 +1621,7 @@
             });
 
             // 2. Surat BPJS — hanya jika checkbox dicentang
-            var generateBpjs = (document.getElementById('ceGenerateBpjs') || {}).checked !== false;
+            var generateBpjs = (document.getElementById('ocGenerateBpjs') || {}).checked !== false;
             if (generateBpjs) {
               setTimeout(function() {
                 if (typeof exportSuratBPJS === 'function') exportSuratBPJS(offbEmpData);

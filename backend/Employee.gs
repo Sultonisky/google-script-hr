@@ -1026,9 +1026,18 @@ function saveProbationEval(evalData, evaluatedBy) {
           10,
       ) / 10;
 
+    // -- VALIDASI: Score vs Decision ---------------------------
     var isLulus = evalData.keputusan.indexOf("Lulus") !== -1 || evalData.keputusan.indexOf("Tetap") !== -1;
     var isPutusKontrak = evalData.keputusan.indexOf("Putus Kontrak") !== -1 || evalData.keputusan.indexOf("Paklaring") !== -1;
     var isPerpanjang = !isLulus && !isPutusKontrak && (evalData.keputusan.indexOf("Perpanjang") !== -1 || evalData.keputusan.indexOf("Evaluasi Ulang") !== -1);
+
+    // Validasi: Lulus hanya boleh jika score >= 7.0
+    if (isLulus && avg < 7.0) {
+      return {
+        success: false,
+        message: "Keputusan 'Lulus → Karyawan Tetap' memerlukan skor minimal 7.0. Skor saat ini: " + avg.toFixed(1)
+      };
+    }
 
     // -- 3. Update row di kandidat_probation dengan hasil evaluasi -----
     var probSheet = getOrCreateProbationSheet_();
