@@ -1,0 +1,65 @@
+@import "variables";
+@import "bootstrap/scss/bootstrap";
+@import "bootstrap-icons/font/bootstrap-icons.css";
+
+// Global Enhancements
+body {
+    font-family: $font-family-base;
+    background-color: $body-bg;
+    color: $body-color;
+    -webkit-font-smoothing: antialiased;
+}
+
+.text-navy {
+    color: $navy !important;
+}
+
+:not(.stat-icon).bg-navy {
+    background-color: $navy !important;
+}
+
+.text-primary-mito {
+    color: $primary !important;
+}
+
+.bg-primary-mito {
+    background-color: $primary !important;
+}
+
+.card {
+    border-radius: $border-radius-lg;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    transition: all 0.2s ease;
+}
+
+.btn-primary {
+    background-color: $primary;
+    border-color: $primary;
+    color: #fff;
+
+    &:hover, &:focus, &:active {
+        background-color: $primary-dark !important;
+        border-color: $primary-dark !important;
+        color: #fff !important;
+    }
+}
+
+.btn-outline-primary {
+    color: $primary;
+    border-color: $primary;
+
+    &:hover, &:focus, &:active {
+        background-color: $primary !important;
+        border-color: $primary !important;
+        color: #fff !important;
+    }
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: $primary;
+    box-shadow: 0 0 0 0.25rem rgba(235, 28, 36, 0.2);
+}
+
+.table {
+    --bs-table-hover-bg: rgba(235, 28, 36, 0.03);
+}

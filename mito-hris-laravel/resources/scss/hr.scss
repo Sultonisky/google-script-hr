@@ -1,0 +1,14 @@
+// MITO HRIS - HR Dashboard SCSS (1:1 from GAS CSS)
+@use 'variables' as *;
+
+// Import original modular CSS from GAS
+@import 'modules/theme';
+@import 'modules/sidebar';
+@import 'modules/topbar';
+@import 'modules/dashboard';
+@import 'modules/table';
+@import 'modules/drawer';
+@import 'modules/modal';
+@import 'modules/employee';
+@import 'modules/masterData';
+@import 'modules/responsive';

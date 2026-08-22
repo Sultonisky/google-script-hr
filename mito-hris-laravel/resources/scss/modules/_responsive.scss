@@ -1,0 +1,41 @@
+// ============================================================
+// modules/_responsive.scss — RESPONSIVE BREAKPOINTS
+// 1:1 from GAS css/responsive.html
+// ============================================================
+
+@media (max-width: 991.98px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.show { transform: translateX(0); }
+  .sidebar-overlay.show { display: block; }
+  .main-content { margin-left: 0; }
+  .btn-burger { display: flex; }
+  .topbar-search { display: none; }
+  .drawer-panel { width: 100%; }
+}
+
+@media (max-width: 576px) {
+  .content-wrap { padding: 18px 14px 40px; }
+  .topbar { padding: 12px 16px; }
+  .filter-bar { flex-direction: column; align-items: stretch; }
+  .filter-bar .table-search,
+  .filter-select,
+  .filter-date,
+  .filter-number { width: 100%; }
+  .export-btns { width: 100%; }
+  .btn-export { flex: 1; justify-content: center; }
+  .cv-grid-2 { grid-template-columns: 1fr; }
+  .fab-wrap { right: 16px; bottom: 16px; }
+}
+
+@media print {
+  .sidebar,
+  .topbar,
+  .fab-wrap,
+  .drawer-footer,
+  .filter-bar,
+  .panel-header .export-btns,
+  .btn-refresh { display: none !important; }
+  .drawer-overlay,
+  .drawer-panel { position: static; box-shadow: none; transform: none; width: 100%; }
+  body { background: #fff; }
+}

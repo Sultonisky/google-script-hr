@@ -1,0 +1,165 @@
+// ============================================================
+// modules/_employee.scss — EMPLOYEE & USER MANAGEMENT PAGE STYLES
+// 1:1 from GAS css/employee.html
+// ============================================================
+
+.emp-ct {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+.emp-hdr {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.emp-hdr h4 {
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+.emp-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+.emp-card-body {
+  padding: 16px 20px;
+}
+.emp-card-hdr {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.emp-card-hdr h6 {
+  margin: 0;
+  font-weight: 700;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.emp-tb {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.emp-srch {
+  position: relative;
+}
+.emp-srch input {
+  padding: 8px 12px 8px 34px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 13px;
+  width: 240px;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+.emp-srch input::placeholder {
+  color: var(--color-text-soft);
+}
+.emp-srch input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(235, 28, 36, 0.1);
+}
+.emp-srch i {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-soft);
+}
+.emp-flt {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.emp-flt select {
+  padding: 7px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 12px;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+.emp-flt select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+.emp-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.emp-tbl th {
+  background: var(--color-bg);
+  font-weight: 600;
+  color: var(--color-text-soft);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  padding: 10px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+}
+.emp-tbl td {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  vertical-align: middle;
+}
+.emp-tbl tr:last-child td { border-bottom: none; }
+.emp-tbl tr:hover td {
+  background: var(--color-bg);
+  cursor: pointer;
+}
+.emp-nm {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.emp-av {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(235, 28, 36, 0.1);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.emp-inf .nm {
+  font-weight: 600;
+  color: var(--color-text);
+}
+.emp-inf .nk {
+  font-size: 11px;
+  color: var(--color-text-soft);
+}
+.emp-st {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.emp-st.on  { background: rgba(22, 163, 74, 0.12); color: #166534; }
+.emp-st.off { background: rgba(220, 38, 38, 0.12); color: #991b1b; }

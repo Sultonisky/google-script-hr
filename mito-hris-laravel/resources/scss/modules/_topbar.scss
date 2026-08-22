@@ -1,0 +1,95 @@
+// ============================================================
+// modules/_topbar.scss — TOPBAR STYLES
+// 1:1 from GAS css/topbar.html & partials/Topbar.html
+// ============================================================
+
+.topbar {
+  position: sticky; top: 0; z-index: 1020;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  padding: 14px 28px;
+  display: flex; align-items: center; gap: 16px;
+}
+
+.btn-burger {
+  display: none; border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  width: 40px; height: 40px; border-radius: 10px;
+  align-items: center; justify-content: center;
+  font-size: 18px; color: var(--color-text); flex-shrink: 0;
+}
+
+.topbar .page-title h5 { font-weight: 700; margin-bottom: 1px; font-size: 17px; }
+.topbar .page-title small { color: var(--color-text-soft); font-size: 12.5px; }
+
+.topbar-search {
+  flex: 1; max-width: 380px; position: relative;
+}
+
+.topbar-search input {
+  height: 42px; border-radius: 10px;
+  border: 1.5px solid var(--color-border);
+  padding-left: 40px; font-size: 13.5px; width: 100%;
+  background: var(--color-surface); color: var(--color-text);
+}
+
+.topbar-search input:focus {
+  outline: none; border-color: var(--color-primary);
+  box-shadow: 0 0 0 0.2rem rgba(235,28,36,0.14);
+}
+
+.topbar-search i {
+  position: absolute; left: 14px; top: 50%;
+  transform: translateY(-50%); color: var(--color-text-soft);
+}
+
+.topbar-actions { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+
+.icon-btn {
+  width: 42px; height: 42px; border-radius: 10px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--color-text-soft); font-size: 17px;
+  position: relative; flex-shrink: 0; cursor: pointer;
+}
+
+.icon-btn .dot {
+  position: absolute; top: 8px; right: 8px;
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--color-accent); border: 1.5px solid var(--color-surface);
+}
+
+.icon-btn.active { color: var(--color-primary); border-color: var(--color-primary); }
+
+.topbar-user-menu { position: relative; }
+.topbar-user-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 4px 8px 4px 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--color-text);
+}
+.topbar-user-btn:hover { background: rgba(0,0,0,0.04); }
+.topbar-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #0B2540;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.topbar-user-meta { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2; }
+.topbar-user-name { font-size: 13px; font-weight: 600; }
+.topbar-user-role { font-size: 11px; color: var(--color-text-soft); }
+.topbar-user-btn .bi-chevron-down { font-size: 10px; opacity: 0.5; }
