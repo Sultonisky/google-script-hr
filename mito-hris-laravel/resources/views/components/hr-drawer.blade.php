@@ -222,6 +222,13 @@
       <button class="btn-status hold" id="btnHold" type="button"><i class="bi bi-pause-fill"></i> Hold</button>
       <button class="btn-status blacklist" id="btnBlacklist" type="button"><i class="bi bi-slash-circle"></i> Blacklist</button>
     </div>
+    {{-- Tombol update respons offering — hanya tampil untuk kandidat accepted yang sudah ada offering (1:1 GAS) --}}
+    <div id="drawerOfferingRespWrap" style="display:none;width:100%">
+      <button class="btn btn-sm w-100 fw-semibold" id="btnUpdateOfferResp" type="button"
+        style="background:var(--color-primary);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:12.5px">
+        <i class="bi bi-reply-fill me-1"></i>Update Respons Offering
+      </button>
+    </div>
   </div>
 
   <div class="drawer-footer" id="drawerFooterEntity" style="display:none;flex-direction:column;gap:8px">

@@ -54,9 +54,39 @@
   <script>
     // Drawer Functions (1:1 from GAS js/drawer.html)
     var activeCandidateId = null;
+    var _activeDrawerCandidate = null;
     var drawerOverlay = null;
     var drawerPanel = null;
     var drawerJustOpened = false;
+
+    // Render badge status utama + badge respons offering di header drawer (1:1 GAS)
+    function statusBadgeClass(status) {
+      var s = (status || '').toLowerCase();
+      if (s === 'accepted') return 'accepted';
+      if (s === 'hold') return 'hold';
+      if (s === 'blacklist') return 'blacklist';
+      return 'pending';
+    }
+    function escapeHtmlDrawer(str) {
+      return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+    function renderDrawerCandidateBadge(statusLabel, offeringResponse) {
+      var wrap = document.getElementById('drawerStatusBadgeWrap');
+      if (!wrap) return;
+      var mainBadge = '<span class="badge-status lg ' + statusBadgeClass(statusLabel) + '">' +
+        escapeHtmlDrawer(statusLabel) + '</span>';
+      var respBadge = '';
+      if (offeringResponse) {
+        var respClass = 'hold', respIcon = 'bi-hourglass-split';
+        if (offeringResponse === 'Diterima') { respClass = 'accepted'; respIcon = 'bi-check-circle-fill'; }
+        if (offeringResponse === 'Ditolak')  { respClass = 'blacklist'; respIcon = 'bi-x-circle-fill'; }
+        respBadge = ' <span class="badge-status lg ' + respClass + '" style="font-size:10px">' +
+          '<i class="bi ' + respIcon + ' me-1"></i>' + escapeHtmlDrawer(offeringResponse) + '</span>';
+      }
+      wrap.innerHTML = mainBadge + respBadge;
+    }
 
     function openDrawer() {
       drawerJustOpened = true;
@@ -91,6 +121,12 @@
       var btnEdit = document.getElementById('btnDrawerEdit');
       if (btnPrint) btnPrint.style.display = (mode === 'candidate') ? '' : 'none';
       if (btnEdit) btnEdit.style.display = (mode !== 'candidate') ? '' : 'none';
+
+      // Reset badge & tombol khusus kandidat saat pindah mode (hindari state basi)
+      var badgeWrap = document.getElementById('drawerStatusBadgeWrap');
+      if (badgeWrap && mode !== 'candidate') badgeWrap.innerHTML = '';
+      var respWrap = document.getElementById('drawerOfferingRespWrap');
+      if (respWrap && mode !== 'candidate') respWrap.style.display = 'none';
     }
 
     function drawerTextValue(value) {
@@ -161,6 +197,23 @@
           if (!btn) return;
           btn.classList.toggle('current', statusMap[key].toLowerCase() === currentStatus.toLowerCase());
         });
+
+        // Badge status utama + badge offering response (1:1 GAS renderCandidateDetail)
+        var isAccepted = (currentStatus || '').toLowerCase() === 'accepted';
+        var hasOffering = c.offeringCreated && c.offeringCreated !== '-' && c.offeringCreated !== '';
+        renderDrawerCandidateBadge(currentStatus, isAccepted ? (c.offeringResponse || '') : '');
+
+        // Tombol Update Respons Offering — hanya untuk Accepted + sudah ada offering letter (1:1 GAS)
+        var respWrap = document.getElementById('drawerOfferingRespWrap');
+        var respBtn = document.getElementById('btnUpdateOfferResp');
+        if (respWrap) respWrap.style.display = (isAccepted && hasOffering) ? 'block' : 'none';
+        if (respBtn) respBtn.onclick = function() { window.openOfferingResponseModal(c); };
+        // Helper live-update badge respons dipakai oleh modal respons offering
+        window.renderOfferingRespBadge = function(response) {
+          if (_activeDrawerCandidate) _activeDrawerCandidate.offeringResponse = response;
+          renderDrawerCandidateBadge(currentStatus, response);
+        };
+        _activeDrawerCandidate = c;
 
         var tlWrap = document.getElementById('drawerTimeline');
         if (tlWrap) {

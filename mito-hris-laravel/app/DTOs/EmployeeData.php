@@ -56,7 +56,13 @@ class EmployeeData
         public ?string $createdBy = null,
         public ?string $createdAt = null,
         public ?string $updatedAt = null,
-        public ?int $rowNumber = null
+        public ?int $rowNumber = null,
+        // -- Enrichment (tidak disimpan di sheet Employee) — diisi runtime dari
+        //    kandidat_probation untuk kolom "Last Score" & status evaluasi di tabel probation.
+        public ?string $lastAvgScore = null,
+        public ?string $lastDecision = null,
+        public ?string $lastEvalDate = null,
+        public ?string $lastEvaluator = null
     ) {}
 
     public static function fromSheetRow(array $row): self

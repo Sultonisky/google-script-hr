@@ -66,6 +66,8 @@ Route::prefix('hr')->name('hr.')->middleware('hr.auth')->group(function () {
         Route::post('/{id}/save-notes', [RecruitmentController::class, 'saveNotes'])->name('save-notes');
         Route::post('/{id}/move-status', [RecruitmentController::class, 'moveStatus'])->name('move-status');
         Route::post('/{id}/save-offering', [RecruitmentController::class, 'saveOffering'])->name('save-offering');
+        Route::post('/{id}/save-offering-response', [RecruitmentController::class, 'saveOfferingResponse'])->name('save-offering-response');
+        Route::post('/{id}/save-contract', [RecruitmentController::class, 'saveContract'])->name('save-contract');
         Route::get('/{id}/json', [RecruitmentController::class, 'getJson'])->name('json');
     });
 
