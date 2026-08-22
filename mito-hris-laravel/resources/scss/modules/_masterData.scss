@@ -1,0 +1,120 @@
+// ============================================================
+// modules/_masterData.scss — Master Data Page Styles
+// 1:1 from GAS css/masterData.html
+// ============================================================
+
+.md-card {
+  background: var(--color-surface);
+  border-radius: 12px;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+  margin-bottom: 20px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+.md-card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.md-card-header h6 {
+  margin: 0;
+  font-weight: 700;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.md-card-body { padding: 0; }
+
+.md-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.md-search { position: relative; }
+.md-search input {
+  padding: 8px 12px 8px 34px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 13px;
+  width: 220px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  transition: all 0.2s;
+}
+.md-search input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(235,28,36,0.1);
+  background: var(--color-surface);
+}
+.md-search i {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-soft);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.md-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.md-table th {
+  background: var(--color-bg);
+  font-weight: 600;
+  color: var(--color-text-soft);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  padding: 10px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+.md-table td {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  vertical-align: middle;
+}
+.md-table tr:last-child td { border-bottom: none; }
+.md-table tr:hover td { background: var(--color-bg); }
+
+.md-cat-nav {
+  display: flex;
+  gap: 6px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--color-border);
+  overflow-x: auto;
+  flex-wrap: nowrap;
+}
+.md-cat-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--color-surface);
+  color: var(--color-text-soft);
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.md-cat-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.md-cat-btn.active { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+.md-cat-btn .badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: rgba(0,0,0,0.08);
+}
+.md-cat-btn.active .badge { background: rgba(255,255,255,0.25); }
