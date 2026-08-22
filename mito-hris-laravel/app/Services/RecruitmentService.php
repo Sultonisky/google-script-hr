@@ -8,11 +8,14 @@ use App\Enums\CandidateStatus;
 use App\Events\CandidateApplied;
 use App\Events\CandidateStatusChanged;
 use App\Events\EmployeeHired;
+use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\CandidateRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
+use App\Services\EmployeeIdGenerator;
 use App\Services\Google\GoogleDriveService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use RuntimeException;
 
 class RecruitmentService
@@ -20,15 +23,21 @@ class RecruitmentService
     protected CandidateRepositoryInterface $candidateRepo;
     protected EmployeeRepositoryInterface $employeeRepo;
     protected GoogleDriveService $drive;
+    protected AuditLogRepositoryInterface $auditRepo;
+    protected EmployeeIdGenerator $idGenerator;
 
     public function __construct(
         CandidateRepositoryInterface $candidateRepo,
         EmployeeRepositoryInterface $employeeRepo,
-        GoogleDriveService $drive
+        GoogleDriveService $drive,
+        AuditLogRepositoryInterface $auditRepo,
+        EmployeeIdGenerator $idGenerator
     ) {
         $this->candidateRepo = $candidateRepo;
         $this->employeeRepo = $employeeRepo;
         $this->drive = $drive;
+        $this->auditRepo = $auditRepo;
+        $this->idGenerator = $idGenerator;
     }
 
     /**
@@ -205,6 +214,193 @@ class RecruitmentService
         }
 
         return $success;
+    }
+
+    /**
+     * Proses Kontrak PKWT & Onboarding — 1:1 dengan GAS processContractOnboarding().
+     * Membuat record Employee (status "Contract"), menandai Onboarding Status di
+     * sheet kandidat_accepted, menulis audit log, dan mengembalikan detail kontrak
+     * (termasuk nomor PKWT & Employee ID) untuk generate PDF.
+     *
+     * @return array{success:bool, employeeId:string, recruitmentId:string, contractNumber:string, onboardingDate:string, onboardingBy:string, message:string}
+     */
+    public function processContractOnboarding(string $recruitmentId, array $contractData, ?string $user = null): array
+    {
+        $candidate = $this->candidateRepo->findById($recruitmentId);
+        if (!$candidate) {
+            throw new RuntimeException("Kandidat dengan ID {$recruitmentId} tidak ditemukan.");
+        }
+
+        // Guard: hanya kandidat yang offering-nya sudah Diterima yang boleh diproses (1:1 GAS)
+        if (($candidate->offeringResponse ?? '') !== 'Diterima') {
+            throw new RuntimeException('Kandidat belum menerima offering letter (Offering Response harus "Diterima").');
+        }
+
+        $user = $user ?: 'HR Administrator';
+        $now = now()->timezone('Asia/Jakarta');
+        $nowStr = $now->format('Y-m-d H:i:s');
+
+        // -- Employee ID (pakai yang ada, atau generate) ----------
+        $employeeId = $candidate->employeeId ?: ($contractData['employee_id'] ?? '');
+        if (empty($employeeId)) {
+            $employeeId = $this->idGenerator->generate();
+        }
+
+        // -- Data kontrak ------------------------------------------
+        $branchName = $contractData['branch_name'] ?? $candidate->offeringCompanyEntity ?? '';
+        $division   = $contractData['division'] ?? $candidate->offeringDivision ?? '';
+        $department = $contractData['department'] ?? $candidate->offeringDepartment ?? '';
+        $position   = $contractData['position'] ?? $candidate->offeringPosition ?? $candidate->positionApplied ?? '';
+        $jobLevel   = $contractData['job_level'] ?? $candidate->offeringJobLevel ?? '';
+        $lokasiKerja = $contractData['lokasi_kerja'] ?? $candidate->offeringLokasiKerja ?? $candidate->city ?? '';
+        $directSuperior = $contractData['direct_superior'] ?? '';
+        $joinDate   = $contractData['join_date'] ?? $candidate->offeringJoinDate ?? '';
+        $contractEnd = $contractData['contract_end'] ?? '';
+
+        $titles = $this->composeEmployeeJobTitles($position, $jobLevel, $lokasiKerja);
+
+        // -- Nomor PKWT (generate bila kosong) --------------------
+        $contractNumber = trim($contractData['contract_number'] ?? '');
+        if ($contractNumber === '') {
+            $contractNumber = $this->generatePkwtNumber($branchName, $contractData['doc_date'] ?? $nowStr, $now);
+        }
+
+        // -- 1. Buat record Employee (status Contract) ------------
+        $employee = new EmployeeData(
+            employeeId: $employeeId,
+            fullName: $candidate->fullName ?? '',
+            branchName: $branchName,
+            division: $division,
+            department: $department,
+            jobPositionLocation: $titles['jobPositionLocation'],
+            jobPosition: $titles['jobPosition'],
+            lokasiKerja: $lokasiKerja,
+            jobLevel: $jobLevel,
+            joinDate: $joinDate,
+            statusEmployee: 'Contract',
+            directSuperior: $directSuperior,
+            personalEmail: $candidate->email ?? '',
+            endDateContract: $contractEnd,
+            birthPlace: $candidate->city ?? '',
+            birthDate: $candidate->birthDate ?? '',
+            citizenIdAddress: $candidate->address ?? '',
+            residentialAddress: $candidate->address ?? '',
+            nikNpwp: $candidate->nik ?? '',
+            mobilePhone: $candidate->phone ?? '',
+            gender: $candidate->gender ?? '',
+            maritalStatus: $candidate->maritalStatus ?? '',
+            hrNotes: $contractData['notes'] ?? '',
+            createdBy: $user,
+            createdAt: $nowStr,
+            updatedAt: $nowStr
+        );
+
+        // Buat baru bila belum ada; kalau sudah ada, update jadi Contract
+        $existingEmp = $this->employeeRepo->findById($employeeId);
+        if ($existingEmp) {
+            $this->employeeRepo->update($employeeId, [
+                'Branch Name' => $branchName,
+                'Division' => $division,
+                'Department' => $department,
+                'Job Position' => $titles['jobPosition'],
+                'Job Position (Location)' => $titles['jobPositionLocation'],
+                'Job Level' => $jobLevel,
+                'Lokasi Kerja' => $lokasiKerja,
+                'Direct Superior' => $directSuperior,
+                'Join Date' => $joinDate,
+                'End Date (Contract)' => $contractEnd,
+                'Status Employee' => 'Contract',
+                'Updated At' => $nowStr,
+            ]);
+        } else {
+            $this->employeeRepo->create($employee);
+        }
+
+        // -- 2. Tandai Onboarding di sheet kandidat_accepted ------
+        $this->candidateRepo->update($recruitmentId, [
+            'Onboarding Status' => 'Contract',
+            'Onboarding Date' => $nowStr,
+            'Onboarding By' => $user,
+            'Employee ID' => $employeeId,
+        ]);
+
+        // -- 3. Audit log (event + entri khusus Kontrak PKWT) -----
+        event(new EmployeeHired($employee, $recruitmentId, $user));
+        $this->auditRepo->log(
+            recruitmentId: $recruitmentId,
+            action: 'Kontrak PKWT',
+            field: 'Employment Status',
+            oldValue: 'Accepted',
+            newValue: "Contract — Employee {$employeeId} ({$contractNumber}) by {$user}",
+            user: $user
+        );
+
+        return [
+            'success' => true,
+            'employeeId' => $employeeId,
+            'recruitmentId' => $recruitmentId,
+            'contractNumber' => $contractNumber,
+            'onboardingDate' => $nowStr,
+            'onboardingBy' => $user,
+            'message' => 'Kontrak PKWT berhasil diproses. Karyawan kini aktif berstatus Contract.',
+        ];
+    }
+
+    /**
+     * Susun Job Position & Job Position (Location) — 1:1 GAS composeEmployeeJobTitles_.
+     *
+     * @return array{jobPosition:string, jobPositionLocation:string}
+     */
+    private function composeEmployeeJobTitles(?string $position, ?string $jobLevel, ?string $lokasiKerja): array
+    {
+        $title = trim((string) $position);
+        $level = trim((string) $jobLevel);
+        $loc   = trim((string) $lokasiKerja);
+
+        $noLoc = $title;
+        if ($level && $title && stripos($title, $level) === false) {
+            $noLoc = $title . ' ' . $level;
+        } elseif (!$title && $level) {
+            $noLoc = $level;
+        }
+
+        $withLoc = $noLoc;
+        if ($loc && $noLoc && strpos($noLoc, "({$loc})") === false) {
+            $withLoc = $noLoc . " ({$loc})";
+        } elseif (!$noLoc && $loc) {
+            $withLoc = $loc;
+        }
+
+        return ['jobPosition' => $noLoc, 'jobPositionLocation' => $withLoc];
+    }
+
+    /**
+     * Generate nomor Surat PKWT: NNN/{branchCode}-HR/PKWT/{RomawiBulan}/{tahun}.
+     * Port dari GAS generatePkwtNumber_ + toRomanMonth_ (counter harian via Cache).
+     */
+    private function generatePkwtNumber(string $branchName, string $docDate, \Illuminate\Support\Carbon $now): string
+    {
+        $bLower = strtolower($branchName);
+        $branchCode = 'MSI';
+        if (str_contains($bLower, 'stein')) $branchCode = 'SPI';
+        elseif (str_contains($bLower, 'injeksi')) $branchCode = 'PII';
+        elseif (str_contains($bLower, 'mitra') || str_contains($bLower, 'elektro')) $branchCode = 'MEP';
+
+        $docObj = $docDate ? \Illuminate\Support\Carbon::parse($docDate) : $now;
+        $roman = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'][$docObj->month - 1];
+
+        $datePart = $now->format('Ymd');
+        $key = "PKWT_COUNTER_{$datePart}";
+        $lock = Cache::lock("lock_{$key}", 10);
+        try {
+            $lock->block(10);
+            $seq = (int) Cache::get($key, 0) + 1;
+            Cache::put($key, $seq, $now->endOfDay());
+        } finally {
+            $lock->release();
+        }
+
+        return sprintf('%03d/%s-HR/PKWT/%s/%d', $seq, $branchCode, $roman, $docObj->year);
     }
 
     /**

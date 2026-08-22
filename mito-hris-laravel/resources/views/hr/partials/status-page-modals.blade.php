@@ -1,6 +1,6 @@
 <!-- partials/StatusPageModals.html — MODAL DOKUMEN & STATUS REKRUTMEN (1:1 from GAS) -->
 
-<!-- 1. MODAL ONBOARDING & KONTRAK PKWT -->
+<!-- 1. MODAL ONBOARDING & KONTRAK PKWT (1:1 from GAS partials/StatusPageModals.html) -->
 <div class="modal fade" id="onboardingModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content" style="border-radius: 16px">
@@ -12,87 +12,192 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
 
-      <form action="" method="POST" id="formOnboarding">
-        @csrf
-        <div class="modal-body p-4">
-          <input type="hidden" id="onboardingRecruitmentId" name="recruitment_id" />
+      <div class="modal-body p-4">
+        <input type="hidden" id="onboardingRecruitmentId" />
+        <input type="hidden" id="onboardingEmployeeId" />
 
-          <!-- Live Search Kandidat Accepted -->
-          <div class="mb-3">
-            <label class="form-label fw-semibold" style="font-size: 13px">
-              <i class="bi bi-search me-1"></i>Cari Kandidat
-              <span class="text-muted fw-normal">(Status: Accepted / Calon Karyawan)</span> <span class="text-danger">*</span>
-            </label>
-            <div class="position-relative">
-              <input type="text" class="form-control" id="onboardingCandSearch"
-                     placeholder="Ketik nama atau Recruitment ID..."
-                     autocomplete="off" style="font-size: 13px; padding-right: 36px" oninput="handleOnboardingSearch(this.value)" />
-              <i class="bi bi-x-circle-fill position-absolute" id="onboardingSearchClear"
-                 style="right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #aaa; display: none" onclick="clearOnboardingSearch()"></i>
-            </div>
-            <div id="onboardingSearchDropdown" class="border rounded-3 mt-1 shadow-sm"
-                 style="display: none; max-height: 200px; overflow-y: auto; background: #fff; z-index: 9999; position: relative">
+        <!-- Step 1: Search kandidat (Accepted + Offering Diterima) -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold" style="font-size: 13px">
+            <i class="bi bi-search me-1"></i>Cari Kandidat
+            <span class="text-muted fw-normal">(Status: Accepted + Offering Diterima)</span>
+          </label>
+          <div class="position-relative">
+            <input type="text" class="form-control" id="onboardingCandSearch"
+                   placeholder="Ketik nama atau Recruitment ID..."
+                   autocomplete="off" style="font-size: 13px; padding-right: 36px" oninput="handleOnboardingSearch(this.value)" />
+            <i class="bi bi-x-circle-fill position-absolute" id="onboardingSearchClear"
+               style="right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #aaa; display: none" onclick="clearOnboardingSearch()"></i>
+          </div>
+          <div id="onboardingSearchDropdown" class="border rounded-3 mt-1 shadow-sm"
+               style="display: none; max-height: 200px; overflow-y: auto; background: #fff; z-index: 9999; position: relative">
+          </div>
+        </div>
+
+        <!-- Info Kandidat terpilih -->
+        <div id="onboardingCandPreview" style="display: none">
+          <div class="p-3 rounded-3 mb-4" style="background: #f0f7ff; border: 1px solid #c7dff7">
+            <div class="d-flex align-items-center gap-3">
+              <div class="avatar-sm" id="onboardingCandAvatar"
+                   style="width: 44px; height: 44px; font-size: 16px; flex-shrink: 0; background: var(--color-primary, #eb1c24); color: #fff; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800">?</div>
+              <div class="flex-grow-1">
+                <div class="fw-bold text-navy" id="onboardingCandName" style="font-size: 15px">-</div>
+                <div class="text-muted" id="onboardingCandPosition" style="font-size: 12px">-</div>
+                <div style="font-size: 11px; color: #888; margin-top: 2px" id="onboardingCandEmail">-</div>
+              </div>
+              <div class="text-end flex-shrink-0" style="font-size: 11.5px">
+                <div class="text-muted">Recruitment ID</div>
+                <div class="fw-semibold" id="onboardingCandRid">-</div>
+                <div class="text-muted mt-1">Employee ID</div>
+                <div class="fw-semibold" id="onboardingCandEmpId">-</div>
+              </div>
             </div>
           </div>
 
-          <!-- Preview Info Kandidat -->
-          <div id="onboardingCandPreview" style="display: none">
-            <div class="p-3 rounded-3 mb-4" style="background: #f0f7ff; border: 1px solid #c7dff7">
-              <div class="d-flex align-items-center gap-3">
-                <div class="avatar-sm" id="onboardingCandAvatar"
-                     style="width: 44px; height: 44px; font-size: 16px; flex-shrink: 0; background: var(--color-primary, #eb1c24); color: #fff; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800">
-                  ?
-                </div>
-                <div class="flex-grow-1">
-                  <div class="fw-bold text-navy" id="onboardingCandName" style="font-size: 15px">-</div>
-                  <div class="text-muted" style="font-size: 12px">
-                    <span id="onboardingCandPos">-</span> &bull; <span id="onboardingCandEmail">-</span>
-                  </div>
-                </div>
-                <div class="text-end flex-shrink-0" style="font-size: 11.5px">
-                  <div class="text-muted">Recruitment ID</div>
-                  <div class="fw-semibold text-primary" id="onboardingCandIdDisp">-</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Form Detail PKWT -->
-            <div class="row g-3">
+          <!-- Form onboarding — field selaras EMPLOYEE_HEADERS -->
+          <div id="onboardingFormSection">
+            <p class="fw-bold mb-3" style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-primary)">
+              <i class="bi bi-briefcase-fill me-1"></i>Informasi Pekerjaan &amp; Penempatan
+            </p>
+            <div class="row g-3 mb-4">
               <div class="col-md-6">
-                <label class="form-label fw-semibold" style="font-size: 13px">Durasi Kontrak PKWT <span class="text-danger">*</span></label>
-                <select class="form-select form-select-sm" name="duration" required>
-                  <option value="12 bulan">12 Bulan (1 Tahun)</option>
-                  <option value="6 bulan">6 Bulan</option>
-                  <option value="3 bulan">3 Bulan</option>
-                  <option value="24 bulan">24 Bulan (2 Tahun)</option>
+                <label class="form-label fw-semibold" style="font-size: 13px">Branch Name <span class="text-danger">*</span></label>
+                <select class="form-select form-select-sm" id="onbBranchName">
+                  <option value="">— Pilih —</option>
+                  <option value="PT Mahakarya Sukses Indonesia">PT Mahakarya Sukses Indonesia</option>
+                  <option value="PT Stein Perkasa Internasional">PT Stein Perkasa Internasional</option>
+                  <option value="PT Perkasa Injeksi Indonesia">PT Perkasa Injeksi Indonesia</option>
+                  <option value="PT Mitra Elektro Perkasa">PT Mitra Elektro Perkasa</option>
                 </select>
               </div>
               <div class="col-md-6">
-                <label class="form-label fw-semibold" style="font-size: 13px">Tanggal Mulai (Join Date) <span class="text-danger">*</span></label>
-                <input type="date" class="form-control form-control-sm" name="start_date" value="{{ date('Y-m-d') }}" required />
+                <label class="form-label fw-semibold" style="font-size: 13px">Division</label>
+                <select class="form-select form-select-sm" id="onbDivision">
+                  <option value="">— Pilih —</option>
+                  <option value="RnD &amp; aftersales">RnD &amp; aftersales</option>
+                  <option value="Commercial Division">Commercial Division</option>
+                  <option value="Sales">Sales</option>
+                  <option value="FAT &amp; GA">FAT &amp; GA</option>
+                  <option value="Manufacture">Manufacture</option>
+                  <option value="E-Commerce">E-Commerce</option>
+                  <option value="IT">IT</option>
+                  <option value="Digital Marketing">Digital Marketing</option>
+                  <option value="Buyer - Import">Buyer - Import</option>
+                  <option value="Marketing">Marketing</option>
+                  <option value="Creative">Creative</option>
+                  <option value="HR &amp; Legal">HR &amp; Legal</option>
+                </select>
               </div>
               <div class="col-md-6">
-                <label class="form-label fw-semibold" style="font-size: 13px">Nomor Surat Kontrak</label>
-                <input type="text" class="form-control form-control-sm" name="contract_number" placeholder="Contoh: 001/SPI-HR/PKWT/I/2026" />
+                <label class="form-label fw-semibold" style="font-size: 13px">Department <span class="text-danger">*</span></label>
+                <select class="form-select form-select-sm" id="onbDepartment">
+                  <option value="">— Pilih —</option>
+                  <option value="Human Resources">Human Resources</option>
+                  <option value="Finance">Finance</option>
+                  <option value="Accounting">Accounting</option>
+                  <option value="Marketing">Marketing</option>
+                  <option value="Digital Marketing">Digital Marketing</option>
+                  <option value="Sales">Sales</option>
+                  <option value="IT">IT</option>
+                  <option value="Engineering">Engineering</option>
+                  <option value="Operations">Operations</option>
+                  <option value="Legal">Legal</option>
+                  <option value="GA">GA</option>
+                  <option value="Warehouse">Warehouse</option>
+                  <option value="Purchasing">Purchasing</option>
+                  <option value="Quality Control">Quality Control</option>
+                  <option value="Customer Service">Customer Service</option>
+                  <option value="Admin">Admin</option>
+                </select>
               </div>
               <div class="col-md-6">
-                <label class="form-label fw-semibold" style="font-size: 13px">Departemen Penempatan <span class="text-danger">*</span></label>
-                <input type="text" class="form-control form-control-sm" name="department" id="onboardingDept" placeholder="Contoh: Commercial & Operations" required />
+                <label class="form-label fw-semibold" style="font-size: 13px">Job Position <span class="text-danger">*</span></label>
+                <input type="text" class="form-control form-control-sm" id="onbPosition" placeholder="Contoh: HR Staff" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold" style="font-size: 13px">Direct Superior</label>
+                <input type="text" class="form-control form-control-sm" id="onbDirectSuperior" placeholder="Nama atasan langsung" />
+              </div>
+            </div>
+
+            <p class="fw-bold mb-3" style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-primary)">
+              <i class="bi bi-file-earmark-text-fill me-1"></i>Kontrak PKWT &amp; Upah
+            </p>
+            <div class="row g-3 mb-4">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold" style="font-size: 13px">Tanggal Mulai / Join Date <span class="text-danger">*</span></label>
+                <input type="date" class="form-control form-control-sm" id="onbJoinDate" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold" style="font-size: 13px">Durasi Kontrak PKWT <span class="text-danger">*</span></label>
+                <select class="form-select form-select-sm" id="onbContractDuration">
+                  <option value="">— Pilih —</option>
+                  <option value="3 Bulan">3 Bulan</option>
+                  <option value="6 Bulan">6 Bulan</option>
+                  <option value="12 Bulan" selected>12 Bulan (1 Tahun)</option>
+                  <option value="24 Bulan">24 Bulan (2 Tahun)</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold" style="font-size: 13px">Akhir Kontrak (End Date)</label>
+                <input type="date" class="form-control form-control-sm" id="onbContractEnd" />
+                <div class="form-text" id="onbContractEndHint" style="font-size: 11px">Terisi otomatis dari durasi kontrak</div>
+              </div>
+              <input type="hidden" id="onbContractNumber" />
+              <!-- Gaji & Tunjangan: hidden, diisi otomatis dari data Offering Letter -->
+              <input type="hidden" id="onbSalaryBasic" />
+              <input type="hidden" id="onbSalaryAllowance" />
+            </div>
+
+            <p class="fw-bold mb-3" style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-primary)">
+              <i class="bi bi-calendar2-check-fill me-1"></i>Ketentuan Dokumen &amp; Jadwal Kerja
+            </p>
+            <div class="row g-3 mb-4">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold" style="font-size: 13px">Tanggal Dokumen Kontrak <span class="text-danger">*</span></label>
+                <input type="date" class="form-control form-control-sm" id="onbDocDate" />
+                <div class="form-text" style="font-size: 11px">Bisa dipilih — kontrak boleh dibuat sebelum/sesudah hari H</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold" style="font-size: 13px">Ketentuan Jam Masuk Kerja</label>
+                <select class="form-select form-select-sm" id="onbJamMasuk">
+                  <option value="">— Pilih —</option>
+                  <option value="mulai pukul 07.00 WIB" selected>Pukul 07.00 WIB</option>
+                  <option value="mulai pukul 07.00 WIB dan selambat-lambatnya sampai dengan pukul 07.15 WIB">07.00 WIB (mlm 07.15 WIB)</option>
+                  <option value="mulai pukul 08.00 WIB">Pukul 08.00 WIB</option>
+                  <option value="mulai pukul 08.00 WIB dan selambat-lambatnya sampai dengan pukul 08.15 WIB">08.00 WIB (mlm 08.15 WIB)</option>
+                  <option value="sesuai shift penempatan">Sesuai shift penempatan</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold" style="font-size: 13px">Jadwal Waktu Kerja</label>
+                <select class="form-select form-select-sm" id="onbWorkSchedule">
+                  <option value="">— Pilih —</option>
+                  <option value="Normal" selected>Normal (5 hari kerja, 8 jam/hari, 40 jam/minggu)</option>
+                  <option value="Shift Khusus">Shift Khusus (disesuaikan kesepakatan dengan Kepala Divisi)</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold" style="font-size: 13px">Klausul Jangka Waktu <span class="text-muted fw-normal">(free text)</span></label>
+                <textarea class="form-control form-control-sm" id="onbTenorText" rows="2"
+                  placeholder="PIHAK PERTAMA dengan ini menyatakan persetujuannya untuk mempekerjakan PIHAK KEDUA sebagai Karyawan PIHAK PERTAMA..."></textarea>
               </div>
             </div>
           </div>
+          <!-- /#onboardingFormSection -->
         </div>
+        <!-- /#onboardingCandPreview -->
+      </div>
 
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
-          <a href="#" target="_blank" class="btn btn-sm btn-outline-success" id="btnPreviewPkwt" style="display:none">
-            <i class="bi bi-file-earmark-pdf me-1"></i>Unduh Draft PDF
-          </a>
-          <button type="submit" class="btn btn-sm text-white fw-semibold" style="background: #166534" id="btnConfirmOnboarding" disabled>
-            <i class="bi bi-check2-circle me-1"></i>Selesaikan Kontrak &amp; Buat Karyawan
-          </button>
-        </div>
-      </form>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+        <button class="btn btn-sm text-white fw-semibold" style="background: #166534" id="btnConfirmOnboarding" disabled>
+          <span id="btnOnboardingText"><i class="bi bi-file-earmark-check-fill me-1"></i>Simpan &amp; Generate Kontrak PKWT</span>
+          <span id="btnOnboardingLoading" style="display: none">
+            <span class="spinner-border spinner-border-sm me-1"></span>Memproses...
+          </span>
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -470,29 +575,182 @@
   </div>
 </div>
 
+<!-- Offering Response Modal (1:1 from GAS partials/StatusPageModals.html) -->
+<div class="modal fade" id="offeringResponseModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius: 16px">
+      <div class="modal-header">
+        <div>
+          <h6 class="modal-title mb-0 fw-bold">Update Respons Offering</h6>
+          <small class="text-muted" id="offerRespCandName">-</small>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="offerRespRecruitmentId" />
+        <input type="hidden" id="offerRespValue" value="" />
+
+        <label class="form-label fw-semibold mb-2" style="font-size: 13px">Respons Kandidat</label>
+        <div class="d-flex flex-column gap-2 mb-3" id="offerRespOptions">
+          <!-- Opsi: Menunggu -->
+          <div class="offer-resp-opt p-3 rounded-3" data-value="Menunggu"
+            style="border: 2px solid #e5e7eb; cursor: pointer; transition: border-color 0.15s, background 0.15s">
+            <div class="d-flex align-items-center gap-3">
+              <div class="offer-resp-dot" style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid #d1d5db; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: border-color 0.15s, background 0.15s">
+                <div class="offer-resp-dot-inner" style="width: 8px; height: 8px; border-radius: 50%; background: transparent; transition: background 0.15s"></div>
+              </div>
+              <div>
+                <div class="fw-semibold" style="font-size: 13px"><i class="bi bi-hourglass-split me-1" style="color: #8a6100"></i>Menunggu</div>
+                <div class="text-muted" style="font-size: 11px">Offering sudah dikirim, belum ada konfirmasi dari kandidat</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Opsi: Diterima -->
+          <div class="offer-resp-opt p-3 rounded-3" data-value="Diterima"
+            style="border: 2px solid #e5e7eb; cursor: pointer; transition: border-color 0.15s, background 0.15s">
+            <div class="d-flex align-items-center gap-3">
+              <div class="offer-resp-dot" style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid #d1d5db; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: border-color 0.15s, background 0.15s">
+                <div class="offer-resp-dot-inner" style="width: 8px; height: 8px; border-radius: 50%; background: transparent; transition: background 0.15s"></div>
+              </div>
+              <div>
+                <div class="fw-semibold" style="font-size: 13px"><i class="bi bi-check-circle-fill me-1" style="color: #166534"></i>Diterima</div>
+                <div class="text-muted" style="font-size: 11px">Kandidat setuju dan siap bergabung sesuai tanggal yang ditentukan</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Opsi: Ditolak -->
+          <div class="offer-resp-opt p-3 rounded-3" data-value="Ditolak"
+            style="border: 2px solid #e5e7eb; cursor: pointer; transition: border-color 0.15s, background 0.15s">
+            <div class="d-flex align-items-center gap-3">
+              <div class="offer-resp-dot" style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid #d1d5db; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: border-color 0.15s, background 0.15s">
+                <div class="offer-resp-dot-inner" style="width: 8px; height: 8px; border-radius: 50%; background: transparent; transition: background 0.15s"></div>
+              </div>
+              <div>
+                <div class="fw-semibold" style="font-size: 13px"><i class="bi bi-x-circle-fill me-1" style="color: #991b1b"></i>Ditolak</div>
+                <div class="text-muted" style="font-size: 11px">Kandidat menolak tawaran — proses rekrutmen selesai</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-0">
+          <label class="form-label fw-semibold" style="font-size: 13px">Catatan <span class="text-muted fw-normal">(opsional)</span></label>
+          <textarea class="form-control" id="offerRespNotes" rows="3"
+            placeholder="Contoh: Kandidat menolak karena gaji tidak sesuai, negosiasi gagal..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+        <button class="btn text-white" style="background: var(--color-primary)" id="btnConfirmOfferResp" disabled>
+          <i class="bi bi-check-lg me-1"></i>Simpan Respons
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
   window.__allCandidatesForStatus = @json($allCandidates ?? $candidates ?? []);
+
+  // ============================================================
+  // PROSES KONTRAK PKWT & ONBOARDING (1:1 from GAS js/statusPages.html)
+  // Eligibility: Accepted + Offering Response "Diterima" + belum onboarding
+  // ============================================================
+  var _activeOnboardingRow = null;
+
+  function _onbInitials(name) {
+    if (!name) return '?';
+    var p = String(name).trim().split(/\s+/);
+    return ((p[0] || '')[0] + (p[1] ? p[1][0] : '')).toUpperCase();
+  }
+
+  // Angka → kata (Indonesia) untuk klausul jangka waktu
+  function _onbNumToWords(n) {
+    var ones = ['','satu','dua','tiga','empat','lima','enam','tujuh','delapan','sembilan',
+      'sepuluh','sebelas','dua belas','tiga belas','empat belas','lima belas',
+      'enam belas','tujuh belas','delapan belas','sembilan belas'];
+    var tens = ['','sepuluh','dua puluh','tiga puluh','empat puluh','lima puluh'];
+    n = parseInt(n, 10) || 0;
+    if (n < 20) return ones[n] || String(n);
+    if (n < 60) { var t = Math.floor(n / 10), o = n % 10; return tens[t] + (o ? ' ' + ones[o] : ''); }
+    return String(n);
+  }
+
+  function _onbFmtDateLong(dstr) {
+    if (!dstr) return '-';
+    var d = new Date(dstr);
+    if (isNaN(d.getTime())) return dstr;
+    var bulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    return d.getDate() + ' ' + bulan[d.getMonth()] + ' ' + d.getFullYear();
+  }
+
+  // Pre-fill data dari Offering Letter (fallback ke field kandidat) — port GAS _normalizeOfferData
+  function _onbNormalizeOffer(row) {
+    row = row || {};
+    var branchName = row.offeringCompanyEntity || row.offeringBranchName || '';
+    return {
+      branchName: branchName,
+      division: row.offeringDivision || '',
+      department: row.offeringDepartment || row.department || '',
+      position: row.offeringPosition || row.positionApplied || '',
+      jobLevel: row.offeringJobLevel || '',
+      lokasiKerja: row.offeringLokasiKerja || row.city || '',
+      salaryBasic: row.offeringSalaryBasic || row.offeringSalary || '',
+      allowTransport: row.offeringAllowTransport || '',
+      allowPulsa: row.offeringAllowPulsa || '',
+      contractDuration: row.offeringContractDuration || '12 Bulan',
+      joinDate: row.offeringJoinDate || '',
+    };
+  }
+
+  function _onbSetSelectOrValue(el, value) {
+    if (!el || value == null || value === '') return;
+    var val = String(value);
+    if (el.tagName === 'SELECT') {
+      var exists = Array.prototype.some.call(el.options, function (o) { return o.value === val; });
+      if (!exists) {
+        var opt = document.createElement('option');
+        opt.value = val; opt.textContent = val;
+        el.appendChild(opt);
+      }
+    }
+    el.value = val;
+  }
+
+  function _onbToDateInput(v) {
+    if (!v) return '';
+    var d = new Date(v);
+    if (isNaN(d.getTime())) return '';
+    return d.toISOString().substring(0, 10);
+  }
 
   function handleOnboardingSearch(query) {
     const q = (query || '').toLowerCase().trim();
     const dropdown = document.getElementById('onboardingSearchDropdown');
     const clearBtn = document.getElementById('onboardingSearchClear');
     clearBtn.style.display = q ? 'block' : 'none';
+    _activeOnboardingRow = null;
+    _fillOnboardingCandPreview(null);
+    _updateOnboardingConfirmBtn();
 
     if (!q) {
       dropdown.style.display = 'none';
       return;
     }
 
+    // Filter: Accepted + Offering Diterima + belum onboarding (1:1 GAS)
     const matched = (window.__allCandidatesForStatus || []).filter(c => {
+      const eligible = c.offeringResponse === 'Diterima';
+      const notYet = !c.onboardingStatus || c.onboardingStatus === '' || c.onboardingStatus === 'Belum Onboarding';
       const name = (c.fullName || '').toLowerCase();
       const id = (c.recruitmentId || '').toLowerCase();
-      const pos = (c.positionApplied || '').toLowerCase();
-      return name.includes(q) || id.includes(q) || pos.includes(q);
+      return eligible && notYet && (name.includes(q) || id.includes(q));
     }).slice(0, 8);
 
     if (matched.length === 0) {
-      dropdown.innerHTML = '<div class="p-3 text-muted text-center" style="font-size:13px">Tidak ada kandidat yang cocok</div>';
+      dropdown.innerHTML = '<div class="px-3 py-2 text-muted" style="font-size:13px">Tidak ada kandidat yang memenuhi syarat (harus: Accepted + Offering Diterima + belum kontrak PKWT)</div>';
       dropdown.style.display = 'block';
       return;
     }
@@ -504,7 +762,7 @@
         </div>
         <div class="flex-grow-1" style="font-size:12.5px;">
           <div class="fw-semibold text-navy">${c.fullName || '-'}</div>
-          <div class="text-muted" style="font-size:11px">${c.recruitmentId} &bull; ${c.positionApplied || '-'}</div>
+          <div class="text-muted" style="font-size:11px">${c.positionApplied || '-'} &middot; ${c.recruitmentId} &middot; <span style="color:#166534">Offering Diterima</span></div>
         </div>
       </div>
     `).join('');
@@ -512,23 +770,117 @@
   }
 
   function selectOnboardingCandidate(c) {
+    _activeOnboardingRow = c;
     document.getElementById('onboardingSearchDropdown').style.display = 'none';
     document.getElementById('onboardingCandSearch').value = `${c.fullName} (${c.recruitmentId})`;
-    document.getElementById('onboardingRecruitmentId').value = c.recruitmentId;
+    document.getElementById('onboardingSearchClear').style.display = 'block';
+    _fillOnboardingCandPreview(c);
+    _updateOnboardingConfirmBtn();
+  }
 
-    document.getElementById('formOnboarding').action = `/hr/recruitment/${c.recruitmentId}/accept`;
-    document.getElementById('onboardingCandName').textContent = c.fullName || '-';
-    document.getElementById('onboardingCandPos').textContent = c.positionApplied || '-';
-    document.getElementById('onboardingCandEmail').textContent = c.email || '-';
-    document.getElementById('onboardingCandIdDisp').textContent = c.recruitmentId;
-    document.getElementById('onboardingCandAvatar').textContent = (c.fullName || 'C').substring(0, 2).toUpperCase();
+  function _fillOnboardingCandPreview(row) {
+    var previewEl = document.getElementById('onboardingCandPreview');
+    if (!row) {
+      if (previewEl) previewEl.style.display = 'none';
+      return;
+    }
+    if (previewEl) previewEl.style.display = 'block';
 
-    const btnPdf = document.getElementById('btnPreviewPkwt');
-    btnPdf.href = `/hr/export/kontrak-pkwt/${c.recruitmentId}`;
-    btnPdf.style.display = 'inline-block';
+    document.getElementById('onboardingCandAvatar').textContent = _onbInitials(row.fullName);
+    document.getElementById('onboardingCandName').textContent = row.fullName || '-';
+    document.getElementById('onboardingCandPosition').textContent = row.positionApplied || '-';
+    document.getElementById('onboardingCandEmail').textContent = row.email || '-';
+    document.getElementById('onboardingCandRid').textContent = row.recruitmentId || '-';
+    document.getElementById('onboardingCandEmpId').textContent = row.employeeId || '-';
+    document.getElementById('onboardingRecruitmentId').value = row.recruitmentId || '';
+    document.getElementById('onboardingEmployeeId').value = row.employeeId || '';
 
-    document.getElementById('onboardingCandPreview').style.display = 'block';
-    document.getElementById('btnConfirmOnboarding').disabled = false;
+    // Pre-fill dari Offering Letter
+    var offer = _onbNormalizeOffer(row);
+    _onbSetSelectOrValue(document.getElementById('onbBranchName'), offer.branchName);
+    _onbSetSelectOrValue(document.getElementById('onbDivision'), offer.division);
+    _onbSetSelectOrValue(document.getElementById('onbDepartment'), offer.department);
+
+    var posInput = document.getElementById('onbPosition');
+    if (posInput) posInput.value = offer.position || '';
+
+    var joinInput = document.getElementById('onbJoinDate');
+    if (joinInput) {
+      var normJoin = _onbToDateInput(offer.joinDate);
+      joinInput.value = normJoin || joinInput.value || new Date().toISOString().substring(0, 10);
+    }
+
+    var durSel = document.getElementById('onbContractDuration');
+    if (durSel && offer.contractDuration) _onbSetSelectOrValue(durSel, offer.contractDuration);
+
+    var docDateEl = document.getElementById('onbDocDate');
+    if (docDateEl && !docDateEl.value) docDateEl.value = new Date().toISOString().substring(0, 10);
+
+    var jamEl = document.getElementById('onbJamMasuk');
+    if (jamEl && !jamEl.value) jamEl.value = 'mulai pukul 07.00 WIB dan selambat-lambatnya sampai dengan pukul 07.15 WIB';
+
+    var wsEl = document.getElementById('onbWorkSchedule');
+    if (wsEl && !wsEl.value) wsEl.value = 'Normal';
+
+    var salInput = document.getElementById('onbSalaryBasic');
+    if (salInput) salInput.value = offer.salaryBasic ? String(offer.salaryBasic).replace(/[^\d]/g, '') : '';
+    var allowInput = document.getElementById('onbSalaryAllowance');
+    if (allowInput) allowInput.value = offer.allowTransport || offer.allowPulsa || '';
+
+    _calcOnboardingEndDate();
+
+    // Klausul jangka waktu — di-generate setelah end date terhitung
+    var tenorEl = document.getElementById('onbTenorText');
+    if (tenorEl && !tenorEl.value) {
+      var joinV = (document.getElementById('onbJoinDate') || {}).value || '';
+      var durV = (durSel && durSel.value) || '12 Bulan';
+      var endV = (document.getElementById('onbContractEnd') || {}).value || '';
+      var monthsNum = 12;
+      var mm = String(durV).match(/^(\d+)\s*bulan/i);
+      var yy = String(durV).match(/^(\d+)\s*tahun/i);
+      if (mm) monthsNum = parseInt(mm[1], 10);
+      else if (yy) monthsNum = parseInt(yy[1], 10) * 12;
+      tenorEl.value = 'PIHAK PERTAMA dengan ini menyatakan persetujuannya untuk mempekerjakan PIHAK KEDUA sebagai Karyawan PIHAK PERTAMA dengan jangka waktu ' +
+        monthsNum + ' (' + _onbNumToWords(monthsNum) + ') bulan terhitung sejak tanggal ' + _onbFmtDateLong(joinV) +
+        ' sampai dengan tanggal ' + _onbFmtDateLong(endV) + '.';
+    }
+
+    setTimeout(_updateOnboardingConfirmBtn, 0);
+  }
+
+  function _calcOnboardingEndDate() {
+    var startEl = document.getElementById('onbJoinDate');
+    var durationEl = document.getElementById('onbContractDuration');
+    var endEl = document.getElementById('onbContractEnd');
+    var hintEl = document.getElementById('onbContractEndHint');
+    if (!startEl || !durationEl || !endEl || !startEl.value || !durationEl.value) return;
+    var months = 12;
+    var durVal = durationEl.value.toLowerCase();
+    var monthMatch = durVal.match(/^(\d+)\s*bulan/i);
+    var yearMatch = durVal.match(/^(\d+)\s*tahun/i);
+    if (monthMatch) months = parseInt(monthMatch[1], 10);
+    else if (yearMatch) months = parseInt(yearMatch[1], 10) * 12;
+
+    var startDate = new Date(startEl.value);
+    startDate.setMonth(startDate.getMonth() + months);
+    startDate.setDate(startDate.getDate() - 1); // akhir periode kontrak
+    var yyyy = startDate.getFullYear();
+    var mm = String(startDate.getMonth() + 1).padStart(2, '0');
+    var dd = String(startDate.getDate()).padStart(2, '0');
+    endEl.value = yyyy + '-' + mm + '-' + dd;
+    if (hintEl) hintEl.innerText = 'Auto-hitung dari durasi ' + durationEl.value;
+  }
+
+  function _updateOnboardingConfirmBtn() {
+    var confirmBtn = document.getElementById('btnConfirmOnboarding');
+    if (!confirmBtn) return;
+    var hasCand     = !!_activeOnboardingRow;
+    var hasBranch   = !!((document.getElementById('onbBranchName')       || {}).value);
+    var hasDept     = !!((document.getElementById('onbDepartment')       || {}).value);
+    var hasPos      = !!((document.getElementById('onbPosition')         || {}).value);
+    var hasDuration = !!((document.getElementById('onbContractDuration') || {}).value);
+    var hasJoin     = !!((document.getElementById('onbJoinDate')         || {}).value);
+    confirmBtn.disabled = !(hasCand && hasBranch && hasDept && hasPos && hasDuration && hasJoin);
   }
 
   function clearOnboardingSearch() {
@@ -536,7 +888,8 @@
     document.getElementById('onboardingSearchDropdown').style.display = 'none';
     document.getElementById('onboardingSearchClear').style.display = 'none';
     document.getElementById('onboardingCandPreview').style.display = 'none';
-    document.getElementById('btnConfirmOnboarding').disabled = true;
+    _activeOnboardingRow = null;
+    _updateOnboardingConfirmBtn();
   }
 
   function handleOfferingSearch(query) {
@@ -551,14 +904,17 @@
     }
 
     const matched = (window.__allCandidatesForStatus || []).filter(c => {
+      // Kandidat yang sudah memiliki offering tidak boleh dibuatkan offering baru —
+      // revisi dilakukan lewat tombol Edit (preview offering). (1:1 GAS)
+      const hasOffer = c.offeringCreated && c.offeringCreated !== '-' && c.offeringCreated !== '';
+      if (hasOffer) return false;
       const name = (c.fullName || '').toLowerCase();
       const id = (c.recruitmentId || '').toLowerCase();
-      const pos = (c.positionApplied || '').toLowerCase();
-      return name.includes(q) || id.includes(q) || pos.includes(q);
+      return name.includes(q) || id.includes(q);
     }).slice(0, 8);
 
     if (matched.length === 0) {
-      dropdown.innerHTML = '<div class="p-3 text-muted text-center" style="font-size:13px">Tidak ada kandidat yang cocok</div>';
+      dropdown.innerHTML = '<div class="p-3 text-muted text-center" style="font-size:13px">Tidak ada kandidat ditemukan</div>';
       dropdown.style.display = 'block';
       return;
     }
@@ -903,6 +1259,254 @@
         btnSaveOffering.disabled = false;
         btnSaveOffering.innerHTML = '<i class="bi bi-save2 me-1"></i>Simpan Offering';
         if (typeof showToast === 'function') showToast('Error: ' + err.message, 'error');
+      });
+    });
+  });
+
+  // ============================================================
+  // OFFERING RESPONSE MODAL (1:1 from GAS js/statusPages.html)
+  // Status: Menunggu (default) → Diterima / Ditolak
+  // ============================================================
+  var _activeOfferRespRow = null;
+
+  window.openOfferingResponseModal = function(row) {
+    _activeOfferRespRow = row;
+    var idEl = document.getElementById('offerRespRecruitmentId');
+    var nameEl = document.getElementById('offerRespCandName');
+    if (idEl) idEl.value = row.recruitmentId || '';
+    if (nameEl) nameEl.innerText = (row.fullName || '-') + ' · ' + (row.recruitmentId || '');
+
+    // Default "Menunggu" jika belum ada response
+    var currentResp = row.offeringResponse || '';
+    if (!currentResp || currentResp === '-') currentResp = 'Menunggu';
+
+    var hiddenEl = document.getElementById('offerRespValue');
+    if (hiddenEl) hiddenEl.value = currentResp;
+    _updateOfferRespOptionStyles();
+
+    var notesEl = document.getElementById('offerRespNotes');
+    if (notesEl) notesEl.value = row.offeringResponseNotes || '';
+
+    var confirmBtn = document.getElementById('btnConfirmOfferResp');
+    if (confirmBtn) confirmBtn.disabled = false;
+
+    var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('offeringResponseModal'));
+    modal.show();
+  };
+
+  function _updateOfferRespOptionStyles() {
+    var colorMap = {
+      'Menunggu': { border: '#d97706', bg: '#fffbeb' },
+      'Diterima': { border: '#166534', bg: '#f0fdf4' },
+      'Ditolak':  { border: '#991b1b', bg: '#fff1f2' }
+    };
+    var selectedVal = (document.getElementById('offerRespValue') || {}).value || '';
+    document.querySelectorAll('.offer-resp-opt').forEach(function(opt) {
+      var val = opt.getAttribute('data-value');
+      var dot = opt.querySelector('.offer-resp-dot');
+      var inner = opt.querySelector('.offer-resp-dot-inner');
+      var isSelected = val === selectedVal;
+      var colors = colorMap[val] || { border: '#e5e7eb', bg: '' };
+      opt.style.borderColor = isSelected ? colors.border : '#e5e7eb';
+      opt.style.background = isSelected ? colors.bg : '';
+      if (dot) {
+        dot.style.borderColor = isSelected ? colors.border : '#d1d5db';
+        dot.style.background = isSelected ? colors.border : 'transparent';
+      }
+      if (inner) inner.style.background = isSelected ? '#fff' : 'transparent';
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    // Click handler untuk custom card-style option selector
+    document.querySelectorAll('.offer-resp-opt').forEach(function(opt) {
+      opt.addEventListener('click', function() {
+        var val = opt.getAttribute('data-value');
+        var hiddenEl = document.getElementById('offerRespValue');
+        if (hiddenEl) hiddenEl.value = val;
+        _updateOfferRespOptionStyles();
+        var confirmBtn = document.getElementById('btnConfirmOfferResp');
+        if (confirmBtn) confirmBtn.disabled = false;
+      });
+    });
+
+    var confirmBtn = document.getElementById('btnConfirmOfferResp');
+    if (!confirmBtn) return;
+    confirmBtn.addEventListener('click', function() {
+      var recruitmentId = (document.getElementById('offerRespRecruitmentId') || {}).value;
+      var response = (document.getElementById('offerRespValue') || {}).value || '';
+      var notes = (document.getElementById('offerRespNotes') || {}).value || '';
+      if (!recruitmentId || !response) return;
+
+      var origBtnHtml = confirmBtn.innerHTML;
+      confirmBtn.disabled = true;
+      confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Menyimpan...';
+
+      fetch('/hr/recruitment/' + recruitmentId + '/save-offering-response', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': getCsrfToken(), 'Accept': 'application/json' },
+        body: JSON.stringify({ response: response, notes: notes })
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(result) {
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = origBtnHtml;
+        var modal = bootstrap.Modal.getInstance(document.getElementById('offeringResponseModal'));
+        if (modal) modal.hide();
+        if (result && result.success) {
+          // Update object row di memory agar modal berikutnya pre-select nilai terbaru
+          if (_activeOfferRespRow) {
+            _activeOfferRespRow.offeringResponse = response;
+            _activeOfferRespRow.offeringResponseNotes = notes;
+          }
+          if (typeof showToast === 'function') showToast('Respons offering berhasil disimpan: ' + response, 'success');
+
+          // Update badge respons di drawer header secara live tanpa reload penuh
+          if (typeof window.renderOfferingRespBadge === 'function') {
+            window.renderOfferingRespBadge(response);
+          }
+        } else {
+          if (typeof showToast === 'function') showToast('Gagal: ' + (result ? result.message : 'Error'), 'error');
+        }
+      })
+      .catch(function(err) {
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = origBtnHtml;
+        if (typeof showToast === 'function') showToast('Error: ' + (err ? err.message : 'Unknown'), 'error');
+      });
+    });
+  });
+
+  // ============================================================
+  // KONTRAK PKWT — live validation, auto end-date, submit + auto PDF
+  // ============================================================
+  document.addEventListener('DOMContentLoaded', function() {
+    // Live validation field wajib
+    ['onbBranchName','onbDepartment','onbPosition','onbContractDuration','onbJoinDate'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', _updateOnboardingConfirmBtn);
+        el.addEventListener('change', _updateOnboardingConfirmBtn);
+      }
+    });
+
+    // Auto-hitung end date saat durasi / join date berubah
+    var durationEl = document.getElementById('onbContractDuration');
+    var joinDateEl = document.getElementById('onbJoinDate');
+    if (durationEl) durationEl.addEventListener('change', function() { _calcOnboardingEndDate(); _updateOnboardingConfirmBtn(); });
+    if (joinDateEl) joinDateEl.addEventListener('change', function() { _calcOnboardingEndDate(); _updateOnboardingConfirmBtn(); });
+
+    // Reset saat modal ditutup
+    var modalEl = document.getElementById('onboardingModal');
+    if (modalEl) {
+      modalEl.addEventListener('hidden.bs.modal', function() {
+        _activeOnboardingRow = null;
+        var searchEl = document.getElementById('onboardingCandSearch');
+        if (searchEl) searchEl.value = '';
+        var clearEl = document.getElementById('onboardingSearchClear');
+        if (clearEl) clearEl.style.display = 'none';
+        var dropEl = document.getElementById('onboardingSearchDropdown');
+        if (dropEl) dropEl.style.display = 'none';
+        var previewEl = document.getElementById('onboardingCandPreview');
+        if (previewEl) previewEl.style.display = 'none';
+        ['onbBranchName','onbDivision','onbDepartment','onbPosition','onbDirectSuperior',
+         'onbJoinDate','onbContractNumber','onbContractDuration','onbContractEnd',
+         'onbSalaryBasic','onbSalaryAllowance','onbDocDate','onbJamMasuk','onbWorkSchedule','onbTenorText'].forEach(function(fid) {
+          var el = document.getElementById(fid); if (el) el.value = '';
+        });
+        var hintEl = document.getElementById('onbContractEndHint');
+        if (hintEl) hintEl.innerText = 'Terisi otomatis dari durasi kontrak';
+        var textEl = document.getElementById('btnOnboardingText');
+        var loadEl = document.getElementById('btnOnboardingLoading');
+        if (textEl) textEl.style.display = 'inline-flex';
+        if (loadEl) loadEl.style.display = 'none';
+        var confirmBtn = document.getElementById('btnConfirmOnboarding');
+        if (confirmBtn) confirmBtn.disabled = true;
+      });
+    }
+
+    // Submit Kontrak PKWT → simpan + auto-generate PDF
+    var confirmBtn = document.getElementById('btnConfirmOnboarding');
+    if (!confirmBtn) return;
+    confirmBtn.addEventListener('click', function() {
+      var recruitmentId = (document.getElementById('onboardingRecruitmentId') || {}).value;
+      if (!recruitmentId) {
+        if (typeof showToast === 'function') showToast('Pilih kandidat terlebih dahulu.', 'error');
+        return;
+      }
+
+      var payload = {
+        employee_id:       (document.getElementById('onboardingEmployeeId') || {}).value || '',
+        branch_name:       (document.getElementById('onbBranchName')        || {}).value || '',
+        division:          (document.getElementById('onbDivision')          || {}).value || '',
+        department:        (document.getElementById('onbDepartment')        || {}).value || '',
+        position:          (document.getElementById('onbPosition')          || {}).value || '',
+        direct_superior:   (document.getElementById('onbDirectSuperior')    || {}).value || '',
+        join_date:         (document.getElementById('onbJoinDate')          || {}).value || '',
+        contract_number:   (document.getElementById('onbContractNumber')    || {}).value || '',
+        contract_duration: (document.getElementById('onbContractDuration')  || {}).value || '',
+        contract_end:      (document.getElementById('onbContractEnd')       || {}).value || '',
+        salary_basic:      (document.getElementById('onbSalaryBasic')       || {}).value || '',
+        salary_allowance:  (document.getElementById('onbSalaryAllowance')   || {}).value || '',
+        doc_date:          (document.getElementById('onbDocDate')           || {}).value || '',
+        jam_masuk:         (document.getElementById('onbJamMasuk')          || {}).value || '',
+        work_schedule:     (document.getElementById('onbWorkSchedule')      || {}).value || '',
+        tenor_text:        (document.getElementById('onbTenorText')         || {}).value || '',
+      };
+
+      var textEl = document.getElementById('btnOnboardingText');
+      var loadEl = document.getElementById('btnOnboardingLoading');
+      confirmBtn.disabled = true;
+      if (textEl) textEl.style.display = 'none';
+      if (loadEl) loadEl.style.display = 'inline-flex';
+
+      fetch('/hr/recruitment/' + recruitmentId + '/save-contract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': getCsrfToken(), 'Accept': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(result) {
+        confirmBtn.disabled = false;
+        if (textEl) textEl.style.display = 'inline-flex';
+        if (loadEl) loadEl.style.display = 'none';
+
+        if (result && result.success) {
+          var modal = bootstrap.Modal.getInstance(document.getElementById('onboardingModal'));
+          if (modal) modal.hide();
+          if (typeof showToast === 'function') {
+            showToast('Kontrak PKWT berhasil diproses! Karyawan kini berstatus Contract.', 'success');
+          }
+
+          // Auto-generate & download PDF Kontrak PKWT (1:1 GAS)
+          var pdfParams = new URLSearchParams({
+            branch_name: payload.branch_name,
+            position: payload.position,
+            department: payload.department,
+            division: payload.division,
+            direct_superior: payload.direct_superior,
+            contract_number: result.contractNumber || payload.contract_number,
+            doc_date: payload.doc_date,
+            contract_duration: payload.contract_duration,
+            join_date: payload.join_date,
+            contract_end: payload.contract_end,
+            tenor_text: payload.tenor_text,
+            jam_masuk: payload.jam_masuk,
+            work_schedule: payload.work_schedule,
+          });
+          var pdfId = result.employeeId || recruitmentId;
+          window.open('/hr/export/kontrak-pkwt/' + pdfId + '?' + pdfParams.toString(), '_blank');
+
+          setTimeout(function() { location.reload(); }, 800);
+        } else {
+          if (typeof showToast === 'function') showToast('Gagal proses kontrak: ' + (result ? result.message : 'Error'), 'error');
+        }
+      })
+      .catch(function(err) {
+        confirmBtn.disabled = false;
+        if (textEl) textEl.style.display = 'inline-flex';
+        if (loadEl) loadEl.style.display = 'none';
+        if (typeof showToast === 'function') showToast('Error: ' + (err ? err.message : 'Unknown'), 'error');
       });
     });
   });

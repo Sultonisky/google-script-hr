@@ -92,15 +92,21 @@ class CandidateSheetsRepository implements CandidateRepositoryInterface
 
     public function update(string $recruitmentId, array $attributes): bool
     {
-        $existing = $this->findById($recruitmentId);
-        if (!$existing || !$existing->rowNumber) {
+        // Cari sheet & row yang benar — kandidat bisa berada di data_kandidat,
+        // kandidat_hold, kandidat_blacklist, atau kandidat_accepted (setelah
+        // dipindah lewat moveToSheet). Update harus menargetkan sheet asalnya.
+        $location = $this->locateRow($recruitmentId);
+        if (!$location) {
             return false;
         }
 
-        $allRows = $this->sheets->getRange($this->sheetName, "A{$existing->rowNumber}:ZZ{$existing->rowNumber}", false);
+        $sheetName = $location['sheetName'];
+        $rowNumber = $location['rowNumber'];
+
+        $allRows = $this->sheets->getRange($sheetName, "A{$rowNumber}:ZZ{$rowNumber}", false);
         if (empty($allRows)) return false;
 
-        $headers = $this->sheets->getRange($this->sheetName, '1:1', true)[0] ?? [];
+        $headers = $this->sheets->getRange($sheetName, '1:1', true)[0] ?? [];
         $currentRow = $allRows[0];
 
         foreach ($attributes as $key => $val) {
@@ -116,7 +122,25 @@ class CandidateSheetsRepository implements CandidateRepositoryInterface
             $currentRow[$updatedAtIdx] = now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s');
         }
 
-        return $this->sheets->updateRow($this->sheetName, $existing->rowNumber, $currentRow);
+        return $this->sheets->updateRow($sheetName, $rowNumber, $currentRow);
+    }
+
+    /**
+     * Cari lokasi (sheet + nomor baris) sebuah Recruitment ID di seluruh sheet kandidat.
+     * Mengembalikan ['sheetName' => string, 'rowNumber' => int] atau null bila tidak ditemukan.
+     */
+    private function locateRow(string $recruitmentId): ?array
+    {
+        $sheetKeys = ['candidates', 'candidates_hold', 'candidates_blacklist', 'candidates_accepted', 'candidates_probation'];
+        foreach ($sheetKeys as $key) {
+            $sheetName = config("google.sheets.{$key}");
+            if (!$sheetName) continue;
+            $row = $this->sheets->findRowBy($sheetName, 'Recruitment ID', $recruitmentId);
+            if ($row && isset($row['_row_number'])) {
+                return ['sheetName' => $sheetName, 'rowNumber' => (int) $row['_row_number']];
+            }
+        }
+        return null;
     }
 
     public function updateStatus(string $recruitmentId, string $status, ?string $notes = null, array $extra = []): bool

@@ -61,6 +61,9 @@ class CandidateData
         public ?string $offeringContractDuration = null,
         public ?string $offeringWorkingHours = null,
         public ?string $offeringDepartment = null,
+        public ?string $onboardingStatus = null,
+        public ?string $onboardingDate = null,
+        public ?string $onboardingBy = null,
         public ?int $rowNumber = null
     ) {}
 
@@ -123,6 +126,9 @@ class CandidateData
             offeringContractDuration: $row['Offering Contract Duration'] ?? null,
             offeringWorkingHours: $row['Offering Working Hours'] ?? null,
             offeringDepartment: $row['Offering Department'] ?? ($row['Department'] ?? null),
+            onboardingStatus: $row['Onboarding Status'] ?? null,
+            onboardingDate: $row['Onboarding Date'] ?? null,
+            onboardingBy: $row['Onboarding By'] ?? null,
             rowNumber: $row['_row_number'] ?? null
         );
     }

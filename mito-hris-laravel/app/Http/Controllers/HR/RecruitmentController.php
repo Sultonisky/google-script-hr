@@ -107,7 +107,10 @@ class RecruitmentController extends Controller
     public function accepted(Request $request): View
     {
         $perPage = $request->query('per_page', 10);
-        $candidates = $this->candidateRepo->getAllFromSheets(['candidates_accepted']);
+        // Full accepted list (unfiltered) — dipakai oleh search modal "Buat Offering Letter"
+        // agar modal melihat seluruh kandidat Accepted, bukan hanya hasil filter tabel.
+        $allCandidates = $this->candidateRepo->getAllFromSheets(['candidates_accepted']);
+        $candidates = $allCandidates;
         $searchFilter = $request->query('search');
         if ($searchFilter) {
             $search = strtolower($searchFilter);
@@ -117,8 +120,10 @@ class RecruitmentController extends Controller
             )->values();
         }
         $stats = [
-            'offering'   => $this->candidateRepo->getAllFromSheets(['candidates_accepted'])->filter(fn($c) => strtolower($c->status ?? '') === 'offering')->count(),
-            'onboarding' => $candidates->count(),
+            // Total Offering Letter = kandidat Accepted yang sudah punya Offering Created (1:1 GAS)
+            'offering'   => $allCandidates->filter(fn($c) => !empty($c->offeringCreated) && $c->offeringCreated !== '-')->count(),
+            // Kontrak PKWT Selesai = kandidat yang sudah diproses onboarding (status Contract)
+            'onboarding' => $allCandidates->filter(fn($c) => !empty($c->onboardingStatus) && $c->onboardingStatus !== '-' && $c->onboardingStatus !== '')->count(),
         ];
 
         $total = $candidates->count();
@@ -126,7 +131,7 @@ class RecruitmentController extends Controller
         $offset = ($currentPage - 1) * $perPage;
         $paginatedCandidates = $candidates->slice($offset, $perPage)->values();
 
-        return view('hr.recruitment.pages.accepted', compact('paginatedCandidates', 'candidates', 'stats', 'perPage', 'currentPage', 'total'));
+        return view('hr.recruitment.pages.accepted', compact('paginatedCandidates', 'candidates', 'allCandidates', 'stats', 'perPage', 'currentPage', 'total'));
     }
 
     public function holdPage(Request $request): View
@@ -351,6 +356,76 @@ class RecruitmentController extends Controller
             $this->candidateRepo->update($id, $offeringData);
 
             return response()->json(['success' => true, 'message' => 'Data offering berhasil disimpan.']);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Simpan respons kandidat terhadap offering letter (1:1 GAS saveOfferingResponse).
+     * response: "Menunggu" | "Diterima" | "Ditolak"
+     */
+    public function saveOfferingResponse(Request $request, string $id): JsonResponse
+    {
+        try {
+            $response = $request->input('response', 'Menunggu');
+            $notes = $request->input('notes', '');
+            $user = auth()->user()->name ?? auth()->user()->email ?? 'HR Administrator';
+
+            $allowed = ['Menunggu', 'Diterima', 'Ditolak'];
+            if (!in_array($response, $allowed, true)) {
+                return response()->json(['success' => false, 'message' => 'Respons tidak valid.'], 422);
+            }
+
+            $candidate = $this->candidateRepo->findById($id);
+            if (!$candidate) {
+                return response()->json(['success' => false, 'message' => "Recruitment ID tidak ditemukan: {$id}"], 404);
+            }
+
+            // Guard: hanya kandidat yang sudah punya offering letter yang boleh di-update responsnya
+            if (empty($candidate->offeringCreated) || $candidate->offeringCreated === '-') {
+                return response()->json(['success' => false, 'message' => 'Kandidat belum memiliki offering letter.'], 422);
+            }
+
+            $this->candidateRepo->update($id, [
+                'Offering Response' => $response,
+                'Offering Response Notes' => $notes,
+                'Offering Response Date' => now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
+                'Offering Response By' => $user,
+            ]);
+
+            $this->auditRepo->log(
+                $id,
+                'Offering Response',
+                'Offering Response',
+                '-',
+                $response . ($notes ? " — {$notes}" : '') . " by {$user}",
+                $user
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Respons offering berhasil disimpan.',
+                'recruitmentId' => $id,
+                'response' => $response,
+                'updatedBy' => $user,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Proses Kontrak PKWT & Onboarding — buat Employee (Contract) + tandai onboarding,
+     * lalu kembalikan detail kontrak agar frontend bisa auto-generate PDF (1:1 GAS).
+     */
+    public function saveContract(Request $request, string $id): JsonResponse
+    {
+        try {
+            $user = auth()->user()->name ?? auth()->user()->email ?? 'HR Administrator';
+            $result = $this->recruitmentService->processContractOnboarding($id, $request->all(), $user);
+
+            return response()->json($result);
         } catch (\Throwable $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
