@@ -235,22 +235,105 @@ class EmployeeController extends Controller
 
     /**
      * Process Employee Offboarding.
+     * Supports multipart/form-data with optional file attachments.
+     * Returns pdf_urls for auto-download on the frontend (1:1 pattern with offContract).
      */
     public function offboard(Request $request, string $id): RedirectResponse|JsonResponse
     {
         $request->validate([
-            'offboarding_type' => 'required|string',
-            'reason'           => 'required|string',
+            'offboarding_type'  => 'required|string|in:Resignation,Termination,Retirement,Death',
+            'reason'            => 'required|string|max:1000',
             'last_working_date' => 'required|date',
+            // attachments: one file per doc type, keyed as attachment_{docType}
+            // Only Death is required; others are optional
         ]);
 
-        $this->employeeService->processOffboarding($id, $request->all(), Auth::user()?->name ?? 'HR Team');
+        $offboardingType = $request->input('offboarding_type');
 
-        if ($request->wantsJson() || $request->ajax() || $request->isXmlHttpRequest()) {
-            return response()->json(['success' => true, 'message' => "Offboarding karyawan {$id} berhasil diproses."]);
+        // Backend attachment validation — Death requires Surat Kematian (1:1 GAS _hasRequiredDeathDocument_)
+        if ($offboardingType === 'Death') {
+            $hasDeathDoc = false;
+            foreach ($request->allFiles() as $key => $file) {
+                if (str_starts_with($key, 'attachment_')) {
+                    $docType = str_replace('attachment_', '', $key);
+                    if (strtolower($docType) === 'surat kematian' || $docType === 'Surat_Kematian') {
+                        $hasDeathDoc = true;
+                        break;
+                    }
+                }
+            }
+            // Also check as generic key 'attachment_death_cert'
+            if (!$hasDeathDoc && $request->hasFile('attachment_death_cert')) {
+                $hasDeathDoc = true;
+            }
+            if (!$hasDeathDoc) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tipe Meninggal Dunia (Death) wajib melampirkan Surat Kematian.',
+                ], 422);
+            }
         }
 
-        return redirect()->back()->with('success', "Offboarding karyawan {$id} berhasil diproses.");
+        // Validate uploaded files: max 5MB, allowed MIME types (1:1 GAS _OFFB_DOC_MAX_BYTES / _OFFB_DOC_ACCEPT)
+        $allowedMimes = ['application/pdf', 'image/jpeg', 'image/png', 'application/msword',
+                         'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+        foreach ($request->allFiles() as $key => $file) {
+            if (!str_starts_with($key, 'attachment_')) {
+                continue;
+            }
+            if ($file->getSize() > 5 * 1024 * 1024) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "File \"{$file->getClientOriginalName()}\" melebihi batas 5 MB.",
+                ], 422);
+            }
+            if (!in_array($file->getMimeType(), $allowedMimes, true)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Tipe file \"{$file->getClientOriginalName()}\" tidak diizinkan. Gunakan PDF, JPG, PNG, DOC, atau DOCX.",
+                ], 422);
+            }
+        }
+
+        // Collect attachments keyed by doc type label
+        $attachments = [];
+        foreach ($request->allFiles() as $key => $file) {
+            if (!str_starts_with($key, 'attachment_')) {
+                continue;
+            }
+            // Convert key back to doc type label: attachment_Surat_Kematian → Surat Kematian
+            $docType = str_replace(['attachment_', '_'], ['', ' '], $key);
+            $attachments[trim($docType)] = $file;
+        }
+
+        // Merge attachments into data array under a special key
+        $data               = $request->all();
+        $data['_attachments'] = $attachments;
+
+        try {
+            $result = $this->employeeService->processOffboarding(
+                $id,
+                $data,
+                auth()->user()?->name ?? 'HR Team'
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("EmployeeController::offboard error for {$id}: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat memproses offboarding: ' . $e->getMessage(),
+            ], 500);
+        }
+
+        if (!$result['success']) {
+            return response()->json($result, 422);
+        }
+
+        // Build staggered PDF download URLs (same pattern as offContract)
+        if ($request->wantsJson() || $request->ajax() || $request->isXmlHttpRequest()) {
+            return response()->json($result);
+        }
+
+        return redirect()->back()->with('success', $result['message']);
     }
 
     /**

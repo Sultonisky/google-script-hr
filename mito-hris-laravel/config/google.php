@@ -42,7 +42,8 @@ return [
     |--------------------------------------------------------------------------
     */
     'drive' => [
-        'docs_folder_id' => env('GOOGLE_DRIVE_DOCS_FOLDER_ID', ''),
+        'docs_folder_id'         => env('GOOGLE_DRIVE_DOCS_FOLDER_ID', ''),
+        'offboarding_folder_id'  => env('GOOGLE_DRIVE_OFFBOARDING_FOLDER_ID', ''),
     ],
 
     /*

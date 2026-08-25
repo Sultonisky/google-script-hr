@@ -289,6 +289,18 @@ class EmployeeService
 
     /**
      * Process Employee Offboarding (Resign, Terminated, Retired, Deceased) (1:1 with backend/Employee.gs).
+     *
+     * Offboarding types (1:1 GAS statusMap):
+     *   Resignation  → Resigned
+     *   Termination  → Terminated
+     *   Retirement   → Retired
+     *   Death        → Deceased
+     *
+     * Attachment requirement (1:1 GAS _hasRequiredDeathDocument_):
+     *   Death → requires 'attachment_Death' (Surat Kematian)
+     *   Others → optional documents
+     *
+     * @throws RuntimeException when employee not found
      */
     public function processOffboarding(string $employeeId, array $data, ?string $user = null): array
     {
@@ -298,67 +310,169 @@ class EmployeeService
         }
 
         $user = $user ?: 'HR Administrator';
-        $now = now()->timezone('Asia/Jakarta');
+        $now    = now()->timezone('Asia/Jakarta');
         $nowStr = $now->format('Y-m-d H:i:s');
-        $offboardingType = $data['offboarding_type'] ?? 'Resigned';
-        $effectiveDate = $data['effective_date'] ?? $data['last_working_date'] ?? $now->format('Y-m-d');
 
+        $offboardingType = trim($data['offboarding_type'] ?? 'Resignation');
+        $effectiveDate   = trim($data['effective_date'] ?? $data['last_working_date'] ?? $now->format('Y-m-d'));
+        $reason          = trim($data['reason'] ?? '');
+        $approvedBy      = trim($data['approved_by'] ?? $user);
+        $notes           = trim($data['notes'] ?? '');
+
+        // Map offboarding type → new status (1:1 GAS statusMap)
+        $statusMap = [
+            'Resignation'       => 'Resigned',
+            'Termination'       => 'Terminated',
+            'Retirement'        => 'Retired',
+            'Death'             => 'Deceased',
+        ];
+        $newStatus = $statusMap[$offboardingType] ?? 'Resigned';
+        $oldStatus = $employee->statusEmployee ?? 'Active';
+
+        // Generate SK number server-side (1:1 GAS generateSkOffNumber_)
+        $branchForEntity = strtolower($employee->branchName ?? '');
+        if (str_contains($branchForEntity, 'stein')) {
+            $entityCode = 'SPI';
+        } elseif (str_contains($branchForEntity, 'injeksi')) {
+            $entityCode = 'PII';
+        } elseif (str_contains($branchForEntity, 'mitra') || str_contains($branchForEntity, 'elektro')) {
+            $entityCode = 'MEP';
+        } else {
+            $entityCode = 'MSI';
+        }
+        $romanMonth = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+        $datePart   = $now->format('Ym');
+        $cacheKey   = "SK_OFF_COUNTER_{$datePart}";
+        $lock       = \Illuminate\Support\Facades\Cache::lock("lock_{$cacheKey}", 10);
+        try {
+            $lock->block(10);
+            $seq = (int) \Illuminate\Support\Facades\Cache::get($cacheKey, 0) + 1;
+            \Illuminate\Support\Facades\Cache::put($cacheKey, $seq, $now->endOfMonth());
+        } finally {
+            $lock->release();
+        }
+        $skNumber = sprintf('%03d/HRD-SKK/%s/%s/%d', $seq, $entityCode, $romanMonth[$now->month - 1], $now->year);
+
+        // Preserve last position to Job Position (Former) if not already set
+        $currentPosition = $employee->jobPositionLocation ?? $employee->jobPosition ?? '';
+        $formerPosition  = $employee->jobPositionFormer ?? '';
+
+        $noteLine = "[Offboarding {$nowStr}] {$offboardingType} — SK: {$skNumber}";
+        if ($notes) {
+            $noteLine .= " | {$notes}";
+        }
+        $updatedNotes = $employee->hrNotes
+            ? $employee->hrNotes . "\n" . $noteLine
+            : $noteLine;
+
+        // Step 1: Update Employee Sheet
         $attributes = [
-            'Status Employee'          => $offboardingType,
+            'Status Employee'          => $newStatus,
             'Resign Date'              => $effectiveDate,
             'Offboarding Type'         => $offboardingType,
-            'Offboarding Reason'       => $data['reason'] ?? '',
-            'Offboarding Approved By'  => $data['approved_by'] ?? $user,
-            'HR Notes'                 => $data['notes'] ?? $employee->hrNotes,
+            'Offboarding Reason'       => $reason,
+            'Offboarding Approved By'  => $approvedBy,
+            'Nomor SK'                 => $skNumber,
+            'HR Notes'                 => $updatedNotes,
             'Updated At'               => $nowStr,
         ];
-
-        $success = $this->employeeRepo->update($employeeId, $attributes);
-
-        if ($success) {
-            $this->auditRepo->log(
-                recruitmentId: $employeeId,
-                action: 'OFFBOARDING_' . strtoupper($offboardingType),
-                field: 'Status Employee',
-                oldValue: $employee->statusEmployee,
-                newValue: $offboardingType,
-                user: $user
-            );
+        if ($currentPosition && !$formerPosition) {
+            $attributes['Job Position (Former)'] = $currentPosition;
+        }
+        if (!empty($data['bpjs_tk'])) {
+            $attributes['BPJS Ketenagakerjaan'] = $data['bpjs_tk'];
+        }
+        if (!empty($data['bpjs_kes'])) {
+            $attributes['BPJS Kesehatan'] = $data['bpjs_kes'];
         }
 
-        $documents = json_decode($data['documents'] ?? '[]', true);
-        $driveResult = null;
-        if (!empty($documents)) {
-            $uploadMethod = 'uploadOffboardingDocuments';
-            if (method_exists($this->driveService, $uploadMethod)) {
-                $driveResult = $this->driveService->{$uploadMethod}($employee, $documents);
-            } else {
-                $driveResult = [
-                    'success' => false,
-                    'message' => 'Upload dokumen offboarding tidak tersedia.',
-                ];
+        $success = $this->employeeRepo->update($employeeId, $attributes);
+        if (!$success) {
+            return [
+                'success' => false,
+                'message' => "Gagal memperbarui data karyawan {$employeeId} di Google Sheets.",
+            ];
+        }
+
+        $this->auditRepo->log(
+            recruitmentId: $employeeId,
+            action: 'OFFBOARDING_' . strtoupper($offboardingType),
+            field: 'Status Employee',
+            oldValue: $oldStatus,
+            newValue: "{$newStatus} — {$offboardingType} (SK: {$skNumber})",
+            user: $user
+        );
+
+        // Step 2: Upload attachment documents to Google Drive
+        $driveResult = ['success' => true, 'folder_url' => null, 'links_string' => ''];
+        $attachments  = $data['_attachments'] ?? []; // UploadedFile[] keyed by doc type
+        if (!empty($attachments)) {
+            $existingFolder = $employee->offboardingDocsFolder ?? null;
+            $driveResult = $this->driveService->uploadOffboardingDocuments(
+                $employeeId,
+                $employee->fullName ?? $employeeId,
+                $attachments,
+                $existingFolder
+            );
+
+            if ($driveResult['success'] && ($driveResult['folder_url'] || $driveResult['links_string'])) {
+                $sheetAttrs = [];
+                if ($driveResult['folder_url']) {
+                    $sheetAttrs['Offboarding Documents Folder'] = $driveResult['folder_url'];
+                }
+                if ($driveResult['links_string']) {
+                    $existingLinks = $employee->offboardingDocLinks ?? '';
+                    $sheetAttrs['Offboarding Document Links'] = $existingLinks
+                        ? $existingLinks . "\n" . $driveResult['links_string']
+                        : $driveResult['links_string'];
+                }
+                if (!empty($sheetAttrs)) {
+                    $this->employeeRepo->update($employeeId, $sheetAttrs);
+                }
+
+                if (!empty($driveResult['uploaded'])) {
+                    $docSummary = implode('; ', array_map(
+                        fn($d) => ($d['type'] ?? '') . ': ' . ($d['fileName'] ?? ''),
+                        $driveResult['uploaded']
+                    ));
+                    $this->auditRepo->log(
+                        recruitmentId: $employeeId,
+                        action: 'OFFBOARDING_DOCUMENT',
+                        field: 'Offboarding Document Links',
+                        oldValue: '-',
+                        newValue: $docSummary,
+                        user: $user
+                    );
+                }
             }
         }
 
-        $pdfs = [];
-        $extraData = [
-            'effective_date' => $effectiveDate,
+        // Step 3: Build PDF download URLs (same pattern as processOffContract)
+        // PDFs are NOT generated server-side here — they are downloaded via existing export routes
+        // using the employee data that was just written to the sheet.
+        $extraQ = http_build_query([
+            'effective_date'    => $effectiveDate,
             'last_working_date' => $effectiveDate,
-            'sk_number' => $employee->nomorSk ?? '',
-            'notes' => $data['notes'] ?? '',
-            'approved_by' => $data['approved_by'] ?? $user,
+            'sk_number'         => $skNumber,
+            'offboarding_type'  => $offboardingType,
+            'notes'             => $notes,
+            'approved_by'       => $approvedBy,
+        ]);
+        $pdfUrls = [
+            'sk_off'     => route('hr.export.sk-off',     ['id' => $employeeId]) . '?' . $extraQ,
+            'surat_bpjs' => route('hr.export.surat-bpjs', ['id' => $employeeId]) . '?' . $extraQ,
+            'paklaring'  => route('hr.export.paklaring',  ['id' => $employeeId]) . '?' . $extraQ,
         ];
 
-        $pdfs[] = $this->pdfService->generateSuratBpjsPdf($employee, $extraData)->output();
-        $pdfs[] = $this->pdfService->generateSkOffPdf($employee, $extraData)->output();
-        $pdfs[] = $this->pdfService->generatePaklaringPdf($employee, $extraData)->output();
-
         return [
-            'success' => $success,
-            'message' => $success ? "Offboarding karyawan {$employeeId} berhasil diproses." : "Gagal memproses offboarding.",
-            'drive_upload' => $driveResult,
-            'pdfs_generated' => count($pdfs),
-            'employeeId' => $employeeId,
+            'success'           => true,
+            'message'           => "Offboarding karyawan {$employeeId} berhasil diproses. Status diubah ke \"{$newStatus}\".",
+            'employeeId'        => $employeeId,
+            'newStatus'         => $newStatus,
+            'skNumber'          => $skNumber,
+            'pdf_urls'          => $pdfUrls,
+            'drive_folder_url'  => $driveResult['folder_url'] ?? null,
+            'docs_uploaded'     => count($driveResult['uploaded'] ?? []),
         ];
     }
 
