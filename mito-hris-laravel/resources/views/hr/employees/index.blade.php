@@ -10,17 +10,16 @@
 
         <!-- Stat Cards -->
         <div class="row g-3 mb-4" id="employeeStatsPanel">
-            <div class="col-6 col-md-3">
+            <div class="col-6 col-md-2">
                 <div class="stat-card">
                     <div class="stat-icon bg-blue"><i class="bi bi-people-fill"></i></div>
                     <div>
                         <div class="stat-label">Total Karyawan</div>
-                        <div class="stat-value text-navy" id="empStatTotal">{{ $stats['total'] ?? $employees->count() }}
-                        </div>
+                        <div class="stat-value text-navy" id="empStatTotal">{{ $stats['total'] ?? 0 }}</div>
                     </div>
                 </div>
             </div>
-            <div class="col-6 col-md-3">
+            <div class="col-6 col-md-2">
                 <div class="stat-card">
                     <div class="stat-icon bg-green"><i class="bi bi-person-check-fill"></i></div>
                     <div>
@@ -29,7 +28,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-6 col-md-3">
+            <div class="col-6 col-md-2">
                 <div class="stat-card">
                     <div class="stat-icon bg-blue"><i class="bi bi-file-earmark-person-fill"></i></div>
                     <div>
@@ -38,7 +37,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-6 col-md-3">
+            <div class="col-6 col-md-2">
                 <div class="stat-card">
                     <div class="stat-icon bg-gold"><i class="bi bi-hourglass-split"></i></div>
                     <div>
@@ -47,9 +46,9 @@
                     </div>
                 </div>
             </div>
-            <div class="col-6 col-md-3">
+            <div class="col-6 col-md-2">
                 <div class="stat-card">
-                    <div class="stat-icon bg-navy"><i class="bi bi-person-workspace"></i></div>
+                    <div class="stat-icon bg-cyan"><i class="bi bi-building-fill"></i></div>
                     <div>
                         <div class="stat-label">Outsource</div>
                         <div class="stat-value text-navy" id="empStatOutsource">{{ $stats['outsource'] ?? 0 }}</div>
@@ -91,56 +90,65 @@
             </div>
 
             <!-- FILTER BAR -->
-            <form action="{{ route('hr.employees.index') }}" method="GET">
+            <form action="{{ route('hr.employees.index') }}" method="GET" id="empFilterForm">
+                {{-- Reset page to 1 on any filter change --}}
+                <input type="hidden" name="page" value="1">
                 <div class="filter-bar">
                     <div class="table-search">
                         <i class="bi bi-search"></i>
                         <input type="text" name="search" id="empSearchInput"
-                            placeholder="Cari nama, NIK, email, posisi, dept..." value="{{ request('search') }}" />
+                            placeholder="Cari nama, NIK, email, posisi, dept..."
+                            value="{{ $searchFilter ?? '' }}" />
                     </div>
                     <select class="filter-select" name="department" id="empDeptFilter" onchange="this.form.submit()">
                         <option value="">Semua Dept</option>
                         @foreach ($departments ?? [] as $dept)
-                            <option value="{{ $dept }}" {{ request('department') === $dept ? 'selected' : '' }}>
+                            <option value="{{ $dept }}" {{ ($departmentFilter ?? '') === $dept ? 'selected' : '' }}>
                                 {{ $dept }}</option>
                         @endforeach
                     </select>
+                    {{--
+                        Status filter values MUST match actual values stored in Employee Sheet.
+                        GAS generates: Permanent, Contract, Probation, Outsource (via empStatEmp array).
+                        Legacy sheet data may use PKWTT/PKWT — both are included for coverage.
+                        Controller does strtolower(trim()) comparison so all values are matched case-insensitively.
+                    --}}
                     <select class="filter-select" name="status" id="empStatusFilter" onchange="this.form.submit()">
-                        <option value="">Semua Status</option>
-                        <option value="Permanent" {{ request('status') === 'Permanent' ? 'selected' : '' }}>Permanent
+                        <option value="">
+                            Semua Status ({{ $stats['total'] ?? 0 }})
                         </option>
-                        <option value="Contract" {{ request('status') === 'Contract' ? 'selected' : '' }}>Contract
+                        <option value="Permanent" {{ ($statusFilter ?? '') === 'Permanent' ? 'selected' : '' }}>
+                            Permanent ({{ $stats['permanent'] ?? 0 }})
                         </option>
-                        <option value="Probation" {{ request('status') === 'Probation' ? 'selected' : '' }}>Probation
+                        <option value="Contract" {{ ($statusFilter ?? '') === 'Contract' ? 'selected' : '' }}>
+                            Contract ({{ $stats['contract'] ?? 0 }})
                         </option>
-                        <option value="Outsource" {{ request('status') === 'Outsource' ? 'selected' : '' }}>Outsource
+                        <option value="Probation" {{ ($statusFilter ?? '') === 'Probation' ? 'selected' : '' }}>
+                            Probation ({{ $stats['probation'] ?? 0 }})
                         </option>
-                        <option value="On Leave" {{ request('status') === 'On Leave' ? 'selected' : '' }}>On Leave</option>
-                        <option value="Resigned" {{ request('status') === 'Resigned' ? 'selected' : '' }}>Resigned</option>
-                        <option value="Terminated" {{ request('status') === 'Terminated' ? 'selected' : '' }}>Terminated
+                        <option value="Outsource" {{ ($statusFilter ?? '') === 'Outsource' ? 'selected' : '' }}>
+                            Outsource ({{ $stats['outsource'] ?? 0 }})
                         </option>
-                        <option value="Retired" {{ request('status') === 'Retired' ? 'selected' : '' }}>Retired</option>
-                        <option value="Inactive" {{ request('status') === 'Inactive' ? 'selected' : '' }}>Inactive</option>
-                        <option value="Contract Finished" {{ request('status') === 'Contract Finished' ? 'selected' : '' }}>Contract Finished</option>
+                        <option value="Resigned" {{ ($statusFilter ?? '') === 'Resigned' ? 'selected' : '' }}>Resigned</option>
+                        <option value="Terminated" {{ ($statusFilter ?? '') === 'Terminated' ? 'selected' : '' }}>Terminated</option>
                     </select>
                     <select class="filter-select" name="sort" id="empSortSelect" onchange="this.form.submit()">
-                        <option value="newest" {{ request('sort') === 'newest' ? 'selected' : '' }}>Terbaru</option>
-                        <option value="oldest" {{ request('sort') === 'oldest' ? 'selected' : '' }}>Terlama</option>
-                        <option value="name_asc" {{ request('sort') === 'name_asc' ? 'selected' : '' }}>Nama A-Z</option>
-                        <option value="name_desc" {{ request('sort') === 'name_desc' ? 'selected' : '' }}>Nama Z-A</option>
+                        <option value="newest" {{ ($sortFilter ?? 'newest') === 'newest' ? 'selected' : '' }}>Terbaru</option>
+                        <option value="oldest" {{ ($sortFilter ?? '') === 'oldest' ? 'selected' : '' }}>Terlama</option>
+                        <option value="name_asc" {{ ($sortFilter ?? '') === 'name_asc' ? 'selected' : '' }}>Nama A-Z</option>
+                        <option value="name_desc" {{ ($sortFilter ?? '') === 'name_desc' ? 'selected' : '' }}>Nama Z-A</option>
                     </select>
+                    <select class="filter-select" name="per_page" id="empPerPage" onchange="this.form.submit()" style="flex: 0 0 auto; width: 90px;">
+                        <option value="10" {{ ($perPage ?? 10) == 10 ? 'selected' : '' }}>10 / hal</option>
+                        <option value="20" {{ ($perPage ?? 10) == 20 ? 'selected' : '' }}>20 / hal</option>
+                        <option value="50" {{ ($perPage ?? 10) == 50 ? 'selected' : '' }}>50 / hal</option>
+                    </select>
+                    <a href="{{ route('hr.employees.index') }}" class="btn-reset-filter text-decoration-none" title="Reset filter">
+                        <i class="bi bi-arrow-counterclockwise"></i> Reset
+                    </a>
                     <button class="btn-refresh" type="button" title="Muat ulang data" onclick="location.reload()">
                         <i class="bi bi-arrow-clockwise"></i>
                     </button>
-                    {{-- Search submit button — handle Enter key, also adds explicit submit --}}
-                    <button class="btn btn-sm btn-primary ms-1" type="submit" title="Cari" style="border-radius:8px;padding:6px 12px">
-                        <i class="bi bi-search"></i>
-                    </button>
-                    @if(request()->hasAny(['search','department','status','sort']) && request()->query() !== ['sort' => 'newest'])
-                    <a href="{{ route('hr.employees.index') }}" class="btn btn-sm btn-outline-secondary ms-1" title="Reset filter" style="border-radius:8px;padding:6px 10px">
-                        <i class="bi bi-x-lg"></i>
-                    </a>
-                    @endif
                 </div>
             </form>
 
@@ -196,22 +204,23 @@
                 </table>
             </div>
 
-            <div class="d-flex justify-content-between align-items-center mt-3">
-                {{ $employees->links('pagination::bootstrap-5') }}
-            </div>
-
             <div class="panel-footer">
                 <span id="empFooterCount">
-                    @if($employees->total() === 0)
-                        Tidak ada data karyawan
+                    @if($total > 0)
+                        Menampilkan {{ (($currentPage - 1) * $perPage + 1) }}–{{ min($currentPage * $perPage, $total) }} dari {{ $total }} data
                     @else
-                        Menampilkan {{ $employees->firstItem() ?? 0 }}&ndash;{{ $employees->lastItem() ?? 0 }}
-                        dari {{ $employees->total() }} data
-                        @if(request()->hasAny(['search','department','status']))
-                            (difilter)
-                        @endif
+                        Tidak ada data
                     @endif
                 </span>
+                @if($total > $perPage)
+                    <x-pagination
+                        :currentPage="$currentPage"
+                        :total="$total"
+                        :perPage="$perPage"
+                        :route="'hr.employees.index'"
+                        :queryParams="['search' => $searchFilter, 'status' => $statusFilter, 'department' => $departmentFilter, 'sort' => $sortFilter, 'per_page' => $perPage]"
+                    />
+                @endif
             </div>
         </div>
 
@@ -235,5 +244,15 @@
                 });
             });
         });
+
+        // Search submit on Enter
+        var empSearchInput = document.getElementById('empSearchInput');
+        if (empSearchInput) {
+            empSearchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    document.getElementById('empFilterForm').submit();
+                }
+            });
+        }
     </script>
 @endsection

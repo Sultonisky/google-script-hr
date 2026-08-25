@@ -1,58 +1,23 @@
 @props(['status'])
 
 @php
-    $statusLower = strtolower(trim($status ?? ''));
-    $bgClass = 'bg-secondary';
+    $s = strtolower(trim($status ?? ''));
 
-    switch ($statusLower) {
-        case 'pending':
-            $bgClass = 'bg-warning text-dark';
-            break;
-        case 'new':
-        case 'baru':
-            $bgClass = 'bg-info text-white';
-            break;
-        case 'screening':
-            $bgClass = 'bg-primary text-white';
-            break;
-        case 'interview hr':
-        case 'interview user':
-        case 'interview':
-            $bgClass = 'bg-warning text-dark';
-            break;
-        case 'offering':
-        case 'offered':
-            $bgClass = 'bg-info text-white';
-            break;
-        case 'hired':
-        case 'accepted':
-        case 'aktif':
-        case 'active':
-        case 'tetap':
-            $bgClass = 'bg-success text-white';
-            break;
-        case 'rejected':
-        case 'ditolak':
-        case 'resigned':
-        case 'non-aktif':
-        case 'phk':
-            $bgClass = 'bg-danger text-white';
-            break;
-        case 'hold':
-            $bgClass = 'bg-secondary text-white';
-            break;
-        case 'blacklist':
-            $bgClass = 'bg-dark text-white';
-            break;
-        case 'probation':
-            $bgClass = 'bg-warning text-dark';
-            break;
-        default:
-            $bgClass = 'bg-light text-dark border';
-            break;
-    }
+    // Mapping 1:1 dengan GAS js/helpers.html entityStatusBadgeClass()
+    // Badge classes merujuk ke CSS definitions di css/table.html GAS:
+    //   accepted  → background: #ecfdf3; color: #166534  (hijau)
+    //   hold      → background: #eef6ff; color: #0b4a86  (biru)
+    //   pending   → background: #fff8e6; color: #8a6100  (kuning/amber)
+    //   blacklist → background: #fef2f2; color: #991b1b  (merah)
+    $badgeClass = match(true) {
+        in_array($s, ['permanent', 'pkwtt', 'contract', 'pkwt', 'active', 'aktif']) => 'accepted',
+        in_array($s, ['probation'])                                                  => 'hold',
+        in_array($s, ['outsource', 'on leave', 'magang', 'intern'])                 => 'pending',
+        in_array($s, ['resigned', 'terminated', 'retired', 'deceased', 'inactive',
+                      'non-aktif', 'phk', 'blacklist', 'contract finished',
+                      'off contract'])                                               => 'blacklist',
+        default                                                                      => 'pending',
+    };
 @endphp
 
-<span class="badge {{ $bgClass }} px-2 py-1 fs-7 fw-semibold">
-    {{ $status ?? '-' }}
-</span>
+<span class="badge-status {{ $badgeClass }}">{{ $status ?? '-' }}</span>

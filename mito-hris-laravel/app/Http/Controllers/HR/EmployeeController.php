@@ -26,94 +26,83 @@ class EmployeeController extends Controller
 
     public function index(Request $request): View
     {
-        // Single read dari Google Sheets — $all digunakan untuk stats, departments, dan modal search
+        $perPage    = max(1, (int) $request->query('per_page', 10));
+        $currentPage = max(1, (int) $request->query('page', 1));
+
+        // Fetch ALL employees once — used for both stats and filtered/paginated table
         $all = $this->employeeRepo->getAll();
 
-        // Sort parameter
-        $sort   = $request->query('sort', 'newest');
-        $search = $request->query('search');
-        $dept   = $request->query('department');
-        $status = $request->query('status');
-
-        // Apply filters
-        $filtered = $all;
-
-        if (!empty($status)) {
-            $statusLower = strtolower(trim($status));
-            $filtered = $filtered->filter(function ($e) use ($statusLower) {
-                return strtolower(trim($e->statusEmployee ?? '')) === $statusLower;
-            });
-        }
-
-        if (!empty($dept)) {
-            $deptLower = strtolower(trim($dept));
-            $filtered = $filtered->filter(function ($e) use ($deptLower) {
-                return strtolower(trim($e->department ?? '')) === $deptLower;
-            });
-        }
-
-        if (!empty($search)) {
-            $searchLower = strtolower(trim($search));
-            $filtered = $filtered->filter(function ($e) use ($searchLower) {
-                return str_contains(strtolower($e->fullName ?? ''), $searchLower)
-                    || str_contains(strtolower($e->employeeId ?? ''), $searchLower)
-                    || str_contains(strtolower($e->personalEmail ?? ''), $searchLower)
-                    || str_contains(strtolower($e->workingEmail ?? ''), $searchLower)
-                    || str_contains(strtolower($e->jobPosition ?? ''), $searchLower)
-                    || str_contains(strtolower($e->jobPositionLocation ?? ''), $searchLower)
-                    || str_contains(strtolower($e->department ?? ''), $searchLower)
-                    || str_contains(strtolower($e->nikNpwp ?? ''), $searchLower);
-            });
-        }
-
-        // Sort — 1:1 GAS empApplyFilters sort options
-        switch ($sort) {
-            case 'oldest':
-                $filtered = $filtered->sortBy(fn($e) => $e->joinDate ?? '');
-                break;
-            case 'name_asc':
-                $filtered = $filtered->sortBy(fn($e) => $e->fullName ?? '');
-                break;
-            case 'name_desc':
-                $filtered = $filtered->sortByDesc(fn($e) => $e->fullName ?? '');
-                break;
-            default: // newest
-                $filtered = $filtered->sortByDesc(fn($e) => $e->joinDate ?? '');
-        }
-        $filtered = $filtered->values();
-
+        // Stats — always computed from the full dataset, never from current page
         $stats = [
             'total'     => $all->count(),
-            'permanent' => $all->filter(fn($e) => strtolower(trim($e->statusEmployee ?? '')) === 'permanent')->count(),
+            'permanent' => $all->filter(fn($e) => in_array(strtolower(trim($e->statusEmployee ?? '')), ['permanent', 'pkwtt']))->count(),
+            'pkwtt'     => 0, // folded into 'permanent' above
             'contract'  => $all->filter(fn($e) => in_array(strtolower(trim($e->statusEmployee ?? '')), ['contract', 'pkwt']))->count(),
+            'pkwt'      => 0, // folded into 'contract' above
             'probation' => $all->filter(fn($e) => strtolower(trim($e->statusEmployee ?? '')) === 'probation')->count(),
-            'outsource' => $all->filter(function ($e) {
-                $s = strtolower(trim($e->statusEmployee ?? ''));
-                return !empty($e->outsourceVendor) ||
-                    $e->createdBy === 'System (Outsource Form)' ||
-                    $s === 'outsource';
-            })->count(),
+            'outsource' => $all->filter(fn($e) => strtolower(trim($e->statusEmployee ?? '')) === 'outsource')->count(),
+            'off_contract' => $all->filter(fn($e) => strtolower(trim($e->statusEmployee ?? '')) === 'contract finished')->count(),
         ];
 
+        // Apply search/filter to full dataset
+        $filtered = $all;
+
+        $departmentFilter = $request->query('department');
+        if ($departmentFilter) {
+            $dept = strtolower(trim($departmentFilter));
+            $filtered = $filtered->filter(fn($e) => strtolower(trim($e->department ?? '')) === $dept);
+        }
+
+        $statusFilter = $request->query('status');
+        if ($statusFilter) {
+            $st = strtolower(trim($statusFilter));
+            // Normalize: 'permanent' matches both 'permanent' and 'pkwtt'
+            // 'contract' matches 'contract' and 'pkwt'
+            $filtered = $filtered->filter(function ($e) use ($st) {
+                $es = strtolower(trim($e->statusEmployee ?? ''));
+                return match($st) {
+                    'permanent' => in_array($es, ['permanent', 'pkwtt']),
+                    'contract'  => in_array($es, ['contract', 'pkwt']),
+                    default     => $es === $st,
+                };
+            });
+        }
+
+        $searchFilter = $request->query('search');
+        if ($searchFilter) {
+            $search = strtolower(trim($searchFilter));
+            $filtered = $filtered->filter(fn($e) =>
+                str_contains(strtolower($e->fullName ?? ''), $search)
+                || str_contains(strtolower($e->employeeId ?? ''), $search)
+                || str_contains(strtolower($e->personalEmail ?? ''), $search)
+                || str_contains(strtolower($e->workingEmail ?? ''), $search)
+                || str_contains(strtolower($e->jobPosition ?? ''), $search)
+                || str_contains(strtolower($e->nikNpwp ?? ''), $search)
+            );
+        }
+
+        $sortFilter = $request->query('sort', 'newest');
+        $filtered = match ($sortFilter) {
+            'oldest'    => $filtered->sortBy('joinDate'),
+            'name_asc'  => $filtered->sortBy(fn($e) => strtolower($e->fullName ?? '')),
+            'name_desc' => $filtered->sortByDesc(fn($e) => strtolower($e->fullName ?? '')),
+            default     => $filtered->sortByDesc('joinDate'),  // newest
+        };
+
+        $filtered = $filtered->values();
+        $total = $filtered->count();
+
+        // Manual pagination
+        $offset    = ($currentPage - 1) * $perPage;
+        $employees = $filtered->slice($offset, $perPage)->values();
+
+        $contractEmployees = $all->filter(fn($e) => in_array(strtoupper(trim($e->statusEmployee ?? '')), ['PKWT', 'CONTRACT']));
         $departments = $all->pluck('department')->filter()->unique()->sort()->values();
 
-        // Paginate — 1:1 GAS EMP_PAGE_SIZE = 20, Laravel uses 20/page
-        $page    = (int) $request->query('page', 1);
-        $perPage = 20;
-        $items   = $filtered->forPage($page, $perPage)->values();
-        $paginator = new \Illuminate\Pagination\LengthAwarePaginator(
-            $items,
-            $filtered->count(),
-            $perPage,
-            $page,
-            ['path' => $request->url(), 'query' => $request->query()]
-        );
-
-        $employees = $paginator;
-
-        // $all is passed to view so modals can serialize window.__allEmployees
-        // Only active employees are included in modal search (see modal blades)
-        return view('hr.employees.index', compact('employees', 'stats', 'departments', 'all'));
+        return view('hr.employees.index', compact(
+            'employees', 'stats', 'departments', 'all', 'contractEmployees',
+            'total', 'currentPage', 'perPage', 'searchFilter', 'statusFilter', 'departmentFilter', 'sortFilter'
+        ));
     }
 
     public function import(Request $request): RedirectResponse

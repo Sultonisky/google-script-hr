@@ -21,35 +21,8 @@
                 <div class="stat-card">
                     <div class="stat-icon bg-cyan"><i class="bi bi-people-fill"></i></div>
                     <div>
-                        <div class="stat-label">Total OS</div>
-                        <div class="stat-value text-navy" id="osStatTotal">{{ $outsources->count() }}</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="stat-card">
-                    <div class="stat-icon bg-green"><i class="bi bi-check-circle-fill"></i></div>
-                    <div>
-                        <div class="stat-label">Permanent</div>
-                        <div class="stat-value text-navy" id="osStatPermanent">{{ $stats['permanent'] ?? 0 }}</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="stat-card">
-                    <div class="stat-icon bg-blue"><i class="bi bi-file-earmark-person-fill"></i></div>
-                    <div>
-                        <div class="stat-label">Contract</div>
-                        <div class="stat-value text-navy" id="osStatContract">{{ $stats['contract'] ?? 0 }}</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="stat-card">
-                    <div class="stat-icon bg-gold"><i class="bi bi-hourglass-split"></i></div>
-                    <div>
-                        <div class="stat-label">Probation</div>
-                        <div class="stat-value text-navy" id="osStatProbation">{{ $stats['probation'] ?? 0 }}</div>
+                        <div class="stat-label">Total Outsource</div>
+                        <div class="stat-value text-navy" id="osStatTotal">{{ $stats['total'] ?? 0 }}</div>
                     </div>
                 </div>
             </div>
@@ -60,33 +33,36 @@
             <div class="panel-header">
                 <div>
                     <h6>Data Karyawan Outsource</h6>
-                    <div class="panel-subtitle" id="osPanelSubtitle">Menampilkan {{ $outsources->count() }} data</div>
+                    <div class="panel-subtitle" id="osPanelSubtitle">
+                        @if($total > 0)
+                            Menampilkan {{ (($currentPage - 1) * $perPage + 1) }}–{{ min($currentPage * $perPage, $total) }} dari {{ $total }} data
+                        @else
+                            Tidak ada data karyawan outsource
+                        @endif
+                    </div>
                 </div>
             </div>
 
             <!-- Filter bar -->
-            <form action="{{ route('hr.outsource.index') }}" method="GET">
+            <form action="{{ route('hr.outsource.index') }}" method="GET" id="osFilterForm">
+                {{-- Reset page to 1 on any filter change --}}
+                <input type="hidden" name="page" value="1">
                 <div class="filter-bar">
                     <div class="table-search">
                         <i class="bi bi-search"></i>
-                        <input type="text" name="search" id="osSearchInput" placeholder="Cari nama, NIK, posisi..."
-                            value="{{ request('search') }}" />
+                        <input type="text" name="search" id="osSearchInput" placeholder="Cari nama, ID, vendor, posisi..."
+                            value="{{ $searchFilter ?? '' }}" />
                     </div>
-                    <select class="filter-select" name="status" id="osStatusFilter" onchange="this.form.submit()">
-                        <option value="">Semua Status</option>
-                        <option value="Permanent" {{ request('status') === 'Permanent' ? 'selected' : '' }}>Permanent
-                        </option>
-                        <option value="Contract" {{ request('status') === 'Contract' ? 'selected' : '' }}>Contract</option>
-                        <option value="Probation" {{ request('status') === 'Probation' ? 'selected' : '' }}>Probation
-                        </option>
-                        <option value="Outsource" {{ request('status') === 'Outsource' ? 'selected' : '' }}>Outsource
-                        </option>
-                    </select>
                     <select class="filter-select" name="sort" id="osSortSelect" onchange="this.form.submit()">
-                        <option value="newest" {{ request('sort') === 'newest' ? 'selected' : '' }}>Terbaru</option>
-                        <option value="oldest" {{ request('sort') === 'oldest' ? 'selected' : '' }}>Terlama</option>
-                        <option value="name_asc" {{ request('sort') === 'name_asc' ? 'selected' : '' }}>Nama A-Z</option>
-                        <option value="name_desc" {{ request('sort') === 'name_desc' ? 'selected' : '' }}>Nama Z-A</option>
+                        <option value="newest" {{ ($sortFilter ?? 'newest') === 'newest' ? 'selected' : '' }}>Terbaru</option>
+                        <option value="oldest" {{ ($sortFilter ?? '') === 'oldest' ? 'selected' : '' }}>Terlama</option>
+                        <option value="name_asc" {{ ($sortFilter ?? '') === 'name_asc' ? 'selected' : '' }}>Nama A-Z</option>
+                        <option value="name_desc" {{ ($sortFilter ?? '') === 'name_desc' ? 'selected' : '' }}>Nama Z-A</option>
+                    </select>
+                    <select class="filter-select" name="per_page" id="osPerPage" onchange="this.form.submit()" style="flex: 0 0 auto; width: 90px;">
+                        <option value="10" {{ ($perPage ?? 10) == 10 ? 'selected' : '' }}>10 / hal</option>
+                        <option value="20" {{ ($perPage ?? 10) == 20 ? 'selected' : '' }}>20 / hal</option>
+                        <option value="50" {{ ($perPage ?? 10) == 50 ? 'selected' : '' }}>50 / hal</option>
                     </select>
                     <a href="{{ route('hr.outsource.index') }}" class="btn-reset-filter text-decoration-none"
                         id="osBtnResetFilter">
@@ -143,7 +119,22 @@
             </div>
 
             <div class="panel-footer">
-                <span id="osFooterCount">Menampilkan {{ $outsources->count() }} data</span>
+                <span id="osFooterCount">
+                    @if($total > 0)
+                        Menampilkan {{ (($currentPage - 1) * $perPage + 1) }}–{{ min($currentPage * $perPage, $total) }} dari {{ $total }} data
+                    @else
+                        Tidak ada data
+                    @endif
+                </span>
+                @if($total > $perPage)
+                    <x-pagination
+                        :currentPage="$currentPage"
+                        :total="$total"
+                        :perPage="$perPage"
+                        :route="'hr.outsource.index'"
+                        :queryParams="['search' => $searchFilter, 'sort' => $sortFilter, 'per_page' => $perPage]"
+                    />
+                @endif
             </div>
         </div>
 
@@ -162,5 +153,15 @@
                 }
             });
         });
+
+        // Search submit on Enter
+        var osSearchInput = document.getElementById('osSearchInput');
+        if (osSearchInput) {
+            osSearchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    document.getElementById('osFilterForm').submit();
+                }
+            });
+        }
     </script>
 @endsection
