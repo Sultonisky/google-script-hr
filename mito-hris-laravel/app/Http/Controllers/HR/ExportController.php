@@ -57,19 +57,21 @@ class ExportController extends Controller
     /**
      * Download Kontrak PKWT PDF.
      * Lookup priority: employeeId → recruitmentId (fallback, handles Google Sheets cache race condition).
+     * Selalu mengembalikan PDF response (Content-Type: application/pdf) agar
+     * Fetch API di frontend dapat membaca sebagai Blob dan auto-download.
      */
     public function kontrakPkwtPdf(Request $request, string $id)
     {
-        $employee = $this->employeeRepo->findById($id);
+        $employee  = $this->employeeRepo->findById($id);
         $candidate = null;
 
         if (!$employee) {
-            // Try lookup as candidate first (pdfId might be recruitmentId)
+            // Coba lookup berdasarkan recruitmentId (pdfId bisa jadi recruitmentId)
             $candidate = $this->candidateRepo->findById($id);
         }
 
-        // FIX: If both fail, try recruitmentId from query param (race condition fallback)
-        // Employee was just written to sheet but cache hasn't refreshed yet.
+        // Fallback: race condition — employee baru di-write ke sheet tapi belum ter-cache.
+        // Gunakan recruitment_id dari query param untuk cari kandidat.
         if (!$employee && !$candidate) {
             $fallbackRid = $request->query('recruitment_id');
             if ($fallbackRid) {
@@ -78,13 +80,32 @@ class ExportController extends Controller
         }
 
         if (!$employee && !$candidate) {
-            abort(404, 'Data karyawan/kandidat tidak ditemukan.');
+            abort(404, 'Data karyawan/kandidat tidak ditemukan. Coba reload halaman dan export ulang.');
         }
 
-        $subject = $employee ?: $candidate;
+        $subject   = $employee ?: $candidate;
         $extraData = $request->all();
-        $pdf = $this->pdfService->generateKontrakPkwtPdf($subject, $extraData);
-        $nameId = $employee ? $employee->employeeId : ($candidate->employeeId ?: $candidate->recruitmentId);
+
+        // Pastikan extraData menyertakan employeeId & recruitmentId agar template
+        // mendapat nilai yang benar meskipun di-lookup via candidate fallback.
+        if ($employee && empty($extraData['employee_id'])) {
+            $extraData['employee_id'] = $employee->employeeId;
+        } elseif ($candidate) {
+            if (empty($extraData['employee_id'])) {
+                $extraData['employee_id'] = $candidate->employeeId ?: $candidate->recruitmentId;
+            }
+            if (empty($extraData['recruitment_id'])) {
+                $extraData['recruitment_id'] = $candidate->recruitmentId;
+            }
+        }
+
+        $pdf   = $this->pdfService->generateKontrakPkwtPdf($subject, $extraData);
+        $nameId = $employee
+            ? $employee->employeeId
+            : ($candidate->employeeId ?: $candidate->recruitmentId);
+
+        // Gunakan download() agar browser menerima disposition attachment
+        // dan Content-Type application/pdf — dibutuhkan oleh Fetch+Blob di frontend.
         return $pdf->download("Kontrak_PKWT_{$nameId}.pdf");
     }
 
