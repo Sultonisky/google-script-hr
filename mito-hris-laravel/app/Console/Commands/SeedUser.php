@@ -19,40 +19,47 @@ class SeedUser extends Command
 
     public function handle(): int
     {
-        $email = strtolower(trim((string) $this->argument('email')));
+        $email    = strtolower(trim((string) $this->argument('email')));
         $username = trim((string) $this->argument('username'));
-        $name = trim((string) $this->argument('name'));
+        $name     = trim((string) $this->argument('name'));
         $password = (string) $this->argument('password');
-        $role = trim((string) $this->argument('role'));
+        $role     = trim((string) $this->argument('role'));
+
+        // Guard: Manager is NOT an internal HRIS role.
+        // Manager accounts belong in the mpr_requestor sheet.
+        if (strtolower($role) === 'manager') {
+            $this->error("Role 'Manager' tidak dapat dibuat di Users sheet.");
+            $this->line("Gunakan: php artisan mito:seed-mpr-requestors");
+            $this->line("Atau buat manual di sheet mpr_requestor.");
+            return self::FAILURE;
+        }
 
         $existing = $this->userRepository->findByEmail($email);
 
         if ($existing !== null) {
             $this->userRepository->updateByEmail($email, [
-                'username' => $username,
-                'fullName' => $name,
-                'role' => $role,
-                'status' => 'Active',
+                'username'     => $username,
+                'fullName'     => $name,
+                'role'         => $role,
+                'status'       => 'Active',
                 'passwordHash' => Hash::make($password),
             ]);
 
             $this->info("User {$email} berhasil di-update.");
-
             return self::SUCCESS;
         }
 
         $this->userRepository->create([
-            'email' => $email,
-            'username' => $username,
-            'fullName' => $name,
-            'role' => $role,
-            'status' => 'Active',
+            'email'        => $email,
+            'username'     => $username,
+            'fullName'     => $name,
+            'role'         => $role,
+            'status'       => 'Active',
             'passwordHash' => Hash::make($password),
-            'createdBy' => 'seed-command',
+            'createdBy'    => 'seed-command',
         ]);
 
         $this->info("User {$email} berhasil dibuat dengan role {$role}.");
-
         return self::SUCCESS;
     }
 }

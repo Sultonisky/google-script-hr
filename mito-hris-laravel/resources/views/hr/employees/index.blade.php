@@ -24,8 +24,8 @@
                 <div class="stat-card">
                     <div class="stat-icon bg-green"><i class="bi bi-person-check-fill"></i></div>
                     <div>
-                        <div class="stat-label">Permanent (PKWTT)</div>
-                        <div class="stat-value text-navy" id="empStatPermanent">{{ $stats['pkwtt'] ?? 0 }}</div>
+                        <div class="stat-label">Permanent</div>
+                        <div class="stat-value text-navy" id="empStatPermanent">{{ $stats['permanent'] ?? 0 }}</div>
                     </div>
                 </div>
             </div>
@@ -33,8 +33,8 @@
                 <div class="stat-card">
                     <div class="stat-icon bg-blue"><i class="bi bi-file-earmark-person-fill"></i></div>
                     <div>
-                        <div class="stat-label">Contract (PKWT)</div>
-                        <div class="stat-value text-navy" id="empStatContract">{{ $stats['pkwt'] ?? 0 }}</div>
+                        <div class="stat-label">Contract</div>
+                        <div class="stat-value text-navy" id="empStatContract">{{ $stats['contract'] ?? 0 }}</div>
                     </div>
                 </div>
             </div>
@@ -47,6 +47,15 @@
                     </div>
                 </div>
             </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon bg-navy"><i class="bi bi-person-workspace"></i></div>
+                    <div>
+                        <div class="stat-label">Outsource</div>
+                        <div class="stat-value text-navy" id="empStatOutsource">{{ $stats['outsource'] ?? 0 }}</div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="panel" id="employeePanel">
@@ -55,10 +64,11 @@
                     <h6>Daftar Karyawan</h6>
                     <div class="panel-subtitle">Klik baris atau nama untuk melihat detail lengkap dari spreadsheet.</div>
                 </div>
+                @can('manage_employees')
                 <div class="export-btns">
                     <button class="btn btn-sm text-white fw-semibold"
                         style="background:#166534;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
-                        type="button" data-bs-toggle="modal" data-bs-target="#importModal">
+                        type="button" data-bs-toggle="modal" data-bs-target="#empImportModal">
                         <i class="bi bi-upload me-1"></i>Import
                     </button>
                     <button class="btn btn-sm ms-2 fw-semibold text-white"
@@ -76,8 +86,8 @@
                         type="button" data-bs-toggle="modal" data-bs-target="#offboardingModal">
                         <i class="bi bi-box-arrow-right me-1"></i>Offboarding
                     </button>
-                    </button>
                 </div>
+                @endcan
             </div>
 
             <!-- FILTER BAR -->
@@ -97,17 +107,21 @@
                     </select>
                     <select class="filter-select" name="status" id="empStatusFilter" onchange="this.form.submit()">
                         <option value="">Semua Status</option>
-                        <option value="PKWTT" {{ request('status') === 'PKWTT' ? 'selected' : '' }}>PKWTT (Permanent)
+                        <option value="Permanent" {{ request('status') === 'Permanent' ? 'selected' : '' }}>Permanent
                         </option>
-                        <option value="PKWT" {{ request('status') === 'PKWT' ? 'selected' : '' }}>PKWT (Contract)
+                        <option value="Contract" {{ request('status') === 'Contract' ? 'selected' : '' }}>Contract
                         </option>
                         <option value="Probation" {{ request('status') === 'Probation' ? 'selected' : '' }}>Probation
                         </option>
                         <option value="Outsource" {{ request('status') === 'Outsource' ? 'selected' : '' }}>Outsource
                         </option>
+                        <option value="On Leave" {{ request('status') === 'On Leave' ? 'selected' : '' }}>On Leave</option>
                         <option value="Resigned" {{ request('status') === 'Resigned' ? 'selected' : '' }}>Resigned</option>
                         <option value="Terminated" {{ request('status') === 'Terminated' ? 'selected' : '' }}>Terminated
                         </option>
+                        <option value="Retired" {{ request('status') === 'Retired' ? 'selected' : '' }}>Retired</option>
+                        <option value="Inactive" {{ request('status') === 'Inactive' ? 'selected' : '' }}>Inactive</option>
+                        <option value="Contract Finished" {{ request('status') === 'Contract Finished' ? 'selected' : '' }}>Contract Finished</option>
                     </select>
                     <select class="filter-select" name="sort" id="empSortSelect" onchange="this.form.submit()">
                         <option value="newest" {{ request('sort') === 'newest' ? 'selected' : '' }}>Terbaru</option>
@@ -118,6 +132,15 @@
                     <button class="btn-refresh" type="button" title="Muat ulang data" onclick="location.reload()">
                         <i class="bi bi-arrow-clockwise"></i>
                     </button>
+                    {{-- Search submit button — handle Enter key, also adds explicit submit --}}
+                    <button class="btn btn-sm btn-primary ms-1" type="submit" title="Cari" style="border-radius:8px;padding:6px 12px">
+                        <i class="bi bi-search"></i>
+                    </button>
+                    @if(request()->hasAny(['search','department','status','sort']) && request()->query() !== ['sort' => 'newest'])
+                    <a href="{{ route('hr.employees.index') }}" class="btn btn-sm btn-outline-secondary ms-1" title="Reset filter" style="border-radius:8px;padding:6px 10px">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                    @endif
                 </div>
             </form>
 
@@ -173,34 +196,43 @@
                 </table>
             </div>
 
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                {{ $employees->links('pagination::bootstrap-5') }}
+            </div>
+
             <div class="panel-footer">
-                <span id="empFooterCount">Menampilkan {{ $employees->count() }} data</span>
+                <span id="empFooterCount">
+                    @if($employees->total() === 0)
+                        Tidak ada data karyawan
+                    @else
+                        Menampilkan {{ $employees->firstItem() ?? 0 }}&ndash;{{ $employees->lastItem() ?? 0 }}
+                        dari {{ $employees->total() }} data
+                        @if(request()->hasAny(['search','department','status']))
+                            (difilter)
+                        @endif
+                    @endif
+                </span>
             </div>
         </div>
 
     </section>
+
+    {{-- Semua modal (Rotasi, Off Contract, Offboarding, Promote Probation) sudah di-include --}}
+    {{-- via layouts/hr.blade.php → hr.partials.rotation-modal, off-contract-modal, entity-modals --}}
+    {{-- JANGAN include lagi di sini — akan menyebabkan duplikasi modal ID di DOM --}}
 @endsection
 
 @section('scripts')
     <script>
-        function openPromoteModal(emp) {
-            if (!emp) return;
-            document.getElementById('promoteProbEmpId').value = emp.employeeId;
-            document.getElementById('promoteProbEmpName').textContent = emp.fullName || '-';
-            document.getElementById('promoteProbPosition').textContent =
-                `${emp.jobPosition || '-'} • ${emp.department || '-'}`;
-            document.getElementById('promoteProbAvatar').textContent = (emp.fullName || 'E').substring(0, 2).toUpperCase();
-            document.getElementById('promoteProbBadge').textContent = emp.statusEmployee || 'Contract';
-            document.getElementById('formPromoteProbation').action = `/hr/probation`;
-        }
-
         // Drawer click handler
-        document.querySelectorAll('#empTableBody tr[data-drawer-type="employee"]').forEach(function(row) {
-            row.addEventListener('click', function() {
-                var empId = this.getAttribute('data-drawer-id');
-                if (empId && typeof openEmployeeDrawer === 'function') {
-                    openEmployeeDrawer(empId);
-                }
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('#empTableBody tr[data-drawer-type="employee"]').forEach(function(row) {
+                row.addEventListener('click', function() {
+                    var empId = this.getAttribute('data-drawer-id');
+                    if (empId && typeof openEmployeeDrawer === 'function') {
+                        openEmployeeDrawer(empId);
+                    }
+                });
             });
         });
     </script>

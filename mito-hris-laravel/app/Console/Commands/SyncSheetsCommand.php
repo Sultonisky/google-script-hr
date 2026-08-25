@@ -4,6 +4,8 @@ namespace App\Console\Commands;
 
 use App\Repositories\Contracts\CandidateRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
+use App\Repositories\Contracts\MprRepositoryInterface;
+use App\Repositories\Contracts\MprRequestorRepositoryInterface;
 use Illuminate\Console\Command;
 
 class SyncSheetsCommand extends Command
@@ -13,7 +15,9 @@ class SyncSheetsCommand extends Command
 
     public function handle(
         CandidateRepositoryInterface $candidateRepo,
-        EmployeeRepositoryInterface $employeeRepo
+        EmployeeRepositoryInterface $employeeRepo,
+        MprRepositoryInterface $mprRepo,
+        MprRequestorRepositoryInterface $requestorRepo
     ): int {
         $this->info('Memulai sinkronisasi data dari Google Sheets...');
 
@@ -23,6 +27,12 @@ class SyncSheetsCommand extends Command
 
             $employees = $employeeRepo->getAll();
             $this->line("  ✓ Berhasil mengambil {$employees->count()} data karyawan dari sheet 'Employee'");
+
+            $mprs = $mprRepo->getAll();
+            $this->line("  ✓ Berhasil mengambil {$mprs->count()} data Manpower Request dari sheet 'MPR'");
+
+            $requestors = $requestorRepo->getAll();
+            $this->line("  ✓ Berhasil mengambil " . count($requestors) . " MPR Requestor dari sheet 'mpr_requestor'");
 
             $this->info('Sinkronisasi selesai! Cache lokal berhasil diperbarui.');
             return Command::SUCCESS;

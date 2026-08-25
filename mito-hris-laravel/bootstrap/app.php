@@ -13,8 +13,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
-            'hr.auth' => \App\Http\Middleware\HrAuthMiddleware::class,
-            'role' => \App\Http\Middleware\CheckRole::class,
+            'hr.auth'      => \App\Http\Middleware\HrAuthMiddleware::class,
+            'role'         => \App\Http\Middleware\CheckRole::class,
+            'mpr.auth'     => \App\Http\Middleware\MprRequestorMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

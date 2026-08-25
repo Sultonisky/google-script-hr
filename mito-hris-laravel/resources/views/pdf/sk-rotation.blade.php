@@ -2,31 +2,143 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Surat Keputusan Rotasi / Mutasi - {{ $employee->fullName }}</title>
+  <title>Surat Keputusan Rotasi — {{ $employee->fullName }}</title>
   <style>
-    @page { margin: 30px 40px; }
+    @page {
+      margin: 28px 38px 28px 38px;
+    }
     body {
-      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-      font-size: 11px;
-      color: #1f2937;
-      line-height: 1.55;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 9.5pt;
+      color: #000000;
+      line-height: 1.5;
       text-align: justify;
     }
-    .doc-title { font-size: 14pt; font-weight: bold; text-align: center; text-transform: uppercase; color: #0b2540; margin-top: 10px; }
-    .doc-no    { font-size: 10pt; text-align: center; color: #6b7280; margin-bottom: 20px; }
-    .data-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-    .data-table td { padding: 4px 6px; vertical-align: top; }
-    .label  { width: 30%; font-weight: bold; color: #1f2937; }
-    .colon  { width: 3%; }
-    .value  { width: 67%; }
-    .sign-table { width: 100%; margin-top: 30px; }
-    .sign-table td { width: 50%; vertical-align: top; }
-    .sign-space { height: 55px; }
-    .closing-text { margin-top: 12px; margin-bottom: 8px; }
+
+    /* ── JUDUL ── */
+    .doc-title {
+      font-size: 11.5pt;
+      font-weight: bold;
+      text-align: center;
+      text-transform: uppercase;
+      text-decoration: underline;
+      margin-top: 10px;
+      margin-bottom: 2px;
+    }
+    .doc-no {
+      font-size: 9pt;
+      text-align: center;
+      margin-bottom: 14px;
+    }
+
+    /* ── PEMBUKA ── */
+    .opener-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 10px;
+    }
+    .opener-table td {
+      padding: 1px 0;
+      vertical-align: top;
+      font-size: 9.5pt;
+    }
+    .opener-table .lbl  { width: 120px; }
+    .opener-table .col  { width: 12px; }
+
+    /* ── SECTION HEADING ── */
+    .section-heading {
+      font-weight: bold;
+      text-align: center;
+      text-transform: uppercase;
+      margin-top: 10px;
+      margin-bottom: 3px;
+      font-size: 9.5pt;
+    }
+
+    /* ── MENIMBANG / MENGINGAT list ── */
+    .list-item {
+      margin-bottom: 3px;
+    }
+    .list-indent {
+      padding-left: 18px;
+    }
+    .mengingat-indent {
+      padding-left: 22px;
+    }
+
+    /* ── GARIS PEMISAH ── */
+    hr.thin {
+      border: none;
+      border-top: 0.8pt solid #000;
+      margin: 10px 0 6px 0;
+    }
+
+    /* ── TABEL DATA KARYAWAN ── */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 6px 0 10px 0;
+    }
+    .data-table th {
+      background-color: #f0f0f0;
+      font-weight: bold;
+      padding: 5px 8px;
+      border: 0.5pt solid #888;
+      font-size: 9pt;
+      text-align: left;
+    }
+    .data-table td {
+      padding: 4px 8px;
+      border: 0.5pt solid #888;
+      vertical-align: top;
+      font-size: 9pt;
+    }
+    .data-table tr:nth-child(even) td {
+      background-color: #fafafa;
+    }
+    .col-label { width: 42%; font-weight: bold; }
+    .col-value { width: 58%; }
+
+    /* ── DIKTUM HEADING ── */
+    .diktum-heading {
+      font-weight: bold;
+      text-align: center;
+      margin-top: 10px;
+      margin-bottom: 2px;
+      font-size: 9.5pt;
+    }
+    .diktum-body {
+      margin-bottom: 8px;
+      text-align: justify;
+    }
+
+    /* ── TANDA TANGAN ── */
+    .sign-wrapper {
+      margin-top: 22px;
+    }
+    .sign-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .sign-table td {
+      width: 50%;
+      vertical-align: top;
+      padding: 0 4px;
+    }
+    .sign-space { height: 50px; }
+
+    /* ── FOOTER PAGE NUMBER ── */
+    .page-footer {
+      font-size: 7.5pt;
+      color: #555;
+      text-align: right;
+      margin-top: 6px;
+    }
   </style>
 </head>
 <body>
 
+  {{-- ══ KOP SURAT ══════════════════════════════════════════════ --}}
   @include('pdf.components.kop-surat')
 
   @php
@@ -42,81 +154,326 @@
                     ?? ($employee->nomorSk ?? '')
                     ?: ('001/HRD-PK/MSI/' . $romanMonth[date('n')-1] . '/' . date('Y'));
 
-    // Posisi/departemen/cabang SEBELUMNYA (FORMER):
-    //   1. priority: dikirim via query param extraData
-    //   2. fallback: kolom "Job Position (Former)" di Employee sheet (jobPositionFormer)
-    //   3. terakhir: gunakan jobPosition saat ini (hanya safety jika data belum ter-sync)
-    $formerPos   = trim($extraData['old_job_position'] ?? $extraData['oldPosition'] ?? '')
-                    ?: ($employee->jobPositionFormer ?? '')
-                    ?: ($employee->jobPosition        ?? '-');
-    $formerDept  = trim($extraData['old_department'] ?? $extraData['oldDept'] ?? '')
-                    ?: ($employee->department         ?? '-');
-    $formerBranch= trim($extraData['old_branch_name'] ?? $extraData['oldBranch'] ?? '')
-                    ?: ($employee->branchName         ?? ($company['name'] ?? '-'));
+    // Normalize: 'PROMOSI' → 'Promosi' for type-aware wording
+    $typeNorm = ucfirst(strtolower($typeLabel));  // Promosi / Demosi / Mutasi / Rotasi
 
-    // Posisi/departemen/cabang BARU:
-    //   1. priority: dikirim via query param extraData (paling akurat saat call saat submit)
-    //   2. fallback: employee sheet terbaru (jika memang sudah di-save terbaru)
-    $newPos      = trim($extraData['new_job_position'] ?? $extraData['newJobPosition'] ?? '')
-                    ?: ($employee->jobPosition        ?? $formerPos);
-    $newDept     = trim($extraData['new_department']   ?? $extraData['newDepartment']  ?? '')
-                    ?: ($employee->department         ?? $formerDept);
-    $newBranch   = trim($extraData['new_branch_name']  ?? $extraData['newBranchName']  ?? '')
-                    ?: ($employee->branchName         ?? $formerBranch);
+    // ── Document Number ──
+    // Format per GAS/template:
+    //   Promosi : NNN/HR-SKP/MSI/VIII/2026
+    //   Mutasi  : NNN/HR-SKM/MSI/VIII/2026
+    //   Demosi  : NNN/HR-SKD/MSI/VIII/2026
+    //   Rotasi  : NNN/HR-SKR/MSI/VIII/2026
+    $docTypeCodeMap = [
+      'Promosi' => 'HR-SKP',
+      'Demosi'  => 'HR-SKD',
+      'Mutasi'  => 'HR-SKM',
+      'Rotasi'  => 'HR-SKR',
+    ];
+    $docTypeCode = $docTypeCodeMap[$typeNorm] ?? 'HR-SKR';
 
-    $effectiveDate = $extraData['effective_date'] ?? $extraData['effectiveDate']
-                    ?? ($employee->rotationDate ?? date('Y-m-d'));
-    if ($effectiveDate && preg_match('/^\d{4}-\d{2}-\d{2}/', $effectiveDate)) {
-        $effectiveDate = \Carbon\Carbon::parse($effectiveDate)->translatedFormat('d F Y');
+    // SK number passed from controller (already generated by EmployeeService)
+    // Replace any HRD-SK prefix with the proper type-aware code if needed
+    $skNumberRaw = $extraData['sk_number'] ?? $extraData['skNumber']
+                    ?? ($employee->nomorSk ?? '');
+    if ($skNumberRaw && preg_match('/^(\d+)\/(HRD-SK|HR-SK[PMDR]?)\/(.+)$/', $skNumberRaw, $m)) {
+      // Re-compose with correct type-aware code keeping the rest
+      $skNumberRaw = $m[1] . '/' . $docTypeCode . '/' . $m[3];
+    }
+    if (!$skNumberRaw) {
+      $romanMonth = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+      $skNumberRaw = '001/' . $docTypeCode . '/' . ($company['code'] ?? 'MSI')
+                      . '/' . $romanMonth[date('n') - 1] . '/' . date('Y');
+    }
+    $skNumber = $skNumberRaw;
+
+    // ── Signatory ──
+    // GAS uses "Hisar Hesti" / "Human Resources & Legal Manager" as source of truth.
+    // Exposed via company config if available; otherwise fall back to GAS default.
+    $signatoryName     = $company['signatory_name']     ?? $extraData['signatory_name']     ?? 'Hisar Hesti';
+    $signatoryPosition = $company['signatory_position'] ?? $extraData['signatory_position'] ?? 'Human Resources & Legal Manager';
+
+    // ── Old Data (SEBELUM rotasi) ──
+    // Priority: 1. extraData snapshot dari controller (paling akurat)
+    //           2. jobPositionFormer di Employee sheet (sudah di-set saat proses rotate)
+    //           3. Safety fallback: jobPosition saat ini (jika data belum ter-sync)
+    $formerPos    = trim($extraData['old_job_position'] ?? $extraData['oldPosition'] ?? '')
+                      ?: ($employee->jobPositionFormer ?? '')
+                      ?: ($employee->jobPosition ?? '-');
+    $formerDept   = trim($extraData['old_department'] ?? $extraData['oldDept'] ?? '')
+                      ?: ($employee->department ?? '-');
+    $formerBranch = trim($extraData['old_branch_name'] ?? $extraData['oldBranch'] ?? '')
+                      ?: ($employee->branchName ?? ($company['name'] ?? '-'));
+
+    // ── New Data (SETELAH rotasi) ──
+    $newPos    = trim($extraData['new_job_position'] ?? $extraData['newJobPosition'] ?? '')
+                   ?: ($employee->jobPosition ?? $formerPos);
+    $newDept   = trim($extraData['new_department'] ?? $extraData['newDepartment'] ?? '')
+                   ?: ($employee->department ?? $formerDept);
+    $newBranch = trim($extraData['new_branch_name'] ?? $extraData['newBranchName'] ?? '')
+                   ?: ($employee->branchName ?? $formerBranch);
+
+    // ── Lokasi / Wilayah Kerja ──
+    // GAS: "Lokasi/Wilayah Kerja" = new branch/location
+    $lokasiKerja = $newBranch ?: $company['name'] ?? '-';
+
+    // ── Effective Date ──
+    $effectiveDateRaw = $extraData['effective_date'] ?? $extraData['effectiveDate']
+                         ?? ($employee->rotationDate ?? date('Y-m-d'));
+    $bulanId = ['Januari','Februari','Maret','April','Mei','Juni',
+                'Juli','Agustus','September','Oktober','November','Desember'];
+    if ($effectiveDateRaw && preg_match('/^(\d{4})-(\d{2})-(\d{2})/', $effectiveDateRaw, $m)) {
+      $effectiveDateFmt = (int)$m[3] . ' ' . ($bulanId[(int)$m[2] - 1] ?? $m[2]) . ' ' . $m[1];
+    } elseif ($effectiveDateRaw && preg_match('/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/', $effectiveDateRaw, $m)) {
+      $effectiveDateFmt = (int)$m[1] . ' ' . ($bulanId[(int)$m[2] - 1] ?? $m[2]) . ' ' . $m[3];
+    } else {
+      $effectiveDateFmt = $effectiveDateRaw ?: (date('j') . ' ' . $bulanId[(int)date('n') - 1] . ' ' . date('Y'));
     }
 
-    $reason      = $extraData['reason'] ?? $extraData['notes'] ?? ($employee->hrNotes ? last(explode("\n", $employee->hrNotes)) : '-');
-    $companyName = $company['name']     ?? 'PT MAHAKARYA SUKSES INDONESIA';
-    $companyCity = $company['city']     ?? 'Jakarta';
-    $todayFmt    = date('d F Y');
+    // ── Alasan Demosi (only for Demosi) ──
+    $alasanDemosi = $extraData['reason'] ?? $extraData['notes']
+                     ?? ($employee->hrNotes ? trim(last(explode("\n", $employee->hrNotes))) : '');
+    if (!$alasanDemosi || $alasanDemosi === '-') {
+      $alasanDemosi = 'Berdasarkan evaluasi kinerja dan kebutuhan organisasi.';
+    }
+
+    // ── Employee data ──
+    $empName   = $employee->fullName ?? '-';
+    $empNik    = ltrim($employee->nikNpwp ?? '-', "'");
+    $empId     = $employee->employeeId ?? '-';
+
+    // ── Company data ──
+    $companyLegal = $company['name']    ?? 'PT MAHAKARYA SUKSES INDONESIA';
+    $companyCity  = $company['city']    ?? 'Tangerang';
+
+    // ── Issue Date ──
+    $issueDateFmt = date('j') . ' ' . $bulanId[(int)date('n') - 1] . ' ' . date('Y');
+
+    // ── Type-aware wording maps ──
+    // Diperlukan agar MENIMBANG, DIKTUM KESATU, dan wording tabel berbeda per jenis
+    $titleJenis = [
+      'Promosi' => 'PROMOSI KARYAWAN',
+      'Demosi'  => 'DEMOSI KARYAWAN',
+      'Mutasi'  => 'MUTASI KARYAWAN',
+      'Rotasi'  => 'ROTASI KARYAWAN',
+    ];
+    $judulSK = 'SURAT KEPUTUSAN ' . ($titleJenis[$typeNorm] ?? ('ROTASI KARYAWAN'));
+
+    // Label kolom tabel berdasarkan jenis (1:1 GAS/template)
+    $labelJabatanBaru = match($typeNorm) {
+      'Promosi' => 'Jabatan Baru (Promosi)',
+      'Demosi'  => 'Jabatan Baru (Demosi)',
+      default   => 'Jabatan Baru',
+    };
+    $labelTanggalEfektif = match($typeNorm) {
+      'Promosi' => 'Tanggal Efektif Promosi',
+      'Demosi'  => 'Tanggal Efektif Demosi',
+      'Mutasi'  => 'Tanggal Efektif Mutasi',
+      default   => 'Tanggal Efektif',
+    };
   @endphp
 
-  <div class="doc-title">SURAT KEPUTUSAN {{ $typeLabel }}</div>
+  {{-- ══ JUDUL ══════════════════════════════════════════════════ --}}
+  <div class="doc-title">{{ $judulSK }}</div>
   <div class="doc-no">Nomor: {{ $skNumber }}</div>
 
-  <p>Yang bertanda tangan di bawah ini, Manajemen / HRD <strong>{{ $companyName }}</strong>, dengan ini menetapkan:</p>
-
-  <table class="data-table">
-    <tr><td class="label">Nama Karyawan</td><td class="colon">:</td><td class="value"><strong>{{ $employee->fullName }}</strong></td></tr>
-    <tr><td class="label">Employee ID</td><td class="colon">:</td><td class="value">{{ $employee->employeeId }}</td></tr>
-    <tr><td class="label">NIK / No. KTP</td><td class="colon">:</td><td class="value">{{ ltrim($employee->nikNpwp ?? '-', "'") }}</td></tr>
-    <tr><td class="label">Entitas Perusahaan</td><td class="colon">:</td><td class="value">{{ $companyName }}</td></tr>
-    <tr><td class="label">Jabatan Sebelumnya</td><td class="colon">:</td><td class="value">{{ $formerPos }}</td></tr>
-    <tr><td class="label">Jabatan Baru</td><td class="colon">:</td><td class="value"><strong>{{ $newPos }}</strong></td></tr>
-    <tr><td class="label">Departemen Sebelumnya</td><td class="colon">:</td><td class="value">{{ $formerDept }}</td></tr>
-    <tr><td class="label">Departemen Baru</td><td class="colon">:</td><td class="value"><strong>{{ $newDept }}</strong></td></tr>
-    <tr><td class="label">Jenis Penetapan</td><td class="colon">:</td><td class="value">{{ $rawType }}</td></tr>
-    <tr><td class="label">Tanggal Efektif</td><td class="colon">:</td><td class="value"><strong>{{ $effectiveDate }}</strong></td></tr>
-    <tr><td class="label">Alasan / Pertimbangan</td><td class="colon">:</td><td class="value">{{ $reason }}</td></tr>
-  </table>
-
-  <p class="closing-text">Demikian Surat Keputusan ini diterbitkan untuk dilaksanakan dengan penuh rasa tanggung jawab. Segala hak, kewajiban, dan wewenang yang melekat pada jabatan baru berlaku efektif sejak tanggal yang telah ditetapkan.</p>
-
-  {{-- Tanda Tangan — HR kiri, Karyawan kanan (1:1 GAS) --}}
-  <table class="sign-table">
+  {{-- ══ PENANDATANGAN ══════════════════════════════════════════ --}}
+  <p style="margin-bottom:4px;">Yang bertanda tangan di bawah ini:</p>
+  <table class="opener-table">
     <tr>
-      <td style="text-align:left">
-        {{ $companyCity }}, {{ $todayFmt }}<br>
-        Hormat Kami,<br>
-        <strong>{{ $companyName }}</strong><br>
-        @include('pdf.components.hr-sign')
-        <strong><u>Hisar Hesti</u></strong><br>
-        Human Resources (HR) &amp; Legal Manager
-      </td>
-      <td style="text-align:left; padding-left:20px">
-        <br><br>
-        Karyawan Yang Bersangkutan,
-        <div class="sign-space"></div>
-        <strong><u>{{ $employee->fullName }}</u></strong><br>
-        {{ $employee->employeeId }}
-      </td>
+      <td class="lbl">Nama</td>
+      <td class="col">:</td>
+      <td>{{ $signatoryName }}</td>
+    </tr>
+    <tr>
+      <td class="lbl">Jabatan</td>
+      <td class="col">:</td>
+      <td>{{ $signatoryPosition }}</td>
     </tr>
   </table>
+  <p style="margin-top:2px;margin-bottom:10px;">
+    Bertindak untuk dan atas nama {{ $companyLegal }} (selanjutnya disebut "Perusahaan").
+  </p>
+
+  {{-- ══ MENIMBANG ═══════════════════════════════════════════════ --}}
+  <div class="section-heading">MENIMBANG</div>
+  <div class="list-indent">
+    @if($typeNorm === 'Promosi')
+      <div class="list-item">a. Bahwa dalam rangka mendukung efektivitas organisasi, pengembangan karier, dan penghargaan atas kinerja Karyawan, Perusahaan perlu melakukan penyesuaian jabatan berupa promosi terhadap Karyawan;</div>
+      <div class="list-item">b. Bahwa berdasarkan hasil evaluasi kinerja, kompetensi, dedikasi, serta kebutuhan organisasi, Karyawan yang bersangkutan dipandang cakap dan memenuhi syarat untuk dipromosikan pada jabatan yang lebih tinggi;</div>
+      <div class="list-item">c. Bahwa berdasarkan pertimbangan sebagaimana dimaksud pada huruf a dan huruf b, perlu ditetapkan promosi jabatan Karyawan melalui Surat Keputusan.</div>
+    @elseif($typeNorm === 'Demosi')
+      <div class="list-item">a. Bahwa berdasarkan hasil evaluasi kinerja, penilaian perilaku kerja, dan/atau pelanggaran terhadap ketentuan Perusahaan, terdapat Karyawan yang dipandang tidak lagi memenuhi kualifikasi, kompetensi, dan/atau tanggung jawab pada jabatan yang saat ini diembannya;</div>
+      <div class="list-item">b. Bahwa dalam rangka menjaga efektivitas organisasi, kedisiplinan kerja, serta kesesuaian antara kompetensi Karyawan dengan tuntutan jabatan, Perusahaan perlu melakukan penyesuaian jabatan berupa demosi terhadap Karyawan yang bersangkutan;</div>
+      <div class="list-item">c. Bahwa berdasarkan pertimbangan sebagaimana dimaksud pada huruf a dan huruf b, perlu ditetapkan demosi jabatan Karyawan melalui Surat Keputusan.</div>
+    @else
+      {{-- Mutasi / Rotasi --}}
+      <div class="list-item">a. Bahwa dalam rangka mendukung efektivitas organisasi, kebutuhan operasional, serta tertib administrasi kepegawaian, Perusahaan perlu melakukan penyesuaian terhadap jabatan dan/atau penempatan Karyawan;</div>
+      <div class="list-item">b. Bahwa berdasarkan kebutuhan organisasi, evaluasi, dan/atau pertimbangan manajemen, dipandang perlu melakukan mutasi dan/atau penyesuaian jabatan Karyawan;</div>
+      <div class="list-item">c. Bahwa berdasarkan pertimbangan sebagaimana dimaksud pada huruf a dan huruf b, perlu ditetapkan mutasi dan/atau penyesuaian jabatan Karyawan melalui Surat Keputusan.</div>
+    @endif
+  </div>
+
+  {{-- ══ MENGINGAT ════════════════════════════════════════════════ --}}
+  <div class="section-heading">MENGINGAT</div>
+  <div class="mengingat-indent">
+    <div class="list-item">1. Peraturan Perusahaan {{ $companyLegal }};</div>
+    <div class="list-item">2. Pasal 4 ayat (1) dan ayat (4) Peraturan Perusahaan mengenai kewenangan Perusahaan dalam menetapkan penempatan dan pendayagunaan tenaga kerja, termasuk {{ strtolower($typeNorm) }} jabatan;</div>
+    <div class="list-item">3. Pasal 8 ayat (4) Peraturan Perusahaan mengenai kewenangan Perusahaan dalam mengatur penempatan dan jenjang jabatan Karyawan;</div>
+    @if($typeNorm === 'Promosi' || $typeNorm === 'Demosi')
+      <div class="list-item">4. Pasal 9 Peraturan Perusahaan mengenai penyesuaian jabatan Karyawan berdasarkan kebutuhan organisasi, hasil evaluasi kinerja, dan/atau pelanggaran ketentuan Perusahaan;</div>
+    @else
+      <div class="list-item">4. Pasal 9 ayat (2) Peraturan Perusahaan mengenai pemindahan/mutasi Karyawan karena kebutuhan operasional Perusahaan;</div>
+    @endif
+  </div>
+
+  {{-- ══ MEMUTUSKAN ═══════════════════════════════════════════════ --}}
+  <div class="section-heading">MEMUTUSKAN</div>
+
+  {{-- ── KESATU ── --}}
+  <div class="diktum-heading">KESATU</div>
+  <div class="diktum-body">
+    Menetapkan {{ strtolower($typeNorm) }} jabatan Karyawan dengan data dan ketentuan sebagai berikut:
+  </div>
+
+  {{-- Tabel Data Karyawan (1:1 dengan template SK PDF acuan) --}}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th class="col-label">DATA KARYAWAN</th>
+        <th class="col-value">KETERANGAN</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="col-label">Nama</td>
+        <td class="col-value">{{ $empName }}</td>
+      </tr>
+      <tr>
+        <td class="col-label">NIK</td>
+        <td class="col-value">{{ $empNik }}</td>
+      </tr>
+      <tr>
+        <td class="col-label">ID Karyawan</td>
+        <td class="col-value">{{ $empId }}</td>
+      </tr>
+      <tr>
+        <td class="col-label">Jabatan Semula</td>
+        <td class="col-value">{{ $formerPos }}</td>
+      </tr>
+      <tr>
+        <td class="col-label">{{ $labelJabatanBaru }}</td>
+        <td class="col-value">{{ $newPos }}</td>
+      </tr>
+      <tr>
+        <td class="col-label">Departemen/Unit Kerja Semula</td>
+        <td class="col-value">{{ $formerDept }}</td>
+      </tr>
+      <tr>
+        <td class="col-label">Departemen/Unit Kerja Baru</td>
+        <td class="col-value">{{ $newDept }}</td>
+      </tr>
+      <tr>
+        <td class="col-label">Lokasi/Wilayah Kerja</td>
+        <td class="col-value">{{ $lokasiKerja }}</td>
+      </tr>
+      @if($typeNorm === 'Demosi')
+        <tr>
+          <td class="col-label">Alasan/Dasar Demosi</td>
+          <td class="col-value">{{ $alasanDemosi }}</td>
+        </tr>
+      @endif
+      <tr>
+        <td class="col-label">{{ $labelTanggalEfektif }}</td>
+        <td class="col-value">{{ $effectiveDateFmt }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p style="margin-bottom:10px;margin-top:4px;">
+    @if($typeNorm === 'Promosi')
+      Promosi sebagaimana dimaksud dalam Diktum ini merupakan kenaikan jabatan yang disertai dengan perubahan tanggung jawab, wewenang, dan/atau hak Karyawan sesuai dengan ketentuan Perusahaan.
+    @elseif($typeNorm === 'Demosi')
+      Demosi sebagaimana dimaksud dalam Diktum ini merupakan penurunan jabatan yang disertai dengan perubahan tanggung jawab, wewenang, dan/atau hak Karyawan sesuai dengan ketentuan Perusahaan.
+    @else
+      Mutasi sebagaimana dimaksud dalam Diktum ini dapat berupa perubahan jabatan, fungsi, unit kerja, departemen, lokasi/wilayah kerja, dan/atau penempatan Karyawan sesuai dengan kebutuhan organisasi dan operasional Perusahaan.
+    @endif
+  </p>
+
+  {{-- ── KEDUA ── --}}
+  <div class="diktum-heading">KEDUA</div>
+  <div class="diktum-body">
+    Karyawan wajib melaksanakan serah terima tugas, pekerjaan, dokumen, dan/atau aset yang menjadi tanggung jawabnya pada jabatan semula kepada pihak yang ditunjuk oleh Perusahaan sebelum tanggal efektif {{ strtolower($typeNorm) }}.
+  </div>
+
+  {{-- ── KETIGA ── --}}
+  <div class="diktum-heading">KETIGA</div>
+  <div class="diktum-body">
+    @if($typeNorm === 'Promosi')
+      Terhitung sejak tanggal efektif promosi sebagaimana dimaksud dalam Diktum KESATU, Karyawan wajib melaksanakan tugas, fungsi, wewenang, dan tanggung jawab sesuai dengan jabatan baru yang telah ditetapkan oleh Perusahaan.
+    @elseif($typeNorm === 'Demosi')
+      Terhitung sejak tanggal efektif demosi sebagaimana dimaksud dalam Diktum KESATU, Karyawan wajib melaksanakan tugas, fungsi, wewenang, dan tanggung jawab sesuai dengan jabatan baru yang telah ditetapkan oleh Perusahaan, serta menunjukkan perbaikan kinerja dan perilaku kerja sebagaimana diharapkan Perusahaan.
+    @else
+      Terhitung sejak tanggal efektif mutasi sebagaimana dimaksud dalam Diktum KESATU, Karyawan wajib melaksanakan tugas, fungsi, wewenang, dan tanggung jawab sesuai dengan jabatan dan/atau penempatan yang telah ditetapkan oleh Perusahaan.
+    @endif
+  </div>
+
+  {{-- ── KEEMPAT ── --}}
+  <div class="diktum-heading">KEEMPAT</div>
+  <div class="diktum-body">
+    Hak-hak Karyawan sehubungan dengan {{ strtolower($typeNorm) }} jabatan, termasuk namun tidak terbatas pada penyesuaian gaji, tunjangan, dan/atau fasilitas lainnya, diatur dan disesuaikan berdasarkan ketentuan Perusahaan yang berlaku, dan akan diinformasikan secara terpisah kepada Karyawan yang bersangkutan.
+  </div>
+
+  {{-- ── KELIMA ── --}}
+  <div class="diktum-heading">KELIMA</div>
+  <div class="diktum-body">
+    @if($typeNorm === 'Demosi')
+      Apabila dalam jangka waktu evaluasi yang ditetapkan Perusahaan Karyawan tidak menunjukkan perbaikan kinerja dan/atau perilaku kerja, Perusahaan berhak mengambil tindakan lebih lanjut sesuai dengan Peraturan Perusahaan, perjanjian kerja, dan peraturan perundang-undangan yang berlaku.
+    @else
+      Surat Keputusan ini menjadi dasar bagi Perusahaan untuk melakukan penyesuaian data dan administrasi kepegawaian Karyawan sesuai dengan perubahan yang ditetapkan dalam Surat Keputusan ini.
+    @endif
+  </div>
+
+  {{-- ── KEENAM ── --}}
+  <div class="diktum-heading">KEENAM</div>
+  <div class="diktum-body">
+    @if($typeNorm === 'Demosi')
+      Surat Keputusan ini menjadi dasar bagi Perusahaan untuk melakukan penyesuaian data dan administrasi kepegawaian Karyawan sesuai dengan perubahan yang ditetapkan dalam Surat Keputusan ini.
+    @else
+      Hak dan kewajiban Karyawan sebagai akibat dari pelaksanaan {{ strtolower($typeNorm) }} tetap mengacu pada ketentuan Perusahaan, perjanjian kerja, dan peraturan perundang-undangan yang berlaku.
+    @endif
+  </div>
+
+  @if($typeNorm === 'Demosi')
+    {{-- ── KETUJUH (hanya untuk Demosi) ── --}}
+    <div class="diktum-heading">KETUJUH</div>
+    <div class="diktum-body">
+      Hak dan kewajiban Karyawan sebagai akibat dari pelaksanaan demosi tetap mengacu pada ketentuan Perusahaan, perjanjian kerja, dan peraturan perundang-undangan yang berlaku.
+    </div>
+  @endif
+
+  {{-- ── PENUTUP ── --}}
+  <p style="margin-top:10px;margin-bottom:16px;text-align:justify;">
+    Demikian Surat Keputusan ini dibuat untuk dilaksanakan dengan sebaik-baiknya dan dipergunakan sebagaimana mestinya.
+  </p>
+
+  {{-- ══ TANDA TANGAN ════════════════════════════════════════════ --}}
+  <div class="sign-wrapper">
+    <table class="sign-table">
+      <tr>
+        <td style="text-align:left; padding-right:20px;">
+          Ditetapkan di : {{ $companyCity }}<br>
+          Tanggal &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: {{ $issueDateFmt }}<br><br>
+          {{ $companyLegal }}<br><br>
+          @include('pdf.components.hr-sign')
+          <strong><u>{{ $signatoryName }}</u></strong><br>
+          {{ $signatoryPosition }}
+        </td>
+        <td style="text-align:left; padding-left:20px;">
+          {{-- Kolom kanan kosong sesuai template SK acuan (hanya 1 kolom tanda tangan) --}}
+        </td>
+      </tr>
+    </table>
+  </div>
 
 </body>
 </html>

@@ -32,6 +32,8 @@ return [
         'employees'  => env('GOOGLE_SHEET_EMPLOYEES', 'Employee'),
         'audit_log'  => env('GOOGLE_SHEET_AUDIT_LOG', 'Audit_Log'),
         'users'      => env('GOOGLE_SHEET_USERS', 'Users'),
+        'mpr'        => env('GOOGLE_SHEET_MPR', 'MPR'),
+        'mpr_requestor' => env('GOOGLE_SHEET_MPR_REQUESTOR', 'mpr_requestor'),
     ],
 
     /*

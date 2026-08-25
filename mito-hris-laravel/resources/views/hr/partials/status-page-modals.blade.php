@@ -755,17 +755,23 @@
       return;
     }
 
-    dropdown.innerHTML = matched.map(c => `
-      <div class="p-2 border-bottom d-flex align-items-center gap-2 hover-item" style="cursor:pointer;" onclick='selectOnboardingCandidate(${JSON.stringify(c).replace(/'/g, "&#39;")})'>
-        <div class="avatar-sm" style="width:32px;height:32px;background:#166534;color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">
-          ${(c.fullName || 'C').substring(0,2).toUpperCase()}
-        </div>
-        <div class="flex-grow-1" style="font-size:12.5px;">
-          <div class="fw-semibold text-navy">${c.fullName || '-'}</div>
-          <div class="text-muted" style="font-size:11px">${c.positionApplied || '-'} &middot; ${c.recruitmentId} &middot; <span style="color:#166534">Offering Diterima</span></div>
-        </div>
-      </div>
-    `).join('');
+    dropdown.innerHTML = matched.map(function(c) {
+      return '<div class="p-2 border-bottom d-flex align-items-center gap-2 hover-item onboarding-cand-item" style="cursor:pointer;" data-rec-id="' + (c.recruitmentId || '') + '">' +
+        '<div class="avatar-sm" style="width:32px;height:32px;background:#166534;color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">' +
+          (c.fullName || 'C').substring(0,2).toUpperCase() +
+        '</div>' +
+        '<div class="flex-grow-1" style="font-size:12.5px;">' +
+          '<div class="fw-semibold text-navy">' + (c.fullName || '-') + '</div>' +
+          '<div class="text-muted" style="font-size:11px">' + (c.positionApplied || '-') + ' &middot; ' + (c.recruitmentId || '') + ' &middot; <span style="color:#166534">Offering Diterima</span></div>' +
+        '</div></div>';
+    }).join('');
+    dropdown.querySelectorAll('.onboarding-cand-item').forEach(function(item) {
+      item.addEventListener('click', function() {
+        var recId = item.getAttribute('data-rec-id');
+        var found = (window.__allCandidatesForStatus || []).find(function(x) { return x.recruitmentId === recId; });
+        if (found) selectOnboardingCandidate(found);
+      });
+    });
     dropdown.style.display = 'block';
   }
 
@@ -919,17 +925,23 @@
       return;
     }
 
-    dropdown.innerHTML = matched.map(c => `
-      <div class="p-2 border-bottom d-flex align-items-center gap-2 hover-item" style="cursor:pointer;" onclick='selectOfferingCandidate(${JSON.stringify(c).replace(/'/g, "&#39;")})'>
-        <div class="avatar-sm" style="width:32px;height:32px;background:var(--color-primary);color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">
-          ${(c.fullName || 'C').substring(0,2).toUpperCase()}
-        </div>
-        <div class="flex-grow-1" style="font-size:12.5px;">
-          <div class="fw-semibold text-navy">${c.fullName || '-'}</div>
-          <div class="text-muted" style="font-size:11px">${c.recruitmentId} &bull; ${c.positionApplied || '-'}</div>
-        </div>
-      </div>
-    `).join('');
+    dropdown.innerHTML = matched.map(function(c) {
+      return '<div class="p-2 border-bottom d-flex align-items-center gap-2 hover-item offering-cand-item" style="cursor:pointer;" data-rec-id="' + (c.recruitmentId || '') + '">' +
+        '<div class="avatar-sm" style="width:32px;height:32px;background:var(--color-primary);color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">' +
+          (c.fullName || 'C').substring(0,2).toUpperCase() +
+        '</div>' +
+        '<div class="flex-grow-1" style="font-size:12.5px;">' +
+          '<div class="fw-semibold text-navy">' + (c.fullName || '-') + '</div>' +
+          '<div class="text-muted" style="font-size:11px">' + (c.recruitmentId || '') + ' &bull; ' + (c.positionApplied || '-') + '</div>' +
+        '</div></div>';
+    }).join('');
+    dropdown.querySelectorAll('.offering-cand-item').forEach(function(item) {
+      item.addEventListener('click', function() {
+        var recId = item.getAttribute('data-rec-id');
+        var found = (window.__allCandidatesForStatus || []).find(function(x) { return x.recruitmentId === recId; });
+        if (found) selectOfferingCandidate(found);
+      });
+    });
     dropdown.style.display = 'block';
   }
 
@@ -1359,6 +1371,17 @@
             _activeOfferRespRow.offeringResponse = response;
             _activeOfferRespRow.offeringResponseNotes = notes;
           }
+          // Sync window.__allCandidatesForStatus so PKWT search reflects the new offeringResponse
+          // immediately without requiring a page reload.
+          if (Array.isArray(window.__allCandidatesForStatus) && _activeOfferRespRow) {
+            var updatedRid = (_activeOfferRespRow.recruitmentId || '');
+            window.__allCandidatesForStatus = window.__allCandidatesForStatus.map(function(c) {
+              if (c.recruitmentId === updatedRid) {
+                return Object.assign({}, c, { offeringResponse: response, offeringResponseNotes: notes });
+              }
+              return c;
+            });
+          }
           if (typeof showToast === 'function') showToast('Respons offering berhasil disimpan: ' + response, 'success');
 
           // Update badge respons di drawer header secara live tanpa reload penuh
@@ -1474,11 +1497,11 @@
         if (result && result.success) {
           var modal = bootstrap.Modal.getInstance(document.getElementById('onboardingModal'));
           if (modal) modal.hide();
-          if (typeof showToast === 'function') {
-            showToast('Kontrak PKWT berhasil diproses! Karyawan kini berstatus Contract.', 'success');
-          }
 
           // Auto-generate & download PDF Kontrak PKWT (1:1 GAS)
+          // FIX: Kirim recruitmentId sebagai param tambahan agar ExportController bisa fallback
+          // jika employee belum ter-cache di sheet (race condition Google Sheets cache).
+          // FIX: Gunakan anchor click trick agar tidak diblokir popup blocker browser.
           var pdfParams = new URLSearchParams({
             branch_name: payload.branch_name,
             position: payload.position,
@@ -1493,11 +1516,27 @@
             tenor_text: payload.tenor_text,
             jam_masuk: payload.jam_masuk,
             work_schedule: payload.work_schedule,
+            // Sertakan recruitmentId sebagai fallback lookup di ExportController
+            recruitment_id: recruitmentId,
           });
-          var pdfId = result.employeeId || recruitmentId;
-          window.open('/hr/export/kontrak-pkwt/' + pdfId + '?' + pdfParams.toString(), '_blank');
+          // Gunakan employeeId jika tersedia; fallback ke recruitmentId
+          var pdfId = (result.employeeId && result.employeeId !== '') ? result.employeeId : recruitmentId;
+          var pdfUrl = '/hr/export/kontrak-pkwt/' + pdfId + '?' + pdfParams.toString();
 
-          setTimeout(function() { location.reload(); }, 800);
+          // Anchor click trick: tidak diblokir popup blocker karena bukan window.open() async
+          var dlAnchor = document.createElement('a');
+          dlAnchor.href = pdfUrl;
+          dlAnchor.target = '_blank';
+          dlAnchor.rel = 'noopener noreferrer';
+          document.body.appendChild(dlAnchor);
+          dlAnchor.click();
+          document.body.removeChild(dlAnchor);
+
+          if (typeof showToast === 'function') {
+            showToast('Kontrak PKWT berhasil diproses! PDF sedang diunduh...', 'success');
+          }
+
+          setTimeout(function() { location.reload(); }, 1200);
         } else {
           if (typeof showToast === 'function') showToast('Gagal proses kontrak: ' + (result ? result.message : 'Error'), 'error');
         }

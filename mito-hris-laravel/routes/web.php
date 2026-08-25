@@ -14,6 +14,7 @@ use App\Http\Controllers\HR\MasterDataController;
 use App\Http\Controllers\HR\SettingsController;
 use App\Http\Controllers\HR\UserController;
 use App\Http\Controllers\HR\ExportController;
+use App\Http\Controllers\HR\MprController;
 
 /*
 |--------------------------------------------------------------------------
@@ -48,63 +49,69 @@ Route::post('/outsource/apply', [OutsourceApplyController::class, 'store'])->nam
 // =========================================================================
 // DOMAIN 3: HR INTERNAL MANAGEMENT SYSTEM (Protected by hr.auth Middleware)
 // =========================================================================
-Route::prefix('hr')->name('hr.')->middleware('hr.auth')->group(function () {
+Route::prefix('hr')->name('hr.')->middleware(['hr.auth', 'mpr.auth'])->group(function () {
     // 1. Dashboard — all authenticated users can view
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // 2. Recruitment Pipeline — Super Admin, HR Manager, HR Recruitment
-    Route::prefix('recruitment')->name('recruitment.')->middleware('role:Super Admin,HR Manager,HR Recruitment')->group(function () {
-        Route::get('/', [RecruitmentController::class, 'index'])->name('index');
-        Route::get('/accepted', [RecruitmentController::class, 'accepted'])->name('accepted');
-        Route::get('/hold', [RecruitmentController::class, 'holdPage'])->name('hold');
-        Route::get('/blacklist', [RecruitmentController::class, 'blacklistPage'])->name('blacklist');
+    // 2. Recruitment Pipeline — uses can middleware for permission-based access
+    Route::prefix('recruitment')->name('recruitment.')->middleware('can:view_recruitment')->group(function () {
+        Route::get('/', [RecruitmentController::class, 'index'])->name('index')->middleware('can:view_recruitment');
+        Route::get('/accepted', [RecruitmentController::class, 'accepted'])->name('accepted')->middleware('can:view_recruitment');
+        Route::get('/hold', [RecruitmentController::class, 'holdPage'])->name('hold')->middleware('can:view_recruitment');
+        Route::get('/blacklist', [RecruitmentController::class, 'blacklistPage'])->name('blacklist')->middleware('can:view_recruitment');
 
-        Route::post('/{id}/status', [RecruitmentController::class, 'updateStatus'])->name('update-status');
-        Route::post('/{id}/hold', [RecruitmentController::class, 'hold'])->name('hold.post');
-        Route::post('/{id}/blacklist', [RecruitmentController::class, 'blacklist'])->name('blacklist.post');
-        Route::post('/{id}/accept', [RecruitmentController::class, 'accept'])->name('accept');
-        Route::post('/{id}/save-notes', [RecruitmentController::class, 'saveNotes'])->name('save-notes');
-        Route::post('/{id}/move-status', [RecruitmentController::class, 'moveStatus'])->name('move-status');
-        Route::post('/{id}/save-offering', [RecruitmentController::class, 'saveOffering'])->name('save-offering');
-        Route::post('/{id}/save-offering-response', [RecruitmentController::class, 'saveOfferingResponse'])->name('save-offering-response');
-        Route::post('/{id}/save-contract', [RecruitmentController::class, 'saveContract'])->name('save-contract');
-        Route::get('/{id}/json', [RecruitmentController::class, 'getJson'])->name('json');
-    });
-
-    // 3. Master Data Employee — Super Admin, HR Manager
-    Route::prefix('employees')->name('employees.')->middleware('role:Super Admin,HR Manager')->group(function () {
-        Route::get('/', [EmployeeController::class, 'index'])->name('index');
-        Route::post('/import', [EmployeeController::class, 'import'])->name('import');
-        Route::post('/{id}/rotate', [EmployeeController::class, 'rotate'])->name('rotate');
-        Route::post('/{id}/offboard', [EmployeeController::class, 'offboard'])->name('offboard');
-        Route::post('/{id}/off-contract', [EmployeeController::class, 'offContract'])->name('off-contract');
-        Route::get('/{id}/json', [EmployeeController::class, 'getJson'])->name('json');
+        Route::post('/{id}/status', [RecruitmentController::class, 'updateStatus'])->name('update-status')->middleware('can:update_candidates');
+        Route::post('/{id}/hold', [RecruitmentController::class, 'hold'])->name('hold.post')->middleware('can:manage_hold_blacklist');
+        Route::post('/{id}/blacklist', [RecruitmentController::class, 'blacklist'])->name('blacklist.post')->middleware('can:manage_hold_blacklist');
+        Route::post('/{id}/accept', [RecruitmentController::class, 'accept'])->name('accept')->middleware('can:update_candidates');
+        Route::post('/{id}/save-notes', [RecruitmentController::class, 'saveNotes'])->name('save-notes')->middleware('can:update_candidates');
+        Route::post('/{id}/move-status', [RecruitmentController::class, 'moveStatus'])->name('move-status')->middleware('can:update_candidates');
+        Route::post('/{id}/save-offering', [RecruitmentController::class, 'saveOffering'])->name('save-offering')->middleware('can:create_offering');
+        Route::post('/{id}/save-offering-response', [RecruitmentController::class, 'saveOfferingResponse'])->name('save-offering-response')->middleware('can:update_candidates');
+        Route::post('/{id}/save-contract', [RecruitmentController::class, 'saveContract'])->name('save-contract')->middleware('can:update_candidates');
+        Route::get('/{id}/json', [RecruitmentController::class, 'getJson'])->name('json')->middleware('can:view_recruitment');
     });
 
-    // 4. Employee Lifecycle — Super Admin, HR Manager
-    Route::prefix('probation')->name('probation.')->middleware('role:Super Admin,HR Manager')->group(function () {
-        Route::get('/', [ProbationController::class, 'index'])->name('index');
-        Route::post('/{id}/evaluate', [ProbationController::class, 'evaluate'])->name('evaluate');
-    });
-    Route::prefix('outsource')->name('outsource.')->middleware('role:Super Admin,HR Manager,HR Recruitment')->group(function () {
-        Route::get('/', [OutsourceController::class, 'index'])->name('index');
+    // 3. Master Data Employee — view_employees for viewing, manage_employees for mutations
+    Route::prefix('employees')->name('employees.')->middleware('can:view_employees')->group(function () {
+        Route::get('/', [EmployeeController::class, 'index'])->name('index')->middleware('can:view_employees');
+        // IMPORTANT: literal routes (search) MUST come before wildcard routes ({id})
+        // to prevent Laravel routing "search" as {id} parameter
+        Route::get('/search', [EmployeeController::class, 'search'])->name('search')->middleware('can:view_employees');
+        Route::post('/import', [EmployeeController::class, 'import'])->name('import')->middleware('can:manage_employees');
+        Route::put('/{id}', [EmployeeController::class, 'update'])->name('update')->middleware('can:manage_employees');
+        Route::post('/{id}/rotate', [EmployeeController::class, 'rotate'])->name('rotate')->middleware('can:manage_employees');
+        Route::post('/{id}/offboard', [EmployeeController::class, 'offboard'])->name('offboard')->middleware('can:manage_employees');
+        Route::post('/{id}/off-contract', [EmployeeController::class, 'offContract'])->name('off-contract')->middleware('can:manage_employees');
+        Route::post('/{id}/promote-probation', [EmployeeController::class, 'promoteToProbation'])->name('promote-probation')->middleware('can:manage_employees');
+        Route::get('/{id}/json', [EmployeeController::class, 'getJson'])->name('json')->middleware('can:view_employees');
     });
 
-    // 5. System Management — Super Admin, HR Manager
-    Route::prefix('audit-logs')->name('audit-logs.')->middleware('role:Super Admin,HR Manager')->group(function () {
-        Route::get('/', [AuditLogController::class, 'index'])->name('index');
+    // 4. Employee Lifecycle — Probation requires manage_probation, Outsource requires view_employees
+    Route::prefix('probation')->name('probation.')->middleware('can:manage_probation')->group(function () {
+        Route::get('/', [ProbationController::class, 'index'])->name('index')->middleware('can:manage_probation');
+        Route::post('/{id}/evaluate', [ProbationController::class, 'evaluate'])->name('evaluate')->middleware('can:manage_probation');
+        Route::get('/{id}/eval-history', [ProbationController::class, 'evalHistory'])->name('eval-history')->middleware('can:manage_probation');
     });
-    Route::prefix('master-data')->name('master-data.')->middleware('role:Super Admin,HR Manager')->group(function () {
-        Route::get('/', [MasterDataController::class, 'index'])->name('index');
-        Route::post('/', [MasterDataController::class, 'store'])->name('store');
+    Route::prefix('outsource')->name('outsource.')->middleware('can:view_employees')->group(function () {
+        Route::get('/', [OutsourceController::class, 'index'])->name('index')->middleware('can:view_employees');
     });
-    Route::prefix('settings')->name('settings.')->middleware('role:Super Admin,HR Manager')->group(function () {
-        Route::get('/', [SettingsController::class, 'index'])->name('index');
-        Route::post('/', [SettingsController::class, 'update'])->name('update');
+
+    // 5. System Management
+    Route::prefix('audit-logs')->name('audit-logs.')->middleware('can:view_reports')->group(function () {
+        Route::get('/', [AuditLogController::class, 'index'])->name('index')->middleware('can:view_reports');
     });
-    Route::prefix('users')->name('users.')->middleware('role:Super Admin')->group(function () {
-        Route::get('/', [UserController::class, 'index'])->name('index');
-        Route::post('/', [UserController::class, 'store'])->name('store');
+    Route::prefix('master-data')->name('master-data.')->middleware('can:manage_settings')->group(function () {
+        Route::get('/', [MasterDataController::class, 'index'])->name('index')->middleware('can:manage_settings');
+        Route::post('/', [MasterDataController::class, 'store'])->name('store')->middleware('can:manage_settings');
+    });
+    Route::prefix('settings')->name('settings.')->middleware('can:manage_settings')->group(function () {
+        Route::get('/', [SettingsController::class, 'index'])->name('index')->middleware('can:manage_settings');
+        Route::post('/', [SettingsController::class, 'update'])->name('update')->middleware('can:manage_settings');
+    });
+    Route::prefix('users')->name('users.')->middleware('can:manage_settings')->group(function () {
+        Route::get('/', [UserController::class, 'index'])->name('index')->middleware('can:manage_settings');
+        Route::post('/', [UserController::class, 'store'])->name('store')->middleware('can:manage_settings');
     });
 
     // 6. PDF Generation & CSV Exports — Super Admin, HR Manager, HR Recruitment
@@ -120,5 +127,15 @@ Route::prefix('hr')->name('hr.')->middleware('hr.auth')->group(function () {
 
         Route::get('/candidates-csv', [ExportController::class, 'exportCandidatesCsv'])->name('candidates-csv');
         Route::get('/employees-csv', [ExportController::class, 'exportEmployeesCsv'])->name('employees-csv');
+    });
+
+    // 7. Manpower Request (MPR) — View, Create, Show, PDF Export
+    Route::prefix('mpr')->name('mpr.')->middleware('can:view_mpr')->group(function () {
+        Route::get('/', [MprController::class, 'index'])->name('index');
+        Route::get('/create', [MprController::class, 'index'])->name('create')->middleware('can:create_mpr');
+        Route::post('/', [MprController::class, 'store'])->name('store')->middleware('can:create_mpr');
+        Route::get('/{id}', [MprController::class, 'show'])->name('show');
+        Route::get('/{id}/json', [MprController::class, 'getJson'])->name('json');
+        Route::get('/{id}/pdf', [MprController::class, 'exportPdf'])->name('pdf')->middleware('can:export_mpr');
     });
 });

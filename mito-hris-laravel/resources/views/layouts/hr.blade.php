@@ -46,6 +46,7 @@
   @include('hr.partials.off-contract-modal')
   @include('hr.partials.status-page-modals')
   @include('hr.recruitment.modals.action-modals')
+  @include('hr.partials.employee-form-modal')
 
   <!-- 1:1 Drawer (Candidate/Employee/Outsource Profile) -->
   @include('components.hr-drawer')
@@ -256,6 +257,10 @@
       .then(function(data) {
         if (!data.success) { closeDrawer(); return; }
         var e = data.employee;
+
+        // Simpan data employee aktif untuk keperluan Edit & Probation
+        window._activeDrawerEmployee = e;
+
         document.getElementById('drawerCandidateName').innerText = e.fullName || '-';
         document.getElementById('drawerPosition').innerText = (e.jobPosition || '-') + (e.department ? ' · ' + e.department : '');
         document.getElementById('drawerAvatar').innerText = initials(e.fullName);
@@ -288,7 +293,7 @@
         setDrawerText('empDrCostCenter', e.costCenter);
         setDrawerText('empDrCity', e.lokasiKerja || e.areaKerja);
         setDrawerText('empDrDistrict', e.areaKerja);
-        setDrawerText('empDrPosition', e.jobPosition);
+        setDrawerText('empDrPosition', e.jobPositionLocation || e.jobPosition);
         setDrawerText('empDrJobLevel', e.jobLevel);
         setDrawerText('empDrGrade', e.grade);
         setDrawerText('empDrJoinDate', e.joinDate);
@@ -308,9 +313,356 @@
         setDrawerText('empDrNotes', e.hrNotes);
         var metaEl = document.getElementById('drawerIdMeta');
         if (metaEl) metaEl.innerHTML = '<span>Employee ID<strong>' + (e.employeeId || '-') + '</strong></span><span>Tanggal Masuk<strong>' + (e.joinDate || '-') + '</strong></span>';
+
+        // Tombol Edit di footer — wire ke empOpenEdit()
+        var btnEdit = document.getElementById('btnDrawerEntityEdit');
+        if (btnEdit) btnEdit.onclick = function() { empOpenEdit(e); };
+
+        // Tombol Edit di header drawer
+        var btnEditHeader = document.getElementById('btnDrawerEdit');
+        if (btnEditHeader) btnEditHeader.onclick = function() { empOpenEdit(e); };
+
+        // Contract actions — tampilkan tombol "Ajukan Onboarding Probation" hanya untuk Contract
+        var contractWrap = document.getElementById('drawerContractActionsWrap');
+        var statusLower = (e.statusEmployee || '').toLowerCase();
+        var isContract = statusLower === 'contract' || statusLower === 'pkwt' || statusLower.indexOf('contract') !== -1;
+        if (contractWrap) {
+          contractWrap.style.display = isContract ? 'block' : 'none';
+          var btnPromote = document.getElementById('btnDrawerPromoteProbation');
+          if (btnPromote) {
+            btnPromote.onclick = function() { openPromoteToProbationModal(e); };
+          }
+        }
       })
       .catch(function() { document.getElementById('drawerCandidateName').innerText = 'Gagal memuat data.'; });
     };
+
+    // ===========================================================
+    // EDIT EMPLOYEE — populate modal dari data drawer aktif
+    // 1:1 dengan GAS empOpenEdit() di js/employee.html
+    // ===========================================================
+    function empOpenEdit(emp) {
+      if (!emp) emp = window._activeDrawerEmployee;
+      if (!emp) return;
+
+      // Update judul modal
+      var titleEl = document.getElementById('empFormTitle');
+      if (titleEl) titleEl.textContent = 'Edit Karyawan';
+
+      // Simpan ID aktif untuk submit
+      var efId = document.getElementById('efId');
+      if (efId) efId.value = emp.employeeId || '';
+
+      // Banner preview
+      var banner = document.getElementById('efPreviewBanner');
+      var bannerAv = document.getElementById('efBannerAvatar');
+      var bannerNm = document.getElementById('efBannerName');
+      var bannerMt = document.getElementById('efBannerMeta');
+      if (banner) banner.style.display = 'flex';
+      if (bannerAv) bannerAv.innerText = initials(emp.fullName || 'K');
+      if (bannerNm) bannerNm.innerText = emp.fullName || '-';
+      if (bannerMt) bannerMt.innerText = (emp.jobPosition || emp.jobPositionLocation || '-') + (emp.department ? ' · ' + emp.department : '') + (emp.employeeId ? ' · ' + emp.employeeId : '');
+
+      // Helper: set value pada input/select
+      function setVal(id, val) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.value = (val === null || val === undefined) ? '' : String(val).replace(/^'/, '');
+      }
+
+      // Helper: set value pada date input (handle berbagai format tanggal)
+      function setDate(id, val) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        if (!val) { el.value = ''; return; }
+        var s = String(val).trim();
+        // Jika sudah format YYYY-MM-DD
+        if (/^\d{4}-\d{2}-\d{2}/.test(s)) { el.value = s.substring(0, 10); return; }
+        // Coba parse DD/MM/YYYY
+        var m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+        if (m) { el.value = m[3] + '-' + m[2].padStart(2, '0') + '-' + m[1].padStart(2, '0'); return; }
+        // Fallback
+        var d = new Date(s);
+        el.value = isNaN(d.getTime()) ? '' : d.toISOString().substring(0, 10);
+      }
+
+      // Seksi 1: Identitas
+      setVal('efName', emp.fullName);
+      setVal('efNik', emp.nikNpwp);
+      setVal('efNpwp', emp.npwp);
+      setVal('efBirthPlace', emp.birthPlace);
+      setDate('efBirthDate', emp.birthDate);
+      setVal('efBloodType', emp.bloodType);
+      setVal('efGender', emp.gender);
+      setVal('efReligion', emp.religion);
+      setVal('efMarital', emp.maritalStatus);
+      setVal('efPtkp', emp.ptkpStatus);
+      setVal('efEmail', emp.personalEmail);
+      setVal('efPhone', emp.mobilePhone);
+      setVal('efAddress', emp.citizenIdAddress);
+      setVal('efResidentialAddress', emp.residentialAddress);
+
+      // Seksi 2: Bank & BPJS
+      setVal('efWorkingEmail', emp.workingEmail);
+      setVal('efBankAccount', emp.bankAccount);
+      setVal('efBankHolder', emp.bankAccountHolder || emp.fullName);
+      setVal('efBpjsTk', emp.bpjsKetenagakerjaan);
+      setVal('efBpjsKes', emp.bpjsKesehatan);
+
+      // Seksi 3: Organisasi & Pekerjaan
+      setVal('efStatusEmployee', emp.statusEmployee || 'Contract');
+      setVal('efBranch', emp.branchName);
+      setVal('efDivision', emp.division);
+      setVal('efDept', emp.department);
+      setVal('efCostCenter', emp.costCenter);
+      setVal('efPos', emp.jobPositionLocation || emp.jobPosition);
+      setVal('efPosNoLoc', emp.jobPosition);
+      setVal('efJobLevel', emp.jobLevel);
+      setVal('efGrade', emp.grade);
+      setVal('efDistrict', emp.areaKerja);
+      setVal('efCity', emp.lokasiKerja);
+      setDate('efJoin', emp.joinDate);
+      setVal('efDirectSup', emp.directSuperior);
+      setVal('efIndirectSup', emp.indirectSuperior);
+      setVal('efOutsourceVendor', emp.outsourceVendor);
+
+      // Seksi 4: Kontrak
+      setDate('efContractStart', emp.contractStart || emp.startDateContract);
+      setDate('efContractEnd', emp.endDateContract);
+      setVal('efContractDuration', emp.contractDuration);
+      setVal('efContractNumber', emp.contractNumber);
+
+      // Seksi 5: Mutasi
+      var hasMutasi = !!(emp.jobPositionFormer || emp.typeOfRotation);
+      var efInfo = document.getElementById('efNoMutasiInfo');
+      if (efInfo) efInfo.style.display = hasMutasi ? 'none' : 'flex';
+      setVal('efFormerPos', emp.jobPositionFormer);
+      setVal('efRotationType', emp.typeOfRotation);
+      setDate('efMutasiDate', emp.rotationDate);
+      setVal('efNoSk', emp.nomorSk);
+      setDate('efResignDate', emp.resignDate);
+
+      // Tampilkan resign date hanya jika status offboard
+      var resignWrap = document.getElementById('efResignDateWrap');
+      if (resignWrap) {
+        var s = (emp.statusEmployee || '').toLowerCase();
+        resignWrap.style.display = (s === 'resigned' || s === 'terminated' || s === 'retired') ? '' : 'none';
+      }
+
+      // Seksi 6: Catatan
+      setVal('efHrNotes', emp.hrNotes);
+      setVal('efNotes', emp.notes);
+
+      // Tampilkan modal
+      var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('empFormModal'));
+      modal.show();
+    }
+
+    // Submit edit employee via Fetch API — PUT /hr/employees/{id}
+    function empSave() {
+      var empId = (document.getElementById('efId') || {}).value || '';
+      var name  = ((document.getElementById('efName') || {}).value || '').trim();
+      if (!empId) return;
+      if (!name) {
+        showToast('Nama lengkap harus diisi.', 'warning');
+        return;
+      }
+
+      var payload = {
+        fullName:            name,
+        nikNpwp:             (document.getElementById('efNik') || {}).value || '',
+        npwp:                (document.getElementById('efNpwp') || {}).value || '',
+        birthPlace:          (document.getElementById('efBirthPlace') || {}).value || '',
+        birthDate:           (document.getElementById('efBirthDate') || {}).value || '',
+        bloodType:           (document.getElementById('efBloodType') || {}).value || '',
+        gender:              (document.getElementById('efGender') || {}).value || '',
+        religion:            (document.getElementById('efReligion') || {}).value || '',
+        maritalStatus:       (document.getElementById('efMarital') || {}).value || '',
+        ptkpStatus:          (document.getElementById('efPtkp') || {}).value || '',
+        personalEmail:       (document.getElementById('efEmail') || {}).value || '',
+        mobilePhone:         (document.getElementById('efPhone') || {}).value || '',
+        citizenIdAddress:    (document.getElementById('efAddress') || {}).value || '',
+        residentialAddress:  (document.getElementById('efResidentialAddress') || {}).value || '',
+        workingEmail:        (document.getElementById('efWorkingEmail') || {}).value || '',
+        bankAccount:         (document.getElementById('efBankAccount') || {}).value || '',
+        bankAccountHolder:   (document.getElementById('efBankHolder') || {}).value || '',
+        bpjsKetenagakerjaan: (document.getElementById('efBpjsTk') || {}).value || '',
+        bpjsKesehatan:       (document.getElementById('efBpjsKes') || {}).value || '',
+        statusEmployee:      (document.getElementById('efStatusEmployee') || {}).value || '',
+        branchName:          (document.getElementById('efBranch') || {}).value || '',
+        division:            (document.getElementById('efDivision') || {}).value || '',
+        department:          (document.getElementById('efDept') || {}).value || '',
+        costCenter:          (document.getElementById('efCostCenter') || {}).value || '',
+        jobPositionLocation: (document.getElementById('efPos') || {}).value || '',
+        jobPosition:         (document.getElementById('efPosNoLoc') || {}).value || '',
+        jobLevel:            (document.getElementById('efJobLevel') || {}).value || '',
+        grade:               (document.getElementById('efGrade') || {}).value || '',
+        areaKerja:           (document.getElementById('efDistrict') || {}).value || '',
+        lokasiKerja:         (document.getElementById('efCity') || {}).value || '',
+        joinDate:            (document.getElementById('efJoin') || {}).value || '',
+        directSuperior:      (document.getElementById('efDirectSup') || {}).value || '',
+        indirectSuperior:    (document.getElementById('efIndirectSup') || {}).value || '',
+        outsourceVendor:     (document.getElementById('efOutsourceVendor') || {}).value || '',
+        contractStart:       (document.getElementById('efContractStart') || {}).value || '',
+        endDateContract:     (document.getElementById('efContractEnd') || {}).value || '',
+        contractDuration:    (document.getElementById('efContractDuration') || {}).value || '',
+        contractNumber:      (document.getElementById('efContractNumber') || {}).value || '',
+        jobPositionFormer:   (document.getElementById('efFormerPos') || {}).value || '',
+        typeOfRotation:      (document.getElementById('efRotationType') || {}).value || '',
+        rotationDate:        (document.getElementById('efMutasiDate') || {}).value || '',
+        nomorSk:             (document.getElementById('efNoSk') || {}).value || '',
+        resignDate:          (document.getElementById('efResignDate') || {}).value || '',
+        hrNotes:             (document.getElementById('efHrNotes') || {}).value || '',
+        _method: 'PUT',
+      };
+
+      var btn = document.getElementById('btnEmpSave');
+      if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Menyimpan...'; }
+
+      fetch('/hr/employees/' + empId, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': getCsrfToken(),
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      })
+      .then(function(res) {
+        if (!res.ok) return res.json().then(function(d) { throw d; });
+        return res.json();
+      })
+      .then(function(result) {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Simpan'; }
+        if (result.success) {
+          // Tutup modal
+          var modal = bootstrap.Modal.getInstance(document.getElementById('empFormModal'));
+          if (modal) modal.hide();
+          // Refresh drawer dengan data terbaru dari response
+          if (result.employee) {
+            window._activeDrawerEmployee = result.employee;
+            window.openEmployeeDrawer(empId);
+          }
+          showToast(result.message || 'Data karyawan berhasil diperbarui.', 'success');
+        } else {
+          showToast(result.message || 'Gagal menyimpan data.', 'error');
+        }
+      })
+      .catch(function(err) {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Simpan'; }
+        var msg = (err && err.message) ? err.message : 'Terjadi kesalahan. Coba lagi.';
+        showToast(msg, 'error');
+      });
+    }
+
+    // ===========================================================
+    // PROMOTE TO PROBATION — submit via Fetch API
+    // POST /hr/employees/{id}/promote-probation
+    // 1:1 dengan GAS promoteEmployeeToProbation()
+    // ===========================================================
+    function openPromoteToProbationModal(emp) {
+      if (!emp) return;
+      window._promoteProbTargetEmp = emp;
+
+      var empIdEl  = document.getElementById('promoteProbEmpId');
+      var nameEl   = document.getElementById('promoteProbEmpName');
+      var posEl    = document.getElementById('promoteProbPosition');
+      var avEl     = document.getElementById('promoteProbAvatar');
+      var badgeEl  = document.getElementById('promoteProbBadge');
+      var startEl  = document.getElementById('promoteProbStart');
+      var durEl    = document.getElementById('promoteProbDuration');
+      var notesEl  = document.getElementById('promoteProbNotes');
+
+      if (empIdEl) empIdEl.value    = emp.employeeId || '';
+      if (nameEl)  nameEl.innerText = emp.fullName || '-';
+      if (posEl)   posEl.innerText  = (emp.jobPositionLocation || emp.jobPosition || '-') + (emp.department ? ' · ' + emp.department : '');
+      if (avEl)    avEl.innerText   = initials(emp.fullName || 'K');
+      if (badgeEl) badgeEl.innerText = emp.statusEmployee || 'Contract';
+      if (startEl) startEl.value   = new Date().toISOString().substring(0, 10);
+      if (durEl)   durEl.value     = '3 Bulan';
+      if (notesEl) notesEl.value   = '';
+
+      // Override form action agar submit tidak trigger default POST
+      var formEl = document.getElementById('formPromoteProbation');
+      if (formEl) {
+        formEl.onsubmit = function(e) {
+          e.preventDefault();
+          submitPromoteProbation();
+          return false;
+        };
+      }
+
+      var modalEl = document.getElementById('promoteToProbationModal');
+      if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+
+    function submitPromoteProbation() {
+      var emp   = window._promoteProbTargetEmp;
+      var empId = (document.getElementById('promoteProbEmpId') || {}).value || '';
+      if (!empId) return;
+
+      var probStart = (document.getElementById('promoteProbStart') || {}).value || '';
+      var probDur   = (document.getElementById('promoteProbDuration') || {}).value || '3 Bulan';
+      var notes     = (document.getElementById('promoteProbNotes') || {}).value || '';
+
+      if (!probStart) {
+        showToast('Tanggal mulai probation wajib diisi.', 'warning');
+        return;
+      }
+
+      // Hitung probation end dari start + durasi
+      var probEnd = '';
+      try {
+        var months = parseInt((probDur.match(/^(\d+)/) || [0, 3])[1], 10) || 3;
+        var d = new Date(probStart);
+        d.setMonth(d.getMonth() + months);
+        d.setDate(d.getDate() - 1);
+        probEnd = d.toISOString().substring(0, 10);
+      } catch (e) {}
+
+      var payload = {
+        probation_start:    probStart,
+        probation_duration: probDur,
+        probation_end:      probEnd,
+        notes:              notes,
+      };
+
+      var submitBtn = document.querySelector('#promoteToProbationModal button[type="submit"]');
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Memproses...'; }
+
+      fetch('/hr/employees/' + empId + '/promote-probation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': getCsrfToken(),
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      })
+      .then(function(res) {
+        if (!res.ok) return res.json().then(function(d) { throw d; });
+        return res.json();
+      })
+      .then(function(result) {
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<i class="bi bi-person-check-fill me-1"></i>Daftarkan ke Probation'; }
+
+        var modalEl = document.getElementById('promoteToProbationModal');
+        if (modalEl) { var m = bootstrap.Modal.getInstance(modalEl); if (m) m.hide(); }
+
+        if (result.success) {
+          showToast(result.message || 'Karyawan berhasil didaftarkan ke Onboarding Probation!', 'success', 5000);
+          closeDrawer();
+          // Reload halaman agar tabel ter-refresh
+          window.location.reload();
+        } else {
+          showToast('Gagal: ' + (result.message || 'Error tidak diketahui'), 'error');
+        }
+      })
+      .catch(function(err) {
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<i class="bi bi-person-check-fill me-1"></i>Daftarkan ke Probation'; }
+        showToast((err && err.message) ? err.message : 'Terjadi kesalahan. Coba lagi.', 'error');
+      });
+    }
 
     window.openOutsourceDrawer = function(id) {
       setDrawerMode('outsource');
@@ -324,6 +676,10 @@
       .then(function(data) {
         if (!data.success) { closeDrawer(); return; }
         var e = data.employee;
+
+        // Simpan data outsource aktif untuk keperluan Edit
+        window._activeDrawerOutsource = e;
+
         document.getElementById('drawerCandidateName').innerText = e.fullName || '-';
         document.getElementById('drawerPosition').innerText = (e.jobPosition || '-') + (e.outsourceVendor ? ' · ' + e.outsourceVendor : '');
         document.getElementById('drawerAvatar').innerText = initials(e.fullName);
@@ -348,7 +704,7 @@
         setDrawerText('osDrBranch', e.branchName);
         setDrawerText('osDrDivision', e.division);
         setDrawerText('osDrDept', e.department);
-        setDrawerText('osDrPosition', e.jobPosition);
+        setDrawerText('osDrPosition', e.jobPositionLocation || e.jobPosition);
         setDrawerText('osDrJobLevel', e.jobLevel);
         setDrawerText('osDrJoinDate', e.joinDate);
         setDrawerText('osDrDirectSup', e.directSuperior);
@@ -359,6 +715,14 @@
         setDrawerText('osDrNotes', e.hrNotes);
         var metaEl = document.getElementById('drawerIdMeta');
         if (metaEl) metaEl.innerHTML = '<span>Employee ID<strong>' + (e.employeeId || '-') + '</strong></span><span>Tanggal Masuk<strong>' + (e.joinDate || '-') + '</strong></span>';
+
+        // Tombol Edit di footer — reuse modal edit employee karena outsource disimpan di sheet yang sama
+        var btnEdit = document.getElementById('btnDrawerEntityEdit');
+        if (btnEdit) btnEdit.onclick = function() { empOpenEdit(e); };
+
+        // Tombol Edit di header
+        var btnEditHeader = document.getElementById('btnDrawerEdit');
+        if (btnEditHeader) btnEditHeader.onclick = function() { empOpenEdit(e); };
       })
       .catch(function() { document.getElementById('drawerCandidateName').innerText = 'Gagal memuat data.'; });
     };
@@ -414,6 +778,10 @@
       if (printBtn) printBtn.addEventListener('click', function() {
         if (activeCandidateId) window.open('/hr/export/candidate-pdf/' + activeCandidateId, '_blank');
       });
+
+      // ── btnEmpSave — tombol simpan pada modal edit employee/outsource ──
+      var btnEmpSave = document.getElementById('btnEmpSave');
+      if (btnEmpSave) btnEmpSave.addEventListener('click', empSave);
 
       // Dark Mode Toggle
       const btnDark = document.getElementById('btnDarkModeToggle');
