@@ -20,8 +20,13 @@ class DashboardController extends Controller
         $this->employeeRepo = $employeeRepo;
     }
 
-    public function index(): View
+    public function index(): View|\Illuminate\Http\RedirectResponse
     {
+        $user = session('hr_user');
+        if (($user['role'] ?? '') === 'Manager') {
+            return redirect()->route('hr.mpr.index');
+        }
+
         $allCandidates = $this->candidateRepo->getAllFromSheets();
         $allEmployees = $this->employeeRepo->getAll();
 

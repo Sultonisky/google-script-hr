@@ -697,14 +697,15 @@
                 return input ? input.value : '';
             }
 
-            function redirectToDashboard() {
+            function redirectToTarget(url) {
+                var target = url || '{{ route('hr.dashboard') }}';
                 try {
-                    window.top.location.replace('{{ route('hr.dashboard') }}');
+                    window.top.location.replace(target);
                 } catch (e1) {
                     try {
-                        window.top.location.assign('{{ route('hr.dashboard') }}');
+                        window.top.location.assign(target);
                     } catch (e2) {
-                        window.location.replace('{{ route('hr.dashboard') }}');
+                        window.location.replace(target);
                     }
                 }
             }
@@ -718,10 +719,12 @@
                     if (loginLoading) loginLoading.style.display = 'none';
                     var successState = document.getElementById('loginSuccessState');
                     var welcomeEl = document.getElementById('loginSuccessWelcome');
-                    if (welcomeEl && result.user && result.user.fullName) {
-                        welcomeEl.textContent = 'Selamat datang, ' + result.user.fullName;
+                    if (welcomeEl && result.user && (result.user.fullName || result.user.name)) {
+                        welcomeEl.textContent = 'Selamat datang, ' + (result.user.fullName || result.user.name);
                     }
                     if (successState) successState.classList.add('show');
+
+                    var targetUrl = (result && result.redirect) ? result.redirect : '{{ route('hr.dashboard') }}';
 
                     setTimeout(function() {
                         var overlay = document.getElementById('loginTransitionOverlay');
@@ -730,7 +733,7 @@
                         if (loginPage) loginPage.classList.add('exiting');
 
                         setTimeout(function() {
-                            redirectToDashboard();
+                            redirectToTarget(targetUrl);
                         }, 500);
                     }, 1100);
 

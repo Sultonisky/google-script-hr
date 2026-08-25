@@ -1,0 +1,128 @@
+<?php
+
+namespace App\Repositories\Sheets;
+
+use App\DTOs\MprData;
+use App\Repositories\Contracts\MprRepositoryInterface;
+use App\Services\Google\GoogleSheetsService;
+use Illuminate\Support\Collection;
+
+class MprSheetsRepository implements MprRepositoryInterface
+{
+    protected GoogleSheetsService $sheets;
+    protected string $sheetName;
+
+    public function __construct(GoogleSheetsService $sheets)
+    {
+        $this->sheets = $sheets;
+        $this->sheetName = config('google.sheets.mpr', 'MPR');
+    }
+
+    public function getAll(array $filters = []): Collection
+    {
+        $rows = $this->sheets->getRowsAsAssoc($this->sheetName);
+        $collection = collect($rows)->map(fn($row) => MprData::fromSheetRow($row));
+
+        if (!empty($filters['status'])) {
+            $status = strtolower(trim($filters['status']));
+            $collection = $collection->filter(function (MprData $mpr) use ($status) {
+                return strtolower(trim($mpr->status ?? '')) === $status;
+            });
+        }
+
+        if (!empty($filters['department'])) {
+            $dept = strtolower(trim($filters['department']));
+            $collection = $collection->filter(function (MprData $mpr) use ($dept) {
+                return strtolower(trim($mpr->department ?? '')) === $dept;
+            });
+        }
+
+        if (!empty($filters['company'])) {
+            $company = strtolower(trim($filters['company']));
+            $collection = $collection->filter(function (MprData $mpr) use ($company) {
+                return str_contains(strtolower(trim($mpr->company ?? '')), $company);
+            });
+        }
+
+        if (!empty($filters['search'])) {
+            $search = strtolower(trim($filters['search']));
+            $collection = $collection->filter(function (MprData $mpr) use ($search) {
+                return str_contains(strtolower($mpr->mprNumber ?? ''), $search)
+                    || str_contains(strtolower($mpr->requestorName ?? ''), $search)
+                    || str_contains(strtolower($mpr->requestorEmail ?? ''), $search)
+                    || str_contains(strtolower($mpr->entity ?? ''), $search)
+                    || str_contains(strtolower($mpr->branch ?? ''), $search)
+                    || str_contains(strtolower($mpr->position ?? ''), $search)
+                    || str_contains(strtolower($mpr->department ?? ''), $search)
+                    || str_contains(strtolower($mpr->division ?? ''), $search);
+            });
+        }
+
+        // Return sorted by created_at descending (newest first)
+        return $collection->sortByDesc(function (MprData $mpr) {
+            return $mpr->createdAt ?? $mpr->requestDate ?? '';
+        })->values();
+    }
+
+    public function getAllForManager(string $email, array $filters = []): Collection
+    {
+        $normalizedEmail = strtolower(trim($email));
+        $all = $this->getAll($filters);
+
+        return $all->filter(function (MprData $mpr) use ($normalizedEmail) {
+            return strtolower(trim($mpr->requestorEmail ?? '')) === $normalizedEmail
+                || strtolower(trim($mpr->createdBy ?? '')) === $normalizedEmail;
+        })->values();
+    }
+
+    public function findByMprNumber(string $mprNumber): ?MprData
+    {
+        $cleanNumber = trim($mprNumber);
+        $row = $this->sheets->findRowBy($this->sheetName, 'MPR Number', $cleanNumber);
+        return $row ? MprData::fromSheetRow($row) : null;
+    }
+
+    public function findById(string $id): ?MprData
+    {
+        return $this->findByMprNumber($id);
+    }
+
+    public function create(MprData $data): MprData
+    {
+        $now = now()->timezone('Asia/Jakarta');
+
+        if (empty($data->mprNumber)) {
+            $datePart = $now->format('Ymd');
+            $randomPart = sprintf('%04d', rand(1, 9999));
+            $data->mprNumber = "MPR-{$datePart}-{$randomPart}";
+        }
+
+        if (empty($data->requestDate)) {
+            $data->requestDate = $now->format('Y-m-d');
+        }
+
+        if (empty($data->status)) {
+            $data->status = 'Submitted';
+        }
+
+        $data->createdAt = $now->format('Y-m-d H:i:s');
+        $data->updatedAt = $now->format('Y-m-d H:i:s');
+
+        // Ensure headers exist in the sheet
+        $expectedHeaders = config('hris.schemas.MPR', [
+            'MPR Number', 'Request Date', 'Requestor Name', 'Requestor Email',
+            'Entity', 'Branch',
+            'Department', 'Division', 'Position', 'Job Level', 'Work Location',
+            'Employment Type', 'Quantity', 'Expected Join Date', 'Reason',
+            'Replacement For', 'Job Description', 'Requirements', 'Notes',
+            'Status', 'Created By', 'Created At', 'Updated At',
+        ]);
+        $this->sheets->ensureSheetHeaders($this->sheetName, $expectedHeaders);
+
+        // Append the row
+        $rowValues = $data->toSheetRow();
+        $this->sheets->appendRow($this->sheetName, $rowValues);
+
+        return $data;
+    }
+}

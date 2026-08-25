@@ -19,8 +19,10 @@
         <i class="bi bi-chevron-down ms-1"></i>
       </button>
       <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 py-2" style="min-width: 200px;">
+        @can('manage_settings')
         <li><a class="dropdown-item py-2" href="{{ route('hr.users.index') }}"><i class="bi bi-people-fill me-2 text-primary"></i> Manajemen Pengguna</a></li>
         <li><a class="dropdown-item py-2" href="{{ route('hr.settings.index') }}"><i class="bi bi-gear-fill me-2 text-primary"></i> Pengaturan</a></li>
+        @endcan
         <li><a class="dropdown-item py-2" href="{{ url('/') }}" target="_blank"><i class="bi bi-globe me-2 text-primary"></i> Portal Karir</a></li>
         <li><hr class="dropdown-divider my-1"></li>
         <li><a class="dropdown-item py-2 text-danger" href="{{ route('logout') }}"><i class="bi bi-box-arrow-right me-2"></i> Keluar</a></li>
