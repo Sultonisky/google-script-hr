@@ -10,9 +10,9 @@ use RuntimeException;
 
 class GoogleSheetsService
 {
-    protected GoogleClientFactory $factory;
-    protected string $spreadsheetId;
-    protected int $cacheTtl;
+    protected ?GoogleClientFactory $factory = null;
+    protected string $spreadsheetId = '';
+    protected int $cacheTtl = 60;
 
     public function __construct(GoogleClientFactory $factory)
     {
@@ -28,8 +28,15 @@ class GoogleSheetsService
     {
         $cacheKey = "sheets_{$this->spreadsheetId}_{$sheetName}_" . md5($range);
 
+        // Check version stamp — if sheet was updated since last cache, skip cache
         if ($useCache && Cache::has($cacheKey)) {
-            return Cache::get($cacheKey);
+            $versionKey    = "sheets_ver_{$this->spreadsheetId}_{$sheetName}";
+            $cachedVersion = Cache::get("sheets_ver_at_{$cacheKey}", 0);
+            $currentVersion = Cache::get($versionKey, 0);
+            if ($cachedVersion === $currentVersion) {
+                return Cache::get($cacheKey);
+            }
+            // Version mismatch — stale data, fall through to fresh fetch
         }
 
         try {
@@ -39,7 +46,10 @@ class GoogleSheetsService
             $values = $response->getValues() ?? [];
 
             if ($useCache) {
+                $versionKey = "sheets_ver_{$this->spreadsheetId}_{$sheetName}";
+                $version    = Cache::get($versionKey, 0);
                 Cache::put($cacheKey, $values, $this->cacheTtl);
+                Cache::put("sheets_ver_at_{$cacheKey}", $version, $this->cacheTtl);
             }
 
             return $values;
@@ -78,6 +88,18 @@ class GoogleSheetsService
     }
 
     /**
+     * Get raw values from a specific range (alias for getRange).
+     */
+    public function getValues(string $range, bool $useCache = true): array
+    {
+        // Parse sheet name from range (e.g., "data_kandidat!A1:Z1")
+        $parts = explode('!', $range);
+        $sheetName = $parts[0] ?? '';
+        $rangePart = $parts[1] ?? 'A:ZZ';
+        return $this->getRange($sheetName, $rangePart, $useCache);
+    }
+
+    /**
      * Find a single row by a column name and value.
      */
     public function findRowBy(string $sheetName, string $columnName, string $value): ?array
@@ -92,6 +114,20 @@ class GoogleSheetsService
     }
 
     /**
+     * Sanitize a row array so every value is a scalar string accepted by the
+     * Google Sheets API v4. null, bool, array and object values are coerced.
+     */
+    private function sanitizeRow(array $row): array
+    {
+        return array_values(array_map(function ($v) {
+            if ($v === null || $v === false) return '';
+            if (is_array($v) || is_object($v)) return '';
+            if (is_bool($v)) return $v ? 'TRUE' : 'FALSE';
+            return (string) $v;
+        }, $row));
+    }
+
+    /**
      * Append a row to the sheet.
      */
     public function appendRow(string $sheetName, array $rowValues): bool
@@ -99,7 +135,7 @@ class GoogleSheetsService
         try {
             $service = $this->factory->getSheetsService();
             $body = new ValueRange([
-                'values' => [$rowValues]
+                'values' => [$this->sanitizeRow($rowValues)]
             ]);
 
             $params = ['valueInputOption' => 'USER_ENTERED'];
@@ -122,7 +158,7 @@ class GoogleSheetsService
             $service = $this->factory->getSheetsService();
             $range = "{$sheetName}!A{$rowNumber}";
             $body = new ValueRange([
-                'values' => [$rowValues]
+                'values' => [$this->sanitizeRow($rowValues)]
             ]);
 
             $params = ['valueInputOption' => 'USER_ENTERED'];
@@ -160,11 +196,114 @@ class GoogleSheetsService
     }
 
     /**
-     * Invalidate cached data for a sheet.
+     * Invalidate ALL cached data for a sheet (any range variant).
+     * Strategy: store a per-sheet version counter; all reads check it.
+     * On write, increment the counter → all prior cache entries become invalid.
      */
     public function clearCache(string $sheetName): void
     {
-        // Flush tags or cache keys for sheet
+        // Primary range key used by getRowsAsAssoc / getRange("A:ZZ")
         Cache::forget("sheets_{$this->spreadsheetId}_{$sheetName}_" . md5('A:ZZ'));
+
+        // Row-level range keys written by update() — pattern "A{n}:ZZ{n}"
+        // We cannot enumerate all row numbers, so we use a version stamp:
+        // bump the version, which is checked in getRange() before returning cached data.
+        $versionKey = "sheets_ver_{$this->spreadsheetId}_{$sheetName}";
+        Cache::put($versionKey, (Cache::get($versionKey, 0) + 1), 86400);
+
+        // Also forget the "1:1" header row cache used by update() & moveToSheet()
+        Cache::forget("sheets_{$this->spreadsheetId}_{$sheetName}_" . md5('1:1'));
+    }
+
+    public function clearAllSheets(): void
+    {
+        $spreadsheetId = config('google.spreadsheet_id');
+        $sheetsConfig  = config('google.sheets', []);
+        $service       = $this->factory->getSheetsService();
+
+        foreach ($sheetsConfig as $key => $sheetName) {
+            if (empty($sheetName)) continue;
+            try {
+                // Read total rows to know how far to clear
+                $response = $service->spreadsheets_values->get($spreadsheetId, "{$sheetName}!A:A");
+                $totalRows = count($response->getValues() ?? []);
+                if ($totalRows <= 1) continue; // Only header, nothing to clear
+
+                $range     = "{$sheetName}!A2:ZZ{$totalRows}";
+                $clearBody = new \Google\Service\Sheets\ClearValuesRequest();
+                $service->spreadsheets_values->clear($spreadsheetId, $range, $clearBody);
+                $this->clearCache($sheetName);
+            } catch (\Throwable $e) {
+                Log::warning("GoogleSheetsService::clearAllSheets({$sheetName}): " . $e->getMessage());
+            }
+        }
+    }
+
+    public function getSheetsService()
+    {
+        return $this->factory->getSheetsService();
+    }
+
+    /**
+     * Pastikan tab sheet ada di Spreadsheet. Jika belum ada, buat sheet baru.
+     */
+    public function createSheetIfNotExists(string $sheetName): bool
+    {
+        try {
+            $service = $this->factory->getSheetsService();
+            $spreadsheet = $service->spreadsheets->get($this->spreadsheetId);
+            $sheetExists = false;
+            foreach ($spreadsheet->getSheets() as $sheet) {
+                if ($sheet->getProperties()->getTitle() === $sheetName) {
+                    $sheetExists = true;
+                    break;
+                }
+            }
+
+            if (!$sheetExists) {
+                $addSheetRequest = new \Google\Service\Sheets\Request([
+                    'addSheet' => [
+                        'properties' => [
+                            'title' => $sheetName,
+                        ]
+                    ]
+                ]);
+                $batchUpdateRequest = new \Google\Service\Sheets\BatchUpdateSpreadsheetRequest([
+                    'requests' => [$addSheetRequest]
+                ]);
+                $service->spreadsheets->batchUpdate($this->spreadsheetId, $batchUpdateRequest);
+            }
+            return true;
+        } catch (\Throwable $e) {
+            Log::warning("GoogleSheetsService::createSheetIfNotExists({$sheetName}): " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Pastikan sheet memiliki baris header sesuai $headers.
+     * Jika sheet kosong, tulis header di baris 1.
+     * Jika sudah ada header, tidak melakukan apa-apa (idempotent).
+     * 1:1 dengan GAS ensureStatusSheetHeaders_()
+     */
+    public function ensureSheetHeaders(string $sheetName, array $headers): void
+    {
+        try {
+            $this->createSheetIfNotExists($sheetName);
+            $existing = $this->getRange($sheetName, '1:1', false);
+            if (!empty($existing[0]) && !empty(array_filter($existing[0]))) {
+                // Header sudah ada — tidak overwrite
+                return;
+            }
+            // Sheet kosong atau baris 1 kosong — tulis header
+            $service   = $this->factory->getSheetsService();
+            $range     = "{$sheetName}!A1";
+            $body      = new ValueRange(['values' => [$this->sanitizeRow($headers)]]);
+            $params    = ['valueInputOption' => 'USER_ENTERED'];
+            $service->spreadsheets_values->update($this->spreadsheetId, $range, $body, $params);
+            $this->clearCache($sheetName);
+        } catch (\Throwable $e) {
+            Log::warning("GoogleSheetsService::ensureSheetHeaders({$sheetName}): " . $e->getMessage());
+        }
     }
 }
