@@ -18,33 +18,51 @@ class OutsourceController extends Controller
 
     public function index(Request $request): View
     {
+        $perPage     = max(1, (int) $request->query('per_page', 10));
+        $currentPage = max(1, (int) $request->query('page', 1));
+
+        // Single source of truth: Employee sheet, filtered to Outsource only
         $allEmployees = $this->employeeRepo->getAll();
+        $allOutsources = $allEmployees->filter(
+            fn($e) => strtolower(trim($e->statusEmployee ?? '')) === 'outsource'
+        );
+
+        // Stats — always from full Outsource dataset (not current page)
+        $stats = [
+            'total'   => $allOutsources->count(),
+        ];
+
+        // Apply search
+        $filtered = $allOutsources;
         $searchFilter = $request->query('search');
-
-        $outsources = $allEmployees->filter(function ($e) {
-            $vendor = strtolower(trim($e->outsourceVendor ?? ''));
-            $createdBy = strtolower(trim($e->createdBy ?? ''));
-            $status = strtolower(trim($e->statusEmployee ?? ''));
-            return !empty($vendor) || $createdBy === 'system (outsource form)' || $status === 'outsource';
-        });
-
         if ($searchFilter) {
-            $search = strtolower($searchFilter);
-            $outsources = $outsources->filter(fn($e) =>
+            $search = strtolower(trim($searchFilter));
+            $filtered = $filtered->filter(fn($e) =>
                 str_contains(strtolower($e->fullName ?? ''), $search) ||
                 str_contains(strtolower($e->employeeId ?? ''), $search) ||
+                str_contains(strtolower($e->jobPosition ?? ''), $search) ||
                 str_contains(strtolower($e->outsourceVendor ?? ''), $search)
             );
         }
 
-        $outsources = $outsources->values();
+        // Sort
+        $sortFilter = $request->query('sort', 'newest');
+        $filtered = match ($sortFilter) {
+            'oldest'    => $filtered->sortBy('joinDate'),
+            'name_asc'  => $filtered->sortBy(fn($e) => strtolower($e->fullName ?? '')),
+            'name_desc' => $filtered->sortByDesc(fn($e) => strtolower($e->fullName ?? '')),
+            default     => $filtered->sortByDesc('joinDate'),
+        };
 
-        $stats = [
-            'permanent' => 0,
-            'contract'  => $outsources->count(),
-            'probation' => 0,
-        ];
+        $filtered = $filtered->values();
+        $total = $filtered->count();
 
-        return view('hr.outsource.index', compact('outsources', 'stats'));
+        // Manual pagination
+        $offset     = ($currentPage - 1) * $perPage;
+        $outsources = $filtered->slice($offset, $perPage)->values();
+
+        return view('hr.outsource.index', compact(
+            'outsources', 'stats', 'total', 'currentPage', 'perPage', 'searchFilter', 'sortFilter'
+        ));
     }
 }
