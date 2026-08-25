@@ -17,7 +17,7 @@ class EmployeeData
         public ?string $jobLevel = null,
         public ?string $grade = null,
         public ?string $joinDate = null,
-        public ?string $statusEmployee = 'PKWT',
+        public ?string $statusEmployee = 'Contract',
         public ?string $directSuperior = null,
         public ?string $indirectSuperior = null,
         public ?string $personalEmail = null,
@@ -58,8 +58,13 @@ class EmployeeData
         public ?string $updatedAt = null,
         public ?int $rowNumber = null,
         // -- Enrichment (tidak disimpan di sheet Employee) — diisi runtime dari
-        //    kandidat_probation untuk kolom "Last Score" & status evaluasi di tabel probation.
+        //    kandidat_probation untuk kolom "Score / Kategori" & status evaluasi di tabel probation.
+        // Legacy (old evaluations — avg-based)
         public ?string $lastAvgScore = null,
+        // New (Performance Review 2026 — indicator-based)
+        public ?string $lastCategory = null,
+        public ?string $lastOverallTotal = null,
+        // Shared
         public ?string $lastDecision = null,
         public ?string $lastEvalDate = null,
         public ?string $lastEvaluator = null
@@ -73,7 +78,7 @@ class EmployeeData
             branchName: $row['Branch Name'] ?? null,
             division: $row['Division'] ?? null,
             department: $row['Department'] ?? null,
-            jobPositionLocation: $row['Job Position (Locaction)'] ?? null,
+            jobPositionLocation: $row['Job Position (Location)'] ?? $row['Job Position (Locaction)'] ?? null,
             jobPosition: $row['Job Position'] ?? null,
             areaKerja: $row['Area Kerja'] ?? null,
             lokasiKerja: $row['Lokasi Kerja'] ?? null,
@@ -138,7 +143,7 @@ class EmployeeData
             $this->jobLevel ?? '',
             $this->grade ?? '',
             $this->joinDate ?? '',
-            $this->statusEmployee ?? 'PKWT',
+            $this->statusEmployee ?? 'Contract',
             $this->directSuperior ?? '',
             $this->indirectSuperior ?? '',
             $this->personalEmail ?? '',
