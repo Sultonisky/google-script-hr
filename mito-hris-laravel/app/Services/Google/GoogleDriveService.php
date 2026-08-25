@@ -74,6 +74,14 @@ class GoogleDriveService
     }
 
     /**
+     * Get the Google Drive service instance.
+     */
+    public function getDriveService(): \Google\Service\Drive
+    {
+        return $this->factory->getDriveService();
+    }
+
+    /**
      * Delete a file from Google Drive by File ID.
      */
     public function deleteFile(string $fileId): bool
