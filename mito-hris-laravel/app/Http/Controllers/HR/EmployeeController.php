@@ -141,16 +141,16 @@ class EmployeeController extends Controller
     public function rotate(Request $request, string $id): RedirectResponse|JsonResponse
     {
         $request->validate([
-            'rotation_type'    => 'required|string',
+            'rotation_type'    => 'required|string|in:Promosi,Demosi,Mutasi',
             'new_job_position' => 'required|string',
             'new_department'   => 'nullable|string',   // optional: Mutasi tidak selalu ganti department
             'effective_date'   => 'required|date',
         ]);
 
-        // Capture old_job_position & old_department dari form (snapshot SEBELUM update employee)
-        // Jika tidak dikirim dari form, processRotation akan mengambil langsung dari Employee sheet
-        // (lihat EmployeeService::processRotation — $oldPosition = $employee->jobPosition)
-        $result = $this->employeeService->processRotation($id, $request->all(), Auth::user()?->name ?? 'HR Team');
+        // Ambil semua data request kecuali sk_number — Nomor SK wajib di-generate server-side
+        $data = $request->except(['sk_number']);
+
+        $result = $this->employeeService->processRotation($id, $data, auth()->user()?->name ?? 'HR Team');
 
         $pdfQuery = http_build_query([
             'rotation_type'     => $result['rotationType'],

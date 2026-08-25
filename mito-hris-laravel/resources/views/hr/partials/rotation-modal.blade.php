@@ -69,7 +69,6 @@
                     <option value="Promosi">Promosi</option>
                     <option value="Demosi">Demosi</option>
                     <option value="Mutasi">Mutasi</option>
-                    <option value="Rotasi">Rotasi</option>
                   </select>
                 </div>
                 <div class="col-md-6">
@@ -86,11 +85,15 @@
                 </div>
                 <div class="col-md-6">
                   <label class="form-label fw-semibold" style="font-size:13px">Cabang Baru</label>
-                  <input type="text" class="form-control form-control-sm" name="new_branch_name" id="rotNewBranch" placeholder="Contoh: Kantor Pusat Jakarta" />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label fw-semibold" style="font-size:13px">Nomor SK</label>
-                  <input type="text" class="form-control form-control-sm" name="sk_number" id="rotSkNumber" placeholder="Contoh: 012/SK-ROT/MITO/VIII/2026" />
+                  <select class="form-select form-select-sm" name="new_branch_name" id="rotNewBranch">
+                    <option value="">— Pilih Cabang —</option>
+                    @php
+                      $branchOptions = ($all ?? collect())->pluck('branchName')->filter()->unique()->sort()->values();
+                    @endphp
+                    @foreach($branchOptions as $bOpt)
+                      <option value="{{ $bOpt }}">{{ $bOpt }}</option>
+                    @endforeach
+                  </select>
                 </div>
                 <div class="col-md-12">
                   <label class="form-label fw-semibold" style="font-size:13px">Alasan / Catatan Rotasi</label>
@@ -231,7 +234,19 @@
 
     document.getElementById('rotNewPosition').value = emp.jobPosition || '';
     document.getElementById('rotNewDepartment').value = emp.department || '';
-    document.getElementById('rotNewBranch').value = emp.branchName || '';
+    // Set select branch — cari option yang match, fallback ke value langsung
+    var branchSel = document.getElementById('rotNewBranch');
+    if (branchSel) {
+      var found = false;
+      for (var i = 0; i < branchSel.options.length; i++) {
+        if (branchSel.options[i].value === (emp.branchName || '')) {
+          branchSel.selectedIndex = i;
+          found = true;
+          break;
+        }
+      }
+      if (!found) branchSel.selectedIndex = 0;
+    }
 
     document.getElementById('rotEmpPreview').style.display = 'block';
     document.getElementById('btnConfirmRotation').disabled = false;
@@ -268,7 +283,8 @@
 
       var formData = new FormData(form);
       var payload = {};
-      formData.forEach(function(v, k) { payload[k] = v; });
+      // sk_number tidak boleh dikirim dari frontend — Nomor SK di-generate server-side
+      formData.forEach(function(v, k) { if (k !== 'sk_number') { payload[k] = v; } });
 
       fetch(form.action, {
         method: 'POST',

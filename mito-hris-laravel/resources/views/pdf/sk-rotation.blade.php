@@ -142,21 +142,17 @@
   @include('pdf.components.kop-surat')
 
   @php
-    // ============================================================
-    // DATA RESOLUTION — 1:1 GAS exportRotationLetterPDF()
-    // Priority order matches GAS: extraData → employee sheet
-    // ============================================================
+    // 1:1 dengan GAS exportRotationLetterPDF
+    $typeMap = ['Promosi' => 'PROMOSI', 'Demosi' => 'DEMOSI', 'Mutasi' => 'MUTASI'];
+    $rawType     = $extraData['rotation_type'] ?? $extraData['rotationType'] ?? ($employee->typeOfRotation ?? 'Mutasi');
+    $typeLabel   = $typeMap[$rawType] ?? strtoupper($rawType);
 
-    // ── Jenis Rotasi ──
-    $typeMap = [
-      'Promosi' => 'PROMOSI',
-      'Demosi'  => 'DEMOSI',
-      'Mutasi'  => 'MUTASI',
-      'Rotasi'  => 'ROTASI',
-    ];
-    $rawType   = $extraData['rotation_type'] ?? $extraData['rotationType']
-                  ?? ($employee->typeOfRotation ?? 'Rotasi');
-    $typeLabel = $typeMap[$rawType] ?? strtoupper($rawType);
+    // Nomor SK — SELALU dari extraData (di-generate backend) atau dari employee sheet.
+    // Tidak boleh di-generate ulang di sini agar nilai konsisten dengan yang tersimpan di sheet.
+    $romanMonth  = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+    $skNumber    = $extraData['sk_number'] ?? $extraData['skNumber']
+                    ?? ($employee->nomorSk ?? '')
+                    ?: ('001/HRD-PK/MSI/' . $romanMonth[date('n')-1] . '/' . date('Y'));
 
     // Normalize: 'PROMOSI' → 'Promosi' for type-aware wording
     $typeNorm = ucfirst(strtolower($typeLabel));  // Promosi / Demosi / Mutasi / Rotasi

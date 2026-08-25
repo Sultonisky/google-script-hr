@@ -202,33 +202,24 @@ class EmployeeService
         $effectiveDate = $data['effective_date'] ?? $now->format('Y-m-d');
         $notesRaw      = $data['notes'] ?? '';
 
-        $skNumber = trim($data['sk_number'] ?? '');
-        if ($skNumber === '') {
-            // Resolve company code from branch name — 1:1 GAS getCompanyProfile()
-            $branchForCode = strtolower($newBranch ?: $oldBranch ?: '');
-            if (str_contains($branchForCode, 'stein')) {
-                $companyCode = 'SPI';
-            } elseif (str_contains($branchForCode, 'injeksi')) {
-                $companyCode = 'PII';
-            } elseif (str_contains($branchForCode, 'mitra') || str_contains($branchForCode, 'elektro')) {
-                $companyCode = 'MEP';
+        // Nomor SK selalu di-generate server-side — tidak boleh menerima dari input request
+        $skNumber = '';
+        {
+            // Resolusi entity abbreviation dari branch name (1:1 dengan kop-surat.blade.php entity resolver)
+            $branchForEntity = strtolower($newBranch ?: $oldBranch ?: '');
+            if (str_contains($branchForEntity, 'stein')) {
+                $entityCode = 'SPI';
+            } elseif (str_contains($branchForEntity, 'injeksi')) {
+                $entityCode = 'PII';
+            } elseif (str_contains($branchForEntity, 'mitra') || str_contains($branchForEntity, 'elektro')) {
+                $entityCode = 'MEP';
             } else {
-                $companyCode = 'MSI'; // PT Mahakarya Sukses Indonesia default
+                $entityCode = 'MSI';
             }
-
-            // Type-aware document code — 1:1 template SK PDF acuan
-            // Promosi: HR-SKP | Mutasi: HR-SKM | Demosi: HR-SKD | Rotasi: HR-SKR
-            $docTypeCodeMap = [
-                'Promosi' => 'HR-SKP',
-                'Demosi'  => 'HR-SKD',
-                'Mutasi'  => 'HR-SKM',
-                'Rotasi'  => 'HR-SKR',
-            ];
-            $docTypeCode = $docTypeCodeMap[$rotationType] ?? 'HR-SKR';
 
             $romanMonth = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
             $datePart   = $now->format('Ym');
-            $cacheKey   = "SK_ROT_COUNTER_{$datePart}_{$companyCode}";
+            $cacheKey   = "SK_ROT_COUNTER_{$datePart}";
             $lock       = \Illuminate\Support\Facades\Cache::lock("lock_{$cacheKey}", 10);
             try {
                 $lock->block(10);
@@ -237,8 +228,7 @@ class EmployeeService
             } finally {
                 $lock->release();
             }
-            // Format: 001/HR-SKP/MSI/VIII/2026 (1:1 template SK PDF acuan)
-            $skNumber = sprintf('%03d/%s/%s/%s/%d', $seq, $docTypeCode, $companyCode, $romanMonth[$now->month - 1], $now->year);
+            $skNumber = sprintf('%03d/HRD-PK/%s/%s/%d', $seq, $entityCode, $romanMonth[$now->month - 1], $now->year);
         }
 
         $noteLine = sprintf('[Rotasi %s] %s → %s', $rotationType, $oldPosition, $newPosition);
