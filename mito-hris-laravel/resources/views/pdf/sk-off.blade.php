@@ -33,7 +33,7 @@
     // 1:1 dengan GAS exportOffboardingLetterPDF
     $romanMonth  = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
     $skNumber    = $extraData['sk_number'] ?? $extraData['skNumber']
-                    ?? ('001/HRD-SKK/' . ($company['brand'] ?? 'MITO') . '/' . $romanMonth[date('n')-1] . '/' . date('Y'));
+                    ?? ('001/HRD-SKK/' . ($company['code'] ?? 'MSI') . '/' . $romanMonth[date('n')-1] . '/' . date('Y'));
 
     $resignDate  = $extraData['effective_date'] ?? $extraData['last_working_date'] ?? $employee->resignDate ?? null;
     $resignFmt   = $resignDate ? \Carbon\Carbon::parse($resignDate)->translatedFormat('d F Y') : date('d F Y');

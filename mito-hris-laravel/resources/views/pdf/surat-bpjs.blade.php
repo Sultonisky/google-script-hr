@@ -32,7 +32,7 @@
     // 1:1 dengan GAS exportSuratBPJS()
     $romanMonth  = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
     $letterNumber = $extraData['letter_number'] ?? $extraData['sk_number']
-                    ?? ('001/HRD-SKK/' . ($company['brand'] ?? 'MITO') . '/' . $romanMonth[date('n')-1] . '/' . date('Y'));
+                    ?? ('001/HRD-SKK/' . ($company['code'] ?? 'MSI') . '/' . $romanMonth[date('n')-1] . '/' . date('Y'));
 
     $endDate = $extraData['effective_date'] ?? $extraData['last_working_date']
                ?? $employee->resignDate ?? $employee->endDateContract ?? null;
