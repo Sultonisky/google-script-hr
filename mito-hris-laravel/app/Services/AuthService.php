@@ -24,6 +24,16 @@ class AuthService
             ];
         }
 
+        // Manager accounts are NOT stored in the Users sheet.
+        // They live in mpr_requestor. Reject early to prevent domain confusion.
+        $role = trim($user['Role'] ?? '');
+        if (strtolower($role) === 'manager') {
+            return [
+                'success' => false,
+                'error'   => 'Akun ini bukan akun internal HRIS. Silakan gunakan portal MPR.',
+            ];
+        }
+
         if (($user['Status'] ?? '') !== 'Active') {
             return [
                 'success' => false,
@@ -69,10 +79,15 @@ class AuthService
             'success' => true,
             'message' => 'Login berhasil.',
             'user' => [
-                'email' => $user['Email'],
-                'fullName' => $user['Full Name'] ?? $user['Email'],
-                'role' => $user['Role'] ?? 'Viewer',
+                'email'       => $user['Email'],
+                'fullName'    => $user['Full Name'] ?? $user['Email'],
+                'role'        => $user['Role'] ?? 'Viewer',
                 'permissions' => $this->getPermissionsForRole($user['Role'] ?? 'Viewer'),
+                // Internal HRIS users do NOT use entity/branch for auth
+                'entities'    => [],
+                'branch'      => '',
+                // Identity source marker
+                'auth_domain' => 'users',
             ],
         ];
     }
@@ -93,7 +108,8 @@ class AuthService
 
     public function isValidRole(string $role): bool
     {
-        $validRoles = config('hris.auth.valid_roles', []);
+        // Internal HRIS roles only — Manager is NOT a valid internal role
+        $validRoles = config('hris.auth.valid_roles_internal', []);
 
         return in_array($role, $validRoles, true);
     }
