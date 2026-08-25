@@ -35,7 +35,7 @@ class HealthCheckCommand extends Command
 
         $this->line("3. Uji Konektivitas Google Sheets API:");
         try {
-            $data = $sheetsService->getValues('data_kandidat!A1:Z1');
+            $data = $sheetsService->getValues('data_kandidat!A1:Z1', false);
             $this->info("   [OK] Berhasil terhubung ke Google Sheets API! Header pertama terdeteksi.");
         } catch (\Throwable $e) {
             $this->warn("   [WARN] Gagal membaca sheet: " . $e->getMessage());

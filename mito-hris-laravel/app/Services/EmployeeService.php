@@ -6,7 +6,11 @@ use App\DTOs\EmployeeData;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Services\EmployeeIdGenerator;
+use App\Services\Google\GoogleDriveService;
+use App\Services\Google\GoogleSheetsService;
+use App\Services\PdfGeneratorService;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use RuntimeException;
 
 class EmployeeService
@@ -18,7 +22,10 @@ class EmployeeService
     public function __construct(
         EmployeeRepositoryInterface $employeeRepo,
         AuditLogRepositoryInterface $auditRepo,
-        EmployeeIdGenerator $idGenerator
+        EmployeeIdGenerator $idGenerator,
+        private GoogleDriveService $driveService,
+        private PdfGeneratorService $pdfService,
+        private GoogleSheetsService $sheets
     ) {
         $this->employeeRepo = $employeeRepo;
         $this->auditRepo = $auditRepo;
@@ -197,11 +204,32 @@ class EmployeeService
 
         $skNumber = trim($data['sk_number'] ?? '');
         if ($skNumber === '') {
-            $branchPrefix = strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $newBranch ?: $oldBranch ?: 'MITO'), 0, 6));
-            $romanMonth   = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
-            $datePart     = $now->format('Ym');
-            $cacheKey     = "SK_ROT_COUNTER_{$datePart}";
-            $lock         = \Illuminate\Support\Facades\Cache::lock("lock_{$cacheKey}", 10);
+            // Resolve company code from branch name — 1:1 GAS getCompanyProfile()
+            $branchForCode = strtolower($newBranch ?: $oldBranch ?: '');
+            if (str_contains($branchForCode, 'stein')) {
+                $companyCode = 'SPI';
+            } elseif (str_contains($branchForCode, 'injeksi')) {
+                $companyCode = 'PII';
+            } elseif (str_contains($branchForCode, 'mitra') || str_contains($branchForCode, 'elektro')) {
+                $companyCode = 'MEP';
+            } else {
+                $companyCode = 'MSI'; // PT Mahakarya Sukses Indonesia default
+            }
+
+            // Type-aware document code — 1:1 template SK PDF acuan
+            // Promosi: HR-SKP | Mutasi: HR-SKM | Demosi: HR-SKD | Rotasi: HR-SKR
+            $docTypeCodeMap = [
+                'Promosi' => 'HR-SKP',
+                'Demosi'  => 'HR-SKD',
+                'Mutasi'  => 'HR-SKM',
+                'Rotasi'  => 'HR-SKR',
+            ];
+            $docTypeCode = $docTypeCodeMap[$rotationType] ?? 'HR-SKR';
+
+            $romanMonth = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+            $datePart   = $now->format('Ym');
+            $cacheKey   = "SK_ROT_COUNTER_{$datePart}_{$companyCode}";
+            $lock       = \Illuminate\Support\Facades\Cache::lock("lock_{$cacheKey}", 10);
             try {
                 $lock->block(10);
                 $seq = (int) \Illuminate\Support\Facades\Cache::get($cacheKey, 0) + 1;
@@ -209,7 +237,8 @@ class EmployeeService
             } finally {
                 $lock->release();
             }
-            $skNumber = sprintf('%03d/HRD-SK/%s/%s/%d', $seq, $branchPrefix, $romanMonth[$now->month - 1], $now->year);
+            // Format: 001/HR-SKP/MSI/VIII/2026 (1:1 template SK PDF acuan)
+            $skNumber = sprintf('%03d/%s/%s/%s/%d', $seq, $docTypeCode, $companyCode, $romanMonth[$now->month - 1], $now->year);
         }
 
         $noteLine = sprintf('[Rotasi %s] %s → %s', $rotationType, $oldPosition, $newPosition);
@@ -271,7 +300,7 @@ class EmployeeService
     /**
      * Process Employee Offboarding (Resign, Terminated, Retired, Deceased) (1:1 with backend/Employee.gs).
      */
-    public function processOffboarding(string $employeeId, array $data, ?string $user = null): bool
+    public function processOffboarding(string $employeeId, array $data, ?string $user = null): array
     {
         $employee = $this->employeeRepo->findById($employeeId);
         if (!$employee) {
@@ -279,15 +308,17 @@ class EmployeeService
         }
 
         $user = $user ?: 'HR Administrator';
-        $nowStr = now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s');
+        $now = now()->timezone('Asia/Jakarta');
+        $nowStr = $now->format('Y-m-d H:i:s');
         $offboardingType = $data['offboarding_type'] ?? 'Resigned';
+        $effectiveDate = $data['effective_date'] ?? $data['last_working_date'] ?? $now->format('Y-m-d');
 
         $attributes = [
             'Status Employee'          => $offboardingType,
-            'Resign Date'              => $data['effective_date'] ?? now()->timezone('Asia/Jakarta')->format('Y-m-d'),
+            'Resign Date'              => $effectiveDate,
             'Offboarding Type'         => $offboardingType,
             'Offboarding Reason'       => $data['reason'] ?? '',
-            'Offboarding Approved By'  => $user,
+            'Offboarding Approved By'  => $data['approved_by'] ?? $user,
             'HR Notes'                 => $data['notes'] ?? $employee->hrNotes,
             'Updated At'               => $nowStr,
         ];
@@ -305,13 +336,46 @@ class EmployeeService
             );
         }
 
-        return $success;
+        $documents = json_decode($data['documents'] ?? '[]', true);
+        $driveResult = null;
+        if (!empty($documents)) {
+            $uploadMethod = 'uploadOffboardingDocuments';
+            if (method_exists($this->driveService, $uploadMethod)) {
+                $driveResult = $this->driveService->{$uploadMethod}($employee, $documents);
+            } else {
+                $driveResult = [
+                    'success' => false,
+                    'message' => 'Upload dokumen offboarding tidak tersedia.',
+                ];
+            }
+        }
+
+        $pdfs = [];
+        $extraData = [
+            'effective_date' => $effectiveDate,
+            'last_working_date' => $effectiveDate,
+            'sk_number' => $employee->nomorSk ?? '',
+            'notes' => $data['notes'] ?? '',
+            'approved_by' => $data['approved_by'] ?? $user,
+        ];
+
+        $pdfs[] = $this->pdfService->generateSuratBpjsPdf($employee, $extraData)->output();
+        $pdfs[] = $this->pdfService->generateSkOffPdf($employee, $extraData)->output();
+        $pdfs[] = $this->pdfService->generatePaklaringPdf($employee, $extraData)->output();
+
+        return [
+            'success' => $success,
+            'message' => $success ? "Offboarding karyawan {$employeeId} berhasil diproses." : "Gagal memproses offboarding.",
+            'drive_upload' => $driveResult,
+            'pdfs_generated' => count($pdfs),
+            'employeeId' => $employeeId,
+        ];
     }
 
     /**
      * Process Off Contract for Contract/PKWT employees (1:1 with GAS backend/Employee.gs).
      */
-    public function processOffContract(string $employeeId, array $data, ?string $user = null): bool
+    public function processOffContract(string $employeeId, array $data, ?string $user = null): array
     {
         $employee = $this->employeeRepo->findById($employeeId);
         if (!$employee) {
@@ -319,8 +383,9 @@ class EmployeeService
         }
 
         $user = $user ?: 'HR Administrator';
-        $nowStr = now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s');
-        $lastDate = $data['last_working_date'] ?? ($employee->endDateContract ?: now()->timezone('Asia/Jakarta')->format('Y-m-d'));
+        $now = now()->timezone('Asia/Jakarta');
+        $nowStr = $now->format('Y-m-d H:i:s');
+        $lastDate = $data['last_working_date'] ?? ($employee->endDateContract ?: $now->format('Y-m-d'));
 
         $attributes = [
             'Status Employee'          => 'Contract Finished',
@@ -347,6 +412,168 @@ class EmployeeService
             );
         }
 
-        return $success;
+        $extraData = [
+            'effective_date' => $lastDate,
+            'last_working_date' => $lastDate,
+            'sk_number' => $employee->nomorSk ?? '',
+            'notes' => $data['notes'] ?? '',
+            'approved_by' => $data['approved_by'] ?? $user,
+        ];
+
+        $pdfs = [];
+        $pdfs[] = $this->pdfService->generatePaklaringPdf($employee, $extraData)->output();
+        if (($data['generate_bpjs'] ?? false) !== false) {
+            $pdfs[] = $this->pdfService->generateSuratBpjsPdf($employee, $extraData)->output();
+        }
+
+        return [
+            'success' => $success,
+            'message' => $success ? "Off Contract karyawan {$employeeId} berhasil diproses." : "Gagal memproses Off Contract.",
+            'pdfs_generated' => count($pdfs),
+            'employeeId' => $employeeId,
+        ];
+    }
+
+    /**
+     * Promote Contract employee to Probation (1:1 with GAS promoteEmployeeToProbation).
+     * FIXED: Sekarang benar-benar membuat probation record di sheet kandidat_probation
+     * (sebelumnya hanya update status, TODO comment tidak dieksekusi).
+     *
+     * @return array{success:bool, message:string, employeeId:string, probationId:string}
+     * @throws RuntimeException
+     */
+    public function promoteToProbation(string $employeeId, array $data, ?string $user = null): array
+    {
+        $employee = $this->employeeRepo->findById($employeeId);
+        if (!$employee) {
+            throw new RuntimeException("Karyawan dengan ID {$employeeId} tidak ditemukan.");
+        }
+
+        // Verify current status is Contract (1:1 GAS — hanya Contract yang bisa diajukan Probation)
+        $currentStatus = strtolower(trim($employee->statusEmployee ?? ''));
+        if ($currentStatus !== 'contract' && $currentStatus !== 'pkwt') {
+            return [
+                'success'     => false,
+                'message'     => 'Hanya karyawan dengan status Contract yang dapat diajukan Probation.',
+                'employeeId'  => $employeeId,
+                'probationId' => '',
+            ];
+        }
+
+        $user        = $user ?: 'HR Administrator';
+        $now         = now()->timezone('Asia/Jakarta');
+        $nowStr      = $now->format('Y-m-d H:i:s');
+        $probStart   = $data['probation_start']    ?? $now->format('Y-m-d');
+        $probDuration = $data['probation_duration'] ?? '3 Bulan';
+        $probEnd     = $data['probation_end']       ?? '';
+        $probNotes   = $data['notes']               ?? '';
+        $contractNo  = $data['contract_number']     ?? '';
+
+        // --- 1. Update Employee status → Probation (1:1 GAS promoteEmployeeToProbation) ---
+        $noteText = "[Ajukan Probation {$now->format('Y-m-d')}]";
+        if ($probNotes) {
+            $noteText .= " {$probNotes}";
+        }
+        $existingNotes = $employee->hrNotes ?? '';
+        $newNotes = $existingNotes ? "{$existingNotes}\n{$noteText}" : $noteText;
+
+        $this->employeeRepo->update($employeeId, [
+            'Status Employee' => 'Probation',
+            'HR Notes'        => $newNotes,
+            'Updated At'      => $nowStr,
+        ]);
+
+        // --- 2. Buat probation record di sheet kandidat_probation ---
+        // 1:1 GAS promoteEmployeeToProbation → createProbationRecord(employeeId, {...}, {skipLock:true})
+        $probationId = '';
+        $sheetName   = config('google.sheets.candidates_probation', 'kandidat_probation');
+
+        try {
+            // Generate Probation ID format: PROB-YYYYMMDD-XXXX
+            $dateStr    = $now->format('Ymd');
+            $cacheKey   = "PROB_COUNTER_{$dateStr}";
+            $lock       = Cache::lock("lock_{$cacheKey}", 10);
+            try {
+                $lock->block(10);
+                $seq = (int) Cache::get($cacheKey, 0) + 1;
+                Cache::put($cacheKey, $seq, $now->endOfDay());
+            } finally {
+                $lock->release();
+            }
+            $probationId = 'PROB-' . $dateStr . '-' . str_pad((string) $seq, 4, '0', STR_PAD_LEFT);
+
+            // Kontrak nomor default jika belum ada (1:1 GAS fallback)
+            if (!$contractNo) {
+                $contractNo = 'PRB/HRD/' . $now->year . '/' . $employeeId;
+            }
+
+            // Header sheet kandidat_probation (harus sesuai PROBATION_HEADERS di GAS Config.gs)
+            $headers = [
+                'Probation ID', 'Employee ID', 'Recruitment ID',
+                'Contract Number', 'Contract Duration', 'Contract Start', 'Contract End', 'Join Date',
+                'Status', 'Onboarding Date', 'Onboarding By',
+                'Eval ID', 'Eval Date',
+                'Score Performance', 'Score Discipline', 'Score Communication',
+                'Score Initiative', 'Score Teamwork', 'Average Score',
+                'Decision', 'Extension Duration', 'New Contract Start', 'New Contract End',
+                'Evaluator Notes', 'Evaluator', 'SK Status', 'Notes',
+                'Created At', 'Updated At',
+            ];
+
+            $row = array_fill(0, count($headers), '');
+            $idx = array_flip($headers);
+
+            $row[$idx['Probation ID']]       = $probationId;
+            $row[$idx['Employee ID']]        = $employeeId;
+            $row[$idx['Recruitment ID']]     = $employee->employeeId ?? $employeeId;
+            $row[$idx['Contract Number']]    = $contractNo;
+            $row[$idx['Contract Duration']]  = $probDuration;
+            $row[$idx['Contract Start']]     = $probStart;
+            $row[$idx['Contract End']]       = $probEnd;
+            $row[$idx['Join Date']]          = $employee->joinDate ?? $probStart;
+            $row[$idx['Status']]             = 'Probation';
+            $row[$idx['Onboarding Date']]    = $nowStr;
+            $row[$idx['Onboarding By']]      = $user;
+            $row[$idx['SK Status']]          = 'Pending';
+            $row[$idx['Notes']]              = $probNotes;
+            $row[$idx['Created At']]         = $nowStr;
+            $row[$idx['Updated At']]         = $nowStr;
+
+            // Pastikan sheet kandidat_probation memiliki header, lalu append row
+            $this->sheets->ensureSheetHeaders($sheetName, $headers);
+            $this->sheets->appendRow($sheetName, $row);
+
+        } catch (\Throwable $e) {
+            // Jika gagal tulis ke sheet probation, rollback status employee
+            // dan kembalikan error agar user tahu
+            $this->employeeRepo->update($employeeId, [
+                'Status Employee' => 'Contract',
+                'HR Notes'        => $existingNotes,
+                'Updated At'      => $nowStr,
+            ]);
+            return [
+                'success'     => false,
+                'message'     => 'Gagal membuat record probation: ' . $e->getMessage(),
+                'employeeId'  => $employeeId,
+                'probationId' => '',
+            ];
+        }
+
+        // --- 3. Audit log (1:1 GAS writeAuditLog_) ---
+        $this->auditRepo->log(
+            recruitmentId: $employeeId,
+            action: 'Ajukan Probation',
+            field: 'Status Employee',
+            oldValue: 'Contract',
+            newValue: 'Probation — Diajukan oleh ' . $user . ($probNotes ? ' (' . $probNotes . ')' : ''),
+            user: $user
+        );
+
+        return [
+            'success'     => true,
+            'message'     => "Karyawan {$employee->fullName} berhasil didaftarkan ke Onboarding Probation.",
+            'employeeId'  => $employeeId,
+            'probationId' => $probationId,
+        ];
     }
 }
