@@ -106,8 +106,14 @@ class CandidateSheetsRepository implements CandidateRepositoryInterface
         $allRows = $this->sheets->getRange($sheetName, "A{$rowNumber}:ZZ{$rowNumber}", false);
         if (empty($allRows)) return false;
 
-        $headers = $this->sheets->getRange($sheetName, '1:1', true)[0] ?? [];
-        $currentRow = $allRows[0];
+        $headers = $this->sheets->getRange($sheetName, '1:1', false)[0] ?? [];
+        $currentRow = array_values($allRows[0]);
+
+        // Ensure currentRow is at least as wide as headers (sparse rows may be shorter)
+        $headerCount = count($headers);
+        while (count($currentRow) < $headerCount) {
+            $currentRow[] = '';
+        }
 
         foreach ($attributes as $key => $val) {
             $colIdx = array_search($key, $headers);
@@ -121,6 +127,14 @@ class CandidateSheetsRepository implements CandidateRepositoryInterface
         if ($updatedAtIdx !== false) {
             $currentRow[$updatedAtIdx] = now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s');
         }
+
+        // Google Sheets API v4 requires all values to be strings/scalars.
+        // Cast every value to string — null becomes '', arrays/objects become ''.
+        $currentRow = array_values(array_map(function ($v) {
+            if ($v === null || $v === false) return '';
+            if (is_array($v) || is_object($v)) return '';
+            return (string) $v;
+        }, $currentRow));
 
         return $this->sheets->updateRow($sheetName, $rowNumber, $currentRow);
     }
@@ -189,22 +203,131 @@ class CandidateSheetsRepository implements CandidateRepositoryInterface
             return false;
         }
 
-        $rowValues = $candidate->toSheetRow();
-        
-        if (!empty($extraData)) {
-            $headers = $this->sheets->getRange($targetSheetName, '1:1', true)[0] ?? [];
-            foreach ($extraData as $key => $val) {
-                $colIdx = array_search($key, $headers);
-                if ($colIdx !== false && isset($rowValues[$colIdx])) {
-                    $rowValues[$colIdx] = $val;
+        // Determine which source sheet currently holds this candidate (for correct delete later)
+        $sourceLocation = $this->locateRow($recruitmentId);
+        $sourceSheetKey = 'candidates'; // fallback
+        if ($sourceLocation) {
+            $sourceSheetName = $sourceLocation['sheetName'];
+            // Reverse-lookup the config key from the sheet name
+            foreach (config('google.sheets', []) as $key => $name) {
+                if ($name === $sourceSheetName) {
+                    $sourceSheetKey = $key;
+                    break;
+                }
+            }
+        }
+
+        // Build row matching target sheet column structure
+        // Target sheet (e.g. kandidat_accepted) may have more columns than toSheetRow() provides.
+        $targetHeaders = $this->sheets->getRange($targetSheetName, '1:1', false)[0] ?? [];
+
+        if (!empty($targetHeaders)) {
+            // Build a full-width row aligned to target sheet headers
+            $rowValues = [];
+            // Map candidate fields by header name
+            $baseAssoc = $this->candidateToAssoc($candidate);
+            // Merge extra data (overrides / new columns)
+            foreach ($extraData as $k => $v) {
+                $baseAssoc[$k] = $v;
+            }
+            foreach ($targetHeaders as $header) {
+                $rowValues[] = $baseAssoc[$header] ?? '';
+            }
+        } else {
+            // Fallback: use compact toSheetRow() + inject extraData by position
+            $rowValues = $candidate->toSheetRow();
+            if (!empty($extraData)) {
+                $headers = $this->sheets->getRange($targetSheetName, '1:1', true)[0] ?? [];
+                foreach ($extraData as $key => $val) {
+                    $colIdx = array_search($key, $headers);
+                    if ($colIdx !== false) {
+                        // Extend array if needed
+                        while (count($rowValues) <= $colIdx) {
+                            $rowValues[] = '';
+                        }
+                        $rowValues[$colIdx] = $val;
+                    }
                 }
             }
         }
 
         $this->sheets->appendRow($targetSheetName, $rowValues);
-        $this->deleteFromSheet($recruitmentId, 'candidates');
+
+        // Delete from the actual source sheet (not hardcoded 'candidates')
+        $this->deleteFromSheet($recruitmentId, $sourceSheetKey);
 
         return true;
+    }
+
+    /**
+     * Convert CandidateData to assoc array keyed by Google Sheet header names.
+     * This is the canonical mapping used for row construction.
+     */
+    private function candidateToAssoc(CandidateData $c): array
+    {
+        return [
+            'Recruitment ID'              => $c->recruitmentId ?? '',
+            'Created Date'                => $c->createdDate ?? now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
+            'Full Name'                   => $c->fullName ?? '',
+            'NIK'                         => "'" . ($c->nik ?? ''),
+            'Birth Date'                  => $c->birthDate ?? '',
+            'Age'                         => $c->age ?? '',
+            'Gender'                      => $c->gender ?? '',
+            'Marital Status'              => $c->maritalStatus ?? '',
+            'Email'                       => $c->email ?? '',
+            'Phone'                       => "'" . ($c->phone ?? ''),
+            'Address'                     => $c->address ?? '',
+            'City'                        => $c->city ?? '',
+            'Position Applied'            => $c->positionApplied ?? '',
+            'Education'                   => $c->education ?? '',
+            'Work Experience'             => $c->workExperience ?? '',
+            'Last Company'                => $c->lastCompany ?? '',
+            'Current Employment Status'   => $c->currentEmploymentStatus ?? '',
+            'Available to Join'           => $c->availableToJoin ?? '',
+            'Expected Salary'             => $c->expectedSalary ?? '',
+            'Recruitment Source'          => $c->recruitmentSource ?? '',
+            'CV Link'                     => $c->cvLink ?? '',
+            'Status'                      => $c->status ?? 'New',
+            'HR Notes'                    => $c->hrNotes ?? '',
+            'Created By'                  => $c->createdBy ?? 'Candidate',
+            'Updated At'                  => $c->updatedAt ?? now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
+            'Hold Reason'                 => $c->holdReason ?? '',
+            'Hold Follow Up Date'         => $c->holdFollowUpDate ?? '',
+            'Blacklist Reason'            => $c->blacklistReason ?? '',
+            'Blacklist Date'              => $c->blacklistDate ?? '',
+            'Blacklist Updated By'        => $c->blacklistUpdatedBy ?? '',
+            'Employee ID'                 => $c->employeeId ?? '',
+            'Processed Date'              => $c->processedDate ?? '',
+            'Processed By'                => $c->processedBy ?? '',
+            'Offering Created'            => $c->offeringCreated ?? '',
+            'Offering Updated'            => $c->offeringUpdated ?? '',
+            'Offering Created By'         => $c->offeringCreatedBy ?? '',
+            'Offering Updated By'         => $c->offeringUpdatedBy ?? '',
+            'Offering Company Entity'     => $c->offeringCompanyEntity ?? '',
+            'Offering Position'           => $c->offeringPosition ?? '',
+            'Offering Salary'             => $c->offeringSalary ?? '',
+            'Offering Join Date'          => $c->offeringJoinDate ?? '',
+            'Offering Notes'              => $c->offeringNotes ?? '',
+            'Offering Response'           => $c->offeringResponse ?? '',
+            'Offering Response Notes'     => $c->offeringResponseNotes ?? '',
+            'Offering Response Date'      => $c->offeringResponseDate ?? '',
+            'Offering Response By'        => $c->offeringResponseBy ?? '',
+            'Onboarding Status'           => $c->onboardingStatus ?? '',
+            'Onboarding Date'             => $c->onboardingDate ?? '',
+            'Onboarding By'               => $c->onboardingBy ?? '',
+            'Offering Division'           => $c->offeringDivision ?? '',
+            'Offering Job Level'          => $c->offeringJobLevel ?? '',
+            'Offering Lokasi Kerja'       => $c->offeringLokasiKerja ?? '',
+            'Offering Salary Basic'       => $c->offeringSalaryBasic ?? '',
+            'Offering Allow Pulsa'        => $c->offeringAllowPulsa ?? '',
+            'Offering Allow Transport'    => $c->offeringAllowTransport ?? '',
+            'Offering Employment Status'  => $c->offeringEmploymentStatus ?? '',
+            'Offering Contract Duration'  => $c->offeringContractDuration ?? '',
+            'Offering Working Hours'      => $c->offeringWorkingHours ?? '',
+            // Note: 'Offering Department' is NOT in GAS ACCEPTED_HEADERS but IS used by saveOfferingStatus_()
+            // Include it here so update() and moveToSheet() can write it correctly
+            'Offering Department'         => $c->offeringDepartment ?? '',
+        ];
     }
 
     public function deleteFromSheet(string $recruitmentId, string $sheetKey): bool
@@ -220,38 +343,46 @@ class CandidateSheetsRepository implements CandidateRepositoryInterface
         }
 
         $rowNumber = $row['_row_number'];
-        $totalRows = count($this->sheets->getRowsAsAssoc($sheetName));
-        
-        if ($rowNumber <= $totalRows) {
-            $lastRow = $this->sheets->getRange($sheetName, "A{$totalRows}:ZZ{$totalRows}", false);
-            if (!empty($lastRow)) {
-                $this->sheets->updateRow($sheetName, $rowNumber, $lastRow[0]);
+        $totalRows = count($this->sheets->getRowsAsAssoc($sheetName)) + 1; // +1 to account for header row
+
+        try {
+            $service       = app(\App\Services\Google\GoogleClientFactory::class)->getSheetsService();
+            $spreadsheetId = config('google.spreadsheet_id');
+
+            // Resolve real sheetId from spreadsheet metadata
+            $spreadsheet = $service->spreadsheets->get($spreadsheetId);
+            $realSheetId = null;
+            foreach ($spreadsheet->getSheets() as $sheetObj) {
+                if ($sheetObj->getProperties()->getTitle() === $sheetName) {
+                    $realSheetId = $sheetObj->getProperties()->getSheetId();
+                    break;
+                }
             }
-            
-            $rangeToDelete = "{$sheetName}!A{$totalRows}:ZZ{$totalRows}";
-            try {
-                $service = app(\App\Services\Google\GoogleClientFactory::class)->getSheetsService();
-                $request = new \Google\Service\Sheets\BatchUpdateSpreadsheetRequest([
-                    'requests' => [
-                        'deleteDimension' => [
-                            'range' => [
-                                'sheetId' => 0,
-                                'dimension' => 'ROWS',
-                                'startIndex' => $totalRows - 1,
-                                'endIndex' => $totalRows
-                            ]
-                        ]
-                    ]
-                ]);
-                $service->spreadsheets->batchUpdate(config('google.spreadsheet_id'), $request);
-                $this->sheets->clearCache($sheetName);
-                return true;
-            } catch (\Throwable $e) {
-                \Log::error("Failed to delete row {$rowNumber} from {$sheetName}: " . $e->getMessage());
+
+            if ($realSheetId === null) {
+                \Log::error("deleteFromSheet: sheetId not found for '{$sheetName}'");
                 return false;
             }
-        }
 
-        return false;
+            // Delete exactly the target row (1-indexed rowNumber → 0-indexed startIndex)
+            $request = new \Google\Service\Sheets\BatchUpdateSpreadsheetRequest([
+                'requests' => [[
+                    'deleteDimension' => [
+                        'range' => [
+                            'sheetId'    => $realSheetId,
+                            'dimension'  => 'ROWS',
+                            'startIndex' => $rowNumber - 1,   // 0-indexed
+                            'endIndex'   => $rowNumber,       // exclusive
+                        ],
+                    ],
+                ]],
+            ]);
+            $service->spreadsheets->batchUpdate($spreadsheetId, $request);
+            $this->sheets->clearCache($sheetName);
+            return true;
+        } catch (\Throwable $e) {
+            \Log::error("Failed to delete row {$rowNumber} from {$sheetName}: " . $e->getMessage());
+            return false;
+        }
     }
 }

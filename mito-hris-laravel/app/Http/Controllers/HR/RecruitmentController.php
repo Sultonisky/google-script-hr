@@ -251,18 +251,23 @@ class RecruitmentController extends Controller
 
     /**
      * Accept candidate & hire to Employee master sheet.
+     * 1:1 dengan GAS acceptCandidateToEmployee():
+     *   1. Update status + Employee ID di in-memory row
+     *   2. Append ke kandidat_accepted
+     *   3. Delete dari data_kandidat
+     *   4. Buat record di Employee sheet (jika belum ada)
      */
     public function accept(AcceptCandidateRequest $request, string $id): RedirectResponse
     {
         try {
-            $this->recruitmentService->updateCandidateStatus(
+            $user = auth()->user()?->name ?? auth()->user()?->email ?? 'HR Administrator';
+            $this->recruitmentService->acceptCandidateToEmployee(
                 recruitmentId: $id,
-                newStatus: 'Accepted',
-                notes: null,
-                user: 'HR Administrator'
+                extraEmployeeData: [],
+                user: $user
             );
 
-            return back()->with('success', "Kandidat {$id} berhasil diterima dan dipindahkan ke status Accepted.");
+            return back()->with('success', "Kandidat {$id} berhasil diterima dan dipindahkan ke Kandidat Accepted.");
         } catch (\Throwable $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -335,27 +340,69 @@ class RecruitmentController extends Controller
     public function saveOffering(Request $request, string $id): JsonResponse
     {
         try {
+            // Cari kandidat untuk cek apakah sudah punya offering sebelumnya (1:1 GAS saveOfferingStatus)
+            $candidate = $this->candidateRepo->findById($id);
+            if (!$candidate) {
+                return response()->json(['success' => false, 'message' => "Kandidat {$id} tidak ditemukan."], 404);
+            }
+
+            $now  = now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s');
+            $user = auth()->user()->name ?? auth()->user()->email ?? 'HR Administrator';
+
+            $hasExistingOffering = !empty($candidate->offeringCreated) && $candidate->offeringCreated !== '-';
+
             $offeringData = [
-                'Offering Company Entity' => $request->input('branch_name', ''),
-                'Offering Position' => $request->input('position', ''),
-                'Offering Department' => $request->input('department', ''),
-                'Offering Division' => $request->input('division', ''),
-                'Offering Job Level' => $request->input('job_level', ''),
-                'Offering Lokasi Kerja' => $request->input('lokasi_kerja', ''),
-                'Offering Join Date' => $request->input('join_date', ''),
-                'Offering Employment Status' => $request->input('employment_status', ''),
+                'Offering Company Entity'    => $request->input('branch_name', ''),
+                'Offering Position'          => $request->input('position', ''),
+                'Offering Department'        => $request->input('department', ''),
+                'Offering Division'          => $request->input('division', ''),
+                'Offering Job Level'         => $request->input('job_level', ''),
+                'Offering Lokasi Kerja'      => $request->input('lokasi_kerja', ''),
+                'Offering Join Date'         => $request->input('join_date', ''),
+                'Offering Employment Status' => $request->input('employment_status', 'Perjanjian Kerja Waktu Tertentu'),
                 'Offering Contract Duration' => $request->input('contract_duration', ''),
-                'Offering Salary Basic' => $request->input('salary_basic', ''),
-                'Offering Allow Pulsa' => $request->input('allow_pulsa', ''),
-                'Offering Allow Transport' => $request->input('allow_transport', ''),
-                'Offering Working Hours' => $request->input('working_hours', ''),
-                'Offering Created' => now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
-                'Offering Created By' => 'HR Administrator',
+                'Offering Salary Basic'      => $request->input('salary_basic', ''),
+                'Offering Allow Pulsa'       => $request->input('allow_pulsa', ''),
+                'Offering Allow Transport'   => $request->input('allow_transport', ''),
+                'Offering Working Hours'     => $request->input('working_hours', ''),
+                // Also set total salary for backward compat
+                'Offering Salary'            => $request->input('salary_basic', ''),
+                'Offering Notes'             => $request->input('notes', ''),
             ];
 
-            $this->candidateRepo->update($id, $offeringData);
+            if (!$hasExistingOffering) {
+                // Belum punya offering → isi Created + set default response "Menunggu" (1:1 GAS)
+                $offeringData['Offering Created']    = $now;
+                $offeringData['Offering Created By'] = $user;
+                $offeringData['Offering Response']   = 'Menunggu';
+                $action = 'created';
+            } else {
+                // Sudah ada offering → update Updated + UpdatedBy (1:1 GAS)
+                $offeringData['Offering Updated']    = $now;
+                $offeringData['Offering Updated By'] = $user;
+                $action = 'updated';
+            }
 
-            return response()->json(['success' => true, 'message' => 'Data offering berhasil disimpan.']);
+            $success = $this->candidateRepo->update($id, $offeringData);
+            if (!$success) {
+                return response()->json(['success' => false, 'message' => 'Gagal menyimpan data ke Google Sheets. Pastikan kandidat ditemukan di sheet kandidat_accepted.'], 500);
+            }
+
+            // Log audit
+            $this->auditRepo->log(
+                $id,
+                $hasExistingOffering ? 'Offering Letter Updated' : 'Offering Letter Created',
+                'Offering ' . ucfirst($action),
+                '-',
+                $now . ' by ' . $user,
+                $user
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data offering berhasil disimpan.',
+                'action'  => $action,
+            ]);
         } catch (\Throwable $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
@@ -383,16 +430,20 @@ class RecruitmentController extends Controller
             }
 
             // Guard: hanya kandidat yang sudah punya offering letter yang boleh di-update responsnya
-            if (empty($candidate->offeringCreated) || $candidate->offeringCreated === '-') {
-                return response()->json(['success' => false, 'message' => 'Kandidat belum memiliki offering letter.'], 422);
+            if (empty(trim($candidate->offeringCreated ?? '')) || $candidate->offeringCreated === '-') {
+                return response()->json(['success' => false, 'message' => 'Kandidat belum memiliki offering letter. Buat offering letter terlebih dahulu.'], 422);
             }
 
-            $this->candidateRepo->update($id, [
+            $success = $this->candidateRepo->update($id, [
                 'Offering Response' => $response,
                 'Offering Response Notes' => $notes,
                 'Offering Response Date' => now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
                 'Offering Response By' => $user,
             ]);
+
+            if (!$success) {
+                return response()->json(['success' => false, 'message' => 'Gagal menyimpan respons offering ke Google Sheets. Pastikan kandidat ditemukan di sheet kandidat_accepted.'], 500);
+            }
 
             $this->auditRepo->log(
                 $id,

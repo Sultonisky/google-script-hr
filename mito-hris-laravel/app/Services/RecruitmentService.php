@@ -192,7 +192,12 @@ class RecruitmentService
     }
 
     /**
-     * Accept candidate and move to kandidat_accepted sheet.
+     * Accept candidate: pindahkan ke kandidat_accepted.
+     * 1:1 dengan GAS acceptCandidateToEmployee() — HANYA memindahkan kandidat
+     * ke sheet kandidat_accepted dan menghapus dari data_kandidat.
+     *
+     * NOTE: Employee record dibuat nanti saat proses Kontrak PKWT
+     * (processContractOnboarding), BUKAN saat accept dari Pending.
      */
     public function acceptCandidateToEmployee(string $recruitmentId, array $extraEmployeeData = [], ?string $user = null): bool
     {
@@ -202,13 +207,17 @@ class RecruitmentService
         }
 
         $oldStatus = $candidate->status ?? 'New';
-        
+        $user      = $user ?? 'HR Administrator';
+        $nowStr    = now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s');
+
         $extraData = [
-            'Processed Date' => now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
-            'Processed By' => $user ?? 'HR Administrator',
+            'Status'         => 'Accepted',
+            'Processed Date' => $nowStr,
+            'Processed By'   => $user,
         ];
 
         $success = $this->candidateRepo->moveToSheet($recruitmentId, 'candidates_accepted', $extraData);
+
         if ($success) {
             event(new CandidateStatusChanged($recruitmentId, $oldStatus, CandidateStatus::ACCEPTED->value, 'Accepted', $user));
         }
@@ -232,8 +241,8 @@ class RecruitmentService
         }
 
         // Guard: hanya kandidat yang offering-nya sudah Diterima yang boleh diproses (1:1 GAS)
-        if (($candidate->offeringResponse ?? '') !== 'Diterima') {
-            throw new RuntimeException('Kandidat belum menerima offering letter (Offering Response harus "Diterima").');
+        if (trim($candidate->offeringResponse ?? '') !== 'Diterima') {
+            throw new RuntimeException('Kandidat belum menerima offering letter (Offering Response harus "Diterima"). Nilai saat ini: "' . ($candidate->offeringResponse ?? 'kosong') . '"');
         }
 
         $user = $user ?: 'HR Administrator';
