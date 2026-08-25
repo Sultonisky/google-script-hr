@@ -95,7 +95,7 @@ class DummyDataService
     private array $superiors   = ['Budi Santoso', 'Siti Nurhaliza', 'Ahmad Wijaya', 'Dewi Lestari', 'Eko Prasetyo'];
     private array $empTypes    = ['Project', 'PKWTT', 'PKWT', 'Outsource', 'Intern'];
     private array $contractDurs = ['3 Bulan', '6 Bulan', '1 Tahun', '2 Tahun'];
-    private array $empStatEmp  = ['Permanent', 'Contract', 'Probation'];
+    private array $empStatEmp  = ['Permanent', 'Permanent', 'Contract', 'Contract', 'Probation', 'Outsource'];
     private array $branches    = ['PT Mahakarya Sukses Indonesia', 'PT Stein Perkasa Internasional', 'PT Perkasa Injeksi Indonesia', 'PT Mitra Elektro Perkasa'];
 
     // Used to avoid duplicates
@@ -520,6 +520,17 @@ class DummyDataService
         $dept   = $c['_department']     ?? $this->deptForPos($pos);
         $branch = $this->pick($this->branches);
 
+        // Status Employee is picked from empStatEmp which now includes Outsource
+        $statusEmployee = $this->pick($this->empStatEmp);
+
+        // If status is Outsource, assign a vendor — otherwise keep blank
+        $outsourceVendors = ['PT Karya Mitra Sejahtera', 'PT Solusi Tenaga Kerja', 'PT Prima Outsource Indonesia', 'PT Global HR Partner'];
+        $outsourceVendor = strtolower($statusEmployee) === 'outsource' ? $this->pick($outsourceVendors) : '';
+
+        // End date: applicable for Contract and Outsource
+        $isContractLike = in_array(strtolower($statusEmployee), ['contract', 'pkwt', 'outsource']);
+        $endDate = $isContractLike ? date('Y-m-d', strtotime('+1 year', strtotime($joinDate))) : '';
+
         return [
             $empId,                                  // Employee ID
             $c['fullName'],                          // Full Name
@@ -533,12 +544,12 @@ class DummyDataService
             $this->pick($this->jobLevels),           // Job Level
             '',                                      // Grade
             $joinDate,                               // Join Date
-            $this->pick($this->empStatEmp),          // Status Employee
+            $statusEmployee,                         // Status Employee
             $this->pick($this->superiors),           // Direct Superior
             $this->pick($this->superiors),           // Indirect Superior
             $c['email'] ?? '',                       // Personal Email
             strtolower(explode('@', $c['email'] ?? 'user@x')[0]) . '@mito.co.id', // Working Email
-            $isContract ? date('Y-m-d', strtotime('+1 year', strtotime($joinDate))) : '', // End Date (Contract)
+            $endDate,                                // End Date (Contract)
             $this->pick($this->cities),              // Birth Place
             $c['birthDate'] ?? '',                   // Birth Date
             $c['address'] ?? ($this->pick($this->streets) . ' No. ' . rand(1, 100)), // Citizen ID Address
@@ -568,7 +579,7 @@ class DummyDataService
             '',                                      // Offboarding Approved By
             '',                                      // Offboarding Documents Folder
             '',                                      // Offboarding Document Links
-            '',                                      // Outsource Vendor
+            $outsourceVendor,                        // Outsource Vendor
             'Demo Generator',                        // Created By
             $nowStr,                                 // Created At
             $nowStr,                                 // Updated At
