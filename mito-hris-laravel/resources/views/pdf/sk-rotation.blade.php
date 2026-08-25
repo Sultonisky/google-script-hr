@@ -31,15 +31,16 @@
 
   @php
     // 1:1 dengan GAS exportRotationLetterPDF
-    $typeMap = ['Promosi' => 'PROMOSI', 'Demosi' => 'DEMOSI', 'Mutasi' => 'MUTASI', 'Rotasi' => 'ROTASI'];
-    $rawType     = $extraData['rotation_type'] ?? $extraData['rotationType'] ?? ($employee->typeOfRotation ?? 'Rotasi');
+    $typeMap = ['Promosi' => 'PROMOSI', 'Demosi' => 'DEMOSI', 'Mutasi' => 'MUTASI'];
+    $rawType     = $extraData['rotation_type'] ?? $extraData['rotationType'] ?? ($employee->typeOfRotation ?? 'Mutasi');
     $typeLabel   = $typeMap[$rawType] ?? strtoupper($rawType);
 
-    // Nomor SK — dari request, dari employee sheet, atau auto-generate
+    // Nomor SK — SELALU dari extraData (di-generate backend) atau dari employee sheet.
+    // Tidak boleh di-generate ulang di sini agar nilai konsisten dengan yang tersimpan di sheet.
     $romanMonth  = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
     $skNumber    = $extraData['sk_number'] ?? $extraData['skNumber']
                     ?? ($employee->nomorSk ?? '')
-                    ?: ('001/HRD-SK/' . ($company['brand'] ?? 'MITO') . '/' . $romanMonth[date('n')-1] . '/' . date('Y'));
+                    ?: ('001/HRD-PK/MSI/' . $romanMonth[date('n')-1] . '/' . date('Y'));
 
     // Posisi/departemen/cabang SEBELUMNYA (FORMER):
     //   1. priority: dikirim via query param extraData

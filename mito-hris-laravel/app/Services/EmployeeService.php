@@ -195,13 +195,25 @@ class EmployeeService
         $effectiveDate = $data['effective_date'] ?? $now->format('Y-m-d');
         $notesRaw      = $data['notes'] ?? '';
 
-        $skNumber = trim($data['sk_number'] ?? '');
-        if ($skNumber === '') {
-            $branchPrefix = strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $newBranch ?: $oldBranch ?: 'MITO'), 0, 6));
-            $romanMonth   = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
-            $datePart     = $now->format('Ym');
-            $cacheKey     = "SK_ROT_COUNTER_{$datePart}";
-            $lock         = \Illuminate\Support\Facades\Cache::lock("lock_{$cacheKey}", 10);
+        // Nomor SK selalu di-generate server-side — tidak boleh menerima dari input request
+        $skNumber = '';
+        {
+            // Resolusi entity abbreviation dari branch name (1:1 dengan kop-surat.blade.php entity resolver)
+            $branchForEntity = strtolower($newBranch ?: $oldBranch ?: '');
+            if (str_contains($branchForEntity, 'stein')) {
+                $entityCode = 'SPI';
+            } elseif (str_contains($branchForEntity, 'injeksi')) {
+                $entityCode = 'PII';
+            } elseif (str_contains($branchForEntity, 'mitra') || str_contains($branchForEntity, 'elektro')) {
+                $entityCode = 'MEP';
+            } else {
+                $entityCode = 'MSI';
+            }
+
+            $romanMonth = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+            $datePart   = $now->format('Ym');
+            $cacheKey   = "SK_ROT_COUNTER_{$datePart}";
+            $lock       = \Illuminate\Support\Facades\Cache::lock("lock_{$cacheKey}", 10);
             try {
                 $lock->block(10);
                 $seq = (int) \Illuminate\Support\Facades\Cache::get($cacheKey, 0) + 1;
@@ -209,7 +221,7 @@ class EmployeeService
             } finally {
                 $lock->release();
             }
-            $skNumber = sprintf('%03d/HRD-SK/%s/%s/%d', $seq, $branchPrefix, $romanMonth[$now->month - 1], $now->year);
+            $skNumber = sprintf('%03d/HRD-PK/%s/%s/%d', $seq, $entityCode, $romanMonth[$now->month - 1], $now->year);
         }
 
         $noteLine = sprintf('[Rotasi %s] %s → %s', $rotationType, $oldPosition, $newPosition);
