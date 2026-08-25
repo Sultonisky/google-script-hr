@@ -98,6 +98,311 @@
   </div>
 </div>
 
+<!-- ================================================================
+     OFFBOARDING MODAL JS
+     handleOffEmpSearch / selectOffEmployee / clearOffEmpSearch
+     + formOffboarding AJAX submit
+     + promoteToProbationModal JS + btnDrawerPromoteProbation wiring
+     ================================================================ -->
+<script>
+  // ── OFFBOARDING SEARCH ──────────────────────────────────────────────────
+  //  Reads window.__allEmployees (set by rotation-modal.blade.php php block)
+  // Falls back to window.__allEmployeesForPdf if __allEmployees not yet ready
+  var _offActiveEmp = null;
+
+  function handleOffEmpSearch(query) {
+    var q = (query || '').toLowerCase().trim();
+    var dropdown = document.getElementById('offEmpDropdown');
+    var clearBtn = document.getElementById('offEmpSearchClear');
+    if (clearBtn) clearBtn.style.display = q ? 'block' : 'none';
+
+    if (!q) { if (dropdown) dropdown.style.display = 'none'; return; }
+
+    // Use the full employee list (with statusEmployee) if available
+    var source = window.__allEmployees || window.__allEmployeesForPdf || [];
+
+    var matched = source.filter(function(e) {
+      var s = (e.statusEmployee || '').trim().toLowerCase();
+      // Exclude already-offboarded employees
+      var ok = s !== 'resigned' && s !== 'terminated' && s !== 'retired'
+             && s !== 'deceased' && s !== 'inactive' && s !== 'contract finished' && s !== '';
+      return ok && (
+        (e.fullName || '').toLowerCase().indexOf(q) !== -1 ||
+        (e.employeeId || '').toLowerCase().indexOf(q) !== -1
+      );
+    }).slice(0, 8);
+
+    if (!matched.length) {
+      dropdown.innerHTML = '<div class="p-3 text-muted text-center" style="font-size:13px">Karyawan tidak ditemukan</div>';
+      dropdown.style.display = 'block';
+      return;
+    }
+
+    dropdown.innerHTML = matched.map(function(emp) {
+      return '<div class="p-2 border-bottom d-flex align-items-center gap-2 hover-item off-search-item" style="cursor:pointer;" data-emp-id="' + (emp.employeeId || '') + '">' +
+        '<div style="width:32px;height:32px;background:#991b1b;color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">' +
+          (emp.fullName || 'E').substring(0,2).toUpperCase() +
+        '</div>' +
+        '<div class="flex-grow-1" style="font-size:12.5px;">' +
+          '<div class="fw-semibold">' + (emp.fullName || '-') + '</div>' +
+          '<div class="text-muted" style="font-size:11px">' + (emp.employeeId || '') + ' &bull; ' + (emp.jobPosition || '-') + '</div>' +
+        '</div></div>';
+    }).join('');
+    // Wire click via event listener to avoid Blade parsing () in onclick inline
+    dropdown.querySelectorAll('.off-search-item').forEach(function(item) {
+      item.addEventListener('click', function() {
+        var empId = item.getAttribute('data-emp-id');
+        var found = (window.__allEmployees || window.__allEmployeesForPdf || []).find(function(e) { return e.employeeId === empId; });
+        if (found) selectOffEmployee(found);
+      });
+    });
+    dropdown.style.display = 'block';
+  }
+
+  function selectOffEmployee(emp) {
+    _offActiveEmp = emp;
+    var dropdown = document.getElementById('offEmpDropdown');
+    var searchEl = document.getElementById('offEmpSearch');
+    var clearBtn = document.getElementById('offEmpSearchClear');
+    if (dropdown) dropdown.style.display = 'none';
+    if (searchEl) searchEl.value = emp.fullName + ' (' + emp.employeeId + ')';
+    if (clearBtn) clearBtn.style.display = 'block';
+
+    // Set form action URL
+    var form = document.getElementById('formOffboarding');
+    if (form) form.action = '/hr/employees/' + emp.employeeId + '/offboard';
+
+    // Fill preview
+    var els = {
+      offEmpAvatar: (emp.fullName || 'E').substring(0,2).toUpperCase(),
+      offEmpName: emp.fullName || '-',
+      offEmpPosition: emp.jobPosition || emp.jobPositionLocation || '-',
+      offEmpDept: emp.department || '-',
+      offEmpIdDisp: emp.employeeId || '-',
+      offEmpStatusDisp: emp.statusEmployee || '-',
+    };
+    Object.keys(els).forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = els[id];
+    });
+
+    // Set default effective date
+    var dateEl = document.getElementById('offEffectiveDate');
+    if (dateEl && !dateEl.value) dateEl.value = new Date().toISOString().split('T')[0];
+
+    var preview = document.getElementById('offEmpPreview');
+    if (preview) preview.style.display = 'block';
+
+    _updateOffConfirmBtn();
+  }
+
+  function clearOffEmpSearch() {
+    _offActiveEmp = null;
+    var searchEl = document.getElementById('offEmpSearch');
+    var clearBtn = document.getElementById('offEmpSearchClear');
+    var dropdown = document.getElementById('offEmpDropdown');
+    var preview  = document.getElementById('offEmpPreview');
+    if (searchEl) searchEl.value = '';
+    if (clearBtn) clearBtn.style.display = 'none';
+    if (dropdown) dropdown.style.display = 'none';
+    if (preview)  preview.style.display = 'none';
+    _updateOffConfirmBtn();
+  }
+
+  function _updateOffConfirmBtn() {
+    var btn = document.getElementById('btnConfirmOffboarding');
+    if (!btn) return;
+    var type   = (document.getElementById('offType') || {}).value || '';
+    var date   = (document.getElementById('offEffectiveDate') || {}).value || '';
+    var reason = ((document.getElementById('offReason') || {}).value || '').trim();
+    btn.disabled = !(_offActiveEmp && type && date && reason);
+  }
+
+  // Wire change handlers for required fields
+  document.addEventListener('DOMContentLoaded', function() {
+    ['offType', 'offEffectiveDate', 'offReason'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) { el.addEventListener('input', _updateOffConfirmBtn); el.addEventListener('change', _updateOffConfirmBtn); }
+    });
+
+    // Reset modal on close
+    var offModal = document.getElementById('offboardingModal');
+    if (offModal) {
+      offModal.addEventListener('hidden.bs.modal', function() {
+        clearOffEmpSearch();
+        var form = document.getElementById('formOffboarding');
+        if (form) { form.action = ''; form.reset(); }
+        _updateOffConfirmBtn();
+      });
+    }
+
+    // AJAX submit for offboarding form
+    var offForm = document.getElementById('formOffboarding');
+    var offBtn  = document.getElementById('btnConfirmOffboarding');
+    if (offForm && offBtn) {
+      offForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (!_offActiveEmp) return;
+        var empId  = (document.getElementById('offEmployeeId') || {}).value || _offActiveEmp.employeeId;
+        var type   = (document.getElementById('offType') || {}).value || '';
+        var date   = (document.getElementById('offEffectiveDate') || {}).value || '';
+        var reason = ((document.getElementById('offReason') || {}).value || '').trim();
+        if (!empId || !type || !date || !reason) return;
+
+        var origHtml = offBtn.innerHTML;
+        offBtn.disabled = true;
+        offBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Memproses...';
+
+        var formData = new FormData(offForm);
+        // Controller expects last_working_date not effective_date for offboard endpoint
+        if (!formData.get('last_working_date') && date) {
+          formData.set('last_working_date', date);
+        }
+
+        fetch('/hr/employees/' + empId + '/offboard', {
+          method: 'POST',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') || {}).content || ''
+          },
+          body: formData
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+          offBtn.disabled = false;
+          offBtn.innerHTML = origHtml;
+          if (res && res.success) {
+            if (typeof showToast === 'function') {
+              showToast('Offboarding <strong>' + (_offActiveEmp ? _offActiveEmp.fullName : '') + '</strong> berhasil.', 'success', 5000);
+            } else {
+              alert('Offboarding berhasil: ' + (res.message || ''));
+            }
+            var modal = bootstrap.Modal.getInstance(document.getElementById('offboardingModal'));
+            if (modal) modal.hide();
+            setTimeout(function() { window.location.reload(); }, 800);
+          } else {
+            if (typeof showToast === 'function') {
+              showToast('Gagal: ' + (res ? (res.message || 'Error') : 'Tidak ada respon'), 'error');
+            } else {
+              alert('Gagal: ' + (res ? res.message : 'Error'));
+            }
+          }
+        })
+        .catch(function(err) {
+          offBtn.disabled = false;
+          offBtn.innerHTML = origHtml;
+          if (typeof showToast === 'function') {
+            showToast('Error: ' + (err ? err.message : 'Network error'), 'error');
+          } else {
+            alert('Error: ' + (err ? err.message : 'Network error'));
+          }
+        });
+      });
+    }
+
+    // ── PROMOTE TO PROBATION — btnDrawerPromoteProbation wiring ──────────
+    // Wire the drawer button to open #promoteToProbationModal
+    // and pre-fill employee data from the active employee drawer
+    var btnProb = document.getElementById('btnDrawerPromoteProbation');
+    if (btnProb) {
+      btnProb.addEventListener('click', function() {
+        // Get current employee data from the drawer
+        var empIdEl  = document.getElementById('empDrEmployeeId');
+        var empNameEl = document.getElementById('drawerCandidateName');
+        var empPosEl  = document.getElementById('empDrPosition');
+        var empDeptEl = document.getElementById('empDrDept');
+        var empStatEl = document.getElementById('empDrStatusEmployee');
+
+        var empId   = empIdEl   ? (empIdEl.innerText   || '').trim() : '';
+        var empName = empNameEl ? (empNameEl.innerText  || '').trim() : '';
+        var empPos  = empPosEl  ? (empPosEl.innerText   || '').trim() : '';
+        var empDept = empDeptEl ? (empDeptEl.innerText  || '').trim() : '';
+        var empStat = empStatEl ? (empStatEl.innerText  || '').trim() : 'Contract';
+
+        if (!empId) return;
+
+        // Fill modal fields
+        var empIdInput = document.getElementById('promoteProbEmpId');
+        var nameEl     = document.getElementById('promoteProbEmpName');
+        var posEl      = document.getElementById('promoteProbPosition');
+        var avatarEl   = document.getElementById('promoteProbAvatar');
+        var badgeEl    = document.getElementById('promoteProbBadge');
+        var formEl     = document.getElementById('formPromoteProbation');
+
+        if (empIdInput) empIdInput.value = empId;
+        if (nameEl)   nameEl.textContent = empName || '-';
+        if (posEl)    posEl.textContent  = (empPos || '-') + (empDept ? ' · ' + empDept : '');
+        if (avatarEl) avatarEl.textContent = (empName || 'K').substring(0,2).toUpperCase();
+        if (badgeEl)  badgeEl.textContent  = empStat;
+        if (formEl)   formEl.action = '/hr/employees/' + empId + '/promote-probation';
+
+        // Set default start date
+        var startEl = document.getElementById('promoteProbStart');
+        if (startEl) startEl.value = new Date().toISOString().split('T')[0];
+
+        // Show modal
+        var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('promoteToProbationModal'));
+        modal.show();
+      });
+    }
+
+    // promoteToProbationModal AJAX submit
+    var probForm = document.getElementById('formPromoteProbation');
+    if (probForm) {
+      probForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        var empId = (document.getElementById('promoteProbEmpId') || {}).value || '';
+        if (!empId) return;
+
+        var submitBtn = probForm.querySelector('button[type="submit"]');
+        var origHtml = submitBtn ? submitBtn.innerHTML : '';
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Memproses...'; }
+
+        var formData = new FormData(probForm);
+        // probation_end is not in form, compute from start + duration
+        var startVal = (document.getElementById('promoteProbStart') || {}).value || '';
+        var durVal   = (document.getElementById('promoteProbDuration') || {}).value || '3 Bulan';
+        if (startVal) {
+          var months = parseInt((durVal.match(/\d+/) || ['3'])[0], 10);
+          var endDate = new Date(startVal);
+          endDate.setMonth(endDate.getMonth() + months);
+          formData.set('probation_end', endDate.toISOString().split('T')[0]);
+        }
+
+        fetch('/hr/employees/' + empId + '/promote-probation', {
+          method: 'POST',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') || {}).content || ''
+          },
+          body: formData
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+          if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = origHtml; }
+          var modal = bootstrap.Modal.getInstance(document.getElementById('promoteToProbationModal'));
+          if (modal) modal.hide();
+          if (res && res.success) {
+            if (typeof showToast === 'function') showToast(res.message || 'Berhasil didaftarkan ke Probation.', 'success', 5000);
+            else alert(res.message || 'Berhasil.');
+            setTimeout(function() { window.location.reload(); }, 800);
+          } else {
+            if (typeof showToast === 'function') showToast('Gagal: ' + (res ? (res.message || 'Error') : 'Error'), 'error');
+            else alert('Gagal: ' + (res ? res.message : 'Error'));
+          }
+        })
+        .catch(function(err) {
+          if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = origHtml; }
+          if (typeof showToast === 'function') showToast('Error: ' + (err ? err.message : 'Network error'), 'error');
+          else alert('Error: ' + (err ? err.message : 'Network error'));
+        });
+      });
+    }
+  });
+</script>
+
 <!-- 2. IMPORT CSV / EXCEL MODAL — Master Data & Employee (1:1 from GAS Modals.html lines 68-171) -->
 <div class="modal fade" id="empImportModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -320,8 +625,24 @@
   </div>
 </div>
 
+@php
+    // Serialize employees untuk PDF modal search
+    $allEmpForPdf = collect($all ?? $employees ?? [])->map(function($e) {
+        if (!is_object($e)) return $e;
+        return [
+            'employeeId'          => $e->employeeId ?? null,
+            'fullName'            => $e->fullName ?? null,
+            'statusEmployee'      => $e->statusEmployee ?? null,
+            'jobPosition'         => $e->jobPosition ?? null,
+            'jobPositionLocation' => $e->jobPositionLocation ?? null,
+            'department'          => $e->department ?? null,
+            'branchName'          => $e->branchName ?? null,
+            'joinDate'            => $e->joinDate ?? null,
+        ];
+    })->values()->all();
+@endphp
 <script>
-  window.__allEmployeesForPdf = @json($all ?? $employees ?? []);
+  window.__allEmployeesForPdf = @json($allEmpForPdf);
   let _pdfSelectedEmployee = null;
 
   function handlePdfEmpSearch(query) {
@@ -348,17 +669,23 @@
       return;
     }
 
-    dropdown.innerHTML = matched.map(emp => `
-      <div class="p-2 border-bottom d-flex align-items-center gap-2 hover-item" style="cursor:pointer;" onclick='selectPdfEmployee(${JSON.stringify(emp).replace(/'/g, "&#39;")})'>
-        <div class="avatar-sm" style="width:32px;height:32px;background:#0B2540;color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">
-          ${(emp.fullName || 'E').substring(0,2).toUpperCase()}
-        </div>
-        <div class="flex-grow-1" style="font-size:12.5px;">
-          <div class="fw-semibold text-navy">${emp.fullName || '-'}</div>
-          <div class="text-muted" style="font-size:11px">${emp.employeeId} &bull; ${emp.jobPosition || '-'}</div>
-        </div>
-      </div>
-    `).join('');
+    dropdown.innerHTML = matched.map(function(emp) {
+      return '<div class="p-2 border-bottom d-flex align-items-center gap-2 hover-item pdf-search-item" style="cursor:pointer;" data-emp-id="' + (emp.employeeId || '') + '">' +
+        '<div class="avatar-sm" style="width:32px;height:32px;background:#0B2540;color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">' +
+          (emp.fullName || 'E').substring(0,2).toUpperCase() +
+        '</div>' +
+        '<div class="flex-grow-1" style="font-size:12.5px;">' +
+          '<div class="fw-semibold text-navy">' + (emp.fullName || '-') + '</div>' +
+          '<div class="text-muted" style="font-size:11px">' + (emp.employeeId || '') + ' &bull; ' + (emp.jobPosition || '-') + '</div>' +
+        '</div></div>';
+    }).join('');
+    dropdown.querySelectorAll('.pdf-search-item').forEach(function(item) {
+      item.addEventListener('click', function() {
+        var empId = item.getAttribute('data-emp-id');
+        var found = (window.__allEmployeesForPdf || []).find(function(e) { return e.employeeId === empId; });
+        if (found) selectPdfEmployee(found);
+      });
+    });
     dropdown.style.display = 'block';
   }
 

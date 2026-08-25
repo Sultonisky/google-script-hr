@@ -14,6 +14,10 @@
         @csrf
         <div class="modal-body p-4">
           <input type="hidden" id="rotEmployeeId" name="employee_id" />
+          {{-- Snapshot old data — WAJIB dikirim ke controller agar PDF mendapat jabatan semula yg benar --}}
+          <input type="hidden" id="rotOldJobPosition" name="old_job_position" />
+          <input type="hidden" id="rotOldDepartment"  name="old_department" />
+          <input type="hidden" id="rotOldBranch"      name="old_branch_name" />
 
           <!-- STEP 1: Live Search karyawan -->
           <div class="mb-3">
@@ -109,7 +113,29 @@
 </div>
 
 <script>
-  window.__allEmployeesForRotation = @json($all ?? $employees ?? []);
+  @php
+    $allEmpForRotation = collect($all ?? $employees ?? [])->map(function($e) {
+        if (!is_object($e)) return $e;
+        return [
+            'employeeId'          => $e->employeeId ?? null,
+            'fullName'            => $e->fullName ?? null,
+            'statusEmployee'      => $e->statusEmployee ?? null,
+            'jobPosition'         => $e->jobPosition ?? null,
+            'jobPositionLocation' => $e->jobPositionLocation ?? null,
+            'department'          => $e->department ?? null,
+            'branchName'          => $e->branchName ?? null,
+            'joinDate'            => $e->joinDate ?? null,
+            'endDateContract'     => $e->endDateContract ?? null,
+            'bpjsKetenagakerjaan' => $e->bpjsKetenagakerjaan ?? null,
+            'bpjsKesehatan'       => $e->bpjsKesehatan ?? null,
+        ];
+    })->values()->all();
+  @endphp
+  window.__allEmployeesForRotation = @json($allEmpForRotation);
+  // Alias so employee modals that use window.__allEmployees also work from this page
+  if (typeof window.__allEmployees === 'undefined' || !Array.isArray(window.__allEmployees) || !window.__allEmployees.length) {
+    window.__allEmployees = window.__allEmployeesForRotation;
+  }
 
   // ==========================================================================
   // AUTO-DOWNLOAD SK ROTASI (FALLBACK: dari session flash setelah page reload)
@@ -164,17 +190,24 @@
       return;
     }
 
-    dropdown.innerHTML = matched.map(emp => `
-      <div class="p-2 border-bottom d-flex align-items-center gap-2 hover-item" style="cursor:pointer;" onclick='selectRotEmployee(${JSON.stringify(emp).replace(/'/g, "&#39;")})'>
-        <div class="avatar-sm" style="width:32px;height:32px;background:#0B2540;color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">
-          ${(emp.fullName || 'E').substring(0,2).toUpperCase()}
-        </div>
-        <div class="flex-grow-1" style="font-size:12.5px;">
-          <div class="fw-semibold text-navy">${emp.fullName || '-'}</div>
-          <div class="text-muted" style="font-size:11px">${emp.employeeId} &bull; ${emp.jobPosition || '-'}</div>
-        </div>
-      </div>
-    `).join('');
+    dropdown.innerHTML = matched.map(function(emp) {
+      return '<div class="p-2 border-bottom d-flex align-items-center gap-2 hover-item rot-search-item" style="cursor:pointer;" data-emp-id="' + (emp.employeeId || '') + '">' +
+        '<div class="avatar-sm" style="width:32px;height:32px;background:#0B2540;color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">' +
+          (emp.fullName || 'E').substring(0,2).toUpperCase() +
+        '</div>' +
+        '<div class="flex-grow-1" style="font-size:12.5px;">' +
+          '<div class="fw-semibold text-navy">' + (emp.fullName || '-') + '</div>' +
+          '<div class="text-muted" style="font-size:11px">' + (emp.employeeId || '') + ' &bull; ' + (emp.jobPosition || '-') + '</div>' +
+        '</div></div>';
+    }).join('');
+    // Wire via event listener — avoid Blade parsing () inside inline onclick
+    dropdown.querySelectorAll('.rot-search-item').forEach(function(item) {
+      item.addEventListener('click', function() {
+        var empId = item.getAttribute('data-emp-id');
+        var found = (window.__allEmployeesForRotation || []).find(function(e) { return e.employeeId === empId; });
+        if (found) selectRotEmployee(found);
+      });
+    });
     dropdown.style.display = 'block';
   }
 
@@ -182,6 +215,11 @@
     document.getElementById('rotEmpDropdown').style.display = 'none';
     document.getElementById('rotEmpSearch').value = `${emp.fullName} (${emp.employeeId})`;
     document.getElementById('rotEmployeeId').value = emp.employeeId;
+
+    // ── Snapshot old data SEBELUM rotasi (1:1 GAS: old_job_position = jabatan sebelum update) ──
+    document.getElementById('rotOldJobPosition').value = emp.jobPosition || emp.jobPositionLocation || '';
+    document.getElementById('rotOldDepartment').value  = emp.department || '';
+    document.getElementById('rotOldBranch').value      = emp.branchName || '';
 
     document.getElementById('formRotation').action = `/hr/employees/${emp.employeeId}/rotate`;
     document.getElementById('rotEmpName').textContent = emp.fullName || '-';
@@ -205,6 +243,10 @@
     document.getElementById('rotEmpSearchClear').style.display = 'none';
     document.getElementById('rotEmpPreview').style.display = 'none';
     document.getElementById('btnConfirmRotation').disabled = true;
+    // Clear snapshots
+    document.getElementById('rotOldJobPosition').value = '';
+    document.getElementById('rotOldDepartment').value  = '';
+    document.getElementById('rotOldBranch').value      = '';
   }
 
   // ==========================================================================
