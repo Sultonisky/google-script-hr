@@ -1,814 +1,521 @@
-```html id="n2k7qa"
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
-    <meta charset="UTF-8">
-    <title>Offering Letter - {{ $candidate->fullName }}</title>
+  <meta charset="UTF-8">
+  <title>SK Pengangkatan Karyawan Tetap - {{ $employee->fullName }}</title>
 
-    <style>
-        @page {
-            margin: 25px 35px;
-        }
+  <style>
+    @page {
+      margin: 30px 40px;
+    }
 
-        body {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            font-size: 10.5px;
-            color: #1f2937;
-            line-height: 1.55;
-            text-align: justify;
-        }
+    body {
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 11px;
+      color: #000000;
+      line-height: 1.55;
+      text-align: justify;
+    }
 
-
-        /* =========================================================
+    /* =========================================================
        DOCUMENT HEADER
        ========================================================= */
 
-        .doc-title {
-            font-size: 13pt;
-            font-weight: bold;
-            text-align: center;
-            text-transform: uppercase;
-            color: #0b2540;
-            margin-top: 10px;
-        }
+    .doc-title {
+      font-size: 12pt;
+      font-weight: bold;
+      text-align: center;
+      text-transform: uppercase;
+      color: #000000;
+      margin-top: 6px;
+    }
 
-        .doc-no {
-            font-size: 9.5pt;
-            text-align: center;
-            color: #4b5563;
-            margin-bottom: 14px;
-        }
+    .doc-sub {
+      font-size: 10pt;
+      font-weight: bold;
+      text-align: center;
+      color: #000000;
+      margin-bottom: 4px;
+    }
+
+    .doc-no {
+      font-size: 8.5pt;
+      text-align: center;
+      color: #555555;
+      margin-bottom: 4px;
+    }
+
+    .doc-co {
+      font-size: 10pt;
+      font-weight: bold;
+      text-align: center;
+      color: #000000;
+      margin-bottom: 12px;
+    }
 
 
-        /* =========================================================
-       GENERAL TABLE
+    /* =========================================================
+       KEY VALUE TABLE
        ========================================================= */
 
-        .pihak-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 4px 0 8px;
-        }
+    .kv-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 4px 0;
+    }
 
-        .pihak-table td {
-            padding: 2px 3px;
-            vertical-align: top;
-        }
+    .kv-table td {
+      padding: 2px 3px;
+      vertical-align: top;
+      font-size: 8.5pt;
+    }
 
-        .pihak-label {
-            width: 30%;
-            font-weight: bold;
-        }
+    .kv-label {
+      width: 120px;
+      font-weight: bold;
+    }
 
-        .pihak-colon {
-            width: 3%;
-        }
+    .kv-colon {
+      width: 12px;
+    }
 
-        .pihak-value {
-            width: 67%;
-        }
+    .kv-value {
+      width: auto;
+    }
 
 
-        /* =========================================================
-       SECTION
+    /* =========================================================
+       SIGNATURE TABLE
        ========================================================= */
 
-        .section-title {
-            font-weight: bold;
-            margin-top: 12px;
-            margin-bottom: 4px;
-        }
+    .sign-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 22px;
+      page-break-inside: avoid;
+    }
 
-        ul {
-            margin-top: 4px;
-            margin-bottom: 6px;
-            padding-left: 20px;
-        }
+    .sign-table td {
+      padding: 0 12px 0 0;
+      vertical-align: top;
+      text-align: right;
+    }
 
-        li {
-            margin-bottom: 2px;
-        }
+    /*
+     * Tetap rata kanan.
+     * Tidak menggunakan fixed width / center alignment
+     * agar mengikuti pola signature pada Offering Letter.
+     */
+    .sign-block {
+      text-align: right;
+    }
 
 
-        /* =========================================================
-       SIGNATURE SECTION
+    /* =========================================================
+       SIGNATURE DATE
        ========================================================= */
 
-        .signature-section {
-            width: 100%;
-            margin-top: 20px;
-            page-break-inside: avoid;
-        }
+    .sign-date {
+      font-size: 8.5pt;
+      line-height: 1.25;
+      margin: 0 0 1px 0;
+    }
 
 
-        /* =========================================================
-       HR SIGNATURE
+    /* =========================================================
+       GREETING
        ========================================================= */
 
-        .hr-signature-block {
-            width: 100%;
-            text-align: left;
-            font-size: 9px;
-        }
-
-        .signature-date {
-            font-size: 9px;
-            margin-bottom: 2px;
-        }
-
-        .signature-greeting {
-            font-size: 9px;
-            margin-bottom: 1px;
-        }
-
-        .signature-company {
-            font-size: 9px;
-            margin-bottom: 1px;
-        }
+    .sign-greeting {
+      font-size: 8.5pt;
+      line-height: 1.25;
+      margin: 0 0 1px 0;
+    }
 
 
-        /* HR signature image area */
-
-        .hr-signature-area {
-            width: 155px;
-            height: 52px;
-            margin: 0;
-        }
-
-        .hr-sign-image {
-            display: block;
-            height: 48px;
-            width: auto;
-            max-width: 145px;
-        }
-
-        .hr-sign-placeholder {
-            height: 48px;
-            width: 120px;
-        }
-
-
-        .hr-name {
-            font-size: 9px;
-            line-height: 1.2;
-        }
-
-        .hr-position {
-            font-size: 8.5px;
-            color: #555555;
-            margin-top: 1px;
-        }
-
-
-        /* =========================================================
-       CANDIDATE SIGNATURE
+    /* =========================================================
+       COMPANY NAME
        ========================================================= */
 
-        .candidate-signature-block {
-            width: 100%;
-            margin-top: 22px;
-            text-align: left;
-            font-size: 9px;
-        }
+    .sign-company {
+      font-size: 8.5pt;
+      font-weight: bold;
+      line-height: 1.25;
+      margin: 0;
+    }
 
 
-        /* Candidate confirmation text */
+    /* =========================================================
+       SIGNATURE IMAGE AREA
+       ========================================================= */
 
-        .candidate-confirmation {
-            width: 100%;
-            font-size: 8.8px;
-            line-height: 1.45;
-            text-align: justify;
-            margin-bottom: 3px;
-        }
+    /*
+     * Fixed height supaya posisi nama tidak berubah
+     * apabila ukuran signature image berbeda.
+     */
+    .sign-image-area {
+      height: 52px;
+      margin: 0;
+      padding: 0;
+    }
 
-        .candidate-confirmation p {
-            margin: 0 0 5px 0;
-        }
-
-
-        /* Join date */
-
-        .join-date-line {
-            white-space: nowrap;
-            display: inline-block;
-            margin-left: 2px;
-        }
-
-
-        /* Candidate signature area */
-
-        .candidate-signature-area {
-            height: 38px;
-            width: 100%;
-        }
+    .sign-image-area img {
+      display: inline-block;
+      height: 48px;
+      width: auto;
+      max-width: 145px;
+      margin: 0;
+      padding: 0;
+    }
 
 
-        /* Candidate signature line */
+    /* =========================================================
+       SIGNATORY NAME
+       ========================================================= */
 
-        .candidate-line {
-            width: 200px;
-            border-bottom: 1px solid #222222;
-            margin-bottom: 3px;
-        }
+    .sign-name {
+      font-size: 8.5pt;
+      font-weight: bold;
+      line-height: 1.25;
+      margin: 0;
+    }
 
 
-        .candidate-name {
-            font-size: 9px;
-            line-height: 1.2;
-        }
+    /* =========================================================
+       SIGNATORY POSITION
+       ========================================================= */
 
-        .candidate-role {
-            font-size: 8px;
-            color: #777777;
-            margin-top: 1px;
-        }
-    </style>
+    .sign-position {
+      font-size: 8.5pt;
+      line-height: 1.25;
+      margin: 1px 0 0 0;
+    }
+
+  </style>
 </head>
-
 
 <body>
 
-    @include('pdf.components.kop-surat')
+  @include('pdf.components.kop-surat')
 
 
-    @php
+  @php
+    // =========================================================
+    // 1:1 GAS exportSKTetapPDF()
+    // =========================================================
 
-        /*
-    |--------------------------------------------------------------------------
-    | Candidate Data
-    |--------------------------------------------------------------------------
-    */
-
-        $candName = $candidate->fullName ?? '-';
-
-        $candNik = ltrim($candidate->nik ?? '-', "'");
-
-        $candEmail = $candidate->email ?? '-';
-
-        $candPhone = ltrim($candidate->phone ?? '-', "'");
-
-        $candCity = $candidate->city ?? '-';
-
-        $candAddr = $candidate->address ?? '-';
-
-        /*
-    |--------------------------------------------------------------------------
-    | Job Information
-    |--------------------------------------------------------------------------
-    */
-
-        $pos = $extraData['position'] ?? ($candidate->positionApplied ?? '-');
-
-        $division = $extraData['division'] ?? '-';
-
-        $lokasi = $extraData['lokasi_kerja'] ?? ($extraData['lokasiKerja'] ?? $candCity);
-
-        $dept = $extraData['department'] ?? '-';
-
-        $jobLevel = $extraData['job_level'] ?? ($extraData['jobLevel'] ?? '');
-
-        $combinedPos = $pos . ($jobLevel ? ' ' . $jobLevel : '');
-
-        /*
-    |--------------------------------------------------------------------------
-    | Employment
-    |--------------------------------------------------------------------------
-    */
-
-        $empStatus =
-            $extraData['employment_status'] ?? ($extraData['employmentStatus'] ?? 'Perjanjian Kerja Waktu Tertentu');
-
-        $contractDur = $extraData['contract_duration'] ?? ($extraData['contractDuration'] ?? '12 bulan');
-
-        /*
-    |--------------------------------------------------------------------------
-    | Salary
-    |--------------------------------------------------------------------------
-    */
-
-        $baseSalary = (int) preg_replace(
-            '/[^0-9]/',
-            '',
-            (string) ($extraData['salary_basic'] ?? ($extraData['salaryBasic'] ?? ($candidate->expectedSalary ?? 0))),
-        );
-
-        $allowPulsa = (int) preg_replace(
-            '/[^0-9]/',
-            '',
-            (string) ($extraData['allow_pulsa'] ?? ($extraData['allowPulsa'] ?? 100000)),
-        );
-
-        $allowTransport = (int) preg_replace(
-            '/[^0-9]/',
-            '',
-            (string) ($extraData['allow_transport'] ?? ($extraData['allowTransport'] ?? 500000)),
-        );
-
-        $totalBruto = $baseSalary + $allowPulsa + $allowTransport;
-
-        /*
-    |--------------------------------------------------------------------------
-    | Other Data
-    |--------------------------------------------------------------------------
-    */
-
-        $workingHours =
-            $extraData['working_hours'] ??
-            ($extraData['workingHours'] ?? 'hari Senin – Jumat mulai pukul 08.00 – 17.00 WIB');
-
-        $benefit = $extraData['benefit'] ?? '';
-
-        $joinDate = $extraData['join_date'] ?? ($extraData['joinDate'] ?? '');
-
-        $joinDateFmt = $joinDate ? \Carbon\Carbon::parse($joinDate)->translatedFormat('d F Y') : date('d F Y');
-
-        /*
-    |--------------------------------------------------------------------------
-    | Offer Expiration
-    |--------------------------------------------------------------------------
-    */
-
-        $expireDate = date('d F Y', strtotime('+3 days'));
-
-        /*
-    |--------------------------------------------------------------------------
-    | Company
-    |--------------------------------------------------------------------------
-    */
-
-        $companyName = $company['name'] ?? 'PT MAHAKARYA SUKSES INDONESIA';
-
-        $companyCity = $company['city'] ?? 'Tangerang';
-
-        $todayFmt = date('d F Y');
-    @endphp
+    // SK number
+    $skNumber = $extraData['sk_number']
+                ?? $extraData['skNumber']
+                ?? $extraData['evalId']
+                ?? (
+                    '001/HRD-PK/'
+                    . ($company['code'] ?? 'MSI')
+                    . '/I/'
+                    . date('Y')
+                );
 
 
-    <!-- =========================================================
-       DATE
-       ========================================================= -->
+    // Position
+    $position = $extraData['job_position']
+                ?? $extraData['jobPosition']
+                ?? $employee->jobPositionLocation
+                ?? $employee->jobPosition
+                ?? 'Jabatan';
 
-    <div style="
-      text-align:right;
-      font-size:9.5px;
-      color:#4b5563;
-      margin-bottom:8px;
+
+    // Department
+    $department = $extraData['department']
+                  ?? $employee->department
+                  ?? 'Departemen';
+
+
+    // Division
+    $division = $extraData['division']
+                ?? $employee->division
+                ?? 'Divisi';
+
+
+    // Full name
+    $fullName = $employee->fullName ?? '-';
+
+
+    // Company
+    $companyName = $company['name']
+                   ?? 'PT MAHAKARYA SUKSES INDONESIA';
+
+
+    // =========================================================
+    // COMPANY CITY
+    // =========================================================
+
+    $companyAddress = $company['address'] ?? '';
+
+    preg_match(
+      '/Kota\s+([\w\s]+?)(?:,|$)/i',
+      $companyAddress,
+      $cityMatch
+    );
+
+    $city = isset($cityMatch[1])
+            ? trim($cityMatch[1])
+            : ($company['city'] ?? 'Jakarta');
+
+
+    // =========================================================
+    // INDONESIAN DATE
+    // =========================================================
+
+    $bulanId = [
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember'
+    ];
+
+    $todayStr =
+      date('j')
+      . ' '
+      . $bulanId[(int) date('n') - 1]
+      . ' '
+      . date('Y');
+  @endphp
+
+
+  {{-- =========================================================
+       JUDUL
+       ========================================================= --}}
+
+  <div class="doc-title">
+    SURAT KEPUTUSAN
+  </div>
+
+  <div class="doc-no">
+    Nomor: {{ $skNumber }}
+  </div>
+
+  <div class="doc-co">
+    Perusahaan {{ $companyName }}
+  </div>
+
+
+  {{-- =========================================================
+       MENIMBANG
+       ========================================================= --}}
+
+  <table class="kv-table">
+    <tr>
+
+      <td class="kv-label">
+        Menimbang
+      </td>
+
+      <td class="kv-colon">
+        :
+      </td>
+
+      <td class="kv-value">
+        Bahwa berdasarkan hasil evaluasi masa percobaan serta
+        kebutuhan Perusahaan, dipandang perlu mengangkat karyawan
+        sebagai Karyawan Tetap sesuai dengan Peraturan Perusahaan
+        dan ketentuan peraturan perundang-undangan yang berlaku.
+      </td>
+
+    </tr>
+  </table>
+
+
+  {{-- =========================================================
+       MENGINGAT
+       ========================================================= --}}
+
+  <table class="kv-table">
+
+    <tr>
+
+      <td class="kv-label">
+        Mengingat
+      </td>
+
+      <td class="kv-colon">
+        :
+      </td>
+
+      <td class="kv-value">
+        1. Undang-Undang Ketenagakerjaan beserta
+        peraturan pelaksanaannya.
+      </td>
+
+    </tr>
+
+    <tr>
+
+      <td class="kv-label"></td>
+
+      <td class="kv-colon"></td>
+
+      <td class="kv-value">
+        2. Peraturan Perusahaan {{ $companyName }}.
+      </td>
+
+    </tr>
+
+    <tr>
+
+      <td class="kv-label"></td>
+
+      <td class="kv-colon"></td>
+
+      <td class="kv-value">
+        3. Hasil evaluasi kinerja selama masa percobaan.
+      </td>
+
+    </tr>
+
+  </table>
+
+
+  {{-- =========================================================
+       MEMUTUSKAN
+       ========================================================= --}}
+
+  <div style="
+    text-align: center;
+    font-size: 10pt;
+    font-weight: bold;
+    margin: 12px 0 6px;
   ">
-        Tanggal:
-        <strong>{{ $todayFmt }}</strong>
-    </div>
+    MEMUTUSKAN
+  </div>
 
 
-    <!-- =========================================================
-       RECIPIENT
-       ========================================================= -->
+  {{-- =========================================================
+       MENETAPKAN
+       ========================================================= --}}
 
-    <p>
-        Kepada Yth. <strong>{{ $candName }}</strong><br>
-        Perihal:
-        <strong>Penawaran Kerja (Offering Letter)</strong>
-    </p>
+  <table class="kv-table">
 
+    <tr>
 
-    <p>
-        Dengan hormat,
-    </p>
+      <td class="kv-label">
+        Menetapkan
+      </td>
 
+      <td class="kv-colon">
+        :
+      </td>
 
-    <p>
-        Berdasarkan hasil proses seleksi yang telah Saudara ikuti,
-        kami dengan senang hati menyampaikan penawaran kerja untuk
-        bergabung bersama <strong>{{ $companyName }}</strong>
-        dengan ketentuan sebagai berikut:
-    </p>
+      <td class="kv-value"></td>
 
+    </tr>
 
-    <!-- =========================================================
-       JOB INFORMATION
-       ========================================================= -->
+    <tr>
 
-    <table class="pihak-table">
+      <td class="kv-label"></td>
 
-        <tr>
-            <td class="pihak-label">
-                Posisi Jabatan
-            </td>
+      <td class="kv-colon">
+        :
+      </td>
 
-            <td class="pihak-colon">
-                :
-            </td>
+      <td class="kv-value">
+        Mengangkat
+        <strong>{{ $fullName }}</strong>
+        sebagai Karyawan Tetap dengan jabatan
+        {{ $position }},
+        Departemen {{ $department }},
+        Divisi {{ $division }},
+        terhitung sejak surat keputusan ini ditetapkan
+        dan ditandatangani.
+      </td>
 
-            <td class="pihak-value">
-                <strong>{{ $combinedPos }}</strong>
-            </td>
-        </tr>
+    </tr>
 
-
-        <tr>
-            <td class="pihak-label">
-                Divisi
-            </td>
-
-            <td class="pihak-colon">
-                :
-            </td>
-
-            <td class="pihak-value">
-                {{ $division }}
-            </td>
-        </tr>
+  </table>
 
 
-        <tr>
-            <td class="pihak-label">
-                Lokasi Penempatan
-            </td>
+  {{-- =========================================================
+       PENUTUP
+       ========================================================= --}}
 
-            <td class="pihak-colon">
-                :
-            </td>
-
-            <td class="pihak-value">
-                {{ $lokasi }}
-            </td>
-        </tr>
-
-
-        <tr>
-            <td class="pihak-label">
-                Status Hubungan Kerja
-            </td>
-
-            <td class="pihak-colon">
-                :
-            </td>
-
-            <td class="pihak-value">
-                {{ $empStatus }}
-            </td>
-        </tr>
-
-    </table>
-
-
-    <p>
-        Dengan masa kontrak selama
-        <strong>{{ $contractDur }}</strong>
-        sesuai ketentuan perusahaan dan peraturan
-        perundang-undangan yang berlaku.
-    </p>
-
-
-    <!-- =========================================================
-       REMUNERATION
-       ========================================================= -->
-
-    <p>
-        Perusahaan menawarkan paket remunerasi sebagai berikut:
-    </p>
-
-
-    <table style="
-      width:55%;
-      border-collapse:collapse;
-      margin:8px 0;
+  <p style="
+    font-size: 8.5pt;
+    margin-top: 16px;
   ">
+    Demikian Surat Keputusan ini dibuat, untuk dilaksanakan
+    sesuai Peraturan Perusahaan yang berlaku.
+  </p>
 
-        <tr>
-
-            <td style="
-          font-weight:bold;
-          padding:2px 4px 2px 0;
-      ">
-                Komponen
-            </td>
 
-            <td
-                style="
-          font-weight:bold;
-          padding:2px 0;
-          text-align:left;
-          padding-left:16px;
-      ">
-                Nilai
-            </td>
+  {{-- =========================================================
+       TANDA TANGAN
+       ========================================================= --}}
 
-        </tr>
-
-
-        <tr>
+  <table class="sign-table">
 
-            <td style="
-          padding:3px 4px 3px 0;
-      ">
-                Gaji Pokok
-            </td>
+    <tr>
 
-            <td style="
-          padding:3px 0;
-          text-align:left;
-          padding-left:16px;
-      ">
-                Rp {{ number_format($baseSalary, 0, ',', '.') }},-
-            </td>
+      <td>
 
-        </tr>
+        <div class="sign-block">
 
+          {{-- Tanggal --}}
 
-        <tr>
+          <div class="sign-date">
+            {{ $city }}, {{ $todayStr }}
+          </div>
 
-            <td style="
-          padding:3px 4px 3px 0;
-      ">
-                Tunjangan Variabel (Pulsa)
-            </td>
 
-            <td style="
-          padding:3px 0;
-          text-align:left;
-          padding-left:16px;
-      ">
-                Rp {{ number_format($allowPulsa, 0, ',', '.') }},-
-            </td>
+          {{-- Hormat Kami --}}
 
-        </tr>
+          <div class="sign-greeting">
+            Hormat Kami,
+          </div>
 
 
-        <tr>
+          {{-- Nama Perusahaan --}}
 
-            <td style="
-          padding:3px 4px 3px 0;
-      ">
-                Tunjangan Variabel (Transport)
-            </td>
+          <div class="sign-company">
+            <strong>{{ $companyName }}</strong>
+          </div>
 
-            <td style="
-          padding:3px 0;
-          text-align:left;
-          padding-left:16px;
-      ">
-                Rp {{ number_format($allowTransport, 0, ',', '.') }},-
-            </td>
 
-        </tr>
+          {{-- Tanda Tangan --}}
 
+          <div class="sign-image-area">
+            @include('pdf.components.hr-sign')
+          </div>
 
-        <tr>
 
-            <td style="
-          padding:3px 4px 3px 0;
-          font-weight:bold;
-      ">
-                Total Penghasilan Bruto / Bulan
-            </td>
+          {{-- Nama Penandatangan --}}
 
-            <td
-                style="
-          padding:3px 0;
-          text-align:left;
-          padding-left:16px;
-          font-weight:bold;
-      ">
-                Rp {{ number_format($totalBruto, 0, ',', '.') }},-
-            </td>
+          <div class="sign-name">
+            <strong>
+              <u>Hisar Hesti</u>
+            </strong>
+          </div>
 
-        </tr>
 
-    </table>
+          {{-- Jabatan --}}
 
-
-    <!-- =========================================================
-       SALARY INFORMATION
-       ========================================================= -->
-
-    <p>
-        Kompensasi tersebut akan dikenakan potongan BPJS sesuai
-        ketentuan perundangan yang berlaku. Perusahaan akan membayar
-        PPH atas gaji saudara dan membayarkannya kepada Dirjen Pajak.
-        Gaji akan dihitung mulai tanggal 21 hingga tanggal 20 bulan
-        berikutnya dan akan langsung dibayarkan ke rekening bank
-        Saudara yang telah didaftarkan ke Perusahaan pada tanggal
-        30 atau 31 di akhir bulan.
-    </p>
-
-
-    <p>
-        Jam kerja Saudara di {{ $workingHours }}.
-    </p>
-
-
-    <!-- =========================================================
-       BENEFITS
-       ========================================================= -->
-
-    <div class="section-title">
-        Selain kompensasi di atas, Saudara akan memperoleh
-        fasilitas sebagai berikut:
-    </div>
-
-
-    <ul>
-
-        <li>
-            BPJS Kesehatan
-        </li>
-
-        <li>
-            BPJS Ketenagakerjaan
-        </li>
-
-        <li>
-            Tunjangan Hari Raya (THR)
-        </li>
-
-        <li>
-            Cuti Tahunan sesuai kebijakan perusahaan
-        </li>
-
-        <li>
-            Biaya Operasional yakni biaya bensin, tol, parkir saat
-            melakukan perjalanan bisnis dapat di reimburse sesuai
-            ketentuan Perusahaan.
-        </li>
-
-        @if ($benefit)
-            <li>
-                {{ $benefit }}
-            </li>
-        @endif
-
-    </ul>
-
-
-    <!-- =========================================================
-       OTHER TERMS
-       ========================================================= -->
-
-    <p>
-        Saudara berhak mengikuti program insentif dan/atau bonus
-        perusahaan sesuai pencapaian KPI, kinerja perusahaan,
-        serta kebijakan yang berlaku.
-    </p>
-
-
-    <p>
-        Saudara wajib menjaga kerahasiaan seluruh informasi,
-        data, strategi bisnis, maupun dokumen perusahaan yang
-        diperoleh selama masa kerja dan setelah hubungan kerja
-        berakhir.
-    </p>
-
-
-    <p>
-        Penawaran kerja ini berlaku sampai dengan tanggal
-        <strong>{{ $expireDate }}</strong>.
-    </p>
-
-
-    <p>
-        Apabila Saudara menyetujui penawaran ini, mohon
-        menandatangani dokumen ini dan mengembalikannya kepada
-        kami sebelum batas waktu tersebut.
-    </p>
-
-
-    <p>
-        Kami berharap Saudara dapat bergabung dan berkontribusi
-        bersama <strong>{{ $companyName }}</strong> dalam mencapai
-        tujuan dan pertumbuhan perusahaan.
-    </p>
-
-
-    <!-- =========================================================
-       SIGNATURE
-       ========================================================= -->
-
-    @php
-
-        $hrSignPath = public_path('assets/hr-sign.png');
-
-        $hrSignSrc = file_exists($hrSignPath)
-            ? 'data:image/png;base64,' . base64_encode(file_get_contents($hrSignPath))
-            : null;
-
-    @endphp
-
-
-    <div class="signature-section">
-
-
-        <!-- =======================================================
-         HR SIGNATURE
-         ======================================================= -->
-
-        <div class="hr-signature-block">
-
-            <div class="signature-date">
-                {{ $companyCity }}, {{ $todayFmt }}
-            </div>
-
-            <div class="signature-greeting">
-                Hormat kami,
-            </div>
-
-            <div class="signature-company">
-                <strong>{{ $companyName }}</strong>
-            </div>
-
-
-            <!-- HR SIGNATURE IMAGE -->
-
-            <div class="hr-signature-area">
-
-                @if ($hrSignSrc)
-                    <img src="{{ $hrSignSrc }}" class="hr-sign-image" alt="Tanda tangan HR">
-                @else
-                    <div class="hr-sign-placeholder"></div>
-                @endif
-
-            </div>
-
-
-            <div class="hr-name">
-                <strong>
-                    <u>Hisar Hesti Pangaribuan</u>
-                </strong>
-            </div>
-
-
-            <div class="hr-position">
-                Human Resource &amp; Legal Manager
-            </div>
+          <div class="sign-position">
+            Human Resources (HR) &amp; Legal Manager
+          </div>
 
         </div>
 
+      </td>
 
-        <!-- =======================================================
-         CANDIDATE SIGNATURE
-         ======================================================= -->
+    </tr>
 
-        <div class="candidate-signature-block">
-
-
-            <!-- Confirmation -->
-
-            <div class="candidate-confirmation">
-
-                <p>
-                    Dengan ini saya memberikan konfirmasi bahwa saya telah
-                    membaca, memahami, dan menyetujui semua persyaratan surat
-                    penawaran ini dan saya menerima penawaran ini sebagaimana
-                    disajikan.
-                </p>
-
-
-                <p>
-                    Saya bersedia bergabung di Perusahaan
-                    <strong>{{ $companyName }}</strong>
-                    pada tanggal:
-
-                    <span class="join-date-line">
-                        __________________
-                    </span>
-                </p>
-
-            </div>
-
-
-            <!-- Candidate Signature Space -->
-
-            <div class="candidate-signature-area">
-                &nbsp;
-            </div>
-
-
-            <!-- Candidate Signature Line -->
-
-            <div class="candidate-line"></div>
-
-
-            <!-- Candidate Name -->
-
-            <div class="candidate-name">
-                <strong>
-                    {{ $candName }}
-                </strong>
-            </div>
-
-
-            <!-- Candidate Role -->
-
-            <div class="candidate-role">
-                Kandidat
-            </div>
-
-        </div>
-
-    </div>
+  </table>
 
 </body>
-
 </html>
-```

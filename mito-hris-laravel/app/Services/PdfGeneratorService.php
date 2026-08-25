@@ -16,39 +16,43 @@ class PdfGeneratorService
         $b = strtolower($branchName);
 
         if (str_contains($b, 'stein')) {
-            return [
-                'name'    => 'PT STEIN PERKASA INTERNASIONAL',
-                'address' => 'Rukan Mangga Dua Square Blok H No. 18-21, Jl. Gunung Sahari Raya Nomor 1, Kel. Ancol, Kec. Pademangan, Kota Jakarta Utara, DKI Jakarta - 14430',
-                'city'    => 'Jakarta',
-                'brand'   => 'STEIN',
-            ];
+                return [
+                    'name'    => 'PT STEIN PERKASA INTERNASIONAL',
+                    'address' => 'Rukan Mangga Dua Square Blok H No. 18-21, Jl. Gunung Sahari Raya Nomor 1, Kel. Ancol, Kec. Pademangan, Kota Jakarta Utara, DKI Jakarta - 14430',
+                    'city'    => 'Jakarta',
+                    'brand'   => 'STEIN',
+                    'code'    => 'SPI',
+                ];
         }
 
         if (str_contains($b, 'injeksi')) {
-            return [
-                'name'    => 'PT PERKASA INJEKSI INDONESIA',
-                'address' => 'Jl. Gajah Tunggal, Kp. Gembor, RT.004/RW.001, Kel. Pasir Jaya, Kec. Jatiuwung, Kota Tangerang, Banten 15135',
-                'city'    => 'Tangerang',
-                'brand'   => 'PERKASA INJEKSI',
-            ];
+                return [
+                    'name'    => 'PT PERKASA INJEKSI INDONESIA',
+                    'address' => 'Jl. Gajah Tunggal, Kp. Gembor, RT.004/RW.001, Kel. Pasir Jaya, Kec. Jatiuwung, Kota Tangerang, Banten 15135',
+                    'city'    => 'Tangerang',
+                    'brand'   => 'PERKASA INJEKSI',
+                    'code'    => 'PII',
+                ];
         }
 
         if (str_contains($b, 'mitra') || str_contains($b, 'elektro')) {
-            return [
-                'name'    => 'PT MITRA ELEKTRO PERKASA',
-                'address' => 'Rukan Mangga Dua Square Blok H No. 18-21, Jln. Gunung Sahari Raya Nomor 1, Kel. Ancol/Kec. Pademangan, Kota Jakarta Utara, DKI Jakarta',
-                'city'    => 'Jakarta',
-                'brand'   => 'MITRA ELEKTRO',
-            ];
+                return [
+                    'name'    => 'PT MITRA ELEKTRO PERKASA',
+                    'address' => 'Rukan Mangga Dua Square Blok H No. 18-21, Jln. Gunung Sahari Raya Nomor 1, Kel. Ancol/Kec. Pademangan, Kota Jakarta Utara, DKI Jakarta',
+                    'city'    => 'Jakarta',
+                    'brand'   => 'MITRA ELEKTRO',
+                    'code'    => 'MEP',
+                ];
         }
 
         // Default: PT Mahakarya Sukses Indonesia
-        return [
-            'name'    => 'PT MAHAKARYA SUKSES INDONESIA',
-            'address' => 'Jl. Gajah Tunggal, Kp. Gembor, RT.004/RW.001, Kel. Pasir Jaya, Kec. Jatiuwung, Kota Tangerang, Banten 15135',
-            'city'    => 'Tangerang',
-            'brand'   => 'MITO',
-        ];
+                return [
+                    'name'    => 'PT MAHAKARYA SUKSES INDONESIA',
+                    'address' => 'Jl. Gajah Tunggal, Kp. Gembor, RT.004/RW.001, Kel. Pasir Jaya, Kec. Jatiuwung, Kota Tangerang, Banten 15135',
+                    'city'    => 'Tangerang',
+                    'brand'   => 'MITO',
+                    'code'    => 'MSI',
+                ];
     }
 
     /**
