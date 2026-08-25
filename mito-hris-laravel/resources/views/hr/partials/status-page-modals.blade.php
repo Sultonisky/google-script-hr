@@ -1498,45 +1498,89 @@
           var modal = bootstrap.Modal.getInstance(document.getElementById('onboardingModal'));
           if (modal) modal.hide();
 
-          // Auto-generate & download PDF Kontrak PKWT (1:1 GAS)
-          // FIX: Kirim recruitmentId sebagai param tambahan agar ExportController bisa fallback
-          // jika employee belum ter-cache di sheet (race condition Google Sheets cache).
-          // FIX: Gunakan anchor click trick agar tidak diblokir popup blocker browser.
-          var pdfParams = new URLSearchParams({
-            branch_name: payload.branch_name,
-            position: payload.position,
-            department: payload.department,
-            division: payload.division,
-            direct_superior: payload.direct_superior,
-            contract_number: result.contractNumber || payload.contract_number,
-            doc_date: payload.doc_date,
-            contract_duration: payload.contract_duration,
-            join_date: payload.join_date,
-            contract_end: payload.contract_end,
-            tenor_text: payload.tenor_text,
-            jam_masuk: payload.jam_masuk,
-            work_schedule: payload.work_schedule,
-            // Sertakan recruitmentId sebagai fallback lookup di ExportController
-            recruitment_id: recruitmentId,
-          });
-          // Gunakan employeeId jika tersedia; fallback ke recruitmentId
-          var pdfId = (result.employeeId && result.employeeId !== '') ? result.employeeId : recruitmentId;
-          var pdfUrl = '/hr/export/kontrak-pkwt/' + pdfId + '?' + pdfParams.toString();
-
-          // Anchor click trick: tidak diblokir popup blocker karena bukan window.open() async
-          var dlAnchor = document.createElement('a');
-          dlAnchor.href = pdfUrl;
-          dlAnchor.target = '_blank';
-          dlAnchor.rel = 'noopener noreferrer';
-          document.body.appendChild(dlAnchor);
-          dlAnchor.click();
-          document.body.removeChild(dlAnchor);
-
           if (typeof showToast === 'function') {
-            showToast('Kontrak PKWT berhasil diproses! PDF sedang diunduh...', 'success');
+            showToast('Kontrak PKWT berhasil diproses! Membuat PDF...', 'success');
           }
 
-          setTimeout(function() { location.reload(); }, 1200);
+          // ── Auto-generate & download PDF Kontrak PKWT (1:1 GAS behavior) ──
+          // Gunakan Fetch API + Blob agar PDF langsung didownload ke komputer
+          // user tanpa popup blocker dan tanpa membuka tab baru.
+          var pdfParams = new URLSearchParams({
+            branch_name:       payload.branch_name,
+            position:          payload.position,
+            department:        payload.department,
+            division:          payload.division,
+            direct_superior:   payload.direct_superior,
+            contract_number:   result.contractNumber || payload.contract_number,
+            doc_date:          payload.doc_date,
+            contract_duration: payload.contract_duration,
+            join_date:         payload.join_date,
+            contract_end:      payload.contract_end,
+            tenor_text:        payload.tenor_text,
+            jam_masuk:         payload.jam_masuk,
+            work_schedule:     payload.work_schedule,
+            // recruitmentId sebagai fallback lookup di ExportController
+            // (race condition: employee baru mungkin belum ter-cache di sheet)
+            recruitment_id:    recruitmentId,
+          });
+
+          // Gunakan employeeId jika tersedia; fallback ke recruitmentId
+          var pdfId  = (result.employeeId && result.employeeId !== '') ? result.employeeId : recruitmentId;
+          var pdfUrl = '/hr/export/kontrak-pkwt/' + pdfId + '?' + pdfParams.toString();
+
+          // Fetch sebagai Blob → trigger download langsung ke local computer
+          fetch(pdfUrl, {
+            headers: {
+              'X-CSRF-TOKEN': getCsrfToken(),
+              'Accept': 'application/pdf',
+            }
+          })
+          .then(function(pdfRes) {
+            if (!pdfRes.ok) {
+              // Coba baca body sebagai teks untuk error message
+              return pdfRes.text().then(function(errText) {
+                throw new Error('Gagal generate PDF (' + pdfRes.status + '): ' + errText.substring(0, 200));
+              });
+            }
+            var contentType = pdfRes.headers.get('content-type') || '';
+            if (!contentType.includes('pdf')) {
+              throw new Error('Response bukan PDF (content-type: ' + contentType + '). Cek log server.');
+            }
+            return pdfRes.blob();
+          })
+          .then(function(blob) {
+            // Buat filename sesuai employeeId dan nama kandidat (1:1 GAS)
+            var safeName = (result.employeeId || recruitmentId).replace(/[^a-zA-Z0-9_-]/g, '_');
+            var filename = 'Kontrak_PKWT_' + safeName + '.pdf';
+
+            var blobUrl = window.URL.createObjectURL(blob);
+            var dlLink  = document.createElement('a');
+            dlLink.href     = blobUrl;
+            dlLink.download = filename;
+            document.body.appendChild(dlLink);
+            dlLink.click();
+            document.body.removeChild(dlLink);
+            window.URL.revokeObjectURL(blobUrl);
+
+            if (typeof showToast === 'function') {
+              showToast('Kontrak PKWT berhasil diproses! PDF diunduh: ' + filename, 'success');
+            }
+
+            setTimeout(function() { location.reload(); }, 1800);
+          })
+          .catch(function(pdfErr) {
+            // PDF gagal — tetap reload karena kontrak sudah tersimpan,
+            // tapi tampilkan error agar user tahu PDF tidak terunduh
+            if (typeof showToast === 'function') {
+              showToast(
+                'Kontrak tersimpan, tetapi PDF gagal diunduh: ' + (pdfErr ? pdfErr.message : 'Unknown error') +
+                '. Gunakan tombol Export PDF secara manual.',
+                'error'
+              );
+            }
+            setTimeout(function() { location.reload(); }, 3000);
+          });
+
         } else {
           if (typeof showToast === 'function') showToast('Gagal proses kontrak: ' + (result ? result.message : 'Error'), 'error');
         }
