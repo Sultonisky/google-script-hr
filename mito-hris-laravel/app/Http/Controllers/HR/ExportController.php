@@ -56,22 +56,35 @@ class ExportController extends Controller
 
     /**
      * Download Kontrak PKWT PDF.
+     * Lookup priority: employeeId → recruitmentId (fallback, handles Google Sheets cache race condition).
      */
     public function kontrakPkwtPdf(Request $request, string $id)
     {
         $employee = $this->employeeRepo->findById($id);
         $candidate = null;
+
         if (!$employee) {
+            // Try lookup as candidate first (pdfId might be recruitmentId)
             $candidate = $this->candidateRepo->findById($id);
-            if (!$candidate) {
-                abort(404, 'Data karyawan/kandidat tidak ditemukan.');
+        }
+
+        // FIX: If both fail, try recruitmentId from query param (race condition fallback)
+        // Employee was just written to sheet but cache hasn't refreshed yet.
+        if (!$employee && !$candidate) {
+            $fallbackRid = $request->query('recruitment_id');
+            if ($fallbackRid) {
+                $candidate = $this->candidateRepo->findById($fallbackRid);
             }
+        }
+
+        if (!$employee && !$candidate) {
+            abort(404, 'Data karyawan/kandidat tidak ditemukan.');
         }
 
         $subject = $employee ?: $candidate;
         $extraData = $request->all();
         $pdf = $this->pdfService->generateKontrakPkwtPdf($subject, $extraData);
-        $nameId = $employee ? $employee->employeeId : $candidate->recruitmentId;
+        $nameId = $employee ? $employee->employeeId : ($candidate->employeeId ?: $candidate->recruitmentId);
         return $pdf->download("Kontrak_PKWT_{$nameId}.pdf");
     }
 
@@ -121,7 +134,7 @@ class ExportController extends Controller
     }
 
     /**
-     * Download SK Rotasi/Mutasi PDF.
+     * Download SK Rotasi/Mutasi/Promosi/Demosi PDF.
      */
     public function skRotationPdf(Request $request, string $id)
     {
@@ -130,22 +143,47 @@ class ExportController extends Controller
             abort(404, 'Data karyawan tidak ditemukan.');
         }
 
-        $extraData = $request->all();
+        $extraData   = $request->all();
+        $rotationType = $extraData['rotation_type'] ?? $extraData['rotationType'] ?? ($employee->typeOfRotation ?? 'Rotasi');
+
+        // Type-aware filename — 1:1 GAS fileName pattern
+        $typeSlug = match (ucfirst(strtolower($rotationType))) {
+            'Promosi' => 'Promosi',
+            'Demosi'  => 'Demosi',
+            'Mutasi'  => 'Mutasi',
+            default   => 'Rotasi',
+        };
+        $safeName = preg_replace('/[^a-zA-Z0-9_]/', '_', $employee->fullName ?? $employee->employeeId);
+        $filename = "SK_{$typeSlug}_{$safeName}_{$employee->employeeId}.pdf";
+
         $pdf = $this->pdfService->generateSkRotationPdf($employee, $extraData);
-        return $pdf->download("SK_Rotasi_{$employee->employeeId}.pdf");
+        return $pdf->download($filename);
     }
 
     /**
      * Download Paklaring PDF.
+     * Called after isPutusKontrak evaluation decision.
+     * Query params: letter_number, evalId, last_working_date (set by ProbationController)
      */
     public function paklaringPdf(Request $request, string $id)
     {
         $employee = $this->employeeRepo->findById($id);
         if (!$employee) {
-            abort(404, 'Data karyawan tidak ditemukan.');
+            // Employee status was just changed to Terminated — clear cache and retry
+            abort(404, 'Data karyawan tidak ditemukan. Silakan coba lagi.');
         }
 
         $extraData = $request->all();
+
+        // Ensure last_working_date is populated for Paklaring content
+        // Priority: query param → employee resignDate → today (1:1 GAS exportPaklaringPDF)
+        if (empty($extraData['last_working_date']) && !empty($employee->resignDate)) {
+            $extraData['last_working_date'] = $employee->resignDate;
+        }
+        if (empty($extraData['last_working_date'])) {
+            $extraData['last_working_date'] = now()->timezone('Asia/Jakarta')->format('Y-m-d');
+        }
+
         $pdf = $this->pdfService->generatePaklaringPdf($employee, $extraData);
         return $pdf->download("Paklaring_{$employee->employeeId}.pdf");
     }

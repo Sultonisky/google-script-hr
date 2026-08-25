@@ -1,372 +1,1206 @@
-<!-- partials/ProbationModals.html — PROBATION EVALUATION MODAL (1:1 from GAS) -->
+{{-- ============================================================
+     hr/partials/probation-modals.blade.php
+     Performance Review 2026 — Behavioral Indicators Checklist
+     
+     SUBMIT FLOW (AJAX):
+       fetch POST /hr/probation/{id}/evaluate  (X-Requested-With: XMLHttpRequest)
+         → JSON { success, pdfUrl, isLulus, isPutusKontrak, isPerpanjang, ... }
+         → if pdfUrl: window.open(pdfUrl, '_blank')   ← PDF download in new tab
+         → modal.hide()
+         → show toast success
+         → location.reload() to refresh probation table + stats
+     
+     NOT a native form submit — never does page redirect.
+     Loading state is ALWAYS reset in the finally block.
+     ============================================================ --}}
+
 <div class="modal fade" id="probationEvalModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-    <div class="modal-content" style="border-radius:16px">
-      <div class="modal-header" style="background:#7c3aed;border-radius:16px 16px 0 0">
+    <div class="modal-content" style="border-radius:16px;overflow:hidden">
+
+      {{-- ── HEADER ──────────────────────────────────────────────── --}}
+      <div class="modal-header py-3 px-4" style="background:#7c3aed;border-bottom:none">
         <div class="d-flex align-items-center gap-2">
-          <i class="bi bi-clipboard-check text-white fs-5"></i>
-          <h6 class="modal-title mb-0 text-white fw-bold">Probation Employee Evaluation</h6>
+          <i class="bi bi-clipboard-check text-white" style="font-size:18px"></i>
+          <div>
+            <h6 class="modal-title mb-0 text-white fw-bold" style="font-size:15px">Evaluasi Probation</h6>
+            <div class="text-white opacity-75" style="font-size:11px">Performance Review 2026 — Behavioral Indicators</div>
+          </div>
         </div>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
 
-      <form action="" method="POST" id="probationEvalForm">
-        @csrf
-        <div class="modal-body p-4">
-          <input type="hidden" name="employee_id" id="evalEmployeeId" />
+      {{-- ── HIDDEN FIELDS (not a real form submit — values read by JS fetch) --}}
+      <input type="hidden" id="evalEmployeeId"    value="" />
+      <input type="hidden" id="evalRecruitmentId" value="" />
+      <input type="hidden" id="evalDecisionValue" value="" />
+      <input type="hidden" id="evalExtDuration"   value="" />
+      {{-- 13 indicator hidden fields --}}
+      <input type="hidden" id="ind_integrity_1" value="0">
+      <input type="hidden" id="ind_integrity_2" value="0">
+      <input type="hidden" id="ind_integrity_3" value="0">
+      <input type="hidden" id="ind_integrity_4" value="0">
+      <input type="hidden" id="ind_ci_1"        value="0">
+      <input type="hidden" id="ind_ci_2"        value="0">
+      <input type="hidden" id="ind_ci_3"        value="0">
+      <input type="hidden" id="ind_ci_4"        value="0">
+      <input type="hidden" id="ind_ee_1"        value="0">
+      <input type="hidden" id="ind_ee_2"        value="0">
+      <input type="hidden" id="ind_tw_1"        value="0">
+      <input type="hidden" id="ind_tw_2"        value="0">
+      <input type="hidden" id="ind_tw_3"        value="0">
 
-          <!-- Step 1: Search karyawan probation (live search, 1:1 GAS) -->
-          <div class="mb-3">
-            <label class="form-label fw-semibold" style="font-size:13px">
-              <i class="bi bi-search me-1"></i>Search Employee
-              <span class="text-muted fw-normal">(Status: Probation)</span>
-            </label>
-            <div class="position-relative">
-              <input type="text" class="form-control" id="evalEmpSearch"
-                placeholder="Type name or Employee ID..." autocomplete="off"
-                style="font-size:13px;padding-right:36px" oninput="handleEvalEmpSearch(this.value)" />
-              <i class="bi bi-x-circle-fill position-absolute" id="evalEmpSearchClear"
-                style="right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;display:none"
-                onclick="clearEvalEmpSearch()"></i>
+      <div class="modal-body p-0">
+
+        {{-- ═══════════════════════════════════════════════════════
+             SECTION A — CARI KARYAWAN
+             ═══════════════════════════════════════════════════════ --}}
+        <div class="px-4 pt-4 pb-3" style="border-bottom:1px solid #f3f4f6">
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="d-flex align-items-center justify-content-center text-white fw-bold rounded-circle"
+              style="width:22px;height:22px;font-size:11px;background:#7c3aed;flex-shrink:0">A</span>
+            <span class="fw-semibold" style="font-size:13px;color:#374151">Pilih Karyawan</span>
+          </div>
+          <div class="position-relative mt-2">
+            <i class="bi bi-search position-absolute" style="left:10px;top:50%;transform:translateY(-50%);color:#9ca3af;font-size:13px"></i>
+            <input type="text" class="form-control form-control-sm" id="evalEmpSearch"
+              placeholder="Ketik nama atau Employee ID (status: Probation)…"
+              autocomplete="off"
+              style="padding-left:30px;padding-right:32px;font-size:13px"
+              oninput="handleEvalEmpSearch(this.value)" />
+            <i class="bi bi-x-circle-fill position-absolute" id="evalEmpSearchClear"
+              style="right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;display:none;font-size:14px"
+              onclick="clearEvalEmpSearch()"></i>
+          </div>
+          <div id="evalEmpDropdown"
+            style="display:none;position:absolute;z-index:9999;background:#fff;border:1px solid #e5e7eb;
+                   border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.1);max-height:200px;
+                   overflow-y:auto;left:16px;right:16px;margin-top:4px">
+          </div>
+        </div>
+
+        {{-- ── Employee info card (hidden until employee selected) ── --}}
+        <div id="evalEmpPreview" style="display:none">
+
+          {{-- ─── EMPLOYEE INFO CARD ───────────────────────────── --}}
+          <div class="mx-4 mt-3 p-3 rounded-3 d-flex align-items-center gap-3"
+            style="background:#f5f3ff;border:1px solid #ddd6fe">
+            <div id="evalEmpAvatar"
+              style="width:44px;height:44px;border-radius:12px;background:#7c3aed;color:#fff;
+                     font-size:16px;font-weight:800;display:flex;align-items:center;
+                     justify-content:center;flex-shrink:0">?</div>
+            <div class="flex-grow-1 min-w-0">
+              <div class="fw-bold text-truncate" id="evalEmpName" style="font-size:14px">—</div>
+              <div class="text-muted text-truncate" style="font-size:12px">
+                <span id="evalEmpPosition">—</span>
+                <span class="mx-1 text-muted">·</span>
+                <span id="evalEmpDept">—</span>
+              </div>
+              <div style="font-size:11px;color:#7c3aed;margin-top:2px">
+                <span id="evalEmpLevel">—</span>
+                <span class="mx-1 text-muted">·</span>
+                <span id="evalEmpPT">—</span>
+              </div>
             </div>
-            <div id="evalEmpDropdown" class="border rounded-3 mt-1 shadow-sm"
-              style="display:none;max-height:200px;overflow-y:auto;background:#fff;z-index:9999;position:relative">
+            <div class="text-end flex-shrink-0" style="font-size:11px">
+              <div class="text-muted">Employee ID</div>
+              <div class="fw-bold" id="evalEmpIdDisp" style="color:#7c3aed">—</div>
+              <div class="text-muted mt-1">Masuk</div>
+              <div class="fw-semibold" id="evalEmpJoinDate">—</div>
+              <div class="text-muted mt-1">Kontrak s/d</div>
+              <div class="fw-semibold" id="evalEmpContractEnd">—</div>
             </div>
           </div>
 
-          <!-- Step 2: Info karyawan terpilih + form evaluasi (1:1 GAS evalEmpPreview) -->
-          <div id="evalEmpPreview" style="display:none">
-            <div class="p-3 rounded-3 mb-4" style="background:#f5f3ff;border:1px solid #ddd6fe">
-              <div class="d-flex align-items-center gap-3">
-                <div id="evalEmpAvatar"
-                  style="width:44px;height:44px;font-size:16px;flex-shrink:0;background:#7c3aed;color:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800">?</div>
-                <div class="flex-grow-1">
-                  <div class="fw-bold" id="evalEmpName" style="font-size:15px">-</div>
-                  <div class="text-muted" style="font-size:12px">
-                    <span id="evalEmpPosition">-</span> &bull; <span id="evalEmpDept">-</span>
-                  </div>
-                </div>
-                <div class="text-end flex-shrink-0" style="font-size:11.5px">
-                  <div class="text-muted">Employee ID</div>
-                  <div class="fw-semibold text-purple" id="evalEmpIdDisp">-</div>
-                  <div class="text-muted mt-1">Contract Until</div>
-                  <div class="fw-semibold" id="evalEmpContractEnd">-</div>
-                </div>
-              </div>
+          {{-- ═══════════════════════════════════════════════════════
+               SECTION B — PENILAIAN BEHAVIORAL INDICATORS
+               ═══════════════════════════════════════════════════════ --}}
+          <div class="px-4 pt-4 pb-2">
+            <div class="d-flex align-items-center gap-2 mb-3">
+              <span class="d-flex align-items-center justify-content-center text-white fw-bold rounded-circle"
+                style="width:22px;height:22px;font-size:11px;background:#7c3aed;flex-shrink:0">B</span>
+              <span class="fw-semibold" style="font-size:13px;color:#374151">Penilaian Behavioral Indicators</span>
             </div>
-
-            <!-- Penilaian 5 kriteria (1:1 GAS) -->
-            <p class="fw-bold mb-3" style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#7c3aed">
-              <i class="bi bi-star-fill me-1"></i>Scoring (1–10 per criterion)
-            </p>
-            <div class="row g-3 mb-3">
-              <div class="col-md-6">
-                <label class="form-label fw-semibold" style="font-size:13px">
-                  Work Performance <span class="text-danger">*</span>
-                  <span class="badge rounded-pill ms-1" id="badgePerformance" style="background:#7c3aed;font-size:11px">5</span>
-                </label>
-                <input type="range" class="form-range eval-score-range" id="evalScorePerformance" name="score_performance" min="1" max="10" step="1" value="5" oninput="updateEvalBadge('badgePerformance',this.value);recalcEvalAvg()" />
-                <div class="d-flex justify-content-between" style="font-size:10px;color:#9ca3af;margin-top:-2px">
-                  <span>1 Poor</span><span>5 Average</span><span>10 Excellent</span>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold" style="font-size:13px">
-                  Discipline <span class="text-danger">*</span>
-                  <span class="badge rounded-pill ms-1" id="badgeDiscipline" style="background:#7c3aed;font-size:11px">5</span>
-                </label>
-                <input type="range" class="form-range eval-score-range" id="evalScoreDiscipline" name="score_discipline" min="1" max="10" step="1" value="5" oninput="updateEvalBadge('badgeDiscipline',this.value);recalcEvalAvg()" />
-                <div class="d-flex justify-content-between" style="font-size:10px;color:#9ca3af;margin-top:-2px">
-                  <span>1 Poor</span><span>5 Average</span><span>10 Excellent</span>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold" style="font-size:13px">
-                  Communication <span class="text-danger">*</span>
-                  <span class="badge rounded-pill ms-1" id="badgeCommunication" style="background:#7c3aed;font-size:11px">5</span>
-                </label>
-                <input type="range" class="form-range eval-score-range" id="evalScoreCommunication" name="score_communication" min="1" max="10" step="1" value="5" oninput="updateEvalBadge('badgeCommunication',this.value);recalcEvalAvg()" />
-                <div class="d-flex justify-content-between" style="font-size:10px;color:#9ca3af;margin-top:-2px">
-                  <span>1 Poor</span><span>5 Average</span><span>10 Excellent</span>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold" style="font-size:13px">
-                  Initiative &amp; Creativity <span class="text-danger">*</span>
-                  <span class="badge rounded-pill ms-1" id="badgeInitiative" style="background:#7c3aed;font-size:11px">5</span>
-                </label>
-                <input type="range" class="form-range eval-score-range" id="evalScoreInitiative" name="score_initiative" min="1" max="10" step="1" value="5" oninput="updateEvalBadge('badgeInitiative',this.value);recalcEvalAvg()" />
-                <div class="d-flex justify-content-between" style="font-size:10px;color:#9ca3af;margin-top:-2px">
-                  <span>1 Poor</span><span>5 Average</span><span>10 Excellent</span>
-                </div>
-              </div>
-              <div class="col-12 col-md-6">
-                <label class="form-label fw-semibold" style="font-size:13px">
-                  Teamwork <span class="text-danger">*</span>
-                  <span class="badge rounded-pill ms-1" id="badgeTeamwork" style="background:#7c3aed;font-size:11px">5</span>
-                </label>
-                <input type="range" class="form-range eval-score-range" id="evalScoreTeamwork" name="score_teamwork" min="1" max="10" step="1" value="5" oninput="updateEvalBadge('badgeTeamwork',this.value);recalcEvalAvg()" />
-                <div class="d-flex justify-content-between" style="font-size:10px;color:#9ca3af;margin-top:-2px">
-                  <span>1 Poor</span><span>5 Average</span><span>10 Excellent</span>
-                </div>
-              </div>
-              <!-- Average Score auto (1:1 GAS) -->
-              <div class="col-12 col-md-6 d-flex align-items-end">
-                <div class="w-100 p-3 rounded-3 text-center" style="background:#f5f3ff;border:2px solid #7c3aed">
-                  <div class="text-muted fw-semibold" style="font-size:11px;text-transform:uppercase;letter-spacing:.04em">Average Score</div>
-                  <div class="fw-bold mt-1" id="evalAvgScore" style="font-size:28px;color:#7c3aed;line-height:1">5.0</div>
-                  <input type="hidden" name="score" id="evalAvgScoreHidden" value="5.0" />
-                  <div style="font-size:11px;color:#9ca3af">out of 10</div>
-                </div>
-              </div>
+            <div class="alert py-2 px-3 mb-3 d-flex align-items-start gap-2"
+              style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;font-size:12px">
+              <i class="bi bi-info-circle-fill text-info mt-1" style="font-size:13px;flex-shrink:0"></i>
+              <span>Centang setiap indikator yang <strong>terbukti ditunjukkan</strong> karyawan selama masa probation. Indikator yang tidak dicentang dianggap belum terpenuhi.</span>
             </div>
+          </div>
 
-            <!-- Score Guidelines (1:1 GAS) -->
-            <div class="alert py-2 px-3 mb-3" style="background:#fffbeb;border:1px solid #fde68a;font-size:12px">
-              <div class="d-flex align-items-start gap-2">
-                <i class="bi bi-info-circle-fill text-warning" style="font-size:14px;margin-top:2px"></i>
+          {{-- ── COMPETENCY BLOCKS ─────────────────────────────── --}}
+          @php
+          $competencies = [
+            [
+              'key'       => 'integrity',
+              'icon'      => 'bi-shield-check',
+              'color'     => '#7c3aed',
+              'bg'        => '#faf5ff',
+              'border'    => '#e9d5ff',
+              'no'        => '1',
+              'title'     => 'Integrity',
+              'action'    => 'Take Accountability',
+              'desc'      => 'Bertanggung jawab atas tindakan, keputusan & hasil kerja.',
+              'max'       => 4,
+              'evidence'  => 'Task/project tracker, Weekly/deadline report',
+              'items'     => [
+                'integrity_1' => 'Menyelesaikan minimal 90% tugas sesuai deadline.',
+                'integrity_2' => 'Memberikan update progres pekerjaan secara rutin.',
+                'integrity_3' => 'Menindaklanjuti permasalahan sesuai SLA.',
+                'integrity_4' => 'Tidak terdapat pelanggaran prosedur, kebijakan, atau komitmen kerja.',
+              ],
+            ],
+            [
+              'key'       => 'ci',
+              'icon'      => 'bi-arrow-up-circle',
+              'color'     => '#0284c7',
+              'bg'        => '#f0f9ff',
+              'border'    => '#bae6fd',
+              'no'        => '2',
+              'title'     => 'Continuous Improvement',
+              'action'    => 'Proactive Contribution',
+              'desc'      => 'Aktif mencari kesempatan belajar & meningkatkan cara kerja.',
+              'max'       => 4,
+              'evidence'  => 'Assignment project, Project report, Coaching form',
+              'items'     => [
+                'ci_1' => 'Mengusulkan minimal 1 improvement atau solusi selama masa probation.',
+                'ci_2' => 'Berpartisipasi dalam minimal 1 project atau kegiatan tim/perusahaan.',
+                'ci_3' => 'Mempelajari atau mengimplementasi proses, sistem, atau knowledge baru yang mendukung pekerjaan.',
+                'ci_4' => 'Mengambil tindakan awal terhadap masalah sebelum dilakukan eskalasi.',
+              ],
+            ],
+            [
+              'key'       => 'ee',
+              'icon'      => 'bi-star',
+              'color'     => '#b45309',
+              'bg'        => '#fffbeb',
+              'border'    => '#fde68a',
+              'no'        => '3',
+              'title'     => 'Execution Excellence',
+              'action'    => 'Deliver Quality Results',
+              'desc'      => 'Menyelesaikan pekerjaan dengan kualitas yang baik.',
+              'max'       => 2,
+              'evidence'  => 'Dokumentasi kegiatan, bukti konkrit achievement',
+              'items'     => [
+                'ee_1' => 'Tingkat kesalahan atau rework tidak melebihi kesepakatan yang telah ditetapkan.',
+                'ee_2' => 'Hasil pekerjaan dapat digunakan atau diselesaikan tanpa koreksi mayor.',
+              ],
+            ],
+            [
+              'key'       => 'tw',
+              'icon'      => 'bi-people',
+              'color'     => '#059669',
+              'bg'        => '#f0fdf4',
+              'border'    => '#bbf7d0',
+              'no'        => '4',
+              'title'     => 'Teamwork',
+              'action'    => 'Supportive Collaboration',
+              'desc'      => 'Berkolaborasi dan memberikan dukungan untuk mencapai tujuan bersama.',
+              'max'       => 3,
+              'evidence'  => 'Stakeholder feedback, Observasi dari atasan langsung',
+              'items'     => [
+                'tw_1' => 'Berpartisipasi aktif dalam meeting, diskusi, atau koordinasi.',
+                'tw_2' => 'Menindaklanjuti permintaan stakeholder internal sesuai SLA.',
+                'tw_3' => 'Tidak terdapat keluhan mayor terkait koordinasi atau kerja sama selama probation.',
+              ],
+            ],
+          ];
+          @endphp
+
+          @foreach($competencies as $comp)
+          <div class="mx-4 mb-3 rounded-3" style="border:1px solid {{ $comp['border'] }};overflow:hidden">
+            {{-- Competency header --}}
+            <div class="d-flex align-items-center justify-content-between px-3 py-2"
+              style="background:{{ $comp['bg'] }};border-bottom:1px solid {{ $comp['border'] }}">
+              <div class="d-flex align-items-center gap-2">
+                <i class="bi {{ $comp['icon'] }}" style="color:{{ $comp['color'] }};font-size:15px"></i>
                 <div>
-                  <strong>Score Guidelines:</strong>
-                  <ul class="mb-0 mt-1 ps-3" style="line-height:1.6">
-                    <li><strong style="color:#166534">≥ 7.0</strong> = Eligible for <strong>Pass → Permanent (PKWTT)</strong></li>
-                    <li><strong style="color:#d97706">5.0 - 6.9</strong> = Can choose <strong>Extend</strong> or <strong>Terminate</strong></li>
-                    <li><strong style="color:#991b1b">&lt; 5.0</strong> = Can only choose <strong>Extend</strong> or <strong>Terminate</strong></li>
-                  </ul>
+                  <span class="fw-bold" style="font-size:12.5px;color:{{ $comp['color'] }}">
+                    Kompetensi {{ $comp['no'] }} — {{ $comp['title'] }}
+                  </span>
+                  <span class="text-muted ms-2" style="font-size:11px">
+                    Key Action: {{ $comp['action'] }}
+                  </span>
                 </div>
+              </div>
+              <div class="text-center" style="min-width:48px">
+                <div style="font-size:10px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:.03em">✓ Terpenuhi</div>
+                <span id="badge_{{ $comp['key'] }}" class="fw-bold" style="font-size:16px;color:{{ $comp['color'] }}">0</span>
+                <span style="font-size:11px;color:#9ca3af"> / {{ $comp['max'] }}</span>
               </div>
             </div>
-
-            <!-- Decision (1:1 GAS visual radio options) -->
-            <p class="fw-bold mb-2" style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#7c3aed">
-              <i class="bi bi-check2-circle me-1"></i>Decision <span class="text-danger">*</span>
-            </p>
-            <input type="hidden" name="decision" id="evalDecisionValue" value="" />
-            <div class="d-flex flex-column gap-2 mb-4" id="evalDecisionOptions">
-              <!-- Pass → Permanent -->
-              <div class="eval-decision-opt p-3 rounded-3" data-value="Lulus → Karyawan Tetap"
-                style="border:2px solid #e5e7eb;cursor:pointer;transition:border-color .15s,background .15s"
-                onclick="selectEvalDecision(this)">
-                <div class="d-flex align-items-center gap-3">
-                  <div class="eval-dec-dot" style="width:20px;height:20px;border-radius:50%;border:2px solid #d1d5db;flex-shrink:0;display:flex;align-items:center;justify-content:center">
-                    <div style="width:8px;height:8px;border-radius:50%;background:transparent"></div>
-                  </div>
-                  <div>
-                    <div class="fw-semibold" style="font-size:13px">
-                      <i class="bi bi-trophy-fill me-1 text-success"></i>Pass → Permanent Employee (PKWTT)
-                    </div>
-                    <div class="text-muted" style="font-size:11.5px">Employee is promoted to permanent status. <strong>SK Pengangkatan Tetap (PDF)</strong> will be generated.</div>
-                  </div>
-                </div>
+            {{-- Indicator rows --}}
+            @foreach($comp['items'] as $key => $label)
+            <div class="eval-ind-row d-flex align-items-start gap-3 px-3 py-2"
+              style="cursor:pointer;border-bottom:1px solid #f9fafb;transition:background .1s"
+              onmouseenter="this.style.background='{{ $comp['bg'] }}'"
+              onmouseleave="this.style.background=''"
+              onclick="toggleIndicator('{{ $key }}', this)">
+              <div class="ind-checkbox flex-shrink-0 mt-1"
+                style="width:18px;height:18px;border:2px solid #d1d5db;border-radius:4px;
+                       display:flex;align-items:center;justify-content:center;
+                       transition:all .15s;background:#fff"
+                data-key="{{ $key }}" data-color="{{ $comp['color'] }}">
+                <i class="bi bi-check2" style="font-size:11px;color:#fff;display:none"></i>
               </div>
-              <!-- Terminate → Paklaring -->
-              <div class="eval-decision-opt p-3 rounded-3" data-value="Tidak Lolos → Putus Kontrak (Paklaring)"
-                style="border:2px solid #e5e7eb;cursor:pointer;transition:border-color .15s,background .15s"
-                onclick="selectEvalDecision(this)">
-                <div class="d-flex align-items-center gap-3">
-                  <div class="eval-dec-dot" style="width:20px;height:20px;border-radius:50%;border:2px solid #d1d5db;flex-shrink:0;display:flex;align-items:center;justify-content:center">
-                    <div style="width:8px;height:8px;border-radius:50%;background:transparent"></div>
-                  </div>
-                  <div>
-                    <div class="fw-semibold" style="font-size:13px">
-                      <i class="bi bi-x-octagon-fill me-1 text-danger"></i>Not Pass → End Contract (Paklaring)
-                    </div>
-                    <div class="text-muted" style="font-size:11.5px">Employment terminated. <strong>Certificate of Employment / Paklaring (PDF)</strong> will be generated.</div>
-                  </div>
-                </div>
-              </div>
-              <!-- Extend → Re-evaluation -->
-              <div class="eval-decision-opt p-3 rounded-3" data-value="Tidak Lolos → Perpanjang Probation (Evaluasi Ulang)"
-                style="border:2px solid #e5e7eb;cursor:pointer;transition:border-color .15s,background .15s"
-                onclick="selectEvalDecision(this)">
-                <div class="d-flex align-items-center gap-3">
-                  <div class="eval-dec-dot" style="width:20px;height:20px;border-radius:50%;border:2px solid #d1d5db;flex-shrink:0;display:flex;align-items:center;justify-content:center">
-                    <div style="width:8px;height:8px;border-radius:50%;background:transparent"></div>
-                  </div>
-                  <div>
-                    <div class="fw-semibold" style="font-size:13px">
-                      <i class="bi bi-arrow-repeat me-1 text-warning"></i>Not Pass → Extend Probation (Re-evaluation)
-                    </div>
-                    <div class="text-muted" style="font-size:11.5px">Probation extended for future re-evaluation. <em>(No PDF generated)</em></div>
-                  </div>
-                </div>
-              </div>
+              <div style="font-size:12.5px;line-height:1.5;color:#374151">{{ $label }}</div>
             </div>
-
-            <!-- Extension detail (conditional, 1:1 GAS) -->
-            <div id="evalExtendSection" style="display:none">
-              <p class="fw-bold mb-3" style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#d97706">
-                <i class="bi bi-calendar-range me-1"></i>Extension Details
-              </p>
-              <div class="row g-3 mb-4">
-                <div class="col-md-4">
-                  <label class="form-label fw-semibold" style="font-size:13px">Extension Duration <span class="text-danger">*</span></label>
-                  <select class="form-select form-select-sm" name="extension_duration" id="evalExtDuration">
-                    <option value="">— Select Duration —</option>
-                    <option value="1 Bulan">1 Month</option>
-                    <option value="2 Bulan">2 Months</option>
-                    <option value="3 Bulan">3 Months</option>
-                    <option value="6 Bulan">6 Months</option>
-                  </select>
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-semibold" style="font-size:13px">New Contract Start <span class="text-danger">*</span></label>
-                  <input type="date" class="form-control form-control-sm" name="extension_start" id="evalExtStart" />
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-semibold" style="font-size:13px">New Contract End</label>
-                  <input type="date" class="form-control form-control-sm" name="extension_end" id="evalExtEnd" />
-                  <div class="form-text" style="font-size:11px">Auto-calculated from duration</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Evaluator Notes -->
-            <div class="mb-0">
-              <label class="form-label fw-semibold" style="font-size:13px">Evaluator Notes <span class="text-muted fw-normal">(optional)</span></label>
-              <textarea class="form-control form-control-sm" name="notes" id="evalCatatan" rows="2"
-                placeholder="e.g. Performance meets high standard, recommended for permanent..."></textarea>
+            @endforeach
+            {{-- Evidence note --}}
+            <div class="px-3 py-2" style="background:#fafafa">
+              <span style="font-size:10.5px;color:#9ca3af">
+                <i class="bi bi-paperclip me-1"></i><em>Contoh bukti: {{ $comp['evidence'] }}</em>
+              </span>
             </div>
           </div>
-        </div>
+          @endforeach
 
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-sm text-white fw-semibold" style="background:#7c3aed" id="btnConfirmProbationEval" disabled>
-            <span id="btnEvalText"><i class="bi bi-clipboard-check me-1"></i>Save Evaluation</span>
-          </button>
-        </div>
-      </form>
+          {{-- ═══════════════════════════════════════════════════════
+               SCORE SUMMARY (selalu visible setelah indicator diisi)
+               ═══════════════════════════════════════════════════════ --}}
+          <div class="mx-4 mb-4 p-3 rounded-3" style="background:#f5f3ff;border:2px solid #7c3aed">
+            <div class="row g-0 align-items-center">
+              <div class="col-4 text-center" style="border-right:1px solid #ddd6fe">
+                <div style="font-size:10px;color:#7c3aed;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Total Score</div>
+                <div id="evalOverallTotal" style="font-size:36px;font-weight:900;color:#7c3aed;line-height:1">0</div>
+                <div style="font-size:10px;color:#9ca3af">dari 13 indikator</div>
+              </div>
+              <div class="col-4 text-center" style="border-right:1px solid #ddd6fe;padding:0 12px">
+                <div style="font-size:10px;color:#6b7280;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Kategori</div>
+                <div id="evalCategoryBadge"
+                  class="d-inline-block px-3 py-1 rounded-pill fw-bold"
+                  style="font-size:12px;background:#e5e7eb;color:#6b7280">—</div>
+              </div>
+              <div class="col-4 ps-3">
+                <table style="font-size:10.5px;width:100%;border-collapse:collapse">
+                  <tr><td><span style="display:inline-block;width:34px;border-radius:4px;background:#d1fae5;color:#166534;text-align:center;font-weight:700;font-size:10px;padding:1px 0">11–13</span></td><td class="ps-1" style="color:#374151">Sangat Baik</td></tr>
+                  <tr><td><span style="display:inline-block;width:34px;border-radius:4px;background:#dbeafe;color:#1d4ed8;text-align:center;font-weight:700;font-size:10px;padding:1px 0">8–10</span></td><td class="ps-1" style="color:#374151">Baik</td></tr>
+                  <tr><td><span style="display:inline-block;width:34px;border-radius:4px;background:#fef3c7;color:#92400e;text-align:center;font-weight:700;font-size:10px;padding:1px 0">6–7</span></td><td class="ps-1" style="color:#374151">Cukup</td></tr>
+                  <tr><td><span style="display:inline-block;width:34px;border-radius:4px;background:#fee2e2;color:#991b1b;text-align:center;font-weight:700;font-size:10px;padding:1px 0">0–5</span></td><td class="ps-1" style="color:#374151">Kurang</td></tr>
+                </table>
+              </div>
+            </div>
+            {{-- Score feedback message --}}
+            <div id="evalScoreFeedback" class="mt-2 text-center" style="font-size:12px;color:#9ca3af">
+              Centang behavioral indicator di atas untuk melihat hasil penilaian.
+            </div>
+          </div>
+
+          {{-- ═══════════════════════════════════════════════════════
+               SECTION C — KEPUTUSAN EVALUASI
+               ═══════════════════════════════════════════════════════ --}}
+          <div class="px-4 pb-2">
+            <div class="d-flex align-items-center gap-2 mb-3">
+              <span class="d-flex align-items-center justify-content-center text-white fw-bold rounded-circle"
+                style="width:22px;height:22px;font-size:11px;background:#7c3aed;flex-shrink:0">C</span>
+              <span class="fw-semibold" style="font-size:13px;color:#374151">Keputusan Evaluasi <span class="text-danger">*</span></span>
+            </div>
+
+            <div class="d-flex flex-column gap-2 mb-1" id="evalDecisionOptions">
+
+              {{-- 1. LULUS --}}
+              <div class="eval-decision-opt rounded-3 p-3"
+                data-value="Diangkat sebagai Karyawan Tetap"
+                style="border:2px solid #e5e7eb;cursor:pointer;transition:all .15s"
+                onclick="selectEvalDecision(this)">
+                <div class="d-flex align-items-start gap-3">
+                  <div class="eval-dec-dot flex-shrink-0 mt-1"
+                    style="width:18px;height:18px;border-radius:50%;border:2px solid #d1d5db;
+                           display:flex;align-items:center;justify-content:center">
+                    <div class="eval-dec-inner" style="width:8px;height:8px;border-radius:50%;background:transparent;transition:background .15s"></div>
+                  </div>
+                  <div>
+                    <div class="fw-bold d-flex align-items-center gap-2" style="font-size:13px">
+                      <i class="bi bi-trophy-fill text-success"></i>
+                      LULUS — Diangkat sebagai Karyawan Tetap
+                    </div>
+                    <div class="text-muted mt-1" style="font-size:12px">
+                      Employee diproses menjadi karyawan tetap (PKWTT).
+                      <strong class="text-success">SK Pengangkatan Tetap</strong> akan diterbitkan.
+                    </div>
+                    <div id="evalLulusScoreGate" class="mt-1" style="display:none;font-size:11px;color:#dc2626">
+                      <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                      Pilihan ini membutuhkan minimal 8 indikator terpenuhi (kategori Baik atau Sangat Baik).
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {{-- 2. TIDAK LULUS / PAKLARING --}}
+              <div class="eval-decision-opt rounded-3 p-3"
+                data-value="Tidak Lulus"
+                style="border:2px solid #e5e7eb;cursor:pointer;transition:all .15s"
+                onclick="selectEvalDecision(this)">
+                <div class="d-flex align-items-start gap-3">
+                  <div class="eval-dec-dot flex-shrink-0 mt-1"
+                    style="width:18px;height:18px;border-radius:50%;border:2px solid #d1d5db;
+                           display:flex;align-items:center;justify-content:center">
+                    <div class="eval-dec-inner" style="width:8px;height:8px;border-radius:50%;background:transparent;transition:background .15s"></div>
+                  </div>
+                  <div>
+                    <div class="fw-bold d-flex align-items-center gap-2" style="font-size:13px">
+                      <i class="bi bi-x-octagon-fill text-danger"></i>
+                      TIDAK LULUS — Putus Kontrak (Paklaring)
+                    </div>
+                    <div class="text-muted mt-1" style="font-size:12px">
+                      Kontrak karyawan diakhiri.
+                      <strong class="text-danger">Surat Keterangan Kerja (Paklaring)</strong> akan diterbitkan.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {{-- 3. EXTEND PROBATION --}}
+              <div class="eval-decision-opt rounded-3 p-3"
+                data-value="Perpanjang Kontrak"
+                style="border:2px solid #e5e7eb;cursor:pointer;transition:all .15s"
+                onclick="selectEvalDecision(this)">
+                <div class="d-flex align-items-start gap-3">
+                  <div class="eval-dec-dot flex-shrink-0 mt-1"
+                    style="width:18px;height:18px;border-radius:50%;border:2px solid #d1d5db;
+                           display:flex;align-items:center;justify-content:center">
+                    <div class="eval-dec-inner" style="width:8px;height:8px;border-radius:50%;background:transparent;transition:background .15s"></div>
+                  </div>
+                  <div>
+                    <div class="fw-bold d-flex align-items-center gap-2" style="font-size:13px">
+                      <i class="bi bi-arrow-repeat text-warning"></i>
+                      EXTEND — Perpanjang Masa Probation
+                    </div>
+                    <div class="text-muted mt-1" style="font-size:12px">
+                      Masa probation diperpanjang untuk evaluasi ulang. <em>Tidak ada dokumen PDF.</em>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {{-- Inline validation error for decision --}}
+            <div id="evalDecisionError" style="display:none;font-size:12px;color:#dc2626;margin-top:6px;margin-bottom:4px">
+              <i class="bi bi-exclamation-triangle-fill me-1"></i>
+              <span id="evalDecisionErrorMsg">Silakan pilih keputusan evaluasi.</span>
+            </div>
+          </div>
+
+          {{-- ═══════════════════════════════════════════════════════
+               SECTION D — DETAIL PERPANJANGAN (conditional: Extend only)
+               ═══════════════════════════════════════════════════════ --}}
+          <div id="evalExtendSection" style="display:none" class="mx-4 mb-3">
+            <div class="p-3 rounded-3" style="background:#fffbeb;border:1px solid #fde68a">
+              <div class="fw-semibold mb-3 d-flex align-items-center gap-2" style="font-size:12.5px;color:#92400e">
+                <i class="bi bi-calendar-range"></i>
+                Detail Perpanjangan <span class="text-danger">*</span>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-semibold" style="font-size:12px">
+                  Durasi Perpanjangan <span class="text-danger">*</span>
+                </label>
+                <div class="d-flex gap-2 flex-wrap">
+                  @foreach(['3 Bulan', '6 Bulan', '12 Bulan'] as $dur)
+                  <button type="button" class="ext-dur-btn btn btn-sm"
+                    data-dur="{{ $dur }}"
+                    style="border:2px solid #d1d5db;font-weight:600;font-size:13px;
+                           padding:6px 16px;border-radius:8px;background:#fff;
+                           transition:all .15s"
+                    onclick="selectExtDuration('{{ $dur }}', this)">
+                    {{ $dur }}
+                  </button>
+                  @endforeach
+                </div>
+                <div id="evalExtDurError" style="display:none;font-size:12px;color:#dc2626;margin-top:4px">
+                  <i class="bi bi-exclamation-triangle-fill me-1"></i>Durasi perpanjangan wajib dipilih.
+                </div>
+              </div>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold" style="font-size:12px">
+                    Tanggal Mulai Kontrak Baru <span class="text-danger">*</span>
+                  </label>
+                  <input type="date" class="form-control form-control-sm" id="evalExtStart"
+                    onchange="calcExtendEnd();updateConfirmBtn()" />
+                  <div id="evalExtStartError" style="display:none;font-size:12px;color:#dc2626;margin-top:4px">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Tanggal mulai wajib diisi.
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold" style="font-size:12px">Tanggal Akhir Kontrak Baru</label>
+                  <input type="date" class="form-control form-control-sm" id="evalExtEnd" readonly
+                    style="background:#f9fafb" />
+                  <div class="form-text" id="evalExtEndHint" style="font-size:11px">
+                    Auto-dihitung dari durasi yang dipilih.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {{-- ═══════════════════════════════════════════════════════
+               SECTION E — CATATAN EVALUATOR (optional)
+               ═══════════════════════════════════════════════════════ --}}
+          <div class="px-4 pb-4">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <span class="d-flex align-items-center justify-content-center text-white fw-bold rounded-circle"
+                style="width:22px;height:22px;font-size:11px;background:#7c3aed;flex-shrink:0">E</span>
+              <span class="fw-semibold" style="font-size:13px;color:#374151">
+                Catatan Evaluator
+                <span class="text-muted fw-normal">(opsional)</span>
+              </span>
+            </div>
+            <textarea class="form-control form-control-sm" id="evalCatatan" rows="2"
+              placeholder="Contoh: Karyawan menunjukkan peningkatan signifikan dalam koordinasi tim…"
+              style="font-size:13px;resize:vertical"></textarea>
+          </div>
+
+          {{-- ═══════════════════════════════════════════════════════
+               PRE-SUBMIT SUMMARY (appears when decision selected)
+               ═══════════════════════════════════════════════════════ --}}
+          <div id="evalSubmitSummary" class="mx-4 mb-4 p-3 rounded-3" style="display:none;border:1px solid #e5e7eb;background:#f9fafb">
+            <div class="fw-semibold mb-2" style="font-size:12px;color:#374151;text-transform:uppercase;letter-spacing:.04em">
+              <i class="bi bi-check2-all me-1 text-success"></i>Ringkasan Evaluasi
+            </div>
+            <div class="row g-2" style="font-size:12.5px">
+              <div class="col-5 text-muted">Karyawan</div>
+              <div class="col-7 fw-semibold" id="summaryEmpName">—</div>
+              <div class="col-5 text-muted">Total Score</div>
+              <div class="col-7 fw-semibold" id="summaryScore">—</div>
+              <div class="col-5 text-muted">Kategori</div>
+              <div class="col-7" id="summaryCategory">—</div>
+              <div class="col-5 text-muted">Keputusan</div>
+              <div class="col-7 fw-bold" id="summaryDecision">—</div>
+              <div class="col-5 text-muted" id="summaryExtLbl" style="display:none">Durasi Perpanjangan</div>
+              <div class="col-7 fw-semibold" id="summaryExt" style="display:none">—</div>
+            </div>
+          </div>
+
+          {{-- ── Backend / server error banner ─────────────────── --}}
+          <div id="evalServerError" class="mx-4 mb-3 alert alert-danger py-2 px-3 d-flex align-items-center gap-2"
+            style="display:none!important;font-size:12.5px;border-radius:8px">
+            <i class="bi bi-exclamation-triangle-fill" style="flex-shrink:0"></i>
+            <span id="evalServerErrorMsg">Terjadi kesalahan. Silakan coba lagi.</span>
+          </div>
+
+        </div>{{-- /#evalEmpPreview --}}
+      </div>{{-- /.modal-body --}}
+
+      {{-- ── FOOTER ───────────────────────────────────────────────── --}}
+      <div class="modal-footer px-4 py-3" style="border-top:1px solid #f3f4f6">
+        <button type="button" class="btn btn-outline-secondary btn-sm px-4"
+          data-bs-dismiss="modal">Batal</button>
+        <button type="button" class="btn btn-sm text-white fw-semibold px-4"
+          id="btnConfirmProbationEval"
+          style="background:#7c3aed;border:none;min-width:180px"
+          disabled
+          onclick="submitProbationEval()">
+          <span id="btnEvalText">
+            <i class="bi bi-clipboard-check me-1"></i>Simpan Evaluasi
+          </span>
+          <span id="btnEvalLoading" style="display:none">
+            <span class="spinner-border spinner-border-sm me-1" style="width:14px;height:14px"></span>
+            <span id="btnEvalLoadingText">Menyimpan…</span>
+          </span>
+        </button>
+      </div>
+
     </div>
   </div>
 </div>
 
+{{-- ================================================================
+     JAVASCRIPT — Probation Eval Modal
+     ================================================================ --}}
 <script>
-  window.__allEmployeesForEval = @json($probations ?? []);
+(function () {
+  'use strict';
 
-  function handleEvalEmpSearch(query) {
-    const q = (query || '').toLowerCase().trim();
-    const dropdown = document.getElementById('evalEmpDropdown');
-    const clearBtn = document.getElementById('evalEmpSearchClear');
-    clearBtn.style.display = q ? 'block' : 'none';
+  // ── Constants ──────────────────────────────────────────────────
+  var COMPETENCIES = {
+    integrity: ['integrity_1', 'integrity_2', 'integrity_3', 'integrity_4'],
+    ci:        ['ci_1', 'ci_2', 'ci_3', 'ci_4'],
+    ee:        ['ee_1', 'ee_2'],
+    tw:        ['tw_1', 'tw_2', 'tw_3'],
+  };
+
+  var ALL_KEYS = [
+    'integrity_1','integrity_2','integrity_3','integrity_4',
+    'ci_1','ci_2','ci_3','ci_4',
+    'ee_1','ee_2',
+    'tw_1','tw_2','tw_3',
+  ];
+
+  // ── Decision helpers (substring-collision safe — isPutus before isLulus) ──
+  function classifyDecision(val) {
+    var isPutus = val === 'Tidak Lulus'
+               || val === 'Tidak Lolos → Putus Kontrak (Paklaring)'
+               || val.indexOf('Putus Kontrak') !== -1
+               || val.indexOf('Paklaring') !== -1;
+    var isPerp  = !isPutus && (
+                    val === 'Perpanjang Kontrak'
+                    || val.indexOf('Perpanjang') !== -1
+                    || val.indexOf('Evaluasi Ulang') !== -1
+                  );
+    var isLulus = !isPutus && !isPerp && (
+                    val === 'Diangkat sebagai Karyawan Tetap'
+                    || val === 'Lulus → Karyawan Tetap'
+                    || val.indexOf('Diangkat') !== -1
+                    || val.indexOf('Tetap') !== -1
+                  );
+    return { isLulus: isLulus, isPutus: isPutus, isPerp: isPerp };
+  }
+
+  // ── Category ────────────────────────────────────────────────────
+  function categoryFromTotal(n) {
+    if (n >= 11) return { label: 'Sangat Baik', bg: '#d1fae5', color: '#166534' };
+    if (n >= 8)  return { label: 'Baik',        bg: '#dbeafe', color: '#1d4ed8' };
+    if (n >= 6)  return { label: 'Cukup',       bg: '#fef3c7', color: '#92400e' };
+    return               { label: 'Kurang',     bg: '#fee2e2', color: '#991b1b' };
+  }
+
+  // ── Toggle a single indicator ───────────────────────────────────
+  window.toggleIndicator = function (key, rowEl) {
+    var hiddenEl = document.getElementById('ind_' + key);
+    var checkEl  = rowEl.querySelector('.ind-checkbox');
+    var iconEl   = checkEl ? checkEl.querySelector('i') : null;
+    if (!hiddenEl || !checkEl) return;
+
+    var newState = hiddenEl.value !== '1';
+    hiddenEl.value = newState ? '1' : '0';
+
+    var color = checkEl.getAttribute('data-color') || '#7c3aed';
+    if (newState) {
+      checkEl.style.background  = color;
+      checkEl.style.borderColor = color;
+      if (iconEl) iconEl.style.display = 'block';
+    } else {
+      checkEl.style.background  = '#fff';
+      checkEl.style.borderColor = '#d1d5db';
+      if (iconEl) iconEl.style.display = 'none';
+    }
+
+    recalcScores();
+  };
+
+  function recalcScores() {
+    // Per-competency totals
+    Object.keys(COMPETENCIES).forEach(function (comp) {
+      var keys  = COMPETENCIES[comp];
+      var count = keys.reduce(function (acc, k) {
+        var el = document.getElementById('ind_' + k);
+        return acc + (el && el.value === '1' ? 1 : 0);
+      }, 0);
+      var badge = document.getElementById('badge_' + comp);
+      if (badge) badge.textContent = count;
+    });
+
+    // Overall total
+    var total = ALL_KEYS.reduce(function (acc, k) {
+      var el = document.getElementById('ind_' + k);
+      return acc + (el && el.value === '1' ? 1 : 0);
+    }, 0);
+
+    var totalEl = document.getElementById('evalOverallTotal');
+    if (totalEl) totalEl.textContent = total;
+
+    var cat = categoryFromTotal(total);
+    var catEl = document.getElementById('evalCategoryBadge');
+    if (catEl) {
+      catEl.textContent      = cat.label;
+      catEl.style.background = cat.bg;
+      catEl.style.color      = cat.color;
+    }
+
+    // Score feedback
+    var feedbackEl = document.getElementById('evalScoreFeedback');
+    if (feedbackEl) {
+      if (total === 0) {
+        feedbackEl.textContent = 'Centang behavioral indicator di atas untuk melihat hasil penilaian.';
+        feedbackEl.style.color = '#9ca3af';
+      } else if (total < 13) {
+        feedbackEl.textContent = total + ' dari 13 indikator terpenuhi. Kategori: ' + cat.label + '.';
+        feedbackEl.style.color = cat.color;
+      } else {
+        feedbackEl.textContent = 'Semua 13 indikator terpenuhi. Kategori: ' + cat.label + '. ✓';
+        feedbackEl.style.color = '#166534';
+      }
+    }
+
+    // Lulus gate hint
+    var gateEl = document.getElementById('evalLulusScoreGate');
+    if (gateEl) gateEl.style.display = total < 8 ? 'block' : 'none';
+
+    // Recheck decision validity (lulus requires ≥ 8)
+    updateConfirmBtn();
+    updateSummary();
+  }
+
+  // ── Decision card click ─────────────────────────────────────────
+  window.selectEvalDecision = function (el) {
+    var val = el.getAttribute('data-value');
+    var cls = classifyDecision(val);
+
+    // Update hidden field
+    document.getElementById('evalDecisionValue').value = val;
+
+    // Visual state for all cards
+    var colorMap = {
+      'Diangkat sebagai Karyawan Tetap': { border: '#166534', bg: '#f0fdf4' },
+      'Tidak Lulus':                     { border: '#991b1b', bg: '#fef2f2' },
+      'Perpanjang Kontrak':              { border: '#d97706', bg: '#fffbeb' },
+    };
+    document.querySelectorAll('.eval-decision-opt').forEach(function (opt) {
+      var isThis = (opt === el);
+      var c = colorMap[opt.getAttribute('data-value')] || {};
+      opt.style.borderColor = isThis ? (c.border || '#7c3aed') : '#e5e7eb';
+      opt.style.background  = isThis ? (c.bg     || '#f5f3ff') : '';
+      var dot   = opt.querySelector('.eval-dec-dot');
+      var inner = opt.querySelector('.eval-dec-inner');
+      if (dot)   dot.style.borderColor  = isThis ? (c.border || '#7c3aed') : '#d1d5db';
+      if (inner) inner.style.background = isThis ? (c.border || '#7c3aed') : 'transparent';
+    });
+
+    // Show / hide extend section
+    var extSec = document.getElementById('evalExtendSection');
+    if (extSec) extSec.style.display = cls.isPerp ? 'block' : 'none';
+
+    // Auto-fill today as extension start if not set
+    if (cls.isPerp) {
+      var startEl = document.getElementById('evalExtStart');
+      if (startEl && !startEl.value) {
+        startEl.value = new Date().toISOString().split('T')[0];
+        calcExtendEnd();
+      }
+    }
+
+    // Clear decision error
+    hideInlineError('evalDecisionError');
+
+    updateConfirmBtn();
+    updateSummary();
+  };
+
+  // ── Extension duration select ────────────────────────────────────
+  window.selectExtDuration = function (dur, btnEl) {
+    document.getElementById('evalExtDuration').value = dur;
+    document.querySelectorAll('.ext-dur-btn').forEach(function (b) {
+      if (b.getAttribute('data-dur') === dur) {
+        b.style.borderColor = '#d97706';
+        b.style.background  = '#fef3c7';
+        b.style.color       = '#92400e';
+      } else {
+        b.style.borderColor = '#d1d5db';
+        b.style.background  = '#fff';
+        b.style.color       = '';
+      }
+    });
+    hideInlineError('evalExtDurError');
+    calcExtendEnd();
+    updateConfirmBtn();
+    updateSummary();
+  };
+
+  // ── Auto-calculate extension end date ────────────────────────────
+  window.calcExtendEnd = function () {
+    var dur     = document.getElementById('evalExtDuration').value;
+    var startEl = document.getElementById('evalExtStart');
+    var endEl   = document.getElementById('evalExtEnd');
+    var hintEl  = document.getElementById('evalExtEndHint');
+    if (!dur || !startEl || !endEl || !startEl.value) return;
+    var m = dur.match(/^(\d+)\s*Bulan/i);
+    if (!m) return;
+    var d = new Date(startEl.value);
+    d.setMonth(d.getMonth() + parseInt(m[1], 10));
+    endEl.value = d.toISOString().split('T')[0];
+    if (hintEl) hintEl.textContent = 'Kontrak baru berakhir ' + endEl.value + ' (' + dur + ').';
+    updateConfirmBtn();
+    updateSummary();
+  };
+
+  // ── Button state ────────────────────────────────────────────────
+  window.updateConfirmBtn = function () {
+    var btn    = document.getElementById('btnConfirmProbationEval');
+    var tEl    = document.getElementById('btnEvalText');
+    if (!btn) return;
+
+    var hasEmp = !!document.getElementById('evalEmployeeId').value;
+    var decVal = document.getElementById('evalDecisionValue').value || '';
+    var cls    = decVal ? classifyDecision(decVal) : {};
+    var total  = parseInt((document.getElementById('evalOverallTotal') || {}).textContent) || 0;
+
+    var extValid = true;
+    if (cls.isPerp) {
+      extValid = !!(document.getElementById('evalExtDuration').value) &&
+                 !!(document.getElementById('evalExtStart').value);
+    }
+
+    var lulusOk = !cls.isLulus || total >= 8;
+
+    // Button label + color
+    if (tEl) {
+      if (cls.isLulus) {
+        btn.style.background = lulusOk ? '#166534' : '#9ca3af';
+        tEl.innerHTML = '<i class="bi bi-file-earmark-check me-1"></i>Simpan & Terbitkan SK Tetap';
+      } else if (cls.isPutus) {
+        btn.style.background = '#991b1b';
+        tEl.innerHTML = '<i class="bi bi-file-earmark-x me-1"></i>Simpan & Terbitkan Paklaring';
+      } else if (cls.isPerp) {
+        btn.style.background = '#d97706';
+        tEl.innerHTML = '<i class="bi bi-calendar-plus me-1"></i>Simpan Perpanjangan';
+      } else {
+        btn.style.background = '#7c3aed';
+        tEl.innerHTML = '<i class="bi bi-clipboard-check me-1"></i>Simpan Evaluasi';
+      }
+    }
+
+    btn.disabled = !(hasEmp && !!decVal && extValid && lulusOk);
+  };
+
+  // ── Pre-submit summary panel ─────────────────────────────────────
+  function updateSummary() {
+    var decVal = document.getElementById('evalDecisionValue').value || '';
+    var sumEl  = document.getElementById('evalSubmitSummary');
+    if (!sumEl) return;
+
+    if (!decVal || !document.getElementById('evalEmployeeId').value) {
+      sumEl.style.display = 'none';
+      return;
+    }
+
+    var total = parseInt((document.getElementById('evalOverallTotal') || {}).textContent) || 0;
+    var cat   = categoryFromTotal(total);
+    var cls   = classifyDecision(decVal);
+
+    var decLabel = cls.isLulus ? '✓ LULUS — SK Pengangkatan'
+                : cls.isPutus ? '✗ TIDAK LULUS — Paklaring'
+                              : '↺ EXTEND — Perpanjang Probation';
+    var decColor = cls.isLulus ? '#166534' : cls.isPutus ? '#991b1b' : '#d97706';
+
+    var nameEl = document.getElementById('summaryEmpName');
+    var scoreEl = document.getElementById('summaryScore');
+    var catEl   = document.getElementById('summaryCategory');
+    var decEl   = document.getElementById('summaryDecision');
+    var extLbl  = document.getElementById('summaryExtLbl');
+    var extEl   = document.getElementById('summaryExt');
+
+    if (nameEl) nameEl.textContent = document.getElementById('evalEmpName').textContent || '—';
+    if (scoreEl) scoreEl.textContent = total + ' / 13 (' + cat.label + ')';
+    if (catEl) {
+      catEl.innerHTML = '<span class="badge rounded-pill px-2" style="background:' + cat.bg + ';color:' + cat.color + ';font-size:11px">' + cat.label + '</span>';
+    }
+    if (decEl) {
+      decEl.textContent  = decLabel;
+      decEl.style.color  = decColor;
+    }
+    if (extLbl && extEl) {
+      var dur = document.getElementById('evalExtDuration').value || '';
+      extLbl.style.display = cls.isPerp && dur ? '' : 'none';
+      extEl.style.display  = cls.isPerp && dur ? '' : 'none';
+      extEl.textContent    = dur;
+    }
+    sumEl.style.display = '';
+  }
+
+  // ── Inline error helpers ─────────────────────────────────────────
+  function showInlineError(elId, msg) {
+    var el = document.getElementById(elId);
+    if (!el) return;
+    if (msg) {
+      var msgEl = el.querySelector('span') || el;
+      if (msgEl !== el) msgEl.textContent = msg;
+    }
+    el.style.display = '';
+  }
+
+  function hideInlineError(elId) {
+    var el = document.getElementById(elId);
+    if (el) el.style.display = 'none';
+  }
+
+  function showServerError(msg) {
+    var el    = document.getElementById('evalServerError');
+    var msgEl = document.getElementById('evalServerErrorMsg');
+    if (msgEl) msgEl.textContent = msg || 'Terjadi kesalahan. Silakan coba lagi.';
+    if (el) el.style.removeProperty('display');   // override display:none!important
+  }
+
+  function hideServerError() {
+    var el = document.getElementById('evalServerError');
+    if (el) el.style.setProperty('display', 'none', 'important');
+  }
+
+  // ── Set loading state ────────────────────────────────────────────
+  function setLoading(state, label) {
+    var btn    = document.getElementById('btnConfirmProbationEval');
+    var tEl    = document.getElementById('btnEvalText');
+    var lEl    = document.getElementById('btnEvalLoading');
+    var lblEl  = document.getElementById('btnEvalLoadingText');
+    if (!btn) return;
+    btn.disabled = state;
+    if (tEl) tEl.style.display = state ? 'none'        : 'inline';
+    if (lEl) lEl.style.display = state ? 'inline-flex' : 'none';
+    if (state && lblEl) lblEl.textContent = label || 'Menyimpan…';
+  }
+
+  // ── MAIN SUBMIT via fetch (fixes infinite loading) ───────────────
+  window.submitProbationEval = function () {
+    // 1. Client-side validation
+    var empId  = document.getElementById('evalEmployeeId').value;
+    var decVal = document.getElementById('evalDecisionValue').value;
+
+    if (!empId) return;
+
+    if (!decVal) {
+      showInlineError('evalDecisionError', 'Silakan pilih keputusan evaluasi.');
+      document.getElementById('evalDecisionOptions').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    var cls   = classifyDecision(decVal);
+    var total = parseInt((document.getElementById('evalOverallTotal') || {}).textContent) || 0;
+
+    if (cls.isLulus && total < 8) {
+      showInlineError('evalDecisionError', 'Keputusan Lulus membutuhkan minimal 8 indikator terpenuhi (kategori Baik/Sangat Baik).');
+      return;
+    }
+
+    if (cls.isPerp) {
+      var dur   = document.getElementById('evalExtDuration').value;
+      var start = document.getElementById('evalExtStart').value;
+      var hasError = false;
+      if (!dur)   { showInlineError('evalExtDurError');   hasError = true; }
+      if (!start) { showInlineError('evalExtStartError'); hasError = true; }
+      if (hasError) {
+        document.getElementById('evalExtendSection').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+    }
+
+    hideServerError();
+
+    // 2. Build FormData (matches controller $request->input() expectations)
+    var fd = new FormData();
+    fd.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+    fd.append('decision',       decVal);
+    fd.append('recruitment_id', document.getElementById('evalRecruitmentId').value || '');
+    fd.append('notes',          document.getElementById('evalCatatan').value || '');
+
+    ALL_KEYS.forEach(function (k) {
+      var el = document.getElementById('ind_' + k);
+      fd.append('indicators[' + k + ']', el ? el.value : '0');
+    });
+
+    if (cls.isPerp) {
+      fd.append('extension_duration', document.getElementById('evalExtDuration').value || '');
+      fd.append('extension_start',    document.getElementById('evalExtStart').value    || '');
+      fd.append('extension_end',      document.getElementById('evalExtEnd').value      || '');
+    }
+
+    // 3. POST via fetch — controller returns JSON when X-Requested-With is set
+    var url = '/hr/probation/' + encodeURIComponent(empId) + '/evaluate';
+
+    setLoading(true, 'Menyimpan data evaluasi…');
+
+    fetch(url, {
+      method:  'POST',
+      body:    fd,
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept':           'application/json',
+      },
+    })
+    .then(function (response) {
+      // Parse JSON regardless of HTTP status
+      return response.json().then(function (data) {
+        return { status: response.status, data: data };
+      });
+    })
+    .then(function (res) {
+      var data   = res.data;
+      var status = res.status;
+
+      if (status === 422) {
+        // Validation errors from backend
+        var msgs = [];
+        if (data.errors) {
+          Object.values(data.errors).forEach(function (arr) {
+            arr.forEach(function (m) { msgs.push(m); });
+          });
+        }
+        showServerError(msgs.length ? msgs.join(' ') : (data.message || 'Validasi gagal.'));
+        setLoading(false);
+        return;
+      }
+
+      if (!data.success) {
+        showServerError(data.message || 'Evaluasi gagal disimpan.');
+        setLoading(false);
+        return;
+      }
+
+      // ── SUCCESS ──────────────────────────────────────────────
+      // Step A: trigger PDF download in new tab (does NOT block JS)
+      if (data.pdfUrl) {
+        setLoading(true, 'Membuat dokumen PDF…');
+        // Small delay so browser registers download without blocking
+        setTimeout(function () {
+          window.open(data.pdfUrl, '_blank');
+        }, 200);
+      }
+
+      // Step B: close modal
+      var modalEl = document.getElementById('probationEvalModal');
+      var bsModal = modalEl ? bootstrap.Modal.getInstance(modalEl) : null;
+      if (bsModal) {
+        bsModal.hide();
+      }
+
+      // Step C: show toast (defined in hr.blade.php global scope)
+      var msg = data.message || 'Evaluasi berhasil disimpan.';
+      if (data.pdfUrl) {
+        msg += data.isLulus       ? ' SK Pengangkatan sedang diunduh.'
+             : data.isPutusKontrak ? ' Paklaring sedang diunduh.'
+             : '';
+      }
+      if (typeof window.showToast === 'function') {
+        window.showToast(msg, 'success', 5000);
+      } else {
+        // Fallback: inject success banner on probation page if toast not available
+        var flashArea = document.querySelector('.content-wrap .alert-success');
+        if (!flashArea) {
+          var div = document.createElement('div');
+          div.className = 'alert alert-success alert-dismissible fade show mx-3 mt-2';
+          div.style.fontSize = '13px';
+          div.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>' + msg +
+            '<button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>';
+          var wrap = document.querySelector('.content-wrap');
+          if (wrap) wrap.insertBefore(div, wrap.firstChild);
+        }
+      }
+
+      // Step D: reload page to refresh table + stats (after 600ms for UX)
+      setTimeout(function () {
+        window.location.reload();
+      }, 600);
+    })
+    .catch(function (err) {
+      // Network error or JSON parse failure
+      console.error('[ProbationEval] fetch error:', err);
+      showServerError('Koneksi gagal. Periksa jaringan dan coba lagi.');
+      setLoading(false);
+    });
+    // NOTE: no .finally() — loading is reset explicitly in each branch above
+    // (success: page reloads so doesn't need reset; error: reset in catch/422)
+  };
+
+  // ── Employee search ──────────────────────────────────────────────
+  window.handleEvalEmpSearch = function (query) {
+    var q       = (query || '').trim().toLowerCase();
+    var dropdown = document.getElementById('evalEmpDropdown');
+    var clearEl  = document.getElementById('evalEmpSearchClear');
+    if (clearEl) clearEl.style.display = q ? 'block' : 'none';
+    if (!dropdown) return;
     if (!q) { dropdown.style.display = 'none'; return; }
 
-    const matched = (window.__allEmployeesForEval || []).filter(e => {
-      const name = (e.fullName || '').toLowerCase();
-      const id = (e.employeeId || '').toLowerCase();
-      const pos = (e.jobPosition || '').toLowerCase();
-      return name.includes(q) || id.includes(q) || pos.includes(q);
+    var allEmps = window.__allProbationEmployees || [];
+    var matched = allEmps.filter(function (e) {
+      return (e.fullName   || '').toLowerCase().indexOf(q) !== -1 ||
+             (e.employeeId || '').toLowerCase().indexOf(q) !== -1 ||
+             (e.jobPosition || '').toLowerCase().indexOf(q) !== -1;
     }).slice(0, 8);
 
-    if (matched.length === 0) {
-      dropdown.innerHTML = '<div class="p-3 text-muted text-center" style="font-size:13px">Tidak ada karyawan probation yang cocok</div>';
+    if (!matched.length) {
+      dropdown.innerHTML = '<div class="px-3 py-2 text-muted" style="font-size:13px">' +
+        'Tidak ada karyawan probation ditemukan.</div>';
       dropdown.style.display = 'block';
       return;
     }
-    dropdown.innerHTML = matched.map(e => `
-      <div class="p-2 border-bottom d-flex align-items-center gap-2" style="cursor:pointer;" onclick='selectEvalEmployee(${JSON.stringify(e).replace(/'/g, "&#39;")})'>
-        <div style="width:32px;height:32px;background:#7c3aed;color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">${(e.fullName||'E').substring(0,2).toUpperCase()}</div>
-        <div style="font-size:12.5px;">
-          <div class="fw-semibold">${e.fullName||'-'}</div>
-          <div class="text-muted" style="font-size:11px">${e.employeeId} &bull; ${e.jobPosition||'-'}</div>
-        </div>
-      </div>
-    `).join('');
+
+    dropdown.innerHTML = matched.map(function (e) {
+      var initl = (e.fullName || 'E').replace(/\s+/g, ' ').trim().split(' ')
+        .map(function (w) { return w[0]; }).join('').substring(0, 2).toUpperCase();
+      var eJson = JSON.stringify(e).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+      return '<div class="d-flex align-items-center gap-2 px-3 py-2 eval-search-row"' +
+        ' style="cursor:pointer;border-bottom:1px solid #f3f4f6;font-size:13px"' +
+        ' onmouseenter="this.style.background=\'#f5f3ff\'" onmouseleave="this.style.background=\'\'"' +
+        ' onclick=\'selectEvalEmployee(' + eJson.replace(/'/g, "&#39;") + ')\'>' +
+        '<div style="width:32px;height:32px;border-radius:8px;background:#7c3aed;color:#fff;' +
+        'font-size:11px;font-weight:700;flex-shrink:0;display:flex;align-items:center;justify-content:center">' +
+        initl + '</div>' +
+        '<div><div class="fw-semibold">' + (e.fullName || '—') + '</div>' +
+        '<div class="text-muted" style="font-size:11px">' +
+        (e.jobPositionLocation || e.jobPosition || '—') + ' · ' + (e.employeeId || '') +
+        '</div></div></div>';
+    }).join('');
     dropdown.style.display = 'block';
-  }
+  };
 
-  function selectEvalEmployee(emp) {
-    document.getElementById('evalEmpDropdown').style.display = 'none';
-    document.getElementById('evalEmpSearch').value = `${emp.fullName} (${emp.employeeId})`;
-    document.getElementById('evalEmployeeId').value = emp.employeeId;
-    document.getElementById('probationEvalForm').action = `/hr/probation/${emp.employeeId}/evaluate`;
+  window.clearEvalEmpSearch = function () {
+    var s = document.getElementById('evalEmpSearch');
+    var c = document.getElementById('evalEmpSearchClear');
+    var d = document.getElementById('evalEmpDropdown');
+    if (s) s.value = '';
+    if (c) c.style.display = 'none';
+    if (d) d.style.display = 'none';
+    document.getElementById('evalEmpPreview').style.display = 'none';
+    document.getElementById('evalEmployeeId').value = '';
+    resetEvalFormState();
+    updateConfirmBtn();
+  };
 
-    document.getElementById('evalEmpName').textContent = emp.fullName || '-';
-    document.getElementById('evalEmpPosition').textContent = emp.jobPosition || '-';
-    document.getElementById('evalEmpDept').textContent = emp.department || '-';
-    document.getElementById('evalEmpIdDisp').textContent = emp.employeeId;
-    document.getElementById('evalEmpContractEnd').textContent = emp.endDateContract || '-';
-    document.getElementById('evalEmpAvatar').textContent = (emp.fullName || 'E').substring(0,2).toUpperCase();
+  window.selectEvalEmployee = function (emp) {
+    var dropdown = document.getElementById('evalEmpDropdown');
+    var search   = document.getElementById('evalEmpSearch');
+    var clearEl  = document.getElementById('evalEmpSearchClear');
+    if (dropdown) dropdown.style.display = 'none';
+    if (search)   search.value = emp.fullName || '';
+    if (clearEl)  clearEl.style.display = 'block';
+
+    document.getElementById('evalEmployeeId').value    = emp.employeeId  || '';
+    document.getElementById('evalRecruitmentId').value = emp.recruitmentId || '';
+
+    var tn = function (id, val) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = val || '—';
+    };
+    tn('evalEmpName',        emp.fullName);
+    tn('evalEmpPosition',    emp.jobPositionLocation || emp.jobPosition);
+    tn('evalEmpDept',        emp.department);
+    tn('evalEmpLevel',       emp.jobLevel);
+    tn('evalEmpPT',          emp.branchName);
+    tn('evalEmpIdDisp',      emp.employeeId);
+    tn('evalEmpJoinDate',    emp.joinDate);
+    tn('evalEmpContractEnd', emp.endDateContract);
+
+    var avatar = document.getElementById('evalEmpAvatar');
+    if (avatar) {
+      avatar.textContent = (emp.fullName || 'E').replace(/\s+/g, ' ').trim().split(' ')
+        .map(function (w) { return w[0]; }).join('').substring(0, 2).toUpperCase();
+    }
 
     document.getElementById('evalEmpPreview').style.display = 'block';
-    // Reset scores
-    ['evalScorePerformance','evalScoreDiscipline','evalScoreCommunication','evalScoreInitiative','evalScoreTeamwork'].forEach(id => {
-      const el = document.getElementById(id); if(el) el.value = 5;
+    resetEvalFormState();
+    recalcScores();
+    updateConfirmBtn();
+  };
+
+  // ── Full form state reset (indicators, decision, extension) ────
+  function resetEvalFormState() {
+    // Reset all indicators
+    ALL_KEYS.forEach(function (k) {
+      var hiddenEl = document.getElementById('ind_' + k);
+      if (hiddenEl) hiddenEl.value = '0';
+      var checkEl  = document.querySelector('.ind-checkbox[data-key="' + k + '"]');
+      if (checkEl) {
+        checkEl.style.background  = '#fff';
+        checkEl.style.borderColor = '#d1d5db';
+        var iconEl = checkEl.querySelector('i');
+        if (iconEl) iconEl.style.display = 'none';
+      }
     });
-    ['badgePerformance','badgeDiscipline','badgeCommunication','badgeInitiative','badgeTeamwork'].forEach(id => updateEvalBadge(id, 5));
-    recalcEvalAvg();
+
+    // Reset competency badges
+    Object.keys(COMPETENCIES).forEach(function (comp) {
+      var badge = document.getElementById('badge_' + comp);
+      if (badge) badge.textContent = '0';
+    });
+
+    // Reset score summary
+    var tot = document.getElementById('evalOverallTotal');
+    if (tot) tot.textContent = '0';
+    var catBadge = document.getElementById('evalCategoryBadge');
+    if (catBadge) {
+      catBadge.textContent = '—';
+      catBadge.style.background = '#e5e7eb';
+      catBadge.style.color      = '#6b7280';
+    }
+
     // Reset decision
-    document.querySelectorAll('.eval-decision-opt').forEach(opt => { opt.style.borderColor='#e5e7eb'; opt.style.background=''; opt.querySelector('.eval-dec-dot div').style.background='transparent'; });
     document.getElementById('evalDecisionValue').value = '';
-    document.getElementById('evalExtendSection').style.display = 'none';
-    document.getElementById('btnConfirmProbationEval').disabled = true;
-  }
-
-  function clearEvalEmpSearch() {
-    document.getElementById('evalEmpSearch').value = '';
-    document.getElementById('evalEmpSearchClear').style.display = 'none';
-    document.getElementById('evalEmpDropdown').style.display = 'none';
-    document.getElementById('evalEmpPreview').style.display = 'none';
-    document.getElementById('btnConfirmProbationEval').disabled = true;
-    document.getElementById('evalEmployeeId').value = '';
-  }
-
-  function updateEvalBadge(id, val) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = val;
-  }
-
-  function recalcEvalAvg() {
-    const ids = ['evalScorePerformance','evalScoreDiscipline','evalScoreCommunication','evalScoreInitiative','evalScoreTeamwork'];
-    const vals = ids.map(id => parseInt(document.getElementById(id)?.value || 5));
-    const avg = (vals.reduce((a,b) => a+b, 0) / vals.length).toFixed(1);
-    document.getElementById('evalAvgScore').textContent = avg;
-    document.getElementById('evalAvgScoreHidden').value = avg;
-  }
-
-  function selectEvalDecision(el) {
-    // Reset all
-    document.querySelectorAll('.eval-decision-opt').forEach(opt => {
+    document.getElementById('evalExtDuration').value   = '';
+    document.querySelectorAll('.eval-decision-opt').forEach(function (opt) {
       opt.style.borderColor = '#e5e7eb';
-      opt.style.background = '';
-      const dot = opt.querySelector('.eval-dec-dot div');
-      if (dot) dot.style.background = 'transparent';
+      opt.style.background  = '';
+      var dot   = opt.querySelector('.eval-dec-dot');
+      var inner = opt.querySelector('.eval-dec-inner');
+      if (dot)   dot.style.borderColor  = '#d1d5db';
+      if (inner) inner.style.background = 'transparent';
     });
-    // Select this
-    el.style.borderColor = '#7c3aed';
-    el.style.background = '#faf5ff';
-    const dot = el.querySelector('.eval-dec-dot div');
-    if (dot) dot.style.background = '#7c3aed';
 
-    const val = el.getAttribute('data-value');
-    document.getElementById('evalDecisionValue').value = val;
+    // Reset extend section
+    var extSec = document.getElementById('evalExtendSection');
+    if (extSec) extSec.style.display = 'none';
+    document.querySelectorAll('.ext-dur-btn').forEach(function (b) {
+      b.style.borderColor = '#d1d5db';
+      b.style.background  = '#fff';
+      b.style.color       = '';
+    });
+    var extStart = document.getElementById('evalExtStart');
+    var extEnd   = document.getElementById('evalExtEnd');
+    if (extStart) extStart.value = '';
+    if (extEnd)   extEnd.value   = '';
 
-    // Show/hide extension section
-    const isExtend = val.includes('Perpanjang');
-    document.getElementById('evalExtendSection').style.display = isExtend ? 'block' : 'none';
-    if (isExtend) {
-      document.getElementById('evalExtStart').value = '{{ date("Y-m-d") }}';
+    // Reset notes
+    var notes = document.getElementById('evalCatatan');
+    if (notes) notes.value = '';
+
+    // Reset summary
+    var sumEl = document.getElementById('evalSubmitSummary');
+    if (sumEl) sumEl.style.display = 'none';
+
+    // Reset errors
+    ['evalDecisionError','evalExtDurError','evalExtStartError'].forEach(hideInlineError);
+    hideServerError();
+
+    // Reset button
+    var btn = document.getElementById('btnConfirmProbationEval');
+    var tEl = document.getElementById('btnEvalText');
+    if (btn) {
+      btn.disabled = true;
+      btn.style.background = '#7c3aed';
     }
+    if (tEl) {
+      tEl.innerHTML = '<i class="bi bi-clipboard-check me-1"></i>Simpan Evaluasi';
+      tEl.style.display = 'inline';
+    }
+    var lEl = document.getElementById('btnEvalLoading');
+    if (lEl) lEl.style.display = 'none';
 
-    document.getElementById('btnConfirmProbationEval').disabled = false;
+    // Reset lulus gate hint
+    var gateEl = document.getElementById('evalLulusScoreGate');
+    if (gateEl) gateEl.style.display = 'none';
   }
 
-  // Auto-calc extension end date
-  document.addEventListener('DOMContentLoaded', function() {
-    const durationSel = document.getElementById('evalExtDuration');
-    const startEl = document.getElementById('evalExtStart');
-    const endEl = document.getElementById('evalExtEnd');
-    if (!durationSel || !startEl || !endEl) return;
-    function updateExtEnd() {
-      const dur = durationSel.value;
-      const start = startEl.value;
-      if (!dur || !start) return;
-      const months = parseInt(dur);
-      if (isNaN(months)) return;
-      const d = new Date(start);
-      d.setMonth(d.getMonth() + months);
-      endEl.value = d.toISOString().split('T')[0];
+  // ── Full modal reset (called on hidden.bs.modal) ────────────────
+  window.resetProbationEvalModal = function () {
+    var search  = document.getElementById('evalEmpSearch');
+    var clearEl = document.getElementById('evalEmpSearchClear');
+    var dropEl  = document.getElementById('evalEmpDropdown');
+    var preview = document.getElementById('evalEmpPreview');
+    if (search)  search.value = '';
+    if (clearEl) clearEl.style.display = 'none';
+    if (dropEl)  dropEl.style.display  = 'none';
+    if (preview) preview.style.display = 'none';
+
+    document.getElementById('evalEmployeeId').value    = '';
+    document.getElementById('evalRecruitmentId').value = '';
+
+    resetEvalFormState();
+  };
+  window.__resetProbationEvalModalImpl = window.resetProbationEvalModal;
+
+  // ── Close dropdown on outside click ─────────────────────────────
+  document.addEventListener('click', function (e) {
+    var dropdown = document.getElementById('evalEmpDropdown');
+    var search   = document.getElementById('evalEmpSearch');
+    if (dropdown && !dropdown.contains(e.target) && e.target !== search) {
+      dropdown.style.display = 'none';
     }
-    durationSel.addEventListener('change', updateExtEnd);
-    startEl.addEventListener('change', updateExtEnd);
   });
+
+  // ── Reset on modal hidden ────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', function () {
+    var modalEl = document.getElementById('probationEvalModal');
+    if (modalEl) {
+      modalEl.addEventListener('hidden.bs.modal', window.resetProbationEvalModal);
+    }
+  });
+
+})();
 </script>
