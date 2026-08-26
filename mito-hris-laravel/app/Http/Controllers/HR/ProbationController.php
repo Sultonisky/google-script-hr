@@ -177,6 +177,15 @@ class ProbationController extends Controller
                 'extension_start'    => 'nullable|date',
                 'extension_end'      => 'nullable|date',
                 'notes'              => 'nullable|string|max:1000',
+                // Approval sign-off (Performance Review template — Section F)
+                // Stored as metadata; no backend workflow change.
+                'reviewer_name'  => 'nullable|string|max:200',
+                'approval_dept'  => 'nullable|string|in:Setuju,Tidak',
+                'approval_dept_name' => 'nullable|string|max:200',
+                'approval_dept_date' => 'nullable|date',
+                'approval_hrbp'  => 'nullable|string|in:Setuju,Tidak',
+                'approval_hrbp_name' => 'nullable|string|max:200',
+                'approval_hrbp_date' => 'nullable|date',
             ]);
         } catch (\Illuminate\Validation\ValidationException $ve) {
             if ($isAjax) {
@@ -211,6 +220,14 @@ class ProbationController extends Controller
             'extension_end'      => $request->input('extension_end',      ''),
             'notes'              => $request->input('notes',              ''),
             'recruitment_id'     => $request->input('recruitment_id',     ''),
+            // Approval sign-off metadata (Performance Review template Section F)
+            'reviewer_name'      => $request->input('reviewer_name',      ''),
+            'approval_dept'      => $request->input('approval_dept',      ''),
+            'approval_dept_name' => $request->input('approval_dept_name', ''),
+            'approval_dept_date' => $request->input('approval_dept_date', ''),
+            'approval_hrbp'      => $request->input('approval_hrbp',      ''),
+            'approval_hrbp_name' => $request->input('approval_hrbp_name', ''),
+            'approval_hrbp_date' => $request->input('approval_hrbp_date', ''),
         ];
 
         $user = auth()->user()?->name ?? 'HR Team';
@@ -250,6 +267,19 @@ class ProbationController extends Controller
             $successMsg = "Masa probation karyawan {$id} diperpanjang ({$evalData['extension_duration']}).";
         }
 
+        // Performance Review eval PDF — always generated alongside consequential PDF
+        $evalPdfUrl = route('hr.export.performance-review', [
+            $id,
+            'eval_id'            => $result['evalId'],
+            'reviewer_name'      => $evalData['reviewer_name']      ?? '',
+            'approval_dept'      => $evalData['approval_dept']      ?? '',
+            'approval_dept_name' => $evalData['approval_dept_name'] ?? '',
+            'approval_dept_date' => $evalData['approval_dept_date'] ?? '',
+            'approval_hrbp'      => $evalData['approval_hrbp']      ?? '',
+            'approval_hrbp_name' => $evalData['approval_hrbp_name'] ?? '',
+            'approval_hrbp_date' => $evalData['approval_hrbp_date'] ?? '',
+        ]);
+
         // ── AJAX mode: return JSON (modal stays open, JS handles PDF + close) ──
         if ($isAjax) {
             return response()->json([
@@ -263,6 +293,7 @@ class ProbationController extends Controller
                 'isPutusKontrak' => $result['isPutusKontrak'],
                 'isPerpanjang'   => $result['isPerpanjang'],
                 'pdfUrl'         => $pdfUrl,
+                'evalPdfUrl'     => $evalPdfUrl,
                 'skNumber'       => $result['skNumber'],
             ]);
         }

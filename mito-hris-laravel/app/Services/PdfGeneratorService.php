@@ -172,4 +172,15 @@ class PdfGeneratorService
         return Pdf::loadView('pdf.paklaring', compact('employee', 'extraData', 'company'))
             ->setPaper('a4', 'portrait');
     }
+
+    /**
+     * Generate Performance Review – Evaluation Form PDF.
+     * Mirrors the printed template (2026) — 4 competencies, 13 indicators, checklist model.
+     */
+    public function generatePerformanceReviewPdf(EmployeeData $employee, array $evalData = [], array $extraData = []): \Barryvdh\DomPDF\PDF
+    {
+        $company = $this->resolveCompany($this->getBranchName($employee, $extraData));
+        return Pdf::loadView('pdf.performance-review', compact('employee', 'evalData', 'extraData', 'company'))
+            ->setPaper('a4', 'portrait');
+    }
 }

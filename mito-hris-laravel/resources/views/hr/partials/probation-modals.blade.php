@@ -35,6 +35,13 @@
       <input type="hidden" id="evalRecruitmentId" value="" />
       <input type="hidden" id="evalDecisionValue" value="" />
       <input type="hidden" id="evalExtDuration"   value="" />
+      {{-- Approval sign-off hidden fields (Performance Review template Section F) --}}
+      <input type="hidden" id="evalApprovalDept"      value="" />
+      <input type="hidden" id="evalApprovalDeptName"  value="" />
+      <input type="hidden" id="evalApprovalDeptDate"  value="" />
+      <input type="hidden" id="evalApprovalHrbp"      value="" />
+      <input type="hidden" id="evalApprovalHrbpName"  value="" />
+      <input type="hidden" id="evalApprovalHrbpDate"  value="" />
       {{-- 13 indicator hidden fields --}}
       <input type="hidden" id="ind_integrity_1" value="0">
       <input type="hidden" id="ind_integrity_2" value="0">
@@ -83,32 +90,42 @@
         <div id="evalEmpPreview" style="display:none">
 
           {{-- ─── EMPLOYEE INFO CARD ───────────────────────────── --}}
-          <div class="mx-4 mt-3 p-3 rounded-3 d-flex align-items-center gap-3"
-            style="background:#f5f3ff;border:1px solid #ddd6fe">
-            <div id="evalEmpAvatar"
-              style="width:44px;height:44px;border-radius:12px;background:#7c3aed;color:#fff;
-                     font-size:16px;font-weight:800;display:flex;align-items:center;
-                     justify-content:center;flex-shrink:0">?</div>
-            <div class="flex-grow-1 min-w-0">
-              <div class="fw-bold text-truncate" id="evalEmpName" style="font-size:14px">—</div>
-              <div class="text-muted text-truncate" style="font-size:12px">
-                <span id="evalEmpPosition">—</span>
-                <span class="mx-1 text-muted">·</span>
-                <span id="evalEmpDept">—</span>
+          <div class="mx-4 mt-3 p-3 rounded-3" style="background:#f5f3ff;border:1px solid #ddd6fe">
+            {{-- Row 1: avatar + name/position + IDs --}}
+            <div class="d-flex align-items-center gap-3 mb-2">
+              <div id="evalEmpAvatar"
+                style="width:44px;height:44px;border-radius:12px;background:#7c3aed;color:#fff;
+                       font-size:16px;font-weight:800;display:flex;align-items:center;
+                       justify-content:center;flex-shrink:0">?</div>
+              <div class="flex-grow-1 min-w-0">
+                <div class="fw-bold text-truncate" id="evalEmpName" style="font-size:14px">—</div>
+                <div class="text-muted text-truncate" style="font-size:12px">
+                  <span id="evalEmpPosition">—</span>
+                  <span class="mx-1 text-muted">·</span>
+                  <span id="evalEmpDept">—</span>
+                </div>
+                <div style="font-size:11px;color:#7c3aed;margin-top:2px">
+                  <span id="evalEmpLevel">—</span>
+                  <span class="mx-1 text-muted">·</span>
+                  <span id="evalEmpPT">—</span>
+                </div>
               </div>
-              <div style="font-size:11px;color:#7c3aed;margin-top:2px">
-                <span id="evalEmpLevel">—</span>
-                <span class="mx-1 text-muted">·</span>
-                <span id="evalEmpPT">—</span>
+              <div class="text-end flex-shrink-0" style="font-size:11px">
+                <div class="text-muted">Employee ID</div>
+                <div class="fw-bold" id="evalEmpIdDisp" style="color:#7c3aed">—</div>
+                <div class="text-muted mt-1">Masuk</div>
+                <div class="fw-semibold" id="evalEmpJoinDate">—</div>
+                <div class="text-muted mt-1">Kontrak s/d</div>
+                <div class="fw-semibold" id="evalEmpContractEnd">—</div>
               </div>
             </div>
-            <div class="text-end flex-shrink-0" style="font-size:11px">
-              <div class="text-muted">Employee ID</div>
-              <div class="fw-bold" id="evalEmpIdDisp" style="color:#7c3aed">—</div>
-              <div class="text-muted mt-1">Masuk</div>
-              <div class="fw-semibold" id="evalEmpJoinDate">—</div>
-              <div class="text-muted mt-1">Kontrak s/d</div>
-              <div class="fw-semibold" id="evalEmpContractEnd">—</div>
+            {{-- Row 2: Nama Atasan Langsung (Reviewer) — from template field --}}
+            <div class="pt-2" style="border-top:1px solid #ede9fe">
+              <span style="font-size:11px;color:#6b7280">
+                <i class="bi bi-person-lines-fill me-1" style="color:#7c3aed"></i>
+                <strong>Nama Atasan Langsung (Reviewer):</strong>
+                <span id="evalEmpReviewer" style="color:#374151">—</span>
+              </span>
             </div>
           </div>
 
@@ -258,25 +275,25 @@
           {{-- ═══════════════════════════════════════════════════════
                SCORE SUMMARY (selalu visible setelah indicator diisi)
                ═══════════════════════════════════════════════════════ --}}
-          <div class="mx-4 mb-4 p-3 rounded-3" style="background:#f5f3ff;border:2px solid #7c3aed">
-            <div class="row g-0 align-items-center">
-              <div class="col-4 text-center" style="border-right:1px solid #ddd6fe">
+          <div class="mx-2 mx-sm-4 mb-4 p-3 rounded-3" style="background:#f5f3ff;border:2px solid #7c3aed">
+            <div class="row g-2 align-items-center">
+              <div class="col-6 col-sm-4 text-center border-end-sm" style="border-right:1px solid #ddd6fe">
                 <div style="font-size:10px;color:#7c3aed;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Total Score</div>
-                <div id="evalOverallTotal" style="font-size:36px;font-weight:900;color:#7c3aed;line-height:1">0</div>
+                <div id="evalOverallTotal" style="font-size:32px;font-weight:900;color:#7c3aed;line-height:1">0</div>
                 <div style="font-size:10px;color:#9ca3af">dari 13 indikator</div>
               </div>
-              <div class="col-4 text-center" style="border-right:1px solid #ddd6fe;padding:0 12px">
+              <div class="col-6 col-sm-4 text-center border-end-sm" style="border-right:1px solid #ddd6fe;padding:0 8px">
                 <div style="font-size:10px;color:#6b7280;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Kategori</div>
                 <div id="evalCategoryBadge"
-                  class="d-inline-block px-3 py-1 rounded-pill fw-bold"
-                  style="font-size:12px;background:#e5e7eb;color:#6b7280">—</div>
+                  class="d-inline-block px-2 px-sm-3 py-1 rounded-pill fw-bold"
+                  style="font-size:11.5px;background:#e5e7eb;color:#6b7280">—</div>
               </div>
-              <div class="col-4 ps-3">
-                <table style="font-size:10.5px;width:100%;border-collapse:collapse">
-                  <tr><td><span style="display:inline-block;width:34px;border-radius:4px;background:#d1fae5;color:#166534;text-align:center;font-weight:700;font-size:10px;padding:1px 0">11–13</span></td><td class="ps-1" style="color:#374151">Sangat Baik</td></tr>
-                  <tr><td><span style="display:inline-block;width:34px;border-radius:4px;background:#dbeafe;color:#1d4ed8;text-align:center;font-weight:700;font-size:10px;padding:1px 0">8–10</span></td><td class="ps-1" style="color:#374151">Baik</td></tr>
-                  <tr><td><span style="display:inline-block;width:34px;border-radius:4px;background:#fef3c7;color:#92400e;text-align:center;font-weight:700;font-size:10px;padding:1px 0">6–7</span></td><td class="ps-1" style="color:#374151">Cukup</td></tr>
-                  <tr><td><span style="display:inline-block;width:34px;border-radius:4px;background:#fee2e2;color:#991b1b;text-align:center;font-weight:700;font-size:10px;padding:1px 0">0–5</span></td><td class="ps-1" style="color:#374151">Kurang</td></tr>
+              <div class="col-12 col-sm-4 ps-sm-3 pt-2 pt-sm-0 border-top border-top-sm-0" style="border-color:#ddd6fe !important">
+                <table style="font-size:10px;width:100%;border-collapse:collapse">
+                  <tr><td><span style="display:inline-block;width:34px;border-radius:4px;background:#d1fae5;color:#166534;text-align:center;font-weight:700;font-size:9.5px;padding:1px 0">11–13</span></td><td class="ps-1" style="color:#374151">Sangat Baik</td></tr>
+                  <tr><td><span style="display:inline-block;width:34px;border-radius:4px;background:#dbeafe;color:#1d4ed8;text-align:center;font-weight:700;font-size:9.5px;padding:1px 0">8–10</span></td><td class="ps-1" style="color:#374151">Baik</td></tr>
+                  <tr><td><span style="display:inline-block;width:34px;border-radius:4px;background:#fef3c7;color:#92400e;text-align:center;font-weight:700;font-size:9.5px;padding:1px 0">6–7</span></td><td class="ps-1" style="color:#374151">Cukup</td></tr>
+                  <tr><td><span style="display:inline-block;width:34px;border-radius:4px;background:#fee2e2;color:#991b1b;text-align:center;font-weight:700;font-size:9.5px;padding:1px 0">3–5</span></td><td class="ps-1" style="color:#374151">Kurang</td></tr>
                 </table>
               </div>
             </div>
@@ -448,6 +465,78 @@
             <textarea class="form-control form-control-sm" id="evalCatatan" rows="2"
               placeholder="Contoh: Karyawan menunjukkan peningkatan signifikan dalam koordinasi tim…"
               style="font-size:13px;resize:vertical"></textarea>
+          </div>
+
+          {{-- ═══════════════════════════════════════════════════════
+               SECTION F — PERSETUJUAN / APPROVAL (Performance Review template)
+               Department Manager/Head + HRBP / HR & Legal Manager
+               Stored as metadata alongside evaluation — no new approval workflow.
+               ═══════════════════════════════════════════════════════ --}}
+          <div class="px-4 pb-4">
+            <div class="d-flex align-items-center gap-2 mb-3">
+              <span class="d-flex align-items-center justify-content-center text-white fw-bold rounded-circle"
+                style="width:22px;height:22px;font-size:11px;background:#7c3aed;flex-shrink:0">F</span>
+              <span class="fw-semibold" style="font-size:13px;color:#374151">
+                Persetujuan
+                <span class="text-muted fw-normal">(opsional)</span>
+              </span>
+            </div>
+            <div class="p-3 rounded-3" style="background:#f8fafc;border:1px solid #e2e8f0">
+              <div class="row g-3">
+                {{-- Department Manager/Head --}}
+                <div class="col-md-6">
+                  <div class="fw-semibold mb-2" style="font-size:12px;color:#374151;border-bottom:1px solid #e2e8f0;padding-bottom:4px">
+                    <i class="bi bi-person-badge me-1 text-primary"></i>Department Manager / Head
+                  </div>
+                  <div class="d-flex gap-2 mb-2">
+                    <button type="button" class="approval-btn btn btn-sm flex-fill"
+                      data-target="evalApprovalDept" data-value="Setuju"
+                      style="border:2px solid #d1d5db;font-size:12px;font-weight:600;background:#fff"
+                      onclick="selectApproval('evalApprovalDept','Setuju',this)">
+                      <i class="bi bi-check-circle me-1"></i>Setuju
+                    </button>
+                    <button type="button" class="approval-btn btn btn-sm flex-fill"
+                      data-target="evalApprovalDept" data-value="Tidak"
+                      style="border:2px solid #d1d5db;font-size:12px;font-weight:600;background:#fff"
+                      onclick="selectApproval('evalApprovalDept','Tidak',this)">
+                      <i class="bi bi-x-circle me-1"></i>Tidak
+                    </button>
+                  </div>
+                  <input type="text" class="form-control form-control-sm mb-2" id="evalApprovalDeptNameInput"
+                    placeholder="Nama Department Manager/Head" style="font-size:12px"
+                    oninput="document.getElementById('evalApprovalDeptName').value=this.value" />
+                  <input type="date" class="form-control form-control-sm" id="evalApprovalDeptDateInput"
+                    style="font-size:12px"
+                    onchange="document.getElementById('evalApprovalDeptDate').value=this.value" />
+                </div>
+                {{-- HRBP / HR & Legal Manager --}}
+                <div class="col-md-6">
+                  <div class="fw-semibold mb-2" style="font-size:12px;color:#374151;border-bottom:1px solid #e2e8f0;padding-bottom:4px">
+                    <i class="bi bi-person-badge me-1 text-success"></i>HRBP / HR &amp; Legal Manager
+                  </div>
+                  <div class="d-flex gap-2 mb-2">
+                    <button type="button" class="approval-btn btn btn-sm flex-fill"
+                      data-target="evalApprovalHrbp" data-value="Setuju"
+                      style="border:2px solid #d1d5db;font-size:12px;font-weight:600;background:#fff"
+                      onclick="selectApproval('evalApprovalHrbp','Setuju',this)">
+                      <i class="bi bi-check-circle me-1"></i>Setuju
+                    </button>
+                    <button type="button" class="approval-btn btn btn-sm flex-fill"
+                      data-target="evalApprovalHrbp" data-value="Tidak"
+                      style="border:2px solid #d1d5db;font-size:12px;font-weight:600;background:#fff"
+                      onclick="selectApproval('evalApprovalHrbp','Tidak',this)">
+                      <i class="bi bi-x-circle me-1"></i>Tidak
+                    </button>
+                  </div>
+                  <input type="text" class="form-control form-control-sm mb-2" id="evalApprovalHrbpNameInput"
+                    placeholder="Nama HRBP / HR & Legal Manager" style="font-size:12px"
+                    oninput="document.getElementById('evalApprovalHrbpName').value=this.value" />
+                  <input type="date" class="form-control form-control-sm" id="evalApprovalHrbpDateInput"
+                    style="font-size:12px"
+                    onchange="document.getElementById('evalApprovalHrbpDate').value=this.value" />
+                </div>
+              </div>
+            </div>
           </div>
 
           {{-- ═══════════════════════════════════════════════════════
@@ -696,6 +785,32 @@
     updateSummary();
   };
 
+  // ── Approval sign-off button (Section F) ─────────────────────────
+  window.selectApproval = function (hiddenId, value, btnEl) {
+    var hidden = document.getElementById(hiddenId);
+    if (hidden) hidden.value = value;
+
+    // Style all sibling buttons for this target
+    var isSetuju = (value === 'Setuju');
+    document.querySelectorAll('.approval-btn[data-target="' + hiddenId + '"]').forEach(function (b) {
+      var bVal    = b.getAttribute('data-value');
+      var isThis  = (b === btnEl);
+      if (isThis && isSetuju) {
+        b.style.borderColor = '#166534';
+        b.style.background  = '#f0fdf4';
+        b.style.color       = '#166534';
+      } else if (isThis && !isSetuju) {
+        b.style.borderColor = '#991b1b';
+        b.style.background  = '#fef2f2';
+        b.style.color       = '#991b1b';
+      } else {
+        b.style.borderColor = '#d1d5db';
+        b.style.background  = '#fff';
+        b.style.color       = '';
+      }
+    });
+  };
+
   // ── Auto-calculate extension end date ────────────────────────────
   window.calcExtendEnd = function () {
     var dur     = document.getElementById('evalExtDuration').value;
@@ -892,6 +1007,15 @@
       fd.append('extension_end',      document.getElementById('evalExtEnd').value      || '');
     }
 
+    // Approval sign-off fields (Performance Review template Section F — always sent)
+    fd.append('reviewer_name',       document.getElementById('evalEmpReviewer').textContent.trim() === '—' ? '' : document.getElementById('evalEmpReviewer').textContent.trim());
+    fd.append('approval_dept',       document.getElementById('evalApprovalDept').value      || '');
+    fd.append('approval_dept_name',  document.getElementById('evalApprovalDeptName').value  || '');
+    fd.append('approval_dept_date',  document.getElementById('evalApprovalDeptDate').value  || '');
+    fd.append('approval_hrbp',       document.getElementById('evalApprovalHrbp').value      || '');
+    fd.append('approval_hrbp_name',  document.getElementById('evalApprovalHrbpName').value  || '');
+    fd.append('approval_hrbp_date',  document.getElementById('evalApprovalHrbpDate').value  || '');
+
     // 3. POST via fetch — controller returns JSON when X-Requested-With is set
     var url = '/hr/probation/' + encodeURIComponent(empId) + '/evaluate';
 
@@ -935,13 +1059,19 @@
       }
 
       // ── SUCCESS ──────────────────────────────────────────────
-      // Step A: trigger PDF download in new tab (does NOT block JS)
+      // Step A: trigger PDF downloads in new tab (does NOT block JS)
       if (data.pdfUrl) {
         setLoading(true, 'Membuat dokumen PDF…');
         // Small delay so browser registers download without blocking
         setTimeout(function () {
           window.open(data.pdfUrl, '_blank');
         }, 200);
+      }
+      // Step A2: open Performance Review eval PDF (always generated)
+      if (data.evalPdfUrl) {
+        setTimeout(function () {
+          window.open(data.evalPdfUrl, '_blank');
+        }, data.pdfUrl ? 600 : 200);
       }
 
       // Step B: close modal
@@ -954,9 +1084,12 @@
       // Step C: show toast (defined in hr.blade.php global scope)
       var msg = data.message || 'Evaluasi berhasil disimpan.';
       if (data.pdfUrl) {
-        msg += data.isLulus       ? ' SK Pengangkatan sedang diunduh.'
+        msg += data.isLulus        ? ' SK Pengangkatan sedang diunduh.'
              : data.isPutusKontrak ? ' Paklaring sedang diunduh.'
              : '';
+      }
+      if (data.evalPdfUrl) {
+        msg += ' Formulir Performance Review sedang diunduh.';
       }
       if (typeof window.showToast === 'function') {
         window.showToast(msg, 'success', 5000);
@@ -1067,6 +1200,7 @@
     tn('evalEmpIdDisp',      emp.employeeId);
     tn('evalEmpJoinDate',    emp.joinDate);
     tn('evalEmpContractEnd', emp.endDateContract);
+    tn('evalEmpReviewer',    emp.directSuperior);
 
     var avatar = document.getElementById('evalEmpAvatar');
     if (avatar) {
@@ -1140,6 +1274,23 @@
     var notes = document.getElementById('evalCatatan');
     if (notes) notes.value = '';
 
+    // Reset approval section (Section F)
+    var approvalHiddens = ['evalApprovalDept','evalApprovalDeptName','evalApprovalDeptDate',
+                           'evalApprovalHrbp','evalApprovalHrbpName','evalApprovalHrbpDate'];
+    approvalHiddens.forEach(function (id) {
+      var el = document.getElementById(id); if (el) el.value = '';
+    });
+    var approvalInputs = ['evalApprovalDeptNameInput','evalApprovalDeptDateInput',
+                          'evalApprovalHrbpNameInput','evalApprovalHrbpDateInput'];
+    approvalInputs.forEach(function (id) {
+      var el = document.getElementById(id); if (el) el.value = '';
+    });
+    document.querySelectorAll('.approval-btn').forEach(function (b) {
+      b.style.borderColor = '#d1d5db';
+      b.style.background  = '#fff';
+      b.style.color       = '';
+    });
+
     // Reset summary
     var sumEl = document.getElementById('evalSubmitSummary');
     if (sumEl) sumEl.style.display = 'none';
@@ -1180,6 +1331,10 @@
 
     document.getElementById('evalEmployeeId').value    = '';
     document.getElementById('evalRecruitmentId').value = '';
+
+    // Reset reviewer display
+    var revEl = document.getElementById('evalEmpReviewer');
+    if (revEl) revEl.textContent = '—';
 
     resetEvalFormState();
   };

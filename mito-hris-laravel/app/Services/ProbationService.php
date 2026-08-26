@@ -496,14 +496,54 @@ class ProbationService
     private function appendProbationEvalRow(array $data): void
     {
         $sheetName = $this->probationSheet();
+
+        // Ensure all headers exist — adds missing new columns to the sheet
+        // if the sheet was created by GAS with only 29 columns.
+        // ensureSheetHeaders is idempotent: only writes row 1 if it is empty.
+        // For an existing GAS sheet we use ensureExtraColumns_ logic:
+        // read current headers, append any missing ones at the end.
         $headerRow = $this->sheets->getRange($sheetName, '1:1', false)[0] ?? [];
-        $headers   = !empty($headerRow) ? array_map('trim', $headerRow) : self::PROBATION_HEADERS;
+        if (empty($headerRow) || empty(array_filter($headerRow))) {
+            // Sheet is empty — write full header set
+            $this->sheets->ensureSheetHeaders($sheetName, self::PROBATION_HEADERS);
+            $headers = self::PROBATION_HEADERS;
+        } else {
+            $existingHeaders = array_map('trim', $headerRow);
+            $missing = array_diff(self::PROBATION_HEADERS, $existingHeaders);
+            if (!empty($missing)) {
+                // Append missing headers immediately after the last existing column
+                $nextCol = count(array_filter($existingHeaders, fn($h) => $h !== '')) + 1;
+                $colLetter = $this->colIndexToLetter($nextCol);
+                $this->sheets->updateRange(
+                    $sheetName,
+                    $colLetter . '1',
+                    [array_values($missing)]
+                );
+                // Re-read headers after update
+                $headerRow = $this->sheets->getRange($sheetName, '1:1', false)[0] ?? [];
+            }
+            $headers = array_map('trim', $headerRow);
+        }
 
         $row = [];
         foreach ($headers as $h) {
             $row[] = $data[$h] ?? '';
         }
         $this->sheets->appendRow($sheetName, $row);
+    }
+
+    /**
+     * Convert 1-based column index to letter(s): 1→A, 26→Z, 27→AA, etc.
+     */
+    private function colIndexToLetter(int $index): string
+    {
+        $letters = '';
+        while ($index > 0) {
+            $index--;
+            $letters = chr(65 + ($index % 26)) . $letters;
+            $index   = (int)($index / 26);
+        }
+        return $letters;
     }
 
     private function appendNote(?string $existing, string $line): string
