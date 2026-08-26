@@ -9,7 +9,7 @@
     }
 
     body {
-      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-family: 'Times New Roman', Times, serif;
       font-size: 9.5pt;
       color: #000;
       line-height: 1.45;
@@ -47,14 +47,14 @@
     .doc-title {
       font-size: 11.5pt;
       font-weight: bold;
-      color: #0b2540;
+      color: #000;
       text-transform: uppercase;
       margin: 0;
       letter-spacing: 0.5px;
     }
     .doc-meta {
       font-size: 8.5pt;
-      color: #475569;
+      color: #000;
       margin-top: 3px;
     }
 
@@ -84,7 +84,7 @@
     }
     .label-col {
       width: 28%;
-      color: #334155;
+      color: #000;
       font-weight: bold;
     }
     .colon-col {
@@ -114,7 +114,45 @@
       min-height: 40px;
       border-radius: 3px;
       line-height: 1.4;
-      white-space: pre-wrap;
+    }
+
+    /* Markdown-rendered HTML inside content-box (DomPDF compatible) */
+    .content-box p {
+      margin: 0 0 5px 0;
+    }
+    .content-box p:last-child {
+      margin-bottom: 0;
+    }
+    .content-box h1,
+    .content-box h2,
+    .content-box h3,
+    .content-box h4,
+    .content-box h5,
+    .content-box h6 {
+      margin: 4px 0 5px 0;
+      font-weight: bold;
+      line-height: 1.3;
+    }
+    .content-box h1 { font-size: 11pt; }
+    .content-box h2 { font-size: 10.5pt; }
+    .content-box h3 { font-size: 10pt; }
+    .content-box h4,
+    .content-box h5,
+    .content-box h6 { font-size: 9pt; }
+    .content-box ul,
+    .content-box ol {
+      margin-top: 4px;
+      margin-bottom: 5px;
+      padding-left: 18px;
+    }
+    .content-box li {
+      margin-bottom: 2px;
+    }
+    .content-box strong {
+      font-weight: bold;
+    }
+    .content-box em {
+      font-style: italic;
     }
 
     /* SIGNATURES */
@@ -133,20 +171,20 @@
     .sign-title {
       font-size: 8.5pt;
       font-weight: bold;
-      color: #334155;
+      color: #000;
       margin-bottom: 45px;
     }
     .sign-name {
       font-size: 9pt;
       font-weight: bold;
-      border-top: 1px solid #334155;
+      border-top: 1px solid #000;
       padding-top: 4px;
       display: inline-block;
       min-width: 140px;
     }
     .sign-role {
       font-size: 8pt;
-      color: #64748b;
+      color: #000;
       margin-top: 2px;
     }
 
@@ -157,7 +195,7 @@
       font-weight: bold;
       border-radius: 3px;
       background: #e2e8f0;
-      color: #334155;
+      color: #000;
     }
   </style>
 </head>
@@ -308,11 +346,23 @@
     <tr>
       <td>
         <strong>Kualifikasi & Persyaratan:</strong>
-        <div class="content-box">{{ $mpr->requirements ?: 'Tidak ada kualifikasi khusus yang dilampirkan.' }}</div>
+        <div class="content-box">
+          @if(!empty($requirementsHtml))
+            {!! $requirementsHtml !!}
+          @else
+            Tidak ada kualifikasi khusus yang dilampirkan.
+          @endif
+        </div>
       </td>
       <td>
         <strong>Uraian Tugas / Tanggung Jawab Utama:</strong>
-        <div class="content-box">{{ $mpr->jobDescription ?: 'Tidak ada uraian pekerjaan khusus yang dilampirkan.' }}</div>
+        <div class="content-box">
+          @if(!empty($jobDescriptionHtml))
+            {!! $jobDescriptionHtml !!}
+          @else
+            Tidak ada uraian pekerjaan khusus yang dilampirkan.
+          @endif
+        </div>
       </td>
     </tr>
   </table>
@@ -320,7 +370,7 @@
   <!-- SECTION 5: CATATAN TAMBAHAN -->
   @if(!empty($mpr->notes))
   <div class="section-title">V. Catatan Tambahan</div>
-  <div class="content-box" style="min-height: 25px; margin-bottom: 8px;">{{ $mpr->notes }}</div>
+  <div class="content-box" style="min-height: 25px; margin-bottom: 8px;">{!! $notesHtml !!}</div>
   @endif
 
   <!-- SECTION 6: TANDA TANGAN -->
