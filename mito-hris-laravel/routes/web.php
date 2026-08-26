@@ -75,9 +75,12 @@ Route::prefix('hr')->name('hr.')->middleware(['hr.auth', 'mpr.auth'])->group(fun
     // 3. Master Data Employee — view_employees for viewing, manage_employees for mutations
     Route::prefix('employees')->name('employees.')->middleware('can:view_employees')->group(function () {
         Route::get('/', [EmployeeController::class, 'index'])->name('index')->middleware('can:view_employees');
-        // IMPORTANT: literal routes (search) MUST come before wildcard routes ({id})
-        // to prevent Laravel routing "search" as {id} parameter
+        // IMPORTANT: literal routes (search, import/*, template) MUST come before wildcard routes ({id})
+        // to prevent Laravel routing literal segments as {id} parameter
         Route::get('/search', [EmployeeController::class, 'search'])->name('search')->middleware('can:view_employees');
+        // Import — preview (no write) + execute + template download
+        Route::post('/import/preview', [EmployeeController::class, 'importPreview'])->name('import.preview')->middleware('can:manage_employees');
+        Route::get('/import/template', [EmployeeController::class, 'importTemplate'])->name('import.template')->middleware('can:manage_employees');
         Route::post('/import', [EmployeeController::class, 'import'])->name('import')->middleware('can:manage_employees');
         Route::put('/{id}', [EmployeeController::class, 'update'])->name('update')->middleware('can:manage_employees');
         Route::post('/{id}/rotate', [EmployeeController::class, 'rotate'])->name('rotate')->middleware('can:manage_employees');
