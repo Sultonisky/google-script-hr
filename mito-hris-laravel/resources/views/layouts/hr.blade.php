@@ -32,6 +32,7 @@
 
     <div class="content-wrap">
       @include('components.alerts')
+      <x-toast />
       @yield('content')
     </div>
   </div>

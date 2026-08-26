@@ -761,8 +761,6 @@ class EmployeeService
                 'Contract Number', 'Contract Duration', 'Contract Start', 'Contract End', 'Join Date',
                 'Status', 'Onboarding Date', 'Onboarding By',
                 'Eval ID', 'Eval Date',
-                'Score Performance', 'Score Discipline', 'Score Communication',
-                'Score Initiative', 'Score Teamwork', 'Average Score',
                 'Decision', 'Extension Duration', 'New Contract Start', 'New Contract End',
                 'Evaluator Notes', 'Evaluator', 'SK Status', 'Notes',
                 'Created At', 'Updated At',

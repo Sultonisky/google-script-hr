@@ -932,7 +932,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 1500);
       })
       .catch(error => {
-        alert('Gagal: ' + error.message);
+        showToast('Gagal: ' + error.message, 'error');
       })
       .finally(() => {
         if (btn) btn.disabled = false;

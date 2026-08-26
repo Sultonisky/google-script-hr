@@ -335,7 +335,7 @@
 
               {{-- 1. LULUS --}}
               <div class="eval-decision-opt rounded-3 p-3"
-                data-value="Diangkat sebagai Karyawan Tetap"
+                data-value="Lulus"
                 style="border:2px solid #e5e7eb;cursor:pointer;transition:all .15s"
                 onclick="selectEvalDecision(this)">
                 <div class="d-flex align-items-start gap-3">
@@ -387,7 +387,7 @@
 
               {{-- 3. EXTEND PROBATION --}}
               <div class="eval-decision-opt rounded-3 p-3"
-                data-value="Perpanjang Kontrak"
+                data-value="Extend"
                 style="border:2px solid #e5e7eb;cursor:pointer;transition:all .15s"
                 onclick="selectEvalDecision(this)">
                 <div class="d-flex align-items-start gap-3">
@@ -647,12 +647,14 @@
                || val.indexOf('Putus Kontrak') !== -1
                || val.indexOf('Paklaring') !== -1;
     var isPerp  = !isPutus && (
-                    val === 'Perpanjang Kontrak'
+                    val === 'Extend'
+                    || val === 'Perpanjang Kontrak'
                     || val.indexOf('Perpanjang') !== -1
                     || val.indexOf('Evaluasi Ulang') !== -1
                   );
     var isLulus = !isPutus && !isPerp && (
-                    val === 'Diangkat sebagai Karyawan Tetap'
+                    val === 'Lulus'
+                    || val === 'Diangkat sebagai Karyawan Tetap'
                     || val === 'Lulus → Karyawan Tetap'
                     || val.indexOf('Diangkat') !== -1
                     || val.indexOf('Tetap') !== -1
@@ -1177,18 +1179,27 @@
       }
 
       // ── SUCCESS ──────────────────────────────────────────────
-      // Step A: trigger PDF downloads in new tab (does NOT block JS)
+      // Step A: trigger PDF downloads via anchor click (bypass popup blockers)
+      // For EXTEND both URLs are null → no PDF is generated at all.
+      function downloadPdf(url) {
+        if (!url) return;
+        var a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+
       if (data.pdfUrl) {
         setLoading(true, 'Membuat dokumen PDF…');
-        // Small delay so browser registers download without blocking
-        setTimeout(function () {
-          window.open(data.pdfUrl, '_blank');
-        }, 200);
+        setTimeout(function () { downloadPdf(data.pdfUrl); }, 200);
       }
-      // Step A2: open Performance Review eval PDF (always generated)
       if (data.evalPdfUrl) {
+        setLoading(true, 'Membuat dokumen PDF…');
         setTimeout(function () {
-          window.open(data.evalPdfUrl, '_blank');
+          downloadPdf(data.evalPdfUrl);
         }, data.pdfUrl ? 600 : 200);
       }
 
@@ -1199,11 +1210,11 @@
         bsModal.hide();
       }
 
-      // Step C: show toast (defined in hr.blade.php global scope)
+      // Step C: show toast
       var msg = data.message || 'Evaluasi berhasil disimpan.';
       if (data.pdfUrl) {
-        msg += data.isLulus        ? ' SK Pengangkatan sedang diunduh.'
-             : data.isPutusKontrak ? ' Paklaring sedang diunduh.'
+        msg += data.decisionType === 'pass' ? ' SK Pengangkatan sedang diunduh.'
+             : data.decisionType === 'fail' ? ' Paklaring sedang diunduh.'
              : '';
       }
       if (data.evalPdfUrl) {
@@ -1212,7 +1223,6 @@
       if (typeof window.showToast === 'function') {
         window.showToast(msg, 'success', 5000);
       } else {
-        // Fallback: inject success banner on probation page if toast not available
         var flashArea = document.querySelector('.content-wrap .alert-success');
         if (!flashArea) {
           var div = document.createElement('div');

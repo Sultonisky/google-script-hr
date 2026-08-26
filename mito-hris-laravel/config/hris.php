@@ -69,27 +69,31 @@ return [
             'Contract Number', 'Contract Duration', 'Contract Start', 'Contract End', 'Join Date',
             // ── Status & Onboarding (col 9–11)
             'Status', 'Onboarding Date', 'Onboarding By',
-            // ── Evaluasi (col 12–13)
+            // ── Evaluasi header (col 12–13)
             'Eval ID', 'Eval Date',
-            // ── Legacy score columns — dipertahankan untuk backward compat data GAS lama (col 14–19)
-            'Score Performance', 'Score Discipline', 'Score Communication',
-            'Score Initiative', 'Score Teamwork', 'Average Score',
-            // ── Decision (col 20)
+            // ── Decision
             'Decision',
-            // ── Perpanjangan (col 21–23)
+            // ── Perpanjangan
             'Extension Duration', 'New Contract Start', 'New Contract End',
-            // ── Catatan & SK (col 24–27)
+            // ── Catatan & SK
             'Evaluator Notes', 'Evaluator', 'SK Status', 'Notes',
-            // ── Audit (col 28–29)
+            // ── Audit
             'Created At', 'Updated At',
-            // ── NEW: Performance Review 2026 — Competency totals (col 30–35)
+            // ── Performance Review 2026 — Competency totals
+            // Dihitung server-side dari 13 behavioral indicator ✓/X.
             'Integrity Total', 'CI Total', 'EE Total', 'Teamwork Total',
             'Overall Total', 'Category',
-            // ── NEW: Performance Review 2026 — Individual indicators 1/0 (col 36–52)
+            // ── Performance Review 2026 — Individual indicators
+            // Disimpan sebagai "1" (✓ terpenuhi) atau "0" (X tidak terpenuhi).
+            // Maximum score: 4+4+2+3 = 13. Kategori: 11-13 Sangat Baik, 8-10 Baik, 6-7 Cukup, 3-5 Kurang.
             'ind_integrity_1', 'ind_integrity_2', 'ind_integrity_3', 'ind_integrity_4',
             'ind_ci_1', 'ind_ci_2', 'ind_ci_3', 'ind_ci_4',
             'ind_ee_1', 'ind_ee_2',
             'ind_tw_1', 'ind_tw_2', 'ind_tw_3',
+            // Approval sign-off (Performance Review Section F)
+            'Reviewer Name', 'Approval Dept', 'Approval Dept Name',
+            'Approval Dept Date', 'Approval HRBP', 'Approval HRBP Name',
+            'Approval HRBP Date',
         ],
         'kandidat_hold' => [
             'Recruitment ID', 'Created Date', 'Full Name', 'NIK', 'Birth Date',

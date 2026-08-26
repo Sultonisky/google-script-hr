@@ -81,12 +81,35 @@ class SchemaValidationService
 
             // Determine starting column for appending
             $startCol = count($currentHeaders) + 1;
-            $colLetter = $this->columnIndexToLetter($startCol);
-            $endCol = $startCol + count($missing) - 1;
-            $endColLetter = $this->columnIndexToLetter($endCol);
+            $endCol   = $startCol + count($missing) - 1;
 
+            // ── Expand the grid if needed ────────────────────────────────
+            // Google Sheets rejects writes beyond the current column count.
+            // We must call appendDimension (batchUpdate) to widen the sheet
+            // BEFORE writing the new header values.
+            $sheetId = $this->getSheetIdByName($spreadsheetId, $sheetName, $service);
+            if ($sheetId !== null) {
+                $columnsNeeded = $endCol - count($currentHeaders);
+                if ($columnsNeeded > 0) {
+                    $appendDimRequest = new \Google\Service\Sheets\Request([
+                        'appendDimension' => [
+                            'sheetId'   => $sheetId,
+                            'dimension' => 'COLUMNS',
+                            'length'    => $columnsNeeded,
+                        ],
+                    ]);
+                    $batchBody = new \Google\Service\Sheets\BatchUpdateSpreadsheetRequest([
+                        'requests' => [$appendDimRequest],
+                    ]);
+                    $service->spreadsheets->batchUpdate($spreadsheetId, $batchBody);
+                }
+            }
+
+            // Now write the missing header names into the newly created columns
+            $colLetter    = $this->columnIndexToLetter($startCol);
+            $endColLetter = $this->columnIndexToLetter($endCol);
             $range = "{$sheetName}!{$colLetter}1:{$endColLetter}1";
-            $body = new \Google\Service\Sheets\ValueRange(['values' => [$missing]]);
+            $body  = new \Google\Service\Sheets\ValueRange(['values' => [$missing]]);
             $params = ['valueInputOption' => 'USER_ENTERED'];
             $service->spreadsheets_values->update($spreadsheetId, $range, $body, $params);
 
@@ -120,6 +143,25 @@ class SchemaValidationService
             if ($sheet->getProperties()->getTitle() === $sheetName) {
                 return $sheet;
             }
+        }
+        return null;
+    }
+
+    /**
+     * Get the numeric sheetId for a named sheet tab.
+     * Returns null if not found.
+     */
+    protected function getSheetIdByName(string $spreadsheetId, string $sheetName, $service): ?int
+    {
+        try {
+            $spreadsheet = $service->spreadsheets->get($spreadsheetId);
+            foreach ($spreadsheet->getSheets() as $sheet) {
+                if ($sheet->getProperties()->getTitle() === $sheetName) {
+                    return (int) $sheet->getProperties()->getSheetId();
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning("getSheetIdByName({$sheetName}): " . $e->getMessage());
         }
         return null;
     }

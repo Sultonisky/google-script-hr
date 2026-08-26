@@ -244,12 +244,19 @@ class ExportController extends Controller
             }
         }
 
-        // Merge approval sign-off data from query params (passed from controller evaluate())
+        // Merge approval sign-off data: prefer query params, fallback to evalData (from sheet)
         $extraData = $request->only([
             'reviewer_name',
             'approval_dept', 'approval_dept_name', 'approval_dept_date',
             'approval_hrbp', 'approval_hrbp_name', 'approval_hrbp_date',
         ]);
+        // If query params empty, use data from evalData (persisted in sheet)
+        foreach (['reviewer_name', 'approval_dept', 'approval_dept_name', 'approval_dept_date',
+                  'approval_hrbp', 'approval_hrbp_name', 'approval_hrbp_date'] as $field) {
+            if (empty($extraData[$field]) && !empty($evalData[$field])) {
+                $extraData[$field] = $evalData[$field];
+            }
+        }
 
         $pdf = $this->pdfService->generatePerformanceReviewPdf($employee, $evalData, $extraData);
         $safeName = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $employee->employeeId ?? 'emp');

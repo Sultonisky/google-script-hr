@@ -432,18 +432,14 @@
             if (modal) modal.hide();
             setTimeout(function() { window.location.reload(); }, 800);
           } else {
-            if (typeof showToast === 'function') {
-              showToast('Gagal: ' + (res ? (res.message || 'Error') : 'Tidak ada respon'), 'error');
-            } else { alert('Gagal: ' + (res ? res.message : 'Error')); }
+            showToast('Gagal: ' + (res ? (res.message || 'Error') : 'Tidak ada respon'), 'error');
           }
         })
         .catch(function(err) {
           offBtn.disabled = false;
           if (txtEl) txtEl.classList.remove('d-none');
           if (ldEl)  ldEl.classList.add('d-none');
-          if (typeof showToast === 'function') {
-            showToast('Error: ' + (err ? err.message : 'Network error'), 'error');
-          } else { alert('Error: ' + (err ? err.message : 'Network error')); }
+          showToast('Error: ' + (err ? err.message : 'Network error'), 'error');
         });
       });
     }
@@ -532,18 +528,15 @@
           var modal = bootstrap.Modal.getInstance(document.getElementById('promoteToProbationModal'));
           if (modal) modal.hide();
           if (res && res.success) {
-            if (typeof showToast === 'function') showToast(res.message || 'Berhasil didaftarkan ke Probation.', 'success', 5000);
-            else alert(res.message || 'Berhasil.');
+            showToast(res.message || 'Berhasil didaftarkan ke Probation.', 'success', 5000);
             setTimeout(function() { window.location.reload(); }, 800);
           } else {
-            if (typeof showToast === 'function') showToast('Gagal: ' + (res ? (res.message || 'Error') : 'Error'), 'error');
-            else alert('Gagal: ' + (res ? res.message : 'Error'));
+            showToast('Gagal: ' + (res ? (res.message || 'Error') : 'Error'), 'error');
           }
         })
         .catch(function(err) {
           if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = origHtml; }
-          if (typeof showToast === 'function') showToast('Error: ' + (err ? err.message : 'Network error'), 'error');
-          else alert('Error: ' + (err ? err.message : 'Network error'));
+          showToast('Error: ' + (err ? err.message : 'Network error'), 'error');
         });
       });
     }
@@ -794,13 +787,11 @@
     if (!file) return;
     var name = (file.name || '').toLowerCase();
     if (!name.endsWith('.csv') && !name.endsWith('.xlsx') && !name.endsWith('.xls')) {
-      if (typeof showToast === 'function') showToast('Hanya file CSV atau Excel (.csv/.xlsx/.xls) yang didukung.', 'error');
-      else alert('Hanya file CSV atau Excel yang didukung.');
+      showToast('Hanya file CSV atau Excel (.csv/.xlsx/.xls) yang didukung.', 'error');
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      if (typeof showToast === 'function') showToast('Ukuran file maksimal 10 MB.', 'error');
-      else alert('Ukuran file maksimal 10 MB.');
+      showToast('Ukuran file maksimal 10 MB.', 'error');
       return;
     }
     _file = file;
