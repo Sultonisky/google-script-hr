@@ -6,7 +6,7 @@
   <style>
     @page { margin: 30px 40px; }
     body {
-      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-family: 'Times New Roman', Times, serif;
       font-size: 11px;
       color: #1f2937;
       line-height: 1.55;
