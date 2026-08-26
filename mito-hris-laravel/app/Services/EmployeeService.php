@@ -33,6 +33,150 @@ class EmployeeService
     }
 
     /**
+     * Preview import — validate rows and check duplicates WITHOUT writing to Google Sheets.
+     * 1:1 with GAS importEmployees() validation logic, minus the batch write.
+     *
+     * Returns per-row classification: new | duplicate_existing | duplicate_internal | invalid
+     * plus summary counts for the modal Step 2 display.
+     */
+    public function previewImport(array $rows): array
+    {
+        if (empty($rows)) {
+            return [
+                'success'  => false,
+                'message'  => 'Tidak ada data untuk dipreview.',
+                'total'    => 0,
+                'new'      => 0,
+                'existing' => 0,
+                'invalid'  => 0,
+                'duplicate_internal' => 0,
+                'rows'     => [],
+            ];
+        }
+
+        // Read all existing Employee IDs from the sheet (UPPERCASE for comparison)
+        $existingEmployees = $this->employeeRepo->getAll();
+        $existingIds = $existingEmployees
+            ->pluck('employeeId')
+            ->filter()
+            ->map(fn($id) => strtoupper(trim($id)))
+            ->values()
+            ->toArray();
+
+        $seenInFile  = [];   // track Employee IDs encountered within this file (uppercase)
+        $resultRows  = [];
+        $countNew    = 0;
+        $countExist  = 0;
+        $countInvalid = 0;
+        $countDupInternal = 0;
+
+        foreach ($rows as $index => $row) {
+            $rowNum   = $index + 1;
+            $issues   = [];
+            $status   = 'new';   // new | duplicate_existing | duplicate_internal | invalid
+
+            // --- Required field: Full Name (1:1 GAS importEmployees) ---
+            $fullName = trim($row['fullName'] ?? $row['name'] ?? $row['nama'] ?? '');
+            if ($fullName === '') {
+                $issues[] = 'Nama lengkap wajib diisi';
+                $status   = 'invalid';
+            }
+
+            // --- Employee ID duplicate checks ---
+            $rawId = trim($row['employeeId'] ?? $row['empId'] ?? $row['idKaryawan'] ?? '');
+            if ($rawId !== '') {
+                $rawIdUpper = strtoupper($rawId);
+
+                // Check against existing sheet data
+                if (in_array($rawIdUpper, $existingIds, true)) {
+                    $issues[] = "Employee ID '{$rawId}' sudah ada di sheet";
+                    $status   = 'duplicate_existing';
+                }
+                // Check for internal duplicate within this file
+                elseif (in_array($rawIdUpper, $seenInFile, true)) {
+                    $issues[] = "Employee ID '{$rawId}' duplikat di dalam file";
+                    $status   = 'duplicate_internal';
+                } else {
+                    $seenInFile[] = $rawIdUpper;
+                }
+            } else {
+                // No explicit ID — will be auto-generated; track by full name as proxy
+                // (GAS does NOT deduplicate no-ID rows by name; we flag a warning only)
+                $nameLower = strtolower($fullName);
+                if ($nameLower !== '' && in_array($nameLower, $seenInFile, true)) {
+                    $issues[] = "Nama '{$fullName}' muncul lebih dari sekali dalam file";
+                    if ($status === 'new') {
+                        $status = 'duplicate_internal';
+                    }
+                } elseif ($nameLower !== '') {
+                    $seenInFile[] = $nameLower;
+                }
+            }
+
+            // --- Date format validation (loose: just check if non-empty dates are parseable) ---
+            foreach (['joinDate', 'birthDate', 'endDateContract', 'resignDate'] as $dateField) {
+                $val = trim($row[$dateField] ?? $row[lcfirst($dateField)] ?? '');
+                if ($val !== '' && strtotime($val) === false) {
+                    $issues[] = "Format tanggal {$dateField} tidak valid: '{$val}'";
+                    if ($status === 'new') {
+                        $status = 'invalid';
+                    }
+                }
+            }
+
+            // --- Status Employee validation (1:1 GAS allowed statuses) ---
+            $allowedStatuses = ['Permanent', 'Contract', 'Probation', 'Outsource', 'PKWTT', 'PKWT'];
+            $empStatus = trim(
+                $row['statusEmployee'] ?? $row['employmentStatus'] ?? $row['status'] ?? ''
+            );
+            if ($empStatus !== '' && !in_array($empStatus, $allowedStatuses, true)) {
+                // Warn but don't hard-reject — GAS uses default 'Contract' for unknown status
+                $issues[] = "Status Employee '{$empStatus}' tidak dikenali (akan digunakan nilai default)";
+            }
+
+            // Tally
+            if ($status === 'new' && empty(array_filter($issues, fn($i) => str_contains($i, 'wajib') || str_contains($i, 'tidak valid')))) {
+                $countNew++;
+            } elseif ($status === 'duplicate_existing') {
+                $countExist++;
+            } elseif ($status === 'duplicate_internal') {
+                $countDupInternal++;
+            } elseif ($status === 'invalid') {
+                $countInvalid++;
+            }
+
+            $resultRows[] = [
+                'row'          => $rowNum,
+                'employeeId'   => $rawId ?: '(auto)',
+                'fullName'     => $fullName ?: '-',
+                'department'   => trim($row['department'] ?? $row['dept'] ?? $row['departemen'] ?? ''),
+                'jobPosition'  => trim($row['positionCurrent'] ?? $row['jobPositionLocation'] ?? $row['position'] ?? $row['jabatan'] ?? ''),
+                'statusEmployee' => $empStatus ?: 'Contract',
+                'joinDate'     => trim($row['joinDate'] ?? $row['tanggalMasuk'] ?? ''),
+                'status'       => $status,   // new | duplicate_existing | duplicate_internal | invalid
+                'issues'       => $issues,
+            ];
+        }
+
+        $total     = count($rows);
+        $canImport = $countNew > 0;
+
+        return [
+            'success'            => true,
+            'total'              => $total,
+            'new'                => $countNew,
+            'existing'           => $countExist,
+            'invalid'            => $countInvalid,
+            'duplicate_internal' => $countDupInternal,
+            'can_import'         => $canImport,
+            'message'            => $canImport
+                ? "{$countNew} baris baru siap diimport."
+                : 'Tidak ada baris baru yang dapat diimport.',
+            'rows'               => $resultRows,
+        ];
+    }
+
+    /**
      * Bulk import employees from array of row data (1:1 with Import.gs).
      */
     public function importEmployees(array $rows, ?string $user = null): array
