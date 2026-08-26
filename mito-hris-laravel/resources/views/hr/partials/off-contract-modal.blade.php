@@ -238,11 +238,7 @@
         ocBtn.innerHTML = origHtml;
 
         if (res && res.success) {
-          if (typeof showToast === 'function') {
-            showToast('Off Contract berhasil diproses.', 'success', 4000);
-          } else {
-            alert('Off Contract berhasil: ' + (res.message || ''));
-          }
+          showToast('Off Contract berhasil diproses.', 'success', 4000);
 
           // Auto-download PDFs via hidden iframe (non-blocking)
           var pdfUrls = res.pdf_urls || {};
@@ -264,21 +260,13 @@
           if (modal) modal.hide();
           setTimeout(function() { window.location.reload(); }, 800);
         } else {
-          if (typeof showToast === 'function') {
-            showToast('Gagal: ' + (res ? (res.message || 'Error') : 'Tidak ada respon'), 'error');
-          } else {
-            alert('Gagal: ' + (res ? res.message : 'Error'));
-          }
+          showToast('Gagal: ' + (res ? (res.message || 'Error') : 'Tidak ada respon'), 'error');
         }
       })
       .catch(function(err) {
         ocBtn.disabled = false;
         ocBtn.innerHTML = origHtml;
-        if (typeof showToast === 'function') {
-          showToast('Error: ' + (err ? err.message : 'Network error'), 'error');
-        } else {
-          alert('Error: ' + (err ? err.message : 'Network error'));
-        }
+        showToast('Error: ' + (err ? err.message : 'Network error'), 'error');
       });
     });
 

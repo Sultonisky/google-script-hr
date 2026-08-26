@@ -97,7 +97,7 @@
                 <td class="text-muted item-desc" style="font-size:12.5px">{{ $itemDesc }}</td>
                 <td><span class="cat-badge">{{ strtoupper(request('cat', 'positions')) }}</span></td>
                 <td class="text-end">
-                  <button class="btn btn-sm btn-light border text-danger" title="Hapus Item" onclick="alert('Item referensi master terproteksi dari spreadsheet.')">
+                  <button class="btn btn-sm btn-light border text-danger" title="Hapus Item" onclick="showToast('Item referensi master terproteksi dari spreadsheet.', 'warning')">
                     <i class="bi bi-trash"></i>
                   </button>
                 </td>
