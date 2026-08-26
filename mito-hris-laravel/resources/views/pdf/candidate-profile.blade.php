@@ -7,7 +7,7 @@
     @page { margin: 22px 30px 28px 30px; }
     * { box-sizing: border-box; }
     body {
-      font-family: Helvetica, Arial, sans-serif;
+      font-family: 'Times New Roman', Times, serif;
       font-size: 10px;
       color: #222;
       line-height: 1.45;

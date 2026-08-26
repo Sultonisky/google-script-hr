@@ -7,7 +7,7 @@
     @page { margin: 28px 36px; size: A4; }
 
     body {
-      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-family: 'Times New Roman', Times, serif;
       font-size: 9.5pt;
       color: #111111;
       line-height: 1.55;
