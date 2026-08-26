@@ -48,17 +48,17 @@
                     <div class="panel-subtitle" id="accPanelSubtitle">Menampilkan {{ $candidates->count() }} kandidat
                         berstatus Accepted</div>
                 </div>
-                <div class="export-btns">
+                <div class="export-btns d-flex flex-wrap gap-2">
                     <button class="btn-refresh" id="btnAccRefresh" type="button" title="Muat ulang"
                         onclick="location.reload()">
                         <i class="bi bi-arrow-clockwise"></i>
                     </button>
-                    <button class="btn btn-sm text-white ms-2 fw-semibold"
+                    <button class="btn btn-sm text-white fw-semibold"
                         style="background:var(--color-primary, #eb1c24);border:none;border-radius:8px;padding:6px 14px;font-size:13px"
                         type="button" data-bs-toggle="modal" data-bs-target="#offeringModal">
                         <i class="bi bi-file-earmark-text me-1"></i>Buat Offering Letter
                     </button>
-                    <button class="btn btn-sm text-white ms-2 fw-semibold"
+                    <button class="btn btn-sm text-white fw-semibold"
                         style="background:#166534;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
                         type="button" data-bs-toggle="modal" data-bs-target="#onboardingModal">
                         <i class="bi bi-file-earmark-check-fill me-1"></i>Proses Kontrak PKWT

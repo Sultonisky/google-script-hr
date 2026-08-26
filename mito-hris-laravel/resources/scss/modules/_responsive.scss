@@ -1,32 +1,397 @@
 // ============================================================
-// modules/_responsive.scss — RESPONSIVE BREAKPOINTS
-// 1:1 from GAS css/responsive.html
+// modules/_responsive.scss — COMPREHENSIVE RESPONSIVE BREAKPOINTS
+// Supports 320px, 375px, 430px, 768px, 1024px, 1280px, 1440px, 1920px
 // ============================================================
 
+/* ── Base Container & Smooth Scrolling ── */
+.table-responsive {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+body.sidebar-open {
+  overflow: hidden;
+}
+
+/* ── Large Tablet / Tablet Landscape (<= 991.98px) ── */
 @media (max-width: 991.98px) {
-  .sidebar { transform: translateX(-100%); }
-  .sidebar.show { transform: translateX(0); }
-  .sidebar-overlay.show { display: block; }
-  .main-content { margin-left: 0; }
-  .btn-burger { display: flex; }
-  .topbar-search { display: none; }
-  .drawer-panel { width: 100%; }
+  .sidebar {
+    transform: translateX(-100%);
+    width: min(280px, 85vw);
+    max-width: 100vw;
+    box-shadow: 8px 0 24px rgba(0, 0, 0, 0.25);
+  }
+  .sidebar.show {
+    transform: translateX(0);
+  }
+  .sidebar-overlay.show {
+    display: block;
+  }
+  .main-content {
+    margin-left: 0;
+    min-width: 0;
+    width: 100%;
+  }
+  .btn-burger {
+    display: flex;
+  }
+  .topbar-search {
+    display: none;
+  }
+  .drawer-panel {
+    width: 100%;
+    max-width: 100vw;
+  }
+  .content-wrap {
+    padding: 20px 18px 48px;
+  }
 }
 
+/* ── Medium Tablet (<= 768px) ── */
+@media (max-width: 768px) {
+  .content-wrap {
+    padding: 16px 14px 44px;
+  }
+  .topbar {
+    padding: 12px 16px;
+  }
+
+  /* Panel & Export Buttons */
+  .panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+
+    .export-btns {
+      margin-left: 0;
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+
+      .btn,
+      .btn-export {
+        flex: 1 1 auto;
+        justify-content: center;
+        margin-left: 0 !important;
+        font-size: 12.5px;
+        padding: 6px 12px;
+      }
+    }
+  }
+
+  /* Filter Bar */
+  .filter-bar {
+    padding: 14px 16px;
+    gap: 8px;
+    flex-direction: column;
+    align-items: stretch;
+
+    .table-search,
+    .filter-select,
+    .filter-date,
+    .filter-number {
+      width: 100%;
+      min-width: 0;
+      flex: 1 1 100%;
+    }
+
+    .btn-toggle-more,
+    .btn-reset-filter,
+    .btn-refresh {
+      height: 38px;
+      font-size: 12.5px;
+      justify-content: center;
+    }
+  }
+
+  /* Drawer Responsive */
+  .drawer-panel {
+    width: 100% !important;
+    max-width: 100vw !important;
+  }
+  .drawer-header {
+    padding: 18px 16px;
+  }
+  .avatar-lg {
+    width: 58px;
+    height: 58px;
+    font-size: 20px;
+    border-radius: 14px;
+  }
+  .drawer-body {
+    padding: 16px 14px;
+  }
+  .cv-section-card {
+    padding: 14px 14px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+  }
+  .cv-grid-2 {
+    grid-template-columns: 1fr !important;
+    gap: 8px 0;
+  }
+  .drawer-footer {
+    padding: 12px 16px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+
+    .btn,
+    .btn-status {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+  .status-action-group {
+    flex-direction: column;
+    width: 100%;
+    gap: 6px;
+  }
+  .btn-status {
+    width: 100%;
+    height: 40px;
+    font-size: 12.5px;
+  }
+
+  /* Pagination & Panel Footer */
+  .panel-footer {
+    padding: 12px 16px;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 10px;
+
+    .pagination-ui {
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .page-btn {
+      min-width: 32px;
+      height: 32px;
+      font-size: 12px;
+      padding: 0 6px;
+    }
+  }
+
+  /* Modals */
+  .modal-dialog {
+    margin: 10px !important;
+    max-width: calc(100vw - 20px) !important;
+  }
+  .modal-body {
+    max-height: calc(100vh - 140px) !important;
+    overflow-y: auto !important;
+  }
+  .modal-footer {
+    flex-wrap: wrap;
+    gap: 8px;
+
+    .btn {
+      flex: 1 1 auto;
+    }
+  }
+
+  /* Settings Page */
+  .settings-card {
+    max-width: 100%;
+  }
+  .settings-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 12px 0;
+
+    input[type="text"],
+    input[type="email"],
+    input[type="url"],
+    select,
+    input[type="number"] {
+      width: 100% !important;
+      min-width: 0 !important;
+    }
+  }
+}
+
+/* ── Mobile Standard & Small (<= 576px) ── */
 @media (max-width: 576px) {
-  .content-wrap { padding: 18px 14px 40px; }
-  .topbar { padding: 12px 16px; }
-  .filter-bar { flex-direction: column; align-items: stretch; }
-  .filter-bar .table-search,
-  .filter-select,
-  .filter-date,
-  .filter-number { width: 100%; }
-  .export-btns { width: 100%; }
-  .btn-export { flex: 1; justify-content: center; }
-  .cv-grid-2 { grid-template-columns: 1fr; }
-  .fab-wrap { right: 16px; bottom: 16px; }
+  .content-wrap {
+    padding: 14px 10px 40px;
+  }
+  .topbar {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .topbar .page-title h5 {
+    font-size: 14px;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .topbar .page-title small {
+    display: none;
+  }
+  .topbar-actions {
+    gap: 6px;
+  }
+  .btn-burger {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+  .icon-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 15px;
+  }
+  .topbar-avatar {
+    width: 30px;
+    height: 30px;
+    font-size: 11px;
+  }
+  .topbar-user-btn {
+    padding: 2px 4px;
+  }
+  .topbar-user-menu .dropdown-menu {
+    max-width: calc(100vw - 20px);
+    right: 0 !important;
+    left: auto !important;
+  }
+
+  /* Stat Cards */
+  .stat-card {
+    padding: 12px 10px;
+    gap: 10px;
+    border-radius: 12px;
+
+    .stat-icon {
+      width: 36px;
+      height: 36px;
+      font-size: 15px;
+      border-radius: 10px;
+    }
+
+    .stat-label {
+      font-size: 10px;
+      letter-spacing: 0.01em;
+      margin-bottom: 2px;
+      line-height: 1.2;
+    }
+
+    .stat-value {
+      font-size: 17px;
+      line-height: 1.1;
+      word-break: break-word;
+    }
+  }
+
+  .chart-card {
+    padding: 14px 12px 10px;
+    border-radius: 12px;
+  }
+  .chart-canvas-wrap {
+    height: 190px;
+  }
+
+  /* Form & Hero Public */
+  .hero-section {
+    padding: 28px 0 20px;
+  }
+  .hero-title {
+    font-size: 21px;
+  }
+  .hero-subtitle {
+    font-size: 13px;
+  }
+  .form-section {
+    border-radius: 12px;
+    margin-bottom: 16px;
+  }
+  .form-section-header {
+    padding: 14px 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    .section-status {
+      margin-left: 0;
+      width: 100%;
+      justify-content: center;
+    }
+  }
+  .form-section-body {
+    padding: 16px 12px;
+  }
+  .btn-submit {
+    width: 100%;
+    min-width: 0;
+    padding: 12px 20px;
+    font-size: 14px;
+  }
+  .agreement-section {
+    padding: 14px 12px;
+    margin: 18px 0;
+  }
+  .progress-section {
+    padding: 10px 0;
+  }
+  .fab-wrap {
+    right: 14px;
+    bottom: 14px;
+  }
 }
 
+/* ── Mobile Extra Small (<= 360px down to 320px) ── */
+@media (max-width: 360px) {
+  .content-wrap {
+    padding: 10px 6px 36px;
+  }
+  .topbar {
+    padding: 8px 8px;
+  }
+  .topbar .page-title h5 {
+    max-width: 105px;
+    font-size: 13px;
+  }
+  .panel-header h6 {
+    font-size: 14px;
+  }
+  .stat-card {
+    padding: 10px 8px;
+    gap: 8px;
+
+    .stat-icon {
+      width: 32px;
+      height: 32px;
+      font-size: 13px;
+    }
+    .stat-label {
+      font-size: 9.5px;
+    }
+    .stat-value {
+      font-size: 15px;
+    }
+  }
+  .page-btn {
+    min-width: 28px;
+    height: 28px;
+    font-size: 11px;
+    padding: 0 4px;
+  }
+  .modal-dialog {
+    margin: 4px !important;
+    max-width: calc(100vw - 8px) !important;
+  }
+  .modal-body {
+    padding: 12px 8px !important;
+  }
+}
+
+/* ── Print Styles ── */
 @media print {
   .sidebar,
   .topbar,
@@ -34,8 +399,17 @@
   .drawer-footer,
   .filter-bar,
   .panel-header .export-btns,
-  .btn-refresh { display: none !important; }
+  .btn-refresh {
+    display: none !important;
+  }
   .drawer-overlay,
-  .drawer-panel { position: static; box-shadow: none; transform: none; width: 100%; }
-  body { background: #fff; }
+  .drawer-panel {
+    position: static;
+    box-shadow: none;
+    transform: none;
+    width: 100%;
+  }
+  body {
+    background: #fff;
+  }
 }

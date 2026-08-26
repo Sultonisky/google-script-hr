@@ -42,20 +42,20 @@
       <input type="hidden" id="evalApprovalHrbp"      value="" />
       <input type="hidden" id="evalApprovalHrbpName"  value="" />
       <input type="hidden" id="evalApprovalHrbpDate"  value="" />
-      {{-- 13 indicator hidden fields --}}
-      <input type="hidden" id="ind_integrity_1" value="0">
-      <input type="hidden" id="ind_integrity_2" value="0">
-      <input type="hidden" id="ind_integrity_3" value="0">
-      <input type="hidden" id="ind_integrity_4" value="0">
-      <input type="hidden" id="ind_ci_1"        value="0">
-      <input type="hidden" id="ind_ci_2"        value="0">
-      <input type="hidden" id="ind_ci_3"        value="0">
-      <input type="hidden" id="ind_ci_4"        value="0">
-      <input type="hidden" id="ind_ee_1"        value="0">
-      <input type="hidden" id="ind_ee_2"        value="0">
-      <input type="hidden" id="ind_tw_1"        value="0">
-      <input type="hidden" id="ind_tw_2"        value="0">
-      <input type="hidden" id="ind_tw_3"        value="0">
+      {{-- 13 indicator hidden fields — 3 states: "" = belum dinilai, "1" = ✓ terpenuhi, "0" = X tidak terpenuhi --}}
+      <input type="hidden" id="ind_integrity_1" value="">
+      <input type="hidden" id="ind_integrity_2" value="">
+      <input type="hidden" id="ind_integrity_3" value="">
+      <input type="hidden" id="ind_integrity_4" value="">
+      <input type="hidden" id="ind_ci_1"        value="">
+      <input type="hidden" id="ind_ci_2"        value="">
+      <input type="hidden" id="ind_ci_3"        value="">
+      <input type="hidden" id="ind_ci_4"        value="">
+      <input type="hidden" id="ind_ee_1"        value="">
+      <input type="hidden" id="ind_ee_2"        value="">
+      <input type="hidden" id="ind_tw_1"        value="">
+      <input type="hidden" id="ind_tw_2"        value="">
+      <input type="hidden" id="ind_tw_3"        value="">
 
       <div class="modal-body p-0">
 
@@ -141,7 +141,11 @@
             <div class="alert py-2 px-3 mb-3 d-flex align-items-start gap-2"
               style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;font-size:12px">
               <i class="bi bi-info-circle-fill text-info mt-1" style="font-size:13px;flex-shrink:0"></i>
-              <span>Centang setiap indikator yang <strong>terbukti ditunjukkan</strong> karyawan selama masa probation. Indikator yang tidak dicentang dianggap belum terpenuhi.</span>
+              <span>
+                Berikan tanda <strong>✓ Terpenuhi</strong> atau <strong>✗ Tidak Terpenuhi</strong> pada setiap Behavioral Indicator.
+                <strong>Semua indikator wajib dinilai</strong> sebelum dapat menyimpan evaluasi.
+                Total jumlah ✓ akan dihitung sebagai skor kompetensi.
+              </span>
             </div>
           </div>
 
@@ -242,25 +246,40 @@
               </div>
               <div class="text-center" style="min-width:48px">
                 <div style="font-size:10px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:.03em">✓ Terpenuhi</div>
-                <span id="badge_{{ $comp['key'] }}" class="fw-bold" style="font-size:16px;color:{{ $comp['color'] }}">0</span>
+                <span id="badge_{{ $comp['key'] }}" class="fw-bold" style="font-size:16px;color:{{ $comp['color'] }}">–</span>
                 <span style="font-size:11px;color:#9ca3af"> / {{ $comp['max'] }}</span>
               </div>
             </div>
             {{-- Indicator rows --}}
             @foreach($comp['items'] as $key => $label)
-            <div class="eval-ind-row d-flex align-items-start gap-3 px-3 py-2"
-              style="cursor:pointer;border-bottom:1px solid #f9fafb;transition:background .1s"
-              onmouseenter="this.style.background='{{ $comp['bg'] }}'"
-              onmouseleave="this.style.background=''"
-              onclick="toggleIndicator('{{ $key }}', this)">
-              <div class="ind-checkbox flex-shrink-0 mt-1"
-                style="width:18px;height:18px;border:2px solid #d1d5db;border-radius:4px;
-                       display:flex;align-items:center;justify-content:center;
-                       transition:all .15s;background:#fff"
-                data-key="{{ $key }}" data-color="{{ $comp['color'] }}">
-                <i class="bi bi-check2" style="font-size:11px;color:#fff;display:none"></i>
+            <div class="eval-ind-row px-3 py-2"
+              style="border-bottom:1px solid #f9fafb">
+              {{-- Indicator text --}}
+              <div class="mb-2" style="font-size:12.5px;line-height:1.5;color:#374151">{{ $label }}</div>
+              {{-- ✓ / X toggle buttons — mutually exclusive, 3 states: null/1/0 --}}
+              <div class="d-flex flex-wrap gap-2" role="group" aria-label="Penilaian indicator">
+                <button type="button"
+                  class="ind-btn-check btn btn-sm flex-fill"
+                  data-key="{{ $key }}"
+                  data-val="1"
+                  style="min-width:115px;border:2px solid #d1d5db;background:#fff;color:#374151;font-size:12px;font-weight:600;border-radius:8px;padding:5px 10px;transition:all .15s"
+                  onclick="setIndicator('{{ $key }}', '1', this)">
+                  <i class="bi bi-check-circle me-1"></i>✓ Terpenuhi
+                </button>
+                <button type="button"
+                  class="ind-btn-cross btn btn-sm flex-fill"
+                  data-key="{{ $key }}"
+                  data-val="0"
+                  style="min-width:125px;border:2px solid #d1d5db;background:#fff;color:#374151;font-size:12px;font-weight:600;border-radius:8px;padding:5px 10px;transition:all .15s"
+                  onclick="setIndicator('{{ $key }}', '0', this)">
+                  <i class="bi bi-x-circle me-1"></i>✗ Tidak Terpenuhi
+                </button>
               </div>
-              <div style="font-size:12.5px;line-height:1.5;color:#374151">{{ $label }}</div>
+              {{-- Validation hint — shown if submit attempted and not yet rated --}}
+              <div class="ind-error" id="ind_err_{{ $key }}"
+                style="display:none;font-size:11px;color:#dc2626;margin-top:3px">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i>Indikator ini belum dinilai.
+              </div>
             </div>
             @endforeach
             {{-- Evidence note --}}
@@ -279,7 +298,7 @@
             <div class="row g-2 align-items-center">
               <div class="col-6 col-sm-4 text-center border-end-sm" style="border-right:1px solid #ddd6fe">
                 <div style="font-size:10px;color:#7c3aed;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Total Score</div>
-                <div id="evalOverallTotal" style="font-size:32px;font-weight:900;color:#7c3aed;line-height:1">0</div>
+                <div id="evalOverallTotal" style="font-size:32px;font-weight:900;color:#7c3aed;line-height:1">–</div>
                 <div style="font-size:10px;color:#9ca3af">dari 13 indikator</div>
               </div>
               <div class="col-6 col-sm-4 text-center border-end-sm" style="border-right:1px solid #ddd6fe;padding:0 8px">
@@ -297,9 +316,8 @@
                 </table>
               </div>
             </div>
-            {{-- Score feedback message --}}
             <div id="evalScoreFeedback" class="mt-2 text-center" style="font-size:12px;color:#9ca3af">
-              Centang behavioral indicator di atas untuk melihat hasil penilaian.
+              Pilih ✓ atau ✗ pada setiap behavioral indicator di atas.
             </div>
           </div>
 
@@ -567,6 +585,13 @@
             <span id="evalServerErrorMsg">Terjadi kesalahan. Silakan coba lagi.</span>
           </div>
 
+          {{-- ── Indicator incomplete warning ─────────────────── --}}
+          <div id="evalIndicatorError" class="mx-4 mb-3 alert alert-warning py-2 px-3 d-flex align-items-center gap-2"
+            style="display:none;font-size:12.5px;border-radius:8px">
+            <i class="bi bi-exclamation-triangle-fill" style="flex-shrink:0;color:#d97706"></i>
+            <span>Semua indikator harus dinilai dengan memilih <strong>✓ Terpenuhi</strong> atau <strong>✗ Tidak Terpenuhi</strong>.</span>
+          </div>
+
         </div>{{-- /#evalEmpPreview --}}
       </div>{{-- /.modal-body --}}
 
@@ -643,79 +668,123 @@
     return               { label: 'Kurang',     bg: '#fee2e2', color: '#991b1b' };
   }
 
-  // ── Toggle a single indicator ───────────────────────────────────
-  window.toggleIndicator = function (key, rowEl) {
+  // ── Set a single indicator to explicit ✓ (1) or ✗ (0) ────────
+  // 3 states: "" = belum dinilai, "1" = ✓, "0" = X
+  window.setIndicator = function (key, val, btnEl) {
     var hiddenEl = document.getElementById('ind_' + key);
-    var checkEl  = rowEl.querySelector('.ind-checkbox');
-    var iconEl   = checkEl ? checkEl.querySelector('i') : null;
-    if (!hiddenEl || !checkEl) return;
+    if (!hiddenEl) return;
 
-    var newState = hiddenEl.value !== '1';
-    hiddenEl.value = newState ? '1' : '0';
+    // Toggle off if same button already selected
+    var isAlreadySelected = hiddenEl.value === val;
+    var newVal = isAlreadySelected ? '' : val;
+    hiddenEl.value = newVal;
 
-    var color = checkEl.getAttribute('data-color') || '#7c3aed';
-    if (newState) {
-      checkEl.style.background  = color;
-      checkEl.style.borderColor = color;
-      if (iconEl) iconEl.style.display = 'block';
-    } else {
-      checkEl.style.background  = '#fff';
-      checkEl.style.borderColor = '#d1d5db';
-      if (iconEl) iconEl.style.display = 'none';
+    // Update button visual states
+    var compBlock = btnEl.closest('.eval-ind-row');
+    if (compBlock) {
+      var checkBtn = compBlock.querySelector('.ind-btn-check');
+      var crossBtn = compBlock.querySelector('.ind-btn-cross');
+
+      // Reset both to neutral
+      if (checkBtn) {
+        checkBtn.style.borderColor = '#d1d5db';
+        checkBtn.style.background  = '#fff';
+        checkBtn.style.color       = '#374151';
+      }
+      if (crossBtn) {
+        crossBtn.style.borderColor = '#d1d5db';
+        crossBtn.style.background  = '#fff';
+        crossBtn.style.color       = '#374151';
+      }
+
+      // Activate selected button (if not toggled off)
+      if (newVal === '1' && checkBtn) {
+        checkBtn.style.borderColor = '#166534';
+        checkBtn.style.background  = '#f0fdf4';
+        checkBtn.style.color       = '#166534';
+      } else if (newVal === '0' && crossBtn) {
+        crossBtn.style.borderColor = '#991b1b';
+        crossBtn.style.background  = '#fef2f2';
+        crossBtn.style.color       = '#991b1b';
+      }
     }
+
+    // Hide per-indicator error if now rated
+    var errEl = document.getElementById('ind_err_' + key);
+    if (errEl) errEl.style.display = 'none';
 
     recalcScores();
   };
 
   function recalcScores() {
-    // Per-competency totals
+    // Per-competency totals — only count explicit "1" (✓)
+    // Show "–" if any indicator in competency not yet rated
     Object.keys(COMPETENCIES).forEach(function (comp) {
-      var keys  = COMPETENCIES[comp];
+      var keys    = COMPETENCIES[comp];
+      var allRated = keys.every(function (k) {
+        var el = document.getElementById('ind_' + k);
+        return el && el.value !== '';
+      });
       var count = keys.reduce(function (acc, k) {
         var el = document.getElementById('ind_' + k);
         return acc + (el && el.value === '1' ? 1 : 0);
       }, 0);
       var badge = document.getElementById('badge_' + comp);
-      if (badge) badge.textContent = count;
+      if (badge) badge.textContent = allRated ? count : '–';
     });
 
     // Overall total
+    var allRatedGlobal = ALL_KEYS.every(function (k) {
+      var el = document.getElementById('ind_' + k);
+      return el && el.value !== '';
+    });
     var total = ALL_KEYS.reduce(function (acc, k) {
       var el = document.getElementById('ind_' + k);
       return acc + (el && el.value === '1' ? 1 : 0);
     }, 0);
 
     var totalEl = document.getElementById('evalOverallTotal');
-    if (totalEl) totalEl.textContent = total;
+    if (totalEl) totalEl.textContent = allRatedGlobal ? total : '–';
 
-    var cat = categoryFromTotal(total);
+    // Category badge — only show when all rated
+    var cat = allRatedGlobal ? categoryFromTotal(total) : null;
     var catEl = document.getElementById('evalCategoryBadge');
     if (catEl) {
-      catEl.textContent      = cat.label;
-      catEl.style.background = cat.bg;
-      catEl.style.color      = cat.color;
+      if (cat) {
+        catEl.textContent      = cat.label;
+        catEl.style.background = cat.bg;
+        catEl.style.color      = cat.color;
+      } else {
+        catEl.textContent      = '—';
+        catEl.style.background = '#e5e7eb';
+        catEl.style.color      = '#6b7280';
+      }
     }
 
     // Score feedback
     var feedbackEl = document.getElementById('evalScoreFeedback');
     if (feedbackEl) {
-      if (total === 0) {
-        feedbackEl.textContent = 'Centang behavioral indicator di atas untuk melihat hasil penilaian.';
+      var ratedCount = ALL_KEYS.filter(function (k) {
+        var el = document.getElementById('ind_' + k);
+        return el && el.value !== '';
+      }).length;
+      if (ratedCount === 0) {
+        feedbackEl.textContent = 'Pilih ✓ atau ✗ pada setiap behavioral indicator di atas.';
         feedbackEl.style.color = '#9ca3af';
-      } else if (total < 13) {
-        feedbackEl.textContent = total + ' dari 13 indikator terpenuhi. Kategori: ' + cat.label + '.';
-        feedbackEl.style.color = cat.color;
+      } else if (!allRatedGlobal) {
+        feedbackEl.textContent = ratedCount + ' dari 13 indikator sudah dinilai. ' + (13 - ratedCount) + ' belum dinilai.';
+        feedbackEl.style.color = '#d97706';
       } else {
-        feedbackEl.textContent = 'Semua 13 indikator terpenuhi. Kategori: ' + cat.label + '. ✓';
-        feedbackEl.style.color = '#166534';
+        var cat2 = categoryFromTotal(total);
+        feedbackEl.textContent = total + ' dari 13 indikator terpenuhi (✓). Kategori: ' + cat2.label + '.';
+        feedbackEl.style.color = cat2.color;
       }
     }
 
-    // Lulus gate hint
+    // Lulus gate hint — only when all rated
     var gateEl = document.getElementById('evalLulusScoreGate');
-    if (gateEl) gateEl.style.display = total < 8 ? 'block' : 'none';
+    if (gateEl) gateEl.style.display = (allRatedGlobal && total < 8) ? 'block' : 'none';
 
-    // Recheck decision validity (lulus requires ≥ 8)
     updateConfirmBtn();
     updateSummary();
   }
@@ -837,7 +906,17 @@
     var hasEmp = !!document.getElementById('evalEmployeeId').value;
     var decVal = document.getElementById('evalDecisionValue').value || '';
     var cls    = decVal ? classifyDecision(decVal) : {};
-    var total  = parseInt((document.getElementById('evalOverallTotal') || {}).textContent) || 0;
+
+    // All 13 indicators MUST be explicitly rated ("1" or "0") — not ""
+    var allRated = ALL_KEYS.every(function (k) {
+      var el = document.getElementById('ind_' + k);
+      return el && el.value !== '';
+    });
+
+    var total = ALL_KEYS.reduce(function (acc, k) {
+      var el = document.getElementById('ind_' + k);
+      return acc + (el && el.value === '1' ? 1 : 0);
+    }, 0);
 
     var extValid = true;
     if (cls.isPerp) {
@@ -845,12 +924,12 @@
                  !!(document.getElementById('evalExtStart').value);
     }
 
-    var lulusOk = !cls.isLulus || total >= 8;
+    var lulusOk = !cls.isLulus || (allRated && total >= 8);
 
     // Button label + color
     if (tEl) {
       if (cls.isLulus) {
-        btn.style.background = lulusOk ? '#166534' : '#9ca3af';
+        btn.style.background = (lulusOk && allRated) ? '#166534' : '#9ca3af';
         tEl.innerHTML = '<i class="bi bi-file-earmark-check me-1"></i>Simpan & Terbitkan SK Tetap';
       } else if (cls.isPutus) {
         btn.style.background = '#991b1b';
@@ -864,7 +943,7 @@
       }
     }
 
-    btn.disabled = !(hasEmp && !!decVal && extValid && lulusOk);
+    btn.disabled = !(hasEmp && !!decVal && allRated && extValid && lulusOk);
   };
 
   // ── Pre-submit summary panel ─────────────────────────────────────
@@ -878,7 +957,15 @@
       return;
     }
 
-    var total = parseInt((document.getElementById('evalOverallTotal') || {}).textContent) || 0;
+    // Compute total from hidden fields directly (not textContent which may be "–")
+    var total = ALL_KEYS.reduce(function (acc, k) {
+      var el = document.getElementById('ind_' + k);
+      return acc + (el && el.value === '1' ? 1 : 0);
+    }, 0);
+    var allRated = ALL_KEYS.every(function (k) {
+      var el = document.getElementById('ind_' + k);
+      return el && el.value !== '';
+    });
     var cat   = categoryFromTotal(total);
     var cls   = classifyDecision(decVal);
 
@@ -887,7 +974,7 @@
                               : '↺ EXTEND — Perpanjang Probation';
     var decColor = cls.isLulus ? '#166534' : cls.isPutus ? '#991b1b' : '#d97706';
 
-    var nameEl = document.getElementById('summaryEmpName');
+    var nameEl  = document.getElementById('summaryEmpName');
     var scoreEl = document.getElementById('summaryScore');
     var catEl   = document.getElementById('summaryCategory');
     var decEl   = document.getElementById('summaryDecision');
@@ -895,9 +982,11 @@
     var extEl   = document.getElementById('summaryExt');
 
     if (nameEl) nameEl.textContent = document.getElementById('evalEmpName').textContent || '—';
-    if (scoreEl) scoreEl.textContent = total + ' / 13 (' + cat.label + ')';
+    if (scoreEl) scoreEl.textContent = allRated ? (total + ' / 13 (' + cat.label + ')') : '— / 13 (belum semua dinilai)';
     if (catEl) {
-      catEl.innerHTML = '<span class="badge rounded-pill px-2" style="background:' + cat.bg + ';color:' + cat.color + ';font-size:11px">' + cat.label + '</span>';
+      catEl.innerHTML = allRated
+        ? '<span class="badge rounded-pill px-2" style="background:' + cat.bg + ';color:' + cat.color + ';font-size:11px">' + cat.label + '</span>'
+        : '<span class="badge rounded-pill px-2" style="background:#f3f4f6;color:#9ca3af;font-size:11px">Belum lengkap</span>';
     }
     if (decEl) {
       decEl.textContent  = decLabel;
@@ -967,11 +1056,39 @@
       return;
     }
 
-    var cls   = classifyDecision(decVal);
-    var total = parseInt((document.getElementById('evalOverallTotal') || {}).textContent) || 0;
+    // Validate ALL indicators must be rated ("1" or "0") — not ""
+    var unratedKeys = ALL_KEYS.filter(function (k) {
+      var el = document.getElementById('ind_' + k);
+      return !el || el.value === '';
+    });
+    if (unratedKeys.length > 0) {
+      // Show global indicator error
+      var indErrEl = document.getElementById('evalIndicatorError');
+      if (indErrEl) indErrEl.style.display = '';
+      // Highlight each unrated indicator's row error
+      unratedKeys.forEach(function (k) {
+        var errEl = document.getElementById('ind_err_' + k);
+        if (errEl) errEl.style.display = '';
+      });
+      // Scroll to first unrated
+      var firstErr = document.getElementById('ind_err_' + unratedKeys[0]);
+      if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    // Hide indicator error if all rated
+    var indErrEl = document.getElementById('evalIndicatorError');
+    if (indErrEl) indErrEl.style.display = 'none';
+
+    // Compute total from hidden fields (not textContent)
+    var total = ALL_KEYS.reduce(function (acc, k) {
+      var el = document.getElementById('ind_' + k);
+      return acc + (el && el.value === '1' ? 1 : 0);
+    }, 0);
+
+    var cls = classifyDecision(decVal);
 
     if (cls.isLulus && total < 8) {
-      showInlineError('evalDecisionError', 'Keputusan Lulus membutuhkan minimal 8 indikator terpenuhi (kategori Baik/Sangat Baik).');
+      showInlineError('evalDecisionError', 'Keputusan Lulus membutuhkan minimal 8 indikator terpenuhi (kategori Baik/Sangat Baik). Total saat ini: ' + total + '/13.');
       return;
     }
 
@@ -989,7 +1106,7 @@
 
     hideServerError();
 
-    // 2. Build FormData (matches controller $request->input() expectations)
+    // 2. Build FormData — indicators sent as "1" or "0" (string, explicit)
     var fd = new FormData();
     fd.append('_token', document.querySelector('meta[name="csrf-token"]').content);
     fd.append('decision',       decVal);
@@ -998,6 +1115,7 @@
 
     ALL_KEYS.forEach(function (k) {
       var el = document.getElementById('ind_' + k);
+      // Send explicit "1" or "0" — never send "" to backend (already validated above)
       fd.append('indicators[' + k + ']', el ? el.value : '0');
     });
 
@@ -1216,35 +1334,54 @@
 
   // ── Full form state reset (indicators, decision, extension) ────
   function resetEvalFormState() {
-    // Reset all indicators
+    // Reset all indicators to "" (belum dinilai) and neutralize ✓/X buttons
     ALL_KEYS.forEach(function (k) {
       var hiddenEl = document.getElementById('ind_' + k);
-      if (hiddenEl) hiddenEl.value = '0';
-      var checkEl  = document.querySelector('.ind-checkbox[data-key="' + k + '"]');
-      if (checkEl) {
-        checkEl.style.background  = '#fff';
-        checkEl.style.borderColor = '#d1d5db';
-        var iconEl = checkEl.querySelector('i');
-        if (iconEl) iconEl.style.display = 'none';
+      if (hiddenEl) hiddenEl.value = '';   // "" = belum dinilai (NOT "0" = X)
+
+      // Reset ✓ button to neutral
+      var checkBtn = document.querySelector('.ind-btn-check[data-key="' + k + '"]');
+      if (checkBtn) {
+        checkBtn.style.borderColor = '#d1d5db';
+        checkBtn.style.background  = '#fff';
+        checkBtn.style.color       = '#374151';
       }
+      // Reset ✗ button to neutral
+      var crossBtn = document.querySelector('.ind-btn-cross[data-key="' + k + '"]');
+      if (crossBtn) {
+        crossBtn.style.borderColor = '#d1d5db';
+        crossBtn.style.background  = '#fff';
+        crossBtn.style.color       = '#374151';
+      }
+      // Hide per-indicator error
+      var errEl = document.getElementById('ind_err_' + k);
+      if (errEl) errEl.style.display = 'none';
     });
 
-    // Reset competency badges
+    // Reset competency badges to "–"
     Object.keys(COMPETENCIES).forEach(function (comp) {
       var badge = document.getElementById('badge_' + comp);
-      if (badge) badge.textContent = '0';
+      if (badge) badge.textContent = '–';
     });
 
     // Reset score summary
     var tot = document.getElementById('evalOverallTotal');
-    if (tot) tot.textContent = '0';
+    if (tot) tot.textContent = '–';
     var catBadge = document.getElementById('evalCategoryBadge');
     if (catBadge) {
       catBadge.textContent = '—';
       catBadge.style.background = '#e5e7eb';
       catBadge.style.color      = '#6b7280';
     }
+    var feedbackEl = document.getElementById('evalScoreFeedback');
+    if (feedbackEl) {
+      feedbackEl.textContent = 'Pilih ✓ atau ✗ pada setiap behavioral indicator di atas.';
+      feedbackEl.style.color = '#9ca3af';
+    }
 
+    // Reset indicator error banner
+    var indErrEl = document.getElementById('evalIndicatorError');
+    if (indErrEl) indErrEl.style.display = 'none';
     // Reset decision
     document.getElementById('evalDecisionValue').value = '';
     document.getElementById('evalExtDuration').value   = '';
@@ -1297,6 +1434,8 @@
 
     // Reset errors
     ['evalDecisionError','evalExtDurError','evalExtStartError'].forEach(hideInlineError);
+    var indErrElB = document.getElementById('evalIndicatorError');
+    if (indErrElB) indErrElB.style.display = 'none';
     hideServerError();
 
     // Reset button

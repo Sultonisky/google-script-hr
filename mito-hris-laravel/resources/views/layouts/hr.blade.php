@@ -806,19 +806,51 @@
         });
       }
 
-      // Mobile Burger Menu
+      // Mobile Burger Menu & Sidebar Overlay
       const btnBurger = document.getElementById('btnBurger');
       const sidebar = document.querySelector('.sidebar');
+      const sidebarOverlay = document.getElementById('sidebarOverlay');
+      const btnSidebarClose = document.getElementById('btnSidebarClose');
+
+      function closeSidebar() {
+        if (sidebar) sidebar.classList.remove('show');
+        if (sidebarOverlay) sidebarOverlay.classList.remove('show');
+        document.body.classList.remove('sidebar-open');
+      }
+
+      function openSidebar() {
+        if (sidebar) sidebar.classList.add('show');
+        if (sidebarOverlay) sidebarOverlay.classList.add('show');
+        document.body.classList.add('sidebar-open');
+      }
+
       if (btnBurger && sidebar) {
         btnBurger.addEventListener('click', () => {
-          sidebar.classList.toggle('show');
-          drawerOverlay?.classList.toggle('show');
+          if (sidebar.classList.contains('show')) {
+            closeSidebar();
+          } else {
+            openSidebar();
+          }
         });
-        drawerOverlay?.addEventListener('click', () => {
-          sidebar.classList.remove('show');
-          drawerOverlay?.classList.remove('show');
-        });
+        if (sidebarOverlay) {
+          sidebarOverlay.addEventListener('click', closeSidebar);
+        }
+        if (btnSidebarClose) {
+          btnSidebarClose.addEventListener('click', closeSidebar);
+        }
       }
+
+      // Close sidebar & drawer on Escape key
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          if (sidebar && sidebar.classList.contains('show')) {
+            closeSidebar();
+          }
+          if (drawerPanel && drawerPanel.classList.contains('show')) {
+            closeDrawer();
+          }
+        }
+      });
 
       // FAB Toggle
       const fabMain = document.getElementById('fabMain');

@@ -483,12 +483,27 @@
         }
 
         @media (max-width: 480px) {
+            .login-page {
+                padding: 24px 12px 20px;
+                gap: 18px;
+            }
+
             .login-card {
-                padding: 28px 20px;
+                padding: 24px 16px;
+                border-radius: 14px;
+            }
+
+            .login-header h1 {
+                font-size: 19px;
             }
 
             .login-features {
                 gap: 6px;
+            }
+
+            .feature-chip {
+                font-size: 11px;
+                padding: 5px 10px;
             }
         }
     </style>

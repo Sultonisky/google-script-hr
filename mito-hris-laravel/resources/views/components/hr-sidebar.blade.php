@@ -14,6 +14,9 @@
             <strong>MITO</strong>
             <small>Human Resource Information System</small>
         </div>
+        <button type="button" class="sidebar-close-btn d-lg-none" id="btnSidebarClose" aria-label="Tutup Sidebar">
+            <i class="bi bi-x-lg"></i>
+        </button>
     </div>
 
     <!-- Navigation Menu -->

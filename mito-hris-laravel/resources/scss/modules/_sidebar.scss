@@ -21,13 +21,40 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 24px 22px;
+  padding: 22px 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  position: relative;
+}
+
+.sidebar-close-btn {
+  display: none;
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  margin-left: auto;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.22);
+  }
+}
+
+@media (max-width: 991.98px) {
+  .sidebar-close-btn {
+    display: flex;
+  }
 }
 
 .sidebar-brand .logo-box {
-  width: 42px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   border-radius: 10px;
   background: transparent;
   display: flex;
@@ -37,7 +64,7 @@
 }
 
 .sidebar-brand .logo-box .sidebar-logo {
-  width: 42px;
+  width: 40px;
   height: auto;
   object-fit: contain;
   filter: brightness(0) invert(1); /* pastikan putih di semua kondisi */
