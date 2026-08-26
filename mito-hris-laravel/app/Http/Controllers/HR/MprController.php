@@ -6,6 +6,7 @@ use App\DTOs\MprData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\HR\StoreMprRequest;
 use App\Repositories\Contracts\MprRepositoryInterface;
+use App\Services\MarkdownRenderer;
 use App\Services\MprPdfService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -19,13 +20,16 @@ class MprController extends Controller
 {
     protected MprRepositoryInterface $mprRepo;
     protected MprPdfService $pdfService;
+    protected MarkdownRenderer $markdownRenderer;
 
     public function __construct(
         MprRepositoryInterface $mprRepo,
-        MprPdfService $pdfService
+        MprPdfService $pdfService,
+        MarkdownRenderer $markdownRenderer
     ) {
         $this->mprRepo = $mprRepo;
         $this->pdfService = $pdfService;
+        $this->markdownRenderer = $markdownRenderer;
     }
 
     /**
@@ -311,7 +315,11 @@ class MprController extends Controller
 
         return response()->json([
             'success' => true,
-            'mpr'     => $mpr->toArray(),
+            'mpr'     => array_merge($mpr->toArray(), [
+                'requirements_html'    => $this->markdownRenderer->render($mpr->requirements),
+                'job_description_html' => $this->markdownRenderer->render($mpr->jobDescription),
+                'notes_html'           => $this->markdownRenderer->render($mpr->notes),
+            ]),
         ]);
     }
 

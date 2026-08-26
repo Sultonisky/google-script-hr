@@ -8,6 +8,13 @@ use Barryvdh\DomPDF\PDF as DomPdfInstance;
 
 class MprPdfService
 {
+    private MarkdownRenderer $markdownRenderer;
+
+    public function __construct(MarkdownRenderer $markdownRenderer)
+    {
+        $this->markdownRenderer = $markdownRenderer;
+    }
+
     /**
      * Resolve company profile array from entity code OR company full name.
      * Supports both new (entity code: 'MSI', 'SPI', 'PII', 'MEP')
@@ -66,7 +73,17 @@ class MprPdfService
         // Resolve company from entity code (new) or legacy company field
         $company = $this->resolveCompany($mpr->entity ?? $mpr->company ?? '');
 
-        return Pdf::loadView('pdf.mpr', compact('mpr', 'company'))
-            ->setPaper('a4', 'portrait');
+        // Pre-render Markdown fields to safe HTML for DomPDF
+        $requirementsHtml   = $this->markdownRenderer->render($mpr->requirements ?? null);
+        $jobDescriptionHtml = $this->markdownRenderer->render($mpr->jobDescription ?? null);
+        $notesHtml          = $this->markdownRenderer->render($mpr->notes ?? null);
+
+        return Pdf::loadView('pdf.mpr', compact(
+            'mpr',
+            'company',
+            'requirementsHtml',
+            'jobDescriptionHtml',
+            'notesHtml'
+        ))->setPaper('a4', 'portrait');
     }
 }
