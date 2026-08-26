@@ -53,7 +53,8 @@ class CareerController extends Controller
                 ->with('error', 'Harap membaca dan menyetujui syarat & ketentuan pendaftaran terlebih dahulu.');
         }
 
-        return view('public.career.apply');
+        $positions = app(\App\Services\JobPositionService::class)->getPositionNames();
+        return view('public.career.apply', compact('positions'));
     }
 
     /**

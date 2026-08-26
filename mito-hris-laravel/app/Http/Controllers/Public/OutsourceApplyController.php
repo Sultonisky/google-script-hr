@@ -25,7 +25,8 @@ class OutsourceApplyController extends Controller
 
     public function index(): View
     {
-        return view('public.outsource.apply');
+        $positions = app(\App\Services\JobPositionService::class)->getPositionNames();
+        return view('public.outsource.apply', compact('positions'));
     }
 
     public function store(Request $request): RedirectResponse

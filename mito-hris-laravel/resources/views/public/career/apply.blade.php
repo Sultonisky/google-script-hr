@@ -200,15 +200,9 @@
                 <label class="form-label fw-semibold" for="position_applied" style="font-size:13px">Posisi yang Dilamar <span class="text-danger">*</span></label>
                 <select class="form-select" id="position_applied" name="posisi_dilamar" required>
                   <option value="">-- Pilih Posisi --</option>
-                  <option value="Admin HR & General Affair" {{ old('posisi_dilamar') === 'Admin HR & General Affair' ? 'selected' : '' }}>Admin HR &amp; General Affair</option>
-                  <option value="Staff Accounting & Finance" {{ old('posisi_dilamar') === 'Staff Accounting & Finance' ? 'selected' : '' }}>Staff Accounting &amp; Finance</option>
-                  <option value="Sales Executive" {{ old('posisi_dilamar') === 'Sales Executive' ? 'selected' : '' }}>Sales Executive</option>
-                  <option value="Digital Marketing Specialist" {{ old('posisi_dilamar') === 'Digital Marketing Specialist' ? 'selected' : '' }}>Digital Marketing Specialist</option>
-                  <option value="IT Support & Network" {{ old('posisi_dilamar') === 'IT Support & Network' ? 'selected' : '' }}>IT Support &amp; Network</option>
-                  <option value="Fullstack Web Developer" {{ old('posisi_dilamar') === 'Fullstack Web Developer' ? 'selected' : '' }}>Fullstack Web Developer</option>
-                  <option value="Customer Service Officer" {{ old('posisi_dilamar') === 'Customer Service Officer' ? 'selected' : '' }}>Customer Service Officer</option>
-                  <option value="Warehouse & Logistics Staff" {{ old('posisi_dilamar') === 'Warehouse & Logistics Staff' ? 'selected' : '' }}>Warehouse &amp; Logistics Staff</option>
-                  <option value="Teknisi Service Center" {{ old('posisi_dilamar') === 'Teknisi Service Center' ? 'selected' : '' }}>Teknisi Service Center</option>
+                  @foreach($positions ?? [] as $pos)
+                    <option value="{{ $pos }}" {{ old('posisi_dilamar') === $pos ? 'selected' : '' }}>{{ $pos }}</option>
+                  @endforeach
                 </select>
                 <div class="invalid-feedback">Posisi yang dilamar wajib dipilih.</div>
               </div>
@@ -401,28 +395,7 @@ var REGIONS = {
     "9101":"KAB. MERAUKE","9102":"KAB. JAYAWIJAYA","9103":"KAB. JAYAPURA","9104":"KAB. NABIRE","9105":"KAB. KEP. YAPEN","9106":"KAB. BIAK NUMFOR","9107":"KAB. PUNCAK JAYA","9108":"KAB. PANIAI","9109":"KAB. MIMIKA","9110":"KAB. SARMI","9111":"KAB. KEEROM","9112":"KAB. PEGUNUNGAN BINTANG","9113":"KAB. YAHUKIMO","9114":"KAB. TOLIKARA","9115":"KAB. WAROPEN","9116":"KAB. BOVEN DIGOEL","9117":"KAB. MAPPI","9118":"KAB. ASMAT","9119":"KAB. SUPIORI","9120":"KAB. MAMBERAMO RAYA","9171":"KOTA JAYAPURA",
     "9201":"KAB. SORONG","9202":"KAB. MANOKWARI","9203":"KAB. FAK FAK","9204":"KAB. SORONG SELATAN","9205":"KAB. RAJA AMPAT","9206":"KAB. TELUK BINTUNI","9207":"KAB. TELUK WONDAMA","9208":"KAB. KAIMANA","9209":"KAB. TAMBRAUW","9210":"KAB. MAYBRAT","9211":"KAB. MANOKWARI SELATAN","9212":"KAB. PEGUNUNGAN ARFAK","9271":"KOTA SORONG"
   },
-  "districts": {
-    "3171":["Cempaka Putih","Gambir","Johar Baru","Kemayoran","Menteng","Sawah Besar","Senen","Tanah Abang"],
-    "3172":["Cilincing","Kelapa Gading","Koja","Pademangan","Penjaringan","Tanjung Priok"],
-    "3173":["Cengkareng","Grogol Petamburan","Kalideres","Kebon Jeruk","Kembangan","Palmerah","Taman Sari","Tambora"],
-    "3174":["Cilandak","Jagakarsa","Kebayoran Baru","Kebayoran Lama","Mampang Prapatan","Pancoran","Pasar Minggu","Pesanggrahan","Setiabudi","Tebet"],
-    "3175":["Cipayung","Ciracas","Duren Sawit","Jatinegara","Kramat Jati","Makasar","Matraman","Pasar Rebo","Pulo Gadung"],
-    "3273":["Bandung Kidul","Bandung Kulon","Bandung Wetan","Bojongloa Kaler","Bojongloa Kidul","Cibeunying Kaler","Cibeunying Kidul","Cidadap","Cinambo","Coblong","Gedebage","Kiaracondong","Lengkong","Mandalajati","Panyileukan","Rancasari","Regol","Sukajadi","Sukasari","Sumur Bandung","Ujungberung"],
-    "3275":["Bekasi Barat","Bekasi Selatan","Bekasi Timur","Bekasi Utara","Medan Satria","Rawalumbu","Jati Asih","Jati Sampurna","Bantar Gebang","Mustika Jaya"],
-    "3276":["Beji","Bojongsari","Cilodong","Cimanggis","Cinere","Cipayung","Depok","Limo","Pancoran Mas","Sawangan","Sukmajaya","Tapos"],
-    "3578":["Bulak","Kenjeran","Krembangan","Pabean Cantian","Semampir","Simokerto","Tambaksari","Tandes","Wiyung","Wonokromo","Wonocolo","Genteng","Jambangan","Karang Pilang","Rungkut","Sawahan","Tegalsari"],
-    "3671":["Batuceper","Benda","Ciledug","Cipondoh","Jatiuwung","Karang Tengah","Karawaci","Larangan","Neglasari","Periuk","Pinang","Tangerang"],
-    "3674":["Ciputat","Ciputat Timur","Pamulang","Pondok Aren","Serpong","Serpong Utara","Setu"],
-    "1271":["Medan Amplas","Medan Area","Medan Barat","Medan Baru","Medan Belawan","Medan Deli","Medan Denai","Medan Helvetia","Medan Johor","Medan Kota","Medan Labuhan","Medan Maimun","Medan Marelan","Medan Perjuangan","Medan Petisah","Medan Polonia","Medan Selayang","Medan Sunggal","Medan Tembung","Medan Timur","Medan Tuntungan"],
-    "3374":["Banyumanik","Candisari","Gajahmungkur","Gayamsari","Genuk","Gunungpati","Mijen","Ngaliyan","Pedurungan","Semarang Barat","Semarang Selatan","Semarang Tengah","Semarang Timur","Semarang Utara","Tembalang","Tugu"],
-    "3471":["Danurejan","Gedongtengen","Gondokusuman","Gondomanan","Jetis","Kotagede","Kraton","Mantrijeron","Mergangsan","Ngampilan","Pakualaman","Tegalrejo","Umbulharjo","Wirobrajan"],
-    "5171":["Denpasar Barat","Denpasar Selatan","Denpasar Timur","Denpasar Utara"],
-    "7371":["Biringkanaya","Bontoala","Kepaniteraan","Makassar","Mamajang","Manggala","Mariso","Panakkukang","Rappocini","Tallo","Tamalanrea","Tamalate","Ujung Pandang","Ujung Tanah","Wajo"],
-    "1671":["Ilir Barat I","Ilir Barat II","Ilir Timur I","Ilir Timur II","Ilir Timur III","Kemuning","Kertapati","Plaju","Sako","Seberang Ulu I","Seberang Ulu II","Sukarami"],
-    "3573":["Blimbing","Kedungkandang","Klojen","Lowokwaru","Sukun"],
-    "6471":["Balikpapan Barat","Balikpapan Kota","Balikpapan Selatan","Balikpapan Tengah","Balikpapan Timur","Balikpapan Utara"],
-    "6472":["Loa Janan Ilir","Samarinda Ilir","Samarinda Kota","Samarinda Seberang","Samarinda Ulu","Samarinda Utara","Sambutan","Sungai Kunjang","Sungai Pinang","Palaran"]
-  }
+  "districts": {}
 };
 
 // ============================================================
@@ -746,15 +719,51 @@ function resetDistrict() {
 
 function loadDistricts(cityCode) {
   if (!cityCode) { resetDistrict(); return; }
-  if (REGIONS.districts[cityCode]) {
-    populateDistrictOptions(REGIONS.districts[cityCode].map(function(n) { return { id: n, nama: n }; }));
+  // Load full kecamatan data from JSON if not already loaded
+  if (!window._kecamatanData) {
+    districtInput.innerHTML = '<option value="">Memuat data kecamatan...</option>';
+    districtInput.disabled = true; districtLoading.style.display = 'block';
+    fetch('/data/kecamatan_all.json')
+      .then(res => {
+        if (!res.ok) throw new Error('Gagal memuat data kecamatan');
+        return res.json();
+      })
+      .then(data => {
+        window._kecamatanData = data;
+        districtLoading.style.display = 'none';
+        populateDistrictsForCity(cityCode);
+      })
+      .catch(() => {
+        districtLoading.style.display = 'none';
+        showDistrictManualFallback();
+      });
     return;
   }
-  districtInput.innerHTML = '<option value="">Memuat kecamatan...</option>';
-  districtInput.disabled = true; districtLoading.style.display = 'block';
-  districtManualWrap.style.display = 'none'; districtManualInput.required = false; districtInput.required = true;
-  // Fallback: show manual input since no backend GAS call available
-  setTimeout(function() { districtLoading.style.display = 'none'; showDistrictManual(); }, 400);
+  populateDistrictsForCity(cityCode);
+}
+
+function populateDistrictsForCity(cityCode) {
+  var data = window._kecamatanData;
+  if (!data) { resetDistrict(); return; }
+  var districts = data[cityCode];
+  if (districts && districts.length) {
+    var html = '<option value="">-- Pilih Kecamatan --</option>';
+    districts.forEach(function(n) { html += '<option value="' + n + '">' + n + '</option>'; });
+    districtInput.innerHTML = html; districtInput.disabled = false;
+    districtInput.required = true;
+    districtManualWrap.style.display = 'none'; districtManualInput.required = false;
+    districtInput.classList.remove('is-invalid'); districtInput.classList.add('is-valid');
+  } else {
+    // Fallback to manual input if no districts for this city
+    showDistrictManualFallback();
+  }
+  districtLoading.style.display = 'none';
+}
+
+function showDistrictManualFallback() {
+  districtInput.innerHTML = '<option value="">-</option>'; districtInput.disabled = true; districtInput.required = false;
+  districtManualWrap.style.display = 'block'; districtManualInput.required = true; districtManualInput.focus();
+  districtInput.classList.remove('is-valid');
 }
 
 function populateDistrictOptions(list) {
