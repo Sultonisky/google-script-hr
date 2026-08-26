@@ -76,14 +76,17 @@ class MprRequestorMiddleware
             }
 
             if (!$allowed) {
+                if ($path === '/hr/dashboard') {
+                    return redirect()->route('hr.mpr.index')
+                        ->with('error', 'Anda hanya dapat mengakses halaman Manpower Request (MPR).');
+                }
                 if ($request->expectsJson()) {
                     return response()->json([
                         'success' => false,
                         'error'   => 'Anda tidak memiliki akses ke halaman ini.',
                     ], 403);
                 }
-                return redirect()->route('hr.mpr.index')
-                    ->with('error', 'Anda hanya dapat mengakses halaman Manpower Request (MPR).');
+                abort(403, 'Anda tidak memiliki akses ke halaman ini.');
             }
         }
 
