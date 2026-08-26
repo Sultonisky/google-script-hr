@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Services\EmployeeService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
@@ -105,23 +104,212 @@ class EmployeeController extends Controller
         ));
     }
 
-    public function import(Request $request): RedirectResponse
+    /**
+     * Preview import — validate rows and check duplicates WITHOUT writing to Google Sheets.
+     * Mirrors GAS importEmployees() validation logic but skips the batch write.
+     * Called by Fetch API from the import modal Step 2 button.
+     *
+     * POST /hr/employees/import/preview
+     * Body: { employees: [...] }  (JSON)
+     */
+    public function importPreview(Request $request): JsonResponse
     {
         $request->validate([
-            'employees' => 'required|array',
-            'employees.*.fullName' => 'required|string',
+            'employees'   => 'required|array|min:1|max:500',
+        ]);
+
+        $rows   = $request->input('employees', []);
+        $result = $this->employeeService->previewImport($rows);
+
+        return response()->json($result);
+    }
+
+    /**
+     * Download blank import template (CSV).
+     * Header columns match GAS empImportTemplateHeaders() exactly.
+     *
+     * GET /hr/employees/import/template
+     */
+    public function importTemplate(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        // Headers 1:1 with GAS empImportTemplateHeaders()
+        $headers = [
+            'Full Name',
+            'NIK',
+            'NPWP',
+            'Tempat Lahir',
+            'Tanggal Lahir',
+            'Jenis Kelamin',
+            'Agama',
+            'Status Pernikahan',
+            'Golongan Darah',
+            'Status PTKP',
+            'Alamat KTP',
+            'Alamat Domisili',
+            'No HP',
+            'Email Pribadi',
+            'Email Kantor',
+            'Nama Bank',
+            'Nomor Rekening',
+            'Atas Nama Rekening',
+            'BPJS Ketenagakerjaan',
+            'BPJS Kesehatan',
+            'Branch Name',
+            'Division',
+            'Department',
+            'Job Position',
+            'Job Position (No Location)',
+            'Job Level',
+            'Grade',
+            'Area Kerja',
+            'Lokasi Kerja',
+            'Cost Center',
+            'Direct Superior',
+            'Indirect Superior',
+            'Status Employee',
+            'Join Date',
+            'End Date Contract',
+            'Outsource Vendor',
+            'Job Position Former',
+            'Type of Rotation',
+            'Tanggal Mutasi',
+            'Nomor SK',
+            'Resign Date',
+            'Catatan HR',
+        ];
+
+        // Example rows 1:1 with GAS empImportTemplateExamples()
+        $examples = [
+            [
+                'Budi Santoso',
+                "'3201234567890001",
+                "'091234567890000",
+                'Jakarta',
+                '1995-03-15',
+                'Laki-laki',
+                'Islam',
+                'Menikah',
+                'O',
+                'K/1',
+                'Jl. Melati No. 10 Jakarta Barat',
+                'Jl. Melati No. 10 Jakarta Barat',
+                "'081234567890",
+                'budi.santoso@gmail.com',
+                'budi.santoso@mitogroup.co.id',
+                'BCA',
+                "'1234567890",
+                'Budi Santoso',
+                "'00012345678",
+                "'00098765432",
+                'Jakarta Head Office',
+                'Operations',
+                'Human Resources',
+                'HR Operations Staff - Jakarta',
+                'HR Operations Staff',
+                'Staff',
+                'Grade 3',
+                'Jakarta Barat',
+                'Jakarta',
+                'CC-HR-001',
+                'Ahmad Fauzi',
+                'Direktur HR',
+                'Permanent',
+                '2024-01-15',
+                '',
+                '',
+                '',
+                '',
+                '',
+                'SK/HRD/2024/001',
+                '',
+                'Karyawan teladan',
+            ],
+            [
+                'Siti Rahmawati',
+                "'3201987654320002",
+                '',
+                'Bandung',
+                '1998-07-20',
+                'Perempuan',
+                'Islam',
+                'Belum Menikah',
+                'A',
+                'TK/0',
+                'Jl. Dago No. 45 Bandung',
+                'Jl. Kebon Jeruk No. 12 Jakarta Barat',
+                "'081987654321",
+                'siti.rahma@gmail.com',
+                'siti.rahma@mitogroup.co.id',
+                'Mandiri',
+                "'1300098765432",
+                'Siti Rahmawati',
+                '',
+                '',
+                'Jakarta Head Office',
+                'Finance & Accounting',
+                'Finance',
+                'Staff Finance - Jakarta',
+                'Staff Finance',
+                'Staff',
+                'Grade 3',
+                'Jakarta Barat',
+                'Jakarta',
+                'CC-FIN-002',
+                'Dewi Sartika',
+                'Finance Manager',
+                'Contract',
+                '2024-06-01',
+                '2025-05-31',
+                '',
+                '',
+                '',
+                '',
+                '',
+                '',
+                'Kontrak periode 1 (12 bulan)',
+            ],
+        ];
+
+        $filename = 'template_import_karyawan.csv';
+
+        $callback = function () use ($headers, $examples) {
+            $out = fopen('php://output', 'w');
+            // UTF-8 BOM for Excel compatibility
+            fputs($out, "\xEF\xBB\xBF");
+            fputcsv($out, $headers);
+            foreach ($examples as $row) {
+                fputcsv($out, $row);
+            }
+            fclose($out);
+        };
+
+        return response()->streamDownload($callback, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    /**
+     * Execute import — validate rows and APPEND only NEW, VALID rows to Google Sheets.
+     * Mirrors GAS importEmployees() exactly.
+     * Frontend sends parsed rows as JSON array.
+     *
+     * POST /hr/employees/import
+     * Body: { employees: [...] }  (JSON)
+     */
+    public function import(Request $request): JsonResponse
+    {
+        $request->validate([
+            'employees'   => 'required|array|min:1|max:500',
         ]);
 
         $result = $this->employeeService->importEmployees(
-            $request->input('employees'),
+            $request->input('employees', []),
             Auth::user()?->name ?? 'HR Administrator'
         );
 
-        if ($result['success']) {
-            return redirect()->back()->with('success', $result['message']);
-        } else {
-            return redirect()->back()->with('error', $result['message']);
-        }
+        // Always return JSON — modal uses Fetch API
+        $httpStatus = $result['success'] ? 200 : 422;
+        return response()->json($result, $httpStatus);
     }
 
     /**
