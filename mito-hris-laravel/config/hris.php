@@ -63,13 +63,33 @@ return [
             'Entities', 'Branch',
         ],
         'kandidat_probation' => [
-            'Probation ID', 'Employee ID', 'Recruitment ID', 'Contract Number',
-            'Contract Duration', 'Contract Start', 'Contract End', 'Join Date',
-            'Status', 'Onboarding Date', 'Onboarding By', 'Eval ID', 'Eval Date',
+            // ── Identitas (col 1–3)
+            'Probation ID', 'Employee ID', 'Recruitment ID',
+            // ── Kontrak Probation (col 4–8)
+            'Contract Number', 'Contract Duration', 'Contract Start', 'Contract End', 'Join Date',
+            // ── Status & Onboarding (col 9–11)
+            'Status', 'Onboarding Date', 'Onboarding By',
+            // ── Evaluasi (col 12–13)
+            'Eval ID', 'Eval Date',
+            // ── Legacy score columns — dipertahankan untuk backward compat data GAS lama (col 14–19)
             'Score Performance', 'Score Discipline', 'Score Communication',
-            'Score Initiative', 'Score Teamwork', 'Average Score', 'Decision',
+            'Score Initiative', 'Score Teamwork', 'Average Score',
+            // ── Decision (col 20)
+            'Decision',
+            // ── Perpanjangan (col 21–23)
             'Extension Duration', 'New Contract Start', 'New Contract End',
-            'Evaluator Notes', 'Evaluator', 'SK Status', 'Notes', 'Created At', 'Updated At'
+            // ── Catatan & SK (col 24–27)
+            'Evaluator Notes', 'Evaluator', 'SK Status', 'Notes',
+            // ── Audit (col 28–29)
+            'Created At', 'Updated At',
+            // ── NEW: Performance Review 2026 — Competency totals (col 30–35)
+            'Integrity Total', 'CI Total', 'EE Total', 'Teamwork Total',
+            'Overall Total', 'Category',
+            // ── NEW: Performance Review 2026 — Individual indicators 1/0 (col 36–52)
+            'ind_integrity_1', 'ind_integrity_2', 'ind_integrity_3', 'ind_integrity_4',
+            'ind_ci_1', 'ind_ci_2', 'ind_ci_3', 'ind_ci_4',
+            'ind_ee_1', 'ind_ee_2',
+            'ind_tw_1', 'ind_tw_2', 'ind_tw_3',
         ],
         'kandidat_hold' => [
             'Recruitment ID', 'Created Date', 'Full Name', 'NIK', 'Birth Date',
