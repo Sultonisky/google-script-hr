@@ -70,6 +70,39 @@
     font-size: 13.5px;
     font-weight: 500;
   }
+
+  /* Markdown-rendered content in MPR detail modal */
+  .mpr-markdown-content p {
+    margin: 0 0 8px;
+  }
+  .mpr-markdown-content p:last-child {
+    margin-bottom: 0;
+  }
+  .mpr-markdown-content h1,
+  .mpr-markdown-content h2,
+  .mpr-markdown-content h3,
+  .mpr-markdown-content h4,
+  .mpr-markdown-content h5,
+  .mpr-markdown-content h6 {
+    margin-top: 8px;
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+  .mpr-markdown-content ul,
+  .mpr-markdown-content ol {
+    margin-top: 4px;
+    margin-bottom: 8px;
+    padding-left: 22px;
+  }
+  .mpr-markdown-content li {
+    margin-bottom: 3px;
+  }
+  .mpr-markdown-content strong {
+    font-weight: 700;
+  }
+  .mpr-markdown-content em {
+    font-style: italic;
+  }
 </style>
 @endsection
 
@@ -794,15 +827,15 @@
             <div class="row g-3 mb-3">
               <div class="col-md-6">
                 <div class="detail-label">Kualifikasi Kandidat</div>
-                <div class="p-2 border rounded bg-white small" id="detRequirements" style="min-height:60px; white-space:pre-wrap;">-</div>
+                <div class="p-2 border rounded bg-white small mpr-markdown-content" id="detRequirements" style="min-height:60px;">-</div>
               </div>
               <div class="col-md-6">
                 <div class="detail-label">Uraian Tugas & Tanggung Jawab</div>
-                <div class="p-2 border rounded bg-white small" id="detJobDesc" style="min-height:60px; white-space:pre-wrap;">-</div>
+                <div class="p-2 border rounded bg-white small mpr-markdown-content" id="detJobDesc" style="min-height:60px;">-</div>
               </div>
               <div class="col-12" id="wrapNotes">
                 <div class="detail-label">Catatan Tambahan</div>
-                <div class="p-2 border rounded bg-white small" id="detNotes">-</div>
+                <div class="p-2 border rounded bg-white small mpr-markdown-content" id="detNotes">-</div>
               </div>
             </div>
           </div>
@@ -966,9 +999,9 @@ document.addEventListener('DOMContentLoaded', function() {
           wrapRepl.classList.add('d-none');
         }
 
-        document.getElementById('detRequirements').innerText = m.requirements || 'Tidak ada kualifikasi khusus.';
-        document.getElementById('detJobDesc').innerText = m.job_description || 'Tidak ada uraian pekerjaan khusus.';
-        document.getElementById('detNotes').innerText = m.notes || '-';
+        document.getElementById('detRequirements').innerHTML = m.requirements_html || '<span class="text-muted fst-italic">Tidak ada kualifikasi khusus.</span>';
+        document.getElementById('detJobDesc').innerHTML      = m.job_description_html || '<span class="text-muted fst-italic">Tidak ada uraian pekerjaan khusus.</span>';
+        document.getElementById('detNotes').innerHTML        = m.notes_html || '<span class="text-muted fst-italic">-</span>';
 
         if (btnPdf) {
           btnPdf.href = `/hr/mpr/${encodeURIComponent(m.mpr_number)}/pdf`;
