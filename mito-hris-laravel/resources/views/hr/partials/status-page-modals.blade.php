@@ -411,14 +411,14 @@
             <table class="table table-sm table-bordered align-middle mb-0" style="font-size:12px">
               <thead class="table-light sticky-top">
                 <tr>
-                  <th style="width:40px">#</th>
-                  <th>Employee ID</th>
-                  <th>Nama Lengkap</th>
-                  <th>Departemen</th>
-                  <th>Posisi</th>
-                  <th>Status Karyawan</th>
-                  <th>Join Date</th>
-                  <th style="width:160px">Hasil</th>
+                  <th style="width:40px">No</th>
+                  <th>ID Karyawan Import</th>
+                  <th>Nama Karyawan Import</th>
+                  <th>Departemen Karyawan</th>
+                  <th>Jabatan Karyawan</th>
+                  <th>Status Kontrak</th>
+                  <th>Tanggal Bergabung</th>
+                  <th style="width:160px">Hasil Validasi Import</th>
                 </tr>
               </thead>
               <tbody id="spImpPreviewBody"></tbody>
