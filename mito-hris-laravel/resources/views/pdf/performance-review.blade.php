@@ -7,17 +7,17 @@
     @page { margin: 24px 32px; }
     * { box-sizing: border-box; }
     body {
-      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-family: 'Times New Roman', Times, serif;
       font-size: 8.5pt;
-      color: #111;
+      color: #000;
       line-height: 1.45;
     }
 
     /* ── Header logos ── */
     .logo-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-    .logo-text-mito { font-size: 18pt; font-weight: 900; color: #005BAC; letter-spacing: -1px; }
-    .logo-text-mito span { color: #111; }
-    .logo-text-stein { font-size: 10pt; font-style: italic; font-weight: 700; color: #333; text-align: right; }
+    .logo-text-mito { font-size: 18pt; font-weight: 900; color: #eb1c24; letter-spacing: -1px; }
+    .logo-text-mito span { color: #000; }
+    .logo-text-stein { font-size: 10pt; font-style: italic; font-weight: 700; color: #000; text-align: right; }
 
     /* ── Title ── */
     .form-title { font-size: 11pt; font-weight: bold; text-align: center; text-decoration: underline; margin: 6px 0 10px; }
@@ -40,14 +40,14 @@
       vertical-align: top;
       font-size: 8pt;
     }
-    .eval-table thead th { background: #005BAC; color: #fff; font-weight: bold; text-align: center; }
+    .eval-table thead th { background: #eb1c24; color: #fff; font-weight: bold; text-align: center; }
     .eval-table .col-kompeten { width: 100px; font-weight: bold; font-style: italic; }
     .eval-table .col-action  { width: 130px; }
     .eval-table .col-indicator { }
     .eval-table .col-check   { width: 52px; text-align: center; }
     .eval-table .row-evidence td { background: #f0f0f0; font-style: italic; font-size: 7.5pt; }
     .eval-table .row-total td    { background: #e8f0fb; font-weight: bold; text-align: right; }
-    .eval-table .row-total .total-val { font-size: 11pt; font-weight: 900; color: #005BAC; }
+    .eval-table .row-total .total-val { font-size: 11pt; font-weight: 900; color: #eb1c24; }
 
     /* Checklist indicators */
     .chk-box {
@@ -61,7 +61,7 @@
       font-weight: bold;
       vertical-align: middle;
     }
-    .chk-yes { background: #005BAC; color: #fff; border-color: #005BAC; }
+    .chk-yes { background: #eb1c24; color: #fff; border-color: #eb1c24; }
     .chk-no  { background: #fff;    color: #bbb; }
 
     /* ── Score summary box ── */
@@ -79,7 +79,7 @@
     .decision-box { border: 1px solid #888; padding: 6px 10px; margin-bottom: 10px; border-radius: 3px; }
     .decision-box .section-label { font-weight: bold; font-size: 8.5pt; margin-bottom: 4px; }
     .chk-inline { display: inline-block; width: 12px; height: 12px; border: 1.5px solid #555; border-radius: 2px; text-align: center; line-height: 11px; font-size: 9pt; font-weight: bold; vertical-align: middle; margin-right: 3px; }
-    .chk-inline.checked { background: #005BAC; color: #fff; border-color: #005BAC; }
+    .chk-inline.checked { background: #eb1c24; color: #fff; border-color: #eb1c24; }
 
     /* ── Approval section ── */
     .approval-table { width: 100%; border-collapse: collapse; margin-top: 10px; }

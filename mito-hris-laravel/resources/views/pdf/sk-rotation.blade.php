@@ -8,7 +8,7 @@
       margin: 28px 38px 28px 38px;
     }
     body {
-      font-family: Arial, Helvetica, sans-serif;
+      font-family: 'Times New Roman', Times, serif;
       font-size: 9.5pt;
       color: #000000;
       line-height: 1.5;

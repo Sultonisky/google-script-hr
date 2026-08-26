@@ -50,7 +50,7 @@
       color: #4a4a4aff;
       z-index: -1;
       pointer-events: none;
-      font-family: Arial, sans-serif;
+      font-family: 'Times New Roman', Times, serif;
       letter-spacing: 6px;
     }
 

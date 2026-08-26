@@ -64,13 +64,13 @@
   {{-- Company name: 1:1 GAS setFontSize(20), setTextColor(235,28,36), bold --}}
   <div style="font-size: 18pt; font-weight: 800; color: #eb1c24;
               letter-spacing: 0.3px; text-transform: uppercase;
-              font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.2;">
+              font-family: 'Times New Roman', Times, serif; line-height: 1.2;">
     {{ $cName }}
   </div>
 
   {{-- Address: 1:1 GAS setFontSize(9.5), normal, dark, centered --}}
   <div style="font-size: 9pt; color: #1e1e1e; margin-top: 4px; line-height: 1.5;
-              font-family: 'Helvetica Neue', Arial, sans-serif;">
+              font-family: 'Times New Roman', Times, serif;">
     {{ $cAddress }}
   </div>
 
