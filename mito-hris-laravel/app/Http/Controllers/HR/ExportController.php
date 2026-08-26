@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Repositories\Contracts\CandidateRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Services\PdfGeneratorService;
+use App\Services\ProbationService;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -14,15 +15,18 @@ class ExportController extends Controller
     protected CandidateRepositoryInterface $candidateRepo;
     protected EmployeeRepositoryInterface $employeeRepo;
     protected PdfGeneratorService $pdfService;
+    protected ProbationService $probationService;
 
     public function __construct(
         CandidateRepositoryInterface $candidateRepo,
         EmployeeRepositoryInterface $employeeRepo,
-        PdfGeneratorService $pdfService
+        PdfGeneratorService $pdfService,
+        ProbationService $probationService
     ) {
-        $this->candidateRepo = $candidateRepo;
-        $this->employeeRepo = $employeeRepo;
-        $this->pdfService = $pdfService;
+        $this->candidateRepo    = $candidateRepo;
+        $this->employeeRepo     = $employeeRepo;
+        $this->pdfService       = $pdfService;
+        $this->probationService = $probationService;
     }
 
     /**
@@ -207,6 +211,49 @@ class ExportController extends Controller
 
         $pdf = $this->pdfService->generatePaklaringPdf($employee, $extraData);
         return $pdf->download("Paklaring_{$employee->employeeId}.pdf");
+    }
+
+    /**
+     * Download Performance Review – Evaluation Form PDF (2026).
+     * Reads latest evaluation data from kandidat_probation for the given employee + eval_id.
+     */
+    public function performanceReviewPdf(Request $request, string $id)
+    {
+        $employee = $this->employeeRepo->findById($id);
+        if (!$employee) {
+            abort(404, 'Data karyawan tidak ditemukan.');
+        }
+
+        $evalId = $request->query('eval_id', '');
+
+        // Fetch eval history and find matching eval record (or use most recent)
+        $history = $this->probationService->getEvalHistory($id);
+        $evalData = [];
+        if (!empty($history)) {
+            if ($evalId) {
+                foreach ($history as $h) {
+                    if (($h['evalId'] ?? '') === $evalId) {
+                        $evalData = $h;
+                        break;
+                    }
+                }
+            }
+            // Fallback: use most recent (history is sorted newest-first)
+            if (empty($evalData)) {
+                $evalData = $history[0];
+            }
+        }
+
+        // Merge approval sign-off data from query params (passed from controller evaluate())
+        $extraData = $request->only([
+            'reviewer_name',
+            'approval_dept', 'approval_dept_name', 'approval_dept_date',
+            'approval_hrbp', 'approval_hrbp_name', 'approval_hrbp_date',
+        ]);
+
+        $pdf = $this->pdfService->generatePerformanceReviewPdf($employee, $evalData, $extraData);
+        $safeName = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $employee->employeeId ?? 'emp');
+        return $pdf->download("PerformanceReview_{$safeName}.pdf");
     }
 
 
