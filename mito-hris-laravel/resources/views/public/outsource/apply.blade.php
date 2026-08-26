@@ -294,8 +294,13 @@
 
               <div class="col-md-6">
                 <label class="form-label fw-semibold" for="position" style="font-size:13px">Posisi / Jabatan <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" id="position" name="posisi_jabatan" value="{{ old('posisi_jabatan') }}" required placeholder="Contoh: Staff, Supervisor, Manager">
-                <div class="invalid-feedback">Posisi/jabatan wajib diisi.</div>
+                <select class="form-select" id="position" name="posisi_jabatan" required>
+                  <option value="">-- Pilih Posisi --</option>
+                  @foreach($positions ?? [] as $pos)
+                    <option value="{{ $pos }}" {{ old('posisi_jabatan') === $pos ? 'selected' : '' }}>{{ $pos }}</option>
+                  @endforeach
+                </select>
+                <div class="invalid-feedback">Posisi/jabatan wajib dipilih.</div>
               </div>
 
               <div class="col-md-6">
@@ -776,22 +781,50 @@ function resetDistrict() {
 
 function loadDistricts(cityCode) {
   if (!cityCode) { resetDistrict(); return; }
-  if (REGIONS.districts[cityCode]) {
-    var html = '<option value="">-- Pilih Kecamatan --</option>';
-    REGIONS.districts[cityCode].forEach(function(n) { html += '<option value="' + n + '">' + n + '</option>'; });
-    districtInput.innerHTML = html; districtInput.disabled = false;
-    districtManualWrap.style.display = 'none'; districtManualInput.required = false;
+  // Load full kecamatan data from JSON if not already loaded
+  if (!window._kecamatanData) {
+    districtInput.innerHTML = '<option value="">Memuat data kecamatan...</option>';
+    districtInput.disabled = true; districtLoading.style.display = 'block';
+    fetch('/data/kecamatan_all.json')
+      .then(res => {
+        if (!res.ok) throw new Error('Gagal memuat data kecamatan');
+        return res.json();
+      })
+      .then(data => {
+        window._kecamatanData = data;
+        districtLoading.style.display = 'none';
+        populateDistrictsForCity(cityCode);
+      })
+      .catch(() => {
+        districtLoading.style.display = 'none';
+        showDistrictManualFallback();
+      });
     return;
   }
-  districtInput.innerHTML = '<option value="">Memuat kecamatan...</option>';
-  districtInput.disabled = true; districtLoading.style.display = 'block';
-  districtManualWrap.style.display = 'none';
-  setTimeout(function() { districtLoading.style.display = 'none'; showDistrictManual(); }, 400);
+  populateDistrictsForCity(cityCode);
 }
 
-function showDistrictManual() {
-  districtInput.innerHTML = '<option value="">-</option>'; districtInput.disabled = true;
-  districtManualWrap.style.display = 'block'; districtManualInput.focus();
+function populateDistrictsForCity(cityCode) {
+  var data = window._kecamatanData;
+  if (!data) { resetDistrict(); return; }
+  var districts = data[cityCode];
+  if (districts && districts.length) {
+    var html = '<option value="">-- Pilih Kecamatan --</option>';
+    districts.forEach(function(n) { html += '<option value="' + n + '">' + n + '</option>'; });
+    districtInput.innerHTML = html; districtInput.disabled = false;
+    districtInput.required = true;
+    districtManualWrap.style.display = 'none'; districtManualInput.required = false;
+    districtInput.classList.remove('is-invalid'); districtInput.classList.add('is-valid');
+  } else {
+    showDistrictManualFallback();
+  }
+  districtLoading.style.display = 'none';
+}
+
+function showDistrictManualFallback() {
+  districtInput.innerHTML = '<option value="">-</option>'; districtInput.disabled = true; districtInput.required = false;
+  districtManualWrap.style.display = 'block'; districtManualInput.required = true; districtManualInput.focus();
+  districtInput.classList.remove('is-valid');
 }
 
 // ============================================================
