@@ -95,6 +95,11 @@ Route::prefix('hr')->name('hr.')->middleware(['hr.auth', 'mpr.auth'])->group(fun
         Route::get('/', [ProbationController::class, 'index'])->name('index')->middleware('can:manage_probation');
         Route::post('/{id}/evaluate', [ProbationController::class, 'evaluate'])->name('evaluate')->middleware('can:manage_probation');
         Route::get('/{id}/eval-history', [ProbationController::class, 'evalHistory'])->name('eval-history')->middleware('can:manage_probation');
+
+        // Performance Review preview (HTML, same template as the PDF) —
+        // data always resolved from the sheet via route {id}, never query params.
+        // PDF downloads use the existing on-demand hr.export.* routes.
+        Route::get('/{id}/preview', [ProbationController::class, 'previewPerformanceReview'])->name('preview');
     });
     Route::prefix('outsource')->name('outsource.')->middleware('can:view_employees')->group(function () {
         Route::get('/', [OutsourceController::class, 'index'])->name('index')->middleware('can:view_employees');

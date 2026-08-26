@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\DTOs\EmployeeData;
+use App\Enums\ProbationDecisionType;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Services\Google\GoogleSheetsService;
@@ -18,8 +19,10 @@ class ProbationService
 
     /**
      * Header sheet kandidat_probation — backward-compat dengan GAS PROBATION_HEADERS (Config.gs).
-     * Kolom lama (Score Performance … Average Score) dipertahankan untuk data historis.
-     * Kolom baru (Integrity Total … ind_tw_3) di-append setelah kolom lama.
+     * LEGACY kolom skor lama (Score Performance … Average Score) sudah DIHAPUS dari definisi
+     * ini — tidak lagi ditulis/dibaca oleh aplikasi (lihat audit cleanup kandidat_probation).
+     * Data historis pada sheet tetap utuh; append row selalu dipetakan by header name
+     * sehingga posisi fisik kolom lama tidak mengganggu.
      */
     private const PROBATION_HEADERS = [
         // -- Identitas
@@ -30,9 +33,6 @@ class ProbationService
         'Status', 'Onboarding Date', 'Onboarding By',
         // -- Evaluasi
         'Eval ID', 'Eval Date',
-        // OLD score columns — tetap ada untuk backward compat (data lama)
-        'Score Performance', 'Score Discipline', 'Score Communication', 'Score Initiative', 'Score Teamwork',
-        'Average Score',
         // Decision
         'Decision',
         // -- Perpanjangan
@@ -50,6 +50,10 @@ class ProbationService
         'ind_ci_1', 'ind_ci_2', 'ind_ci_3', 'ind_ci_4',
         'ind_ee_1', 'ind_ee_2',
         'ind_tw_1', 'ind_tw_2', 'ind_tw_3',
+        // Approval sign-off (Performance Review Section F)
+        'Reviewer Name', 'Approval Dept', 'Approval Dept Name',
+        'Approval Dept Date', 'Approval HRBP', 'Approval HRBP Name',
+        'Approval HRBP Date',
     ];
 
     /** 13 indicator keys in canonical order (Performance Review 2026). */
@@ -116,11 +120,11 @@ class ProbationService
      *     ciTotal: int,
      *     eeTotal: int,
      *     twTotal: int,
-     *     averageScore: string,
      *     isLulus: bool,
      *     isPutusKontrak: bool,
      *     isPerpanjang: bool,
      *     skNumber: string,
+     *     hasPdf: bool,
      *     message: string
      * }
      */
@@ -130,6 +134,9 @@ class ProbationService
         if (!$employee) {
             throw new RuntimeException("Karyawan probation {$employeeId} tidak ditemukan.");
         }
+
+        // Normalize Employee ID — strip leading apostrophe that GAS sometimes prepends
+        $employeeId = ltrim(trim($employeeId), "'");
 
         $user   = $user ?: 'HR Administrator';
         $now    = now()->timezone('Asia/Jakarta');
@@ -146,58 +153,15 @@ class ProbationService
         $overallTotal   = $integrityTotal + $ciTotal + $eeTotal + $twTotal;
         $category       = $this->calculateCategory($overallTotal);
 
-        // ── 2. Decision classification (GAS-compatible) ──────────
-        //
-        // IMPORTANT: Order matters here. We must check isPutusKontrak BEFORE
-        // isLulus because "Tidak Lulus" contains the substring "Lulus".
-        // Using str_contains('Tidak Lulus', 'Lulus') would incorrectly return true.
-        //
-        // Priority order (1:1 GAS submitProbationEvaluation logic):
-        //   1. isPutusKontrak — checked first to prevent "Tidak Lulus" false-positive
-        //   2. isPerpanjang   — checked second
-        //   3. isLulus        — only if neither of the above
-        //
-        // NEW decision values (Laravel modal):
-        //   "Diangkat sebagai Karyawan Tetap" → isLulus
-        //   "Tidak Lulus"                      → isPutusKontrak
-        //   "Perpanjang Kontrak"               → isPerpanjang
-        //
-        // LEGACY decision values (GAS modal, backward compat):
-        //   "Lulus → Karyawan Tetap"                          → isLulus
-        //   "Tidak Lolos → Putus Kontrak (Paklaring)"         → isPutusKontrak
-        //   "Tidak Lolos → Perpanjang Probation (Evaluasi Ulang)" → isPerpanjang
+        // ── 2. Decision classification using Enum ────────────────
         $decision = (string) ($evalData['decision'] ?? '');
-
-        // isPutusKontrak — MUST be evaluated BEFORE isLulus to avoid
-        // str_contains('Tidak Lulus', 'Lulus') = true false-positive.
-        $isPutusKontrak = ($decision === 'Tidak Lulus')
-                       || ($decision === 'Tidak Lolos → Putus Kontrak (Paklaring)')
-                       || str_contains($decision, 'Putus Kontrak')
-                       || str_contains($decision, 'Paklaring');
-
-        // isPerpanjang — evaluated before isLulus for the same safety reason
-        $isPerpanjang = !$isPutusKontrak
-                     && (
-                         $decision === 'Perpanjang Kontrak'
-                         || str_contains($decision, 'Perpanjang')
-                         || str_contains($decision, 'Evaluasi Ulang')
-                     );
-
-        // isLulus — only if neither putus kontrak nor perpanjang
-        $isLulus = !$isPutusKontrak
-                && !$isPerpanjang
-                && (
-                    $decision === 'Diangkat sebagai Karyawan Tetap'
-                    || $decision === 'Lulus → Karyawan Tetap'
-                    || str_contains($decision, 'Diangkat')
-                    || str_contains($decision, 'Tetap')
-                    // NOTE: We do NOT check str_contains($decision, 'Lulus') here
-                    // because 'Tidak Lulus' contains 'Lulus' — handled by isPutusKontrak above.
-                );
-
-        if (!$isLulus && !$isPutusKontrak && !$isPerpanjang) {
+        $decisionType = ProbationDecisionType::fromDecisionString($decision);
+        if (!$decisionType) {
             throw new RuntimeException('Keputusan evaluasi tidak valid: "' . $decision . '". Pilih salah satu keputusan yang tersedia.');
         }
+        $isLulus = $decisionType->isPass();
+        $isPutusKontrak = $decisionType->isFail();
+        $isPerpanjang = $decisionType->isExtend();
 
         $extDuration = $evalData['extension_duration'] ?? '';
         $extStart    = $evalData['extension_start']    ?? '';
@@ -270,6 +234,13 @@ class ProbationService
         }
 
         // ── 4. Tulis baris evaluasi ke kandidat_probation ─────────
+        //
+        // CATATAN: TIDAK ada PDF yang di-generate di sini.
+        //   - PASS/FAIL → PDF (SK Pengangkatan / Paklaring + Performance Review)
+        //     dibuat on-demand dan langsung di-download oleh controller/frontend
+        //     lewat route hr.export.* (konvensi fungsi PDF lainnya).
+        //   - EXTEND → tidak ada dokumen sama sekali; hanya data evaluasi +
+        //     durasi perpanjangan yang disimpan ke sheet.
         $this->appendProbationEvalRow([
             'Probation ID'       => $this->generateProbationId($now),
             'Employee ID'        => $employeeId,
@@ -278,13 +249,6 @@ class ProbationService
             'Status'             => $probStatus,
             'Eval ID'            => $evalId,
             'Eval Date'          => $nowStr,
-            // OLD score columns — empty for new evaluations (backward compat)
-            'Score Performance'  => '',
-            'Score Discipline'   => '',
-            'Score Communication'=> '',
-            'Score Initiative'   => '',
-            'Score Teamwork'     => '',
-            'Average Score'      => '',
             // Decision
             'Decision'           => $decision,
             // Extension
@@ -305,7 +269,8 @@ class ProbationService
             'Teamwork Total'     => $twTotal,
             'Overall Total'      => $overallTotal,
             'Category'           => $category,
-            // NEW: individual indicators (stored as 1/0)
+            // NEW: individual indicators — stored as "1" (✓) or "0" (X) string
+            // This allows eval history to reconstruct exact ✓/X display per indicator.
             'ind_integrity_1'    => $this->indVal($indicators, 'integrity_1'),
             'ind_integrity_2'    => $this->indVal($indicators, 'integrity_2'),
             'ind_integrity_3'    => $this->indVal($indicators, 'integrity_3'),
@@ -319,6 +284,14 @@ class ProbationService
             'ind_tw_1'           => $this->indVal($indicators, 'tw_1'),
             'ind_tw_2'           => $this->indVal($indicators, 'tw_2'),
             'ind_tw_3'           => $this->indVal($indicators, 'tw_3'),
+            // Approval fields
+            'Reviewer Name'      => $evalData['reviewer_name'] ?? '',
+            'Approval Dept'      => $evalData['approval_dept'] ?? '',
+            'Approval Dept Name' => $evalData['approval_dept_name'] ?? '',
+            'Approval Dept Date' => $evalData['approval_dept_date'] ?? '',
+            'Approval HRBP'      => $evalData['approval_hrbp'] ?? '',
+            'Approval HRBP Name' => $evalData['approval_hrbp_name'] ?? '',
+            'Approval HRBP Date' => $evalData['approval_hrbp_date'] ?? '',
         ]);
 
         // ── 5. Audit log ──────────────────────────────────────────
@@ -332,6 +305,8 @@ class ProbationService
             user: $user
         );
 
+        $decisionType = ProbationDecisionType::fromDecisionString($decision);
+
         return [
             'success'        => true,
             'evalId'         => $evalId,
@@ -343,15 +318,16 @@ class ProbationService
             'ciTotal'        => $ciTotal,
             'eeTotal'        => $eeTotal,
             'twTotal'        => $twTotal,
-            'averageScore'   => '',   // empty for new evals; kept for backward compat
             'isLulus'        => $isLulus,
             'isPutusKontrak' => $isPutusKontrak,
             'isPerpanjang'   => $isPerpanjang,
             'skNumber'       => $skNumber,
+            // hasPdf = false untuk EXTEND → controller tidak membangun URL PDF
+            'hasPdf'         => $decisionType?->hasPdf() ?? false,
             'message'        => $isLulus
-                ? 'Karyawan lulus probation & diangkat menjadi karyawan tetap (PKWTT).'
+                ? "Karyawan lulus probation & diangkat menjadi karyawan tetap (PKWTT). SK: {$skNumber}"
                 : ($isPutusKontrak
-                    ? 'Kontrak diakhiri. Paklaring diterbitkan.'
+                    ? "Kontrak diakhiri. Paklaring diterbitkan. No: {$skNumber}"
                     : "Masa probation diperpanjang ({$extDuration})."),
         ];
     }
@@ -364,28 +340,32 @@ class ProbationService
      * Riwayat evaluasi untuk satu karyawan dari kandidat_probation,
      * urut terbaru dulu. (1:1 GAS getProbationEvalHistory)
      *
-     * Returns both new fields (overallTotal, category, competency totals)
-     * AND old fields (averageScore) for backward compat with old data.
+     * Returns new fields (overallTotal, category, competency totals).
      */
     public function getEvalHistory(string $employeeId): array
     {
+        $this->sheets->clearCache($this->probationSheet());
         $rows    = $this->sheets->getRowsAsAssoc($this->probationSheet());
         $history = [];
 
+        // Normalize query ID: trim, strip leading apostrophe, extract numeric part
+        $queryEmpId = ltrim(trim($employeeId), "'");
+        $queryNumeric = preg_replace('/[^0-9]/', '', $queryEmpId);
+
         foreach ($rows as $row) {
-            if (($row['Employee ID'] ?? '') !== $employeeId) continue;
+            // Normalize row Employee ID similarly
+            $rowEmpId = ltrim(trim($row['Employee ID'] ?? ''), "'");
+            $rowNumeric = preg_replace('/[^0-9]/', '', $rowEmpId);
+
+            // Match if exact or numeric-only matches
+            if ($rowEmpId !== $queryEmpId && $rowNumeric !== $queryNumeric) {
+                continue;
+            }
             if (empty($row['Eval Date'])) continue;
 
             $history[] = [
-                // Legacy fields (old evaluations)
                 'evalId'           => $row['Eval ID']           ?? '',
                 'evalDate'         => $row['Eval Date']          ?? '',
-                'scorePerformance' => $row['Score Performance']  ?? '',
-                'scoreDiscipline'  => $row['Score Discipline']   ?? '',
-                'scoreCommunication' => $row['Score Communication'] ?? '',
-                'scoreInitiative'  => $row['Score Initiative']   ?? '',
-                'scoreTeamwork'    => $row['Score Teamwork']     ?? '',
-                'averageScore'     => $row['Average Score']      ?? '',
                 // New fields (Performance Review 2026)
                 'overallTotal'     => $row['Overall Total']      ?? '',
                 'category'         => $row['Category']           ?? '',
@@ -415,6 +395,14 @@ class ProbationService
                 'evaluatorNotes'   => $row['Evaluator Notes']    ?? '',
                 'evaluator'        => $row['Evaluator']          ?? '',
                 'skStatus'         => $row['SK Status']          ?? '',
+                // Approval fields
+                'reviewer_name'      => $row['Reviewer Name']      ?? '',
+                'approval_dept'      => $row['Approval Dept']      ?? '',
+                'approval_dept_name' => $row['Approval Dept Name'] ?? '',
+                'approval_dept_date' => $row['Approval Dept Date'] ?? '',
+                'approval_hrbp'      => $row['Approval HRBP']      ?? '',
+                'approval_hrbp_name' => $row['Approval HRBP Name'] ?? '',
+                'approval_hrbp_date' => $row['Approval HRBP Date'] ?? '',
             ];
         }
 
@@ -426,32 +414,73 @@ class ProbationService
     /**
      * Peta Employee ID → evaluasi terakhir (untuk kolom Last Score & status di tabel).
      * Returns Collection with key = Employee ID.
-     * Includes new fields (overallTotal, category) AND old avgScore for backward compat.
      */
+    public function getAllProbationRecords(): Collection
+    {
+        $this->sheets->clearCache($this->probationSheet());
+        $rows = $this->sheets->getRowsAsAssoc($this->probationSheet());
+        // Group by Employee ID, take latest by Eval Date (or Created At if no eval)
+        $grouped = [];
+        foreach ($rows as $row) {
+            $empId = ltrim(trim($row['Employee ID'] ?? ''), "'");
+            if ($empId === '') continue;
+            $date = $row['Eval Date'] ?? $row['Created At'] ?? '';
+            if (!isset($grouped[$empId]) || $date > $grouped[$empId]['_date']) {
+                $grouped[$empId] = array_merge($row, ['_date' => $date]);
+            }
+        }
+        return collect(array_values($grouped));
+    }
+
+    public function canEvaluate(string $employeeId): bool
+    {
+        $history = $this->getEvalHistory($employeeId);
+        $count = count($history);
+        if ($count === 0) {
+            return true;
+        }
+        $latest = $history[0]; // newest first
+        $decision = $latest['decision'] ?? '';
+        $type = ProbationDecisionType::fromDecisionString($decision);
+        if ($type === null) {
+            return true; // no valid decision yet
+        }
+        if ($type->isPass() || $type->isFail()) {
+            return false;
+        }
+        if ($type->isExtend()) {
+            // Allow if this is the first evaluation (extend) and no final yet
+            return $count === 1;
+        }
+        return true;
+    }
+
     public function latestEvalByEmployee(): Collection
     {
+        $this->sheets->clearCache($this->probationSheet());
         $rows   = $this->sheets->getRowsAsAssoc($this->probationSheet());
         $latest = [];
 
         foreach ($rows as $row) {
-            $empId = $row['Employee ID'] ?? '';
+            $empId = ltrim(trim($row['Employee ID'] ?? ''), "'");
             if ($empId === '' || empty($row['Eval Date'])) continue;
 
             $date = $row['Eval Date'];
             if (!isset($latest[$empId]) || strcmp($date, $latest[$empId]['evalDate']) > 0) {
                 $latest[$empId] = [
-                    'avgScore'    => $row['Average Score']   ?? '',
+                    'evalId'       => $row['Eval ID']         ?? '',
                     'overallTotal' => $row['Overall Total']  ?? '',
-                    'category'    => $row['Category']        ?? '',
-                    'decision'    => $row['Decision']        ?? '',
-                    'evalDate'    => $date,
-                    'evaluator'   => $row['Evaluator']       ?? '',
+                    'category'     => $row['Category']        ?? '',
+                    'decision'     => $row['Decision']        ?? '',
+                    'evalDate'     => $date,
+                    'evaluator'    => $row['Evaluator']       ?? '',
                 ];
             }
         }
 
         return collect($latest);
     }
+
 
     // ==========================================================
     // Private helpers
@@ -472,13 +501,15 @@ class ProbationService
     }
 
     /**
-     * Count how many indicators from $keys are true/1 in $indicators.
+     * Count how many indicators from $keys equal "1" (✓ terpenuhi).
+     * 3-state: "1" = ✓ terpenuhi, "0" = X tidak terpenuhi, "" = belum dinilai.
+     * Only "1" counts toward the score. "0" and "" are both not counted.
      */
     private function countChecked(array $indicators, array $keys): int
     {
         $count = 0;
         foreach ($keys as $key) {
-            if (!empty($indicators[$key])) {
+            if (($indicators[$key] ?? '') === '1') {
                 $count++;
             }
         }
@@ -486,11 +517,15 @@ class ProbationService
     }
 
     /**
-     * Return 1 or 0 for a single indicator (for sheet storage).
+     * Return stored value for a single indicator in the sheet.
+     * "1" = ✓ terpenuhi, "0" = X tidak terpenuhi.
+     * Stores the explicit string so eval history can reconstruct ✓/X display.
      */
-    private function indVal(array $indicators, string $key): int
+    private function indVal(array $indicators, string $key): string
     {
-        return !empty($indicators[$key]) ? 1 : 0;
+        $v = $indicators[$key] ?? '';
+        // Only accept "1" or "0" — anything else (incl. bool) normalises to "0"
+        return $v === '1' ? '1' : '0';
     }
 
     private function appendProbationEvalRow(array $data): void
@@ -530,6 +565,7 @@ class ProbationService
             $row[] = $data[$h] ?? '';
         }
         $this->sheets->appendRow($sheetName, $row);
+        $this->sheets->clearCache($sheetName);
     }
 
     /**
@@ -544,6 +580,21 @@ class ProbationService
             $index   = (int)($index / 26);
         }
         return $letters;
+    }
+
+    private function getEntityCode(string $branchName): string
+    {
+        $b = strtolower($branchName);
+        if (str_contains($b, 'stein')) {
+            return 'SPI';
+        }
+        if (str_contains($b, 'injeksi')) {
+            return 'PII';
+        }
+        if (str_contains($b, 'mitra') || str_contains($b, 'elektro')) {
+            return 'MEP';
+        }
+        return 'MSI';
     }
 
     private function appendNote(?string $existing, string $line): string
@@ -563,16 +614,16 @@ class ProbationService
 
     private function generateSuratNumber(string $code, string $branchName, \Illuminate\Support\Carbon $now): string
     {
-        $branch6 = strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $branchName ?: 'MITO'), 0, 6));
-        $roman   = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'][$now->month - 1];
-        $seq     = $this->nextCounter('SK', $now);
-        return sprintf('%03d/%s/%s/%s/%d', $seq, $code, $branch6, $roman, $now->year);
+        $entity = $this->getEntityCode($branchName);
+        $roman  = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'][$now->month - 1];
+        $seq    = $this->nextCounter('SK', $now);
+        return sprintf('%03d/%s/%s/%s/%d', $seq, $code, $entity, $roman, $now->year);
     }
 
     private function generatePaklaringNumber(string $branchName, string $evalId, \Illuminate\Support\Carbon $now): string
     {
-        $branch6 = strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $branchName ?: 'MITO'), 0, 6));
-        return sprintf('SKK/HRD/%s/%d/%s', $branch6, $now->year, $evalId);
+        $entity = $this->getEntityCode($branchName);
+        return sprintf('SKK/HRD/%s/%d/%s', $entity, $now->year, $evalId);
     }
 
     private function nextCounter(string $prefix, \Illuminate\Support\Carbon $now): int

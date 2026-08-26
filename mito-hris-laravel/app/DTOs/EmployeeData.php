@@ -59,9 +59,7 @@ class EmployeeData
         public ?int $rowNumber = null,
         // -- Enrichment (tidak disimpan di sheet Employee) — diisi runtime dari
         //    kandidat_probation untuk kolom "Score / Kategori" & status evaluasi di tabel probation.
-        // Legacy (old evaluations — avg-based)
-        public ?string $lastAvgScore = null,
-        // New (Performance Review 2026 — indicator-based)
+        // Performance Review 2026 (indicator-based)
         public ?string $lastCategory = null,
         public ?string $lastOverallTotal = null,
         // Shared
