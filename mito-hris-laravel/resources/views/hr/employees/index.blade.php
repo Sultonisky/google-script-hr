@@ -64,23 +64,23 @@
                     <div class="panel-subtitle">Klik baris atau nama untuk melihat detail lengkap dari spreadsheet.</div>
                 </div>
                 @can('manage_employees')
-                <div class="export-btns">
+                <div class="export-btns d-flex flex-wrap gap-2">
                     <button class="btn btn-sm text-white fw-semibold"
                         style="background:#166534;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
                         type="button" data-bs-toggle="modal" data-bs-target="#empImportModal">
                         <i class="bi bi-upload me-1"></i>Import
                     </button>
-                    <button class="btn btn-sm ms-2 fw-semibold text-white"
+                    <button class="btn btn-sm fw-semibold text-white"
                         style="background:#0B2540;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
                         type="button" data-bs-toggle="modal" data-bs-target="#rotationModal">
                         <i class="bi bi-arrow-left-right me-1"></i>Rotasi
                     </button>
-                    <button class="btn btn-sm ms-2 fw-semibold text-white"
+                    <button class="btn btn-sm fw-semibold text-white"
                         style="background:#d97706;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
                         type="button" data-bs-toggle="modal" data-bs-target="#offContractModal">
                         <i class="bi bi-calendar-x me-1"></i>Off Contract
                     </button>
-                    <button class="btn btn-sm ms-2 fw-semibold text-white"
+                    <button class="btn btn-sm fw-semibold text-white"
                         style="background:#991b1b;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
                         type="button" data-bs-toggle="modal" data-bs-target="#offboardingModal">
                         <i class="bi bi-box-arrow-right me-1"></i>Offboarding
