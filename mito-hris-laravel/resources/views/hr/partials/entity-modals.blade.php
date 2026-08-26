@@ -550,64 +550,729 @@
   });
 </script>
 
-<!-- 2. IMPORT CSV / EXCEL MODAL — Master Data & Employee (1:1 from GAS Modals.html lines 68-171) -->
+<!-- 2. IMPORT CSV / EXCEL MODAL — Master Data & Employee (1:1 from GAS Modals.html / js/import.html) -->
+{{--
+  Full 3-step import flow:
+  Step 1 — File select / drag-drop (CSV or XLSX/XLS), client-side parse with XLSX.js
+  Step 2 — Preview table: per-row status (new / duplicate / invalid), summary counts
+  Step 3 — Result: import summary, errors list, close button
+
+  Data flow:
+  1. User selects file → client-side parse (CSV or XLSX) → empImportRows[]
+  2. POST /hr/employees/import/preview (JSON: {employees:[...]}) → preview result
+  3. User clicks Import → POST /hr/employees/import (JSON: {employees:[new rows only]})
+  4. Show step3 result with counts and per-row errors
+
+  NO write to Google Sheets happens in steps 1–2.
+  Backend always re-validates in step 3.
+  RBAC: can:manage_employees (enforced in route + backend).
+--}}
 <div class="modal fade" id="empImportModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content" style="border-radius:16px">
       <div class="modal-header" style="background:#166534;color:#fff;border-radius:16px 16px 0 0">
         <h6 class="modal-title mb-0 fw-bold"><i class="bi bi-upload me-2"></i>Import Karyawan (CSV / Excel)</h6>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
+
       <div class="modal-body p-4">
-        <!-- Step 1: File upload -->
+
+        {{-- ====== STEP 1: File Select ====== --}}
         <div id="empImportStep1">
-          <p style="font-size:13.5px;color:var(--color-text-soft)">
-            Upload file <strong>CSV</strong> atau <strong>Excel (.xlsx/.xls)</strong> dengan format kolom yang sesuai. Kolom <strong>wajib</strong>: <code>fullName</code>. Semua kolom lain opsional.
+          <p style="font-size:13px;color:var(--color-text-soft)">
+            Upload file <strong>CSV</strong> atau <strong>Excel (.xlsx/.xls)</strong>. Kolom <strong>wajib</strong>:
+            <code>Full Name</code>. Semua kolom lain opsional.
           </p>
-          <div class="border rounded-3 p-4 text-center" id="empImportDropZone" style="cursor:pointer;border-style:dashed!important;transition:background .2s;background:var(--color-bg)" onclick="document.getElementById('empImportFileInput').click()">
-            <i class="bi bi-file-earmark-spreadsheet fs-1" style="color:var(--color-primary, #eb1c24)"></i>
+
+          {{-- Drop zone --}}
+          <div class="border rounded-3 p-4 text-center" id="empImportDropZone"
+               style="cursor:pointer;border-style:dashed!important;transition:background .2s;background:var(--color-bg)">
+            <i class="bi bi-file-earmark-spreadsheet fs-1 text-success"></i>
             <p class="mb-1 mt-2 fw-semibold" style="font-size:14px">Klik atau seret file CSV / Excel ke sini</p>
-            <p class="mb-0 text-muted" style="font-size:12px">Format: .csv &bull; .xlsx &bull; .xls — maks 5MB &bull; maks 500 baris</p>
-            <input type="file" id="empImportFileInput" accept=".csv,.xlsx,.xls" class="d-none" onchange="handleEmpImportFileSelect(this)" />
+            <p class="mb-0 text-muted" style="font-size:12px">.csv &bull; .xlsx &bull; .xls — maks 10 MB &bull; maks 500 baris</p>
+            <input type="file" id="empImportFileInput" accept=".csv,.xlsx,.xls" class="d-none" />
           </div>
-          <div class="mt-3" id="empImportFileInfo" style="display:none">
+
+          {{-- File info (shown after selection) --}}
+          <div class="mt-3 d-none" id="empImportFileInfo">
             <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--color-bg)">
               <i class="bi bi-file-earmark-check fs-5 text-success"></i>
-              <div>
+              <div class="flex-grow-1">
                 <div class="fw-semibold" style="font-size:13px" id="empImportFileName">-</div>
                 <div class="text-muted" style="font-size:12px" id="empImportFileSize">-</div>
               </div>
-              <button class="btn btn-sm btn-outline-danger ms-auto" type="button" onclick="clearEmpImportFile()"><i class="bi bi-x"></i></button>
+              <button class="btn btn-sm btn-outline-danger" type="button" id="btnEmpImportClearFile">
+                <i class="bi bi-x"></i>
+              </button>
             </div>
           </div>
-          <!-- Kolom yang dikenali (1:1 from GAS) -->
+
+          {{-- Recognized columns reference --}}
           <div class="mt-3 p-3 rounded" style="background:var(--color-bg);border:1px solid var(--color-border);font-size:11.5px">
-            <div class="fw-semibold mb-1" style="font-size:12px"><i class="bi bi-info-circle me-1"></i>Kolom yang dikenali (sesuai header Employee)</div>
-            <div class="mb-1"><span class="badge bg-danger me-1">Wajib</span> <code>fullName</code> (atau: <code>nama</code>, <code>namalengkap</code>)</div>
+            <div class="fw-semibold mb-1" style="font-size:12px"><i class="bi bi-info-circle me-1"></i>Header yang dikenali (case-insensitive, spasi/underscore diabaikan)</div>
+            <div class="mb-1"><span class="badge bg-danger me-1">Wajib</span><code>Full Name</code> / <code>fullName</code> / <code>Nama Lengkap</code></div>
             <div style="color:var(--color-text-soft)">
-              <strong>Identitas:</strong> <code>nik</code>, <code>npwp</code>, <code>birthPlace</code>, <code>birthDate</code>, <code>gender</code>, <code>religion</code>, <code>maritalStatus</code>, <code>bloodType</code><br>
-              <strong>Kontak:</strong> <code>citizenIdAddress</code>, <code>residentialAddress</code>, <code>mobilePhone</code>, <code>personalEmail</code>, <code>workingEmail</code><br>
-              <strong>Bank &amp; BPJS:</strong> <code>bankName</code>, <code>bankAccount</code>, <code>bankAccountHolder</code>, <code>bpjsKetenagakerjaan</code>, <code>bpjsKesehatan</code><br>
-              <strong>Organisasi:</strong> <code>branchName</code>, <code>division</code>, <code>department</code>, <code>positionCurrent</code>, <code>jobLevel</code>, <code>areaKerja</code>, <code>lokasiKerja</code><br>
-              <strong>Status &amp; Kontrak:</strong> <code>statusEmployee</code>, <code>joinDate</code>, <code>endDateContract</code>, <code>outsourceVendor</code>
+              <strong>Identitas:</strong> <code>NIK</code>, <code>NPWP</code>, <code>Tempat Lahir</code>, <code>Tanggal Lahir</code>, <code>Jenis Kelamin</code>, <code>Agama</code>, <code>Status Pernikahan</code>, <code>Golongan Darah</code><br>
+              <strong>Kontak:</strong> <code>Alamat KTP</code>, <code>Alamat Domisili</code>, <code>No HP</code>, <code>Email Pribadi</code>, <code>Email Kantor</code><br>
+              <strong>Bank &amp; BPJS:</strong> <code>Nama Bank</code>, <code>Nomor Rekening</code>, <code>Atas Nama Rekening</code>, <code>BPJS Ketenagakerjaan</code>, <code>BPJS Kesehatan</code><br>
+              <strong>Organisasi:</strong> <code>Branch Name</code>, <code>Division</code>, <code>Department</code>, <code>Job Position</code>, <code>Job Level</code>, <code>Grade</code>, <code>Area Kerja</code>, <code>Lokasi Kerja</code><br>
+              <strong>Status &amp; Kontrak:</strong> <code>Status Employee</code> (<em>Permanent / Contract / Probation / Outsource</em>), <code>Join Date</code>, <code>End Date Contract</code>
             </div>
           </div>
         </div>
-      </div>
-      <div class="modal-footer">
-        <a href="{{ route('hr.export.employees-csv') }}" class="btn btn-outline-secondary btn-sm" id="btnEmpDownloadTemplate">
-          <i class="bi bi-download me-1"></i>Download Template CSV
-        </a>
-        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
-        <button class="btn btn-sm text-white fw-semibold" style="background:#166534" id="btnEmpImportStart" disabled onclick="simulateEmpImport()">
-          <i class="bi bi-upload me-1"></i>Mulai Import
-        </button>
-      </div>
+        {{-- /STEP 1 --}}
+
+        {{-- ====== STEP 2: Preview ====== --}}
+        <div id="empImportStep2" class="d-none">
+          {{-- Summary bar --}}
+          <div class="d-flex flex-wrap gap-2 align-items-center mb-3" id="empImportSummaryBar">
+            <span class="badge bg-secondary" style="font-size:13px" id="empImportBadgeTotal">Total: 0</span>
+            <span class="badge bg-success" style="font-size:13px" id="empImportBadgeNew">Baru: 0</span>
+            <span class="badge bg-warning text-dark" style="font-size:13px" id="empImportBadgeExist">Sudah Ada: 0</span>
+            <span class="badge bg-danger" style="font-size:13px" id="empImportBadgeInvalid">Invalid: 0</span>
+            <span class="badge bg-info text-dark" style="font-size:13px" id="empImportBadgeDupFile">Duplikat File: 0</span>
+          </div>
+
+          {{-- Loading spinner saat preview --}}
+          <div id="empImportPreviewLoading" class="text-center py-4 d-none">
+            <span class="spinner-border spinner-border-sm text-success me-2"></span>
+            <span style="font-size:13px">Memvalidasi data...</span>
+          </div>
+
+          {{-- Preview table --}}
+          <div class="table-responsive" id="empImportPreviewTableWrap" style="max-height:360px;overflow-y:auto">
+            <table class="table table-sm table-bordered align-middle mb-0" style="font-size:12px">
+              <thead class="table-light sticky-top">
+                <tr>
+                  <th style="width:40px">#</th>
+                  <th>Employee ID</th>
+                  <th>Nama Lengkap</th>
+                  <th>Departemen</th>
+                  <th>Posisi</th>
+                  <th>Status Karyawan</th>
+                  <th>Join Date</th>
+                  <th style="width:160px">Hasil Validasi</th>
+                </tr>
+              </thead>
+              <tbody id="empImportPreviewBody"></tbody>
+            </table>
+          </div>
+
+          {{-- Warning if nothing to import --}}
+          <div id="empImportNoNewAlert" class="alert alert-warning mt-3 d-none" style="font-size:13px">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            Tidak ada baris baru yang dapat diimport. Semua baris sudah ada di sheet atau invalid.
+          </div>
+        </div>
+        {{-- /STEP 2 --}}
+
+        {{-- ====== STEP 3: Result ====== --}}
+        <div id="empImportStep3" class="d-none text-center py-3">
+          <i id="empImportResultIcon" class="bi bi-check-circle-fill fs-1 text-success"></i>
+          <h6 id="empImportResultTitle" class="mt-3 mb-1">Import Selesai</h6>
+          <p id="empImportResultMessage" class="text-muted" style="font-size:13px"></p>
+
+          {{-- Error list (shown if partial errors) --}}
+          <div id="empImportResultErrors" class="text-start d-none mt-3">
+            <div class="fw-semibold mb-1" style="font-size:12px;color:#991b1b">
+              <i class="bi bi-exclamation-circle me-1"></i>Detail baris yang dilewati:
+            </div>
+            <ul id="empImportErrorList" class="list-unstyled mb-0" style="font-size:12px;max-height:200px;overflow-y:auto;background:#fff5f5;padding:8px 12px;border-radius:8px;border:1px solid #fecaca"></ul>
+          </div>
+        </div>
+        {{-- /STEP 3 --}}
+
+      </div>{{-- /modal-body --}}
+
+      <div class="modal-footer" id="empImportFooter">
+        {{-- Step 1 footer --}}
+        <div id="empImportFooterStep1" class="d-flex gap-2 w-100">
+          <a href="{{ route('hr.employees.import.template') }}" class="btn btn-outline-secondary btn-sm" id="btnEmpDownloadTemplate">
+            <i class="bi bi-download me-1"></i>Download Template CSV
+          </a>
+          <button type="button" class="btn btn-outline-secondary btn-sm ms-auto" data-bs-dismiss="modal">Tutup</button>
+          <button type="button" class="btn btn-sm text-white fw-semibold" style="background:#166534"
+                  id="btnEmpImportPreview" disabled>
+            <span id="btnPreviewText"><i class="bi bi-eye me-1"></i>Preview &amp; Validasi</span>
+            <span id="btnPreviewLoading" class="d-none"><span class="spinner-border spinner-border-sm me-1"></span>Memvalidasi...</span>
+          </button>
+        </div>
+
+        {{-- Step 2 footer --}}
+        <div id="empImportFooterStep2" class="d-flex gap-2 w-100 d-none">
+          <button type="button" class="btn btn-outline-secondary btn-sm" id="btnEmpImportBack">
+            <i class="bi bi-arrow-left me-1"></i>Kembali
+          </button>
+          <button type="button" class="btn btn-outline-secondary btn-sm ms-auto" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-sm text-white fw-semibold" style="background:#166534"
+                  id="btnEmpImportConfirm" disabled>
+            <span id="btnImportText"><i class="bi bi-cloud-arrow-up-fill me-1"></i>Import <span id="btnImportCount">0</span> Karyawan Baru</span>
+            <span id="btnImportLoading" class="d-none"><span class="spinner-border spinner-border-sm me-1"></span>Mengimport...</span>
+          </button>
+        </div>
+
+        {{-- Step 3 footer --}}
+        <div id="empImportFooterStep3" class="d-flex gap-2 w-100 d-none">
+          <button type="button" class="btn btn-sm text-white fw-semibold ms-auto" style="background:#166534"
+                  data-bs-dismiss="modal" id="btnEmpImportClose">
+            <i class="bi bi-check me-1"></i>Selesai
+          </button>
+        </div>
+      </div>{{-- /modal-footer --}}
+
     </div>
   </div>
-</div>
+</div>{{-- /empImportModal --}}
 
-<!-- 3. AJUKAN ONBOARDING PROBATION MODAL (1:1 from GAS Modals.html lines 172-238) -->
+<script>
+// ============================================================
+// IMPORT EMPLOYEE MODAL — Full 3-step flow
+// 1:1 behavior with GAS js/import.html
+// Step 1: file select → client-side parse (CSV/XLSX)
+// Step 2: POST preview endpoint → display per-row validation
+// Step 3: POST import endpoint (new rows only) → show result
+// ============================================================
+(function () {
+  'use strict';
+
+  // ── State ──────────────────────────────────────────────────
+  var _file         = null;   // File object
+  var _parsedRows   = [];     // all rows parsed from file
+  var _previewRows  = [];     // rows from backend preview response
+  var _newCount     = 0;      // importable row count
+
+  // ── DOM helpers ────────────────────────────────────────────
+  function el(id) { return document.getElementById(id); }
+  function show(id) { var e = el(id); if (e) { e.classList.remove('d-none'); } }
+  function hide(id) { var e = el(id); if (e) { e.classList.add('d-none'); } }
+  function setText(id, txt) { var e = el(id); if (e) e.textContent = txt; }
+  function esc(str) {
+    return String(str || '')
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function csrfToken() {
+    var m = document.querySelector('meta[name="csrf-token"]');
+    return m ? m.content : '';
+  }
+
+  // ── Step navigation ────────────────────────────────────────
+  function showStep(n) {
+    [1,2,3].forEach(function(s) {
+      var body   = el('empImportStep' + s);
+      var footer = el('empImportFooterStep' + s);
+      if (body)   { if (s === n) body.classList.remove('d-none');   else body.classList.add('d-none'); }
+      if (footer) { if (s === n) footer.classList.remove('d-none'); else footer.classList.add('d-none'); }
+    });
+  }
+
+  // ── Reset to step 1 ────────────────────────────────────────
+  function resetModal() {
+    _file = null; _parsedRows = []; _previewRows = []; _newCount = 0;
+    var fi = el('empImportFileInput');
+    if (fi) fi.value = '';
+    hide('empImportFileInfo');
+    show('empImportDropZone');
+    var prevBtn = el('btnEmpImportPreview');
+    if (prevBtn) { prevBtn.disabled = true; }
+    // Reset step 2 badges
+    ['Total','New','Exist','Invalid','DupFile'].forEach(function(k) {
+      var e = el('empImportBadge' + k);
+      if (e) e.textContent = k + ': 0';
+    });
+    var tbody = el('empImportPreviewBody');
+    if (tbody) tbody.innerHTML = '';
+    hide('empImportNoNewAlert');
+    // Reset step 3
+    hide('empImportResultErrors');
+    var errList = el('empImportErrorList');
+    if (errList) errList.innerHTML = '';
+    showStep(1);
+  }
+
+  // ── File selection ─────────────────────────────────────────
+  function handleFile(file) {
+    if (!file) return;
+    var name = (file.name || '').toLowerCase();
+    if (!name.endsWith('.csv') && !name.endsWith('.xlsx') && !name.endsWith('.xls')) {
+      if (typeof showToast === 'function') showToast('Hanya file CSV atau Excel (.csv/.xlsx/.xls) yang didukung.', 'error');
+      else alert('Hanya file CSV atau Excel yang didukung.');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      if (typeof showToast === 'function') showToast('Ukuran file maksimal 10 MB.', 'error');
+      else alert('Ukuran file maksimal 10 MB.');
+      return;
+    }
+    _file = file;
+    setText('empImportFileName', file.name);
+    setText('empImportFileSize', (file.size / 1024).toFixed(1) + ' KB');
+    hide('empImportDropZone');
+    show('empImportFileInfo');
+
+    // Parse file client-side
+    if (name.endsWith('.csv')) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          _parsedRows = parseCSV(e.target.result);
+          afterParse();
+        } catch(err) {
+          if (typeof showToast === 'function') showToast('Gagal memproses CSV: ' + err.message, 'error');
+          resetModal();
+        }
+      };
+      reader.onerror = function() {
+        if (typeof showToast === 'function') showToast('Gagal membaca file CSV.', 'error');
+        resetModal();
+      };
+      reader.readAsText(file, 'UTF-8');
+    } else {
+      parseExcel(file, function(rows) {
+        _parsedRows = rows;
+        afterParse();
+      });
+    }
+  }
+
+  function afterParse() {
+    if (!_parsedRows || _parsedRows.length === 0) {
+      if (typeof showToast === 'function') showToast('File kosong atau format kolom tidak dikenali.', 'error');
+      resetModal(); return;
+    }
+    if (_parsedRows.length > 500) {
+      if (typeof showToast === 'function') showToast('Maksimal 500 baris per import. File memiliki ' + _parsedRows.length + ' baris.', 'error');
+      resetModal(); return;
+    }
+    var prevBtn = el('btnEmpImportPreview');
+    if (prevBtn) prevBtn.disabled = false;
+  }
+
+  // ── CSV parser (identical to GAS js/import.html) ───────────
+  function detectDelimiter(lines) {
+    var first = lines[0] || '';
+    var c = (first.match(/,/g)||[]).length;
+    var s = (first.match(/;/g)||[]).length;
+    var t = (first.match(/\t/g)||[]).length;
+    if (s > c && s > t) return ';';
+    if (t > c && t > s) return '\t';
+    return ',';
+  }
+
+  function splitLine(line, delim) {
+    var result = [], cur = '', inQ = false;
+    for (var i = 0; i < line.length; i++) {
+      var ch = line[i];
+      if (ch === '"') {
+        if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+        else { inQ = !inQ; }
+      } else if (ch === delim && !inQ) {
+        result.push(cur); cur = '';
+      } else { cur += ch; }
+    }
+    result.push(cur);
+    return result;
+  }
+
+  function parseCSV(text) {
+    text = (text || '').replace(/^\uFEFF/, '');
+    var lines = text.split(/\r?\n/).filter(function(l) { return l.trim() !== ''; });
+    if (lines.length < 2) return [];
+    var delim = detectDelimiter(lines);
+    var matrix = lines.map(function(l) { return splitLine(l, delim); });
+    return rowsFromMatrix(matrix);
+  }
+
+  // ── Excel parser (uses XLSX.js CDN, lazy-loaded) ───────────
+  function parseExcel(file, cb) {
+    if (typeof XLSX === 'undefined') {
+      var s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      document.head.appendChild(s);
+      s.onload = function() { parseExcel(file, cb); };
+      s.onerror = function() {
+        if (typeof showToast === 'function') showToast('Gagal memuat library Excel. Periksa koneksi internet.', 'error');
+        if (cb) cb([]);
+      };
+      return;
+    }
+    var fr = new FileReader();
+    fr.onload = function(e) {
+      try {
+        var wb   = XLSX.read(new Uint8Array(e.target.result), { type: 'array', raw: false });
+        var sheetName = wb.SheetNames[0];
+        var preferred = ['edited','data','karyawan','employee','import'];
+        for (var si = 0; si < wb.SheetNames.length; si++) {
+          var sn = wb.SheetNames[si].toLowerCase().trim();
+          for (var pi = 0; pi < preferred.length; pi++) {
+            if (sn === preferred[pi] || sn.indexOf(preferred[pi]) !== -1) {
+              sheetName = wb.SheetNames[si]; break;
+            }
+          }
+          if (sheetName !== wb.SheetNames[0]) break;
+        }
+        var ws     = wb.Sheets[sheetName];
+        if (!ws) { if (cb) cb([]); return; }
+        var matrix = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' });
+        // Strip leading apostrophe Excel text prefix
+        matrix = matrix.map(function(row) {
+          return row.map(function(cell) {
+            return String(cell == null ? '' : cell).replace(/^'+/, '');
+          });
+        });
+        if (cb) cb(rowsFromMatrix(matrix));
+      } catch(err) {
+        if (typeof showToast === 'function') showToast('Gagal membaca file Excel: ' + err.message, 'error');
+        if (cb) cb([]);
+      }
+    };
+    fr.onerror = function() {
+      if (typeof showToast === 'function') showToast('Gagal membaca file Excel.', 'error');
+      if (cb) cb([]);
+    };
+    fr.readAsArrayBuffer(file);
+  }
+
+  // ── Field mapping (1:1 with GAS empImportFieldMap) ─────────
+  var FIELD_MAP = {
+    // Identitas
+    'employeeid':'employeeId','idkaryawan':'employeeId',
+    'fullname':'fullName','namalengkap':'fullName','nama':'fullName','name':'fullName','namakaryawan':'fullName','karyawan':'fullName','employeename':'fullName',
+    'nik':'nik','niknpwp16digit':'nik','niknpwp':'nik','nomorinduk':'nik','ktp':'nik','noktp':'nik','nomorktp':'nik',
+    'npwp':'npwp','nonpwp':'npwp',
+    'tempatlahir':'birthPlace','birthplace':'birthPlace','kotalahir':'birthPlace',
+    'tanggallahir':'birthDate','birthdate':'birthDate','tgllahir':'birthDate',
+    // Pribadi
+    'jeniskelamin':'gender','gender':'gender','jk':'gender','sex':'gender',
+    'agama':'religion','religion':'religion',
+    'statuspernikahan':'maritalStatus','maritalstatus':'maritalStatus','statusnikah':'maritalStatus',
+    'golongandarah':'bloodType','bloodtype':'bloodType','goldarah':'bloodType',
+    'statusptkp':'ptkpStatus','ptkp':'ptkpStatus','ptkpstatus':'ptkpStatus',
+    'alamatktp':'citizenIdAddress','alamatsesuaiktp':'citizenIdAddress','citizenidaddress':'citizenIdAddress','address':'citizenIdAddress','alamat':'citizenIdAddress',
+    'alamatdomisili':'residentialAddress','residentialaddress':'residentialAddress','domisili':'residentialAddress',
+    'nohp':'mobilePhone','hp':'mobilePhone','nomortelepon':'mobilePhone','telepon':'mobilePhone','phone':'mobilePhone','mobilephone':'mobilePhone','notelp':'mobilePhone','whatsapp':'mobilePhone','wa':'mobilePhone',
+    'emailpribadi':'personalEmail','personalemail':'personalEmail','email':'personalEmail',
+    'emailkantor':'workingEmail','workingemail':'workingEmail','emailkerja':'workingEmail',
+    // Bank & BPJS
+    'namabank':'bankName','bankname':'bankName','bank':'bankName',
+    'nomorrekening':'bankAccount','bankaccount':'bankAccount','rekening':'bankAccount','norek':'bankAccount',
+    'atasnama':'bankAccountHolder','bankaccountholder':'bankAccountHolder','namarekening':'bankAccountHolder',
+    'nomorbpjsketenagakerjaan':'bpjsKetenagakerjaan','bpjsketenagakerjaan':'bpjsKetenagakerjaan','bpjstk':'bpjsKetenagakerjaan','kpj':'bpjsKetenagakerjaan',
+    'nomorbpjskesehatan':'bpjsKesehatan','bpjskesehatan':'bpjsKesehatan','bpjskes':'bpjsKesehatan','kis':'bpjsKesehatan',
+    // Organisasi
+    'cabang':'branchName','branchname':'branchName','branch':'branchName','namacabang':'branchName','entitas':'branchName','perusahaan':'branchName',
+    'divisi':'division','division':'division','namadivisi':'division',
+    'departemen':'department','department':'department','dept':'department','bagian':'department','unit':'department','namadepartemen':'department',
+    'jabatan':'positionCurrent','jobpositionlocation':'positionCurrent','positioncurrent':'positionCurrent','posisi':'positionCurrent','jobpositionlocaction':'positionCurrent',
+    'jobposition':'positionNoLocCurrent','position':'positionNoLocCurrent','positionnoloccurrent':'positionNoLocCurrent',
+    'joblevel':'jobLevel','level':'jobLevel','leveljabatan':'jobLevel',
+    'grade':'grade',
+    'areakerja':'areaKerja','kecamatan':'areaKerja','district':'areaKerja',
+    'lokasikerja':'lokasiKerja','kota':'lokasiKerja','city':'lokasiKerja',
+    'costcenter':'costCenter','pusatbiaya':'costCenter',
+    'atasanlangsung':'directSuperior','directsuperior':'directSuperior',
+    'atasantidaklangsung':'indirectSuperior','indirectsuperior':'indirectSuperior',
+    // Status & Kontrak
+    'statuskaryawan':'statusEmployee','statusemployee':'statusEmployee','status':'statusEmployee','statuskepegawaian':'statusEmployee','employmentstatus':'statusEmployee',
+    'tanggalmasuk':'joinDate','joindate':'joinDate','tglmasuk':'joinDate',
+    'akhirkontrak':'endDateContract','enddatecontract':'endDateContract','contractend':'endDateContract',
+    'vendoroutsource':'outsourceVendor','outsourcevendor':'outsourceVendor','vendor':'outsourceVendor',
+    // Karier
+    'jabatansebelumnya':'positionFormer','positionformer':'positionFormer','jobpositionformer':'positionFormer',
+    'jenisrotasi':'typeOfRotation','typeofrotation':'typeOfRotation',
+    'tanggalmutasi':'mutasiDate','mutasidate':'mutasiDate',
+    'nomorsk':'nomorSk','nosk':'nomorSk',
+    'tanggalresign':'resignDate','resigndate':'resignDate',
+    // Catatan
+    'catatan':'hrNotes','notes':'hrNotes','hrnotes':'hrNotes','keterangan':'hrNotes',
+  };
+
+  function normalizeHeader(h) {
+    return String(h||'').trim().replace(/^["']|["']$/g,'').toLowerCase().replace(/[\s_\-\/\.\(\)]/g,'');
+  }
+
+  function rowsFromMatrix(matrix) {
+    if (!matrix || matrix.length < 2) return [];
+    var headers = (matrix[0]||[]).map(normalizeHeader);
+    var rows = [];
+    for (var i = 1; i < matrix.length; i++) {
+      var vals = matrix[i] || [];
+      var any  = vals.some(function(v) { return v !== '' && v !== null && v !== undefined; });
+      if (!any) continue;  // skip blank rows
+      var row = {};
+      for (var j = 0; j < headers.length; j++) {
+        var hNorm = headers[j];
+        var key   = FIELD_MAP[hNorm] || hNorm;
+        if (!key) continue;
+        var val   = vals[j];
+        row[key]  = String(val == null ? '' : val).trim().replace(/^["']|["']$/g,'');
+      }
+      rows.push(row);
+    }
+    return rows;
+  }
+
+  // ── Step 2: call preview endpoint ──────────────────────────
+  function runPreview() {
+    if (!_parsedRows || _parsedRows.length === 0) return;
+
+    var prevBtn  = el('btnEmpImportPreview');
+    var prevText = el('btnPreviewText');
+    var prevLoad = el('btnPreviewLoading');
+
+    if (prevBtn)  prevBtn.disabled = true;
+    if (prevText) prevText.classList.add('d-none');
+    if (prevLoad) prevLoad.classList.remove('d-none');
+
+    showStep(2);
+    show('empImportPreviewLoading');
+    hide('empImportPreviewTableWrap');
+
+    fetch('{{ route("hr.employees.import.preview") }}', {
+      method:  'POST',
+      headers: {
+        'Content-Type':     'application/json',
+        'Accept':           'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRF-TOKEN':     csrfToken(),
+      },
+      body: JSON.stringify({ employees: _parsedRows }),
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      if (prevBtn)  prevBtn.disabled = false;
+      if (prevText) prevText.classList.remove('d-none');
+      if (prevLoad) prevLoad.classList.add('d-none');
+      hide('empImportPreviewLoading');
+      show('empImportPreviewTableWrap');
+
+      if (!res || !res.success) {
+        if (typeof showToast === 'function') showToast('Preview gagal: ' + ((res && res.message) || 'Error'), 'error');
+        showStep(1); return;
+      }
+
+      _previewRows = res.rows || [];
+      _newCount    = res.new || 0;
+
+      // Update summary badges
+      setText('empImportBadgeTotal',   'Total: '       + (res.total    || 0));
+      setText('empImportBadgeNew',     'Baru: '        + (res.new      || 0));
+      setText('empImportBadgeExist',   'Sudah Ada: '   + (res.existing || 0));
+      setText('empImportBadgeInvalid', 'Invalid: '     + (res.invalid  || 0));
+      setText('empImportBadgeDupFile', 'Duplikat File: '+ (res.duplicate_internal || 0));
+
+      // Render preview table
+      var tbody = el('empImportPreviewBody');
+      if (tbody) {
+        tbody.innerHTML = _previewRows.map(function(r) {
+          var statusCls, statusLabel, rowCls;
+          if (r.status === 'new') {
+            statusCls = 'bg-success'; statusLabel = 'BARU'; rowCls = '';
+          } else if (r.status === 'duplicate_existing') {
+            statusCls = 'bg-warning text-dark'; statusLabel = 'SUDAH ADA'; rowCls = 'table-warning';
+          } else if (r.status === 'duplicate_internal') {
+            statusCls = 'bg-info text-dark'; statusLabel = 'DUPLIKAT FILE'; rowCls = 'table-info';
+          } else {
+            statusCls = 'bg-danger'; statusLabel = 'INVALID'; rowCls = 'table-danger';
+          }
+          var issues = (r.issues && r.issues.length)
+            ? '<br><span style="font-size:10.5px;color:#888">' + esc(r.issues.join(' | ')) + '</span>'
+            : '';
+          return '<tr class="' + rowCls + '">' +
+            '<td>' + r.row + '</td>' +
+            '<td class="id-mono" style="font-size:11px">' + esc(r.employeeId || '(auto)') + '</td>' +
+            '<td class="fw-semibold">' + esc(r.fullName || '-') + '</td>' +
+            '<td style="font-size:11px">' + esc(r.department || '-') + '</td>' +
+            '<td style="font-size:11px">' + esc(r.jobPosition || '-') + '</td>' +
+            '<td style="font-size:11px">' + esc(r.statusEmployee || 'Contract') + '</td>' +
+            '<td style="font-size:11px">' + esc(r.joinDate || '-') + '</td>' +
+            '<td><span class="badge ' + statusCls + '" style="font-size:10px">' + statusLabel + '</span>' + issues + '</td>' +
+            '</tr>';
+        }).join('');
+      }
+
+      // Enable/disable import button
+      var confirmBtn = el('btnEmpImportConfirm');
+      if (confirmBtn) {
+        confirmBtn.disabled = (_newCount === 0);
+      }
+      setText('btnImportCount', _newCount);
+
+      // Show/hide no-new alert
+      if (_newCount === 0) { show('empImportNoNewAlert'); } else { hide('empImportNoNewAlert'); }
+    })
+    .catch(function(err) {
+      if (prevBtn)  prevBtn.disabled = false;
+      if (prevText) prevText.classList.remove('d-none');
+      if (prevLoad) prevLoad.classList.add('d-none');
+      hide('empImportPreviewLoading');
+      if (typeof showToast === 'function') showToast('Error: ' + (err ? err.message : 'Network error'), 'error');
+      showStep(1);
+    });
+  }
+
+  // ── Step 3: execute import ──────────────────────────────────
+  function runImport() {
+    // Only send rows classified as 'new'
+    var newRows = (_previewRows || [])
+      .filter(function(r) { return r.status === 'new'; })
+      .map(function(r) {
+        // Find matching original parsed row by index (row numbers are 1-based)
+        return _parsedRows[r.row - 1] || {};
+      });
+
+    if (newRows.length === 0) {
+      if (typeof showToast === 'function') showToast('Tidak ada data baru untuk diimport.', 'error');
+      return;
+    }
+
+    var confirmBtn  = el('btnEmpImportConfirm');
+    var importText  = el('btnImportText');
+    var importLoad  = el('btnImportLoading');
+    var backBtn     = el('btnEmpImportBack');
+
+    if (confirmBtn) confirmBtn.disabled = true;
+    if (importText) importText.classList.add('d-none');
+    if (importLoad) importLoad.classList.remove('d-none');
+    if (backBtn)    backBtn.disabled = true;
+
+    fetch('{{ route("hr.employees.import") }}', {
+      method:  'POST',
+      headers: {
+        'Content-Type':     'application/json',
+        'Accept':           'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRF-TOKEN':     csrfToken(),
+      },
+      body: JSON.stringify({ employees: newRows }),
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      if (importText) importText.classList.remove('d-none');
+      if (importLoad) importLoad.classList.add('d-none');
+      if (backBtn)    backBtn.disabled = false;
+
+      showStep(3);
+
+      var icon  = el('empImportResultIcon');
+      var title = el('empImportResultTitle');
+      var msg   = el('empImportResultMessage');
+
+      if (res && res.success) {
+        if (icon)  { icon.className  = 'bi bi-check-circle-fill fs-1 text-success'; }
+        if (title) { title.textContent = 'Import Berhasil!'; title.className = 'mt-3 mb-1 text-success'; }
+        if (typeof showToast === 'function') showToast((res.message || 'Import selesai.'), 'success', 6000);
+      } else {
+        if (icon)  { icon.className  = 'bi bi-exclamation-triangle-fill fs-1 text-warning'; }
+        if (title) { title.textContent = 'Import Selesai dengan Catatan'; title.className = 'mt-3 mb-1'; }
+        if (typeof showToast === 'function') showToast((res && res.message) || 'Import selesai dengan catatan.', 'warning', 6000);
+      }
+
+      var imported = (res && res.imported) ? res.imported : 0;
+      var errors   = (res && res.errors && res.errors.length) ? res.errors : [];
+      var skipped  = (res && res.errors) ? res.errors.length : 0;
+
+      if (msg) {
+        msg.textContent = 'Berhasil diimport: ' + imported + ' karyawan.' +
+          (skipped > 0 ? ' ' + skipped + ' baris dilewati.' : '');
+      }
+
+      if (errors.length > 0) {
+        show('empImportResultErrors');
+        var errList = el('empImportErrorList');
+        if (errList) {
+          errList.innerHTML = errors.map(function(e) {
+            return '<li class="py-1 border-bottom"><i class="bi bi-x-circle text-danger me-1"></i>' + esc(e) + '</li>';
+          }).join('');
+        }
+      }
+
+      // Reload table after short delay
+      setTimeout(function() { window.location.reload(); }, 2500);
+    })
+    .catch(function(err) {
+      if (importText) importText.classList.remove('d-none');
+      if (importLoad) importLoad.classList.add('d-none');
+      if (confirmBtn) confirmBtn.disabled = false;
+      if (backBtn)    backBtn.disabled = false;
+      if (typeof showToast === 'function') showToast('Error: ' + (err ? err.message : 'Network error'), 'error');
+    });
+  }
+
+  // ── Wire up events after DOM ready ─────────────────────────
+  document.addEventListener('DOMContentLoaded', function() {
+    var modal    = el('empImportModal');
+    var dropZone = el('empImportDropZone');
+    var fileInp  = el('empImportFileInput');
+    var clearBtn = el('btnEmpImportClearFile');
+    var prevBtn  = el('btnEmpImportPreview');
+    var backBtn  = el('btnEmpImportBack');
+    var confirmBtn = el('btnEmpImportConfirm');
+
+    // Reset on modal close
+    if (modal) {
+      modal.addEventListener('hidden.bs.modal', resetModal);
+    }
+
+    // Drag-drop
+    if (dropZone) {
+      dropZone.addEventListener('click', function() { if (fileInp) fileInp.click(); });
+      dropZone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        dropZone.style.background = '#e8f5e9';
+      });
+      dropZone.addEventListener('dragleave', function() {
+        dropZone.style.background = '';
+      });
+      dropZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        dropZone.style.background = '';
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+          handleFile(e.dataTransfer.files[0]);
+        }
+      });
+    }
+
+    // File input change
+    if (fileInp) {
+      fileInp.addEventListener('change', function() {
+        if (fileInp.files && fileInp.files.length) {
+          handleFile(fileInp.files[0]);
+        }
+      });
+    }
+
+    // Clear file button
+    if (clearBtn) {
+      clearBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        resetModal();
+      });
+    }
+
+    // Preview button
+    if (prevBtn) {
+      prevBtn.addEventListener('click', function() {
+        if (_parsedRows && _parsedRows.length > 0) runPreview();
+      });
+    }
+
+    // Back button
+    if (backBtn) {
+      backBtn.addEventListener('click', function() {
+        _previewRows = []; _newCount = 0;
+        showStep(1);
+      });
+    }
+
+    // Confirm import button
+    if (confirmBtn) {
+      confirmBtn.addEventListener('click', function() {
+        if (_newCount > 0) runImport();
+      });
+    }
+  });
+})();
+</script>
 <div class="modal fade" id="promoteToProbationModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content" style="border-radius:16px">
@@ -672,34 +1337,6 @@
     </div>
   </div>
 </div>
-
-<script>
-  function handleEmpImportFileSelect(input) {
-    if (input.files && input.files[0]) {
-      const file = input.files[0];
-      document.getElementById('empImportFileName').textContent = file.name;
-      document.getElementById('empImportFileSize').textContent = (file.size / 1024).toFixed(1) + ' KB';
-      document.getElementById('empImportFileInfo').style.display = 'block';
-      document.getElementById('btnEmpImportStart').disabled = false;
-    }
-  }
-
-  function clearEmpImportFile() {
-    document.getElementById('empImportFileInput').value = '';
-    document.getElementById('empImportFileInfo').style.display = 'none';
-    document.getElementById('btnEmpImportStart').disabled = true;
-  }
-
-  function simulateEmpImport() {
-    const btn = document.getElementById('btnEmpImportStart');
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Mengimpor berkas...';
-    btn.disabled = true;
-    setTimeout(() => {
-      alert('Berkas berhasil diproses dan disinkronkan ke master spreadsheet.');
-      location.reload();
-    }, 1200);
-  }
-</script>
 
 <div class="modal fade" id="exportPdfModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">

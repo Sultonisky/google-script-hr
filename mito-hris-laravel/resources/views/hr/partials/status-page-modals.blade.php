@@ -354,113 +354,120 @@
   </div>
 </div>
 
-<!-- 3. MODAL IMPORT CSV / EXCEL (1:1 from GAS partials/Modals.html empImportModal) -->
+{{--
+  NOTE: Modal import karyawan (empImportModal) untuk halaman Employee sudah ada di entity-modals.blade.php.
+  Modal di sini (spImportModal) adalah alias yang digunakan oleh tombol Import di halaman
+  Recruitment / Master Data lain yang mungkin juga membutuhkan import karyawan.
+  Semua elemen DOM menggunakan prefix "spImp" untuk menghindari collision dengan empImportModal.
+  JS-nya meneruskan ke endpoint yang sama: hr.employees.import.preview & hr.employees.import
+--}}
 <div class="modal fade" id="importModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content" style="border-radius:16px">
       <div class="modal-header" style="background:#166534;color:#fff;border-radius:16px 16px 0 0">
         <h6 class="modal-title mb-0 fw-bold"><i class="bi bi-upload me-2"></i>Import Karyawan (CSV / Excel)</h6>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body p-4">
-        <!-- Step 1: File upload (1:1 GAS empImportStep1) -->
-        <div id="empImportStep1">
-          <p style="font-size:13.5px;color:var(--color-text-soft,#6b7280)">
-            Upload file <strong>CSV</strong> atau <strong>Excel (.xlsx/.xls)</strong> dengan format kolom yang sesuai. Kolom <strong>wajib</strong>: <code>fullName</code>. Semua kolom lain opsional.
+
+        {{-- Step 1: File select --}}
+        <div id="spImpStep1">
+          <p style="font-size:13px;color:var(--color-text-soft,#6b7280)">
+            Upload file <strong>CSV</strong> atau <strong>Excel (.xlsx/.xls)</strong>. Kolom <strong>wajib</strong>: <code>Full Name</code>. Semua kolom lain opsional.
           </p>
-          <div class="border rounded-3 p-4 text-center" id="empImportDropZone"
-               style="cursor:pointer;border-style:dashed!important;transition:background .2s;background:var(--color-bg,#f5f7fa)"
-               onclick="document.getElementById('empImportFileInput').click()"
-               ondragover="event.preventDefault();this.style.background='#e8f5e9'"
-               ondragleave="this.style.background='var(--color-bg,#f5f7fa)'"
-               ondrop="handleEmpImportDrop(event)">
-            <i class="bi bi-file-earmark-spreadsheet fs-1" style="color:var(--color-primary,#eb1c24)"></i>
+          <div class="border rounded-3 p-4 text-center" id="spImpDropZone"
+               style="cursor:pointer;border-style:dashed!important;transition:background .2s;background:var(--color-bg,#f5f7fa)">
+            <i class="bi bi-file-earmark-spreadsheet fs-1 text-success"></i>
             <p class="mb-1 mt-2 fw-semibold" style="font-size:14px">Klik atau seret file CSV / Excel ke sini</p>
-            <p class="mb-0 text-muted" style="font-size:12px">Format: .csv &bull; .xlsx &bull; .xls — maks 5MB &bull; maks 500 baris</p>
-            <input type="file" id="empImportFileInput" accept=".csv,.xlsx,.xls" class="d-none" onchange="handleEmpImportFileSelect(this)" />
+            <p class="mb-0 text-muted" style="font-size:12px">.csv &bull; .xlsx &bull; .xls — maks 10 MB &bull; maks 500 baris</p>
+            <input type="file" id="spImpFileInput" accept=".csv,.xlsx,.xls" class="d-none" />
           </div>
-          <div class="mt-3" id="empImportFileInfo" style="display:none">
+          <div class="mt-3 d-none" id="spImpFileInfo">
             <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--color-bg,#f5f7fa)">
               <i class="bi bi-file-earmark-check fs-5 text-success"></i>
-              <div>
-                <div class="fw-semibold" style="font-size:13px" id="empImportFileName">-</div>
-                <div class="text-muted" style="font-size:12px" id="empImportFileSize">-</div>
+              <div class="flex-grow-1">
+                <div class="fw-semibold" style="font-size:13px" id="spImpFileName">-</div>
+                <div class="text-muted" style="font-size:12px" id="spImpFileSize">-</div>
               </div>
-              <button class="btn btn-sm btn-outline-danger ms-auto" type="button" onclick="clearEmpImportFile()"><i class="bi bi-x"></i></button>
-            </div>
-          </div>
-          <!-- Kolom yang dikenali (1:1 GAS) -->
-          <div class="mt-3 p-3 rounded" style="background:var(--color-bg,#f5f7fa);border:1px solid var(--color-border,#e5e7eb);font-size:11.5px">
-            <div class="fw-semibold mb-1" style="font-size:12px"><i class="bi bi-info-circle me-1"></i>Kolom yang dikenali (sesuai header Employee)</div>
-            <div class="mb-1"><span class="badge bg-danger me-1">Wajib</span> <code>fullName</code> (atau: <code>nama</code>, <code>namalengkap</code>)</div>
-            <div style="color:var(--color-text-soft,#6b7280)">
-              <strong>Identitas:</strong> <code>nik</code>, <code>npwp</code>, <code>birthPlace</code>, <code>birthDate</code>, <code>gender</code>, <code>religion</code>, <code>maritalStatus</code>, <code>bloodType</code>, <code>ptkpStatus</code><br>
-              <strong>Kontak:</strong> <code>citizenIdAddress</code>, <code>residentialAddress</code>, <code>mobilePhone</code>, <code>personalEmail</code>, <code>workingEmail</code><br>
-              <strong>Bank &amp; BPJS:</strong> <code>bankName</code>, <code>bankAccount</code>, <code>bankAccountHolder</code>, <code>bpjsKetenagakerjaan</code>, <code>bpjsKesehatan</code><br>
-              <strong>Organisasi:</strong> <code>branchName</code>, <code>division</code>, <code>department</code>, <code>positionCurrent</code>, <code>jobLevel</code>, <code>grade</code>, <code>areaKerja</code>, <code>lokasiKerja</code>, <code>costCenter</code>, <code>directSuperior</code>, <code>indirectSuperior</code><br>
-              <strong>Status &amp; Kontrak:</strong> <code>statusEmployee</code>, <code>joinDate</code>, <code>endDateContract</code>, <code>outsourceVendor</code><br>
-              <strong>Karier:</strong> <code>positionFormer</code>, <code>typeOfRotation</code>, <code>mutasiDate</code>, <code>nomorSk</code>, <code>resignDate</code><br>
-              <strong>Catatan:</strong> <code>hrNotes</code>, <code>notes</code><br>
-              <span class="text-muted">Header bahasa Indonesia juga dikenali — lihat template untuk daftar lengkap.</span>
+              <button class="btn btn-sm btn-outline-danger" type="button" id="spImpClearBtn"><i class="bi bi-x"></i></button>
             </div>
           </div>
         </div>
 
-        <!-- Step 2: Preview & validation (1:1 GAS empImportStep2) -->
-        <div id="empImportStep2" style="display:none">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <h6 class="mb-0 fw-bold" style="font-size:14px"><i class="bi bi-eye me-1"></i>Hasil Validasi &amp; Preview</h6>
-            <span class="badge" style="font-size:12px;background:var(--color-primary,#eb1c24)" id="empImportSummaryBadge">-</span>
+        {{-- Step 2: Preview table --}}
+        <div id="spImpStep2" class="d-none">
+          <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+            <span class="badge bg-secondary" style="font-size:13px" id="spImpBadgeTotal">Total: 0</span>
+            <span class="badge bg-success" style="font-size:13px" id="spImpBadgeNew">Baru: 0</span>
+            <span class="badge bg-warning text-dark" style="font-size:13px" id="spImpBadgeExist">Sudah Ada: 0</span>
+            <span class="badge bg-danger" style="font-size:13px" id="spImpBadgeInvalid">Invalid: 0</span>
+            <span class="badge bg-info text-dark" style="font-size:13px" id="spImpBadgeDup">Duplikat File: 0</span>
           </div>
-          <div class="table-responsive border rounded-3" style="max-height:340px;overflow-y:auto">
-            <table class="table table-sm table-hover align-middle mb-0" style="font-size:12px">
-              <thead class="table-light position-sticky top-0" style="z-index:1">
+          <div id="spImpPreviewLoading" class="text-center py-4 d-none">
+            <span class="spinner-border spinner-border-sm text-success me-2"></span>
+            <span style="font-size:13px">Memvalidasi data...</span>
+          </div>
+          <div class="table-responsive" id="spImpTableWrap" style="max-height:360px;overflow-y:auto">
+            <table class="table table-sm table-bordered align-middle mb-0" style="font-size:12px">
+              <thead class="table-light sticky-top">
                 <tr>
                   <th style="width:40px">#</th>
+                  <th>Employee ID</th>
                   <th>Nama Lengkap</th>
-                  <th>NIK</th>
                   <th>Departemen</th>
-                  <th>Jabatan</th>
-                  <th>Cabang</th>
-                  <th>Status</th>
-                  <th>Validasi</th>
+                  <th>Posisi</th>
+                  <th>Status Karyawan</th>
+                  <th>Join Date</th>
+                  <th style="width:160px">Hasil</th>
                 </tr>
               </thead>
-              <tbody id="empImportPreviewBody"></tbody>
+              <tbody id="spImpPreviewBody"></tbody>
             </table>
+          </div>
+          <div id="spImpNoNewAlert" class="alert alert-warning mt-3 d-none" style="font-size:13px">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>Tidak ada baris baru yang dapat diimport.
           </div>
         </div>
 
-        <!-- Step 3: Result (1:1 GAS empImportStep3) -->
-        <div id="empImportStep3" style="display:none">
-          <div class="text-center py-4">
-            <i class="bi bi-check-circle-fill fs-1 text-success" id="empImportResultIcon"></i>
-            <h5 class="mt-3 mb-1" id="empImportResultTitle">Import Selesai</h5>
-            <p class="text-muted mb-0" style="font-size:14px" id="empImportResultMessage">-</p>
-          </div>
-          <div id="empImportResultErrors" style="display:none" class="mt-3">
-            <div class="p-3 rounded" style="background:var(--color-bg,#f5f7fa);font-size:13px;border:1px solid var(--color-border,#e5e7eb)">
-              <strong class="text-danger">Error Details:</strong>
-              <ul class="mb-0 mt-1" id="empImportErrorList"></ul>
-            </div>
+        {{-- Step 3: Result --}}
+        <div id="spImpStep3" class="d-none text-center py-3">
+          <i id="spImpResultIcon" class="bi bi-check-circle-fill fs-1 text-success"></i>
+          <h6 id="spImpResultTitle" class="mt-3 mb-1">Import Selesai</h6>
+          <p id="spImpResultMsg" class="text-muted" style="font-size:13px"></p>
+          <div id="spImpResultErrors" class="text-start d-none mt-3">
+            <div class="fw-semibold mb-1" style="font-size:12px;color:#991b1b"><i class="bi bi-exclamation-circle me-1"></i>Baris yang dilewati:</div>
+            <ul id="spImpErrorList" class="list-unstyled mb-0" style="font-size:12px;max-height:200px;overflow-y:auto;background:#fff5f5;padding:8px 12px;border-radius:8px;border:1px solid #fecaca"></ul>
           </div>
         </div>
+
       </div>
-      <div class="modal-footer">
-        <a href="{{ route('hr.export.employees-csv') }}" class="btn btn-outline-secondary btn-sm" id="btnEmpDownloadTemplate">
-          <i class="bi bi-download me-1"></i>Template CSV
-        </a>
-        <button class="btn btn-outline-secondary btn-sm" type="button" id="btnEmpDownloadExcelTemplate" onclick="alert('Template Excel akan segera tersedia.')">
-          <i class="bi bi-file-earmark-excel me-1"></i>Template Excel
-        </button>
-        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
-        <button class="btn btn-outline-primary btn-sm" id="btnEmpImportBack" style="display:none" onclick="resetEmpImportToStep1()">
-          <i class="bi bi-arrow-left me-1"></i>Kembali / Ganti File
-        </button>
-        <button class="btn btn-sm text-white fw-semibold" style="background:#166634" id="btnEmpImportStart" disabled onclick="runEmpImport()">
-          <span id="btnEmpImportStartText"><i class="bi bi-upload me-1"></i>Mulai Import</span>
-          <span id="btnEmpImportLoading" style="display:none"><span class="spinner-border spinner-border-sm me-1"></span>Memproses Import...</span>
-        </button>
+      <div class="modal-footer" id="spImpFooter">
+        {{-- Step 1 --}}
+        <div id="spImpFooter1" class="d-flex gap-2 w-100">
+          <a href="{{ route('hr.employees.import.template') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-download me-1"></i>Download Template CSV
+          </a>
+          <button type="button" class="btn btn-outline-secondary btn-sm ms-auto" data-bs-dismiss="modal">Tutup</button>
+          <button type="button" class="btn btn-sm text-white fw-semibold" style="background:#166534" id="spImpPreviewBtn" disabled>
+            <span id="spImpPreviewText"><i class="bi bi-eye me-1"></i>Preview &amp; Validasi</span>
+            <span id="spImpPreviewLoad" class="d-none"><span class="spinner-border spinner-border-sm me-1"></span>Memvalidasi...</span>
+          </button>
+        </div>
+        {{-- Step 2 --}}
+        <div id="spImpFooter2" class="d-flex gap-2 w-100 d-none">
+          <button type="button" class="btn btn-outline-secondary btn-sm" id="spImpBackBtn"><i class="bi bi-arrow-left me-1"></i>Kembali</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm ms-auto" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-sm text-white fw-semibold" style="background:#166534" id="spImpConfirmBtn" disabled>
+            <span id="spImpImportText"><i class="bi bi-cloud-arrow-up-fill me-1"></i>Import <span id="spImpNewCount">0</span> Karyawan Baru</span>
+            <span id="spImpImportLoad" class="d-none"><span class="spinner-border spinner-border-sm me-1"></span>Mengimport...</span>
+          </button>
+        </div>
+        {{-- Step 3 --}}
+        <div id="spImpFooter3" class="d-flex gap-2 w-100 d-none">
+          <button type="button" class="btn btn-sm text-white fw-semibold ms-auto" style="background:#166534" data-bs-dismiss="modal">
+            <i class="bi bi-check me-1"></i>Selesai
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -980,68 +987,259 @@
   }
 
   // ============================================================
-  // Import CSV/Excel Modal (1:1 GAS)
+  // spImportModal — Import CSV/Excel (status-page-modals instance)
+  // Shares the same backend endpoints as empImportModal in entity-modals.blade.php.
+  // All DOM IDs use "spImp" prefix to avoid collision.
   // ============================================================
-  function handleEmpImportFileSelect(input) {
-    if (input.files && input.files[0]) {
-      const file = input.files[0];
-      document.getElementById('empImportFileName').textContent = file.name;
-      document.getElementById('empImportFileSize').textContent = (file.size / 1024).toFixed(1) + ' KB';
-      document.getElementById('empImportFileInfo').style.display = 'block';
-      document.getElementById('btnEmpImportStart').disabled = false;
+  (function () {
+    'use strict';
+    var _spFile = null, _spParsed = [], _spPreview = [], _spNewCount = 0;
+
+    function spEl(id) { return document.getElementById(id); }
+    function spShow(id) { var e = spEl(id); if (e) e.classList.remove('d-none'); }
+    function spHide(id) { var e = spEl(id); if (e) e.classList.add('d-none'); }
+    function spText(id, t) { var e = spEl(id); if (e) e.textContent = t; }
+    function spEsc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function csrfToken() { var m = document.querySelector('meta[name="csrf-token"]'); return m ? m.content : ''; }
+
+    function spShowStep(n) {
+      [1,2,3].forEach(function(s) {
+        var b = spEl('spImpStep'+s), f = spEl('spImpFooter'+s);
+        if (b) { if(s===n) b.classList.remove('d-none'); else b.classList.add('d-none'); }
+        if (f) { if(s===n) f.classList.remove('d-none'); else f.classList.add('d-none'); }
+      });
     }
-  }
 
-  function handleEmpImportDrop(event) {
-    event.preventDefault();
-    document.getElementById('empImportDropZone').style.background = 'var(--color-bg,#f5f7fa)';
-    const file = event.dataTransfer.files[0];
-    if (!file) return;
-    const allowed = ['.csv','.xlsx','.xls'];
-    if (!allowed.some(ext => file.name.endsWith(ext))) {
-      alert('Format file tidak didukung. Gunakan .csv, .xlsx, atau .xls'); return;
+    function spReset() {
+      _spFile = null; _spParsed = []; _spPreview = []; _spNewCount = 0;
+      var fi = spEl('spImpFileInput'); if (fi) fi.value = '';
+      spHide('spImpFileInfo'); spShow('spImpDropZone');
+      var pb = spEl('spImpPreviewBtn'); if (pb) pb.disabled = true;
+      var tbody = spEl('spImpPreviewBody'); if (tbody) tbody.innerHTML = '';
+      spHide('spImpNoNewAlert'); spHide('spImpResultErrors');
+      spShowStep(1);
     }
-    document.getElementById('empImportFileName').textContent = file.name;
-    document.getElementById('empImportFileSize').textContent = (file.size / 1024).toFixed(1) + ' KB';
-    document.getElementById('empImportFileInfo').style.display = 'block';
-    document.getElementById('btnEmpImportStart').disabled = false;
-  }
 
-  function clearEmpImportFile() {
-    document.getElementById('empImportFileInput').value = '';
-    document.getElementById('empImportFileInfo').style.display = 'none';
-    document.getElementById('btnEmpImportStart').disabled = true;
-  }
+    // Re-use field map + CSV/Excel parsers from empImportModal's IIFE
+    // (they are defined in entity-modals.blade.php as local vars inside IIFE,
+    //  so we replicate the minimal subset needed here)
+    var SP_FIELD_MAP = {
+      'fullname':'fullName','namalengkap':'fullName','nama':'fullName','name':'fullName','employeename':'fullName','namakaryawan':'fullName','karyawan':'fullName',
+      'employeeid':'employeeId','idkaryawan':'employeeId',
+      'nik':'nik','niknpwp16digit':'nik','niknpwp':'nik','nomorinduk':'nik','ktp':'nik',
+      'npwp':'npwp','tanggallahir':'birthDate','birthdate':'birthDate','tempatlahir':'birthPlace','birthplace':'birthPlace',
+      'jeniskelamin':'gender','gender':'gender','agama':'religion','religion':'religion',
+      'statuspernikahan':'maritalStatus','maritalstatus':'maritalStatus',
+      'alamatktp':'citizenIdAddress','citizenidaddress':'citizenIdAddress','address':'citizenIdAddress','alamat':'citizenIdAddress',
+      'alamatdomisili':'residentialAddress','residentialaddress':'residentialAddress',
+      'nohp':'mobilePhone','mobilephone':'mobilePhone','hp':'mobilePhone','phone':'mobilePhone',
+      'emailpribadi':'personalEmail','personalemail':'personalEmail','email':'personalEmail',
+      'emailkantor':'workingEmail','workingemail':'workingEmail',
+      'namabank':'bankName','bankname':'bankName','bank':'bankName',
+      'nomorrekening':'bankAccount','bankaccount':'bankAccount','rekening':'bankAccount',
+      'bpjsketenagakerjaan':'bpjsKetenagakerjaan','bpjstk':'bpjsKetenagakerjaan',
+      'bpjskesehatan':'bpjsKesehatan','bpjskes':'bpjsKesehatan',
+      'cabang':'branchName','branchname':'branchName','branch':'branchName',
+      'divisi':'division','division':'division',
+      'departemen':'department','department':'department','dept':'department','bagian':'department',
+      'jabatan':'positionCurrent','jobpositionlocation':'positionCurrent','positioncurrent':'positionCurrent','posisi':'positionCurrent',
+      'jobposition':'positionNoLocCurrent','position':'positionNoLocCurrent',
+      'joblevel':'jobLevel','level':'jobLevel',
+      'grade':'grade','areakerja':'areaKerja','lokasikerja':'lokasiKerja','city':'lokasiKerja',
+      'statuskaryawan':'statusEmployee','statusemployee':'statusEmployee','status':'statusEmployee','employmentstatus':'statusEmployee',
+      'tanggalmasuk':'joinDate','joindate':'joinDate',
+      'akhirkontrak':'endDateContract','enddatecontract':'endDateContract',
+      'outsourcevendor':'outsourceVendor','vendor':'outsourceVendor',
+      'catatan':'hrNotes','notes':'hrNotes','hrnotes':'hrNotes',
+    };
 
-  function resetEmpImportToStep1() {
-    document.getElementById('empImportStep1').style.display = 'block';
-    document.getElementById('empImportStep2').style.display = 'none';
-    document.getElementById('empImportStep3').style.display = 'none';
-    document.getElementById('btnEmpImportBack').style.display = 'none';
-    document.getElementById('btnEmpImportStart').style.display = '';
-    document.getElementById('btnEmpImportStart').disabled = true;
-    clearEmpImportFile();
-  }
+    function spNorm(h) { return String(h||'').trim().replace(/^["']|["']$/g,'').toLowerCase().replace(/[\s_\-\/\.\(\)]/g,''); }
 
-  function runEmpImport() {
-    const btn = document.getElementById('btnEmpImportStart');
-    const loadingSpan = document.getElementById('btnEmpImportLoading');
-    const textSpan = document.getElementById('btnEmpImportStartText');
-    btn.disabled = true;
-    textSpan.style.display = 'none';
-    loadingSpan.style.display = '';
-    setTimeout(() => {
-      loadingSpan.style.display = 'none';
-      textSpan.style.display = '';
-      document.getElementById('empImportStep1').style.display = 'none';
-      document.getElementById('empImportStep2').style.display = 'none';
-      document.getElementById('empImportStep3').style.display = 'block';
-      document.getElementById('empImportResultTitle').textContent = 'Import Selesai';
-      document.getElementById('empImportResultMessage').textContent = 'Berkas berhasil diproses dan disinkronkan ke master data Employee.';
-      document.getElementById('btnEmpImportStart').style.display = 'none';
-      document.getElementById('btnEmpImportBack').style.display = 'inline-block';
-    }, 1500);
-  }
+    function spRowsFromMatrix(matrix) {
+      if (!matrix || matrix.length < 2) return [];
+      var hdrs = (matrix[0]||[]).map(spNorm);
+      var rows = [];
+      for (var i = 1; i < matrix.length; i++) {
+        var vals = matrix[i]||[];
+        if (!vals.some(function(v){return v!==''&&v!==null&&v!==undefined;})) continue;
+        var row = {};
+        for (var j = 0; j < hdrs.length; j++) {
+          var key = SP_FIELD_MAP[hdrs[j]] || hdrs[j];
+          if (!key) continue;
+          row[key] = String(vals[j]==null?'':vals[j]).trim().replace(/^["']|["']$/g,'');
+        }
+        rows.push(row);
+      }
+      return rows;
+    }
+
+    function spDetectDelim(lines) {
+      var f = lines[0]||'';
+      var c=(f.match(/,/g)||[]).length, s=(f.match(/;/g)||[]).length, t=(f.match(/\t/g)||[]).length;
+      if(s>c&&s>t) return ';'; if(t>c&&t>s) return '\t'; return ',';
+    }
+    function spSplitLine(line, d) {
+      var res=[],cur='',inQ=false;
+      for(var i=0;i<line.length;i++){var ch=line[i];if(ch==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else{inQ=!inQ;}}else if(ch===d&&!inQ){res.push(cur);cur='';}else{cur+=ch;}}
+      res.push(cur); return res;
+    }
+    function spParseCSV(text) {
+      text=(text||'').replace(/^\uFEFF/,'');
+      var lines=text.split(/\r?\n/).filter(function(l){return l.trim()!=='';});
+      if(lines.length<2) return [];
+      var d=spDetectDelim(lines);
+      return spRowsFromMatrix(lines.map(function(l){return spSplitLine(l,d);}));
+    }
+    function spParseExcel(file,cb) {
+      if(typeof XLSX==='undefined'){
+        var s=document.createElement('script');
+        s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+        document.head.appendChild(s);
+        s.onload=function(){spParseExcel(file,cb);}; s.onerror=function(){if(cb)cb([]);};
+        return;
+      }
+      var fr=new FileReader();
+      fr.onload=function(e){
+        try{
+          var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',raw:false});
+          var sn=wb.SheetNames[0];
+          var ws=wb.Sheets[sn]; if(!ws){if(cb)cb([]);return;}
+          var mx=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:''});
+          mx=mx.map(function(row){return row.map(function(c){return String(c==null?'':c).replace(/^'+/,'');});});
+          if(cb)cb(spRowsFromMatrix(mx));
+        }catch(err){if(typeof showToast==='function')showToast('Gagal membaca Excel: '+err.message,'error');if(cb)cb([]);}
+      };
+      fr.onerror=function(){if(cb)cb([]);};
+      fr.readAsArrayBuffer(file);
+    }
+
+    function spHandleFile(file) {
+      if(!file) return;
+      var name=(file.name||'').toLowerCase();
+      if(!name.endsWith('.csv')&&!name.endsWith('.xlsx')&&!name.endsWith('.xls')){
+        if(typeof showToast==='function') showToast('Hanya file CSV atau Excel yang didukung.','error'); return;
+      }
+      if(file.size>10*1024*1024){if(typeof showToast==='function') showToast('Ukuran file maksimal 10 MB.','error'); return;}
+      _spFile=file;
+      spText('spImpFileName',file.name);
+      spText('spImpFileSize',(file.size/1024).toFixed(1)+' KB');
+      spHide('spImpDropZone'); spShow('spImpFileInfo');
+      if(name.endsWith('.csv')){
+        var reader=new FileReader();
+        reader.onload=function(e){try{_spParsed=spParseCSV(e.target.result);spAfterParse();}catch(err){if(typeof showToast==='function')showToast('Gagal proses CSV: '+err.message,'error');spReset();}};
+        reader.onerror=function(){if(typeof showToast==='function')showToast('Gagal membaca file CSV.','error');spReset();};
+        reader.readAsText(file,'UTF-8');
+      } else { spParseExcel(file,function(rows){_spParsed=rows;spAfterParse();}); }
+    }
+
+    function spAfterParse() {
+      if(!_spParsed||_spParsed.length===0){if(typeof showToast==='function')showToast('File kosong atau format tidak dikenali.','error');spReset();return;}
+      if(_spParsed.length>500){if(typeof showToast==='function')showToast('Maksimal 500 baris. File memiliki '+_spParsed.length+' baris.','error');spReset();return;}
+      var pb=spEl('spImpPreviewBtn'); if(pb) pb.disabled=false;
+    }
+
+    function spRunPreview() {
+      var pb=spEl('spImpPreviewBtn'),pt=spEl('spImpPreviewText'),pl=spEl('spImpPreviewLoad');
+      if(pb) pb.disabled=true; if(pt) pt.classList.add('d-none'); if(pl) pl.classList.remove('d-none');
+      spShowStep(2); spShow('spImpPreviewLoading'); spHide('spImpTableWrap');
+      fetch('{{ route("hr.employees.import.preview") }}',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Accept':'application/json','X-Requested-With':'XMLHttpRequest','X-CSRF-TOKEN':csrfToken()},
+        body:JSON.stringify({employees:_spParsed})
+      })
+      .then(function(r){return r.json();})
+      .then(function(res){
+        if(pb) pb.disabled=false; if(pt) pt.classList.remove('d-none'); if(pl) pl.classList.add('d-none');
+        spHide('spImpPreviewLoading'); spShow('spImpTableWrap');
+        if(!res||!res.success){if(typeof showToast==='function')showToast('Preview gagal: '+((res&&res.message)||'Error'),'error');spShowStep(1);return;}
+        _spPreview=res.rows||[]; _spNewCount=res.new||0;
+        spText('spImpBadgeTotal','Total: '+(res.total||0));
+        spText('spImpBadgeNew','Baru: '+(res.new||0));
+        spText('spImpBadgeExist','Sudah Ada: '+(res.existing||0));
+        spText('spImpBadgeInvalid','Invalid: '+(res.invalid||0));
+        spText('spImpBadgeDup','Duplikat File: '+(res.duplicate_internal||0));
+        var tbody=spEl('spImpPreviewBody');
+        if(tbody){
+          tbody.innerHTML=_spPreview.map(function(r){
+            var sc,sl,rc;
+            if(r.status==='new'){sc='bg-success';sl='BARU';rc='';}
+            else if(r.status==='duplicate_existing'){sc='bg-warning text-dark';sl='SUDAH ADA';rc='table-warning';}
+            else if(r.status==='duplicate_internal'){sc='bg-info text-dark';sl='DUPLIKAT';rc='table-info';}
+            else{sc='bg-danger';sl='INVALID';rc='table-danger';}
+            var iss=(r.issues&&r.issues.length)?'<br><span style="font-size:10px;color:#888">'+spEsc(r.issues.join(' | '))+'</span>':'';
+            return '<tr class="'+rc+'"><td>'+r.row+'</td><td class="id-mono" style="font-size:11px">'+spEsc(r.employeeId||'(auto)')+'</td><td class="fw-semibold">'+spEsc(r.fullName||'-')+'</td><td style="font-size:11px">'+spEsc(r.department||'-')+'</td><td style="font-size:11px">'+spEsc(r.jobPosition||'-')+'</td><td style="font-size:11px">'+spEsc(r.statusEmployee||'Contract')+'</td><td style="font-size:11px">'+spEsc(r.joinDate||'-')+'</td><td><span class="badge '+sc+'" style="font-size:10px">'+sl+'</span>'+iss+'</td></tr>';
+          }).join('');
+        }
+        var cb=spEl('spImpConfirmBtn'); if(cb) cb.disabled=(_spNewCount===0);
+        spText('spImpNewCount',_spNewCount);
+        if(_spNewCount===0){spShow('spImpNoNewAlert');}else{spHide('spImpNoNewAlert');}
+      })
+      .catch(function(err){
+        if(pb) pb.disabled=false; if(pt) pt.classList.remove('d-none'); if(pl) pl.classList.add('d-none');
+        spHide('spImpPreviewLoading');
+        if(typeof showToast==='function') showToast('Error: '+(err?err.message:'Network error'),'error');
+        spShowStep(1);
+      });
+    }
+
+    function spRunImport() {
+      var newRows=(_spPreview||[]).filter(function(r){return r.status==='new';}).map(function(r){return _spParsed[r.row-1]||{};});
+      if(!newRows.length){if(typeof showToast==='function')showToast('Tidak ada data baru.','error');return;}
+      var cb=spEl('spImpConfirmBtn'),it=spEl('spImpImportText'),il=spEl('spImpImportLoad'),bb=spEl('spImpBackBtn');
+      if(cb) cb.disabled=true; if(it) it.classList.add('d-none'); if(il) il.classList.remove('d-none'); if(bb) bb.disabled=true;
+      fetch('{{ route("hr.employees.import") }}',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Accept':'application/json','X-Requested-With':'XMLHttpRequest','X-CSRF-TOKEN':csrfToken()},
+        body:JSON.stringify({employees:newRows})
+      })
+      .then(function(r){return r.json();})
+      .then(function(res){
+        if(it) it.classList.remove('d-none'); if(il) il.classList.add('d-none'); if(bb) bb.disabled=false;
+        spShowStep(3);
+        var icon=spEl('spImpResultIcon'),title=spEl('spImpResultTitle'),msg=spEl('spImpResultMsg');
+        if(res&&res.success){
+          if(icon) icon.className='bi bi-check-circle-fill fs-1 text-success';
+          if(title){title.textContent='Import Berhasil!';title.className='mt-3 mb-1 text-success';}
+          if(typeof showToast==='function') showToast(res.message||'Import selesai.','success',6000);
+        } else {
+          if(icon) icon.className='bi bi-exclamation-triangle-fill fs-1 text-warning';
+          if(title) title.textContent='Import Selesai dengan Catatan';
+          if(typeof showToast==='function') showToast((res&&res.message)||'Import selesai dengan catatan.','warning',6000);
+        }
+        var imported=(res&&res.imported)?res.imported:0;
+        var errors=(res&&res.errors&&res.errors.length)?res.errors:[];
+        if(msg) msg.textContent='Berhasil diimport: '+imported+' karyawan.'+(errors.length?' '+errors.length+' baris dilewati.':'');
+        if(errors.length){
+          spShow('spImpResultErrors');
+          var el=spEl('spImpErrorList');
+          if(el) el.innerHTML=errors.map(function(e){return '<li class="py-1 border-bottom"><i class="bi bi-x-circle text-danger me-1"></i>'+spEsc(e)+'</li>';}).join('');
+        }
+        setTimeout(function(){window.location.reload();},2500);
+      })
+      .catch(function(err){
+        if(it) it.classList.remove('d-none'); if(il) il.classList.add('d-none'); if(cb) cb.disabled=false; if(bb) bb.disabled=false;
+        if(typeof showToast==='function') showToast('Error: '+(err?err.message:'Network error'),'error');
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      var modal=document.getElementById('importModal');
+      var dz=spEl('spImpDropZone'),fi=spEl('spImpFileInput'),clr=spEl('spImpClearBtn');
+      var pb=spEl('spImpPreviewBtn'),bb=spEl('spImpBackBtn'),cb=spEl('spImpConfirmBtn');
+      if(modal) modal.addEventListener('hidden.bs.modal',spReset);
+      if(dz){
+        dz.addEventListener('click',function(){if(fi)fi.click();});
+        dz.addEventListener('dragover',function(e){e.preventDefault();dz.style.background='#e8f5e9';});
+        dz.addEventListener('dragleave',function(){dz.style.background='';});
+        dz.addEventListener('drop',function(e){e.preventDefault();dz.style.background='';if(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files.length)spHandleFile(e.dataTransfer.files[0]);});
+      }
+      if(fi) fi.addEventListener('change',function(){if(fi.files&&fi.files.length)spHandleFile(fi.files[0]);});
+      if(clr) clr.addEventListener('click',function(e){e.stopPropagation();spReset();});
+      if(pb) pb.addEventListener('click',function(){if(_spParsed&&_spParsed.length)spRunPreview();});
+      if(bb) bb.addEventListener('click',function(){_spPreview=[];_spNewCount=0;spShowStep(1);});
+      if(cb) cb.addEventListener('click',function(){if(_spNewCount>0)spRunImport();});
+    });
+  })();
 
   function openMoveStatusModal(recruitmentId, fromStatus) {
     var idEl = document.getElementById('moveStatusRecruitmentId');
