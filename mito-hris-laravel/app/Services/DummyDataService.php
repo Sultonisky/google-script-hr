@@ -125,7 +125,7 @@ class DummyDataService
             $acceptedCount  = max(1, (int)($count * 0.6));
             $blacklistCount = max(1, (int)($count * 0.3));
 
-            $pool = $this->buildPool($now, $pendingCount, $holdCount, $acceptedCount, $blacklistCount);
+        $pool = $this->buildPool($now, $pendingCount, $holdCount, $acceptedCount, $blacklistCount);
 
             // Clear existing data rows (preserve headers)
             $this->clearSheetData('data_kandidat');
@@ -463,23 +463,28 @@ class DummyDataService
         $this->batchAppend('kandidat_blacklist', $rows);
     }
 
-    private function writeEmployeeSheet(array $acceptedCandidates, $now): int
+    private function writeEmployeeSheet(array &$acceptedCandidates, $now): int
     {
         $nowStr    = $now->format('Y-m-d H:i:s');
         $rows      = [];
         $seqByDate = [];
 
         // From accepted candidates (30 employees)
-        foreach ($acceptedCandidates as $c) {
+        foreach ($acceptedCandidates as &$c) {
             $joinDate = $now->copy()->subDays(rand(10, 365))->format('Y-m-d');
-            $dateKey  = str_replace('-', '', $joinDate);
-            $seqByDate[$dateKey] = ($seqByDate[$dateKey] ?? 0) + 1;
-            $empId    = $dateKey . str_pad((string)$seqByDate[$dateKey], 2, '0', STR_PAD_LEFT);
+            // Generate employeeId if not already set
+            if (empty($c['employeeId'])) {
+                $dateKey  = str_replace('-', '', $joinDate);
+                $seqByDate[$dateKey] = ($seqByDate[$dateKey] ?? 0) + 1;
+                $c['employeeId'] = $dateKey . str_pad((string)$seqByDate[$dateKey], 2, '0', STR_PAD_LEFT);
+            }
+            $empId = $c['employeeId'];
             $empType  = $this->pick($this->empTypes);
             $isContract = in_array($empType, ['PKWT', 'Outsource', 'Intern']);
 
             $rows[] = $this->buildEmployeeRow($empId, $c, $joinDate, $empType, $isContract, $nowStr);
         }
+        unset($c);
 
         // 20 legacy employees (not from recruitment)
         for ($i = 0; $i < 20; $i++) {
@@ -608,18 +613,46 @@ class DummyDataService
 
             $decision = '';
             $evalDate = '';
-            $avgScore = '';
-            $scores   = array_fill(0, 5, '');
+            $integrityTotal = 0;
+            $ciTotal = 0;
+            $eeTotal = 0;
+            $twTotal = 0;
+            $overallTotal = 0;
+            $category = '';
+            $extDuration = '';
+            $extStart = '';
+            $extEnd = '';
+            $evalNotes = '';
+            $notes = '';
 
-            // ~40% already have evaluation
+            // ~40% already have evaluation (Performance Review 2026 — indicator-based)
             if ($idx % 5 < 2) {
-                $evalDate  = $now->copy()->subDays(rand(1, 30))->format('Y-m-d H:i:s');
-                $scores    = [rand(60, 100), rand(60, 100), rand(60, 100), rand(60, 100), rand(60, 100)];
-                $avgScore  = number_format(array_sum($scores) / 5, 2);
-                $decision  = (float)$avgScore >= 70 ? 'Lulus' : 'Perpanjang';
+                $evalDate = $now->copy()->subDays(rand(1, 30))->format('Y-m-d H:i:s');
+                // Random totals (max 4,4,2,3)
+                $integrityTotal = rand(0, 4);
+                $ciTotal = rand(0, 4);
+                $eeTotal = rand(0, 2);
+                $twTotal = rand(0, 3);
+                $overallTotal = $integrityTotal + $ciTotal + $eeTotal + $twTotal;
+                $category = match (true) {
+                    $overallTotal >= 11 => 'Sangat Baik',
+                    $overallTotal >= 8 => 'Baik',
+                    $overallTotal >= 6 => 'Cukup',
+                    default => 'Kurang',
+                };
+                $decision = $overallTotal >= 8 ? 'Diangkat sebagai Karyawan Tetap' : 'Perpanjang Kontrak';
+                $evalNotes = $this->pick(['Karyawan menunjukkan kinerja baik dan potensi pengembangan.', 'Perlu peningkatan dalam komunikasi dan inisiatif.', 'Hasil kerja cukup memuaskan, namun perlu konsistensi.', 'Karyawan sangat proaktif dan berkontribusi positif.', 'Disarankan perpanjangan untuk melihat perkembangan lebih lanjut.']);
+                $notes = $this->pick(['Catatan tambahan: Perlu monitoring berkala.', 'Sudah melakukan perbaikan signifikan.', 'Koordinasi tim baik, namun perlu peningkatan teknis.']);
+                if ($decision === 'Perpanjang Kontrak') {
+                    $durations = ['3 Bulan', '6 Bulan', '12 Bulan'];
+                    $extDuration = $durations[array_rand($durations)];
+                    $months = (int) filter_var($extDuration, FILTER_SANITIZE_NUMBER_INT);
+                    $extStart = $contractEnd; // new contract starts after current end
+                    $extEnd = date('Y-m-d', strtotime("+$months months", strtotime($extStart)));
+                }
             }
 
-            $status = $decision === 'Lulus' ? 'Completed' : ($decision === 'Perpanjang' ? 'Extended' : 'Ongoing');
+            $status = $decision === 'Diangkat sebagai Karyawan Tetap' ? 'Completed - Passed' : ($decision === 'Perpanjang Kontrak' ? 'Extended' : 'Ongoing');
 
             $rows[] = [
                 'PRO-' . str_pad((string)$probSeq++, 6, '0', STR_PAD_LEFT), // Probation ID
@@ -635,22 +668,36 @@ class DummyDataService
                 'Demo Generator',                    // Onboarding By
                 $evalDate ? ('EVAL-' . rand(100, 999)) : '', // Eval ID
                 $evalDate,                           // Eval Date
-                $scores[0] ?? '',                    // Score Performance
-                $scores[1] ?? '',                    // Score Discipline
-                $scores[2] ?? '',                    // Score Communication
-                $scores[3] ?? '',                    // Score Initiative
-                $scores[4] ?? '',                    // Score Teamwork
-                $avgScore,                           // Average Score
                 $decision,                           // Decision
-                '',                                  // Extension Duration
-                '',                                  // New Contract Start
-                '',                                  // New Contract End
-                '',                                  // Evaluator Notes
+                $extDuration,                        // Extension Duration
+                $extStart,                           // New Contract Start
+                $extEnd,                             // New Contract End
+                $evalNotes,                          // Evaluator Notes
                 $evalDate ? 'HR Manager' : '',       // Evaluator
-                '',                                  // SK Status
-                '',                                  // Notes
+                $decision === 'Diangkat sebagai Karyawan Tetap' ? 'SK Diterbitkan' : ($decision === 'Perpanjang Kontrak' ? 'Diperpanjang' : ''), // SK Status
+                $notes,                              // Notes
                 $nowStr,                             // Created At
                 $nowStr,                             // Updated At
+                // Competency totals (already computed)
+                (string)$integrityTotal,             // Integrity Total
+                (string)$ciTotal,                    // CI Total
+                (string)$eeTotal,                    // EE Total
+                (string)$twTotal,                    // Teamwork Total
+                (string)$overallTotal,               // Overall Total
+                $category,                           // Category
+                // Individual indicators – generate random 1/0 per indicator
+                rand(0,1), rand(0,1), rand(0,1), rand(0,1), // ind_integrity_1..4
+                rand(0,1), rand(0,1), rand(0,1), rand(0,1), // ind_ci_1..4
+                rand(0,1), rand(0,1),                // ind_ee_1..2
+                rand(0,1), rand(0,1), rand(0,1),     // ind_tw_1..3
+                // Approval fields (random realistic)
+                $this->pick(['Setuju', 'Tidak', '']), // Reviewer Name? Actually these are approval fields; we need to map correctly
+                $this->pick(['Setuju', 'Tidak', '']), // Approval Dept
+                $this->pick(['Budi Santoso', 'Siti Nurhaliza', 'Ahmad Wijaya', '']), // Approval Dept Name
+                $evalDate ? $now->copy()->subDays(rand(1, 10))->format('Y-m-d') : '', // Approval Dept Date
+                $this->pick(['Setuju', 'Tidak', '']), // Approval HRBP
+                $this->pick(['Dewi Lestari', 'Eko Prasetyo', 'Rina Sari', '']), // Approval HRBP Name
+                $evalDate ? $now->copy()->subDays(rand(1, 5))->format('Y-m-d') : '', // Approval HRBP Date
             ];
         }
 
