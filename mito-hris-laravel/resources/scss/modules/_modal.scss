@@ -8,7 +8,7 @@
 .drawer-panel   { z-index: 1900; }
 .drawer-overlay { z-index: 1800; }
 .toast-container { z-index: 2200; }
-.toast-custom    { min-width: 300px; }
+.toast-custom    { min-width: 260px; max-width: calc(100vw - 24px); }
 
 /* Timeline */
 .timeline { position: relative; padding-left: 28px; }
@@ -74,7 +74,7 @@ a.fab-action { text-decoration: none; }
 .settings-row input[type="number"] {
   height: 40px; border-radius: 10px; border: 1.5px solid var(--color-border);
   background: var(--color-surface); color: var(--color-text);
-  padding: 0 12px; font-size: 13px; min-width: 150px;
+  padding: 0 12px; font-size: 13px; min-width: 150px; max-width: 100%;
 }
 .settings-group-title {
   display: flex; align-items: center; gap: 8px;
@@ -90,7 +90,7 @@ a.fab-action { text-decoration: none; }
 .settings-row input[type="url"] {
   height: 40px; border-radius: 10px; border: 1.5px solid var(--color-border);
   background: var(--color-surface); color: var(--color-text);
-  padding: 0 12px; font-size: 13px; min-width: 220px;
+  padding: 0 12px; font-size: 13px; min-width: 220px; max-width: 100%;
 }
 .settings-row input:focus,
 .settings-row select:focus {
