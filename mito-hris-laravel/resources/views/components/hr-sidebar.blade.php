@@ -21,8 +21,8 @@
 
     <!-- Navigation Menu -->
     <nav class="sidebar-nav" id="sidebarNav">
-        @if(session('hr_user.auth_domain') === 'mpr_requestor' || session('hr_user.role') === 'Manager')
-            <!-- MPR Requestor Navigation (Manager — source: mpr_requestor sheet) -->
+        @if(session('hr_user.auth_domain') === 'mpr_requestor')
+            <!-- MPR Requestor Navigation (source: mpr_requestor sheet) -->
             <div class="nav-section-label">Manpower Request</div>
             <a href="{{ route('hr.mpr.index') }}" class="nav-item {{ request()->routeIs('hr.mpr.*') ? 'active' : '' }}">
                 <i class="bi bi-file-earmark-text-fill"></i> Manpower Request (MPR)
@@ -33,11 +33,6 @@
             <a href="{{ route('hr.dashboard') }}" class="nav-item {{ request()->routeIs('hr.dashboard') ? 'active' : '' }}">
                 <i class="bi bi-grid-1x2-fill"></i> Dashboard
             </a>
-            @can('view_mpr')
-            <a href="{{ route('hr.mpr.index') }}" class="nav-item {{ request()->routeIs('hr.mpr.*') ? 'active' : '' }}">
-                <i class="bi bi-file-earmark-text-fill"></i> Manpower Request
-            </a>
-            @endcan
             @can('view_recruitment')
             <a href="{{ route('hr.recruitment.index') }}" class="nav-item {{ request()->routeIs('hr.recruitment.index') ? 'active' : '' }}">
                 <i class="bi bi-people-fill"></i> Recruitment

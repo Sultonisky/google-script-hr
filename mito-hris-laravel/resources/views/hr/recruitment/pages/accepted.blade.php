@@ -53,6 +53,7 @@
                         onclick="location.reload()">
                         <i class="bi bi-arrow-clockwise"></i>
                     </button>
+                    @can('create_offering')
                     <button class="btn btn-sm text-white fw-semibold"
                         style="background:var(--color-primary, #eb1c24);border:none;border-radius:8px;padding:6px 14px;font-size:13px"
                         type="button" data-bs-toggle="modal" data-bs-target="#offeringModal">
@@ -63,6 +64,7 @@
                         type="button" data-bs-toggle="modal" data-bs-target="#onboardingModal">
                         <i class="bi bi-file-earmark-check-fill me-1"></i>Proses Kontrak PKWT
                     </button>
+                    @endcan
                 </div>
             </div>
 
@@ -136,6 +138,7 @@
                                         onclick="event.stopPropagation(); openMoveStatusModal('{{ $c->recruitmentId }}', 'Accepted')">
                                         <i class="bi bi-arrow-repeat"></i>
                                     </button>
+                                    @can('create_offering')
                                     @if(!empty($c->offeringCreated) && $c->offeringCreated !== '-')
                                         <button class="btn btn-sm btn-offering-preview"
                                             data-id="{{ $c->recruitmentId }}"
@@ -145,6 +148,7 @@
                                             <i class="bi bi-eye"></i>
                                         </button>
                                     @endif
+                                    @endcan
                                 </td>
                             </tr>
                         @empty

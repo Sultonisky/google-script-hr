@@ -218,9 +218,13 @@
 
   <div class="drawer-footer" id="drawerFooterCandidate" style="flex-direction:column;gap:8px">
     <div class="status-action-group">
-      <button class="btn-status accept" id="btnAccept" type="button"><i class="bi bi-check-lg"></i> Accept</button>
+      @can('manage_hold_blacklist')
       <button class="btn-status hold" id="btnHold" type="button"><i class="bi bi-pause-fill"></i> Hold</button>
       <button class="btn-status blacklist" id="btnBlacklist" type="button"><i class="bi bi-slash-circle"></i> Blacklist</button>
+      @endcan
+      @can('create_offering')
+      <button class="btn-status accept" id="btnAccept" type="button"><i class="bi bi-check-lg"></i> Accept</button>
+      @endcan
     </div>
     {{-- Tombol update respons offering — hanya tampil untuk kandidat accepted yang sudah ada offering (1:1 GAS) --}}
     <div id="drawerOfferingRespWrap" style="display:none;width:100%">

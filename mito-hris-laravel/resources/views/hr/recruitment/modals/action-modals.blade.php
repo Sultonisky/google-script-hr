@@ -34,6 +34,7 @@
     </div>
 </div>
 
+@can('manage_hold_blacklist')
 <!-- Modal: Hold Candidate -->
 <div class="modal fade" id="modalHold" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
@@ -87,6 +88,8 @@
     </div>
 </div>
 
+@endcan
+@can('create_offering')
 <!-- Modal: Accept to Employee -->
 <div class="modal fade" id="modalAccept" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
@@ -112,3 +115,4 @@
         </div>
     </div>
 </div>
+@endcan

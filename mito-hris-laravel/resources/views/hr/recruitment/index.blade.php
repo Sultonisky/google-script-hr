@@ -29,11 +29,13 @@
                     <div class="panel-subtitle" id="panelSubtitle">Menampilkan {{ $candidates->count() }} data kandidat
                     </div>
                 </div>
+                @can('manage_recruitment')
                 <div class="export-btns">
                     <a href="{{ route('hr.export.candidates-csv') }}" class="btn btn-sm btn-outline-success">
                         <i class="bi bi-file-earmark-spreadsheet me-1"></i>Export CSV
                     </a>
                 </div>
+                @endcan
             </div>
 
             <!-- FILTER BAR — basic -->

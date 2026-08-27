@@ -1,5 +1,6 @@
 <!-- partials/StatusPageModals.html — MODAL DOKUMEN & STATUS REKRUTMEN (1:1 from GAS) -->
 
+@can('create_offering')
 <!-- 1. MODAL ONBOARDING & KONTRAK PKWT (1:1 from GAS partials/StatusPageModals.html) -->
 <div class="modal fade" id="onboardingModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
@@ -408,6 +409,7 @@
         </div>
     </div>
 </div>
+@endcan
 
 {{--
   NOTE: Modal import karyawan (empImportModal) untuk halaman Employee sudah ada di entity-modals.blade.php.
