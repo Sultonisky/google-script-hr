@@ -29,6 +29,14 @@ class ExportController extends Controller
         $this->probationService = $probationService;
     }
 
+    private function employeeDocumentStem($employee): string
+    {
+        $name = preg_replace('/[^a-zA-Z0-9]+/', '_', trim($employee->fullName ?? 'Employee'));
+        $id   = preg_replace('/[^a-zA-Z0-9_-]+/', '_', trim($employee->employeeId ?? 'Unknown'));
+
+        return trim($name ?: 'Employee', '_') . '_Employee_' . ($id ?: 'Unknown');
+    }
+
     /**
      * Download or stream Candidate Resume PDF.
      */
@@ -140,7 +148,7 @@ class ExportController extends Controller
 
         $extraData = $request->all();
         $pdf = $this->pdfService->generateSkOffPdf($employee, $extraData);
-        return $pdf->download("SK_OFF_{$employee->employeeId}.pdf");
+        return $pdf->download("SK_Offboarding_{$this->employeeDocumentStem($employee)}.pdf");
     }
 
     /**
@@ -155,7 +163,44 @@ class ExportController extends Controller
 
         $extraData = $request->all();
         $pdf = $this->pdfService->generateSuratBpjsPdf($employee, $extraData);
-        return $pdf->download("Surat_BPJS_{$employee->employeeId}.pdf");
+        return $pdf->download("Surat_BPJS_{$this->employeeDocumentStem($employee)}.pdf");
+    }
+
+    /**
+     * Generate all offboarding PDFs and return them as one ZIP download.
+     */
+    public function offboardingBundlePdf(Request $request, string $id)
+    {
+        $employee = $this->employeeRepo->findById($id);
+        if (!$employee) {
+            abort(404, 'Data karyawan tidak ditemukan.');
+        }
+
+        $extraData = $request->all();
+        $fileStem = $this->employeeDocumentStem($employee);
+        $documents = [
+            "SK_Offboarding_{$fileStem}.pdf" => $this->pdfService->generateSkOffPdf($employee, $extraData)->output(),
+            "Surat_BPJS_{$fileStem}.pdf" => $this->pdfService->generateSuratBpjsPdf($employee, $extraData)->output(),
+            "Paklaring_{$fileStem}.pdf" => $this->pdfService->generatePaklaringPdf($employee, $extraData)->output(),
+        ];
+
+        $zipPath = tempnam(storage_path('app'), 'offboarding_');
+        $zip = new \ZipArchive();
+        if (!$zipPath || $zip->open($zipPath, \ZipArchive::OVERWRITE) !== true) {
+            if ($zipPath) @unlink($zipPath);
+            abort(500, 'Gagal membuat bundle dokumen offboarding.');
+        }
+
+        foreach ($documents as $filename => $content) {
+            $zip->addFromString($filename, $content);
+        }
+        $zip->close();
+
+        return response()->download(
+            $zipPath,
+            "Dokumen_Offboarding_{$this->employeeDocumentStem($employee)}.zip",
+            ['Content-Type' => 'application/zip']
+        )->deleteFileAfterSend(true);
     }
 
     /**
@@ -210,7 +255,7 @@ class ExportController extends Controller
         }
 
         $pdf = $this->pdfService->generatePaklaringPdf($employee, $extraData);
-        return $pdf->download("Paklaring_{$employee->employeeId}.pdf");
+        return $pdf->download("Paklaring_{$this->employeeDocumentStem($employee)}.pdf");
     }
 
     /**
@@ -247,12 +292,25 @@ class ExportController extends Controller
         // Merge approval sign-off data: prefer query params, fallback to evalData (from sheet)
         $extraData = $request->only([
             'reviewer_name',
-            'approval_dept', 'approval_dept_name', 'approval_dept_date',
-            'approval_hrbp', 'approval_hrbp_name', 'approval_hrbp_date',
+            'approval_dept',
+            'approval_dept_name',
+            'approval_dept_date',
+            'approval_hrbp',
+            'approval_hrbp_name',
+            'approval_hrbp_date',
         ]);
         // If query params empty, use data from evalData (persisted in sheet)
-        foreach (['reviewer_name', 'approval_dept', 'approval_dept_name', 'approval_dept_date',
-                  'approval_hrbp', 'approval_hrbp_name', 'approval_hrbp_date'] as $field) {
+        foreach (
+            [
+                'reviewer_name',
+                'approval_dept',
+                'approval_dept_name',
+                'approval_dept_date',
+                'approval_hrbp',
+                'approval_hrbp_name',
+                'approval_hrbp_date'
+            ] as $field
+        ) {
             if (empty($extraData[$field]) && !empty($evalData[$field])) {
                 $extraData[$field] = $evalData[$field];
             }
@@ -279,15 +337,34 @@ class ExportController extends Controller
         return response()->stream(function () use ($candidates) {
             $handle = fopen('php://output', 'w');
             fputcsv($handle, [
-                'Recruitment ID', 'Nama Lengkap', 'NIK', 'Email', 'No Telepon', 'Kota',
-                'Posisi', 'Pendidikan', 'Pengalaman', 'Ekspektasi Gaji', 'Status', 'Tanggal Daftar'
+                'Recruitment ID',
+                'Nama Lengkap',
+                'NIK',
+                'Email',
+                'No Telepon',
+                'Kota',
+                'Posisi',
+                'Pendidikan',
+                'Pengalaman',
+                'Ekspektasi Gaji',
+                'Status',
+                'Tanggal Daftar'
             ]);
 
             foreach ($candidates as $c) {
                 fputcsv($handle, [
-                    $c->recruitmentId, $c->fullName, "'" . $c->nik, $c->email,
-                    "'" . $c->phone, $c->city, $c->positionApplied, $c->education,
-                    $c->workExperience, $c->expectedSalary, $c->status, $c->createdDate
+                    $c->recruitmentId,
+                    $c->fullName,
+                    "'" . $c->nik,
+                    $c->email,
+                    "'" . $c->phone,
+                    $c->city,
+                    $c->positionApplied,
+                    $c->education,
+                    $c->workExperience,
+                    $c->expectedSalary,
+                    $c->status,
+                    $c->createdDate
                 ]);
             }
             fclose($handle);
@@ -309,14 +386,28 @@ class ExportController extends Controller
         return response()->stream(function () use ($employees) {
             $handle = fopen('php://output', 'w');
             fputcsv($handle, [
-                'Employee ID', 'Nama Lengkap', 'NIK', 'Email', 'No Telepon',
-                'Departemen', 'Posisi', 'Status Employee', 'Tanggal Masuk'
+                'Employee ID',
+                'Nama Lengkap',
+                'NIK',
+                'Email',
+                'No Telepon',
+                'Departemen',
+                'Posisi',
+                'Status Employee',
+                'Tanggal Masuk'
             ]);
 
             foreach ($employees as $e) {
                 fputcsv($handle, [
-                    $e->employeeId, $e->fullName, "'" . $e->nikNpwp, $e->personalEmail,
-                    "'" . $e->mobilePhone, $e->department, $e->jobPosition, $e->statusEmployee, $e->joinDate
+                    $e->employeeId,
+                    $e->fullName,
+                    "'" . $e->nikNpwp,
+                    $e->personalEmail,
+                    "'" . $e->mobilePhone,
+                    $e->department,
+                    $e->jobPosition,
+                    $e->statusEmployee,
+                    $e->joinDate
                 ]);
             }
             fclose($handle);

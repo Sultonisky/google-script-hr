@@ -48,6 +48,7 @@ class GoogleDriveService
                 'mimeType'   => $mimeType,
                 'uploadType' => 'multipart',
                 'fields'     => 'id, name, webViewLink, webContentLink',
+                'supportsAllDrives' => true,
             ]);
 
             // Make file publicly readable via link
@@ -112,9 +113,11 @@ class GoogleDriveService
             }
 
             $results = $service->files->listFiles([
-                'q'      => $q,
-                'fields' => 'files(id, name, webViewLink)',
-                'spaces' => 'drive',
+                'q'                     => $q,
+                'fields'                => 'files(id, name, webViewLink)',
+                'spaces'                => 'drive',
+                'supportsAllDrives'     => true,
+                'includeItemsFromAllDrives' => true,
             ]);
 
             $files = $results->getFiles();
@@ -135,7 +138,8 @@ class GoogleDriveService
             ]);
 
             $folder = $service->files->create($metadata, [
-                'fields' => 'id, name, webViewLink',
+                'fields'            => 'id, name, webViewLink',
+                'supportsAllDrives' => true,
             ]);
 
             // Make folder readable
@@ -175,8 +179,8 @@ class GoogleDriveService
     ): array {
         $uploaded = [];
         $rootFolderId = config('google.drive.offboarding_folder_id')
-                     ?: config('google.drive.docs_folder_id')
-                     ?: null;
+            ?: config('google.drive.docs_folder_id')
+            ?: null;
 
         // Step 1: Get/create root "MITO HRIS Offboarding" folder
         $rootFolder = $this->getOrCreateFolder('MITO HRIS Offboarding', $rootFolderId);
@@ -187,7 +191,7 @@ class GoogleDriveService
                 'folder_url'   => null,
                 'uploaded'     => [],
                 'links_string' => '',
-                'message'      => 'Gagal membuat/mengakses root folder offboarding di Google Drive.',
+                'message'      => 'Folder Google Drive tidak dapat diakses. Bagikan folder kepada mito-hris@hris-maha.iam.gserviceaccount.com dengan akses Editor.',
             ];
         }
 
@@ -246,12 +250,17 @@ class GoogleDriveService
             }
         }
 
+        $uploadSuccess = count($uploaded) === count($files);
+
         return [
-            'success'      => true,
+            'success'      => $uploadSuccess,
             'folder_id'    => $empFolder['folder_id'],
             'folder_url'   => $empFolder['view_url'] ?? "https://drive.google.com/drive/folders/{$empFolder['folder_id']}",
             'uploaded'     => $uploaded,
             'links_string' => implode("\n", $links),
+            'message'      => $uploadSuccess
+                ? null
+                : 'Folder berhasil dibuat, tetapi file gagal di-upload. Service account memerlukan Shared Drive atau OAuth user dengan storage quota.',
         ];
     }
 }
