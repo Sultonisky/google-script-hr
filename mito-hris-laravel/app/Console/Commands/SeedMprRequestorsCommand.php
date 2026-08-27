@@ -7,7 +7,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
 
 /**
- * Seed default MPR Requestor (Manager) accounts into the mpr_requestor sheet.
+ * Seed default MPR Requestor (Manpower) accounts into the mpr_requestor sheet.
  *
  * These accounts are completely separate from the internal HRIS Users sheet.
  * Each Manager is assigned one or more entities and a branch location.
@@ -21,7 +21,7 @@ class SeedMprRequestorsCommand extends Command
     protected $signature = 'mito:seed-mpr-requestors
         {--force : Overwrite existing requestors}';
 
-    protected $description = 'Seed default MPR Requestor (Manager) accounts into the mpr_requestor sheet';
+    protected $description = 'Seed default MPR Requestor (Manpower) accounts into the mpr_requestor sheet';
 
     /**
      * Default requestor accounts to seed.
@@ -73,7 +73,7 @@ class SeedMprRequestorsCommand extends Command
         $this->line('Sheet: mpr_requestor (independent from Users)');
         $this->newLine();
 
-        $password      = 'password123';
+        $password      = 'Mahakarya2026'; // default password for all seeded requestors
         $force         = $this->option('force');
         $createdCount  = 0;
         $skippedCount  = 0;
@@ -90,7 +90,7 @@ class SeedMprRequestorsCommand extends Command
             $payload = [
                 'username'     => $data['username'],
                 'fullName'     => $data['name'],
-                'role'         => 'Manager',
+                'role'         => 'Manpower',
                 'status'       => 'Active',
                 'passwordHash' => Hash::make($password),
                 'entity'       => $data['entity'],
