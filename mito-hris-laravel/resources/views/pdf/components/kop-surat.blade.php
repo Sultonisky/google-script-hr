@@ -1,10 +1,11 @@
 @php
   // ── 1:1 GAS renderKopSuratPDF() + getCompanyProfile() ──────
   // Resolve branch name dari berbagai sumber (same priority order as GAS getCompanyProfile)
-  $branch = (isset($companyEntity) ? $companyEntity : null)
+  $branch = (isset($companyEntity) && trim((string)$companyEntity) !== '' ? $companyEntity : null)
     ?? (isset($employee) ? ($employee->branchName ?? null) : null)
     ?? (isset($candidate) ? ($candidate->branchName ?? null) : null)
-    ?? ($extraData['branch_name'] ?? $extraData['company_entity'] ?? null)
+    ?? (($extraData['branch_name'] ?? '') !== '' ? $extraData['branch_name'] : null)
+    ?? (($extraData['company_entity'] ?? '') !== '' ? $extraData['company_entity'] : null)
     ?? 'PT Mahakarya Sukses Indonesia';
 
   $bLower = strtolower((string)$branch);

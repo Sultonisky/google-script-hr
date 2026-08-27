@@ -60,7 +60,6 @@ class CandidateData
         public ?string $offeringEmploymentStatus = null,
         public ?string $offeringContractDuration = null,
         public ?string $offeringWorkingHours = null,
-        public ?string $offeringDepartment = null,
         public ?string $onboardingStatus = null,
         public ?string $onboardingDate = null,
         public ?string $onboardingBy = null,
@@ -120,12 +119,14 @@ class CandidateData
             offeringJobLevel: $row['Offering Job Level'] ?? null,
             offeringLokasiKerja: $row['Offering Lokasi Kerja'] ?? null,
             offeringSalaryBasic: $row['Offering Salary Basic'] ?? null,
-            offeringAllowPulsa: $row['Offering Allow Pulsa'] ?? null,
+            offeringAllowPulsa: $row['Offering Allow Pulsa']
+                ?? $row['Offering Allowance Pulsa']
+                ?? $row['Allow Pulsa']
+                ?? null,
             offeringAllowTransport: $row['Offering Allow Transport'] ?? null,
             offeringEmploymentStatus: $row['Offering Employment Status'] ?? null,
             offeringContractDuration: $row['Offering Contract Duration'] ?? null,
             offeringWorkingHours: $row['Offering Working Hours'] ?? null,
-            offeringDepartment: $row['Offering Department'] ?? ($row['Department'] ?? null),
             onboardingStatus: $row['Onboarding Status'] ?? null,
             onboardingDate: $row['Onboarding Date'] ?? null,
             onboardingBy: $row['Onboarding By'] ?? null,

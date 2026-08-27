@@ -76,12 +76,13 @@ class RecruitmentController extends Controller
 
         if ($searchFilter) {
             $search = strtolower($searchFilter);
-            $candidates = $candidates->filter(fn($c) =>
+            $candidates = $candidates->filter(
+                fn($c) =>
                 str_contains(strtolower($c->fullName ?? ''), $search) ||
-                str_contains(strtolower($c->recruitmentId ?? ''), $search) ||
-                str_contains(strtolower($c->email ?? ''), $search) ||
-                str_contains(strtolower($c->nik ?? ''), $search) ||
-                str_contains(strtolower($c->positionApplied ?? ''), $search)
+                    str_contains(strtolower($c->recruitmentId ?? ''), $search) ||
+                    str_contains(strtolower($c->email ?? ''), $search) ||
+                    str_contains(strtolower($c->nik ?? ''), $search) ||
+                    str_contains(strtolower($c->positionApplied ?? ''), $search)
             );
         }
 
@@ -114,9 +115,10 @@ class RecruitmentController extends Controller
         $searchFilter = $request->query('search');
         if ($searchFilter) {
             $search = strtolower($searchFilter);
-            $candidates = $candidates->filter(fn($c) =>
+            $candidates = $candidates->filter(
+                fn($c) =>
                 str_contains(strtolower($c->fullName ?? ''), $search) ||
-                str_contains(strtolower($c->recruitmentId ?? ''), $search)
+                    str_contains(strtolower($c->recruitmentId ?? ''), $search)
             )->values();
         }
         $stats = [
@@ -141,9 +143,10 @@ class RecruitmentController extends Controller
         $searchFilter = $request->query('search');
         if ($searchFilter) {
             $search = strtolower($searchFilter);
-            $candidates = $candidates->filter(fn($c) =>
+            $candidates = $candidates->filter(
+                fn($c) =>
                 str_contains(strtolower($c->fullName ?? ''), $search) ||
-                str_contains(strtolower($c->recruitmentId ?? ''), $search)
+                    str_contains(strtolower($c->recruitmentId ?? ''), $search)
             )->values();
         }
 
@@ -162,9 +165,10 @@ class RecruitmentController extends Controller
         $searchFilter = $request->query('search');
         if ($searchFilter) {
             $search = strtolower($searchFilter);
-            $candidates = $candidates->filter(fn($c) =>
+            $candidates = $candidates->filter(
+                fn($c) =>
                 str_contains(strtolower($c->fullName ?? ''), $search) ||
-                str_contains(strtolower($c->recruitmentId ?? ''), $search)
+                    str_contains(strtolower($c->recruitmentId ?? ''), $search)
             )->values();
         }
 
@@ -354,7 +358,6 @@ class RecruitmentController extends Controller
             $offeringData = [
                 'Offering Company Entity'    => $request->input('branch_name', ''),
                 'Offering Position'          => $request->input('position', ''),
-                'Offering Department'        => $request->input('department', ''),
                 'Offering Division'          => $request->input('division', ''),
                 'Offering Job Level'         => $request->input('job_level', ''),
                 'Offering Lokasi Kerja'      => $request->input('lokasi_kerja', ''),
