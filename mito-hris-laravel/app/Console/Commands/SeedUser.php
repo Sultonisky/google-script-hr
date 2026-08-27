@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Repositories\Contracts\UserRepositoryInterface;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
+use App\Support\Rbac;
 
 class SeedUser extends Command
 {
@@ -23,14 +24,12 @@ class SeedUser extends Command
         $username = trim((string) $this->argument('username'));
         $name     = trim((string) $this->argument('name'));
         $password = (string) $this->argument('password');
-        $role     = trim((string) $this->argument('role'));
+        $role     = Rbac::normalizeRole($this->argument('role'));
 
-        // Guard: Manager is NOT an internal HRIS role.
-        // Manager accounts belong in the mpr_requestor sheet.
-        if (strtolower($role) === 'manager') {
-            $this->error("Role 'Manager' tidak dapat dibuat di Users sheet.");
+        if (!in_array($role, config('hris.auth.valid_roles_internal', []), true)) {
+            $this->error("Role '{$role}' tidak valid untuk Users sheet.");
+            $this->line('Role yang tersedia: ' . implode(', ', config('hris.auth.valid_roles_internal', [])));
             $this->line("Gunakan: php artisan mito:seed-mpr-requestors");
-            $this->line("Atau buat manual di sheet mpr_requestor.");
             return self::FAILURE;
         }
 

@@ -22,6 +22,7 @@ use App\Repositories\Sheets\CandidateSheetsRepository;
 use App\Repositories\Sheets\EmployeeSheetsRepository;
 use App\Repositories\Sheets\MprSheetsRepository;
 use App\Repositories\Sheets\MprRequestorSheetsRepository;
+use App\Support\Rbac;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -64,7 +65,7 @@ class AppServiceProvider extends ServiceProvider
             // in_array('view_employees', ['*']) is false — this was why
             // "Master Data" was hidden for Super Admin in the sidebar.
             // ===========================================================
-            $rawPermissions = $user['permissions'] ?? [];
+            $rawPermissions = Rbac::permissionsForRole($user['role'] ?? null);
 
             if (in_array('*', $rawPermissions, true)) {
                 // Flatten all defined permissions from config, exclude the wildcard itself
