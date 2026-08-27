@@ -455,6 +455,16 @@ class RbacTest extends TestCase
     }
 
     /** @test */
+    public function super_admin_sidebar_shows_mpr_navigation(): void
+    {
+        $this->actingAsRole('Super Admin');
+
+        $this->get('/hr/dashboard')
+            ->assertOk()
+            ->assertSee('Manpower Request');
+    }
+
+    /** @test */
     public function role_resolution_is_case_and_whitespace_tolerant_but_unknown_roles_fail_closed(): void
     {
         $this->actingAsRole(' Super Admin ');

@@ -1,0 +1,110 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Repositories\Contracts\MprRequestorRepositoryInterface;
+use App\Repositories\Contracts\UserRepositoryInterface;
+use Illuminate\Support\Facades\Hash;
+use Mockery;
+use Tests\TestCase;
+
+class LoginSecurityTest extends TestCase
+{
+    private function mockMprDomain(): void
+    {
+        $repository = Mockery::mock(MprRequestorRepositoryInterface::class);
+        $repository->shouldReceive('findByIdentifier')->andReturn(null);
+        $this->app->instance(MprRequestorRepositoryInterface::class, $repository);
+    }
+
+    private function mockUserDomain(?array $user, bool $expectLastLogin = false): void
+    {
+        $repository = Mockery::mock(UserRepositoryInterface::class);
+        $repository->shouldReceive('findByIdentifier')->andReturn($user);
+        if ($user !== null && $expectLastLogin) {
+            $repository->shouldReceive('updateLastLogin')->once();
+        }
+        $this->app->instance(UserRepositoryInterface::class, $repository);
+    }
+
+    private function activeUser(string $password = 'correct-password'): array
+    {
+        return [
+            'Email' => 'admin@example.test',
+            'Full Name' => 'Admin Test',
+            'Username' => 'admin',
+            'Role' => 'Admin',
+            'Status' => 'Active',
+            'Password Hash' => Hash::make($password),
+        ];
+    }
+
+    public function test_successful_login_creates_session_without_returning_password(): void
+    {
+        $this->mockMprDomain();
+        $this->mockUserDomain($this->activeUser(), true);
+
+        $response = $this->postJson('/login', [
+            'identifier' => 'admin',
+            'password' => 'correct-password',
+            'rememberMe' => true,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonMissingPath('user.password');
+        $this->assertStringNotContainsString('correct-password', $response->getContent());
+        $this->assertTrue($this->app['session']->has('hr_user'));
+        $this->assertTrue($this->app['session']->get('hris_remember'));
+    }
+
+    public function test_failed_login_uses_generic_error_without_echoing_password(): void
+    {
+        $this->mockMprDomain();
+        $this->mockUserDomain($this->activeUser());
+
+        $response = $this->postJson('/login', [
+            'identifier' => 'admin',
+            'password' => 'wrong-password',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error', 'Email/username atau password salah.');
+        $this->assertStringNotContainsString('wrong-password', $response->getContent());
+        $this->assertFalse($this->app['session']->has('hr_user'));
+    }
+
+    public function test_unknown_identifier_has_same_generic_error(): void
+    {
+        $this->mockMprDomain();
+        $this->mockUserDomain(null);
+
+        $response = $this->postJson('/login', [
+            'identifier' => 'unknown-' . uniqid() . '@example.test',
+            'password' => 'any-password',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('error', 'Email/username atau password salah.');
+    }
+
+    public function test_login_is_rate_limited_per_identifier_and_ip(): void
+    {
+        $this->mockMprDomain();
+        $this->mockUserDomain(null);
+        $identifier = 'limited-' . uniqid() . '@example.test';
+
+        for ($attempt = 0; $attempt < 5; $attempt++) {
+            $this->postJson('/login', [
+                'identifier' => $identifier,
+                'password' => 'wrong-password',
+            ])->assertStatus(422);
+        }
+
+        $this->postJson('/login', [
+            'identifier' => $identifier,
+            'password' => 'wrong-password',
+        ])->assertStatus(429);
+    }
+}

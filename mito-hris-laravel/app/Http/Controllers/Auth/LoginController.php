@@ -138,6 +138,8 @@ class LoginController extends Controller
         array $user,
         bool $remember
     ): RedirectResponse|JsonResponse {
+        $request->session()->regenerate();
+        $request->session()->forget('hris_remember');
         $request->session()->put('hr_user', $user);
 
         if ($remember) {
@@ -163,15 +165,17 @@ class LoginController extends Controller
         Request $request,
         string $errorMessage
     ): RedirectResponse|JsonResponse {
+        $genericError = 'Email/username atau password salah.';
+
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => false,
-                'error'   => $errorMessage,
+                'error'   => $genericError,
             ], 422);
         }
 
         throw ValidationException::withMessages([
-            'identifier' => [$errorMessage],
+            'identifier' => [$genericError],
         ]);
     }
 }
