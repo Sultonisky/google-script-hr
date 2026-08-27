@@ -714,11 +714,18 @@
                                                             data-id="{{ $mpr->mprNumber }}" title="Lihat Detail">
                                                             <i class="bi bi-eye"></i>
                                                         </button>
-                                                        <a href="{{ route('hr.mpr.pdf', $mpr->mprNumber) }}"
-                                                            target="_blank" class="btn btn-outline-danger"
-                                                            title="Unduh PDF">
-                                                            <i class="bi bi-file-earmark-pdf"></i>
-                                                        </a>
+                                                        @if (filled($mpr->mprNumber))
+                                                            <a href="{{ route('hr.mpr.pdf', ['id' => $mpr->mprNumber]) }}"
+                                                                target="_blank" class="btn btn-outline-danger"
+                                                                title="Unduh PDF">
+                                                                <i class="bi bi-file-earmark-pdf"></i>
+                                                            </a>
+                                                        @else
+                                                            <button type="button" class="btn btn-outline-secondary"
+                                                                disabled title="Nomor MPR tidak tersedia">
+                                                                <i class="bi bi-file-earmark-pdf"></i>
+                                                            </button>
+                                                        @endif
                                                     </div>
                                                 </td>
                                             </tr>
@@ -902,10 +909,18 @@
                                                     <i class="bi bi-eye-fill"></i>
                                                 </button>
                                                 @can('export_mpr')
-                                                    <a href="{{ route('hr.mpr.pdf', $mpr->mprNumber) }}" target="_blank"
-                                                        class="btn btn-outline-danger" title="Unduh PDF Resmi">
-                                                        <i class="bi bi-file-earmark-pdf-fill"></i>
-                                                    </a>
+                                                    @if (filled($mpr->mprNumber))
+                                                        <a href="{{ route('hr.mpr.pdf', ['id' => $mpr->mprNumber]) }}"
+                                                            target="_blank" class="btn btn-outline-danger"
+                                                            title="Unduh PDF Resmi">
+                                                            <i class="bi bi-file-earmark-pdf-fill"></i>
+                                                        </a>
+                                                    @else
+                                                        <button type="button" class="btn btn-outline-secondary" disabled
+                                                            title="Nomor MPR tidak tersedia">
+                                                            <i class="bi bi-file-earmark-pdf-fill"></i>
+                                                        </button>
+                                                    @endif
                                                 @endcan
                                             </div>
                                         </td>
