@@ -125,7 +125,7 @@ class OfferingContractFlowTest extends TestCase
         $this->assertNotNull($savedAttributes, 'update() was not called');
         $this->assertArrayHasKey('Offering Company Entity',    $savedAttributes);
         $this->assertArrayHasKey('Offering Position',          $savedAttributes);
-        $this->assertArrayHasKey('Offering Department',        $savedAttributes);
+        $this->assertArrayNotHasKey('Offering Department',     $savedAttributes);
         $this->assertArrayHasKey('Offering Division',          $savedAttributes);
         $this->assertArrayHasKey('Offering Job Level',         $savedAttributes);
         $this->assertArrayHasKey('Offering Lokasi Kerja',      $savedAttributes);
@@ -143,7 +143,6 @@ class OfferingContractFlowTest extends TestCase
         // First offering → response should default to "Menunggu" (1:1 GAS)
         $this->assertSame('Menunggu', $savedAttributes['Offering Response']);
         $this->assertSame('PT Mahakarya Sukses Indonesia', $savedAttributes['Offering Company Entity']);
-        $this->assertSame('Human Resources', $savedAttributes['Offering Department']);
 
         // Created fields should be set, Updated fields should NOT be set
         $this->assertArrayNotHasKey('Offering Updated',    $savedAttributes);

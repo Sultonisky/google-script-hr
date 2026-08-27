@@ -347,8 +347,7 @@ class EmployeeService
         $notesRaw      = $data['notes'] ?? '';
 
         // Nomor SK selalu di-generate server-side — tidak boleh menerima dari input request
-        $skNumber = '';
-        {
+        $skNumber = ''; {
             // Resolusi entity abbreviation dari branch name (1:1 dengan kop-surat.blade.php entity resolver)
             $branchForEntity = strtolower($newBranch ?: $oldBranch ?: '');
             if (str_contains($branchForEntity, 'stein')) {
@@ -361,7 +360,7 @@ class EmployeeService
                 $entityCode = 'MSI';
             }
 
-            $romanMonth = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+            $romanMonth = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
             $datePart   = $now->format('Ym');
             $cacheKey   = "SK_ROT_COUNTER_{$datePart}";
             $lock       = \Illuminate\Support\Facades\Cache::lock("lock_{$cacheKey}", 10);
@@ -484,7 +483,7 @@ class EmployeeService
         } else {
             $entityCode = 'MSI';
         }
-        $romanMonth = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+        $romanMonth = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
         $datePart   = $now->format('Ym');
         $cacheKey   = "SK_OFF_COUNTER_{$datePart}";
         $lock       = \Illuminate\Support\Facades\Cache::lock("lock_{$cacheKey}", 10);
@@ -606,6 +605,7 @@ class EmployeeService
             'sk_off'     => route('hr.export.sk-off',     ['id' => $employeeId]) . '?' . $extraQ,
             'surat_bpjs' => route('hr.export.surat-bpjs', ['id' => $employeeId]) . '?' . $extraQ,
             'paklaring'  => route('hr.export.paklaring',  ['id' => $employeeId]) . '?' . $extraQ,
+            'bundle'     => route('hr.export.offboarding-bundle', ['id' => $employeeId]) . '?' . $extraQ,
         ];
 
         return [
@@ -617,6 +617,8 @@ class EmployeeService
             'pdf_urls'          => $pdfUrls,
             'drive_folder_url'  => $driveResult['folder_url'] ?? null,
             'docs_uploaded'     => count($driveResult['uploaded'] ?? []),
+            'drive_upload_success' => $driveResult['success'] ?? true,
+            'drive_upload_error'   => $driveResult['message'] ?? null,
         ];
     }
 
@@ -757,13 +759,29 @@ class EmployeeService
 
             // Header sheet kandidat_probation (harus sesuai PROBATION_HEADERS di GAS Config.gs)
             $headers = [
-                'Probation ID', 'Employee ID', 'Recruitment ID',
-                'Contract Number', 'Contract Duration', 'Contract Start', 'Contract End', 'Join Date',
-                'Status', 'Onboarding Date', 'Onboarding By',
-                'Eval ID', 'Eval Date',
-                'Decision', 'Extension Duration', 'New Contract Start', 'New Contract End',
-                'Evaluator Notes', 'Evaluator', 'SK Status', 'Notes',
-                'Created At', 'Updated At',
+                'Probation ID',
+                'Employee ID',
+                'Recruitment ID',
+                'Contract Number',
+                'Contract Duration',
+                'Contract Start',
+                'Contract End',
+                'Join Date',
+                'Status',
+                'Onboarding Date',
+                'Onboarding By',
+                'Eval ID',
+                'Eval Date',
+                'Decision',
+                'Extension Duration',
+                'New Contract Start',
+                'New Contract End',
+                'Evaluator Notes',
+                'Evaluator',
+                'SK Status',
+                'Notes',
+                'Created At',
+                'Updated At',
             ];
 
             $row = array_fill(0, count($headers), '');
@@ -788,7 +806,6 @@ class EmployeeService
             // Pastikan sheet kandidat_probation memiliki header, lalu append row
             $this->sheets->ensureSheetHeaders($sheetName, $headers);
             $this->sheets->appendRow($sheetName, $row);
-
         } catch (\Throwable $e) {
             // Jika gagal tulis ke sheet probation, rollback status employee
             // dan kembalikan error agar user tahu

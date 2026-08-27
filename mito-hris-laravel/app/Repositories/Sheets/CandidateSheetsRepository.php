@@ -6,6 +6,7 @@ use App\DTOs\CandidateData;
 use App\Repositories\Contracts\CandidateRepositoryInterface;
 use App\Services\Google\GoogleSheetsService;
 use Illuminate\Support\Collection;
+use Log;
 
 class CandidateSheetsRepository implements CandidateRepositoryInterface
 {
@@ -25,14 +26,14 @@ class CandidateSheetsRepository implements CandidateRepositoryInterface
 
         if (!empty($filters['status'])) {
             $status = strtolower(trim($filters['status']));
-            $collection = $collection->filter(function(CandidateData $c) use ($status) {
+            $collection = $collection->filter(function (CandidateData $c) use ($status) {
                 return strtolower(trim($c->status ?? '')) === $status;
             });
         }
 
         if (!empty($filters['search'])) {
             $search = strtolower(trim($filters['search']));
-            $collection = $collection->filter(function(CandidateData $c) use ($search) {
+            $collection = $collection->filter(function (CandidateData $c) use ($search) {
                 return str_contains(strtolower($c->fullName ?? ''), $search)
                     || str_contains(strtolower($c->recruitmentId ?? ''), $search)
                     || str_contains(strtolower($c->email ?? ''), $search)
@@ -43,7 +44,7 @@ class CandidateSheetsRepository implements CandidateRepositoryInterface
 
         if (!empty($filters['city'])) {
             $city = strtolower(trim($filters['city']));
-            $collection = $collection->filter(function(CandidateData $c) use ($city) {
+            $collection = $collection->filter(function (CandidateData $c) use ($city) {
                 return str_contains(strtolower($c->city ?? ''), $city);
             });
         }
@@ -53,7 +54,7 @@ class CandidateSheetsRepository implements CandidateRepositoryInterface
 
     public function findById(string $recruitmentId): ?CandidateData
     {
-        $sheetKeys = ['candidates', 'candidates_hold', 'candidates_blacklist', 'candidates_accepted', 'candidates_probation'];
+        $sheetKeys = ['candidates_accepted', 'candidates_probation', 'candidates_hold', 'candidates_blacklist', 'candidates'];
         foreach ($sheetKeys as $key) {
             $sheetName = config("google.sheets.{$key}");
             if (!$sheetName) continue;
@@ -116,7 +117,16 @@ class CandidateSheetsRepository implements CandidateRepositoryInterface
         }
 
         foreach ($attributes as $key => $val) {
-            $colIdx = array_search($key, $headers);
+            $headerAliases = [
+                'Offering Allow Pulsa' => ['Offering Allow Pulsa', 'Offering Allowance Pulsa', 'Allow Pulsa'],
+            ];
+            $colIdx = false;
+            foreach ($headerAliases[$key] ?? [$key] as $header) {
+                $colIdx = array_search($header, $headers);
+                if ($colIdx !== false) {
+                    break;
+                }
+            }
             if ($colIdx !== false) {
                 $currentRow[$colIdx] = $val;
             }
@@ -145,7 +155,7 @@ class CandidateSheetsRepository implements CandidateRepositoryInterface
      */
     private function locateRow(string $recruitmentId): ?array
     {
-        $sheetKeys = ['candidates', 'candidates_hold', 'candidates_blacklist', 'candidates_accepted', 'candidates_probation'];
+        $sheetKeys = ['candidates_accepted', 'candidates_probation', 'candidates_hold', 'candidates_blacklist', 'candidates'];
         foreach ($sheetKeys as $key) {
             $sheetName = config("google.sheets.{$key}");
             if (!$sheetName) continue;
@@ -324,9 +334,6 @@ class CandidateSheetsRepository implements CandidateRepositoryInterface
             'Offering Employment Status'  => $c->offeringEmploymentStatus ?? '',
             'Offering Contract Duration'  => $c->offeringContractDuration ?? '',
             'Offering Working Hours'      => $c->offeringWorkingHours ?? '',
-            // Note: 'Offering Department' is NOT in GAS ACCEPTED_HEADERS but IS used by saveOfferingStatus_()
-            // Include it here so update() and moveToSheet() can write it correctly
-            'Offering Department'         => $c->offeringDepartment ?? '',
         ];
     }
 
@@ -360,7 +367,7 @@ class CandidateSheetsRepository implements CandidateRepositoryInterface
             }
 
             if ($realSheetId === null) {
-                \Log::error("deleteFromSheet: sheetId not found for '{$sheetName}'");
+                Log::error("deleteFromSheet: sheetId not found for '{$sheetName}'");
                 return false;
             }
 
@@ -381,7 +388,7 @@ class CandidateSheetsRepository implements CandidateRepositoryInterface
             $this->sheets->clearCache($sheetName);
             return true;
         } catch (\Throwable $e) {
-            \Log::error("Failed to delete row {$rowNumber} from {$sheetName}: " . $e->getMessage());
+            Log::error("Failed to delete row {$rowNumber} from {$sheetName}: " . $e->getMessage());
             return false;
         }
     }

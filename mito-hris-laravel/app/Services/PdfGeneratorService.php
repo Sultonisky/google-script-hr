@@ -60,10 +60,21 @@ class PdfGeneratorService
      */
     private function getBranchName(EmployeeData|CandidateData|null $subject, array $extraData = []): string
     {
-        return $extraData['branch_name']
-            ?? $extraData['company_entity']
-            ?? ($subject instanceof EmployeeData ? ($subject->branchName ?? '') : '')
-            ?? '';
+        $branchName = trim((string) ($extraData['branch_name'] ?? ''));
+        if ($branchName !== '') {
+            return $branchName;
+        }
+
+        $companyEntity = trim((string) ($extraData['company_entity'] ?? ''));
+        if ($companyEntity !== '') {
+            return $companyEntity;
+        }
+
+        if ($subject instanceof EmployeeData) {
+            return trim((string) ($subject->branchName ?? ''));
+        }
+
+        return trim((string) ($subject?->offeringCompanyEntity ?? ''));
     }
 
     /**
@@ -81,7 +92,7 @@ class PdfGeneratorService
      */
     public function generateOfferingLetterPdf(CandidateData $candidate, array $extraData = []): \Barryvdh\DomPDF\PDF
     {
-        $branchName = $extraData['branch_name'] ?? $extraData['company_entity'] ?? '';
+        $branchName = $this->getBranchName($candidate, $extraData);
         $company = $this->resolveCompany($branchName);
 
         // Resolve salary values — support both formats from form (formatted "4.000.000" or raw "4000000")
@@ -98,7 +109,7 @@ class PdfGeneratorService
             'total_bruto'     => $totalBruto,
         ]);
 
-        return Pdf::loadView('pdf.offering-letter', compact('candidate', 'extraData', 'company'))
+        return Pdf::loadView('pdf.offering-letter', compact('candidate', 'extraData', 'company', 'branchName'))
             ->setPaper('a4', 'portrait');
     }
 

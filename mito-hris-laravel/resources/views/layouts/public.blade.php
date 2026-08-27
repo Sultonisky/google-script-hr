@@ -152,7 +152,7 @@
             background: #fafafa;
         }
 
-        .form-section-header i {
+        .form-section-header > i {
             width: 38px;
             height: 38px;
             border-radius: 10px;
@@ -180,26 +180,25 @@
 
         .section-status {
             margin-left: auto;
-            font-size: 12px;
-            font-weight: 500;
-            color: var(--color-text-soft);
-            background: #f3f4f6;
-            padding: 4px 10px;
-            border-radius: 100px;
-            display: flex;
+            flex-shrink: 0;
+            width: 32px;
+            height: 32px;
+            font-size: 16px;
+            border-radius: 50%;
+            display: inline-flex;
             align-items: center;
-            gap: 4px;
+            transition: all 0.15s ease;
+            white-space: nowrap;
         }
 
-        .section-status.complete {
-            background: rgba(22, 163, 74, 0.1);
-            color: #166534;
-            font-weight: 600;
+        .section-status.done {
+            background: #dcfce7;
+            color: #15803d;
         }
 
-        .section-status:not(.complete) {
-            color: var(--color-primary);
-            background: rgba(235, 28, 36, 0.08);
+        .section-status:not(.done) {
+            background: #fff7ed;
+            color: #c2410c;
         }
 
         .btn-submit {
@@ -243,13 +242,13 @@
 
         .footer-tagline {
             font-size: 12.5px;
-            color: rgba(255, 255, 255, 0.65);
+            color: #fff;
             margin-bottom: 10px;
         }
 
         .footer-help {
             font-size: 11.5px;
-            color: rgba(255, 255, 255, 0.45);
+            color: #fff;
         }
     </style>
 </head>

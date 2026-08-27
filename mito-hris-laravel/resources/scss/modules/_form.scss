@@ -141,12 +141,12 @@
 }
 .form-section-header .section-status {
   margin-left: auto;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 5px 12px;
-  border-radius: 100px;
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
+  width: 32px;
+  height: 32px;
+  font-size: 16px;
+  border-radius: 50%;
+  background: #fff7ed;
+  color: #c2410c;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -154,7 +154,8 @@
   flex-shrink: 0;
 }
 .form-section-header .section-status.done {
-  background: rgba(22, 101, 52, 0.95);
+  background: #dcfce7;
+  color: #15803d;
 }
 .form-section-body {
   padding: 28px;

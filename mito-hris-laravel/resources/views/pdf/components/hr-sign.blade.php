@@ -1,3 +1,10 @@
+<style>
+.hr-sign-img {
+  height: 60px;
+  display: block;
+  margin: 6px 0 8px;
+}
+</style>
 @php
   // Resolve HR signature image as base64 for DomPDF (cannot use URL, must use filesystem path)
   if (!isset($hrSignSrc)) {
@@ -8,7 +15,7 @@
   }
 @endphp
 @if($hrSignSrc)
-  <img src="{{ $hrSignSrc }}" style="height:45px; display:block; margin:4px 0 2px;" alt="">
+  <img src="{{ $hrSignSrc }}" class="hr-sign-img" alt="">
 @else
-  <div style="height:45px; margin:4px 0 2px;"></div>
+  <div class="hr-sign-img" style="background:#f0f0f0; min-height:60px;"></div>
 @endif
