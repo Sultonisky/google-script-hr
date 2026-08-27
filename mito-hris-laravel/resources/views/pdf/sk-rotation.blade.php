@@ -114,7 +114,7 @@
 
     /* ── TANDA TANGAN ── */
     .sign-wrapper {
-      margin-top: 22px;
+      margin-top: 20px;
     }
     .sign-table {
       width: 100%;
@@ -125,7 +125,16 @@
       vertical-align: top;
       padding: 0 4px;
     }
-    .sign-space { height: 50px; }
+    .sign-image-area {
+      height: 58px;
+      margin: 2px 0 2px;
+    }
+    .sign-image-area .hr-sign-img {
+      height: 48px !important;
+      width: auto;
+      max-width: 125px;
+      margin: 0 0 4px;
+    }
 
     /* ── FOOTER PAGE NUMBER ── */
     .page-footer {
@@ -464,7 +473,9 @@
           Ditetapkan di : {{ $companyCity }}<br>
           Tanggal &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: {{ $issueDateFmt }}<br><br>
           {{ $companyLegal }}<br><br>
-          @include('pdf.components.hr-sign')
+          <div class="sign-image-area">
+            @include('pdf.components.hr-sign')
+          </div>
           <strong><u>{{ $signatoryName }}</u></strong><br>
           {{ $signatoryPosition }}
         </td>
