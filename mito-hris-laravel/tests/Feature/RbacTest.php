@@ -64,8 +64,8 @@ class RbacTest extends TestCase
         Session::put('hr_user', [
             'email'        => $email,
             'fullName'     => $name,
-            'role'         => 'Manager',
-            'permissions'  => config('hris.auth.role_permissions.Manager', ['view_mpr', 'create_mpr', 'export_mpr']),
+            'role'         => 'Manpower',
+            'permissions'  => config('hris.auth.role_permissions.Manpower', ['view_mpr', 'create_mpr', 'export_mpr']),
             'auth_domain'  => 'mpr_requestor', // MPR domain — NOT internal HRIS
             'entities'     => $entities,
             'branch'       => $branch,
@@ -79,7 +79,7 @@ class RbacTest extends TestCase
     {
         $matrix = config('hris.auth.role_permissions', []);
         $flat   = array_unique(array_merge(...array_values($matrix)));
-        return array_values(array_filter($flat, fn ($p) => $p !== '*'));
+        return array_values(array_filter($flat, fn($p) => $p !== '*'));
     }
 
     // =========================================================================
@@ -89,20 +89,20 @@ class RbacTest extends TestCase
     /** @test */
     public function gate_user_resolver_reads_session_hr_user(): void
     {
-        $this->actingAsRole('HR Staff');
+        $this->actingAsRole('User');
         // Dump what Auth::user() and gate resolves to
         $sessionUser = session('hr_user');
         $this->assertNotNull($sessionUser, 'session(hr_user) should not be null after actingAsRole');
-        $this->assertSame('HR Staff', $sessionUser['role']);
+        $this->assertSame('User', $sessionUser['role']);
 
         // Auth::resolveUsersUsing() should have wired this
         $authUser = app('auth')->userResolver()();
         $this->assertIsArray($authUser, 'Auth resolver should return session array');
-        $this->assertSame('HR Staff', $authUser['role'] ?? 'NULL');
+        $this->assertSame('User', $authUser['role'] ?? 'NULL');
 
         // Gate should now resolve to the same user
         $this->assertTrue(Gate::allows('view_recruitment'), 'Gate should resolve session user, not Auth::user()');
-        $this->assertFalse(Gate::allows('manage_settings'), 'HR Staff should not have manage_settings');
+        $this->assertFalse(Gate::allows('manage_settings'), 'User should not have manage_settings');
     }
 
     // =========================================================================
@@ -208,151 +208,215 @@ class RbacTest extends TestCase
     }
 
     // =========================================================================
-    // 4. HR Manager — only configured permissions
+    // 4. Admin — only configured permissions
     // =========================================================================
 
     /** @test */
     public function hr_manager_gate_permissions_match_config(): void
     {
-        $this->actingAsRole('HR Manager');
+        $this->actingAsRole('Admin');
 
-        // HR Manager has manage + view for employees and recruitment (manage implies view)
-        $allowed = ['manage_recruitment', 'manage_employees', 'manage_probation', 'manage_settings', 'view_reports',
-                    'view_employees', 'view_recruitment'];
-        $denied  = ['update_candidates', 'create_offering', 'manage_hold_blacklist'];
+        // Admin has manage + view for employees and recruitment (manage implies view)
+        $allowed = [
+            'manage_recruitment',
+            'manage_employees',
+            'manage_probation',
+            'view_employees',
+            'view_recruitment',
+            'update_candidates',
+            'create_offering',
+            'manage_hold_blacklist'
+        ];
+        $denied  = ['view_reports', 'manage_settings'];
 
         foreach ($allowed as $p) {
-            $this->assertTrue(Gate::allows($p), "HR Manager should have: {$p}");
+            $this->assertTrue(Gate::allows($p), "Admin should have: {$p}");
         }
         foreach ($denied as $p) {
-            $this->assertFalse(Gate::allows($p), "HR Manager should NOT have: {$p}");
+            $this->assertFalse(Gate::allows($p), "Admin should NOT have: {$p}");
         }
     }
 
     /** @test */
     public function hr_manager_cannot_access_recruitment_index(): void
     {
-        // HR Manager now has view_recruitment, so this should PASS (200), not 403
-        $this->actingAsRole('HR Manager');
+        // Admin now has view_recruitment, so this should PASS (200), not 403
+        $this->actingAsRole('Admin');
         $this->get('/hr/recruitment')->assertOk();
     }
 
     /** @test */
     public function hr_manager_can_access_employees(): void
     {
-        $this->actingAsRole('HR Manager');
+        $this->actingAsRole('Admin');
         $this->get('/hr/employees')->assertOk();
     }
 
     /** @test */
-    public function hr_manager_can_access_settings(): void
+    public function admin_cannot_access_system_settings(): void
     {
-        $this->actingAsRole('HR Manager');
-        $this->get('/hr/settings')->assertOk();
+        $this->actingAsRole('Admin');
+        $this->get('/hr/settings')->assertStatus(403);
+        $this->get('/hr/users')->assertStatus(403);
+        $this->get('/hr/audit-logs')->assertStatus(403);
+    }
+
+    /** @test */
+    public function admin_sidebar_hides_system_navigation(): void
+    {
+        $this->actingAsRole('Admin');
+
+        $this->get('/hr/dashboard')
+            ->assertOk()
+            ->assertDontSee('User Management')
+            ->assertDontSee('Audit Log')
+            ->assertDontSee('Settings');
     }
 
     // =========================================================================
-    // 5. HR Recruitment — only configured permissions
+    // 5. Super User — only configured permissions
     // =========================================================================
 
     /** @test */
     public function hr_recruitment_gate_permissions_match_config(): void
     {
-        $this->actingAsRole('HR Recruitment');
+        $this->actingAsRole('Super User');
 
         $allowed = ['view_recruitment', 'update_candidates', 'create_offering', 'manage_hold_blacklist'];
         $denied  = ['view_employees', 'manage_employees', 'manage_probation', 'view_reports', 'manage_settings'];
 
         foreach ($allowed as $p) {
-            $this->assertTrue(Gate::allows($p), "HR Recruitment should have: {$p}");
+            $this->assertTrue(Gate::allows($p), "Super User should have: {$p}");
         }
         foreach ($denied as $p) {
-            $this->assertFalse(Gate::allows($p), "HR Recruitment should NOT have: {$p}");
+            $this->assertFalse(Gate::allows($p), "Super User should NOT have: {$p}");
         }
     }
 
     /** @test */
     public function hr_recruitment_can_access_recruitment(): void
     {
-        $this->actingAsRole('HR Recruitment');
+        $this->actingAsRole('Super User');
         $this->get('/hr/recruitment')->assertOk();
     }
 
     /** @test */
     public function hr_recruitment_cannot_access_employees(): void
     {
-        $this->actingAsRole('HR Recruitment');
+        $this->actingAsRole('Super User');
         $this->get('/hr/employees')->assertStatus(403);
     }
 
     /** @test */
     public function hr_recruitment_cannot_access_settings(): void
     {
-        $this->actingAsRole('HR Recruitment');
+        $this->actingAsRole('Super User');
         $this->get('/hr/settings')->assertStatus(403);
     }
 
     // =========================================================================
-    // 6. HR Staff — only configured permissions
+    // 6. User — only configured permissions
     // =========================================================================
 
     /** @test */
     public function hr_staff_gate_permissions_match_config(): void
     {
-        $this->actingAsRole('HR Staff');
+        $this->actingAsRole('User');
 
-        $allowed = ['view_recruitment', 'view_employees', 'view_reports'];
-        $denied  = ['update_candidates', 'create_offering', 'manage_hold_blacklist',
-                    'manage_employees', 'manage_probation', 'manage_settings'];
+        $allowed = ['view_recruitment', 'update_candidates'];
+        $denied  = [
+            'create_offering',
+            'manage_hold_blacklist',
+            'manage_employees',
+            'manage_probation',
+            'manage_settings',
+            'view_employees',
+            'view_reports',
+            'view_mpr',
+            'export_mpr'
+        ];
 
         foreach ($allowed as $p) {
-            $this->assertTrue(Gate::allows($p), "HR Staff should have: {$p}");
+            $this->assertTrue(Gate::allows($p), "User should have: {$p}");
         }
         foreach ($denied as $p) {
-            $this->assertFalse(Gate::allows($p), "HR Staff should NOT have: {$p}");
+            $this->assertFalse(Gate::allows($p), "User should NOT have: {$p}");
         }
     }
 
     /** @test */
     public function hr_staff_can_access_recruitment(): void
     {
-        $this->actingAsRole('HR Staff');
+        $this->actingAsRole('User');
         $this->get('/hr/recruitment')->assertOk();
     }
 
     /** @test */
-    public function hr_staff_can_access_employees(): void
+    public function hr_staff_cannot_access_employees(): void
     {
-        $this->actingAsRole('HR Staff');
-        $this->get('/hr/employees')->assertOk();
+        $this->actingAsRole('User');
+        $this->get('/hr/employees')->assertStatus(403);
     }
 
     /** @test */
     public function hr_staff_cannot_access_settings(): void
     {
-        $this->actingAsRole('HR Staff');
+        $this->actingAsRole('User');
         $this->get('/hr/settings')->assertStatus(403);
     }
 
     /** @test */
     public function hr_staff_cannot_access_users(): void
     {
-        $this->actingAsRole('HR Staff');
+        $this->actingAsRole('User');
         $this->get('/hr/users')->assertStatus(403);
     }
 
     /** @test */
     public function hr_staff_cannot_access_probation(): void
     {
-        $this->actingAsRole('HR Staff');
+        $this->actingAsRole('User');
         $this->get('/hr/probation')->assertStatus(403);
     }
 
     /** @test */
     public function hr_staff_cannot_access_master_data(): void
     {
-        $this->actingAsRole('HR Staff');
+        $this->actingAsRole('User');
         $this->get('/hr/master-data')->assertStatus(403);
+    }
+
+    /** @test */
+    public function hr_staff_cannot_access_outsource_mpr_or_employee_actions(): void
+    {
+        $this->actingAsRole('User');
+
+        $this->get('/hr/outsource')->assertStatus(403);
+        $this->get('/hr/mpr')->assertStatus(403);
+        $this->post('/hr/employees/EMP001/rotate')->assertStatus(403);
+        $this->post('/hr/employees/EMP001/offboard')->assertStatus(403);
+        $this->post('/hr/recruitment/REC-001/accept')->assertStatus(403);
+        $this->post('/hr/recruitment/REC-001/save-notes')->assertStatus(403);
+        $this->post('/hr/recruitment/REC-001/save-contract')->assertStatus(403);
+        $this->post('/hr/recruitment/REC-001/save-offering-response')->assertStatus(403);
+    }
+
+    /** @test */
+    public function hr_staff_sidebar_only_shows_recruitment_navigation(): void
+    {
+        $this->actingAsRole('User');
+
+        $this->get('/hr/dashboard')
+            ->assertOk()
+            ->assertSee('Recruitment')
+            ->assertDontSee('href="' . route('hr.employees.index') . '"')
+            ->assertDontSee('href="' . route('hr.outsource.index') . '"')
+            ->assertDontSee('href="' . route('hr.mpr.index') . '"')
+            ->assertDontSee('href="' . route('hr.settings.index') . '"')
+            ->assertDontSee('href="' . route('hr.users.index') . '"')
+            ->assertDontSee('id="btnAccept"')
+            ->assertDontSee('id="btnHold"')
+            ->assertDontSee('id="btnBlacklist"');
     }
 
     // =========================================================================
@@ -390,6 +454,34 @@ class RbacTest extends TestCase
         $this->assertTrue(Gate::allows('manage_settings'));
     }
 
+    /** @test */
+    public function role_resolution_is_case_and_whitespace_tolerant_but_unknown_roles_fail_closed(): void
+    {
+        $this->actingAsRole(' Super Admin ');
+        $this->assertTrue(Gate::allows('manage_settings'));
+
+        $this->actingAsRole('hr recruitment');
+        $this->assertTrue(Gate::allows('view_recruitment'));
+        $this->assertFalse(Gate::allows('manage_settings'));
+
+        foreach ([null, '', 'Unknown Role'] as $role) {
+            Session::put('hr_user', ['role' => $role, 'permissions' => []]);
+            $this->assertFalse(Gate::allows('view_recruitment'));
+            $this->get('/hr/settings')->assertStatus(403);
+        }
+    }
+
+    /** @test */
+    public function view_only_user_cannot_mutate_employee_or_recruitment_endpoints(): void
+    {
+        $this->actingAsRole('User');
+
+        $this->get('/hr/employees')->assertStatus(403);
+        $this->post('/hr/employees/import')->assertStatus(403);
+        $this->post('/hr/recruitment/REC-001/hold')->assertStatus(403);
+        $this->post('/hr/recruitment/REC-001/save-offering')->assertStatus(403);
+    }
+
     // =========================================================================
     // 9. MPR Requestor domain — Manager from mpr_requestor sheet
     //    These tests verify auth domain separation from internal HRIS Users.
@@ -409,8 +501,11 @@ class RbacTest extends TestCase
         // MprRequestorMiddleware should redirect Manager to MPR, not show 403 raw
         $response = $this->get('/hr/dashboard');
         // Either redirect to MPR or 403 — must NOT be 200
-        $this->assertNotSame(200, $response->getStatusCode(),
-            'MPR Requestor must not access HR Dashboard');
+        $this->assertNotSame(
+            200,
+            $response->getStatusCode(),
+            'MPR Requestor must not access HR Dashboard'
+        );
     }
 
     /** @test */
@@ -418,8 +513,11 @@ class RbacTest extends TestCase
     {
         $this->actingAsMprRequestor();
         $response = $this->get('/hr/recruitment');
-        $this->assertNotSame(200, $response->getStatusCode(),
-            'MPR Requestor must not access Recruitment');
+        $this->assertNotSame(
+            200,
+            $response->getStatusCode(),
+            'MPR Requestor must not access Recruitment'
+        );
     }
 
     /** @test */
@@ -427,8 +525,11 @@ class RbacTest extends TestCase
     {
         $this->actingAsMprRequestor();
         $response = $this->get('/hr/employees');
-        $this->assertNotSame(200, $response->getStatusCode(),
-            'MPR Requestor must not access Employees');
+        $this->assertNotSame(
+            200,
+            $response->getStatusCode(),
+            'MPR Requestor must not access Employees'
+        );
     }
 
     /** @test */
@@ -436,8 +537,11 @@ class RbacTest extends TestCase
     {
         $this->actingAsMprRequestor();
         $response = $this->get('/hr/settings');
-        $this->assertNotSame(200, $response->getStatusCode(),
-            'MPR Requestor must not access Settings');
+        $this->assertNotSame(
+            200,
+            $response->getStatusCode(),
+            'MPR Requestor must not access Settings'
+        );
     }
 
     /** @test */
@@ -445,8 +549,11 @@ class RbacTest extends TestCase
     {
         $this->actingAsMprRequestor();
         $response = $this->get('/hr/users');
-        $this->assertNotSame(200, $response->getStatusCode(),
-            'MPR Requestor must not access User Management');
+        $this->assertNotSame(
+            200,
+            $response->getStatusCode(),
+            'MPR Requestor must not access User Management'
+        );
     }
 
     /** @test */
@@ -454,8 +561,11 @@ class RbacTest extends TestCase
     {
         $this->actingAsMprRequestor();
         $response = $this->get('/hr/probation');
-        $this->assertNotSame(200, $response->getStatusCode(),
-            'MPR Requestor must not access Probation');
+        $this->assertNotSame(
+            200,
+            $response->getStatusCode(),
+            'MPR Requestor must not access Probation'
+        );
     }
 
     /** @test */
@@ -463,8 +573,11 @@ class RbacTest extends TestCase
     {
         $this->actingAsMprRequestor();
         $response = $this->get('/hr/audit-logs');
-        $this->assertNotSame(200, $response->getStatusCode(),
-            'MPR Requestor must not access Audit Logs');
+        $this->assertNotSame(
+            200,
+            $response->getStatusCode(),
+            'MPR Requestor must not access Audit Logs'
+        );
     }
 
     /** @test */
@@ -472,13 +585,13 @@ class RbacTest extends TestCase
     {
         $this->actingAsMprRequestor();
 
-        $this->assertTrue(Gate::allows('view_mpr'),    'Manager should have view_mpr');
-        $this->assertTrue(Gate::allows('create_mpr'),  'Manager should have create_mpr');
-        $this->assertTrue(Gate::allows('export_mpr'),  'Manager should have export_mpr');
+        $this->assertTrue(Gate::allows('view_mpr'),    'Manpower should have view_mpr');
+        $this->assertTrue(Gate::allows('create_mpr'),  'Manpower should have create_mpr');
+        $this->assertTrue(Gate::allows('export_mpr'),  'Manpower should have export_mpr');
 
-        $this->assertFalse(Gate::allows('view_recruitment'), 'Manager must not have view_recruitment');
-        $this->assertFalse(Gate::allows('view_employees'),   'Manager must not have view_employees');
-        $this->assertFalse(Gate::allows('manage_settings'),  'Manager must not have manage_settings');
+        $this->assertFalse(Gate::allows('view_recruitment'), 'Manpower must not have view_recruitment');
+        $this->assertFalse(Gate::allows('view_employees'),   'Manpower must not have view_employees');
+        $this->assertFalse(Gate::allows('manage_settings'),  'Manpower must not have manage_settings');
     }
 
     // =========================================================================
@@ -497,8 +610,8 @@ class RbacTest extends TestCase
         Session::put('hr_user', [
             'email'       => 'bad.manager@mito.id',
             'fullName'    => 'Bad Manager',
-            'role'        => 'Manager',
-            'permissions' => config('hris.auth.role_permissions.Manager', []),
+            'role'        => 'Manpower',
+            'permissions' => config('hris.auth.role_permissions.Manpower', []),
             'auth_domain' => 'users', // Wrong domain for Manager
             'entities'    => [],
             'branch'      => '',
