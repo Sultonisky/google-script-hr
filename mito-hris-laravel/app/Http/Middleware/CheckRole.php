@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use App\Support\Rbac;
 
 class CheckRole
 {
@@ -19,9 +20,10 @@ class CheckRole
             return redirect()->route('login')->with('error', 'Silakan login terlebih dahulu.');
         }
 
-        $userRole = $user['role'] ?? 'Viewer';
+        $userRole = Rbac::normalizeRole($user['role'] ?? null);
 
-        if (!in_array($userRole, $roles)) {
+        $allowedRoles = array_map(fn ($role) => Rbac::normalizeRole($role), $roles);
+        if (!in_array($userRole, $allowedRoles, true)) {
             if ($request->expectsJson()) {
                 return response()->json(['success' => false, 'error' => 'Anda tidak memiliki akses ke halaman ini.'], 403);
             }

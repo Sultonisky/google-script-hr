@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Repositories\Contracts\UserRepositoryInterface;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
+use App\Support\Rbac;
 
 
 class AuthService
@@ -26,7 +26,7 @@ class AuthService
 
         // Manager accounts are NOT stored in the Users sheet.
         // They live in mpr_requestor. Reject early to prevent domain confusion.
-        $role = trim($user['Role'] ?? '');
+        $role = Rbac::normalizeRole($user['Role'] ?? null);
         if (strtolower($role) === 'manager') {
             return [
                 'success' => false,
@@ -81,8 +81,8 @@ class AuthService
             'user' => [
                 'email'       => $user['Email'],
                 'fullName'    => $user['Full Name'] ?? $user['Email'],
-                'role'        => $user['Role'] ?? 'Viewer',
-                'permissions' => $this->getPermissionsForRole($user['Role'] ?? 'Viewer'),
+                'role'        => $role,
+                'permissions' => $this->getPermissionsForRole($role),
                 // Internal HRIS users do NOT use entity/branch for auth
                 'entities'    => [],
                 'branch'      => '',
@@ -94,16 +94,12 @@ class AuthService
 
     public function getPermissionsForRole(string $role): array
     {
-        $permissions = config('hris.auth.role_permissions', []);
-
-        return $permissions[$role] ?? [];
+        return Rbac::permissionsForRole($role);
     }
 
     public function hasPermission(string $role, string $permission): bool
     {
-        $permissions = $this->getPermissionsForRole($role);
-
-        return in_array($permission, $permissions, true);
+        return Rbac::allows($role, $permission);
     }
 
     public function isValidRole(string $role): bool
@@ -111,7 +107,7 @@ class AuthService
         // Internal HRIS roles only — Manager is NOT a valid internal role
         $validRoles = config('hris.auth.valid_roles_internal', []);
 
-        return in_array($role, $validRoles, true);
+        return in_array(Rbac::normalizeRole($role), $validRoles, true);
     }
 
     public function hashPassword(string $password): string

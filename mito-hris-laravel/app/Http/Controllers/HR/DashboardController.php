@@ -23,7 +23,7 @@ class DashboardController extends Controller
     public function index(): View|\Illuminate\Http\RedirectResponse
     {
         $user = session('hr_user');
-        if (($user['role'] ?? '') === 'Manager') {
+        if (($user['role'] ?? '') === 'Manpower') {
             return redirect()->route('hr.mpr.index');
         }
 

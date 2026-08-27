@@ -27,7 +27,7 @@ class LoginController extends Controller
     {
         if (session()->has('hr_user')) {
             $user = session('hr_user');
-            if (($user['role'] ?? '') === 'Manager') {
+            if (($user['role'] ?? '') === 'Manpower') {
                 return redirect()->route('hr.mpr.index');
             }
             return redirect()->route('hr.dashboard');
@@ -144,7 +144,7 @@ class LoginController extends Controller
             $request->session()->put('hris_remember', true);
         }
 
-        $redirect = ($user['role'] ?? '') === 'Manager'
+        $redirect = ($user['role'] ?? '') === 'Manpower'
             ? route('hr.mpr.index')
             : route('hr.dashboard');
 

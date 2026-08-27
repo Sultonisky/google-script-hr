@@ -30,18 +30,18 @@ class MprFlowTest extends TestCase
         string $branch = 'Head Office (HO)'
     ): array {
         $permissions = config('hris.auth.role_permissions')[$role] ?? [];
-        $isManager   = ($role === 'Manager');
+        $isManpower = ($role === 'Manpower');
 
         return [
             'email'        => $email ?? (strtolower(str_replace(' ', '.', $role)) . '@mito.id'),
             'fullName'     => $name  ?? ($role . ' User'),
             'role'         => $role,
             'permissions'  => $permissions,
-            // Manager sessions come from mpr_requestor; all others from Users
-            'auth_domain'  => $isManager ? 'mpr_requestor' : 'users',
-            'entities'     => $isManager ? $entities : [],
-            'branch'       => $isManager ? $branch   : '',
-            'requestor_id' => $isManager ? 'MPR-REQ-TEST' : '',
+            // Manpower sessions come from mpr_requestor; all others from Users
+            'auth_domain'  => $isManpower ? 'mpr_requestor' : 'users',
+            'entities'     => $isManpower ? $entities : [],
+            'branch'       => $isManpower ? $branch : '',
+            'requestor_id' => $isManpower ? 'MPR-REQ-TEST' : '',
         ];
     }
 
@@ -62,23 +62,23 @@ class MprFlowTest extends TestCase
     private function makeMprData(array $overrides = []): MprData
     {
         return new MprData(
-            mprNumber:       $overrides['mprNumber']       ?? 'MPR-20260824-0001',
-            requestDate:     $overrides['requestDate']     ?? '2026-08-24',
-            requestorName:   $overrides['requestorName']   ?? 'Manager User',
-            requestorEmail:  $overrides['requestorEmail']  ?? 'manager@mito.id',
-            entity:          $overrides['entity']          ?? 'MSI',
-            branch:          $overrides['branch']          ?? 'Head Office (HO)',
-            department:      $overrides['department']      ?? 'IT',
-            division:        $overrides['division']        ?? 'IT',
-            position:        $overrides['position']        ?? 'Backend Developer',
-            jobLevel:        $overrides['jobLevel']        ?? 'Staff',
-            workLocation:    $overrides['workLocation']    ?? 'Head Office (HO)',
-            employmentType:  $overrides['employmentType']  ?? 'Permanent (PKWTT)',
-            quantity:        $overrides['quantity']        ?? 2,
+            mprNumber: $overrides['mprNumber']       ?? 'MPR-20260824-0001',
+            requestDate: $overrides['requestDate']     ?? '2026-08-24',
+            requestorName: $overrides['requestorName']   ?? 'Manpower User',
+            requestorEmail: $overrides['requestorEmail']  ?? 'manager@mito.id',
+            entity: $overrides['entity']          ?? 'MSI',
+            branch: $overrides['branch']          ?? 'Head Office (HO)',
+            department: $overrides['department']      ?? 'IT',
+            division: $overrides['division']        ?? 'IT',
+            position: $overrides['position']        ?? 'Backend Developer',
+            jobLevel: $overrides['jobLevel']        ?? 'Staff',
+            workLocation: $overrides['workLocation']    ?? 'Head Office (HO)',
+            employmentType: $overrides['employmentType']  ?? 'Permanent (PKWTT)',
+            quantity: $overrides['quantity']        ?? 2,
             expectedJoinDate: $overrides['expectedJoinDate'] ?? '2026-09-01',
-            reason:          $overrides['reason']          ?? 'Penambahan Karyawan Baru',
-            status:          $overrides['status']          ?? 'Submitted',
-            createdBy:       $overrides['createdBy']       ?? 'manager@mito.id',
+            reason: $overrides['reason']          ?? 'Penambahan Karyawan Baru',
+            status: $overrides['status']          ?? 'Submitted',
+            createdBy: $overrides['createdBy']       ?? 'manpower@mito.id',
         );
     }
 
@@ -95,24 +95,24 @@ class MprFlowTest extends TestCase
     }
 
     /** @test */
-    public function manager_role_has_correct_permissions_and_restrictions(): void
+    public function manpower_role_has_correct_permissions_and_restrictions(): void
     {
-        $this->actingAsRole('Manager');
+        $this->actingAsRole('Manpower');
 
-        $this->assertTrue(Gate::allows('view_mpr'), 'Manager should have view_mpr');
-        $this->assertTrue(Gate::allows('create_mpr'), 'Manager should have create_mpr');
-        $this->assertTrue(Gate::allows('export_mpr'), 'Manager should have export_mpr');
+        $this->assertTrue(Gate::allows('view_mpr'), 'Manpower should have view_mpr');
+        $this->assertTrue(Gate::allows('create_mpr'), 'Manpower should have create_mpr');
+        $this->assertTrue(Gate::allows('export_mpr'), 'Manpower should have export_mpr');
 
-        $this->assertFalse(Gate::allows('view_recruitment'), 'Manager should not have view_recruitment');
-        $this->assertFalse(Gate::allows('view_employees'), 'Manager should not have view_employees');
-        $this->assertFalse(Gate::allows('manage_settings'), 'Manager should not have manage_settings');
-        $this->assertFalse(Gate::allows('manage_probation'), 'Manager should not have manage_probation');
+        $this->assertFalse(Gate::allows('view_recruitment'), 'Manpower should not have view_recruitment');
+        $this->assertFalse(Gate::allows('view_employees'), 'Manpower should not have view_employees');
+        $this->assertFalse(Gate::allows('manage_settings'), 'Manpower should not have manage_settings');
+        $this->assertFalse(Gate::allows('manage_probation'), 'Manpower should not have manage_probation');
     }
 
     /** @test */
-    public function manager_is_redirected_from_dashboard_and_forbidden_from_hr_modules(): void
+    public function manpower_is_redirected_from_dashboard_and_forbidden_from_hr_modules(): void
     {
-        $this->actingAsRole('Manager');
+        $this->actingAsRole('Manpower');
 
         // Manager accessing HR Dashboard -> automatically redirected to their allowed MPR page
         $this->get('/hr/dashboard')->assertRedirect(route('hr.mpr.index'));
@@ -140,25 +140,25 @@ class MprFlowTest extends TestCase
     }
 
     /** @test */
-    public function manager_can_view_mpr_index_and_sees_own_records(): void
+    public function manpower_can_view_mpr_index_and_sees_own_records(): void
     {
-        $managerEmail = 'manager1@mito.id';
-        $this->actingAsRole('Manager', $managerEmail, 'Budi Manager', ['MSI', 'SPI'], 'Bandung');
+        $manpowerEmail = 'manager1@mito.id';
+        $this->actingAsRole('Manpower', $manpowerEmail, 'Budi Manpower', ['MSI', 'SPI'], 'Bandung');
 
         $mockMpr = $this->makeMprData([
             'mprNumber'     => 'MPR-20260824-0001',
-            'requestorName' => 'Budi Manager',
-            'requestorEmail' => $managerEmail,
+            'requestorName' => 'Budi Manpower',
+            'requestorEmail' => $manpowerEmail,
             'entity'        => 'MSI',
             'branch'        => 'Bandung',
             'position'      => 'Backend Developer',
-            'createdBy'     => $managerEmail,
+            'createdBy'     => $manpowerEmail,
         ]);
 
         $mockRepo = Mockery::mock(MprRepositoryInterface::class);
         $mockRepo->shouldReceive('getAllForManager')
             ->once()
-            ->with($managerEmail, Mockery::any())
+            ->with($manpowerEmail, Mockery::any())
             ->andReturn(collect([$mockMpr]));
 
         $this->app->instance(MprRepositoryInterface::class, $mockRepo);
@@ -167,29 +167,29 @@ class MprFlowTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('MPR-20260824-0001');
         $response->assertSee('Backend Developer');
-        $response->assertSee('Role: Manager');
+        $response->assertSee('Role: Manpower');
     }
 
     /** @test */
-    public function manager_can_submit_mpr_and_identity_is_resolved_server_side(): void
+    public function manpower_can_submit_mpr_and_identity_is_resolved_server_side(): void
     {
-        $managerEmail   = 'manager.it@mito.id';
-        $managerName    = 'Sari Manager IT';
-        $managerBranch  = 'Bandung';
+        $manpowerEmail   = 'manager.it@mito.id';
+        $manpowerName    = 'Sari Manpower IT';
+        $manpowerBranch  = 'Bandung';
         $allowedEntities = ['MSI', 'SPI', 'MEP'];
 
-        $this->actingAsRole('Manager', $managerEmail, $managerName, $allowedEntities, $managerBranch);
+        $this->actingAsRole('Manpower', $manpowerEmail, $manpowerName, $allowedEntities, $manpowerBranch);
 
         $mockRepo = Mockery::mock(MprRepositoryInterface::class);
         $mockRepo->shouldReceive('create')
             ->once()
-            ->withArgs(function (MprData $data) use ($managerEmail, $managerName, $managerBranch) {
+            ->withArgs(function (MprData $data) use ($manpowerEmail, $manpowerName, $manpowerBranch) {
                 // Identity MUST come from session, not from payload
-                return $data->requestorEmail === $managerEmail
-                    && $data->requestorName  === $managerName
-                    && $data->branch         === $managerBranch
+                return $data->requestorEmail === $manpowerEmail
+                    && $data->requestorName  === $manpowerName
+                    && $data->branch         === $manpowerBranch
                     && $data->entity         === 'SPI'      // entity yang dipilih dari form
-                    && $data->createdBy      === $managerEmail
+                    && $data->createdBy      === $manpowerEmail
                     && $data->position       === 'Senior Laravel Engineer'
                     && $data->quantity       === 3;
             })
@@ -214,7 +214,7 @@ class MprFlowTest extends TestCase
             'requirements'       => 'Pendidikan S1, Pengalaman 3 tahun',
             'job_description'    => 'Membangun backend microservice',
             'entity'             => 'SPI', // valid: ada di $allowedEntities
-            // These forged fields should be ignored for Manager role
+            // These forged fields should be ignored for Manpower role
             'manager_name'       => 'Forged Name',
             'manager_email'      => 'forged@other.com',
         ];
@@ -229,12 +229,12 @@ class MprFlowTest extends TestCase
     }
 
     /** @test */
-    public function manager_cannot_submit_mpr_with_entity_not_in_assignment(): void
+    public function manpower_cannot_submit_mpr_with_entity_not_in_assignment(): void
     {
-        $managerEmail    = 'manager.it@mito.id';
+        $manpowerEmail   = 'manager.it@mito.id';
         $allowedEntities = ['MSI', 'SPI'];
 
-        $this->actingAsRole('Manager', $managerEmail, 'Sari Manager IT', $allowedEntities, 'Bandung');
+        $this->actingAsRole('Manpower', $manpowerEmail, 'Sari Manpower IT', $allowedEntities, 'Bandung');
 
         // PII is NOT in allowed entities
         $payload = [
@@ -256,9 +256,9 @@ class MprFlowTest extends TestCase
     }
 
     /** @test */
-    public function manager_without_entity_assignment_cannot_submit_mpr(): void
+    public function manpower_without_entity_assignment_cannot_submit_mpr(): void
     {
-        $this->actingAsRole('Manager', 'no-entity@mito.id', 'No Entity Manager', [], 'Bandung');
+        $this->actingAsRole('Manpower', 'no-entity@mito.id', 'No Entity Manpower', [], 'Bandung');
 
         $payload = [
             'position'           => 'Staff IT',
@@ -278,16 +278,16 @@ class MprFlowTest extends TestCase
     }
 
     /** @test */
-    public function idor_protection_manager_cannot_view_or_export_other_manager_mpr(): void
+    public function idor_protection_manpower_cannot_view_or_export_other_manpower_mpr(): void
     {
         $managerA = 'manager.a@mito.id';
         $managerB = 'manager.b@mito.id';
 
-        $this->actingAsRole('Manager', $managerA, 'Manager A', ['MSI'], 'Jakarta');
+        $this->actingAsRole('Manpower', $managerA, 'Manpower A', ['MSI'], 'Jakarta');
 
         $mprB = $this->makeMprData([
             'mprNumber'     => 'MPR-20260824-0002',
-            'requestorName' => 'Manager B',
+            'requestorName' => 'Manpower B',
             'requestorEmail' => $managerB,
             'entity'        => 'MSI',
             'department'    => 'Finance',
@@ -304,20 +304,20 @@ class MprFlowTest extends TestCase
 
         $this->app->instance(MprRepositoryInterface::class, $mockRepo);
 
-        // Manager A attempting to view Manager B's MPR JSON -> 403 Forbidden
+        // Manpower A attempting to view Manpower B's MPR JSON -> 403 Forbidden
         $responseJson = $this->getJson('/hr/mpr/MPR-20260824-0002/json');
         $responseJson->assertStatus(403);
 
-        // Manager A attempting to export Manager B's MPR PDF -> 403 Forbidden
+        // Manpower A attempting to export Manpower B's MPR PDF -> 403 Forbidden
         $responsePdf = $this->get('/hr/mpr/MPR-20260824-0002/pdf');
         $responsePdf->assertStatus(403);
     }
 
     /** @test */
-    public function hr_manager_can_view_all_mprs_and_create_mpr(): void
+    public function admin_can_view_all_mprs_and_create_mpr(): void
     {
-        // HR Manager tidak punya entity assignment (bukan Manager role), tapi bisa buat MPR atas nama siapapun
-        $this->actingAsRole('HR Manager', 'hrmanager@mito.id', 'HR Manager User', [], '');
+        // Admin tidak punya entity assignment (bukan Manpower role), tapi bisa buat MPR atas nama siapapun
+        $this->actingAsRole('Admin', 'admin@mito.id', 'Admin User', [], '');
 
         $mockMpr1 = $this->makeMprData([
             'mprNumber'     => 'MPR-20260824-0001',
@@ -347,7 +347,7 @@ class MprFlowTest extends TestCase
         $response->assertSee('Daftar Manpower Request (MPR)');
         $response->assertSee('Buat MPR Baru');
 
-        // Create MPR (HR Manager boleh pilih entity bebas)
+        // Create MPR (Admin boleh pilih entity bebas)
         $payload = [
             'position'           => 'HR Recruiter',
             'department'         => 'Human Resources',
@@ -358,8 +358,8 @@ class MprFlowTest extends TestCase
             'quantity'           => 1,
             'expected_join_date' => '2026-09-10',
             'reason'             => 'Penambahan Karyawan Baru (Business Expansion)',
-            'manager_name'       => 'HR Manager',
-            'manager_email'      => 'hrmanager@mito.id',
+            'manager_name'       => 'Admin',
+            'manager_email'      => 'admin@mito.id',
             'entity'             => 'MSI',
         ];
 
@@ -372,38 +372,16 @@ class MprFlowTest extends TestCase
     }
 
     /** @test */
-    public function hr_staff_can_view_and_export_mpr_but_cannot_create(): void
+    public function user_cannot_access_mpr_or_create_mpr(): void
     {
-        $this->actingAsRole('HR Staff', 'hrstaff@mito.id', 'HR Staff User', [], '');
+        $this->actingAsRole('User', 'hrstaff@mito.id', 'User User', [], '');
 
-        $mockMpr = $this->makeMprData([
-            'mprNumber'     => 'MPR-20260824-0001',
-            'requestorName' => 'Manager A',
-            'requestorEmail' => 'manager.a@mito.id',
-            'entity'        => 'MSI',
-            'position'      => 'Frontend Developer',
-            'employmentType' => 'Contract (PKWT)',
-        ]);
+        // User cannot view MPR index, detail, or PDF.
+        $this->get('/hr/mpr')->assertStatus(403);
+        $this->getJson('/hr/mpr/MPR-20260824-0001/json')->assertStatus(403);
+        $this->get('/hr/mpr/MPR-20260824-0001/pdf')->assertStatus(403);
 
-        $mockRepo = Mockery::mock(MprRepositoryInterface::class);
-        $mockRepo->shouldReceive('getAll')
-            ->andReturn(collect([$mockMpr]));
-        $mockRepo->shouldReceive('findByMprNumber')
-            ->with('MPR-20260824-0001')
-            ->andReturn($mockMpr);
-
-        $this->app->instance(MprRepositoryInterface::class, $mockRepo);
-
-        // HR Staff can view MPR index
-        $this->get('/hr/mpr')->assertStatus(200);
-
-        // HR Staff can view detail JSON
-        $this->getJson('/hr/mpr/MPR-20260824-0001/json')->assertStatus(200);
-
-        // HR Staff can export PDF
-        $this->get('/hr/mpr/MPR-20260824-0001/pdf')->assertStatus(200);
-
-        // HR Staff CANNOT create MPR -> 403 Forbidden
+        // User cannot create MPR either.
         $payload = [
             'position'           => 'Staff Admin',
             'department'         => 'GA',
@@ -430,8 +408,8 @@ class MprFlowTest extends TestCase
 
         $mockMpr = $this->makeMprData([
             'mprNumber'     => 'MPR-20260824-7777',
-            'requestorName' => 'Manager X',
-            'requestorEmail' => 'manager.x@mito.id',
+            'requestorName' => 'Manpower X',
+            'requestorEmail' => 'manpower.x@mito.id',
             'entity'        => 'MSI',
             'department'    => 'Sales',
             'division'      => 'Sales',
@@ -461,7 +439,7 @@ class MprFlowTest extends TestCase
     /** @test */
     public function validation_rejects_missing_required_fields(): void
     {
-        $this->actingAsRole('Manager', null, null, ['MSI'], 'Jakarta');
+        $this->actingAsRole('Manpower', null, null, ['MSI'], 'Jakarta');
 
         $response = $this->postJson('/hr/mpr', []);
         $response->assertStatus(422);
@@ -484,7 +462,7 @@ class MprFlowTest extends TestCase
     {
         $mpr = $this->makeMprData([
             'mprNumber'       => 'MPR-20260824-TEST',
-            'requestorName'   => 'Hendra Manager',
+            'requestorName'   => 'Hendra Manpower',
             'requestorEmail'  => 'hendra@mito.id',
             'entity'          => 'MSI',
             'branch'          => 'Tangerang',

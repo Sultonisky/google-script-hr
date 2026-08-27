@@ -5,6 +5,7 @@ namespace App\Providers;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use App\Support\Rbac;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -30,8 +31,7 @@ class AuthServiceProvider extends ServiceProvider
         // $user is now the session array resolved above.
         // ==============================================================
         Gate::before(function ($user, $ability) {
-            $role = $user['role'] ?? 'Viewer';
-            if ($role === 'Super Admin') {
+            if (Rbac::normalizeRole($user['role'] ?? null) === 'Super Admin') {
                 return true;
             }
             return null;
@@ -51,9 +51,7 @@ class AuthServiceProvider extends ServiceProvider
             }
 
             Gate::define($permission, function ($user) use ($permission) {
-                $role = $user['role'] ?? 'Viewer';
-                $perms = config('hris.auth.role_permissions', [])[$role] ?? [];
-                return in_array($permission, $perms, true);
+                return Rbac::allows($user['role'] ?? null, $permission);
             });
         }
     }

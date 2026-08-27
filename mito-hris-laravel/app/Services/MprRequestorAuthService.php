@@ -51,9 +51,9 @@ class MprRequestorAuthService
             ];
         }
 
-        // Role must be Manager
+        // Role must be Manpower
         $role = trim($requestor['Role'] ?? '');
-        if (strtolower($role) !== 'manager') {
+        if (strtolower($role) !== 'manpower') {
             return [
                 'success' => false,
                 'error'   => 'Akun ini tidak memiliki akses ke portal MPR.',
@@ -111,8 +111,8 @@ class MprRequestorAuthService
             'user'    => [
                 'email'        => $requestor['Email'],
                 'fullName'     => $requestor['Full Name']    ?? $requestor['Email'],
-                'role'         => 'Manager',
-                'permissions'  => config('hris.auth.role_permissions.Manager', ['view_mpr', 'create_mpr', 'export_mpr']),
+                'role'         => 'Manpower',
+                'permissions'  => config('hris.auth.role_permissions.Manpower', ['view_mpr', 'create_mpr', 'export_mpr']),
                 'entities'     => $entitiesArray,
                 'branch'       => trim($requestor['Branch'] ?? ''),
                 // Identity source marker — used by middleware to differentiate domains

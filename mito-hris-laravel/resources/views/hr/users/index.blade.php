@@ -88,9 +88,9 @@
           <div class="mb-3">
             <label class="form-label fw-semibold">Role Hak Akses <span class="text-danger">*</span></label>
             <select class="form-select" name="role" required>
-              <option value="HR Recruiter">HR Recruiter (Akses Recruitment & Calon Kandidat)</option>
-              <option value="HR Admin">HR Admin (Akses Seluruh Modul HR)</option>
-              <option value="Super Admin">Super Admin (Akses Penuh & Manajemen Pengguna)</option>
+              @foreach(config('hris.auth.valid_roles_internal', []) as $role)
+                <option value="{{ $role }}">{{ $role }}</option>
+              @endforeach
             </select>
           </div>
         </div>

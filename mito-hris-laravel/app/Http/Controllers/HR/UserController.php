@@ -7,6 +7,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
@@ -25,7 +26,7 @@ class UserController extends Controller
                 'id'         => 2,
                 'name'       => 'HR Recruiter Team',
                 'email'      => 'recruitment@mitocareer.com',
-                'role'       => 'Recruiter',
+                'role'       => 'Super User',
                 'status'     => 'Aktif',
                 'last_login' => now()->timezone('Asia/Jakarta')->subHours(2)->format('Y-m-d H:i:s'),
             ]
@@ -39,7 +40,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'name'  => 'required|string|min:3',
             'email' => 'required|email',
-            'role'  => 'required|string',
+            'role'  => ['required', 'string', Rule::in(config('hris.auth.valid_roles_internal', []))],
         ]);
 
         $users = Cache::get('hr_system_users', []);

@@ -31,7 +31,7 @@ class SetupCommand extends Command
         $this->line("\n3. Seeding users...");
         $this->call('mito:seed-users', ['--force' => $this->option('force')]);
 
-        $this->line("\n4. Seeding MPR Requestors (Manager accounts)...");
+        $this->line("\n4. Seeding MPR Requestors (Manpower accounts)...");
         $this->call('mito:seed-mpr-requestors', ['--force' => $this->option('force')]);
 
         if (!$this->option('skip-dummy')) {
@@ -46,9 +46,9 @@ class SetupCommand extends Command
         $this->info("\nSetup completed successfully.");
         $this->info('Next steps:');
         $this->line('  - Internal HR login : admin@mito.co.id / password123');
-        $this->line('  - MPR Manager login : manager.msi@mito.co.id / password123');
+        $this->line('  - MPR Manpower login : manager.msi@mito.co.id / password123');
         $this->line('  - Visit /hr/dashboard to access the HR system');
-        $this->line('  - Visit /hr/mpr (after Manager login) to access MPR portal');
+        $this->line('  - Visit /hr/mpr (after Manpower login) to access MPR portal');
         return Command::SUCCESS;
     }
 }

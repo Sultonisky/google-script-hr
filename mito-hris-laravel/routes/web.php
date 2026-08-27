@@ -63,12 +63,12 @@ Route::prefix('hr')->name('hr.')->middleware(['hr.auth', 'mpr.auth'])->group(fun
         Route::post('/{id}/status', [RecruitmentController::class, 'updateStatus'])->name('update-status')->middleware('can:update_candidates');
         Route::post('/{id}/hold', [RecruitmentController::class, 'hold'])->name('hold.post')->middleware('can:manage_hold_blacklist');
         Route::post('/{id}/blacklist', [RecruitmentController::class, 'blacklist'])->name('blacklist.post')->middleware('can:manage_hold_blacklist');
-        Route::post('/{id}/accept', [RecruitmentController::class, 'accept'])->name('accept')->middleware('can:update_candidates');
-        Route::post('/{id}/save-notes', [RecruitmentController::class, 'saveNotes'])->name('save-notes')->middleware('can:update_candidates');
+        Route::post('/{id}/accept', [RecruitmentController::class, 'accept'])->name('accept')->middleware('can:create_offering');
+        Route::post('/{id}/save-notes', [RecruitmentController::class, 'saveNotes'])->name('save-notes')->middleware('can:create_offering');
         Route::post('/{id}/move-status', [RecruitmentController::class, 'moveStatus'])->name('move-status')->middleware('can:update_candidates');
         Route::post('/{id}/save-offering', [RecruitmentController::class, 'saveOffering'])->name('save-offering')->middleware('can:create_offering');
-        Route::post('/{id}/save-offering-response', [RecruitmentController::class, 'saveOfferingResponse'])->name('save-offering-response')->middleware('can:update_candidates');
-        Route::post('/{id}/save-contract', [RecruitmentController::class, 'saveContract'])->name('save-contract')->middleware('can:update_candidates');
+        Route::post('/{id}/save-offering-response', [RecruitmentController::class, 'saveOfferingResponse'])->name('save-offering-response')->middleware('can:create_offering');
+        Route::post('/{id}/save-contract', [RecruitmentController::class, 'saveContract'])->name('save-contract')->middleware('can:create_offering');
         Route::get('/{id}/json', [RecruitmentController::class, 'getJson'])->name('json')->middleware('can:view_recruitment');
     });
 
@@ -122,9 +122,13 @@ Route::prefix('hr')->name('hr.')->middleware(['hr.auth', 'mpr.auth'])->group(fun
         Route::post('/', [UserController::class, 'store'])->name('store')->middleware('can:manage_settings');
     });
 
-    // 6. PDF Generation & CSV Exports — Super Admin, HR Manager, HR Recruitment
-    Route::prefix('export')->name('export.')->middleware('role:Super Admin,HR Manager,HR Recruitment')->group(function () {
+    // 6. Candidate profile print is available to every recruitment viewer.
+    Route::prefix('export')->name('export.')->middleware('can:view_recruitment')->group(function () {
         Route::get('/candidate-pdf/{id}', [ExportController::class, 'candidatePdf'])->name('candidate-pdf');
+    });
+
+    // Other PDFs and CSV exports are restricted to operational HR roles.
+    Route::prefix('export')->name('export.')->middleware('role:Super Admin,Admin,Super User')->group(function () {
         Route::get('/offering-letter/{id}', [ExportController::class, 'offeringLetterPdf'])->name('offering-letter');
         Route::get('/kontrak-pkwt/{id}', [ExportController::class, 'kontrakPkwtPdf'])->name('kontrak-pkwt');
         Route::get('/sk-pengangkatan/{id}', [ExportController::class, 'skPengangkatanPdf'])->name('sk-pengangkatan');

@@ -40,9 +40,9 @@ class MprData
     public function __get(string $name): mixed
     {
         return match ($name) {
-            'managerName'  => $this->requestorName,
-            'managerEmail' => $this->requestorEmail,
-            'company'      => $this->entity,
+            'managerName'  => $this->requestorName, // legacy alias
+            'managerEmail' => $this->requestorEmail, // legacy alias
+            'company'      => $this->entity, // legacy alias
             default        => null,
         };
     }
@@ -58,9 +58,9 @@ class MprData
     public static function fromSheetRow(array $row): self
     {
         // Support both old column names (Manager Name / Company) and new ones (Requestor Name / Entity)
-        $requestorName  = $row['Requestor Name']  ?? $row['Manager Name']  ?? null;
-        $requestorEmail = $row['Requestor Email'] ?? $row['Manager Email'] ?? null;
-        $entity         = $row['Entity']           ?? $row['Company']       ?? null;
+        $requestorName  = $row['Requestor Name']  ?? $row['Manager Name']  ?? null; // 'Manager Name' is legacy
+        $requestorEmail = $row['Requestor Email'] ?? $row['Manager Email'] ?? null; // 'Manager Email' is legacy
+        $entity         = $row['Entity']           ?? $row['Company']       ?? null; // 'Company' is legacy
         $branch         = $row['Branch']           ?? null;
 
         return new self(
