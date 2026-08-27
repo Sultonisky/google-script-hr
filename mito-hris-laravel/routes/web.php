@@ -27,7 +27,9 @@ use App\Http\Controllers\HR\MprController;
 // DOMAIN 1: AUTHENTICATION & LOGIN (Manual GSheets Auth)
 // =========================================================================
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
-Route::post('/login', [LoginController::class, 'login'])->name('login.post');
+Route::post('/login', [LoginController::class, 'login'])
+    ->middleware('throttle:login')
+    ->name('login.post');
 Route::any('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // =========================================================================
