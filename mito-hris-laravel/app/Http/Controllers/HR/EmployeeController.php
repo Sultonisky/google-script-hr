@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Services\EmployeeService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
@@ -327,7 +328,7 @@ class EmployeeController extends Controller
         // Ambil semua data request kecuali sk_number — Nomor SK wajib di-generate server-side
         $data = $request->except(['sk_number']);
 
-        $result = $this->employeeService->processRotation($id, $data, auth()->user()?->name ?? 'HR Team');
+        $result = $this->employeeService->processRotation($id, $data, Auth::user()?->name ?? 'HR Team');
 
         $pdfQuery = http_build_query([
             'rotation_type'     => $result['rotationType'],
@@ -502,7 +503,7 @@ class EmployeeController extends Controller
             $result = $this->employeeService->processOffboarding(
                 $id,
                 $data,
-                auth()->user()?->name ?? 'HR Team'
+                Auth::user()?->name ?? 'HR Team'
             );
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("EmployeeController::offboard error for {$id}: " . $e->getMessage());

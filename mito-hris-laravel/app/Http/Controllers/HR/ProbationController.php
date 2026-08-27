@@ -87,16 +87,18 @@ class ProbationController extends Controller
         $probations = $allProbations;
         if ($request->filled('search')) {
             $search     = strtolower(trim($request->query('search')));
-            $probations = $probations->filter(fn($e) =>
+            $probations = $probations->filter(
+                fn($e) =>
                 str_contains(strtolower($e->fullName   ?? ''), $search)
-                || str_contains(strtolower($e->employeeId ?? ''), $search)
-                || str_contains(strtolower($e->jobPosition ?? ''), $search)
-                || str_contains(strtolower($e->department  ?? ''), $search)
+                    || str_contains(strtolower($e->employeeId ?? ''), $search)
+                    || str_contains(strtolower($e->jobPosition ?? ''), $search)
+                    || str_contains(strtolower($e->department  ?? ''), $search)
             )->values();
         }
         if ($request->filled('department')) {
             $dept       = strtolower(trim($request->query('department')));
-            $probations = $probations->filter(fn($e) =>
+            $probations = $probations->filter(
+                fn($e) =>
                 strtolower(trim($e->department ?? '')) === $dept
             )->values();
         }
@@ -147,7 +149,7 @@ class ProbationController extends Controller
     public function evaluate(SubmitProbationEvaluationRequest $request, string $id): RedirectResponse|JsonResponse
     {
         $isAjax = $request->ajax() || $request->wantsJson();
-        
+
         // Server-side validation: check if evaluation is allowed
         if (!$this->probationService->canEvaluate($id)) {
             $msg = 'Kandidat sudah menyelesaikan evaluasi probation dan tidak dapat dievaluasi kembali.';
@@ -188,7 +190,7 @@ class ProbationController extends Controller
             'approval_hrbp_date' => $request->input('approval_hrbp_date', ''),
         ];
 
-        $user = Auth::user()?->name ?? 'HR Team';
+        $user = Auth::user()->name ?? 'HR Team';
 
         try {
             $result = $this->probationService->evaluateProbation($id, $evalData, $user);
@@ -330,10 +332,10 @@ class ProbationController extends Controller
     private function buildEvalPdfParams(string $evalId, array $evalData): array
     {
         $indicators = $evalData['indicators'] ?? [];
-        $integrityTotal = $this->countChecked($indicators, ['integrity_1','integrity_2','integrity_3','integrity_4']);
-        $ciTotal = $this->countChecked($indicators, ['ci_1','ci_2','ci_3','ci_4']);
-        $eeTotal = $this->countChecked($indicators, ['ee_1','ee_2']);
-        $twTotal = $this->countChecked($indicators, ['tw_1','tw_2','tw_3']);
+        $integrityTotal = $this->countChecked($indicators, ['integrity_1', 'integrity_2', 'integrity_3', 'integrity_4']);
+        $ciTotal = $this->countChecked($indicators, ['ci_1', 'ci_2', 'ci_3', 'ci_4']);
+        $eeTotal = $this->countChecked($indicators, ['ee_1', 'ee_2']);
+        $twTotal = $this->countChecked($indicators, ['tw_1', 'tw_2', 'tw_3']);
         $overallTotal = $integrityTotal + $ciTotal + $eeTotal + $twTotal;
         $category = $this->calculateCategory($overallTotal);
         return [
