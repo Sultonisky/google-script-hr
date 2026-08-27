@@ -33,13 +33,14 @@ class MprController extends Controller
     }
 
     /**
-     * Display list of MPR records (for HR) or Manager's own requests + submission form.
+    * Display list of MPR records (for HR) or Manpower's own requests + submission form.
      */
     public function index(Request $request): View
     {
         $user = session('hr_user', []);
         $role = $user['role'] ?? 'Viewer';
-        $isManager = ($role === 'Manager');
+        $isManpower = strtolower(trim($role)) === 'manpower';
+        $isManager = $isManpower;
 
         $search = $request->query('search', '');
         $dept = $request->query('department', '');
@@ -59,7 +60,7 @@ class MprController extends Controller
         }
 
         // Aggregate statistics for dashboard metrics
-        $allMprs = $isManager ? $mprs : $this->mprRepo->getAll();
+        $allMprs = $isManpower ? $mprs : $this->mprRepo->getAll();
         $thisMonthStr = now()->timezone('Asia/Jakarta')->format('Y-m');
 
         $stats = [
@@ -103,10 +104,10 @@ class MprController extends Controller
         ];
 
         // Entity yang diizinkan untuk user yang sedang login
-        // - Manager: hanya entity yang menjadi assignment-nya (dari session)
+        // - Manpower: hanya entity yang menjadi assignment-nya (dari session)
         // - HR/Super Admin: semua entity tersedia
         $userEntities = $user['entities'] ?? [];
-        $allowedEntities = $isManager
+        $allowedEntities = $isManpower
             ? array_filter($entityOptions, fn($label, $code) => in_array($code, $userEntities, true), ARRAY_FILTER_USE_BOTH)
             : $entityOptions;
 
@@ -148,13 +149,13 @@ class MprController extends Controller
      * Security:
      * - Entity divalidasi server-side: selected entity HARUS ada di daftar entity requestor.
      * - Branch selalu diambil dari session authenticated requestor, TIDAK dari request body.
-     * - Identitas requestor (nama, email) selalu dari session untuk role Manager.
+    * - Identitas requestor (nama, email) selalu dari session untuk role Manpower.
      */
     public function store(StoreMprRequest $request): JsonResponse|RedirectResponse
     {
         $user    = session('hr_user', []);
         $role    = $user['role'] ?? 'Viewer';
-        $isManager = ($role === 'Manager');
+        $isManager = strtolower(trim($role)) === 'manpower';
 
         $validated = $request->validated();
 
@@ -173,9 +174,9 @@ class MprController extends Controller
         // ==============================================================
         if ($isManager) {
             // Identitas requestor SELALU dari session — tidak boleh dari request body
-            $requestorName  = $user['fullName'] ?? $user['name'] ?? 'Manager';
+            $requestorName  = $user['fullName'] ?? $user['name'] ?? 'Manpower';
             $requestorEmail = $user['email'] ?? '';
-            $createdBy      = $user['email'] ?? 'Manager';
+            $createdBy      = $user['email'] ?? 'Manpower';
 
             // Entity assignment dari session (sudah di-normalize saat login)
             $userEntities = $user['entities'] ?? [];
@@ -206,8 +207,8 @@ class MprController extends Controller
             $entityFullName = $entityNameMap[$selectedEntity] ?? $selectedEntity;
 
         } else {
-            // HR Manager / Super Admin: bisa mengisi atas nama manager lain
-            $requestorName  = !empty($validated['manager_name'])  ? $validated['manager_name']  : ($user['fullName'] ?? 'HR Manager');
+            // Admin / Super Admin: bisa mengisi atas nama Manpower lain
+            $requestorName  = !empty($validated['manager_name'])  ? $validated['manager_name']  : ($user['fullName'] ?? 'Admin');
             $requestorEmail = !empty($validated['manager_email']) ? $validated['manager_email'] : ($user['email'] ?? '');
             $createdBy      = $user['email'] ?? 'HR Team';
 
@@ -300,7 +301,7 @@ class MprController extends Controller
         $user = session('hr_user', []);
         $role = $user['role'] ?? 'Viewer';
 
-        if ($role === 'Manager') {
+        if ($role === 'Manpower') {
             $userEmail  = strtolower(trim($user['email'] ?? ''));
             $mprEmail   = strtolower(trim($mpr->requestorEmail ?? ''));
             $mprCreator = strtolower(trim($mpr->createdBy ?? ''));
@@ -338,7 +339,7 @@ class MprController extends Controller
         $user = session('hr_user', []);
         $role = $user['role'] ?? 'Viewer';
 
-        if ($role === 'Manager') {
+        if ($role === 'Manpower') {
             $userEmail  = strtolower(trim($user['email'] ?? ''));
             $mprEmail   = strtolower(trim($mpr->requestorEmail ?? ''));
             $mprCreator = strtolower(trim($mpr->createdBy ?? ''));
@@ -366,7 +367,7 @@ class MprController extends Controller
         $user = session('hr_user', []);
         $role = $user['role'] ?? 'Viewer';
 
-        if ($role === 'Manager') {
+        if ($role === 'Manpower') {
             $userEmail  = strtolower(trim($user['email'] ?? ''));
             $mprEmail   = strtolower(trim($mpr->requestorEmail ?? ''));
             $mprCreator = strtolower(trim($mpr->createdBy ?? ''));

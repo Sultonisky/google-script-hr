@@ -9,12 +9,12 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * Middleware: mpr.auth
  *
- * Protects routes that a Manager (from mpr_requestor) is trying to access.
+ * Protects routes that a Manpower requestor (from mpr_requestor) is trying to access.
  *
  * Rules:
  *   1. Must be authenticated (session hr_user exists).
  *   2. If identity is an MPR Requestor (auth_domain = mpr_requestor):
- *      - role MUST be Manager
+ *      - role MUST be Manpower
  *      - status is already verified at login time
  *      - ONLY MPR routes are allowed; all other /hr/* routes return 403
  *   3. If identity is an internal HR user (auth_domain = users):
@@ -48,12 +48,11 @@ class MprRequestorMiddleware
         $authDomain = $user['auth_domain'] ?? 'users';
         $role       = $user['role']        ?? 'Viewer';
 
-        // Restrict any Manager session (regardless of auth_domain) to MPR routes only.
-        // This covers both legitimate MPR Requestors (auth_domain=mpr_requestor) and
-        // any anomalous case where a Manager ends up in the Users sheet.
-        if ($authDomain === 'mpr_requestor' || strtolower($role) === 'manager') {
+        // Restrict any Manpower session (regardless of auth_domain) to MPR routes only.
+        // This covers both legitimate MPR Requestors and anomalous cross-domain data.
+        if ($authDomain === 'mpr_requestor' || strtolower($role) === 'manpower') {
             // For mpr_requestor domain: additional role sanity check
-            if ($authDomain === 'mpr_requestor' && strtolower($role) !== 'manager') {
+            if ($authDomain === 'mpr_requestor' && strtolower($role) !== 'manpower') {
                 session()->forget('hr_user');
                 if ($request->expectsJson()) {
                     return response()->json([
@@ -65,7 +64,7 @@ class MprRequestorMiddleware
                     ->with('error', 'Akun ini tidak memiliki akses yang valid.');
             }
 
-            // Route restriction: Manager can ONLY access /hr/mpr* and /logout
+            // Route restriction: Manpower can ONLY access /hr/mpr* and /logout
             $path    = '/' . ltrim($request->path(), '/');
             $allowed = false;
             foreach (self::ALLOWED_PREFIXES as $prefix) {
