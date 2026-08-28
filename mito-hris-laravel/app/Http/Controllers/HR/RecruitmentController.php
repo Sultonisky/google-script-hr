@@ -39,6 +39,7 @@ class RecruitmentController extends Controller
     {
         $statusFilter = $request->query('status', '');
         $searchFilter = $request->query('search', '');
+        $positionFilter = $request->query('position', '');
         $cityFilter   = $request->query('city', '');
         $sortFilter   = $request->query('sort', 'newest');
         $perPage      = $request->query('per_page', 10);
@@ -92,6 +93,11 @@ class RecruitmentController extends Controller
             );
         }
 
+        if ($positionFilter) {
+            $position = strtolower(trim($positionFilter));
+            $candidates = $candidates->filter(fn($c) => strtolower(trim($c->positionApplied ?? '')) === $position);
+        }
+
         if ($cityFilter) {
             $city = strtolower($cityFilter);
             $candidates = $candidates->filter(fn($c) => str_contains(strtolower($c->city ?? ''), $city));
@@ -112,7 +118,7 @@ class RecruitmentController extends Controller
         $offset = ($currentPage - 1) * $perPage;
         $paginatedCandidates = $candidates->slice($offset, $perPage)->values();
 
-        return view('hr.recruitment.index', compact('paginatedCandidates', 'candidates', 'counts', 'statusFilter', 'searchFilter', 'cityFilter', 'perPage', 'currentPage', 'total'));
+        return view('hr.recruitment.index', compact('paginatedCandidates', 'candidates', 'counts', 'statusFilter', 'searchFilter', 'positionFilter', 'cityFilter', 'perPage', 'currentPage', 'total'));
     }
 
     /**
@@ -423,6 +429,20 @@ class RecruitmentController extends Controller
                 'success' => true,
                 'message' => 'Data offering berhasil disimpan.',
                 'action'  => $action,
+                'pdf_url' => route('hr.export.offering-letter', ['id' => $id]) . '?' . http_build_query([
+                    'branch_name'       => $request->input('branch_name', ''),
+                    'position'          => $request->input('position', ''),
+                    'division'          => $request->input('division', ''),
+                    'job_level'         => $request->input('job_level', ''),
+                    'lokasi_kerja'      => $request->input('lokasi_kerja', ''),
+                    'join_date'         => $request->input('join_date', ''),
+                    'employment_status' => $request->input('employment_status', ''),
+                    'contract_duration' => $request->input('contract_duration', ''),
+                    'salary_basic'      => $request->input('salary_basic', ''),
+                    'allow_pulsa'       => $request->input('allow_pulsa', ''),
+                    'allow_transport'   => $request->input('allow_transport', ''),
+                    'working_hours'     => $request->input('working_hours', ''),
+                ]),
             ]);
         } catch (\Throwable $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
