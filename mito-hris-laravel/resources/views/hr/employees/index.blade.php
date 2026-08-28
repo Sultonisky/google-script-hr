@@ -93,7 +93,7 @@
             <form action="{{ route('hr.employees.index') }}" method="GET" id="empFilterForm">
                 {{-- Reset page to 1 on any filter change --}}
                 <input type="hidden" name="page" value="1">
-                <div class="filter-bar">
+                <div class="filter-bar employee-filter-bar">
                     <div class="table-search">
                         <i class="bi bi-search"></i>
                         <input type="text" name="search" id="empSearchInput"
@@ -136,19 +136,21 @@
                     <select class="filter-select" name="sort" id="empSortSelect" onchange="this.form.submit()">
                         <option value="name_asc" selected>Nama A-Z</option>
                     </select>
-                    <select class="filter-select" name="per_page" id="empPerPage" onchange="this.form.submit()"
-                        style="flex: 0 0 auto; width: 90px;">
+                    <select class="filter-select employee-per-page" name="per_page" id="empPerPage"
+                        onchange="this.form.submit()">
                         <option value="10" {{ ($perPage ?? 10) == 10 ? 'selected' : '' }}>10 / hal</option>
                         <option value="20" {{ ($perPage ?? 10) == 20 ? 'selected' : '' }}>20 / hal</option>
                         <option value="50" {{ ($perPage ?? 10) == 50 ? 'selected' : '' }}>50 / hal</option>
                     </select>
-                    <a href="{{ route('hr.employees.index') }}" class="btn-reset-filter text-decoration-none"
-                        title="Reset filter">
-                        <i class="bi bi-arrow-counterclockwise"></i> Reset
-                    </a>
-                    <button class="btn-refresh" type="button" title="Muat ulang data" onclick="location.reload()">
-                        <i class="bi bi-arrow-clockwise"></i>
-                    </button>
+                    <div class="employee-filter-actions">
+                        <a href="{{ route('hr.employees.index') }}" class="btn-reset-filter text-decoration-none"
+                            title="Reset filter">
+                            <i class="bi bi-arrow-counterclockwise"></i> Reset
+                        </a>
+                        <button class="btn-refresh" type="button" title="Muat ulang data" onclick="location.reload()">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                    </div>
                 </div>
             </form>
 
