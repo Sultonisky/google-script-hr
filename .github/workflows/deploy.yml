@@ -53,7 +53,7 @@ jobs:
 
             echo "== Checking Google Sheets =="
             php artisan mito:health-check
-            php artisan mito:setup-sheets
+            php artisan mito:setup-sheets --fix
             php artisan mito:validate-schema
             php artisan mito:sync
 
