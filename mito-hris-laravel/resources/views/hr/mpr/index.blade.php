@@ -556,18 +556,18 @@
                                         <select name="department" class="form-select" required>
                                             <option value="">-- Pilih Departemen --</option>
                                             @foreach ($departments as $d)
-                                                <option value="{{ $d }}">{{ $d }}</option>
+                                                <option value="{{ $d }}"
+                                                    {{ old('department') === $d ? 'selected' : '' }}>{{ $d }}
+                                                </option>
                                             @endforeach
                                         </select>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label fw-semibold small">Divisi <span
                                                 class="text-danger">*</span></label>
-                                        <select name="division" class="form-select" required>
-                                            <option value="">-- Pilih Divisi --</option>
-                                            @foreach ($divisions as $div)
-                                                <option value="{{ $div }}">{{ $div }}</option>
-                                            @endforeach
+                                        <select name="division" class="form-select"
+                                            data-selected-division="{{ old('division') }}" required>
+                                            <option value="">-- Pilih Departemen terlebih dahulu --</option>
                                         </select>
                                     </div>
                                     <div class="col-md-6">
@@ -796,7 +796,8 @@
                 <div
                     class="card-header bg-white mpr-list-header py-3 d-flex flex-wrap justify-content-between align-items-center gap-2 border-bottom">
                     <div>
-                        <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-list-task me-2 text-primary"></i> Daftar Manpower Request (MPR)</h5>
+                        <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-list-task me-2 text-primary"></i> Daftar
+                            Manpower Request (MPR)</h5>
                         <small class="text-muted">Menampilkan {{ $total }} pengajuan kebutuhan tenaga kerja</small>
                     </div>
                     <div class="d-flex gap-2">
@@ -1027,18 +1028,18 @@
                                             <select name="department" class="form-select form-select-sm" required>
                                                 <option value="">-- Pilih Departemen --</option>
                                                 @foreach ($departments as $d)
-                                                    <option value="{{ $d }}">{{ $d }}</option>
+                                                    <option value="{{ $d }}"
+                                                        {{ old('department') === $d ? 'selected' : '' }}>{{ $d }}
+                                                    </option>
                                                 @endforeach
                                             </select>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-semibold small">Divisi <span
                                                     class="text-danger">*</span></label>
-                                            <select name="division" class="form-select form-select-sm" required>
-                                                <option value="">-- Pilih Divisi --</option>
-                                                @foreach ($divisions as $div)
-                                                    <option value="{{ $div }}">{{ $div }}</option>
-                                                @endforeach
+                                            <select name="division" class="form-select form-select-sm"
+                                                data-selected-division="{{ old('division') }}" required>
+                                                <option value="">-- Pilih Departemen terlebih dahulu --</option>
                                             </select>
                                         </div>
                                         <div class="col-md-6">
@@ -1265,32 +1266,87 @@
                 <div class="modal-dialog modal-lg modal-dialog-scrollable">
                     <div class="modal-content border-0 shadow">
                         <div class="modal-header bg-primary text-white">
-                            <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2"></i>Edit MPR <small id="editMprNumber"></small></h5>
+                            <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2"></i>Edit MPR <small
+                                    id="editMprNumber"></small></h5>
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                         </div>
                         <form id="formEditMpr">
                             <div class="modal-body p-4">
                                 <div id="editMprErrors" class="alert alert-danger d-none"></div>
                                 <div class="row g-3">
-                                    <div class="col-md-6"><label class="form-label small fw-semibold">Posisi *</label><input name="position" class="form-control" required></div>
-                                    <div class="col-md-6"><label class="form-label small fw-semibold">Departemen *</label><select name="department" class="form-select" required><option value="">-- Pilih --</option>@foreach($departments as $d)<option value="{{ $d }}">{{ $d }}</option>@endforeach</select></div>
-                                    <div class="col-md-6"><label class="form-label small fw-semibold">Divisi *</label><select name="division" class="form-select" required><option value="">-- Pilih --</option>@foreach($divisions as $d)<option value="{{ $d }}">{{ $d }}</option>@endforeach</select></div>
-                                    <div class="col-md-6"><label class="form-label small fw-semibold">Level Jabatan *</label><select name="job_level" class="form-select" required><option value="">-- Pilih --</option>@foreach($jobLevels as $d)<option value="{{ $d }}">{{ $d }}</option>@endforeach</select></div>
-                                    <div class="col-md-6"><label class="form-label small fw-semibold">Lokasi Penempatan *</label><select name="work_location" class="form-select" required><option value="">-- Pilih --</option>@foreach($workLocations as $d)<option value="{{ $d }}">{{ $d }}</option>@endforeach</select></div>
-                                    <div class="col-md-6"><label class="form-label small fw-semibold">Status Kepegawaian *</label><select name="employment_type" class="form-select" required><option value="">-- Pilih --</option>@foreach($employmentTypes as $d)<option value="{{ $d }}">{{ $d }}</option>@endforeach</select></div>
-                                    <div class="col-md-6"><label class="form-label small fw-semibold">Jumlah Kebutuhan *</label><input name="quantity" type="number" min="1" max="100" class="form-control" required></div>
-                                    <div class="col-md-6"><label class="form-label small fw-semibold">Target Bergabung *</label><input name="expected_join_date" type="date" class="form-control" required></div>
-                                    <div class="col-md-6"><label class="form-label small fw-semibold">Alasan Permintaan *</label><select name="reason" class="form-select" required><option value="">-- Pilih --</option>@foreach($reasons as $d)<option value="{{ $d }}">{{ $d }}</option>@endforeach</select></div>
-                                    <div class="col-md-6"><label class="form-label small fw-semibold">Karyawan yang Digantikan</label><input name="replacement_for" class="form-control"></div>
-                                    <div class="col-12"><label class="form-label small fw-semibold">Kualifikasi & Persyaratan</label><textarea name="requirements" rows="4" class="form-control"></textarea></div>
-                                    <div class="col-12"><label class="form-label small fw-semibold">Uraian Tugas</label><textarea name="job_description" rows="4" class="form-control"></textarea></div>
-                                    <div class="col-12"><label class="form-label small fw-semibold">Catatan</label><textarea name="notes" rows="3" class="form-control"></textarea></div>
+                                    <div class="col-md-6"><label class="form-label small fw-semibold">Posisi *</label><input
+                                            name="position" class="form-control" required></div>
+                                    <div class="col-md-6"><label class="form-label small fw-semibold">Departemen
+                                            *</label><select name="department" class="form-select" required>
+                                            <option value="">-- Pilih --</option>
+                                            @foreach ($departments as $d)
+                                                <option value="{{ $d }}">{{ $d }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6"><label class="form-label small fw-semibold">Divisi *</label><select
+                                            name="division" class="form-select"
+                                            data-selected-division="{{ old('division') }}" required disabled>
+                                            <option value="">-- Pilih Departemen terlebih dahulu --</option>
+                                        </select></div>
+                                    <div class="col-md-6"><label class="form-label small fw-semibold">Level Jabatan
+                                            *</label><select name="job_level" class="form-select" required>
+                                            <option value="">-- Pilih --</option>
+                                            @foreach ($jobLevels as $d)
+                                                <option value="{{ $d }}">{{ $d }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6"><label class="form-label small fw-semibold">Lokasi Penempatan
+                                            *</label><select name="work_location" class="form-select" required>
+                                            <option value="">-- Pilih --</option>
+                                            @foreach ($workLocations as $d)
+                                                <option value="{{ $d }}">{{ $d }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6"><label class="form-label small fw-semibold">Status Kepegawaian
+                                            *</label><select name="employment_type" class="form-select" required>
+                                            <option value="">-- Pilih --</option>
+                                            @foreach ($employmentTypes as $d)
+                                                <option value="{{ $d }}">{{ $d }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6"><label class="form-label small fw-semibold">Jumlah Kebutuhan
+                                            *</label><input name="quantity" type="number" min="1" max="100"
+                                            class="form-control" required></div>
+                                    <div class="col-md-6"><label class="form-label small fw-semibold">Target Bergabung
+                                            *</label><input name="expected_join_date" type="date" class="form-control"
+                                            required></div>
+                                    <div class="col-md-6"><label class="form-label small fw-semibold">Alasan Permintaan
+                                            *</label><select name="reason" class="form-select" required>
+                                            <option value="">-- Pilih --</option>
+                                            @foreach ($reasons as $d)
+                                                <option value="{{ $d }}">{{ $d }}</option>
+                                            @endforeach
+                                        </select></div>
+                                    <div class="col-md-6"><label class="form-label small fw-semibold">Karyawan yang
+                                            Digantikan</label><input name="replacement_for" class="form-control"></div>
+                                    <div class="col-12"><label class="form-label small fw-semibold">Kualifikasi &
+                                            Persyaratan</label>
+                                        <textarea name="requirements" rows="4" class="form-control"></textarea>
+                                    </div>
+                                    <div class="col-12"><label class="form-label small fw-semibold">Uraian Tugas</label>
+                                        <textarea name="job_description" rows="4" class="form-control"></textarea>
+                                    </div>
+                                    <div class="col-12"><label class="form-label small fw-semibold">Catatan</label>
+                                        <textarea name="notes" rows="3" class="form-control"></textarea>
+                                    </div>
                                 </div>
                             </div>
                             <div class="modal-footer">
-                                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
-                                <button type="button" id="btnPreviewMpr" class="btn btn-outline-primary btn-sm"><i class="bi bi-eye me-1"></i> Preview</button>
-                                <button type="submit" id="btnSaveMpr" class="btn btn-primary btn-sm"><i class="bi bi-check-circle me-1"></i> Save Changes</button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm"
+                                    data-bs-dismiss="modal">Batal</button>
+                                <button type="button" id="btnPreviewMpr" class="btn btn-outline-primary btn-sm"><i
+                                        class="bi bi-eye me-1"></i> Preview</button>
+                                <button type="submit" id="btnSaveMpr" class="btn btn-primary btn-sm"><i
+                                        class="bi bi-check-circle me-1"></i> Save Changes</button>
                             </div>
                         </form>
                     </div>
@@ -1298,11 +1354,18 @@
             </div>
 
             <div class="modal fade" id="modalPreviewMpr" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog modal-lg modal-dialog-scrollable"><div class="modal-content border-0 shadow">
-                    <div class="modal-header bg-primary text-white"><h5 class="modal-title">Preview Perubahan MPR</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-                    <div class="modal-body" id="mprPreviewContent"></div>
-                    <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Kembali ke Edit</button><button type="button" class="btn btn-primary btn-sm" id="btnPreviewSaveMpr">Save Changes</button></div>
-                </div></div>
+                <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                    <div class="modal-content border-0 shadow">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title">Preview Perubahan MPR</h5><button type="button"
+                                class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body" id="mprPreviewContent"></div>
+                        <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm"
+                                data-bs-dismiss="modal">Kembali ke Edit</button><button type="button"
+                                class="btn btn-primary btn-sm" id="btnPreviewSaveMpr">Save Changes</button></div>
+                    </div>
+                </div>
             </div>
         @endcan
 
@@ -1311,6 +1374,33 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             let currentMprId = null;
+            const departmentDivisionMap = @json($departmentDivisionMap);
+
+            function setupDepartmentDivision(form, selectedDivision = '') {
+                const department = form.elements.department;
+                const division = form.elements.division;
+                if (!department || !division) return;
+
+                const initialDivision = selectedDivision || division.dataset.selectedDivision || '';
+                const updateDivisions = (preserveSelection = false) => {
+                    const divisions = departmentDivisionMap[department.value] || [];
+                    const currentDivision = preserveSelection ? initialDivision || division.value : '';
+                    division.innerHTML = '';
+                    division.append(new Option(
+                        divisions.length ? '-- Pilih Divisi --' :
+                        '-- Pilih Departemen terlebih dahulu --',
+                        ''
+                    ));
+                    divisions.forEach(value => division.append(new Option(value, value)));
+                    division.disabled = divisions.length === 0;
+                    division.value = divisions.includes(currentDivision) ? currentDivision : '';
+                };
+
+                department.addEventListener('change', () => updateDivisions(false));
+                updateDivisions(true);
+            }
+
+            document.querySelectorAll('form').forEach(form => setupDepartmentDivision(form));
 
             function getCsrfToken() {
                 const meta = document.querySelector('meta[name="csrf-token"]');
@@ -1497,15 +1587,23 @@
                             if (btnEdit) {
                                 btnEdit.onclick = function() {
                                     const editForm = document.getElementById('formEditMpr');
-                                    document.getElementById('editMprNumber').innerText = m.mpr_number || id;
+                                    document.getElementById('editMprNumber').innerText = m
+                                        .mpr_number || id;
                                     editForm.reset();
                                     Object.keys(m).forEach(key => {
                                         const field = editForm.elements[key];
-                                        if (field && !key.endsWith('_html')) field.value = m[key] ?? '';
+                                        if (field && !key.endsWith('_html') &&
+                                            key !== 'department' && key !==
+                                            'division') field.value = m[key] ?? '';
                                     });
-                                    document.getElementById('editMprErrors').classList.add('d-none');
-                                    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalMprDetail')).hide();
-                                    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEditMpr')).show();
+                                    editForm.elements.department.value = m.department || '';
+                                    setupDepartmentDivision(editForm, m.division || '');
+                                    document.getElementById('editMprErrors').classList.add(
+                                        'd-none');
+                                    bootstrap.Modal.getOrCreateInstance(document
+                                        .getElementById('modalMprDetail')).hide();
+                                    bootstrap.Modal.getOrCreateInstance(document
+                                        .getElementById('modalEditMpr')).show();
                                 };
                             }
 
@@ -1521,8 +1619,12 @@
 
             function escapeHtml(value) {
                 return String(value || '').replace(/[&<>'"]/g, char => ({
-                    '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;'
-                }[char]));
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#039;',
+                    '"': '&quot;'
+                } [char]));
             }
 
             function renderMprMarkdown(value) {
@@ -1541,13 +1643,19 @@
             function showMprPreview() {
                 const form = document.getElementById('formEditMpr');
                 const value = name => form.elements[name]?.value || '-';
-                const section = (label, content, markdown = false) => `<div class="mb-3"><div class="detail-label">${label}</div><div class="p-2 border rounded ${markdown ? 'mpr-markdown-content' : ''}">${markdown ? renderMprMarkdown(content) : escapeHtml(content)}</div></div>`;
+                const section = (label, content, markdown = false) =>
+                    `<div class="mb-3"><div class="detail-label">${label}</div><div class="p-2 border rounded ${markdown ? 'mpr-markdown-content' : ''}">${markdown ? renderMprMarkdown(content) : escapeHtml(content)}</div></div>`;
                 document.getElementById('mprPreviewContent').innerHTML =
                     `<h6 class="text-primary fw-bold mb-3">MPR ${escapeHtml(currentMprId)}</h6>` +
-                    section('Posisi', value('position')) + section('Departemen / Divisi', `${value('department')} / ${value('division')}`) +
-                    section('Level / Status / Lokasi', `${value('job_level')} / ${value('employment_type')} / ${value('work_location')}`) +
-                    section('Jumlah / Target Bergabung', `${value('quantity')} Orang / ${value('expected_join_date')}`) + section('Alasan', value('reason')) +
-                    section('Kualifikasi & Persyaratan', value('requirements'), true) + section('Uraian Tugas', value('job_description'), true) + section('Catatan', value('notes'), true);
+                    section('Posisi', value('position')) + section('Departemen / Divisi',
+                        `${value('department')} / ${value('division')}`) +
+                    section('Level / Status / Lokasi',
+                        `${value('job_level')} / ${value('employment_type')} / ${value('work_location')}`) +
+                    section('Jumlah / Target Bergabung',
+                        `${value('quantity')} Orang / ${value('expected_join_date')}`) + section('Alasan', value(
+                        'reason')) +
+                    section('Kualifikasi & Persyaratan', value('requirements'), true) + section('Uraian Tugas',
+                        value('job_description'), true) + section('Catatan', value('notes'), true);
                 bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPreviewMpr')).show();
             }
 
@@ -1565,22 +1673,30 @@
                 const button = document.getElementById('btnSaveMpr');
                 const errorBox = document.getElementById('editMprErrors');
                 button.disabled = true;
-                button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
+                button.innerHTML =
+                    '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
                 errorBox.classList.add('d-none');
                 try {
                     const response = await fetch(`/hr/mpr/${encodeURIComponent(currentMprId)}`, {
-                        method: 'PUT', headers: {'X-CSRF-TOKEN': getCsrfToken(), 'Accept': 'application/json', 'Content-Type': 'application/json'},
+                        method: 'PUT',
+                        headers: {
+                            'X-CSRF-TOKEN': getCsrfToken(),
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
                         body: JSON.stringify(Object.fromEntries(new FormData(editForm)))
                     });
                     const data = await response.json();
                     if (!response.ok) {
-                        const errors = data.errors ? Object.values(data.errors).flat().join('<br>') : (data.message || 'Gagal memperbarui MPR.');
+                        const errors = data.errors ? Object.values(data.errors).flat().join('<br>') : (
+                            data.message || 'Gagal memperbarui MPR.');
                         errorBox.innerHTML = errors;
                         errorBox.classList.remove('d-none');
                         return;
                     }
                     bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEditMpr')).hide();
-                    if (typeof showToast === 'function') showToast(data.message || 'MPR berhasil diperbarui.', 'success');
+                    if (typeof showToast === 'function') showToast(data.message ||
+                        'MPR berhasil diperbarui.', 'success');
                     setTimeout(() => window.location.reload(), 700);
                 } catch (error) {
                     errorBox.textContent = 'Terjadi kesalahan saat memperbarui MPR.';
