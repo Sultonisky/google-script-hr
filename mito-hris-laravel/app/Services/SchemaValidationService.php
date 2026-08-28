@@ -77,8 +77,10 @@ class SchemaValidationService
 
             // Users has a strict schema. Remove legacy trailing columns such as Entity/Branch
             // after the canonical ten columns have been established.
-            if ($sheetName === 'Users' && count($currentHeaders) > count($expectedHeaders)
-                && array_slice($currentHeaders, 0, count($expectedHeaders)) === $expectedHeaders) {
+            if (
+                $sheetName === 'Users' && count($currentHeaders) > count($expectedHeaders)
+                && array_slice($currentHeaders, 0, count($expectedHeaders)) === $expectedHeaders
+            ) {
                 $sheetId = $this->getSheetIdByName($spreadsheetId, $sheetName, $service);
                 if ($sheetId !== null) {
                     $deleteRequest = new \Google\Service\Sheets\Request([
