@@ -23,8 +23,8 @@
                         lengkap. Seluruh data akan digunakan hanya untuk kebutuhan proses rekrutmen.</p>
                 </div>
                 <div class="col-lg-5 col-md-4 d-none d-md-flex justify-content-end align-items-center">
-                    <img id="heroAvatarImg" src="{{ asset('assets/mito.png') }}" alt="MITO Official"
-                        class="hero-avatar-img">
+                    <img id="heroAvatarImg" src="{{ asset('assets/mito.png') }}" alt="MITO Official" class="hero-avatar-img"
+                        loading="lazy">
                 </div>
             </div>
         </div>

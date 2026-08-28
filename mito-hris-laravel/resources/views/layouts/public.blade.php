@@ -255,6 +255,8 @@
 
 <body>
 
+    <x-toast />
+
     {{-- Main Content without Topbar (1:1 from GAS) --}}
     <main>
         @yield('content')

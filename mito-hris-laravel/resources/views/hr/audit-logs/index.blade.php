@@ -197,10 +197,7 @@
         <!-- Header -->
         <div class="audit-page-header d-flex justify-content-between align-items-center mb-4">
             <div>
-                <h5 class="fw-bold mb-1">
-                    <i class="bi bi-clock-history text-primary me-2" aria-hidden="true"></i>Audit Log
-                </h5>
-                <small class="text-muted">Riwayat aktivitas dan perubahan data pada HRIS</small>
+
             </div>
             <div>
                 <button class="btn btn-outline-primary btn-sm" id="btnAuditRefresh" type="button" onclick="location.reload()">

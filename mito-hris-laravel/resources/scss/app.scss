@@ -28,7 +28,9 @@ body {
 
 .card {
     border-radius: $border-radius-lg;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    box-shadow:
+        0 4px 6px -1px rgba(0, 0, 0, 0.05),
+        0 2px 4px -1px rgba(0, 0, 0, 0.03);
     transition: all 0.2s ease;
 }
 
@@ -37,7 +39,9 @@ body {
     border-color: $primary;
     color: #fff;
 
-    &:hover, &:focus, &:active {
+    &:hover,
+    &:focus,
+    &:active {
         background-color: $primary-dark !important;
         border-color: $primary-dark !important;
         color: #fff !important;
@@ -48,18 +52,143 @@ body {
     color: $primary;
     border-color: $primary;
 
-    &:hover, &:focus, &:active {
+    &:hover,
+    &:focus,
+    &:active {
         background-color: $primary !important;
         border-color: $primary !important;
         color: #fff !important;
     }
 }
 
-.form-control:focus, .form-select:focus {
+.form-control:focus,
+.form-select:focus {
     border-color: $primary;
     box-shadow: 0 0 0 0.25rem rgba(235, 28, 36, 0.2);
 }
 
 .table {
     --bs-table-hover-bg: rgba(235, 28, 36, 0.03);
+}
+
+.mito-toast-container {
+    z-index: 1100;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    width: min(420px, calc(100vw - 2rem));
+    pointer-events: none;
+}
+
+.mito-toast {
+    --mito-toast-accent: #005bac;
+    --mito-toast-bg: #eff6ff;
+    --mito-toast-text: #164e63;
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    color: var(--mito-toast-text);
+    background: var(--mito-toast-bg);
+    border: 1px solid
+        color-mix(in srgb, var(--mito-toast-accent) 24%, transparent);
+    border-left: 4px solid var(--mito-toast-accent);
+    border-radius: 0.65rem;
+    box-shadow: 0 0.75rem 1.75rem rgba(11, 37, 64, 0.14);
+    pointer-events: auto;
+    transform: translateY(-8px);
+    transition:
+        opacity 0.25s ease,
+        transform 0.25s ease;
+}
+
+.mito-toast.show {
+    transform: translateY(0);
+}
+
+.mito-toast-success {
+    --mito-toast-accent: #198754;
+    --mito-toast-bg: #f0fdf4;
+    --mito-toast-text: #166534;
+}
+.mito-toast-error {
+    --mito-toast-accent: #dc3545;
+    --mito-toast-bg: #fef2f2;
+    --mito-toast-text: #991b1b;
+}
+.mito-toast-warning {
+    --mito-toast-accent: #d97706;
+    --mito-toast-bg: #fffbeb;
+    --mito-toast-text: #92400e;
+}
+.mito-toast-info {
+    --mito-toast-accent: #0d6efd;
+    --mito-toast-bg: #eff6ff;
+    --mito-toast-text: #1e40af;
+}
+
+.mito-toast > .d-flex {
+    width: 100%;
+    min-width: 0;
+}
+.mito-toast-icon {
+    padding: 1rem 0.25rem 1rem 1rem;
+    font-size: 1.15rem;
+    color: var(--mito-toast-accent);
+}
+.mito-toast .toast-body {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0.9rem 0.75rem;
+}
+.mito-toast-title,
+.mito-toast-message {
+    display: block;
+    line-height: 1.4;
+}
+.mito-toast-title {
+    margin-bottom: 0.15rem;
+    font-size: 0.86rem;
+}
+.mito-toast-message {
+    overflow-wrap: anywhere;
+    font-size: 0.84rem;
+}
+.mito-toast .btn-close {
+    flex: 0 0 auto;
+    margin-left: auto;
+    opacity: 0.55;
+}
+.mito-toast-progress {
+    height: 3px;
+    background: var(--mito-toast-accent);
+    transform-origin: left;
+    animation: mito-toast-countdown var(--mito-toast-duration, 4500ms) linear
+        forwards;
+}
+
+@keyframes mito-toast-countdown {
+    from {
+        transform: scaleX(1);
+    }
+    to {
+        transform: scaleX(0);
+    }
+}
+
+@media (max-width: 575.98px) {
+    .mito-toast-container {
+        right: 0;
+        left: 0;
+        width: auto;
+        padding: 0.75rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mito-toast {
+        transition: none;
+    }
+    .mito-toast-progress {
+        animation: none;
+    }
 }
