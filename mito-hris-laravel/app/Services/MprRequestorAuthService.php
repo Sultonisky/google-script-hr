@@ -51,9 +51,8 @@ class MprRequestorAuthService
             ];
         }
 
-        // Role must be Manpower
         $role = trim($requestor['Role'] ?? '');
-        if (strtolower($role) !== 'manpower') {
+        if (!in_array(strtolower($role), ['manpower', 'manager'], true)) {
             return [
                 'success' => false,
                 'error'   => 'Akun ini tidak memiliki akses ke portal MPR.',
@@ -111,7 +110,7 @@ class MprRequestorAuthService
             'user'    => [
                 'email'        => $requestor['Email'],
                 'fullName'     => $requestor['Full Name']    ?? $requestor['Email'],
-                'role'         => 'Manpower',
+                'role'         => $role ?: 'Manpower',
                 'permissions'  => config('hris.auth.role_permissions.Manpower', ['view_mpr', 'create_mpr', 'export_mpr']),
                 'entities'     => $entitiesArray,
                 'branch'       => trim($requestor['Branch'] ?? ''),
