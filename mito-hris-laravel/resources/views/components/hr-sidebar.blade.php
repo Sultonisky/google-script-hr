@@ -8,11 +8,10 @@
     <!-- Brand Header -->
     <div class="sidebar-brand">
         <div class="logo-box">
-            <img src="{{ asset('assets/mito-white.png') }}" alt="MITO" class="sidebar-logo">
+            <img src="{{ asset('assets/brand.png') }}" alt="MITO" class="sidebar-logo">
         </div>
         <div class="brand-text">
-            <strong>MITO</strong>
-            <small>Human Resource Information System</small>
+            <strong>Human Resource Information System</strong>
         </div>
         <button type="button" class="sidebar-close-btn d-lg-none" id="btnSidebarClose" aria-label="Tutup Sidebar">
             <i class="bi bi-x-lg"></i>
@@ -90,20 +89,25 @@
             <!-- System Section -->
             @canany(['view_reports', 'manage_settings'])
                 <div class="nav-section-label">System</div>
-                @can('view_reports')
-                    <a href="{{ route('hr.audit-logs.index') }}"
-                        class="nav-item {{ request()->routeIs('hr.audit-logs.*') ? 'active' : '' }}">
-                        <i class="bi bi-clock-history"></i> Audit Log
-                    </a>
-                @endcan
+
                 @can('manage_settings')
+                    <a href="{{ route('hr.users.index') }}"
+                        class="nav-item {{ request()->routeIs('hr.users.*') ? 'active' : '' }}">
+                        <i class="bi bi-shield-lock"></i> User Management
+                    </a>
+                    <a href="{{ route('hr.mpr-requestors.index') }}"
+                        class="nav-item {{ request()->routeIs('hr.mpr-requestors.*') ? 'active' : '' }}">
+                        <i class="bi bi-person-lines-fill"></i> MPR Requestors
+                    </a>
                     <a href="{{ route('hr.settings.index') }}"
                         class="nav-item {{ request()->routeIs('hr.settings.*') ? 'active' : '' }}">
                         <i class="bi bi-gear-fill"></i> Settings
                     </a>
-                    <a href="{{ route('hr.users.index') }}"
-                        class="nav-item {{ request()->routeIs('hr.users.*') ? 'active' : '' }}">
-                        <i class="bi bi-shield-lock"></i> User Management
+                @endcan
+                @can('view_reports')
+                    <a href="{{ route('hr.audit-logs.index') }}"
+                        class="nav-item {{ request()->routeIs('hr.audit-logs.*') ? 'active' : '' }}">
+                        <i class="bi bi-clock-history"></i> Audit Log
                     </a>
                 @endcan
             @endcanany

@@ -13,6 +13,7 @@ use App\Http\Controllers\HR\AuditLogController;
 use App\Http\Controllers\HR\MasterDataController;
 use App\Http\Controllers\HR\SettingsController;
 use App\Http\Controllers\HR\UserController;
+use App\Http\Controllers\HR\MprRequestorController;
 use App\Http\Controllers\HR\ExportController;
 use App\Http\Controllers\HR\MprController;
 
@@ -122,6 +123,10 @@ Route::prefix('hr')->name('hr.')->middleware(['hr.auth', 'mpr.auth'])->group(fun
     Route::prefix('users')->name('users.')->middleware('can:manage_settings')->group(function () {
         Route::get('/', [UserController::class, 'index'])->name('index')->middleware('can:manage_settings');
         Route::post('/', [UserController::class, 'store'])->name('store')->middleware('can:manage_settings');
+    });
+    Route::prefix('mpr-requestors')->name('mpr-requestors.')->middleware('can:manage_settings')->group(function () {
+        Route::get('/', [MprRequestorController::class, 'index'])->name('index')->middleware('can:manage_settings');
+        Route::post('/', [MprRequestorController::class, 'store'])->name('store')->middleware('can:manage_settings');
     });
 
     // 6. Candidate profile print is available to every recruitment viewer.
