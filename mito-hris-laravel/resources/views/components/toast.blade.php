@@ -1,39 +1,17 @@
-@if(session('success'))
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            if (typeof showToast === 'function') {
-                showToast('{{ session('success') }}', 'success');
-            }
-        });
-    </script>
-@endif
+@php
+    $flashToasts = collect(['success', 'error', 'warning', 'info'])
+        ->filter(fn ($type) => session()->has($type))
+        ->map(fn ($type) => ['type' => $type, 'message' => session($type)])
+        ->values();
+@endphp
 
-@if(session('error'))
+@if ($flashToasts->isNotEmpty())
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            if (typeof showToast === 'function') {
-                showToast('{{ session('error') }}', 'error');
-            }
-        });
-    </script>
-@endif
-
-@if(session('warning'))
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            if (typeof showToast === 'function') {
-                showToast('{{ session('warning') }}', 'warning');
-            }
-        });
-    </script>
-@endif
-
-@if(session('info'))
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            if (typeof showToast === 'function') {
-                showToast('{{ session('info') }}', 'info');
-            }
+            const flashToasts = @json($flashToasts);
+            flashToasts.forEach(function(toast) {
+                if (typeof window.showToast === 'function') window.showToast(toast);
+            });
         });
     </script>
 @endif

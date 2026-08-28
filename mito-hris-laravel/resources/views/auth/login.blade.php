@@ -10,6 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="icon" type="image/png" href="{{ asset('assets/logo-favicon.png') }}">
 
+    @vite(['resources/js/app.js'])
+
 
     <style>
         * {
@@ -618,63 +620,6 @@
             var loginLoading = document.getElementById('loginLoading');
             var btnManualLogin = document.getElementById('btnManualLogin');
             var togglePassword = document.getElementById('togglePassword');
-
-            function showToast(msg, type) {
-                type = type || 'info';
-                var colors = {
-                    success: {
-                        bg: '#F0FDF4',
-                        border: '#BBF7D0',
-                        text: '#166534',
-                        icon: 'bi-check-circle-fill'
-                    },
-                    error: {
-                        bg: '#FEF2F2',
-                        border: '#FECACA',
-                        text: '#991B1B',
-                        icon: 'bi-exclamation-triangle-fill'
-                    },
-                    info: {
-                        bg: '#EFF6FF',
-                        border: '#BFDBFE',
-                        text: '#1E40AF',
-                        icon: 'bi-info-circle-fill'
-                    },
-                    warning: {
-                        bg: '#FFFBEB',
-                        border: '#FDE68A',
-                        text: '#92400E',
-                        icon: 'bi-exclamation-circle-fill'
-                    }
-                };
-                var c = colors[type] || colors.info;
-                var container = document.getElementById('toastContainer');
-                if (!container) {
-                    container = document.createElement('div');
-                    container.id = 'toastContainer';
-                    container.style.cssText =
-                        'position:fixed;top:20px;right:20px;z-index:99999;display:flex;flex-direction:column;gap:10px;pointer-events:none;';
-                    document.body.appendChild(container);
-                }
-                var toast = document.createElement('div');
-                toast.style.cssText =
-                    'pointer-events:auto;display:flex;align-items:center;gap:10px;padding:14px 18px;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.12);font-size:14px;font-weight:500;font-family:Inter,Segoe UI,sans-serif;max-width:400px;opacity:0;transform:translateX(20px);transition:all 0.3s ease;background:' +
-                    c.bg + ';border:1px solid ' + c.border + ';color:' + c.text + ';';
-                toast.innerHTML = '<i class="bi ' + c.icon + '" style="font-size:18px;flex-shrink:0;"></i><span>' +
-                    msg + '</span>';
-                container.appendChild(toast);
-                requestAnimationFrame(function() {
-                    toast.style.opacity = '1';
-                    toast.style.transform = 'translateX(0)';
-                });
-                setTimeout(function() {
-                    toast.style.opacity = '0';
-                    toast.style.transform = 'translateX(20px)';
-                    setTimeout(function() {
-                        if (toast.parentNode) toast.parentNode.removeChild(toast);
-                    }, 300);
-                }, 4000);
-            }
 
             function showError(msg) {
                 loginError.classList.add('show');
