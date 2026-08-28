@@ -58,6 +58,10 @@ class SchemaValidationService
             return false;
         }
 
+        if ($sheetName === 'MPR') {
+            return $this->migrateMprSchema($expectedHeaders);
+        }
+
         $spreadsheetId = config('google.spreadsheet_id');
         $service = $this->sheets->getSheetsService();
 
@@ -139,6 +143,76 @@ class SchemaValidationService
             return true;
         } catch (\Throwable $e) {
             Log::error("Failed to fix headers for {$sheetName}: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Migrate the legacy MPR layout while keeping existing row values aligned.
+     */
+    protected function migrateMprSchema(array $expectedHeaders): bool
+    {
+        $spreadsheetId = config('google.spreadsheet_id');
+        $service = $this->sheets->getSheetsService();
+        $legacyAliases = [
+            'Requestor Name' => ['Manager Name'],
+            'Requestor Email' => ['Manager Email'],
+            'Entity' => ['Company'],
+        ];
+
+        try {
+            $data = $this->sheets->getRange('MPR', 'A:ZZ', false);
+            $currentHeaders = !empty($data[0]) ? array_map('trim', $data[0]) : [];
+            if (empty($currentHeaders)) {
+                return false;
+            }
+
+            $headerIndexes = [];
+            foreach ($currentHeaders as $index => $header) {
+                if ($header !== '') {
+                    $headerIndexes[$header][] = $index;
+                }
+            }
+
+            $rows = [];
+            foreach (array_slice($data, 1) as $row) {
+                $newRow = [];
+                foreach ($expectedHeaders as $header) {
+                    $candidateHeaders = array_merge($legacyAliases[$header] ?? [], [$header]);
+                    $value = '';
+                    foreach ($candidateHeaders as $candidate) {
+                        foreach ($headerIndexes[$candidate] ?? [] as $index) {
+                            if (isset($row[$index]) && trim((string) $row[$index]) !== '') {
+                                $value = $row[$index];
+                                break 2;
+                            }
+                        }
+                    }
+                    $newRow[] = $value;
+                }
+                $rows[] = $newRow;
+            }
+
+            $service->spreadsheets_values->update(
+                $spreadsheetId,
+                'MPR!A1:W' . max(1, count($rows) + 1),
+                new \Google\Service\Sheets\ValueRange(['values' => array_merge([$expectedHeaders], $rows)]),
+                ['valueInputOption' => 'USER_ENTERED']
+            );
+
+            // Remove obsolete duplicate headers without deleting any row data.
+            if (count($currentHeaders) > count($expectedHeaders)) {
+                $service->spreadsheets_values->clear(
+                    $spreadsheetId,
+                    'MPR!X1:ZZ1',
+                    new \Google\Service\Sheets\ClearValuesRequest()
+                );
+            }
+
+            $this->sheets->clearCache('MPR');
+            return true;
+        } catch (\Throwable $e) {
+            Log::error('Failed to migrate MPR schema: ' . $e->getMessage());
             return false;
         }
     }
