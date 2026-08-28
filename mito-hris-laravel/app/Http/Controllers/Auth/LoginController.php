@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Services\AuthService;
 use App\Services\MprRequestorAuthService;
+use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,6 +18,7 @@ class LoginController extends Controller
     public function __construct(
         protected AuthService $authService,
         protected MprRequestorAuthService $mprRequestorAuthService,
+        protected AuditLogRepositoryInterface $auditRepo,
     ) {}
 
     /**
@@ -85,6 +87,8 @@ class LoginController extends Controller
      */
     public function logout(Request $request): RedirectResponse
     {
+        $user = session('hr_user', []);
+        $this->auditRepo->log('Authentication', $user['email'] ?? 'UNKNOWN', 'logged_out', null, null, null, $user['email'] ?? 'UNKNOWN', 'Authentication');
         session()->forget('hr_user');
         $request->session()->invalidate();
         $request->session()->regenerateToken();
@@ -141,6 +145,7 @@ class LoginController extends Controller
         $request->session()->regenerate();
         $request->session()->forget('hris_remember');
         $request->session()->put('hr_user', $user);
+        $this->auditRepo->log('Authentication', $user['email'] ?? $user['username'] ?? 'UNKNOWN', 'logged_in', null, null, null, $user['email'] ?? 'UNKNOWN', 'Authentication');
 
         if ($remember) {
             $request->session()->put('hris_remember', true);
@@ -166,6 +171,7 @@ class LoginController extends Controller
         string $errorMessage
     ): RedirectResponse|JsonResponse {
         $genericError = 'Email/username atau password salah.';
+        $this->auditRepo->log('Authentication', $request->input('identifier', 'UNKNOWN'), 'login_failed', null, null, null, $request->input('identifier', 'UNKNOWN'), 'Authentication');
 
         if ($request->expectsJson()) {
             return response()->json([

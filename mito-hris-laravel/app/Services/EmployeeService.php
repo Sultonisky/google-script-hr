@@ -299,12 +299,14 @@ class EmployeeService
             $imported++;
 
             $this->auditRepo->log(
-                recruitmentId: $empId,
+                entityType: 'Employee',
+                entityId: $empId,
                 action: 'Import',
                 field: 'Status Employee',
                 oldValue: '-',
                 newValue: $employee->statusEmployee ?? 'Active',
-                user: $user
+                user: $user,
+                source: 'Dashboard'
             );
         }
 
@@ -402,12 +404,14 @@ class EmployeeService
 
         if ($success) {
             $this->auditRepo->log(
-                recruitmentId: $employeeId,
+                entityType: 'Employee',
+                entityId: $employeeId,
                 action: 'ROTATION_' . strtoupper($rotationType),
                 field: 'Job Position / Dept',
                 oldValue: "{$oldPosition} ({$oldDepartment})",
                 newValue: "{$newPosition} ({$newDepartment}) | SK: {$skNumber}",
-                user: $user
+                user: $user,
+                source: 'Dashboard'
             );
         }
 
@@ -538,12 +542,14 @@ class EmployeeService
         }
 
         $this->auditRepo->log(
-            recruitmentId: $employeeId,
+            entityType: 'Employee',
+            entityId: $employeeId,
             action: 'OFFBOARDING_' . strtoupper($offboardingType),
             field: 'Status Employee',
             oldValue: $oldStatus,
             newValue: "{$newStatus} — {$offboardingType} (SK: {$skNumber})",
-            user: $user
+            user: $user,
+            source: 'Dashboard'
         );
 
         // Step 2: Upload attachment documents to Google Drive
@@ -579,12 +585,14 @@ class EmployeeService
                         $driveResult['uploaded']
                     ));
                     $this->auditRepo->log(
-                        recruitmentId: $employeeId,
+                        entityType: 'Employee',
+                        entityId: $employeeId,
                         action: 'OFFBOARDING_DOCUMENT',
                         field: 'Offboarding Document Links',
                         oldValue: '-',
                         newValue: $docSummary,
-                        user: $user
+                        user: $user,
+                        source: 'Dashboard'
                     );
                 }
             }
@@ -653,12 +661,14 @@ class EmployeeService
 
         if ($success) {
             $this->auditRepo->log(
-                recruitmentId: $employeeId,
+                entityType: 'Employee',
+                entityId: $employeeId,
                 action: 'OFF_CONTRACT',
                 field: 'Status Employee',
                 oldValue: $employee->statusEmployee,
                 newValue: 'Contract Finished',
-                user: $user
+                user: $user,
+                source: 'Dashboard'
             );
         }
 
@@ -824,12 +834,14 @@ class EmployeeService
 
         // --- 3. Audit log (1:1 GAS writeAuditLog_) ---
         $this->auditRepo->log(
-            recruitmentId: $employeeId,
+            entityType: 'Employee',
+            entityId: $employeeId,
             action: 'Ajukan Probation',
             field: 'Status Employee',
             oldValue: 'Contract',
             newValue: 'Probation — Diajukan oleh ' . $user . ($probNotes ? ' (' . $probNotes . ')' : ''),
-            user: $user
+            user: $user,
+            source: 'Dashboard'
         );
 
         return [

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\HR\StoreMprRequest;
 use App\Http\Requests\HR\UpdateMprRequest;
 use App\Repositories\Contracts\MprRepositoryInterface;
+use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Services\MarkdownRenderer;
 use App\Services\MprPdfService;
 use Illuminate\Http\JsonResponse;
@@ -22,15 +23,18 @@ class MprController extends Controller
     protected MprRepositoryInterface $mprRepo;
     protected MprPdfService $pdfService;
     protected MarkdownRenderer $markdownRenderer;
+    protected AuditLogRepositoryInterface $auditRepo;
 
     public function __construct(
         MprRepositoryInterface $mprRepo,
         MprPdfService $pdfService,
-        MarkdownRenderer $markdownRenderer
+        MarkdownRenderer $markdownRenderer,
+        AuditLogRepositoryInterface $auditRepo
     ) {
         $this->mprRepo = $mprRepo;
         $this->pdfService = $pdfService;
         $this->markdownRenderer = $markdownRenderer;
+        $this->auditRepo = $auditRepo;
     }
 
     /**
@@ -288,6 +292,11 @@ class MprController extends Controller
             return redirect()->back()->withInput()->with('error', 'Gagal menyimpan data MPR: ' . $e->getMessage());
         }
 
+        $this->auditRepo->log(
+            'MPR', $savedMpr->mprNumber, 'created', null, null, $savedMpr->toArray(),
+            $user['email'] ?? 'Manpower', $isManager ? 'Public' : 'Dashboard'
+        );
+
         // Prepare PDF URL
         $pdfUrl = route('hr.mpr.pdf', ['id' => $savedMpr->mprNumber]);
 
@@ -392,6 +401,20 @@ class MprController extends Controller
             return response()->json(['success' => false, 'message' => 'Terjadi kesalahan saat memperbarui MPR.'], 500);
         }
 
+        $actor = session('hr_user.email', session('hr_user.fullName', 'HR Administrator'));
+        foreach ($validated as $field => $newValue) {
+            $property = match ($field) {
+                'job_level' => 'jobLevel', 'work_location' => 'workLocation',
+                'employment_type' => 'employmentType', 'expected_join_date' => 'expectedJoinDate',
+                'replacement_for' => 'replacementFor', 'job_description' => 'jobDescription',
+                default => $field,
+            };
+            $oldValue = $existing->{$property} ?? null;
+            if ((string) $oldValue !== (string) $newValue) {
+                $this->auditRepo->log('MPR', $existing->mprNumber ?? $id, 'updated', $field, $oldValue, $newValue, $actor, 'Dashboard');
+            }
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'MPR berhasil diperbarui.',
@@ -482,6 +505,8 @@ class MprController extends Controller
 
         $pdf = $this->pdfService->generate($mpr);
         $fileName = "MPR-{$mpr->mprNumber}.pdf";
+
+        $this->auditRepo->log('MPR', $mpr->mprNumber, 'generated', 'document', null, 'MPR PDF', $user['email'] ?? 'Manpower', 'Dashboard');
 
         return $pdf->stream($fileName);
     }

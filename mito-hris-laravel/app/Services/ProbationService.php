@@ -297,12 +297,14 @@ class ProbationService
         // ── 5. Audit log ──────────────────────────────────────────
         $action = $isLulus ? 'Probation Lulus' : ($isPutusKontrak ? 'Probation Putus Kontrak' : 'Probation Diperpanjang');
         $this->auditRepo->log(
-            recruitmentId: $employeeId,
+            entityType: 'Probation',
+            entityId: $employeeId,
             action: $action,
             field: 'Employment Status',
             oldValue: $employee->statusEmployee ?? 'Probation',
             newValue: "{$decision} (total {$overallTotal}/13, {$category})" . ($skNumber ? " — {$skNumber}" : ''),
-            user: $user
+            user: $user,
+            source: 'Dashboard'
         );
 
         $decisionType = ProbationDecisionType::fromDecisionString($decision);

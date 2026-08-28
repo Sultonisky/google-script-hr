@@ -336,12 +336,14 @@ class RecruitmentService
         // -- 3. Audit log (event + entri khusus Kontrak PKWT) -----
         event(new EmployeeHired($employee, $recruitmentId, $user));
         $this->auditRepo->log(
-            recruitmentId: $recruitmentId,
-            action: 'Kontrak PKWT',
+            entityType: 'Employee',
+            entityId: $employeeId,
+            action: 'created',
             field: 'Employment Status',
             oldValue: 'Accepted',
             newValue: "Contract — Employee {$employeeId} ({$contractNumber}) by {$user}",
-            user: $user
+            user: $user,
+            source: 'Dashboard'
         );
 
         return [

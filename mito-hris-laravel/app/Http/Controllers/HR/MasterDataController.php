@@ -5,6 +5,7 @@ namespace App\Http\Controllers\HR;
 use App\Http\Controllers\Controller;
 use App\Repositories\Contracts\CandidateRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
+use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -14,13 +15,16 @@ class MasterDataController extends Controller
 {
     protected CandidateRepositoryInterface $candidateRepo;
     protected EmployeeRepositoryInterface $employeeRepo;
+    protected AuditLogRepositoryInterface $auditRepo;
 
     public function __construct(
         CandidateRepositoryInterface $candidateRepo,
-        EmployeeRepositoryInterface $employeeRepo
+        EmployeeRepositoryInterface $employeeRepo,
+        AuditLogRepositoryInterface $auditRepo
     ) {
         $this->candidateRepo = $candidateRepo;
         $this->employeeRepo = $employeeRepo;
+        $this->auditRepo = $auditRepo;
     }
 
     public function index(Request $request): View
@@ -75,6 +79,7 @@ class MasterDataController extends Controller
         if (!in_array($name, $existing)) {
             $existing[] = $name;
             Cache::forever($cacheKey, $existing);
+            $this->auditRepo->log('MasterData', $cat, 'created', 'name', null, $name, session('hr_user.email', 'HR Administrator'), 'Dashboard');
         }
 
         return redirect()->route('hr.master-data.index', ['cat' => $cat])
