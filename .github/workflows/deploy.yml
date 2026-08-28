@@ -47,7 +47,7 @@ jobs:
         run: npm run build
 
   deploy:
-    name: Deploy to Production
+    name: Deploy Production
     runs-on: ubuntu-latest
     needs: test
 
@@ -82,10 +82,7 @@ jobs:
 
             echo "== Checking Node dependencies =="
             if [ ! -d "node_modules" ]; then
-              echo "node_modules not found. Installing..."
               npm ci
-            else
-              echo "node_modules already exists. Skipping npm install."
             fi
 
             echo "== Building frontend assets =="
