@@ -1,98 +1,38 @@
-name: Deploy HRIS
+- name: Deploy via SSH
+  uses: appleboy/ssh-action@v1.2.2
+  with:
+    host: ${{ secrets.SERVER_HOST }}
+    username: ${{ secrets.SERVER_USER }}
+    key: ${{ secrets.SERVER_SSH_KEY }}
+    command_timeout: 30m
+    script: |
+      set -e
 
-on:
-  push:
-    branches:
-      - main
+      cd /home/ubuntu/hris/mito-hris-laravel
 
-jobs:
-  deploy:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
+      echo "== Updating source =="
+      git fetch origin main
+      git reset --hard origin/main
 
-    steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.2.2
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          command_timeout: 20m
-          script: |
-            set -e
+      echo "== Installing dependencies =="
+      composer install --no-dev --optimize-autoloader --no-interaction
 
-            cd /home/ubuntu/hris/mito-hris-laravel
+      echo "== Running Laravel tests =="
+      php artisan test
 
-            echo "========================================"
-            echo "== 1. Updating source =="
-            echo "========================================"
+      echo "== Running MITO diagnostics =="
+      php artisan mito:diagnose
 
-            git fetch origin main
-            git reset --hard origin/main
+      echo "== Checking Google Sheets =="
+      php artisan mito:health-check
+      php artisan mito:setup-sheets
+      php artisan mito:validate-schema
+      php artisan mito:sync
 
-            echo "========================================"
-            echo "== 2. Installing dependencies =="
-            echo "========================================"
+      echo "== Laravel optimization =="
+      php artisan optimize:clear
+      php artisan config:cache
+      php artisan route:cache
+      php artisan view:cache
 
-            composer install \
-              --no-interaction \
-              --prefer-dist \
-              --optimize-autoloader
-
-            echo "========================================"
-            echo "== 3. Running Laravel tests =="
-            echo "========================================"
-
-            php artisan test
-
-            echo "========================================"
-            echo "== 4. MITO deep diagnostics =="
-            echo "========================================"
-
-            php artisan mito:diagnose
-
-            echo "========================================"
-            echo "== 5. Google Sheets health check =="
-            echo "========================================"
-
-            php artisan mito:health-check
-
-            echo "========================================"
-            echo "== 6. Google Sheets schema validation =="
-            echo "========================================"
-
-            php artisan mito:validate-schema
-
-            echo "========================================"
-            echo "== 7. Google Sheets setup =="
-            echo "========================================"
-
-            php artisan mito:setup-sheets
-
-            echo "========================================"
-            echo "== 8. Google Sheets sync =="
-            echo "========================================"
-
-            php artisan mito:sync
-
-            echo "========================================"
-            echo "== 9. Production dependencies =="
-            echo "========================================"
-
-            composer install \
-              --no-dev \
-              --optimize-autoloader \
-              --no-interaction
-
-            echo "========================================"
-            echo "== 10. Laravel optimization =="
-            echo "========================================"
-
-            php artisan optimize:clear
-            php artisan config:cache
-            php artisan route:cache
-            php artisan view:cache
-
-            echo "========================================"
-            echo "== DEPLOYMENT SUCCESSFUL =="
-            echo "========================================"
+      echo "== Deployment completed successfully =="
