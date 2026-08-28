@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', 'Karir & Rekrutmen - MITO Group')
+@section('title', 'Karir dan Rekrutmen - MITO Career Portal')
 @section('description',
     'Temukan informasi proses rekrutmen dan peluang karir melalui MITO HRIS Career Portal.
     Pendaftaran dilakukan secara online tanpa biaya.')
