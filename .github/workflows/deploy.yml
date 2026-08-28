@@ -1,14 +1,55 @@
-name: Deploy HRIS
+name: Deploy MITO HRIS
 
 on:
   push:
     branches:
       - main
 
+  workflow_dispatch:
+
 jobs:
+  test:
+    name: Laravel Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: mbstring, bcmath, intl, pdo, pdo_sqlite
+          coverage: none
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Prepare Laravel environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Run Laravel tests
+        run: php artisan test
+
+      - name: Build frontend assets
+        run: npm run build
+
   deploy:
     name: Deploy to Production
     runs-on: ubuntu-latest
+    needs: test
 
     steps:
       - name: Deploy via SSH
@@ -18,31 +59,37 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           command_timeout: 30m
+
           script: |
             set -e
 
             cd /home/ubuntu/hris/mito-hris-laravel
 
+            echo "========================================"
+            echo "       MITO HRIS PRODUCTION DEPLOY"
+            echo "========================================"
+
             echo "== Updating source =="
             git fetch origin main
             git reset --hard origin/main
 
-            echo "== Installing PHP dependencies =="
-            composer install --no-dev --optimize-autoloader --no-interaction
+            echo "== Installing production PHP dependencies =="
+            composer install \
+              --no-dev \
+              --no-interaction \
+              --prefer-dist \
+              --optimize-autoloader
 
             echo "== Checking Node dependencies =="
             if [ ! -d "node_modules" ]; then
               echo "node_modules not found. Installing..."
-              npm install
+              npm ci
             else
               echo "node_modules already exists. Skipping npm install."
             fi
 
             echo "== Building frontend assets =="
             npm run build
-
-            echo "== Running Laravel tests =="
-            php artisan test
 
             echo "== Running MITO diagnostics =="
             php artisan mito:diagnose
@@ -59,4 +106,9 @@ jobs:
             php artisan route:cache
             php artisan view:cache
 
-            echo "== Deployment completed successfully =="
+            echo "== Reloading PHP-FPM =="
+            sudo systemctl reload php8.3-fpm
+
+            echo "========================================"
+            echo "   DEPLOYMENT COMPLETED SUCCESSFULLY"
+            echo "========================================"
