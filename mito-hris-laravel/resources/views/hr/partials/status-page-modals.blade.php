@@ -2089,6 +2089,9 @@
                     if (result && result.success) {
                         if (typeof showToast === 'function') showToast(
                             'Data offering berhasil disimpan.', 'success');
+                        if (result.pdf_url) {
+                            window.open(result.pdf_url, '_blank');
+                        }
                         var modal = bootstrap.Modal.getInstance(document.getElementById(
                             'offeringModal'));
                         if (modal) modal.hide();
