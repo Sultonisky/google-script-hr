@@ -16,7 +16,7 @@ class ApplyJobRequest extends FormRequest
         return [
             // Field names match apply.blade.php form inputs
             'posisi_dilamar'        => ['required', 'string', 'max:255'],
-            'nama_lengkap'          => ['required', 'string', 'max:255'],
+            'nama_lengkap'          => ['required', 'string', 'min:3', 'max:255', 'regex:/^[\p{L}]+(?:[ ]+[\p{L}]+)*$/u'],
             'nik'                   => ['required', 'digits:16'],
             'email'                 => ['required', 'email', 'max:255'],
             'nomor_telepon'         => ['required', 'string', 'max:30'],
@@ -46,6 +46,7 @@ class ApplyJobRequest extends FormRequest
         return [
             'posisi_dilamar.required' => 'Posisi yang dilamar wajib dipilih.',
             'nama_lengkap.required'   => 'Nama lengkap wajib diisi sesuai KTP.',
+            'nama_lengkap.regex'      => 'Nama lengkap hanya boleh berisi huruf dan spasi.',
             'nik.required'            => 'Nomor Induk Kependudukan (NIK) wajib diisi.',
             'nik.digits'              => 'NIK harus berupa 16 digit angka.',
             'email.required'          => 'Alamat email wajib diisi.',
