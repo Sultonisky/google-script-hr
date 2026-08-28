@@ -69,7 +69,7 @@ class MprFlowTest extends TestCase
             entity: $overrides['entity']          ?? 'MSI',
             branch: $overrides['branch']          ?? 'Head Office (HO)',
             department: $overrides['department']      ?? 'IT',
-            division: $overrides['division']        ?? 'IT',
+            division: $overrides['division']        ?? 'IT Support',
             position: $overrides['position']        ?? 'Backend Developer',
             jobLevel: $overrides['jobLevel']        ?? 'Staff',
             workLocation: $overrides['workLocation']    ?? 'Head Office (HO)',
@@ -204,7 +204,7 @@ class MprFlowTest extends TestCase
         $payload = [
             'position'           => 'Senior Laravel Engineer',
             'department'         => 'IT',
-            'division'           => 'IT',
+            'division'           => 'IT Support',
             'job_level'          => 'Senior Staff',
             'work_location'      => 'Head Office (HO)',
             'employment_type'    => 'Permanent (PKWTT)',
@@ -240,7 +240,7 @@ class MprFlowTest extends TestCase
         $payload = [
             'position'           => 'Staff Finance',
             'department'         => 'Finance',
-            'division'           => 'FAT & GA',
+            'division'           => 'Financial Planning & Analysis (FP&A)',
             'job_level'          => 'Staff',
             'work_location'      => 'Head Office (HO)',
             'employment_type'    => 'Permanent (PKWTT)',
@@ -263,7 +263,7 @@ class MprFlowTest extends TestCase
         $payload = [
             'position'           => 'Staff IT',
             'department'         => 'IT',
-            'division'           => 'IT',
+            'division'           => 'IT Support',
             'job_level'          => 'Staff',
             'work_location'      => 'Head Office (HO)',
             'employment_type'    => 'Permanent (PKWTT)',
@@ -291,7 +291,7 @@ class MprFlowTest extends TestCase
             'requestorEmail' => $managerB,
             'entity'        => 'MSI',
             'department'    => 'Finance',
-            'division'      => 'FAT & GA',
+            'division'      => 'Financial Planning & Analysis (FP&A)',
             'position'      => 'Accounting Staff',
             'quantity'      => 1,
             'createdBy'     => $managerB,
@@ -351,7 +351,7 @@ class MprFlowTest extends TestCase
         $payload = [
             'position'           => 'HR Recruiter',
             'department'         => 'Human Resources',
-            'division'           => 'HR & Legal',
+            'division'           => 'HR Operations',
             'job_level'          => 'Staff',
             'work_location'      => 'Head Office (HO)',
             'employment_type'    => 'Permanent (PKWTT)',
@@ -393,7 +393,7 @@ class MprFlowTest extends TestCase
         $response = $this->putJson('/hr/mpr/MPR-20260824-0001', [
             'position' => 'Senior Backend Developer',
             'department' => 'IT',
-            'division' => 'IT',
+            'division' => 'IT Support',
             'job_level' => 'Senior Staff',
             'work_location' => 'Head Office (HO)',
             'employment_type' => 'Permanent (PKWTT)',
@@ -435,7 +435,7 @@ class MprFlowTest extends TestCase
         $payload = [
             'position'           => 'Staff Admin',
             'department'         => 'GA',
-            'division'           => 'Operations',
+            'division'           => 'General Affairs',
             'job_level'          => 'Staff',
             'work_location'      => 'Head Office (HO)',
             'employment_type'    => 'Contract (PKWT)',
@@ -505,6 +505,47 @@ class MprFlowTest extends TestCase
             'reason',
             'entity',
         ]);
+    }
+
+    /** @test */
+    public function create_rejects_division_from_another_department(): void
+    {
+        $this->actingAsRole('Manpower', null, null, ['MSI'], 'Jakarta');
+
+        $response = $this->postJson('/hr/mpr', [
+            'position' => 'Finance Staff',
+            'department' => 'Finance',
+            'division' => 'HR Operations',
+            'job_level' => 'Staff',
+            'work_location' => 'Head Office (HO)',
+            'employment_type' => 'Permanent (PKWTT)',
+            'quantity' => 1,
+            'expected_join_date' => '2026-09-15',
+            'reason' => 'Penambahan Karyawan Baru (Business Expansion)',
+            'entity' => 'MSI',
+        ]);
+
+        $response->assertStatus(422)->assertJsonValidationErrors('division');
+    }
+
+    /** @test */
+    public function update_rejects_division_from_another_department(): void
+    {
+        $this->actingAsRole('Admin');
+
+        $response = $this->putJson('/hr/mpr/MPR-20260824-0001', [
+            'position' => 'Finance Staff',
+            'department' => 'Finance',
+            'division' => 'HR Operations',
+            'job_level' => 'Staff',
+            'work_location' => 'Head Office (HO)',
+            'employment_type' => 'Permanent (PKWT)',
+            'quantity' => 1,
+            'expected_join_date' => '2026-09-15',
+            'reason' => 'Penambahan Karyawan Baru (Business Expansion)',
+        ]);
+
+        $response->assertStatus(422)->assertJsonValidationErrors('division');
     }
 
     /** @test */

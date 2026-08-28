@@ -84,39 +84,9 @@ class MprController extends Controller
         $paginatedMprs = $mprs->slice($offset, $perPage)->values();
         $lastPage = max(1, (int) ceil($total / $perPage));
 
-        // Master dropdown values
-        $departments = [
-            'Human Resources',
-            'Finance',
-            'Accounting',
-            'Marketing',
-            'Digital Marketing',
-            'Sales',
-            'IT',
-            'Engineering',
-            'Operations',
-            'Legal',
-            'GA',
-            'Warehouse',
-            'Purchasing',
-            'Quality Control',
-            'Customer Service',
-            'Creative',
-        ];
-
-        $divisions = [
-            'RnD & aftersales',
-            'Sales',
-            'FAT & GA',
-            'Manufacture',
-            'E-Commerce',
-            'IT',
-            'Digital Marketing',
-            'Marketing',
-            'Creative',
-            'HR & Legal',
-            'Operations',
-        ];
+        // MPR organization catalog is shared by the form and validation rules.
+        $departmentDivisionMap = config('hris.mpr_department_divisions', []);
+        $departments = array_keys($departmentDivisionMap);
 
         $jobLevels = ['Associate', 'Staff', 'Senior Staff', 'Supervisor', 'Team Lead', 'Manager', 'General Manager', 'Director'];
 
@@ -159,7 +129,7 @@ class MprController extends Controller
             'perPage',
             'stats',
             'departments',
-            'divisions',
+            'departmentDivisionMap',
             'jobLevels',
             'workLocations',
             'employmentTypes',
@@ -293,8 +263,14 @@ class MprController extends Controller
         }
 
         $this->auditRepo->log(
-            'MPR', $savedMpr->mprNumber, 'created', null, null, $savedMpr->toArray(),
-            $user['email'] ?? 'Manpower', $isManager ? 'Public' : 'Dashboard'
+            'MPR',
+            $savedMpr->mprNumber,
+            'created',
+            null,
+            null,
+            $savedMpr->toArray(),
+            $user['email'] ?? 'Manpower',
+            $isManager ? 'Public' : 'Dashboard'
         );
 
         // Prepare PDF URL
@@ -404,9 +380,12 @@ class MprController extends Controller
         $actor = session('hr_user.email', session('hr_user.fullName', 'HR Administrator'));
         foreach ($validated as $field => $newValue) {
             $property = match ($field) {
-                'job_level' => 'jobLevel', 'work_location' => 'workLocation',
-                'employment_type' => 'employmentType', 'expected_join_date' => 'expectedJoinDate',
-                'replacement_for' => 'replacementFor', 'job_description' => 'jobDescription',
+                'job_level' => 'jobLevel',
+                'work_location' => 'workLocation',
+                'employment_type' => 'employmentType',
+                'expected_join_date' => 'expectedJoinDate',
+                'replacement_for' => 'replacementFor',
+                'job_description' => 'jobDescription',
                 default => $field,
             };
             $oldValue = $existing->{$property} ?? null;

@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\HR;
 
+use App\Rules\DivisionBelongsToDepartment;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateMprRequest extends FormRequest
 {
@@ -15,8 +17,8 @@ class UpdateMprRequest extends FormRequest
     {
         return [
             'position'           => ['required', 'string', 'max:255'],
-            'department'         => ['required', 'string', 'max:255'],
-            'division'           => ['required', 'string', 'max:255'],
+            'department'         => ['required', 'string', 'max:255', Rule::in(array_keys(config('hris.mpr_department_divisions', [])))],
+            'division'           => ['required', 'string', 'max:255', new DivisionBelongsToDepartment((string) $this->input('department'))],
             'job_level'          => ['required', 'string', 'max:255'],
             'work_location'      => ['required', 'string', 'max:255'],
             'employment_type'    => ['required', 'string', 'max:255'],
