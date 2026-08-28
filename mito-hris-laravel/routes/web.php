@@ -150,6 +150,8 @@ Route::prefix('hr')->name('hr.')->middleware(['hr.auth', 'mpr.auth'])->group(fun
         Route::get('/', [MprController::class, 'index'])->name('index');
         Route::get('/create', [MprController::class, 'index'])->name('create')->middleware('can:create_mpr');
         Route::post('/', [MprController::class, 'store'])->name('store')->middleware('can:create_mpr');
+        Route::put('/{id}', [MprController::class, 'update'])->name('update')->middleware('can:update_mpr');
+        Route::get('/{id}/preview', [MprController::class, 'preview'])->name('preview');
         Route::get('/{id}', [MprController::class, 'show'])->name('show');
         Route::get('/{id}/json', [MprController::class, 'getJson'])->name('json');
         Route::get('/{id}/pdf', [MprController::class, 'exportPdf'])->name('pdf')->middleware('can:export_mpr');

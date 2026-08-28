@@ -125,4 +125,27 @@ class MprSheetsRepository implements MprRepositoryInterface
 
         return $data;
     }
+
+    public function update(string $mprNumber, MprData $data): MprData
+    {
+        $row = $this->sheets->findRowBy($this->sheetName, 'MPR Number', trim($mprNumber));
+        if (!$row || empty($row['_row_number'])) {
+            throw new \RuntimeException("MPR '{$mprNumber}' tidak ditemukan.");
+        }
+
+        $serialized = $data->toSheetRow();
+        $rowValues = [];
+        foreach ($row as $header => $value) {
+            if ($header === '_row_number') {
+                continue;
+            }
+            $rowValues[] = array_key_exists($header, $serialized) ? $serialized[$header] : $value;
+        }
+
+        if (!$this->sheets->updateRow($this->sheetName, (int) $row['_row_number'], $rowValues)) {
+            throw new \RuntimeException("Gagal memperbarui baris MPR '{$mprNumber}'.");
+        }
+
+        return $data;
+    }
 }

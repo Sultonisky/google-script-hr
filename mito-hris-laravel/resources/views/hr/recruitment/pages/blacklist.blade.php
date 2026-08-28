@@ -45,10 +45,7 @@
                             placeholder="Cari ID, nama, posisi, alasan..." value="{{ request('search') }}" />
                     </div>
                     <select class="filter-select" name="sort" id="blSortSelect" onchange="this.form.submit()">
-                        <option value="newest" {{ request('sort') === 'newest' ? 'selected' : '' }}>Terbaru</option>
-                        <option value="oldest" {{ request('sort') === 'oldest' ? 'selected' : '' }}>Terlama</option>
-                        <option value="name_asc" {{ request('sort') === 'name_asc' ? 'selected' : '' }}>Nama A-Z</option>
-                        <option value="name_desc" {{ request('sort') === 'name_desc' ? 'selected' : '' }}>Nama Z-A</option>
+                        <option value="newest" selected>Terbaru</option>
                     </select>
                     <a href="{{ route('hr.recruitment.blacklist') }}" class="btn-reset-filter text-decoration-none"
                         id="btnBlReset">
@@ -109,14 +106,10 @@
             </div>
 
             <div class="panel-footer">
-                <span id="blFooterCount">Menampilkan {{ $paginatedCandidates->count() > 0 ? (($currentPage - 1) * $perPage + 1) . '–' . min($currentPage * $perPage, $total) : 0 }} dari {{ $total }} data</span>
-                <x-pagination 
-                    :currentPage="$currentPage" 
-                    :total="$total" 
-                    :perPage="$perPage" 
-                    :route="'hr.recruitment.blacklist'"
-                    :queryParams="['search' => request('search')]"
-                />
+                <span id="blFooterCount">Menampilkan
+                    {{ $paginatedCandidates->count() > 0 ? ($currentPage - 1) * $perPage + 1 . '–' . min($currentPage * $perPage, $total) : 0 }}
+                    dari {{ $total }} data</span>
+                <x-pagination :currentPage="$currentPage" :total="$total" :perPage="$perPage" :route="'hr.recruitment.blacklist'" :queryParams="['search' => request('search')]" />
             </div>
         </div>
     </section>
@@ -124,12 +117,12 @@
 
 @section('scripts')
     <script>
-  document.querySelectorAll('#blTableBody tr[data-drawer-type="candidate"]').forEach(function(row) {
-    row.addEventListener('click', function(e) {
-      e.stopPropagation();
-      var id = this.getAttribute('data-drawer-id');
-      if (id && typeof openCandidateDrawer === 'function') openCandidateDrawer(id);
-    });
-  });
+        document.querySelectorAll('#blTableBody tr[data-drawer-type="candidate"]').forEach(function(row) {
+            row.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var id = this.getAttribute('data-drawer-id');
+                if (id && typeof openCandidateDrawer === 'function') openCandidateDrawer(id);
+            });
+        });
     </script>
 @endsection

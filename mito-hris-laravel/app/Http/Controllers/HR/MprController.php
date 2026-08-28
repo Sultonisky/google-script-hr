@@ -5,6 +5,7 @@ namespace App\Http\Controllers\HR;
 use App\DTOs\MprData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\HR\StoreMprRequest;
+use App\Http\Requests\HR\UpdateMprRequest;
 use App\Repositories\Contracts\MprRepositoryInterface;
 use App\Services\MarkdownRenderer;
 use App\Services\MprPdfService;
@@ -33,7 +34,7 @@ class MprController extends Controller
     }
 
     /**
-    * Display list of MPR records (for HR) or Manpower's own requests + submission form.
+     * Display list of MPR records (for HR) or Manpower's own requests + submission form.
      */
     public function index(Request $request): View
     {
@@ -59,6 +60,8 @@ class MprController extends Controller
             $mprs = $this->mprRepo->getAll($filters);
         }
 
+        $mprs = $mprs->sortByDesc(fn($mpr) => $mpr->requestDate ?? $mpr->createdAt ?? '')->values();
+
         // Aggregate statistics for dashboard metrics
         $allMprs = $isManpower ? $mprs : $this->mprRepo->getAll();
         $thisMonthStr = now()->timezone('Asia/Jakarta')->format('Y-m');
@@ -79,14 +82,36 @@ class MprController extends Controller
 
         // Master dropdown values
         $departments = [
-            'Human Resources', 'Finance', 'Accounting', 'Marketing', 'Digital Marketing',
-            'Sales', 'IT', 'Engineering', 'Operations', 'Legal', 'GA', 'Warehouse',
-            'Purchasing', 'Quality Control', 'Customer Service', 'Creative',
+            'Human Resources',
+            'Finance',
+            'Accounting',
+            'Marketing',
+            'Digital Marketing',
+            'Sales',
+            'IT',
+            'Engineering',
+            'Operations',
+            'Legal',
+            'GA',
+            'Warehouse',
+            'Purchasing',
+            'Quality Control',
+            'Customer Service',
+            'Creative',
         ];
 
         $divisions = [
-            'RnD & aftersales', 'Sales', 'FAT & GA', 'Manufacture', 'E-Commerce',
-            'IT', 'Digital Marketing', 'Marketing', 'Creative', 'HR & Legal', 'Operations',
+            'RnD & aftersales',
+            'Sales',
+            'FAT & GA',
+            'Manufacture',
+            'E-Commerce',
+            'IT',
+            'Digital Marketing',
+            'Marketing',
+            'Creative',
+            'HR & Legal',
+            'Operations',
         ];
 
         $jobLevels = ['Associate', 'Staff', 'Senior Staff', 'Supervisor', 'Team Lead', 'Manager', 'General Manager', 'Director'];
@@ -149,7 +174,7 @@ class MprController extends Controller
      * Security:
      * - Entity divalidasi server-side: selected entity HARUS ada di daftar entity requestor.
      * - Branch selalu diambil dari session authenticated requestor, TIDAK dari request body.
-    * - Identitas requestor (nama, email) selalu dari session untuk role Manpower.
+     * - Identitas requestor (nama, email) selalu dari session untuk role Manpower.
      */
     public function store(StoreMprRequest $request): JsonResponse|RedirectResponse
     {
@@ -205,7 +230,6 @@ class MprController extends Controller
 
             // Resolve nama perusahaan dari kode entitas
             $entityFullName = $entityNameMap[$selectedEntity] ?? $selectedEntity;
-
         } else {
             // Admin / Super Admin: bisa mengisi atas nama Manpower lain
             $requestorName  = !empty($validated['manager_name'])  ? $validated['manager_name']  : ($user['fullName'] ?? 'Admin');
@@ -229,26 +253,26 @@ class MprController extends Controller
 
         $now = now()->timezone('Asia/Jakarta');
         $mprData = new MprData(
-            requestDate:      $now->format('Y-m-d'),
-            requestorName:    $requestorName,
-            requestorEmail:   $requestorEmail,
-            entity:           $selectedEntity,
-            branch:           $branch,
-            department:       $validated['department'],
-            division:         $validated['division'],
-            position:         $validated['position'],
-            jobLevel:         $validated['job_level'],
-            workLocation:     $validated['work_location'],
-            employmentType:   $validated['employment_type'],
-            quantity:         (int) ($validated['quantity'] ?? 1),
+            requestDate: $now->format('Y-m-d'),
+            requestorName: $requestorName,
+            requestorEmail: $requestorEmail,
+            entity: $selectedEntity,
+            branch: $branch,
+            department: $validated['department'],
+            division: $validated['division'],
+            position: $validated['position'],
+            jobLevel: $validated['job_level'],
+            workLocation: $validated['work_location'],
+            employmentType: $validated['employment_type'],
+            quantity: (int) ($validated['quantity'] ?? 1),
             expectedJoinDate: $validated['expected_join_date'],
-            reason:           $validated['reason'],
-            replacementFor:   $validated['replacement_for'] ?? null,
-            jobDescription:   $validated['job_description'] ?? null,
-            requirements:     $validated['requirements'] ?? null,
-            notes:            $validated['notes'] ?? null,
-            status:           'Submitted',
-            createdBy:        $createdBy,
+            reason: $validated['reason'],
+            replacementFor: $validated['replacement_for'] ?? null,
+            jobDescription: $validated['job_description'] ?? null,
+            requirements: $validated['requirements'] ?? null,
+            notes: $validated['notes'] ?? null,
+            status: 'Submitted',
+            createdBy: $createdBy,
         );
 
         try {
@@ -322,6 +346,80 @@ class MprController extends Controller
                 'notes_html'           => $this->markdownRenderer->render($mpr->notes),
             ]),
         ]);
+    }
+
+    /** Update editable MPR fields while preserving identity and workflow metadata. */
+    public function update(UpdateMprRequest $request, string $id): JsonResponse
+    {
+        Gate::authorize('update_mpr');
+        $existing = $this->mprRepo->findByMprNumber($id);
+
+        if (!$existing) {
+            return response()->json(['success' => false, 'message' => 'Data MPR tidak ditemukan.'], 404);
+        }
+
+        $validated = $request->validated();
+        $updated = new MprData(
+            mprNumber: $existing->mprNumber,
+            requestDate: $existing->requestDate,
+            requestorName: $existing->requestorName,
+            requestorEmail: $existing->requestorEmail,
+            entity: $existing->entity,
+            branch: $existing->branch,
+            department: $validated['department'],
+            division: $validated['division'],
+            position: $validated['position'],
+            jobLevel: $validated['job_level'],
+            workLocation: $validated['work_location'],
+            employmentType: $validated['employment_type'],
+            quantity: (int) $validated['quantity'],
+            expectedJoinDate: $validated['expected_join_date'],
+            reason: $validated['reason'],
+            replacementFor: $validated['replacement_for'] ?? null,
+            jobDescription: $validated['job_description'] ?? null,
+            requirements: $validated['requirements'] ?? null,
+            notes: $validated['notes'] ?? null,
+            status: $existing->status,
+            createdBy: $existing->createdBy,
+            createdAt: $existing->createdAt,
+            updatedAt: now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
+        );
+
+        try {
+            $this->mprRepo->update($existing->mprNumber ?? $id, $updated);
+        } catch (\Throwable $e) {
+            Log::error('Gagal memperbarui MPR: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Terjadi kesalahan saat memperbarui MPR.'], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'MPR berhasil diperbarui.',
+            'mpr' => $updated->toArray(),
+            'pdf_url' => route('hr.mpr.pdf', ['id' => $updated->mprNumber]),
+        ]);
+    }
+
+    /** Preview the current persisted MPR using the same PDF service as export. */
+    public function preview(string $id): Response
+    {
+        $mpr = $this->mprRepo->findByMprNumber($id);
+        if (!$mpr) {
+            abort(404, "Dokumen MPR '{$id}' tidak ditemukan.");
+        }
+
+        $user = session('hr_user', []);
+        if (($user['role'] ?? '') === 'Manpower') {
+            $email = strtolower(trim($user['email'] ?? ''));
+            if (
+                $email !== strtolower(trim($mpr->requestorEmail ?? ''))
+                && $email !== strtolower(trim($mpr->createdBy ?? ''))
+            ) {
+                abort(403, 'Anda tidak memiliki hak akses untuk melihat preview MPR ini.');
+            }
+        }
+
+        return $this->pdfService->generate($mpr)->stream("MPR-{$mpr->mprNumber}-preview.pdf");
     }
 
     /**

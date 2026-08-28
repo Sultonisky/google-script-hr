@@ -297,7 +297,7 @@ class CandidateSheetsRepository implements CandidateRepositoryInterface
             'Expected Salary'             => $c->expectedSalary ?? '',
             'Recruitment Source'          => $c->recruitmentSource ?? '',
             'CV Link'                     => $c->cvLink ?? '',
-            'Status'                      => $c->status ?? 'New',
+            'Status'                      => $c->status ?? 'Pending',
             'HR Notes'                    => $c->hrNotes ?? '',
             'Created By'                  => $c->createdBy ?? 'Candidate',
             'Updated At'                  => $c->updatedAt ?? now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),

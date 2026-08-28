@@ -14,7 +14,7 @@ class UpdateCandidateStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status'   => ['required', 'string', 'in:New,Screening,Interview HR,Interview User,Offering,Accepted,Hold,Blacklist,Rejected'],
+            'status'   => ['required', 'string', 'in:Pending,New,Screening,Interview HR,Interview User,Offering,Accepted,Hold,Blacklist,Rejected'],
             'hr_notes' => ['nullable', 'string'],
         ];
     }

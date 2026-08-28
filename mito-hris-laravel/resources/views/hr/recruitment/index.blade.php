@@ -30,11 +30,11 @@
                     </div>
                 </div>
                 @can('manage_recruitment')
-                <div class="export-btns">
-                    <a href="{{ route('hr.export.candidates-csv') }}" class="btn btn-sm btn-outline-success">
-                        <i class="bi bi-file-earmark-spreadsheet me-1"></i>Export CSV
-                    </a>
-                </div>
+                    <div class="export-btns">
+                        <a href="{{ route('hr.export.candidates-csv') }}" class="btn btn-sm btn-outline-success">
+                            <i class="bi bi-file-earmark-spreadsheet me-1"></i>Export CSV
+                        </a>
+                    </div>
                 @endcan
             </div>
 
@@ -48,7 +48,8 @@
                     </div>
                     <select class="filter-select" name="status" id="statusFilter" onchange="this.form.submit()">
                         <option value="">Semua Status</option>
-                        <option value="New" {{ request('status') === 'New' ? 'selected' : '' }}>New (Pending)</option>
+                        <option value="Pending"
+                            {{ in_array(request('status'), ['Pending', 'New'], true) ? 'selected' : '' }}>Pending</option>
                         <option value="Screening" {{ request('status') === 'Screening' ? 'selected' : '' }}>Screening
                         </option>
                         <option value="Interview HR" {{ request('status') === 'Interview HR' ? 'selected' : '' }}>Interview
@@ -70,10 +71,7 @@
                         @endforeach
                     </select>
                     <select class="filter-select" name="sort" id="sortSelect" onchange="this.form.submit()">
-                        <option value="newest" {{ request('sort') === 'newest' ? 'selected' : '' }}>Terbaru</option>
-                        <option value="oldest" {{ request('sort') === 'oldest' ? 'selected' : '' }}>Terlama</option>
-                        <option value="name_asc" {{ request('sort') === 'name_asc' ? 'selected' : '' }}>Nama A-Z</option>
-                        <option value="name_desc" {{ request('sort') === 'name_desc' ? 'selected' : '' }}>Nama Z-A</option>
+                        <option value="newest" selected>Terbaru</option>
                     </select>
                     <button class="btn-toggle-more" id="btnToggleMore" type="button">
                         <i class="bi bi-sliders"></i> Filter Lanjutan
@@ -174,14 +172,10 @@
             </div>
 
             <div class="panel-footer">
-                <span id="footerCount">Menampilkan {{ $paginatedCandidates->count() > 0 ? (($currentPage - 1) * $perPage + 1) . '–' . min($currentPage * $perPage, $total) : 0 }} dari {{ $total }} data</span>
-                <x-pagination 
-                    :currentPage="$currentPage" 
-                    :total="$total" 
-                    :perPage="$perPage" 
-                    :route="'hr.recruitment.index'"
-                    :queryParams="['status' => $statusFilter, 'search' => $searchFilter, 'city' => $cityFilter]"
-                />
+                <span id="footerCount">Menampilkan
+                    {{ $paginatedCandidates->count() > 0 ? ($currentPage - 1) * $perPage + 1 . '–' . min($currentPage * $perPage, $total) : 0 }}
+                    dari {{ $total }} data</span>
+                <x-pagination :currentPage="$currentPage" :total="$total" :perPage="$perPage" :route="'hr.recruitment.index'" :queryParams="['status' => $statusFilter, 'search' => $searchFilter, 'city' => $cityFilter]" />
             </div>
         </div>
 

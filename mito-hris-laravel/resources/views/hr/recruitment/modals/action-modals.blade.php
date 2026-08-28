@@ -12,7 +12,7 @@
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Pilih Status Baru <span class="text-danger">*</span></label>
                         <select class="form-select" name="status" id="modalStatusSelect" required>
-                            <option value="New">New</option>
+                            <option value="Pending">Pending</option>
                             <option value="Screening">Screening</option>
                             <option value="Interview HR">Interview HR</option>
                             <option value="Interview User">Interview User</option>

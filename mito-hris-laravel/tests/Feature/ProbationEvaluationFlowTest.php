@@ -29,20 +29,48 @@ use Tests\TestCase;
 class ProbationEvaluationFlowTest extends TestCase
 {
     private const HEADERS = [
-        'Probation ID', 'Employee ID', 'Recruitment ID',
-        'Contract Number', 'Contract Duration', 'Contract Start', 'Contract End', 'Join Date',
-        'Status', 'Onboarding Date', 'Onboarding By',
-        'Eval ID', 'Eval Date',
+        'Probation ID',
+        'Employee ID',
+        'Recruitment ID',
+        'Contract Number',
+        'Contract Duration',
+        'Contract Start',
+        'Contract End',
+        'Join Date',
+        'Status',
+        'Onboarding Date',
+        'Onboarding By',
+        'Eval ID',
+        'Eval Date',
         'Decision',
-        'Extension Duration', 'New Contract Start', 'New Contract End',
-        'Evaluator Notes', 'Evaluator', 'SK Status', 'Notes',
-        'Created At', 'Updated At',
-        'Integrity Total', 'CI Total', 'EE Total', 'Teamwork Total',
-        'Overall Total', 'Category',
-        'ind_integrity_1', 'ind_integrity_2', 'ind_integrity_3', 'ind_integrity_4',
-        'ind_ci_1', 'ind_ci_2', 'ind_ci_3', 'ind_ci_4',
-        'ind_ee_1', 'ind_ee_2',
-        'ind_tw_1', 'ind_tw_2', 'ind_tw_3',
+        'Extension Duration',
+        'New Contract Start',
+        'New Contract End',
+        'Evaluator Notes',
+        'Evaluator',
+        'SK Status',
+        'Notes',
+        'Created At',
+        'Updated At',
+        'Integrity Total',
+        'CI Total',
+        'EE Total',
+        'Teamwork Total',
+        'Overall Total',
+        'Category',
+        'ind_integrity_1',
+        'ind_integrity_2',
+        'ind_integrity_3',
+        'ind_integrity_4',
+        'ind_ci_1',
+        'ind_ci_2',
+        'ind_ci_3',
+        'ind_ci_4',
+        'ind_ee_1',
+        'ind_ee_2',
+        'ind_tw_1',
+        'ind_tw_2',
+        'ind_tw_3',
     ];
 
     protected function tearDown(): void
@@ -68,14 +96,14 @@ class ProbationEvaluationFlowTest extends TestCase
     private function makeEmployee(): EmployeeData
     {
         return new EmployeeData(
-            employeeId:    'EMP001',
-            fullName:      'Budi Santoso',
-            branchName:    '',
-            department:    'IT',
-            jobPosition:   'Staff IT',
+            employeeId: 'EMP001',
+            fullName: 'Budi Santoso',
+            branchName: '',
+            department: 'IT',
+            jobPosition: 'Staff IT',
             jobPositionLocation: 'Staff IT - Jakarta',
-            jobLevel:      'Staff',
-            joinDate:      '2026-05-01',
+            jobLevel: 'Staff',
+            joinDate: '2026-05-01',
             statusEmployee: 'Probation',
             personalEmail: 'budi@example.com',
         );
@@ -108,6 +136,8 @@ class ProbationEvaluationFlowTest extends TestCase
                 return true;
             })->andReturn(true)->byDefault();
         $sheets->shouldReceive('clearCache')->andReturn(null)->byDefault();
+        $sheets->shouldReceive('updateRange')->andReturn(true)->byDefault();
+        $sheets->shouldReceive('getRowsAsAssoc')->andReturn([])->byDefault();
 
         $this->app->instance(EmployeeRepositoryInterface::class, $employeeRepo);
         $this->app->instance(AuditLogRepositoryInterface::class, $auditRepo);
@@ -123,9 +153,22 @@ class ProbationEvaluationFlowTest extends TestCase
 
     private function validIndicatorPayload(): array
     {
-        $keys = ['integrity_1','integrity_2','integrity_3','integrity_4',
-                 'ci_1','ci_2','ci_3','ci_4','ee_1','ee_2','tw_1','tw_2','tw_3'];
-        return ['indicators' => collect($keys)->mapWithKeys(fn ($k) => [$k => '1'])->all()];
+        $keys = [
+            'integrity_1',
+            'integrity_2',
+            'integrity_3',
+            'integrity_4',
+            'ci_1',
+            'ci_2',
+            'ci_3',
+            'ci_4',
+            'ee_1',
+            'ee_2',
+            'tw_1',
+            'tw_2',
+            'tw_3'
+        ];
+        return ['indicators' => collect($keys)->mapWithKeys(fn($k) => [$k => '1'])->all()];
     }
 
     /** POST an evaluation with mocked sheets; returns [response, capturedRows]. */
@@ -160,7 +203,7 @@ class ProbationEvaluationFlowTest extends TestCase
         [$response, $rows] = $this->postEvaluation('Diangkat sebagai Karyawan Tetap');
 
         $response->assertOk()->assertJsonPath('success', true)
-                 ->assertJsonPath('decisionType', 'pass');
+            ->assertJsonPath('decisionType', 'pass');
 
         $row = end($rows);
         $this->assertSame('13', self::ref($row, 'Overall Total'));
@@ -181,7 +224,7 @@ class ProbationEvaluationFlowTest extends TestCase
         [$response, $rows] = $this->postEvaluation('Tidak Lulus');
 
         $response->assertOk()->assertJsonPath('success', true)
-                 ->assertJsonPath('decisionType', 'fail');
+            ->assertJsonPath('decisionType', 'fail');
 
         $row = end($rows);
         $this->assertSame('Tidak Lulus', self::ref($row, 'Decision'));
@@ -211,9 +254,9 @@ class ProbationEvaluationFlowTest extends TestCase
         ]);
 
         $response->assertOk()->assertJsonPath('success', true)
-                 ->assertJsonPath('decisionType', 'extend')
-                 ->assertJsonPath('pdfUrl', null)
-                 ->assertJsonPath('evalPdfUrl', null);
+            ->assertJsonPath('decisionType', 'extend')
+            ->assertJsonPath('pdfUrl', null)
+            ->assertJsonPath('evalPdfUrl', null);
 
         $row = end($rows);
         $this->assertSame($duration, self::ref($row, 'Extension Duration'));
@@ -255,6 +298,7 @@ class ProbationEvaluationFlowTest extends TestCase
         $sheetRow['Decision']      = 'Diangkat sebagai Karyawan Tetap';
 
         $sheets = Mockery::mock(GoogleSheetsService::class);
+        $sheets->shouldReceive('clearCache')->andReturn(null)->byDefault();
         $sheets->shouldReceive('getRowsAsAssoc')
             ->with('kandidat_probation')
             ->andReturn([$sheetRow]);
@@ -287,6 +331,7 @@ class ProbationEvaluationFlowTest extends TestCase
         $sheetRow['Decision']      = 'Diangkat sebagai Karyawan Tetap';
 
         $sheets = Mockery::mock(GoogleSheetsService::class);
+        $sheets->shouldReceive('clearCache')->andReturn(null)->byDefault();
         $sheets->shouldReceive('getRowsAsAssoc')->andReturn([$sheetRow]);
         $this->app->instance(GoogleSheetsService::class, $sheets);
 
@@ -323,12 +368,18 @@ class ProbationEvaluationFlowTest extends TestCase
     {
         // Legacy score columns from the GAS era — removed by the cleanup task
         $legacy = [
-            'Score Performance', 'Score Discipline', 'Score Communication',
-            'Score Initiative', 'Score Teamwork', 'Average Score',
+            'Score Performance',
+            'Score Discipline',
+            'Score Communication',
+            'Score Initiative',
+            'Score Teamwork',
+            'Average Score',
         ];
         // Document-reference columns from the (reverted) storage-based design
         $storageRefs = [
-            'Performance Review File', 'Decision Doc Type', 'Decision Doc File',
+            'Performance Review File',
+            'Decision Doc Type',
+            'Decision Doc File',
             'Extension Letter No',
         ];
 

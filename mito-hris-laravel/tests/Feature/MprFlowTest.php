@@ -372,6 +372,56 @@ class MprFlowTest extends TestCase
     }
 
     /** @test */
+    public function admin_can_update_mpr_without_changing_immutable_metadata(): void
+    {
+        $this->actingAsRole('Admin', 'admin@mito.id', 'Admin User', [], '');
+        $existing = $this->makeMprData([
+            'mprNumber' => 'MPR-20260824-0001',
+            'requestDate' => '2026-08-24',
+            'createdBy' => 'manager@mito.id',
+        ]);
+        $updatedData = null;
+
+        $repo = Mockery::mock(MprRepositoryInterface::class);
+        $repo->shouldReceive('findByMprNumber')->once()->with('MPR-20260824-0001')->andReturn($existing);
+        $repo->shouldReceive('update')->once()->withArgs(function (string $id, MprData $data) use (&$updatedData) {
+            $updatedData = $data;
+            return $id === 'MPR-20260824-0001';
+        })->andReturnUsing(fn (string $id, MprData $data) => $data);
+        $this->app->instance(MprRepositoryInterface::class, $repo);
+
+        $response = $this->putJson('/hr/mpr/MPR-20260824-0001', [
+            'position' => 'Senior Backend Developer',
+            'department' => 'IT',
+            'division' => 'IT',
+            'job_level' => 'Senior Staff',
+            'work_location' => 'Head Office (HO)',
+            'employment_type' => 'Permanent (PKWTT)',
+            'quantity' => 3,
+            'expected_join_date' => '2026-10-01',
+            'reason' => 'Penambahan Karyawan Baru (Business Expansion)',
+            'requirements' => "### Skill\n\n- Laravel",
+            'job_description' => '**Build APIs**',
+            'notes' => 'Updated note',
+        ]);
+
+        $response->assertOk()->assertJsonPath('success', true)->assertJsonPath('mpr.mpr_number', 'MPR-20260824-0001');
+        $this->assertSame('Senior Backend Developer', $updatedData->position);
+        $this->assertSame('manager@mito.id', $updatedData->createdBy);
+        $this->assertSame('2026-08-24', $updatedData->requestDate);
+        $this->assertSame('MSI', $updatedData->entity);
+        $this->assertSame("### Skill\n\n- Laravel", $updatedData->requirements);
+        $this->assertNotSame($existing->updatedAt, $updatedData->updatedAt);
+    }
+
+    /** @test */
+    public function super_user_cannot_update_mpr(): void
+    {
+        $this->actingAsRole('Super User');
+        $this->putJson('/hr/mpr/MPR-20260824-0001', [])->assertForbidden();
+    }
+
+    /** @test */
     public function user_cannot_access_mpr_or_create_mpr(): void
     {
         $this->actingAsRole('User', 'hrstaff@mito.id', 'User User', [], '');

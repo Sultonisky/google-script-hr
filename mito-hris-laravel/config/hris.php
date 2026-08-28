@@ -26,7 +26,7 @@ return [
         ],
         'role_permissions' => [
             'Super Admin' => ['*'],
-            'Admin' => ['manage_recruitment', 'manage_employees', 'manage_probation', 'view_employees', 'view_recruitment', 'update_candidates', 'create_offering', 'manage_hold_blacklist', 'view_mpr', 'create_mpr', 'export_mpr'],
+            'Admin' => ['manage_recruitment', 'manage_employees', 'manage_probation', 'view_employees', 'view_recruitment', 'update_candidates', 'create_offering', 'manage_hold_blacklist', 'view_mpr', 'create_mpr', 'update_mpr', 'export_mpr'],
             'Super User' => ['view_recruitment', 'update_candidates', 'create_offering', 'manage_hold_blacklist', 'view_mpr', 'export_mpr'],
             'User' => ['view_recruitment', 'update_candidates'],
             'Manpower' => ['view_mpr', 'create_mpr', 'export_mpr'],

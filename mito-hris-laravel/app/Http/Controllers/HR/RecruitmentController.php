@@ -40,10 +40,13 @@ class RecruitmentController extends Controller
         $statusFilter = $request->query('status', '');
         $searchFilter = $request->query('search', '');
         $cityFilter   = $request->query('city', '');
+        $sortFilter   = $request->query('sort', 'newest');
         $perPage      = $request->query('per_page', 10);
 
         $allCandidates = $this->candidateRepo->getAllFromSheets(['candidates']);
-        $pendingCandidates = $allCandidates->filter(fn($c) => strtolower($c->status ?? 'pending') === 'pending');
+        $pendingCandidates = $allCandidates->filter(function ($c) {
+            return in_array(strtolower(trim($c->status ?? '')), ['new', 'pending'], true);
+        });
 
         $counts = [
             'all'         => $allCandidates->count(),
@@ -70,6 +73,8 @@ class RecruitmentController extends Controller
 
             if (isset($sheetMap[$statusLower])) {
                 $candidates = $this->candidateRepo->getAllFromSheets($sheetMap[$statusLower]);
+
+                $candidates = $candidates->sortByDesc(fn($c) => $c->createdDate ?? '')->values();
             } else {
                 $candidates = $allCandidates->filter(fn($c) => strtolower($c->status ?? '') === $statusLower);
             }
@@ -91,6 +96,13 @@ class RecruitmentController extends Controller
             $city = strtolower($cityFilter);
             $candidates = $candidates->filter(fn($c) => str_contains(strtolower($c->city ?? ''), $city));
         }
+
+        $candidates = match ($sortFilter) {
+            'oldest'   => $candidates->sortBy(fn($c) => $c->createdDate ?? ''),
+            'name_asc' => $candidates->sortBy(fn($c) => strtolower($c->fullName ?? '')),
+            'name_desc' => $candidates->sortByDesc(fn($c) => strtolower($c->fullName ?? '')),
+            default    => $candidates->sortByDesc(fn($c) => $c->createdDate ?? ''),
+        };
 
         $total = $candidates->count();
         $candidates = $candidates->values();
@@ -129,6 +141,7 @@ class RecruitmentController extends Controller
             'onboarding' => $allCandidates->filter(fn($c) => !empty($c->onboardingStatus) && $c->onboardingStatus !== '-' && $c->onboardingStatus !== '')->count(),
         ];
 
+        $candidates = $candidates->sortByDesc(fn($c) => $c->createdDate ?? '')->values();
         $total = $candidates->count();
         $currentPage = max(1, (int) $request->query('page', 1));
         $offset = ($currentPage - 1) * $perPage;
@@ -151,6 +164,7 @@ class RecruitmentController extends Controller
             )->values();
         }
 
+        $candidates = $candidates->sortByDesc(fn($c) => $c->createdDate ?? '')->values();
         $total = $candidates->count();
         $currentPage = max(1, (int) $request->query('page', 1));
         $offset = ($currentPage - 1) * $perPage;
@@ -173,6 +187,7 @@ class RecruitmentController extends Controller
             )->values();
         }
 
+        $candidates = $candidates->sortByDesc(fn($c) => $c->createdDate ?? '')->values();
         $total = $candidates->count();
         $currentPage = max(1, (int) $request->query('page', 1));
         $offset = ($currentPage - 1) * $perPage;

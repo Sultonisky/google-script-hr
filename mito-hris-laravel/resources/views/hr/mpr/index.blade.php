@@ -796,8 +796,7 @@
                 <div
                     class="card-header bg-white mpr-list-header py-3 d-flex flex-wrap justify-content-between align-items-center gap-2 border-bottom">
                     <div>
-                        <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-list-task me-2 text-primary"></i> Daftar
-                            Manpower Request (MPR)</h5>
+                        <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-list-task me-2 text-primary"></i> Daftar Manpower Request (MPR)</h5>
                         <small class="text-muted">Menampilkan {{ $total }} pengajuan kebutuhan tenaga kerja</small>
                     </div>
                     <div class="d-flex gap-2">
@@ -1247,6 +1246,11 @@
                     </div>
                     <div class="modal-footer bg-light border-top">
                         <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+                        @can('update_mpr')
+                            <button type="button" id="btnEditMpr" class="btn btn-primary btn-sm fw-semibold">
+                                <i class="bi bi-pencil-square me-1"></i> Edit MPR
+                            </button>
+                        @endcan
                         <a id="btnModalDownloadPdf" href="#" target="_blank"
                             class="btn btn-danger btn-sm fw-semibold">
                             <i class="bi bi-file-earmark-pdf-fill me-1"></i> Unduh PDF Resmi
@@ -1256,10 +1260,57 @@
             </div>
         </div>
 
+        @can('update_mpr')
+            <div class="modal fade" id="modalEditMpr" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                    <div class="modal-content border-0 shadow">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2"></i>Edit MPR <small id="editMprNumber"></small></h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form id="formEditMpr">
+                            <div class="modal-body p-4">
+                                <div id="editMprErrors" class="alert alert-danger d-none"></div>
+                                <div class="row g-3">
+                                    <div class="col-md-6"><label class="form-label small fw-semibold">Posisi *</label><input name="position" class="form-control" required></div>
+                                    <div class="col-md-6"><label class="form-label small fw-semibold">Departemen *</label><select name="department" class="form-select" required><option value="">-- Pilih --</option>@foreach($departments as $d)<option value="{{ $d }}">{{ $d }}</option>@endforeach</select></div>
+                                    <div class="col-md-6"><label class="form-label small fw-semibold">Divisi *</label><select name="division" class="form-select" required><option value="">-- Pilih --</option>@foreach($divisions as $d)<option value="{{ $d }}">{{ $d }}</option>@endforeach</select></div>
+                                    <div class="col-md-6"><label class="form-label small fw-semibold">Level Jabatan *</label><select name="job_level" class="form-select" required><option value="">-- Pilih --</option>@foreach($jobLevels as $d)<option value="{{ $d }}">{{ $d }}</option>@endforeach</select></div>
+                                    <div class="col-md-6"><label class="form-label small fw-semibold">Lokasi Penempatan *</label><select name="work_location" class="form-select" required><option value="">-- Pilih --</option>@foreach($workLocations as $d)<option value="{{ $d }}">{{ $d }}</option>@endforeach</select></div>
+                                    <div class="col-md-6"><label class="form-label small fw-semibold">Status Kepegawaian *</label><select name="employment_type" class="form-select" required><option value="">-- Pilih --</option>@foreach($employmentTypes as $d)<option value="{{ $d }}">{{ $d }}</option>@endforeach</select></div>
+                                    <div class="col-md-6"><label class="form-label small fw-semibold">Jumlah Kebutuhan *</label><input name="quantity" type="number" min="1" max="100" class="form-control" required></div>
+                                    <div class="col-md-6"><label class="form-label small fw-semibold">Target Bergabung *</label><input name="expected_join_date" type="date" class="form-control" required></div>
+                                    <div class="col-md-6"><label class="form-label small fw-semibold">Alasan Permintaan *</label><select name="reason" class="form-select" required><option value="">-- Pilih --</option>@foreach($reasons as $d)<option value="{{ $d }}">{{ $d }}</option>@endforeach</select></div>
+                                    <div class="col-md-6"><label class="form-label small fw-semibold">Karyawan yang Digantikan</label><input name="replacement_for" class="form-control"></div>
+                                    <div class="col-12"><label class="form-label small fw-semibold">Kualifikasi & Persyaratan</label><textarea name="requirements" rows="4" class="form-control"></textarea></div>
+                                    <div class="col-12"><label class="form-label small fw-semibold">Uraian Tugas</label><textarea name="job_description" rows="4" class="form-control"></textarea></div>
+                                    <div class="col-12"><label class="form-label small fw-semibold">Catatan</label><textarea name="notes" rows="3" class="form-control"></textarea></div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                                <button type="button" id="btnPreviewMpr" class="btn btn-outline-primary btn-sm"><i class="bi bi-eye me-1"></i> Preview</button>
+                                <button type="submit" id="btnSaveMpr" class="btn btn-primary btn-sm"><i class="bi bi-check-circle me-1"></i> Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal fade" id="modalPreviewMpr" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-scrollable"><div class="modal-content border-0 shadow">
+                    <div class="modal-header bg-primary text-white"><h5 class="modal-title">Preview Perubahan MPR</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+                    <div class="modal-body" id="mprPreviewContent"></div>
+                    <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Kembali ke Edit</button><button type="button" class="btn btn-primary btn-sm" id="btnPreviewSaveMpr">Save Changes</button></div>
+                </div></div>
+            </div>
+        @endcan
+
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            let currentMprId = null;
 
             function getCsrfToken() {
                 const meta = document.querySelector('meta[name="csrf-token"]');
@@ -1392,6 +1443,7 @@
                         })
                         .then(data => {
                             const m = data.mpr;
+                            currentMprId = m.mpr_number || id;
                             document.getElementById('detManagerName').innerText = m
                                 .requestor_name || m.manager_name || '-';
                             document.getElementById('detManagerEmail').innerText = m
@@ -1441,6 +1493,22 @@
                                 btnPdf.href = `/hr/mpr/${encodeURIComponent(m.mpr_number)}/pdf`;
                             }
 
+                            const btnEdit = document.getElementById('btnEditMpr');
+                            if (btnEdit) {
+                                btnEdit.onclick = function() {
+                                    const editForm = document.getElementById('formEditMpr');
+                                    document.getElementById('editMprNumber').innerText = m.mpr_number || id;
+                                    editForm.reset();
+                                    Object.keys(m).forEach(key => {
+                                        const field = editForm.elements[key];
+                                        if (field && !key.endsWith('_html')) field.value = m[key] ?? '';
+                                    });
+                                    document.getElementById('editMprErrors').classList.add('d-none');
+                                    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalMprDetail')).hide();
+                                    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEditMpr')).show();
+                                };
+                            }
+
                             loadingEl.classList.add('d-none');
                             contentEl.classList.remove('d-none');
                         })
@@ -1449,6 +1517,78 @@
                                 `<div class="text-danger py-4"><i class="bi bi-exclamation-triangle-fill fs-2 d-block mb-2"></i>${error.message}</div>`;
                         });
                 });
+            });
+
+            function escapeHtml(value) {
+                return String(value || '').replace(/[&<>'"]/g, char => ({
+                    '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;'
+                }[char]));
+            }
+
+            function renderMprMarkdown(value) {
+                let html = escapeHtml(value);
+                html = html.replace(/^### (.+)$/gm, '<h5>$1</h5>')
+                    .replace(/^## (.+)$/gm, '<h4>$1</h4>')
+                    .replace(/^# (.+)$/gm, '<h3>$1</h3>')
+                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                    .replace(/^(?:- )(.+)$/gm, '<li>$1</li>')
+                    .replace(/(?:<li>.*<\/li>\n?)+/g, match => `<ul>${match}</ul>`)
+                    .replace(/\n/g, '<br>');
+                return html || '<span class="text-muted">-</span>';
+            }
+
+            function showMprPreview() {
+                const form = document.getElementById('formEditMpr');
+                const value = name => form.elements[name]?.value || '-';
+                const section = (label, content, markdown = false) => `<div class="mb-3"><div class="detail-label">${label}</div><div class="p-2 border rounded ${markdown ? 'mpr-markdown-content' : ''}">${markdown ? renderMprMarkdown(content) : escapeHtml(content)}</div></div>`;
+                document.getElementById('mprPreviewContent').innerHTML =
+                    `<h6 class="text-primary fw-bold mb-3">MPR ${escapeHtml(currentMprId)}</h6>` +
+                    section('Posisi', value('position')) + section('Departemen / Divisi', `${value('department')} / ${value('division')}`) +
+                    section('Level / Status / Lokasi', `${value('job_level')} / ${value('employment_type')} / ${value('work_location')}`) +
+                    section('Jumlah / Target Bergabung', `${value('quantity')} Orang / ${value('expected_join_date')}`) + section('Alasan', value('reason')) +
+                    section('Kualifikasi & Persyaratan', value('requirements'), true) + section('Uraian Tugas', value('job_description'), true) + section('Catatan', value('notes'), true);
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPreviewMpr')).show();
+            }
+
+            const previewButton = document.getElementById('btnPreviewMpr');
+            if (previewButton) previewButton.addEventListener('click', showMprPreview);
+            const previewSaveButton = document.getElementById('btnPreviewSaveMpr');
+            if (previewSaveButton) previewSaveButton.addEventListener('click', () => {
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPreviewMpr')).hide();
+                document.getElementById('formEditMpr').requestSubmit();
+            });
+
+            const editForm = document.getElementById('formEditMpr');
+            if (editForm) editForm.addEventListener('submit', async function(event) {
+                event.preventDefault();
+                const button = document.getElementById('btnSaveMpr');
+                const errorBox = document.getElementById('editMprErrors');
+                button.disabled = true;
+                button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
+                errorBox.classList.add('d-none');
+                try {
+                    const response = await fetch(`/hr/mpr/${encodeURIComponent(currentMprId)}`, {
+                        method: 'PUT', headers: {'X-CSRF-TOKEN': getCsrfToken(), 'Accept': 'application/json', 'Content-Type': 'application/json'},
+                        body: JSON.stringify(Object.fromEntries(new FormData(editForm)))
+                    });
+                    const data = await response.json();
+                    if (!response.ok) {
+                        const errors = data.errors ? Object.values(data.errors).flat().join('<br>') : (data.message || 'Gagal memperbarui MPR.');
+                        errorBox.innerHTML = errors;
+                        errorBox.classList.remove('d-none');
+                        return;
+                    }
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEditMpr')).hide();
+                    if (typeof showToast === 'function') showToast(data.message || 'MPR berhasil diperbarui.', 'success');
+                    setTimeout(() => window.location.reload(), 700);
+                } catch (error) {
+                    errorBox.textContent = 'Terjadi kesalahan saat memperbarui MPR.';
+                    errorBox.classList.remove('d-none');
+                } finally {
+                    button.disabled = false;
+                    button.innerHTML = '<i class="bi bi-check-circle me-1"></i> Save Changes';
+                }
             });
 
         });

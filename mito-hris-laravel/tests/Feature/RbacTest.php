@@ -461,7 +461,7 @@ class RbacTest extends TestCase
 
         $this->get('/hr/dashboard')
             ->assertOk()
-            ->assertSee('Manpower Request');
+            ->assertSeeText('Manpower Request');
     }
 
     /** @test */
