@@ -40,13 +40,13 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
       - name: Prepare Laravel environment
         run: |
           cp .env.example .env
           php artisan key:generate --force
-
-      - name: Install PHP dependencies
-        run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Install Node dependencies
         run: |
