@@ -95,6 +95,7 @@
                             <th>Status</th>
                             <th>Login Terakhir</th>
                             <th>Dibuat</th>
+                            <th>Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="usersTableBody">
@@ -106,7 +107,7 @@
                                     ? 'bg-success'
                                     : 'bg-secondary';
                             @endphp
-                            <tr>
+                            <tr data-user-email="{{ $user['Email'] ?? '' }}">
                                 <td class="id-mono">{{ $loop->iteration }}</td>
                                 <td>
                                     <div class="cand-name user-name">{{ $user['Full Name'] ?? '-' }}</div>
@@ -117,10 +118,21 @@
                                 <td><span class="badge {{ $statusClass }}">{{ $status }}</span></td>
                                 <td class="id-mono">{{ $user['Last Login'] ?? '-' }}</td>
                                 <td class="id-mono">{{ $user['Created At'] ?? '-' }}</td>
+                                <td>
+                                    @can('manage_settings')
+                                        <button type="button" class="btn btn-sm btn-primary" title="Edit pengguna"
+                                            aria-label="Edit pengguna" data-bs-toggle="modal" data-bs-target="#userEditModal"
+                                            data-email="{{ $user['Email'] ?? '' }}" data-name="{{ $user['Full Name'] ?? '' }}"
+                                            data-username="{{ $user['Username'] ?? '' }}" data-role="{{ $role }}"
+                                            data-status="{{ $status }}">
+                                            <i class="bi bi-pencil-fill" aria-hidden="true"></i>
+                                        </button>
+                                    @endcan
+                                </td>
                             </tr>
                         @empty
                             <tr id="userEmptyRow">
-                                <td colspan="7">
+                                <td colspan="8">
                                     <div class="table-empty">
                                         <i class="bi bi-person-x"></i>
                                         <p class="mb-0">Belum ada pengguna sistem.</p>
@@ -129,7 +141,7 @@
                             </tr>
                         @endforelse
                         <tr id="userSearchEmptyRow" class="d-none">
-                            <td colspan="7">
+                            <td colspan="8">
                                 <div class="table-empty">
                                     <i class="bi bi-search"></i>
                                     <p class="mb-0">Tidak ada pengguna yang sesuai pencarian.</p>
@@ -185,6 +197,12 @@
                                 @endforeach
                             </select>
                         </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="userUsername">Username <span
+                                    class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="userUsername" name="username"
+                                placeholder="username staf..." minlength="3" required />
+                        </div>
                         <div class="row g-3 mt-0">
                             <div class="col-md-6">
                                 <label class="form-label" for="userPassword">Password <span
@@ -209,6 +227,77 @@
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="userEditModal" tabindex="-1" aria-labelledby="userEditModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="userEditModalLabel"><i
+                            class="bi bi-person-gear me-2 text-primary"></i>Edit Pengguna</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                </div>
+                <form id="userEditForm" method="POST"
+                    data-update-url="{{ route('hr.users.update', ['email' => '__EMAIL__']) }}">
+                    @csrf
+                    @method('PUT')
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label" for="userEditEmail">Email Login</label>
+                            <input type="email" class="form-control" id="userEditEmail" readonly />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="userEditName">Nama Lengkap <span
+                                    class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="userEditName" name="name" minlength="3"
+                                required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="userEditUsername">Username <span
+                                    class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="userEditUsername" name="username"
+                                minlength="3" required />
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label" for="userEditRole">Role <span
+                                        class="text-danger">*</span></label>
+                                <select class="form-select" id="userEditRole" name="role" required>
+                                    @foreach (config('hris.auth.valid_roles_internal', []) as $role)
+                                        <option value="{{ $role }}">{{ $role }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="userEditStatus">Status <span
+                                        class="text-danger">*</span></label>
+                                <select class="form-select" id="userEditStatus" name="status" required>
+                                    <option value="Active">Active</option>
+                                    <option value="Inactive">Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-0">
+                            <div class="col-md-6">
+                                <label class="form-label" for="userEditPassword">Password Baru</label>
+                                <input type="password" class="form-control" id="userEditPassword" name="password"
+                                    minlength="8" autocomplete="new-password" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="userEditPasswordConfirmation">Konfirmasi Password</label>
+                                <input type="password" class="form-control" id="userEditPasswordConfirmation"
+                                    name="password_confirmation" minlength="8" autocomplete="new-password" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-check2 me-1"></i>Simpan
+                            Perubahan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('scripts')
@@ -220,7 +309,23 @@
             const resultCount = document.getElementById('userResultCount');
             const roleFilter = document.getElementById('userRoleFilter');
             const statusFilter = document.getElementById('userStatusFilter');
+            const editModal = document.getElementById('userEditModal');
+            const editForm = document.getElementById('userEditForm');
             if (!search || !body) return;
+
+            editModal?.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                const email = button?.dataset.email || '';
+                editForm.action = editForm.dataset.updateUrl.replace('__EMAIL__', encodeURIComponent(
+                    email));
+                document.getElementById('userEditEmail').value = email;
+                document.getElementById('userEditName').value = button?.dataset.name || '';
+                document.getElementById('userEditUsername').value = button?.dataset.username || '';
+                document.getElementById('userEditRole').value = button?.dataset.role || '';
+                document.getElementById('userEditStatus').value = button?.dataset.status || 'Active';
+                document.getElementById('userEditPassword').value = '';
+                document.getElementById('userEditPasswordConfirmation').value = '';
+            });
 
             function applyUserFilters() {
                 const query = search.value.trim().toLowerCase();
