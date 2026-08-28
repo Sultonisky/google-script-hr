@@ -120,7 +120,7 @@ class RecruitmentService
             throw new RuntimeException("Kandidat dengan ID {$recruitmentId} tidak ditemukan.");
         }
 
-        $oldStatus = $candidate->status ?? 'New';
+        $oldStatus = $candidate->status ?? 'Pending';
         $success = $this->candidateRepo->updateStatus($recruitmentId, $newStatus, $notes);
 
         if ($success) {
@@ -140,7 +140,7 @@ class RecruitmentService
             throw new RuntimeException("Kandidat dengan ID {$recruitmentId} tidak ditemukan.");
         }
 
-        $oldStatus = $candidate->status ?? 'New';
+        $oldStatus = $candidate->status ?? 'Pending';
         
         $extraData = [
             'Hold Reason' => $reason,
@@ -170,7 +170,7 @@ class RecruitmentService
             throw new RuntimeException("Kandidat dengan ID {$recruitmentId} tidak ditemukan.");
         }
 
-        $oldStatus = $candidate->status ?? 'New';
+        $oldStatus = $candidate->status ?? 'Pending';
         
         $extraData = [
             'Blacklist Reason' => $reason,
@@ -206,7 +206,7 @@ class RecruitmentService
             throw new RuntimeException("Kandidat dengan ID {$recruitmentId} tidak ditemukan.");
         }
 
-        $oldStatus = $candidate->status ?? 'New';
+        $oldStatus = $candidate->status ?? 'Pending';
         $user      = $user ?? 'HR Administrator';
         $nowStr    = now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s');
 

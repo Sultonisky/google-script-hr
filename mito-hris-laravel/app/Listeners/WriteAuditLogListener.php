@@ -24,7 +24,7 @@ class WriteAuditLogListener
                 action: 'APPLY',
                 field: 'Status',
                 oldValue: '',
-                newValue: 'New',
+                newValue: 'Pending',
                 user: 'Public Portal'
             );
         } elseif ($event instanceof CandidateStatusChanged) {

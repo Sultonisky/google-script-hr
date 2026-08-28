@@ -54,16 +54,16 @@
                         <i class="bi bi-arrow-clockwise"></i>
                     </button>
                     @can('create_offering')
-                    <button class="btn btn-sm text-white fw-semibold"
-                        style="background:var(--color-primary, #eb1c24);border:none;border-radius:8px;padding:6px 14px;font-size:13px"
-                        type="button" data-bs-toggle="modal" data-bs-target="#offeringModal">
-                        <i class="bi bi-file-earmark-text me-1"></i>Buat Offering Letter
-                    </button>
-                    <button class="btn btn-sm text-white fw-semibold"
-                        style="background:#166534;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
-                        type="button" data-bs-toggle="modal" data-bs-target="#onboardingModal">
-                        <i class="bi bi-file-earmark-check-fill me-1"></i>Proses Kontrak PKWT
-                    </button>
+                        <button class="btn btn-sm text-white fw-semibold"
+                            style="background:var(--color-primary, #eb1c24);border:none;border-radius:8px;padding:6px 14px;font-size:13px"
+                            type="button" data-bs-toggle="modal" data-bs-target="#offeringModal">
+                            <i class="bi bi-file-earmark-text me-1"></i>Buat Offering Letter
+                        </button>
+                        <button class="btn btn-sm text-white fw-semibold"
+                            style="background:#166534;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
+                            type="button" data-bs-toggle="modal" data-bs-target="#onboardingModal">
+                            <i class="bi bi-file-earmark-check-fill me-1"></i>Proses Kontrak PKWT
+                        </button>
                     @endcan
                 </div>
             </div>
@@ -77,10 +77,7 @@
                             placeholder="Cari ID, nama, posisi, Employee ID..." value="{{ request('search') }}" />
                     </div>
                     <select class="filter-select" name="sort" id="accSortSelect" onchange="this.form.submit()">
-                        <option value="newest" {{ request('sort') === 'newest' ? 'selected' : '' }}>Terbaru</option>
-                        <option value="oldest" {{ request('sort') === 'oldest' ? 'selected' : '' }}>Terlama</option>
-                        <option value="name_asc" {{ request('sort') === 'name_asc' ? 'selected' : '' }}>Nama A-Z</option>
-                        <option value="name_desc" {{ request('sort') === 'name_desc' ? 'selected' : '' }}>Nama Z-A</option>
+                        <option value="newest" selected>Terbaru</option>
                     </select>
                     <a href="{{ route('hr.recruitment.accepted') }}" class="btn-reset-filter text-decoration-none"
                         id="btnAccReset">
@@ -107,7 +104,8 @@
                     </thead>
                     <tbody id="accTableBody">
                         @forelse($paginatedCandidates as $c)
-                            <tr data-drawer-type="candidate" data-drawer-id="{{ $c->recruitmentId }}" style="cursor:pointer;">
+                            <tr data-drawer-type="candidate" data-drawer-id="{{ $c->recruitmentId }}"
+                                style="cursor:pointer;">
                                 <td>
                                     <div class="avatar-sm">
                                         {{ strtoupper(substr($c->fullName ?? 'A', 0, 2)) }}
@@ -122,15 +120,16 @@
                                 <td>{{ $c->age ? "{$c->age} th" : '-' }}</td>
                                 <td class="fw-semibold text-navy">{{ $c->positionApplied }}</td>
                                 <td>
-                                    @if(!empty($c->offeringCreated) && $c->offeringCreated !== '-')
-                                        <span class="badge-status accepted" style="font-size:10px;padding:2px 8px;white-space:nowrap">
+                                    @if (!empty($c->offeringCreated) && $c->offeringCreated !== '-')
+                                        <span class="badge-status accepted"
+                                            style="font-size:10px;padding:2px 8px;white-space:nowrap">
                                             <i class="bi bi-check2-circle me-1"></i>{{ $c->offeringCreated }}
                                         </span>
                                     @else
                                         <span style="color:#aaa;font-size:12px">-</span>
                                     @endif
                                 </td>
-                                <td class="id-mono"><small>{{ $c->processedDate ?? $c->createdDate ?? '-' }}</small></td>
+                                <td class="id-mono"><small>{{ $c->processedDate ?? ($c->createdDate ?? '-') }}</small></td>
                                 <td><small>{{ $c->processedBy ?? '-' }}</small></td>
                                 <td>
                                     <button class="btn btn-sm btn-outline-secondary btn-status-move"
@@ -139,15 +138,14 @@
                                         <i class="bi bi-arrow-repeat"></i>
                                     </button>
                                     @can('create_offering')
-                                    @if(!empty($c->offeringCreated) && $c->offeringCreated !== '-')
-                                        <button class="btn btn-sm btn-offering-preview"
-                                            data-id="{{ $c->recruitmentId }}"
-                                            title="Dibuat: {{ $c->offeringCreated }} oleh {{ $c->offeringCreatedBy ?? '-' }}"
-                                            style="background:#e8f4e8;color:#166534;border:1px solid #bbf7d0;border-radius:6px;padding:4px 8px"
-                                            onclick="event.stopPropagation(); openOfferingPreviewModal('{{ $c->recruitmentId }}')">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
-                                    @endif
+                                        @if (!empty($c->offeringCreated) && $c->offeringCreated !== '-')
+                                            <button class="btn btn-sm btn-offering-preview" data-id="{{ $c->recruitmentId }}"
+                                                title="Dibuat: {{ $c->offeringCreated }} oleh {{ $c->offeringCreatedBy ?? '-' }}"
+                                                style="background:#e8f4e8;color:#166534;border:1px solid #bbf7d0;border-radius:6px;padding:4px 8px"
+                                                onclick="event.stopPropagation(); openOfferingPreviewModal('{{ $c->recruitmentId }}')">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        @endif
                                     @endcan
                                 </td>
                             </tr>
@@ -166,28 +164,24 @@
             </div>
 
             <div class="panel-footer">
-                <span id="accFooterCount">Menampilkan {{ $paginatedCandidates->count() > 0 ? (($currentPage - 1) * $perPage + 1) . '–' . min($currentPage * $perPage, $total) : 0 }} dari {{ $total }} data</span>
-                <x-pagination 
-                    :currentPage="$currentPage" 
-                    :total="$total" 
-                    :perPage="$perPage" 
-                    :route="'hr.recruitment.accepted'"
-                    :queryParams="['search' => request('search')]"
-                />
+                <span id="accFooterCount">Menampilkan
+                    {{ $paginatedCandidates->count() > 0 ? ($currentPage - 1) * $perPage + 1 . '–' . min($currentPage * $perPage, $total) : 0 }}
+                    dari {{ $total }} data</span>
+                <x-pagination :currentPage="$currentPage" :total="$total" :perPage="$perPage" :route="'hr.recruitment.accepted'" :queryParams="['search' => request('search')]" />
             </div>
         </div>
     </section>
 @endsection
 
 @section('scripts')
-<script>
-  document.querySelectorAll('#accTableBody tr[data-drawer-type="candidate"]').forEach(function(row) {
-    row.addEventListener('click', function(e) {
-      e.stopPropagation();
-      if (e.target.closest('button')) return;
-      var id = this.getAttribute('data-drawer-id');
-      if (id && typeof openCandidateDrawer === 'function') openCandidateDrawer(id);
-    });
-  });
-</script>
+    <script>
+        document.querySelectorAll('#accTableBody tr[data-drawer-type="candidate"]').forEach(function(row) {
+            row.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (e.target.closest('button')) return;
+                var id = this.getAttribute('data-drawer-id');
+                if (id && typeof openCandidateDrawer === 'function') openCandidateDrawer(id);
+            });
+        });
+    </script>
 @endsection

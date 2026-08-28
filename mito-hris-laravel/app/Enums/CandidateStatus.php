@@ -4,7 +4,7 @@ namespace App\Enums;
 
 enum CandidateStatus: string
 {
-    case NEW            = 'New';
+    case NEW            = 'Pending';
     case SCREENING      = 'Screening';
     case INTERVIEW_HR   = 'Interview HR';
     case INTERVIEW_USER = 'Interview User';
