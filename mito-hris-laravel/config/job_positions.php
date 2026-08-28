@@ -1,7 +1,6 @@
 <?php
 
-return [
-    'positions' => [
+$positions = [
         ['Sales Director', 'Sales', 'Director'],
         ['Head of Sales', 'Sales', 'Head'],
         ['Sales Manager', 'Sales', 'Manager'],
@@ -122,7 +121,11 @@ return [
         ['Facility Management Specialist', 'GA & Facility', 'Specialist'],
         ['Receptionist', 'GA & Facility', 'Staff'],
         ['Driver', 'GA & Facility', 'Staff'],
-    ],
+    ];
+
+return ['positions' => $positions];
+
+/*
 
     'get_level' => function($position) {
         $map = [
@@ -375,4 +378,4 @@ return [
         ];
         return $map[$position] ?? null;
     },
-];
+*/
