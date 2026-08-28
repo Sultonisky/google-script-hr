@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Public\CareerController;
 use App\Http\Controllers\Public\OutsourceApplyController;
+use App\Http\Controllers\Public\SeoController;
 use App\Http\Controllers\HR\DashboardController;
 use App\Http\Controllers\HR\RecruitmentController;
 use App\Http\Controllers\HR\EmployeeController;
@@ -36,6 +37,8 @@ Route::any('/logout', [LoginController::class, 'logout'])->name('logout');
 // =========================================================================
 // DOMAIN 2: PUBLIC CAREER & APPLICANT PORTAL (with Landing & Consent Gate)
 // =========================================================================
+Route::get('/robots.txt', [SeoController::class, 'robots'])->name('public.seo.robots');
+Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('public.seo.sitemap');
 Route::get('/', [CareerController::class, 'index'])->name('public.career.index');
 Route::post('/career/consent', [CareerController::class, 'consent'])->name('public.career.consent');
 Route::get('/apply', [CareerController::class, 'form'])->name('public.career.form');

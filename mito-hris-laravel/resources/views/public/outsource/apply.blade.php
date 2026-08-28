@@ -1,6 +1,8 @@
 @extends('layouts.public')
 
 @section('title', 'Registrasi Karyawan Outsource - MITO Group')
+@section('description', 'Formulir registrasi karyawan outsource untuk keperluan administrasi HRIS MITO.')
+@section('robots', 'noindex,follow,noarchive')
 
 @section('content')
     <!-- LOADING OVERLAY -->
@@ -95,8 +97,11 @@
                                     <label class="form-label fw-semibold" for="full_name" style="font-size:13px">Nama
                                         Lengkap <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="full_name" name="nama_lengkap"
-                                        value="{{ old('nama_lengkap') }}" required minlength="3" autocomplete="name">
-                                    <div class="invalid-feedback">Nama lengkap wajib diisi (minimal 3 karakter).</div>
+                                        value="{{ old('nama_lengkap') }}" required minlength="3" maxlength="255"
+                                        pattern="[\p{L}]+( [\p{L}]+)*" autocomplete="name"
+                                        oninput="this.value=this.value.replace(/[^\p{L} ]/gu,'').replace(/ {2,}/g,' ')"
+                                        onblur="this.value=this.value.trim()">
+                                    <div class="invalid-feedback">Nama lengkap hanya boleh berisi huruf dan spasi.</div>
                                 </div>
 
                                 <div class="col-md-6">

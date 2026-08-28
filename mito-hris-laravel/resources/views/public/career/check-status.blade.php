@@ -1,6 +1,8 @@
 @extends('layouts.public')
 
 @section('title', 'Cek Status Lamaran - MITO Group')
+@section('description', 'Periksa status lamaran Anda melalui MITO HRIS Career Portal menggunakan nomor registrasi.')
+@section('robots', 'noindex,follow,noarchive')
 
 @section('content')
 <!-- HERO (1:1 Red MITO Theme) -->

@@ -1,12 +1,20 @@
 @extends('layouts.public')
 
 @section('title', 'Karir & Rekrutmen - MITO Group')
+@section('description', 'Temukan informasi proses rekrutmen dan peluang karir melalui MITO HRIS Career Portal. Pendaftaran dilakukan secara online tanpa biaya.')
+@section('structuredData', json_encode([
+    '@context' => 'https://schema.org',
+    '@type' => 'Organization',
+    'name' => 'MITO Group',
+    'url' => config('seo.canonical_base_url'),
+    'logo' => asset('assets/mito.png'),
+]))
 
 @section('content')
     <div class="career-landing-page">
 
         <!-- HERO (Red MITO Theme 1:1 GAS) -->
-        <div class="hero-section">
+        <header class="hero-section">
             <div class="container">
                 <div class="row align-items-center">
                     <div class="col-lg-8 col-md-7">
@@ -19,12 +27,12 @@
                         </p>
                     </div>
                     <div class="col-lg-4 col-md-5 d-none d-md-flex justify-content-end align-items-center">
-                        <img id="heroAvatarImg" src="{{ asset('assets/mito.png') }}" alt="MITO Official"
-                            class="hero-avatar-img" loading="lazy">
+                        <img id="heroAvatarImg" src="{{ asset('assets/mito.png') }}" alt="Logo MITO untuk portal karir"
+                            class="hero-avatar-img" width="150" height="150" fetchpriority="high">
                     </div>
                 </div>
             </div>
-        </div>
+        </header>
 
         <div class="container py-5" style="max-width:960px;">
 
@@ -39,10 +47,10 @@
             @endif
 
             <!-- 4 Langkah Rekrutmen -->
-            <div class="mb-5">
+            <section class="mb-5" aria-labelledby="recruitment-process-title">
                 <div class="text-center mb-4">
-                    <h5 class="fw-bold text-navy mb-1"><i class="bi bi-diagram-3 me-2 text-danger"></i>Tahapan Proses
-                        Rekrutmen</h5>
+                    <h2 id="recruitment-process-title" class="h5 fw-bold text-navy mb-1"><i class="bi bi-diagram-3 me-2 text-danger"></i>Tahapan Proses
+                        Rekrutmen</h2>
                     <small class="text-muted">Proses seleksi transparan, terstruktur, dan tanpa dipungut biaya
                         apapun</small>
                 </div>
@@ -85,10 +93,10 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
             <!-- Syarat & Ketentuan Pendaftaran (Wajib Checklist) -->
-            <div class="card border-0 shadow-sm rounded-4 mb-4" id="syaratKetentuan"
+            <section class="card border-0 shadow-sm rounded-4 mb-4" id="syaratKetentuan"
                 style="border:1px solid #e2e8f0!important;">
                 <div class="card-header bg-white p-4 pb-3 border-0">
                     <div class="d-flex align-items-center gap-2">
@@ -148,7 +156,7 @@
                         </div>
                     </form>
                 </div>
-            </div>
+            </section>
 
         </div>
     </div>

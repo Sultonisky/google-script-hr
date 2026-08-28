@@ -8,10 +8,10 @@
     <!-- Brand Header -->
     <div class="sidebar-brand">
         <div class="logo-box">
-            <img src="{{ asset('assets/brand.png') }}" alt="MITO" class="sidebar-logo">
+            <img src="{{ asset('assets/mito-white.png') }}" alt="MITO" class="sidebar-logo">
         </div>
         <div class="brand-text">
-            <strong>Human Resource Information System</strong>
+            <h1>Human Resource Information System</h1>
         </div>
         <button type="button" class="sidebar-close-btn d-lg-none" id="btnSidebarClose" aria-label="Tutup Sidebar">
             <i class="bi bi-x-lg"></i>
