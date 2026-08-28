@@ -63,9 +63,8 @@
                         <i class="bi bi-arrow-clockwise"></i>
                     </button>
                     <button class="btn btn-sm text-white ms-2 fw-semibold"
-                        style="background:#7c3aed;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
-                        id="btnOpenEvalModal" type="button"
-                        data-bs-toggle="modal" data-bs-target="#probationEvalModal"
+                        style="background:#eb1c24;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
+                        id="btnOpenEvalModal" type="button" data-bs-toggle="modal" data-bs-target="#probationEvalModal"
                         onclick="resetProbationEvalModal()">
                         <i class="bi bi-clipboard-check me-1"></i>Evaluasi Karyawan
                     </button>
@@ -78,8 +77,7 @@
                     <div class="table-search">
                         <i class="bi bi-search"></i>
                         <input type="text" name="search" id="probSearchInput"
-                            placeholder="Cari nama, ID, posisi, departemen..."
-                            value="{{ request('search') }}"
+                            placeholder="Cari nama, ID, posisi, departemen..." value="{{ request('search') }}"
                             onkeydown="if(event.key==='Enter'){this.closest('form').submit()}" />
                     </div>
                     <select class="filter-select" name="department" id="probDeptFilter"
@@ -93,38 +91,36 @@
                     </select>
                     <select class="filter-select" name="sort" id="probSortSelect"
                         onchange="this.closest('form').submit()">
-                        <option value="newest"    {{ request('sort', 'newest') === 'newest'    ? 'selected' : '' }}>Terbaru</option>
-                        <option value="oldest"    {{ request('sort') === 'oldest'    ? 'selected' : '' }}>Terlama</option>
-                        <option value="name_asc"  {{ request('sort') === 'name_asc'  ? 'selected' : '' }}>Nama A-Z</option>
-                        <option value="name_desc" {{ request('sort') === 'name_desc' ? 'selected' : '' }}>Nama Z-A</option>
+                        <option value="newest" selected>Terbaru</option>
                     </select>
                     <a href="{{ route('hr.probation.index') }}" class="btn-reset-filter text-decoration-none">
                         <i class="bi bi-arrow-counterclockwise"></i> Reset
                     </a>
-                    <button type="submit" class="btn btn-sm btn-outline-primary">
-                        <i class="bi bi-search me-1"></i>Cari
+                    <button type="submit" class="btn-reset-filter btn-primary">
+                        <i class="bi bi-search me-1"></i>
                     </button>
                 </div>
             </form>
 
             <!-- Success / Error flash messages -->
-            @if(session('success'))
-                <div class="alert alert-success alert-dismissible fade show mx-3 mt-2" role="alert" style="font-size:13px">
+            @if (session('success'))
+                <div class="alert alert-success alert-dismissible fade show mx-3 mt-2" role="alert"
+                    style="font-size:13px">
                     <i class="bi bi-check-circle-fill me-2"></i>{!! session('success') !!}
                     <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
                 </div>
             @endif
-            @if(session('error'))
+            @if (session('error'))
                 <div class="alert alert-danger alert-dismissible fade show mx-3 mt-2" role="alert" style="font-size:13px">
                     <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ session('error') }}
                     <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
                 </div>
             @endif
-            @if($errors->any())
+            @if ($errors->any())
                 <div class="alert alert-danger alert-dismissible fade show mx-3 mt-2" role="alert" style="font-size:13px">
                     <i class="bi bi-exclamation-triangle-fill me-2"></i>
                     <ul class="mb-0">
-                        @foreach($errors->all() as $err)
+                        @foreach ($errors->all() as $err)
                             <li>{{ $err }}</li>
                         @endforeach
                     </ul>
@@ -137,7 +133,7 @@
                 <table class="table hr-table">
                     <thead>
                         <tr>
-                            <th></th>
+                            <th>Avatar</th>
                             <th>Employee ID</th>
                             <th>Employee</th>
                             <th>Position / Dept</th>
@@ -145,51 +141,54 @@
                             <th>Probation End</th>
                             <th>Score / Kategori</th>
                             <th>Evaluation Status</th>
-                            <th class="text-end">Actions</th>
+                            <th class="text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="probTableBody">
                         @forelse($probations as $prob)
                             @php
-                                $lastCategory = $prob->lastCategory    ?? null;
-                                $lastTotal    = $prob->lastOverallTotal ?? null;
-                                $keputusan    = $prob->lastDecision    ?? '';
+                                $lastCategory = $prob->lastCategory ?? null;
+                                $lastTotal = $prob->lastOverallTotal ?? null;
+                                $keputusan = $prob->lastDecision ?? '';
 
                                 // IMPORTANT: Check isTerm BEFORE isLulus.
                                 // 'Tidak Lulus' contains 'Lulus' as substring — wrong order causes
                                 // str_contains('Tidak Lulus','Lulus') = true false-positive.
-                                $isTerm  = ($keputusan === 'Tidak Lulus')
-                                        || ($keputusan === 'Tidak Lolos → Putus Kontrak (Paklaring)')
-                                        || str_contains($keputusan,'Putus Kontrak')
-                                        || str_contains($keputusan,'Paklaring');
-                                $isExt   = !$isTerm && (
-                                               str_contains($keputusan,'Perpanjang')
-                                            || str_contains($keputusan,'Evaluasi Ulang')
-                                           );
+                                $isTerm =
+                                    $keputusan === 'Tidak Lulus' ||
+                                    $keputusan === 'Tidak Lolos → Putus Kontrak (Paklaring)' ||
+                                    str_contains($keputusan, 'Putus Kontrak') ||
+                                    str_contains($keputusan, 'Paklaring');
+                                $isExt =
+                                    !$isTerm &&
+                                    (str_contains($keputusan, 'Perpanjang') ||
+                                        str_contains($keputusan, 'Evaluasi Ulang'));
                                 // isLulus: only if neither terminated nor extended
-                                $isLulus = !$isTerm && !$isExt && $keputusan !== '' && (
-                                               ($keputusan === 'Diangkat sebagai Karyawan Tetap')
-                                            || ($keputusan === 'Lulus → Karyawan Tetap')
-                                            || str_contains($keputusan,'Pass')
-                                            || str_contains($keputusan,'Tetap')
-                                            || str_contains($keputusan,'Diangkat')
-                                           );
+                                $isLulus =
+                                    !$isTerm &&
+                                    !$isExt &&
+                                    $keputusan !== '' &&
+                                    ($keputusan === 'Diangkat sebagai Karyawan Tetap' ||
+                                        $keputusan === 'Lulus → Karyawan Tetap' ||
+                                        str_contains($keputusan, 'Pass') ||
+                                        str_contains($keputusan, 'Tetap') ||
+                                        str_contains($keputusan, 'Diangkat'));
 
                                 // Score badge class — category-based (Performance Review 2026)
                                 $scoreCls = '';
                                 if (!empty($lastCategory)) {
-                                    $scoreCls = match($lastCategory) {
+                                    $scoreCls = match ($lastCategory) {
                                         'Sangat Baik', 'Baik' => 'accepted',
-                                        'Cukup'               => 'hold',
-                                        'Kurang'              => 'blacklist',
-                                        default               => '',
+                                        'Cukup' => 'hold',
+                                        'Kurang' => 'blacklist',
+                                        default => '',
                                     };
                                 }
                             @endphp
                             <tr>
                                 <td>
-                                    <div class="avatar-sm" style="background:#7c3aed;color:#fff">
-                                        {{ strtoupper(substr(str_replace(' ','',($prob->fullName??'P')),0,1)) }}{{ strtoupper(substr(explode(' ',$prob->fullName??'P')[1]??'',0,1)) }}
+                                    <div class="avatar-sm">
+                                        {{ strtoupper(substr(str_replace(' ', '', $prob->fullName ?? 'P'), 0, 1)) }}{{ strtoupper(substr(explode(' ', $prob->fullName ?? 'P')[1] ?? '', 0, 1)) }}
                                     </div>
                                 </td>
                                 <td><span class="id-mono" style="font-size:11px">{{ $prob->employeeId }}</span></td>
@@ -198,25 +197,28 @@
                                     <div class="cand-sub">{{ $prob->personalEmail }}</div>
                                 </td>
                                 <td>
-                                    <div style="font-size:13px">{{ $prob->jobPositionLocation ?: $prob->jobPosition ?: '-' }}</div>
+                                    <div style="font-size:13px">
+                                        {{ $prob->jobPositionLocation ?: $prob->jobPosition ?: '-' }}</div>
                                     <div class="cand-sub">{{ $prob->department ?? '-' }}</div>
                                 </td>
                                 <td><small>{{ $prob->joinDate ?? '-' }}</small></td>
                                 <td><small>{{ $prob->endDateContract ?? '-' }}</small></td>
                                 <td>
-                                    @if(!empty($lastCategory))
+                                    @if (!empty($lastCategory))
                                         <div>
-                                            <span class="badge-status {{ $scoreCls }}" style="font-size:11px;padding:2px 8px">
+                                            <span class="badge-status {{ $scoreCls }}"
+                                                style="font-size:11px;padding:2px 8px">
                                                 {{ $lastTotal }}/13
                                             </span>
                                         </div>
-                                        <div style="font-size:10.5px;color:#6b7280;margin-top:2px">{{ $lastCategory }}</div>
+                                        <div style="font-size:10.5px;color:#6b7280;margin-top:2px">{{ $lastCategory }}
+                                        </div>
                                     @else
                                         <span style="color:#9ca3af;font-size:12px">-</span>
                                     @endif
                                 </td>
                                 <td>
-                                    @if($keputusan === '')
+                                    @if ($keputusan === '')
                                         <span style="color:#9ca3af;font-size:12px">Not yet evaluated</span>
                                     @elseif($isLulus)
                                         <span class="badge-status accepted" style="font-size:10px;padding:2px 8px">
@@ -233,32 +235,28 @@
                                     @endif
                                 </td>
                                 <td class="text-end">
-                                    @if($prob->can_evaluate ?? false)
-                                    <button class="btn btn-sm prob-btn-eval"
-                                        style="background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe;border-radius:6px;padding:4px 8px"
-                                        type="button"
-                                        title="Evaluasi"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#probationEvalModal"
-                                        onclick="prefillEvalEmployee('{{ $prob->employeeId }}')">
-                                        <i class="bi bi-clipboard-check"></i>
-                                    </button>
+                                    @if ($prob->can_evaluate ?? false)
+                                        <button class="btn btn-sm prob-btn-eval"
+                                            style="background:#eb1c24;color:#f5f3ff;border:1px solid #ddd6fe;border-radius:6px;padding:4px 8px"
+                                            type="button" title="Evaluasi" data-bs-toggle="modal"
+                                            data-bs-target="#probationEvalModal"
+                                            onclick="prefillEvalEmployee('{{ $prob->employeeId }}')">
+                                            <i class="bi bi-clipboard-check"></i>
+                                        </button>
                                     @endif
                                     <button class="btn btn-sm prob-btn-history ms-1"
                                         style="background:#f0f7ff;color:#0b4a86;border:1px solid #c7dff7;border-radius:6px;padding:4px 8px"
-                                        type="button"
-                                        title="Riwayat Evaluasi"
+                                        type="button" title="Riwayat Evaluasi"
                                         onclick="openEvalHistoryModal('{{ $prob->employeeId }}', '{{ addslashes($prob->fullName) }}')">
                                         <i class="bi bi-clock-history"></i>
                                     </button>
-                                    @if(!empty($prob->lastEvalId))
-                                    <a href="{{ route('hr.export.performance-review', ['id' => $prob->employeeId, 'eval_id' => $prob->lastEvalId]) }}"
-                                       class="btn btn-sm ms-1"
-                                       style="background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe;border-radius:6px;padding:4px 8px"
-                                       target="_blank"
-                                       title="Download Performance Review">
-                                        <i class="bi bi-file-earmark-pdf"></i>
-                                    </a>
+                                    @if (!empty($prob->lastEvalId))
+                                        <a href="{{ route('hr.export.performance-review', ['id' => $prob->employeeId, 'eval_id' => $prob->lastEvalId]) }}"
+                                            class="btn btn-sm ms-1"
+                                            style="background:#f5f3ff;color:#eb1c24;border:1px solid #ddd6fe;border-radius:6px;padding:4px 8px"
+                                            target="_blank" title="Download Performance Review">
+                                            <i class="bi bi-file-earmark-pdf"></i>
+                                        </a>
                                     @endif
                                 </td>
                             </tr>
@@ -308,116 +306,124 @@
 @endsection
 
 @section('scripts')
-<script>
-    // All probation employees — passed to modal for live search (1:1 GAS _probData)
-    window.__allProbationEmployees = @json($allProbations->values());
+    <script>
+        // All probation employees — passed to modal for live search (1:1 GAS _probData)
+        window.__allProbationEmployees = @json($allProbations->values());
 
-    // ============================================================
-    // Pre-fill eval modal when clicking Evaluasi button in table row
-    // (1:1 GAS _attachProbRowHandlers → openEvalModal(emp))
-    // ============================================================
-    function prefillEvalEmployee(employeeId) {
-        resetProbationEvalModal();
-        const emp = (window.__allProbationEmployees || []).find(e =>
-            (e.employeeId || '').replace(/^'+/, '') === String(employeeId).replace(/^'+/, '')
-        );
-        if (emp) {
-            setTimeout(() => selectEvalEmployee(emp), 150);
+        // ============================================================
+        // Pre-fill eval modal when clicking Evaluasi button in table row
+        // (1:1 GAS _attachProbRowHandlers → openEvalModal(emp))
+        // ============================================================
+        function prefillEvalEmployee(employeeId) {
+            resetProbationEvalModal();
+            const emp = (window.__allProbationEmployees || []).find(e =>
+                (e.employeeId || '').replace(/^'+/, '') === String(employeeId).replace(/^'+/, '')
+            );
+            if (emp) {
+                setTimeout(() => selectEvalEmployee(emp), 150);
+            }
         }
-    }
 
-    // ============================================================
-    // Reset eval modal to initial state
-    // Delegates to resetProbationEvalModal() defined in probation-modals.blade.php
-    // ============================================================
-    function resetProbationEvalModal() {
-        // The actual implementation lives in probation-modals.blade.php (IIFE).
-        // This function is called from index.blade.php (button onclick + modal hidden event).
-        // If probation-modals has already been loaded, call its version; otherwise no-op.
-        if (typeof window.__resetProbationEvalModalImpl === 'function') {
-            window.__resetProbationEvalModalImpl();
-        } else {
-            // Fallback — basic reset if modal JS not yet initialised
-            const ids = ['evalEmpSearch','evalEmployeeId','evalRecruitmentId','evalDecisionValue',
-                         'evalExtDuration','evalExtStart','evalExtEnd','evalCatatan'];
-            ids.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.value = '';
-            });
-            ['evalEmpSearchClear','evalEmpDropdown','evalEmpPreview','evalExtendSection']
+        // ============================================================
+        // Reset eval modal to initial state
+        // Delegates to resetProbationEvalModal() defined in probation-modals.blade.php
+        // ============================================================
+        function resetProbationEvalModal() {
+            // The actual implementation lives in probation-modals.blade.php (IIFE).
+            // This function is called from index.blade.php (button onclick + modal hidden event).
+            // If probation-modals has already been loaded, call its version; otherwise no-op.
+            if (typeof window.__resetProbationEvalModalImpl === 'function') {
+                window.__resetProbationEvalModalImpl();
+            } else {
+                // Fallback — basic reset if modal JS not yet initialised
+                const ids = ['evalEmpSearch', 'evalEmployeeId', 'evalRecruitmentId', 'evalDecisionValue',
+                    'evalExtDuration', 'evalExtStart', 'evalExtEnd', 'evalCatatan'
+                ];
+                ids.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = '';
+                });
+                ['evalEmpSearchClear', 'evalEmpDropdown', 'evalEmpPreview', 'evalExtendSection']
                 .forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.style.display = 'none';
                 });
-            const btn = document.getElementById('btnConfirmProbationEval');
-            if (btn) btn.disabled = true;
-            const form = document.getElementById('probationEvalForm');
-            if (form) form.action = '';
-        }
-    }
-
-    // ============================================================
-    // Eval History Modal (1:1 GAS openEvalHistoryModal)
-    // ============================================================
-    function openEvalHistoryModal(employeeId, empName) {
-        const nameEl  = document.getElementById('evalHistoryEmpName');
-        const bodyEl  = document.getElementById('evalHistoryBody');
-        if (nameEl) nameEl.textContent = empName || '-';
-        if (bodyEl) bodyEl.innerHTML = '<div class="text-center text-muted py-4" style="font-size:13px"><span class="spinner-border spinner-border-sm me-2"></span>Memuat riwayat...</div>';
-
-        const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('evalHistoryModal'));
-        modal.show();
-
-        fetch(`/hr/probation/${employeeId}/eval-history`, {
-            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json',
-                       'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (!bodyEl) return;
-            const history = data.history || [];
-            if (!history.length) {
-                bodyEl.innerHTML = '<div class="text-center text-muted py-4" style="font-size:13px">Belum ada riwayat evaluasi untuk karyawan ini.</div>';
-                return;
+                const btn = document.getElementById('btnConfirmProbationEval');
+                if (btn) btn.disabled = true;
+                const form = document.getElementById('probationEvalForm');
+                if (form) form.action = '';
             }
-            bodyEl.innerHTML = history.map((ev, idx) => {
-                const keputusan = ev.decision || '';
+        }
 
-                // IMPORTANT: check isTerm BEFORE isLulus.
-                // 'Tidak Lulus' contains 'Lulus' — wrong check order causes misclassification.
-                const isTerm  = keputusan === 'Tidak Lulus'
-                             || keputusan === 'Tidak Lolos → Putus Kontrak (Paklaring)'
-                             || keputusan.includes('Putus Kontrak')
-                             || keputusan.includes('Paklaring');
-                const isExt   = !isTerm && (
-                                    keputusan.includes('Perpanjang')
-                                 || keputusan.includes('Evaluasi Ulang')
-                                );
-                const isLulus = !isTerm && !isExt && keputusan !== '' && (
-                                    keputusan === 'Diangkat sebagai Karyawan Tetap'
-                                 || keputusan === 'Lulus → Karyawan Tetap'
-                                 || keputusan.includes('Pass')
-                                 || keputusan.includes('Tetap')
-                                 || keputusan.includes('Diangkat')
-                                );
+        // ============================================================
+        // Eval History Modal (1:1 GAS openEvalHistoryModal)
+        // ============================================================
+        function openEvalHistoryModal(employeeId, empName) {
+            const nameEl = document.getElementById('evalHistoryEmpName');
+            const bodyEl = document.getElementById('evalHistoryBody');
+            if (nameEl) nameEl.textContent = empName || '-';
+            if (bodyEl) bodyEl.innerHTML =
+                '<div class="text-center text-muted py-4" style="font-size:13px"><span class="spinner-border spinner-border-sm me-2"></span>Memuat riwayat...</div>';
 
-                const kepClass = isLulus ? 'accepted' : (isTerm ? 'blacklist' : 'hold');
-                const kepLabel = isLulus ? 'Passed → Permanent' : (isTerm ? 'Terminated → Paklaring' : 'Extended');
-                const sDur     = ev.extensionDuration  || '';
-                const sStart   = ev.newContractStart   || '-';
-                const sEnd     = ev.newContractEnd     || '-';
-                const sNote    = ev.evaluatorNotes     || '';
+            const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('evalHistoryModal'));
+            modal.show();
 
-                // Determine if this is a Performance Review 2026 (indicator-based) evaluation
-                const hasNewData = ev.overallTotal !== '' && ev.overallTotal !== null && ev.overallTotal !== undefined;
+            fetch(`/hr/probation/${employeeId}/eval-history`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (!bodyEl) return;
+                    const history = data.history || [];
+                    if (!history.length) {
+                        bodyEl.innerHTML =
+                            '<div class="text-center text-muted py-4" style="font-size:13px">Belum ada riwayat evaluasi untuk karyawan ini.</div>';
+                        return;
+                    }
+                    bodyEl.innerHTML = history.map((ev, idx) => {
+                        const keputusan = ev.decision || '';
 
-                let scoreHtml = '';
-                if (hasNewData) {
-                    // Performance Review 2026 — show competency totals
-                    const total    = ev.overallTotal || 0;
-                    const cat      = ev.category     || '-';
-                    const catColor = getCategoryColor(cat);
-                    scoreHtml = `
+                        // IMPORTANT: check isTerm BEFORE isLulus.
+                        // 'Tidak Lulus' contains 'Lulus' — wrong check order causes misclassification.
+                        const isTerm = keputusan === 'Tidak Lulus' ||
+                            keputusan === 'Tidak Lolos → Putus Kontrak (Paklaring)' ||
+                            keputusan.includes('Putus Kontrak') ||
+                            keputusan.includes('Paklaring');
+                        const isExt = !isTerm && (
+                            keputusan.includes('Perpanjang') ||
+                            keputusan.includes('Evaluasi Ulang')
+                        );
+                        const isLulus = !isTerm && !isExt && keputusan !== '' && (
+                            keputusan === 'Diangkat sebagai Karyawan Tetap' ||
+                            keputusan === 'Lulus → Karyawan Tetap' ||
+                            keputusan.includes('Pass') ||
+                            keputusan.includes('Tetap') ||
+                            keputusan.includes('Diangkat')
+                        );
+
+                        const kepClass = isLulus ? 'accepted' : (isTerm ? 'blacklist' : 'hold');
+                        const kepLabel = isLulus ? 'Passed → Permanent' : (isTerm ? 'Terminated → Paklaring' :
+                            'Extended');
+                        const sDur = ev.extensionDuration || '';
+                        const sStart = ev.newContractStart || '-';
+                        const sEnd = ev.newContractEnd || '-';
+                        const sNote = ev.evaluatorNotes || '';
+
+                        // Determine if this is a Performance Review 2026 (indicator-based) evaluation
+                        const hasNewData = ev.overallTotal !== '' && ev.overallTotal !== null && ev
+                            .overallTotal !== undefined;
+
+                        let scoreHtml = '';
+                        if (hasNewData) {
+                            // Performance Review 2026 — show competency totals
+                            const total = ev.overallTotal || 0;
+                            const cat = ev.category || '-';
+                            const catColor = getCategoryColor(cat);
+                            scoreHtml = `
                     <div class="row g-2 mb-2" style="font-size:12px">
                         <div class="col-3"><div class="text-muted">Integrity</div><strong>${ev.integrityTotal ?? '-'}/4</strong></div>
                         <div class="col-3"><div class="text-muted">Cont. Improvement</div><strong>${ev.ciTotal ?? '-'}/4</strong></div>
@@ -432,52 +438,55 @@
                             <span class="badge rounded-pill px-2 py-1" style="background:${catColor.bg};color:${catColor.color};font-size:12px">${cat}</span>
                         </div>
                     </div>`;
-                } else {
-                    scoreHtml = '<div class="text-muted mb-2" style="font-size:12px">Data skor tidak tersedia.</div>';
-                }
+                        } else {
+                            scoreHtml =
+                                '<div class="text-muted mb-2" style="font-size:12px">Data skor tidak tersedia.</div>';
+                        }
 
-                // ── Decision-specific document actions ───────────────
-                // PDF dibuat on-demand dan langsung di-download lewat route
-                // hr.export.* (konvensi fungsi PDF lainnya).
-                // EXTEND tidak punya dokumen — hanya info durasi.
-                const evalIdQ = encodeURIComponent(ev.evalId || '');
+                        // ── Decision-specific document actions ───────────────
+                        // PDF dibuat on-demand dan langsung di-download lewat route
+                        // hr.export.* (konvensi fungsi PDF lainnya).
+                        // EXTEND tidak punya dokumen — hanya info durasi.
+                        const evalIdQ = encodeURIComponent(ev.evalId || '');
 
-                let docBtnLabel = '', docIcon = '', docUrl = '';
-                if (isLulus) {
-                    docBtnLabel = 'Download SK Pengangkatan';
-                    docIcon     = 'bi-patch-check';
-                    docUrl      = '/hr/export/sk-pengangkatan/' + encodeURIComponent(employeeId);
-                } else if (isTerm) {
-                    docBtnLabel = 'Download Paklaring';
-                    docIcon     = 'bi-file-earmark-text';
-                    docUrl      = '/hr/export/paklaring/' + encodeURIComponent(employeeId) +
-                                  '?eval_id=' + evalIdQ;
-                }
+                        let docBtnLabel = '',
+                            docIcon = '',
+                            docUrl = '';
+                        if (isLulus) {
+                            docBtnLabel = 'Download SK Pengangkatan';
+                            docIcon = 'bi-patch-check';
+                            docUrl = '/hr/export/sk-pengangkatan/' + encodeURIComponent(employeeId);
+                        } else if (isTerm) {
+                            docBtnLabel = 'Download Paklaring';
+                            docIcon = 'bi-file-earmark-text';
+                            docUrl = '/hr/export/paklaring/' + encodeURIComponent(employeeId) +
+                                '?eval_id=' + evalIdQ;
+                        }
 
-                const previewBtn = `
+                        const previewBtn = `
                     <a class="btn btn-sm" target="_blank"
                        style="background:#f0f7ff;color:#0b4a86;border:1px solid #c7dff7;border-radius:6px;font-size:12px"
                        href="/hr/probation/${encodeURIComponent(employeeId)}/preview?eval_id=${evalIdQ}">
                        <i class="bi bi-eye me-1"></i>Preview Performance Review
                     </a>`;
-                const prPdfBtn = (isLulus || isTerm) ? `
+                        const prPdfBtn = (isLulus || isTerm) ? `
                     <a class="btn btn-sm" target="_blank"
                        style="background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe;border-radius:6px;font-size:12px"
                        href="/hr/export/performance-review/${encodeURIComponent(employeeId)}?eval_id=${evalIdQ}">
                        <i class="bi bi-file-earmark-pdf me-1"></i>Download Performance Review PDF
                     </a>` : '';
-                const decDocBtn = docUrl ? `
+                        const decDocBtn = docUrl ? `
                     <a class="btn btn-sm" target="_blank"
                        style="background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;border-radius:6px;font-size:12px"
                        href="${docUrl}">
                        <i class="bi ${docIcon} me-1"></i>${docBtnLabel}
                     </a>` : '';
 
-                const docActions = (isLulus || isTerm)
-                    ? `<div class="d-flex flex-wrap gap-2 mt-2 pt-2" style="border-top:1px dashed #e5e7eb">${previewBtn}${prPdfBtn}${decDocBtn}</div>`
-                    : '';
+                        const docActions = (isLulus || isTerm) ?
+                            `<div class="d-flex flex-wrap gap-2 mt-2 pt-2" style="border-top:1px dashed #e5e7eb">${previewBtn}${prPdfBtn}${decDocBtn}</div>` :
+                            '';
 
-                return `<div class="p-3 rounded-3 mb-3" style="background:#f9fafb;border:1px solid #e5e7eb">
+                        return `<div class="p-3 rounded-3 mb-3" style="background:#f9fafb;border:1px solid #e5e7eb">
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <div>
                             <span class="fw-bold" style="font-size:13px">#${idx+1} — ${ev.evalDate || '-'}</span>
@@ -490,32 +499,48 @@
                     ${sDur  ? `<div style="font-size:11px;color:#d97706" class="mt-1"><i class="bi bi-calendar-range me-1"></i>Extended ${sDur} (${sStart} – ${sEnd})</div>` : ''}
                     ${docActions}
                 </div>`;
-            }).join('');
-        })
-        .catch(() => {
-            if (bodyEl) bodyEl.innerHTML = '<div class="text-center text-muted py-4" style="font-size:13px">Gagal memuat riwayat.</div>';
-        });
-    }
-
-    // Helper: get category badge colors for history modal
-    function getCategoryColor(cat) {
-        const map = {
-            'Sangat Baik': { bg: '#d1fae5', color: '#166534' },
-            'Baik':        { bg: '#dbeafe', color: '#1e40af' },
-            'Cukup':       { bg: '#fef3c7', color: '#92400e' },
-            'Kurang':      { bg: '#fee2e2', color: '#991b1b' },
-        };
-        return map[cat] || { bg: '#e5e7eb', color: '#374151' };
-    }
-
-    // Reset modal on close
-    document.addEventListener('DOMContentLoaded', function() {
-        const modalEl = document.getElementById('probationEvalModal');
-        if (modalEl) {
-            modalEl.addEventListener('hidden.bs.modal', function() {
-                if (typeof resetProbationEvalModal === 'function') resetProbationEvalModal();
-            });
+                    }).join('');
+                })
+                .catch(() => {
+                    if (bodyEl) bodyEl.innerHTML =
+                        '<div class="text-center text-muted py-4" style="font-size:13px">Gagal memuat riwayat.</div>';
+                });
         }
-    });
-</script>
+
+        // Helper: get category badge colors for history modal
+        function getCategoryColor(cat) {
+            const map = {
+                'Sangat Baik': {
+                    bg: '#d1fae5',
+                    color: '#166534'
+                },
+                'Baik': {
+                    bg: '#dbeafe',
+                    color: '#1e40af'
+                },
+                'Cukup': {
+                    bg: '#fef3c7',
+                    color: '#92400e'
+                },
+                'Kurang': {
+                    bg: '#fee2e2',
+                    color: '#991b1b'
+                },
+            };
+            return map[cat] || {
+                bg: '#e5e7eb',
+                color: '#374151'
+            };
+        }
+
+        // Reset modal on close
+        document.addEventListener('DOMContentLoaded', function() {
+            const modalEl = document.getElementById('probationEvalModal');
+            if (modalEl) {
+                modalEl.addEventListener('hidden.bs.modal', function() {
+                    if (typeof resetProbationEvalModal === 'function') resetProbationEvalModal();
+                });
+            }
+        });
+    </script>
 @endsection
