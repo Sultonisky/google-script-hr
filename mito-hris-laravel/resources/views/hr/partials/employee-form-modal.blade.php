@@ -87,8 +87,8 @@
                             <label class="form-label fw-semibold" style="font-size:12.5px">Jenis Kelamin</label>
                             <select class="form-select form-select-sm" id="efGender">
                                 <option value="">— Pilih —</option>
-                                <option value="Male">Laki-laki</option>
-                                <option value="Female">Perempuan</option>
+                                <option value="Laki-laki">Laki-laki</option>
+                                <option value="Perempuan">Perempuan</option>
                             </select>
                         </div>
                         <div class="col-md-4">
@@ -107,10 +107,10 @@
                             <label class="form-label fw-semibold" style="font-size:12.5px">Status Pernikahan</label>
                             <select class="form-select form-select-sm" id="efMarital">
                                 <option value="">— Pilih —</option>
-                                <option value="Single">Belum Menikah</option>
-                                <option value="Married">Menikah</option>
-                                <option value="Divorced">Cerai</option>
-                                <option value="Widowed">Duda/Janda</option>
+                                <option value="Belum Menikah">Belum Menikah</option>
+                                <option value="Menikah">Menikah</option>
+                                <option value="Cerai">Cerai</option>
+                                <option value="Duda/Janda">Duda/Janda</option>
                             </select>
                         </div>
                         <div class="col-md-4">
