@@ -1,6 +1,135 @@
 // MITO HRIS - Public Career Portal SCSS (1:1 from GAS CSS)
-@use 'variables' as *;
+@use "variables" as *;
 
-@import 'modules/theme';
-@import 'modules/form';
-@import 'modules/responsive';
+@import "modules/theme";
+@import "modules/form";
+@import "modules/responsive";
+
+.public-loader {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: grid;
+    place-items: center;
+    background: #fff;
+    opacity: 1;
+    visibility: visible;
+    transition:
+        opacity 0.35s ease,
+        visibility 0s linear 0.35s;
+}
+
+.public-loader.is-hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.public-submit-loader {
+    position: fixed;
+    inset: 0;
+    z-index: 1999;
+    display: grid;
+    place-items: center;
+    background: rgba(255, 255, 255, 0.94);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+        opacity 0.3s ease,
+        visibility 0s linear 0.3s;
+}
+
+.public-submit-loader.is-active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition-delay: 0s;
+}
+
+.public-submit-loader-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    animation: public-loader-enter 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.public-submit-loader-label {
+    color: #0b2540;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.public-loader-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.35rem;
+    transform: translateY(0);
+    animation: public-loader-enter 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.public-loader-logo {
+    display: block;
+    width: min(240px, 65vw);
+    height: auto;
+}
+
+.public-loader-dots {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.public-loader-dots span {
+    display: block;
+    width: 0.62rem;
+    height: 0.62rem;
+    border-radius: 50%;
+    background: #eb1c24;
+    animation: public-loader-dot 1.15s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    will-change: transform, opacity;
+}
+
+.public-loader-dots span:nth-child(2) {
+    animation-delay: 0.14s;
+}
+
+.public-loader-dots span:nth-child(3) {
+    animation-delay: 0.28s;
+}
+
+@keyframes public-loader-dot {
+    0%,
+    70%,
+    100% {
+        opacity: 0.3;
+        transform: translate3d(0, 0, 0) scale(0.82);
+    }
+
+    35% {
+        opacity: 1;
+        transform: translate3d(0, -0.38rem, 0) scale(1);
+    }
+}
+
+@keyframes public-loader-enter {
+    from {
+        opacity: 0;
+        transform: translateY(0.5rem);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .public-loader,
+    .public-loader-dots span {
+        animation: none;
+        transition: none;
+    }
+}

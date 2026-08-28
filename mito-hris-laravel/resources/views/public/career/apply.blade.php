@@ -1,16 +1,18 @@
 @extends('layouts.public')
 
 @section('title', 'Form Pendaftaran - MITO Group')
-@section('description', 'Lengkapi formulir pendaftaran karir MITO dengan data yang valid untuk mengikuti proses rekrutmen.')
+@section('description', 'Lengkapi formulir pendaftaran karir MITO dengan data yang valid untuk mengikuti proses
+    rekrutmen.')
 @section('robots', 'noindex,follow,noarchive')
 
 @section('content')
-    <!-- LOADING OVERLAY -->
-    <div class="loading-overlay" id="loadingOverlay"
-        style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
-        <div class="spinner-border text-white" role="status" style="width:48px;height:48px;border-width:4px;"></div>
-        <div style="color:#fff;font-size:15px;font-weight:600;">Mengirim data...</div>
-        <div style="color:rgba(255,255,255,0.7);font-size:13px;">Mohon tunggu beberapa saat.</div>
+    <!-- Branded submit loading overlay -->
+    <div class="public-submit-loader" id="loadingOverlay" role="status" aria-label="Mengirim data">
+        <div class="public-submit-loader-content">
+            <img class="public-loader-logo" src="{{ asset('assets/mito-red.png') }}" alt="MITO">
+            <div class="public-loader-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+            <span class="public-submit-loader-label">Mengirim data...</span>
+        </div>
     </div>
 
     <!-- HERO (1:1 from GAS FormPendaftaran.html) -->
@@ -1743,7 +1745,7 @@
                 submitBtn.disabled = true;
                 submitSpinner.classList.remove('d-none');
                 submitText.textContent = 'Mengirim...';
-                loadingOverlay.style.display = 'flex';
+                loadingOverlay.classList.add('is-active');
             });
 
             updateProgress();
