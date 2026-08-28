@@ -16,14 +16,12 @@ class JobPositionService
 
     public function getLevel(string $position): ?string
     {
-        $map = config('job_positions.get_level');
-        return is_callable($map) ? $map($position) : null;
+        return $this->getPositionData($position)['level'] ?? null;
     }
 
     public function getFamily(string $position): ?string
     {
-        $map = config('job_positions.get_family');
-        return is_callable($map) ? $map($position) : null;
+        return $this->getPositionData($position)['family'] ?? null;
     }
 
     public function getPositionData(string $position): ?array
