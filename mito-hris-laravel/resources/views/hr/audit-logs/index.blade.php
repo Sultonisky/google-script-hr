@@ -213,7 +213,7 @@
                     <div class="stat-icon bg-blue"><i class="bi bi-list-ul"></i></div>
                     <div>
                         <div class="stat-label">Total Log</div>
-                        <div class="stat-value" id="auditStatTotal">{{ $logs->count() }}</div>
+                        <div class="stat-value" id="auditStatTotal">{{ $total }}</div>
                     </div>
                 </div>
             </div>
@@ -336,7 +336,7 @@
                         </tr>
                     </thead>
                     <tbody id="auditTableBody">
-                        @forelse($logs as $log)
+                        @forelse($paginatedLogs as $log)
                             <tr>
                                 @php
                                     $action = strtolower(trim($log['Action'] ?? ''));
@@ -395,8 +395,26 @@
                     </tbody>
                 </table>
             </div>
-            <div class="panel-footer">
-                <span id="auditFooterCount">Menampilkan {{ $logs->count() }} data</span>
+            <div class="panel-footer d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <span id="auditFooterCount">
+                    @if ($total > 0)
+                        Menampilkan {{ ($currentPage - 1) * $perPage + 1 }}–{{ min($currentPage * $perPage, $total) }} dari {{ $total }} data
+                    @else
+                        Tidak ada data
+                    @endif
+                </span>
+                @if ($total > $perPage)
+                    <x-pagination :currentPage="$currentPage" :total="$total" :perPage="$perPage" :route="'hr.audit-logs.index'"
+                        :queryParams="[
+                            'search' => request('search'),
+                            'entity_type' => request('entity_type'),
+                            'action' => request('action'),
+                            'user' => request('user'),
+                            'source' => request('source'),
+                            'entity_id' => request('entity_id'),
+                            'per_page' => $perPage,
+                        ]" />
+                @endif
             </div>
         </div>
     </section>

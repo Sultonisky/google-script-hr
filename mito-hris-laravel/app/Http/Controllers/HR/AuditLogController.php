@@ -58,12 +58,26 @@ class AuditLogController extends Controller
             });
         }
 
+        $total = $logs->count();
+        $perPage = max(1, min(100, (int) $request->query('per_page', 10)));
+        $currentPage = max(1, (int) $request->query('page', 1));
+        $lastPage = max(1, (int) ceil($total / $perPage));
+        $currentPage = min($currentPage, $lastPage);
+        $paginatedLogs = $logs->slice(($currentPage - 1) * $perPage, $perPage)->values();
+
         $stats = [
             'created' => $allLogs->filter(fn($l) => in_array(strtolower($l['Action'] ?? ''), ['created', 'create', 'apply']))->count(),
             'update'  => $allLogs->filter(fn($l) => in_array(strtolower($l['Action'] ?? ''), ['updated', 'update', 'update_status', 'status_changed']))->count(),
             'hold_bl' => $allLogs->filter(fn($l) => in_array(strtoupper($l['Action'] ?? ''), ['HOLD', 'BLACKLIST']))->count(),
         ];
 
-        return view('hr.audit-logs.index', compact('logs', 'stats'));
+        return view('hr.audit-logs.index', compact(
+            'paginatedLogs',
+            'total',
+            'currentPage',
+            'lastPage',
+            'perPage',
+            'stats'
+        ));
     }
 }
