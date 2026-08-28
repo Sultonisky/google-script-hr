@@ -1,414 +1,407 @@
 <!-- partials/StatusPageModals.html — MODAL DOKUMEN & STATUS REKRUTMEN (1:1 from GAS) -->
 
 @can('create_offering')
-<!-- 1. MODAL ONBOARDING & KONTRAK PKWT (1:1 from GAS partials/StatusPageModals.html) -->
-<div class="modal fade" id="onboardingModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content" style="border-radius: 16px">
-            <div class="modal-header" style="background: #166534; border-radius: 16px 16px 0 0">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-file-earmark-check-fill text-white fs-5"></i>
-                    <h6 class="modal-title mb-0 text-white fw-bold">Proses Kontrak PKWT &amp; Onboarding Karyawan</h6>
-                </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-
-            <div class="modal-body p-4">
-                <input type="hidden" id="onboardingRecruitmentId" />
-                <input type="hidden" id="onboardingEmployeeId" />
-
-                <!-- Step 1: Search kandidat (Accepted + Offering Diterima) -->
-                <div class="mb-3">
-                    <label class="form-label fw-semibold" style="font-size: 13px">
-                        <i class="bi bi-search me-1"></i>Cari Kandidat
-                        <span class="text-muted fw-normal">(Status: Accepted + Offering Diterima)</span>
-                    </label>
-                    <div class="position-relative">
-                        <input type="text" class="form-control" id="onboardingCandSearch"
-                            placeholder="Ketik nama atau Recruitment ID..." autocomplete="off"
-                            style="font-size: 13px; padding-right: 36px" oninput="handleOnboardingSearch(this.value)" />
-                        <i class="bi bi-x-circle-fill position-absolute" id="onboardingSearchClear"
-                            style="right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #aaa; display: none"
-                            onclick="clearOnboardingSearch()"></i>
+    <!-- 1. MODAL ONBOARDING & KONTRAK PKWT (1:1 from GAS partials/StatusPageModals.html) -->
+    <div class="modal fade" id="onboardingModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content" style="border-radius: 16px">
+                <div class="modal-header" style="background: #eb1c24; border-radius: 16px 16px 0 0">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-file-earmark-check-fill text-white fs-5"></i>
+                        <h6 class="modal-title mb-0 text-white fw-bold">Proses Kontrak PKWT &amp; Onboarding Karyawan</h6>
                     </div>
-                    <div id="onboardingSearchDropdown" class="border rounded-3 mt-1 shadow-sm"
-                        style="display: none; max-height: 200px; overflow-y: auto; background: #fff; z-index: 9999; position: relative">
-                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
 
-                <!-- Info Kandidat terpilih -->
-                <div id="onboardingCandPreview" style="display: none">
-                    <div class="p-3 rounded-3 mb-4" style="background: #f0f7ff; border: 1px solid #c7dff7">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="avatar-sm" id="onboardingCandAvatar"
-                                style="width: 44px; height: 44px; font-size: 16px; flex-shrink: 0; background: var(--color-primary, #eb1c24); color: #fff; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800">
-                                ?</div>
-                            <div class="flex-grow-1">
-                                <div class="fw-bold text-navy" id="onboardingCandName" style="font-size: 15px">-</div>
-                                <div class="text-muted" id="onboardingCandPosition" style="font-size: 12px">-</div>
-                                <div style="font-size: 11px; color: #888; margin-top: 2px" id="onboardingCandEmail">-
-                                </div>
-                            </div>
-                            <div class="text-end flex-shrink-0" style="font-size: 11.5px">
-                                <div class="text-muted">Recruitment ID</div>
-                                <div class="fw-semibold" id="onboardingCandRid">-</div>
-                                <div class="text-muted mt-1">Employee ID</div>
-                                <div class="fw-semibold" id="onboardingCandEmpId">-</div>
-                            </div>
+                <div class="modal-body p-4">
+                    <input type="hidden" id="onboardingRecruitmentId" />
+                    <input type="hidden" id="onboardingEmployeeId" />
+
+                    <!-- Step 1: Search kandidat (Accepted + Offering Diterima) -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" style="font-size: 13px">
+                            <i class="bi bi-search me-1"></i>Cari Kandidat
+                            <span class="text-muted fw-normal">(Status: Accepted + Offering Diterima)</span>
+                        </label>
+                        <div class="position-relative">
+                            <input type="text" class="form-control" id="onboardingCandSearch"
+                                placeholder="Ketik nama atau Recruitment ID..." autocomplete="off"
+                                style="font-size: 13px; padding-right: 36px" oninput="handleOnboardingSearch(this.value)" />
+                            <i class="bi bi-x-circle-fill position-absolute" id="onboardingSearchClear"
+                                style="right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #aaa; display: none"
+                                onclick="clearOnboardingSearch()"></i>
+                        </div>
+                        <div id="onboardingSearchDropdown" class="border rounded-3 mt-1 shadow-sm"
+                            style="display: none; max-height: 200px; overflow-y: auto; background: #fff; z-index: 9999; position: relative">
                         </div>
                     </div>
 
-                    <!-- Form onboarding — field selaras EMPLOYEE_HEADERS -->
-                    <div id="onboardingFormSection">
-                        <p class="fw-bold mb-3"
-                            style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-primary)">
-                            <i class="bi bi-briefcase-fill me-1"></i>Informasi Pekerjaan &amp; Penempatan
+                    <!-- Info Kandidat terpilih -->
+                    <div id="onboardingCandPreview" style="display: none">
+                        <div class="p-3 rounded-3 mb-4" style="border: 1px solid #eb1c24">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="avatar-sm" id="onboardingCandAvatar"
+                                    style="width: 44px; height: 44px; font-size: 16px; flex-shrink: 0; background: var(--color-primary, #eb1c24); color: #fff; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800">
+                                    ?</div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold text-navy" id="onboardingCandName" style="font-size: 15px">-</div>
+                                    <div class="text-muted" id="onboardingCandPosition" style="font-size: 12px">-</div>
+                                    <div style="font-size: 11px; color: #888; margin-top: 2px" id="onboardingCandEmail">-
+                                    </div>
+                                </div>
+                                <div class="text-end flex-shrink-0" style="font-size: 11.5px">
+                                    <div class="text-muted">Recruitment ID</div>
+                                    <div class="fw-semibold" id="onboardingCandRid">-</div>
+                                    <div class="text-muted mt-1">Employee ID</div>
+                                    <div class="fw-semibold" id="onboardingCandEmpId">-</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form onboarding — field selaras EMPLOYEE_HEADERS -->
+                        <div id="onboardingFormSection">
+                            <p class="fw-bold mb-3"
+                                style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-primary)">
+                                <i class="bi bi-briefcase-fill me-1"></i>Informasi Pekerjaan &amp; Penempatan
+                            </p>
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold" style="font-size: 13px">Branch Name<span
+                                            class="text-danger">*</span></label>
+                                    <input type="text" class="form-control form-control-sm" id="onbBranchName" disabled
+                                        readonly />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold" style="font-size: 13px">Division</label>
+                                    <select class="form-select form-select-sm" id="onbDivision">
+                                        <option value="">— Pilih —</option>
+                                        <option value="RnD &amp; aftersales">RnD &amp; aftersales</option>
+                                        <option value="Commercial Division">Commercial Division</option>
+                                        <option value="Sales">Sales</option>
+                                        <option value="FAT &amp; GA">FAT &amp; GA</option>
+                                        <option value="Manufacture">Manufacture</option>
+                                        <option value="E-Commerce">E-Commerce</option>
+                                        <option value="IT">IT</option>
+                                        <option value="Digital Marketing">Digital Marketing</option>
+                                        <option value="Buyer - Import">Buyer - Import</option>
+                                        <option value="Marketing">Marketing</option>
+                                        <option value="Creative">Creative</option>
+                                        <option value="HR &amp; Legal">HR &amp; Legal</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold" style="font-size: 13px">Department <span
+                                            class="text-danger">*</span></label>
+                                    <select class="form-select form-select-sm" id="onbDepartment">
+                                        <option value="">— Pilih —</option>
+                                        <option value="Human Resources">Human Resources</option>
+                                        <option value="Finance">Finance</option>
+                                        <option value="Accounting">Accounting</option>
+                                        <option value="Marketing">Marketing</option>
+                                        <option value="Digital Marketing">Digital Marketing</option>
+                                        <option value="Sales">Sales</option>
+                                        <option value="IT">IT</option>
+                                        <option value="Engineering">Engineering</option>
+                                        <option value="Operations">Operations</option>
+                                        <option value="Legal">Legal</option>
+                                        <option value="GA">GA</option>
+                                        <option value="Warehouse">Warehouse</option>
+                                        <option value="Purchasing">Purchasing</option>
+                                        <option value="Quality Control">Quality Control</option>
+                                        <option value="Customer Service">Customer Service</option>
+                                        <option value="Admin">Admin</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold" style="font-size: 13px">Job Position <span
+                                            class="text-danger">*</span></label>
+                                    <input type="text" class="form-control form-control-sm" id="onbPosition"
+                                        placeholder="Contoh: HR Staff" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold" style="font-size: 13px">Direct Superior</label>
+                                    <input type="text" class="form-control form-control-sm" id="onbDirectSuperior"
+                                        placeholder="Nama atasan langsung" />
+                                </div>
+                            </div>
+
+                            <p class="fw-bold mb-3"
+                                style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-primary)">
+                                <i class="bi bi-file-earmark-text-fill me-1"></i>Kontrak PKWT &amp; Upah
+                            </p>
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold" style="font-size: 13px">Tanggal Mulai / Join
+                                        Date <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control form-control-sm" id="onbJoinDate" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold" style="font-size: 13px">Durasi Kontrak PKWT
+                                        <span class="text-danger">*</span></label>
+                                    <select class="form-select form-select-sm" id="onbContractDuration">
+                                        <option value="">— Pilih —</option>
+                                        <option value="3 Bulan">3 Bulan</option>
+                                        <option value="6 Bulan">6 Bulan</option>
+                                        <option value="12 Bulan" selected>12 Bulan (1 Tahun)</option>
+                                        <option value="24 Bulan">24 Bulan (2 Tahun)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold" style="font-size: 13px">Akhir Kontrak (End
+                                        Date)</label>
+                                    <input type="date" class="form-control form-control-sm" id="onbContractEnd" />
+                                    <div class="form-text" id="onbContractEndHint" style="font-size: 11px">Terisi
+                                        otomatis dari durasi kontrak</div>
+                                </div>
+                                <input type="hidden" id="onbContractNumber" />
+                                <!-- Gaji & Tunjangan: hidden, diisi otomatis dari data Offering Letter -->
+                                <input type="hidden" id="onbSalaryBasic" />
+                                <input type="hidden" id="onbSalaryAllowance" />
+                            </div>
+
+                            <p class="fw-bold mb-3"
+                                style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-primary)">
+                                <i class="bi bi-calendar2-check-fill me-1"></i>Ketentuan Dokumen &amp; Jadwal Kerja
+                            </p>
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold" style="font-size: 13px">Tanggal Dokumen Kontrak
+                                        <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control form-control-sm" id="onbDocDate" />
+                                    <div class="form-text" style="font-size: 11px">Bisa dipilih — kontrak boleh dibuat
+                                        sebelum/sesudah hari H</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold" style="font-size: 13px">Ketentuan Jam Masuk
+                                        Kerja</label>
+                                    <select class="form-select form-select-sm" id="onbJamMasuk">
+                                        <option value="">— Pilih —</option>
+                                        <option value="mulai pukul 07.00 WIB" selected>Pukul 07.00 WIB</option>
+                                        <option
+                                            value="mulai pukul 07.00 WIB dan selambat-lambatnya sampai dengan pukul 07.15 WIB">
+                                            07.00 WIB (mlm 07.15 WIB)</option>
+                                        <option value="mulai pukul 08.00 WIB">Pukul 08.00 WIB</option>
+                                        <option
+                                            value="mulai pukul 08.00 WIB dan selambat-lambatnya sampai dengan pukul 08.15 WIB">
+                                            08.00 WIB (mlm 08.15 WIB)</option>
+                                        <option value="sesuai shift penempatan">Sesuai shift penempatan</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold" style="font-size: 13px">Jadwal Waktu
+                                        Kerja</label>
+                                    <select class="form-select form-select-sm" id="onbWorkSchedule">
+                                        <option value="">— Pilih —</option>
+                                        <option value="Normal" selected>Normal (5 hari kerja, 8 jam/hari, 40 jam/minggu)
+                                        </option>
+                                        <option value="Shift Khusus">Shift Khusus (disesuaikan kesepakatan dengan Kepala
+                                            Divisi)</option>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold" style="font-size: 13px">Klausul Jangka Waktu
+                                        <span class="text-muted fw-normal">(free text)</span></label>
+                                    <textarea class="form-control form-control-sm" id="onbTenorText" rows="2"
+                                        placeholder="PIHAK PERTAMA dengan ini menyatakan persetujuannya untuk mempekerjakan PIHAK KEDUA sebagai Karyawan PIHAK PERTAMA..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- /#onboardingFormSection -->
+                    </div>
+                    <!-- /#onboardingCandPreview -->
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                    <button class="btn btn-sm text-white fw-semibold" style="background: #eb1c24"
+                        id="btnConfirmOnboarding" disabled>
+                        <span id="btnOnboardingText"><i class="bi bi-file-earmark-check-fill me-1"></i>Simpan &amp;
+                            Generate Kontrak PKWT</span>
+                        <span id="btnOnboardingLoading" style="display: none">
+                            <span class="spinner-border spinner-border-sm me-1"></span>Memproses...
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. MODAL BUAT OFFERING LETTER (1:1 from GAS partials/StatusPageModals.html) -->
+    <div class="modal fade" id="offeringModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content" style="border-radius: 16px">
+                <div class="modal-header" style="background: var(--color-primary, #eb1c24); border-radius: 16px 16px 0 0">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-file-earmark-text-fill text-white fs-5"></i>
+                        <h6 class="modal-title mb-0 text-white fw-bold">Buat / Generate Offering Letter</h6>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body p-4">
+                    <!-- Live Search Kandidat -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" style="font-size: 13px">
+                            <i class="bi bi-search me-1"></i>Cari Kandidat (Status: Accepted)
+                        </label>
+                        <div class="position-relative">
+                            <input type="text" class="form-control" id="offeringCandSearch"
+                                placeholder="Ketik nama atau Recruitment ID..." autocomplete="off"
+                                style="font-size: 13px; padding-right: 36px" oninput="handleOfferingSearch(this.value)" />
+                            <i class="bi bi-x-circle-fill position-absolute" id="offeringSearchClear"
+                                style="right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #aaa; display: none"
+                                onclick="clearOfferingSearch()"></i>
+                        </div>
+                        <div id="offeringSearchDropdown" class="border rounded-3 mt-1 shadow-sm"
+                            style="display: none; max-height: 200px; overflow-y: auto; background: #fff; z-index: 9999; position: relative">
+                        </div>
+                    </div>
+
+                    <!-- Preview Info Kandidat -->
+                    <div id="offeringCandPreview" style="display: none">
+                        <div class="p-3 rounded-3 mb-3" style="background: #fff5f5; border: 1px solid #fed7d7">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="avatar-sm" id="offeringCandAvatar"
+                                    style="width: 44px; height: 44px; font-size: 16px; flex-shrink: 0; background: var(--color-primary, #eb1c24); color: #fff; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800">
+                                    ?</div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold text-navy" id="offeringCandName" style="font-size: 15px">-</div>
+                                    <div class="text-muted" style="font-size: 12px">
+                                        <span id="offeringCandPos">-</span> &bull; <span id="offeringCandEmail">-</span>
+                                    </div>
+                                </div>
+                                <div class="text-end flex-shrink-0" style="font-size: 11.5px">
+                                    <div class="text-muted">Ekspektasi Gaji</div>
+                                    <div class="fw-semibold text-danger" id="offeringCandExpSal">-</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Detail Penawaran — 1:1 from GAS offeringStep2 -->
+                        <hr class="my-3" />
+                        <p class="fw-semibold mb-3" style="font-size: 13px; color: var(--color-primary, #eb1c24)">
+                            <i class="bi bi-pencil-square me-1"></i>Detail Penawaran Kerja
                         </p>
-                        <div class="row g-3 mb-4">
+                        <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold" style="font-size: 13px">Branch Name <span
+                                <label class="form-label fw-semibold" style="font-size: 12px">Branch Name <span
                                         class="text-danger">*</span></label>
-                                <select class="form-select form-select-sm" id="onbBranchName" disabled
-                                    title="Perusahaan mengikuti Offering Letter dan tidak dapat diubah">
+                                <select class="form-select form-select-sm" id="offerBranchName">
                                     <option value="">— Pilih —</option>
                                     <option value="PT Mahakarya Sukses Indonesia">PT Mahakarya Sukses Indonesia</option>
-                                    <option value="PT Stein Perkasa Internasional">PT Stein Perkasa Internasional
-                                    </option>
+                                    <option value="PT Stein Perkasa Internasional">PT Stein Perkasa Internasional</option>
                                     <option value="PT Perkasa Injeksi Indonesia">PT Perkasa Injeksi Indonesia</option>
                                     <option value="PT Mitra Elektro Perkasa">PT Mitra Elektro Perkasa</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold" style="font-size: 13px">Division</label>
-                                <select class="form-select form-select-sm" id="onbDivision">
-                                    <option value="">— Pilih —</option>
-                                    <option value="RnD &amp; aftersales">RnD &amp; aftersales</option>
-                                    <option value="Commercial Division">Commercial Division</option>
-                                    <option value="Sales">Sales</option>
-                                    <option value="FAT &amp; GA">FAT &amp; GA</option>
-                                    <option value="Manufacture">Manufacture</option>
-                                    <option value="E-Commerce">E-Commerce</option>
-                                    <option value="IT">IT</option>
-                                    <option value="Digital Marketing">Digital Marketing</option>
-                                    <option value="Buyer - Import">Buyer - Import</option>
-                                    <option value="Marketing">Marketing</option>
-                                    <option value="Creative">Creative</option>
-                                    <option value="HR &amp; Legal">HR &amp; Legal</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold" style="font-size: 13px">Department <span
+                                <label class="form-label fw-semibold" style="font-size: 12px">Job Position <span
                                         class="text-danger">*</span></label>
-                                <select class="form-select form-select-sm" id="onbDepartment">
-                                    <option value="">— Pilih —</option>
-                                    <option value="Human Resources">Human Resources</option>
-                                    <option value="Finance">Finance</option>
-                                    <option value="Accounting">Accounting</option>
-                                    <option value="Marketing">Marketing</option>
-                                    <option value="Digital Marketing">Digital Marketing</option>
-                                    <option value="Sales">Sales</option>
-                                    <option value="IT">IT</option>
-                                    <option value="Engineering">Engineering</option>
-                                    <option value="Operations">Operations</option>
-                                    <option value="Legal">Legal</option>
-                                    <option value="GA">GA</option>
-                                    <option value="Warehouse">Warehouse</option>
-                                    <option value="Purchasing">Purchasing</option>
-                                    <option value="Quality Control">Quality Control</option>
-                                    <option value="Customer Service">Customer Service</option>
-                                    <option value="Admin">Admin</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold" style="font-size: 13px">Job Position <span
-                                        class="text-danger">*</span></label>
-                                <input type="text" class="form-control form-control-sm" id="onbPosition"
+                                <input type="text" class="form-control form-control-sm" id="offerPosition"
                                     placeholder="Contoh: HR Staff" />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold" style="font-size: 13px">Direct Superior</label>
-                                <input type="text" class="form-control form-control-sm" id="onbDirectSuperior"
-                                    placeholder="Nama atasan langsung" />
-                            </div>
-                        </div>
-
-                        <p class="fw-bold mb-3"
-                            style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-primary)">
-                            <i class="bi bi-file-earmark-text-fill me-1"></i>Kontrak PKWT &amp; Upah
-                        </p>
-                        <div class="row g-3 mb-4">
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold" style="font-size: 13px">Tanggal Mulai / Join
-                                    Date <span class="text-danger">*</span></label>
-                                <input type="date" class="form-control form-control-sm" id="onbJoinDate" />
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold" style="font-size: 13px">Durasi Kontrak PKWT
-                                    <span class="text-danger">*</span></label>
-                                <select class="form-select form-select-sm" id="onbContractDuration">
+                                <label class="form-label fw-semibold" style="font-size: 12px">Division</label>
+                                <select class="form-select form-select-sm" id="offerDivision">
                                     <option value="">— Pilih —</option>
-                                    <option value="3 Bulan">3 Bulan</option>
-                                    <option value="6 Bulan">6 Bulan</option>
-                                    <option value="12 Bulan" selected>12 Bulan (1 Tahun)</option>
-                                    <option value="24 Bulan">24 Bulan (2 Tahun)</option>
+                                    <option>RnD &amp; aftersales</option>
+                                    <option>Commercial Division</option>
+                                    <option>Sales</option>
+                                    <option>FAT &amp; GA</option>
+                                    <option>Manufacture</option>
+                                    <option>E-Commerce</option>
+                                    <option>IT</option>
+                                    <option>Digital Marketing</option>
+                                    <option>Buyer - Import</option>
+                                    <option>Marketing</option>
+                                    <option>Creative</option>
+                                    <option>HR &amp; Legal</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold" style="font-size: 13px">Akhir Kontrak (End
-                                    Date)</label>
-                                <input type="date" class="form-control form-control-sm" id="onbContractEnd" />
-                                <div class="form-text" id="onbContractEndHint" style="font-size: 11px">Terisi
-                                    otomatis dari durasi kontrak</div>
-                            </div>
-                            <input type="hidden" id="onbContractNumber" />
-                            <!-- Gaji & Tunjangan: hidden, diisi otomatis dari data Offering Letter -->
-                            <input type="hidden" id="onbSalaryBasic" />
-                            <input type="hidden" id="onbSalaryAllowance" />
-                        </div>
-
-                        <p class="fw-bold mb-3"
-                            style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-primary)">
-                            <i class="bi bi-calendar2-check-fill me-1"></i>Ketentuan Dokumen &amp; Jadwal Kerja
-                        </p>
-                        <div class="row g-3 mb-4">
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold" style="font-size: 13px">Tanggal Dokumen Kontrak
-                                    <span class="text-danger">*</span></label>
-                                <input type="date" class="form-control form-control-sm" id="onbDocDate" />
-                                <div class="form-text" style="font-size: 11px">Bisa dipilih — kontrak boleh dibuat
-                                    sebelum/sesudah hari H</div>
+                                <label class="form-label fw-semibold" style="font-size: 12px">Job Level</label>
+                                <select class="form-select form-select-sm" id="offerJobLevel">
+                                    <option value="">— Pilih —</option>
+                                    <option>Associate</option>
+                                    <option>Supervisor</option>
+                                    <option>Manager</option>
+                                </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold" style="font-size: 13px">Ketentuan Jam Masuk
+                                <label class="form-label fw-semibold" style="font-size: 12px">Lokasi Kerja</label>
+                                <input type="text" class="form-control form-control-sm" id="offerLokasiKerja"
+                                    placeholder="Contoh: Jakarta" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" style="font-size: 12px">Join Date <span
+                                        class="text-danger">*</span></label>
+                                <input type="date" class="form-control form-control-sm" id="offerJoinDate"
+                                    value="{{ date('Y-m-d') }}" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" style="font-size: 12px">Status Hubungan
                                     Kerja</label>
-                                <select class="form-select form-select-sm" id="onbJamMasuk">
-                                    <option value="">— Pilih —</option>
-                                    <option value="mulai pukul 07.00 WIB" selected>Pukul 07.00 WIB</option>
-                                    <option
-                                        value="mulai pukul 07.00 WIB dan selambat-lambatnya sampai dengan pukul 07.15 WIB">
-                                        07.00 WIB (mlm 07.15 WIB)</option>
-                                    <option value="mulai pukul 08.00 WIB">Pukul 08.00 WIB</option>
-                                    <option
-                                        value="mulai pukul 08.00 WIB dan selambat-lambatnya sampai dengan pukul 08.15 WIB">
-                                        08.00 WIB (mlm 08.15 WIB)</option>
-                                    <option value="sesuai shift penempatan">Sesuai shift penempatan</option>
+                                <select class="form-select form-select-sm" id="offerEmploymentStatus">
+                                    <option value="Perjanjian Kerja Waktu Tertentu" selected>PKWT (Kontrak)</option>
+                                    <option value="Perjanjian Kerja Waktu Tidak Tertentu">PKWTT (Tetap)</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold" style="font-size: 13px">Jadwal Waktu
-                                    Kerja</label>
-                                <select class="form-select form-select-sm" id="onbWorkSchedule">
-                                    <option value="">— Pilih —</option>
-                                    <option value="Normal" selected>Normal (5 hari kerja, 8 jam/hari, 40 jam/minggu)
-                                    </option>
-                                    <option value="Shift Khusus">Shift Khusus (disesuaikan kesepakatan dengan Kepala
-                                        Divisi)</option>
+                                <label class="form-label fw-semibold" style="font-size: 12px">Masa Kontrak</label>
+                                <select class="form-select form-select-sm" id="offerContractDuration">
+                                    <option value="3 bulan">3 bulan</option>
+                                    <option value="6 bulan">6 bulan</option>
+                                    <option value="12 bulan" selected>12 bulan</option>
+                                    <option value="24 bulan">24 bulan</option>
                                 </select>
                             </div>
-                            <div class="col-12">
-                                <label class="form-label fw-semibold" style="font-size: 13px">Klausul Jangka Waktu
-                                    <span class="text-muted fw-normal">(free text)</span></label>
-                                <textarea class="form-control form-control-sm" id="onbTenorText" rows="2"
-                                    placeholder="PIHAK PERTAMA dengan ini menyatakan persetujuannya untuk mempekerjakan PIHAK KEDUA sebagai Karyawan PIHAK PERTAMA..."></textarea>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" style="font-size: 12px">Gaji Pokok (Rp) <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-sm" id="offerSalaryBasic"
+                                    placeholder="Contoh: 4.000.000" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" style="font-size: 12px">Tunjangan Pulsa (Rp)</label>
+                                <input type="text" class="form-control form-control-sm" id="offerAllowPulsa"
+                                    placeholder="Contoh: 100.000" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" style="font-size: 12px">Tunjangan Transport
+                                    (Rp)</label>
+                                <input type="text" class="form-control form-control-sm" id="offerAllowTransport"
+                                    placeholder="Contoh: 500.000" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" style="font-size: 12px">Jam Kerja</label>
+                                <select class="form-select form-select-sm" id="offerWorkingHoursPreset"
+                                    onchange="applyWorkingHoursPreset(this)">
+                                    <option value="">— Pilih pola jam kerja —</option>
+                                    <option value="Senin – Jumat mulai pukul 08.00 – 17.00 WIB" selected>Kantor
+                                        (Senin–Jumat 08.00–17.00 WIB)</option>
+                                    <option value="Senin – Sabtu mulai pukul 08.00 – 16.30 WIB">Pabrik/Cabang (Senin–Sabtu
+                                        08.00–16.30 WIB)</option>
+                                    <option value="Shift sesuai penempatan">Shift sesuai penempatan</option>
+                                    <option value="custom">Kustom (ketik manual)</option>
+                                </select>
+                                <input type="text" class="form-control form-control-sm mt-1" id="offerWorkingHours"
+                                    value="Senin – Jumat mulai pukul 08.00 – 17.00 WIB" placeholder="Jam kerja..." />
                             </div>
                         </div>
                     </div>
-                    <!-- /#onboardingFormSection -->
                 </div>
-                <!-- /#onboardingCandPreview -->
-            </div>
 
-            <div class="modal-footer">
-                <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
-                <button class="btn btn-sm text-white fw-semibold" style="background: #166534"
-                    id="btnConfirmOnboarding" disabled>
-                    <span id="btnOnboardingText"><i class="bi bi-file-earmark-check-fill me-1"></i>Simpan &amp;
-                        Generate Kontrak PKWT</span>
-                    <span id="btnOnboardingLoading" style="display: none">
-                        <span class="spinner-border spinner-border-sm me-1"></span>Memproses...
-                    </span>
-                </button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary btn-sm"
+                        data-bs-dismiss="modal">Tutup</button>
+                    <button type="button" class="btn btn-sm text-white fw-semibold"
+                        style="background: var(--color-primary, #eb1c24)" id="btnSaveOffering">
+                        <i class="bi bi-save2 me-1"></i>Simpan Offering
+                    </button>
+                </div>
             </div>
         </div>
     </div>
-</div>
-
-<!-- 2. MODAL BUAT OFFERING LETTER (1:1 from GAS partials/StatusPageModals.html) -->
-<div class="modal fade" id="offeringModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content" style="border-radius: 16px">
-            <div class="modal-header" style="background: var(--color-primary, #eb1c24); border-radius: 16px 16px 0 0">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-file-earmark-text-fill text-white fs-5"></i>
-                    <h6 class="modal-title mb-0 text-white fw-bold">Buat / Generate Offering Letter</h6>
-                </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-
-            <div class="modal-body p-4">
-                <!-- Live Search Kandidat -->
-                <div class="mb-3">
-                    <label class="form-label fw-semibold" style="font-size: 13px">
-                        <i class="bi bi-search me-1"></i>Cari Kandidat (Status: Accepted)
-                    </label>
-                    <div class="position-relative">
-                        <input type="text" class="form-control" id="offeringCandSearch"
-                            placeholder="Ketik nama atau Recruitment ID..." autocomplete="off"
-                            style="font-size: 13px; padding-right: 36px" oninput="handleOfferingSearch(this.value)" />
-                        <i class="bi bi-x-circle-fill position-absolute" id="offeringSearchClear"
-                            style="right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #aaa; display: none"
-                            onclick="clearOfferingSearch()"></i>
-                    </div>
-                    <div id="offeringSearchDropdown" class="border rounded-3 mt-1 shadow-sm"
-                        style="display: none; max-height: 200px; overflow-y: auto; background: #fff; z-index: 9999; position: relative">
-                    </div>
-                </div>
-
-                <!-- Preview Info Kandidat -->
-                <div id="offeringCandPreview" style="display: none">
-                    <div class="p-3 rounded-3 mb-3" style="background: #fff5f5; border: 1px solid #fed7d7">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="avatar-sm" id="offeringCandAvatar"
-                                style="width: 44px; height: 44px; font-size: 16px; flex-shrink: 0; background: var(--color-primary, #eb1c24); color: #fff; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800">
-                                ?</div>
-                            <div class="flex-grow-1">
-                                <div class="fw-bold text-navy" id="offeringCandName" style="font-size: 15px">-</div>
-                                <div class="text-muted" style="font-size: 12px">
-                                    <span id="offeringCandPos">-</span> &bull; <span id="offeringCandEmail">-</span>
-                                </div>
-                            </div>
-                            <div class="text-end flex-shrink-0" style="font-size: 11.5px">
-                                <div class="text-muted">Ekspektasi Gaji</div>
-                                <div class="fw-semibold text-danger" id="offeringCandExpSal">-</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Detail Penawaran — 1:1 from GAS offeringStep2 -->
-                    <hr class="my-3" />
-                    <p class="fw-semibold mb-3" style="font-size: 13px; color: var(--color-primary, #eb1c24)">
-                        <i class="bi bi-pencil-square me-1"></i>Detail Penawaran Kerja
-                    </p>
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold" style="font-size: 12px">Branch Name <span
-                                    class="text-danger">*</span></label>
-                            <select class="form-select form-select-sm" id="offerBranchName">
-                                <option value="">— Pilih —</option>
-                                <option value="PT Mahakarya Sukses Indonesia">PT Mahakarya Sukses Indonesia</option>
-                                <option value="PT Stein Perkasa Internasional">PT Stein Perkasa Internasional</option>
-                                <option value="PT Perkasa Injeksi Indonesia">PT Perkasa Injeksi Indonesia</option>
-                                <option value="PT Mitra Elektro Perkasa">PT Mitra Elektro Perkasa</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold" style="font-size: 12px">Job Position <span
-                                    class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-sm" id="offerPosition"
-                                placeholder="Contoh: HR Staff" />
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold" style="font-size: 12px">Division</label>
-                            <select class="form-select form-select-sm" id="offerDivision">
-                                <option value="">— Pilih —</option>
-                                <option>RnD &amp; aftersales</option>
-                                <option>Commercial Division</option>
-                                <option>Sales</option>
-                                <option>FAT &amp; GA</option>
-                                <option>Manufacture</option>
-                                <option>E-Commerce</option>
-                                <option>IT</option>
-                                <option>Digital Marketing</option>
-                                <option>Buyer - Import</option>
-                                <option>Marketing</option>
-                                <option>Creative</option>
-                                <option>HR &amp; Legal</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold" style="font-size: 12px">Job Level</label>
-                            <select class="form-select form-select-sm" id="offerJobLevel">
-                                <option value="">— Pilih —</option>
-                                <option>Associate</option>
-                                <option>Supervisor</option>
-                                <option>Manager</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold" style="font-size: 12px">Lokasi Kerja</label>
-                            <input type="text" class="form-control form-control-sm" id="offerLokasiKerja"
-                                placeholder="Contoh: Jakarta" />
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold" style="font-size: 12px">Join Date <span
-                                    class="text-danger">*</span></label>
-                            <input type="date" class="form-control form-control-sm" id="offerJoinDate"
-                                value="{{ date('Y-m-d') }}" />
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold" style="font-size: 12px">Status Hubungan
-                                Kerja</label>
-                            <select class="form-select form-select-sm" id="offerEmploymentStatus">
-                                <option value="Perjanjian Kerja Waktu Tertentu" selected>PKWT (Kontrak)</option>
-                                <option value="Perjanjian Kerja Waktu Tidak Tertentu">PKWTT (Tetap)</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold" style="font-size: 12px">Masa Kontrak</label>
-                            <select class="form-select form-select-sm" id="offerContractDuration">
-                                <option value="3 bulan">3 bulan</option>
-                                <option value="6 bulan">6 bulan</option>
-                                <option value="12 bulan" selected>12 bulan</option>
-                                <option value="24 bulan">24 bulan</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold" style="font-size: 12px">Gaji Pokok (Rp) <span
-                                    class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-sm" id="offerSalaryBasic"
-                                placeholder="Contoh: 4.000.000" />
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold" style="font-size: 12px">Tunjangan Pulsa (Rp)</label>
-                            <input type="text" class="form-control form-control-sm" id="offerAllowPulsa"
-                                placeholder="Contoh: 100.000" />
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold" style="font-size: 12px">Tunjangan Transport
-                                (Rp)</label>
-                            <input type="text" class="form-control form-control-sm" id="offerAllowTransport"
-                                placeholder="Contoh: 500.000" />
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold" style="font-size: 12px">Jam Kerja</label>
-                            <select class="form-select form-select-sm" id="offerWorkingHoursPreset"
-                                onchange="applyWorkingHoursPreset(this)">
-                                <option value="">— Pilih pola jam kerja —</option>
-                                <option value="Senin – Jumat mulai pukul 08.00 – 17.00 WIB" selected>Kantor
-                                    (Senin–Jumat 08.00–17.00 WIB)</option>
-                                <option value="Senin – Sabtu mulai pukul 08.00 – 16.30 WIB">Pabrik/Cabang (Senin–Sabtu
-                                    08.00–16.30 WIB)</option>
-                                <option value="Shift sesuai penempatan">Shift sesuai penempatan</option>
-                                <option value="custom">Kustom (ketik manual)</option>
-                            </select>
-                            <input type="text" class="form-control form-control-sm mt-1" id="offerWorkingHours"
-                                value="Senin – Jumat mulai pukul 08.00 – 17.00 WIB" placeholder="Jam kerja..." />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary btn-sm"
-                    data-bs-dismiss="modal">Tutup</button>
-                <button type="button" class="btn btn-sm text-white fw-semibold"
-                    style="background: var(--color-primary, #eb1c24)" id="btnSaveOffering">
-                    <i class="bi bi-save2 me-1"></i>Simpan Offering
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 @endcan
 
 {{--
@@ -421,7 +414,7 @@
 <div class="modal fade" id="importModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content" style="border-radius:16px">
-            <div class="modal-header" style="background:#166534;color:#fff;border-radius:16px 16px 0 0">
+            <div class="modal-header" style="background:#eb1c24;color:#fff;border-radius:16px 16px 0 0">
                 <h6 class="modal-title mb-0 fw-bold"><i class="bi bi-upload me-2"></i>Import Karyawan (CSV / Excel)
                 </h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -517,7 +510,7 @@
                     </a>
                     <button type="button" class="btn btn-outline-secondary btn-sm ms-auto"
                         data-bs-dismiss="modal">Tutup</button>
-                    <button type="button" class="btn btn-sm text-white fw-semibold" style="background:#166534"
+                    <button type="button" class="btn btn-sm text-white fw-semibold" style="background:#eb1c24"
                         id="spImpPreviewBtn" disabled>
                         <span id="spImpPreviewText"><i class="bi bi-eye me-1"></i>Preview &amp; Validasi</span>
                         <span id="spImpPreviewLoad" class="d-none"><span
@@ -530,7 +523,7 @@
                             class="bi bi-arrow-left me-1"></i>Kembali</button>
                     <button type="button" class="btn btn-outline-secondary btn-sm ms-auto"
                         data-bs-dismiss="modal">Batal</button>
-                    <button type="button" class="btn btn-sm text-white fw-semibold" style="background:#166534"
+                    <button type="button" class="btn btn-sm text-white fw-semibold" style="background:#eb1c24"
                         id="spImpConfirmBtn" disabled>
                         <span id="spImpImportText"><i class="bi bi-cloud-arrow-up-fill me-1"></i>Import <span
                                 id="spImpNewCount">0</span> Karyawan Baru</span>
@@ -541,7 +534,7 @@
                 {{-- Step 3 --}}
                 <div id="spImpFooter3" class="d-flex gap-2 w-100 d-none">
                     <button type="button" class="btn btn-sm text-white fw-semibold ms-auto"
-                        style="background:#166534" data-bs-dismiss="modal">
+                        style="background:#eb1c24" data-bs-dismiss="modal">
                         <i class="bi bi-check me-1"></i>Selesai
                     </button>
                 </div>
@@ -824,7 +817,7 @@
                             </div>
                             <div>
                                 <div class="fw-semibold" style="font-size: 13px"><i
-                                        class="bi bi-check-circle-fill me-1" style="color: #166534"></i>Diterima</div>
+                                        class="bi bi-check-circle-fill me-1" style="color: #eb1c24"></i>Diterima</div>
                                 <div class="text-muted" style="font-size: 11px">Kandidat setuju dan siap bergabung
                                     sesuai tanggal yang ditentukan</div>
                             </div>
@@ -988,14 +981,14 @@
         dropdown.innerHTML = matched.map(function(c) {
             return '<div class="p-2 border-bottom d-flex align-items-center gap-2 hover-item onboarding-cand-item" style="cursor:pointer;" data-rec-id="' +
                 (c.recruitmentId || '') + '">' +
-                '<div class="avatar-sm" style="width:32px;height:32px;background:#166534;color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">' +
+                '<div class="avatar-sm" style="width:32px;height:32px;background:#eb1c24;color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">' +
                 (c.fullName || 'C').substring(0, 2).toUpperCase() +
                 '</div>' +
                 '<div class="flex-grow-1" style="font-size:12.5px;">' +
                 '<div class="fw-semibold text-navy">' + (c.fullName || '-') + '</div>' +
                 '<div class="text-muted" style="font-size:11px">' + (c.positionApplied || '-') + ' &middot; ' +
                 (c.recruitmentId || '') +
-                ' &middot; <span style="color:#166534">Offering Diterima</span></div>' +
+                ' &middot; <span style="color:#eb1c24">Offering Diterima</span></div>' +
                 '</div></div>';
         }).join('');
         dropdown.querySelectorAll('.onboarding-cand-item').forEach(function(item) {
@@ -2152,7 +2145,7 @@
                 bg: '#fffbeb'
             },
             'Diterima': {
-                border: '#166534',
+                border: '#eb1c24',
                 bg: '#f0fdf4'
             },
             'Ditolak': {
