@@ -1,6 +1,35 @@
 <?php
 
 return [
+    'mpr_department_divisions' => [
+        'Human Resources' => [
+            'HR Operations',
+            'Recruitment & Talent Acquisition',
+            'Learning & Development',
+            'Compensation & Benefit',
+            'People Development',
+        ],
+        'Finance' => [
+            'Financial Planning & Analysis (FP&A)',
+            'Treasury',
+            'Finance Accounting',
+            'Tax',
+        ],
+        'Accounting' => ['General Accounting', 'Accounts Payable', 'Accounts Receivable', 'Cost Accounting'],
+        'Marketing' => ['Brand & Marketing', 'Digital Marketing', 'Marketing Communication', 'Trade Marketing'],
+        'Digital Marketing' => ['Social Media', 'Performance Marketing', 'Content & Creative', 'E-Commerce'],
+        'Sales' => ['Sales Operations', 'General Trade', 'Modern Trade', 'Key Account', 'Regional Sales', 'Sales Support'],
+        'IT' => ['IT Infrastructure', 'IT Support', 'Software Development', 'IT Security', 'Data & Analytics'],
+        'Engineering' => ['Mechanical Engineering', 'Electrical Engineering', 'Civil Engineering', 'Project Engineering', 'Maintenance Engineering'],
+        'Operations' => ['Production', 'Production Planning', 'Operational Excellence', 'Warehouse Operations', 'Logistics'],
+        'Legal' => ['Legal Corporate', 'Legal Compliance', 'Contract Management', 'Litigation'],
+        'GA' => ['General Affairs', 'Facility Management', 'Asset Management', 'Office Services', 'Security'],
+        'Warehouse' => ['Warehouse Operations', 'Inventory Control', 'Receiving', 'Picking & Packing', 'Distribution'],
+        'Purchasing' => ['Procurement', 'Strategic Sourcing', 'Purchasing Operations', 'Vendor Management'],
+        'Quality Control' => ['Quality Assurance', 'Quality Control', 'Quality Management System', 'Quality Inspection'],
+        'Customer Service' => ['Customer Service Operations', 'Customer Support', 'Customer Complaint', 'After Sales Service'],
+        'Creative' => ['Graphic Design', 'Multimedia', 'Content Production', 'Creative Design', 'Photography & Videography'],
+    ],
     'auth' => [
         'valid_roles' => [
             'Super Admin',

@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\HR;
 
+use App\Rules\DivisionBelongsToDepartment;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreMprRequest extends FormRequest
 {
@@ -15,8 +17,8 @@ class StoreMprRequest extends FormRequest
     {
         return [
             'position'           => ['required', 'string', 'max:255'],
-            'department'         => ['required', 'string', 'max:255'],
-            'division'           => ['required', 'string', 'max:255'],
+            'department'         => ['required', 'string', 'max:255', Rule::in(array_keys(config('hris.mpr_department_divisions', [])))],
+            'division'           => ['required', 'string', 'max:255', new DivisionBelongsToDepartment((string) $this->input('department'))],
             'job_level'          => ['required', 'string', 'max:255'],
             'work_location'      => ['required', 'string', 'max:255'],
             'employment_type'    => ['required', 'string', 'max:255'],
@@ -43,6 +45,8 @@ class StoreMprRequest extends FormRequest
             'position.required'           => 'Posisi / jabatan yang diminta wajib diisi.',
             'department.required'         => 'Departemen wajib dipilih.',
             'division.required'           => 'Divisi wajib dipilih.',
+            'department.in'               => 'Departemen yang dipilih tidak tersedia.',
+            'division.*'                  => 'Divisi yang dipilih tidak sesuai dengan departemen.',
             'job_level.required'          => 'Level jabatan wajib dipilih.',
             'work_location.required'      => 'Lokasi kerja penempatan wajib dipilih.',
             'employment_type.required'    => 'Status kepegawaian wajib dipilih.',
