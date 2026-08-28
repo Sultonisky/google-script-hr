@@ -177,9 +177,9 @@
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold" for="email" style="font-size:13px">Alamat
                                         Email <span class="text-danger">*</span></label>
-                                    <input type="email" class="form-control" id="email" name="email"
-                                        value="{{ old('email') }}" required autocomplete="email">
-                                    <div class="invalid-feedback">Format alamat email tidak valid.</div>
+                                    <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email"
+                                        value="{{ old('email') }}" required autocomplete="email" aria-describedby="emailFeedback">
+                                    <div class="invalid-feedback" id="emailFeedback">{{ $errors->first('email') ?: 'Silakan masukkan alamat email yang valid.' }}</div>
                                     <div id="emailValidation" class="mt-1" style="display:none;font-size:12px;"></div>
                                 </div>
 
@@ -1530,6 +1530,42 @@
             'outlook.con': 'outlook.com'
         };
 
+        function validateEmailField(showToastOnError) {
+            if (!emailInput) return true;
+            var email = emailInput.value.trim();
+            var feedback = document.getElementById('emailFeedback');
+            var message = '';
+
+            if (!email) {
+                message = 'Email wajib diisi.';
+            } else if (!emailInput.checkValidity() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                message = 'Silakan masukkan alamat email yang valid.';
+            }
+
+            if (message) {
+                emailInput.classList.add('is-invalid');
+                emailInput.classList.remove('is-valid');
+                if (feedback) {
+                    feedback.textContent = message;
+                    feedback.style.display = 'flex';
+                }
+                if (showToastOnError && typeof window.showToast === 'function') {
+                    window.showToast({
+                        type: 'error',
+                        title: 'Email tidak valid',
+                        message: message
+                    });
+                }
+                return false;
+            }
+
+            emailInput.value = email;
+            emailInput.classList.remove('is-invalid');
+            emailInput.classList.add('is-valid');
+            if (feedback) feedback.style.display = 'none';
+            return true;
+        }
+
         // ============================================================
         // FORM SUBMISSION (Laravel POST — no google.script.run)
         // ============================================================
@@ -1627,8 +1663,8 @@
             emailInput.addEventListener('blur', function() {
                 var email = this.value.trim();
                 emailValidation.style.display = 'none';
-                if (!email) return;
-                var valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+                if (!validateEmailField(false)) return;
+                var valid = this.checkValidity();
                 if (!valid) {
                     emailValidation.style.cssText =
                         'display:flex;font-size:12px;color:#991b1b;align-items:center;gap:4px;';
@@ -1651,6 +1687,7 @@
             emailInput.addEventListener('input', function() {
                 emailValidation.style.display = 'none';
                 validateField(this);
+                if (this.value.trim()) validateEmailField(false);
                 updateProgress();
             });
 
@@ -1728,6 +1765,11 @@
                     e.preventDefault();
                     agreementError.style.display = 'block';
                     agreementCheckbox.classList.add('is-invalid');
+                    return;
+                }
+                if (!validateEmailField(true)) {
+                    e.preventDefault();
+                    emailInput.focus();
                     return;
                 }
                 agreementError.style.display = 'none';

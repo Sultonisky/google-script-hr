@@ -11,6 +11,17 @@ class ApplyJobRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $email = $this->input('email');
+
+        if (is_string($email)) {
+            $this->merge([
+                'email' => trim($email),
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         return [
