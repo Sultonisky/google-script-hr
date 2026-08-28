@@ -376,16 +376,6 @@ class EmployeeService
             $skNumber = sprintf('%03d/HRD-PK/%s/%s/%d', $seq, $entityCode, $romanMonth[$now->month - 1], $now->year);
         }
 
-        $noteLine = sprintf('[Rotasi %s] %s → %s', $rotationType, $oldPosition, $newPosition);
-        if (($newDepartment !== $oldDepartment) && $oldDepartment && $newDepartment) {
-            $noteLine .= sprintf(' | Dept: %s → %s', $oldDepartment, $newDepartment);
-        }
-        $noteLine .= sprintf(' | Efektif: %s', $effectiveDate);
-        if (trim($notesRaw) !== '') {
-            $noteLine .= sprintf(' | %s', trim($notesRaw));
-        }
-        $hrNotes = ($employee->hrNotes ? $employee->hrNotes . "\n" : '') . "[$nowStr] $noteLine";
-
         $attributes = [
             'Job Position (Former)'        => $oldPosition,
             'Job Position'                 => $newPosition,
@@ -396,7 +386,6 @@ class EmployeeService
             'Type of Rotation'             => $rotationType,
             'Tanggal Mutasi/Demosi/Promosi' => $effectiveDate,
             'Nomor SK'                     => $skNumber,
-            'HR Notes'                     => $hrNotes,
             'Updated At'                   => $nowStr,
         ];
 
@@ -409,7 +398,7 @@ class EmployeeService
                 action: 'ROTATION_' . strtoupper($rotationType),
                 field: 'Job Position / Dept',
                 oldValue: "{$oldPosition} ({$oldDepartment})",
-                newValue: "{$newPosition} ({$newDepartment}) | SK: {$skNumber}",
+                newValue: "{$newPosition} ({$newDepartment}) | Efektif: {$effectiveDate} | SK: {$skNumber}" . ($notesRaw ? " | {$notesRaw}" : ''),
                 user: $user,
                 source: 'Dashboard'
             );
@@ -504,14 +493,6 @@ class EmployeeService
         $currentPosition = $employee->jobPositionLocation ?? $employee->jobPosition ?? '';
         $formerPosition  = $employee->jobPositionFormer ?? '';
 
-        $noteLine = "[Offboarding {$nowStr}] {$offboardingType} — SK: {$skNumber}";
-        if ($notes) {
-            $noteLine .= " | {$notes}";
-        }
-        $updatedNotes = $employee->hrNotes
-            ? $employee->hrNotes . "\n" . $noteLine
-            : $noteLine;
-
         // Step 1: Update Employee Sheet
         $attributes = [
             'Status Employee'          => $newStatus,
@@ -520,7 +501,6 @@ class EmployeeService
             'Offboarding Reason'       => $reason,
             'Offboarding Approved By'  => $approvedBy,
             'Nomor SK'                 => $skNumber,
-            'HR Notes'                 => $updatedNotes,
             'Updated At'               => $nowStr,
         ];
         if ($currentPosition && !$formerPosition) {
@@ -547,7 +527,7 @@ class EmployeeService
             action: 'OFFBOARDING_' . strtoupper($offboardingType),
             field: 'Status Employee',
             oldValue: $oldStatus,
-            newValue: "{$newStatus} — {$offboardingType} (SK: {$skNumber})",
+            newValue: "{$newStatus} — {$offboardingType} (SK: {$skNumber})" . ($notes ? " | {$notes}" : ''),
             user: $user,
             source: 'Dashboard'
         );
@@ -653,7 +633,6 @@ class EmployeeService
             'Offboarding Approved By'  => $data['approved_by'] ?? $user,
             'BPJS Ketenagakerjaan'     => $data['bpjs_tk'] ?? $employee->bpjsKetenagakerjaan,
             'BPJS Kesehatan'          => $data['bpjs_kes'] ?? $employee->bpjsKesehatan,
-            'HR Notes'                 => $data['notes'] ?? $employee->hrNotes,
             'Updated At'               => $nowStr,
         ];
 
@@ -666,7 +645,7 @@ class EmployeeService
                 action: 'OFF_CONTRACT',
                 field: 'Status Employee',
                 oldValue: $employee->statusEmployee,
-                newValue: 'Contract Finished',
+                newValue: 'Contract Finished' . (($data['notes'] ?? '') ? ' | ' . trim($data['notes']) : ''),
                 user: $user,
                 source: 'Dashboard'
             );
@@ -730,16 +709,8 @@ class EmployeeService
         $contractNo  = $data['contract_number']     ?? '';
 
         // --- 1. Update Employee status → Probation (1:1 GAS promoteEmployeeToProbation) ---
-        $noteText = "[Ajukan Probation {$now->format('Y-m-d')}]";
-        if ($probNotes) {
-            $noteText .= " {$probNotes}";
-        }
-        $existingNotes = $employee->hrNotes ?? '';
-        $newNotes = $existingNotes ? "{$existingNotes}\n{$noteText}" : $noteText;
-
         $this->employeeRepo->update($employeeId, [
             'Status Employee' => 'Probation',
-            'HR Notes'        => $newNotes,
             'Updated At'      => $nowStr,
         ]);
 
@@ -821,7 +792,6 @@ class EmployeeService
             // dan kembalikan error agar user tahu
             $this->employeeRepo->update($employeeId, [
                 'Status Employee' => 'Contract',
-                'HR Notes'        => $existingNotes,
                 'Updated At'      => $nowStr,
             ]);
             return [
