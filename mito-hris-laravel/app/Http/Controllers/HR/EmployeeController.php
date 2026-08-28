@@ -692,6 +692,7 @@ class EmployeeController extends Controller
             'resignDate'           => 'Resign Date',
             // Catatan
             'hrNotes'              => 'HR Notes',
+            'notes'                => 'HR Notes',
         ];
 
         $attributes = [];
@@ -743,9 +744,22 @@ class EmployeeController extends Controller
             return response()->json(['success' => false, 'error' => 'Karyawan tidak ditemukan.'], 404);
         }
 
+        try {
+            $auditLogs = $this->auditRepo->getLogs((string) $employee->employeeId)
+                ->filter(function ($log) {
+                    return in_array(strtolower(trim($log['Entity Type'] ?? $log['entityType'] ?? '')), ['employee', 'outsource'], true);
+                })
+                ->take(20)
+                ->values();
+        } catch (\Throwable $e) {
+            report($e);
+            $auditLogs = collect();
+        }
+
         return response()->json([
             'success' => true,
             'employee' => $employee,
+            'auditLogs' => $auditLogs,
         ]);
     }
 }

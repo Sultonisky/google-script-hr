@@ -45,7 +45,7 @@
                 <div class="mb-3">
                     <p class="fw-bold mb-3"
                         style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#eb1c24">
-                        <i class="bi bi-person-badge-fill me-1"></i>Identitas &amp; Data Pribadi
+                        <i class="bi bi-person-badge-fill me-1"></i>Identitas & Data Pribadi
                     </p>
                     <div class="row g-2">
                         <div class="col-md-6">
@@ -356,33 +356,29 @@
                         style="font-size:12px;border-radius:8px">
                         <i class="bi bi-info-circle-fill"></i>
                         <span>Field Jabatan Sebelumnya, Tipe Rotasi, dan Nomor SK hanya diisi jika karyawan pernah
-                            dimutasi/rotasi. Gunakan modal <strong>Rotasi</strong> untuk memproses rotasi baru.</span>
+                            dimutasi/rotasi. Gunakan Fitur <strong>Rotasi</strong> untuk memproses rotasi baru.</span>
                     </div>
                     <div class="row g-2">
                         <div class="col-md-6">
                             <label class="form-label fw-semibold" style="font-size:12.5px">Jabatan Sebelumnya</label>
                             <input type="text" class="form-control form-control-sm" id="efFormerPos"
-                                placeholder="Jabatan sebelum mutasi" />
+                                placeholder="Jabatan sebelum mutasi" disabled />
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-6">
                             <label class="form-label fw-semibold" style="font-size:12.5px">Tipe Rotasi</label>
-                            <select class="form-select form-select-sm" id="efRotationType">
-                                <option value="">— Pilih —</option>
-                                <option value="Mutasi">Mutasi</option>
-                                <option value="Promosi">Promosi</option>
-                                <option value="Demosi">Demosi</option>
-                                <option value="Rotasi">Rotasi</option>
-                            </select>
+                            <input type="text" class="form-control form-control-sm" id="efRotationType"
+                                placeholder="Tipe rotasi" disabled />
                         </div>
-                        <div class="col-md-3">
+
+                        <div class="col-md-6">
                             <label class="form-label fw-semibold" style="font-size:12.5px">Tanggal Efektif
                                 Mutasi</label>
-                            <input type="date" class="form-control form-control-sm" id="efMutasiDate" />
+                            <input type="date" class="form-control form-control-sm" id="efMutasiDate" disabled />
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold" style="font-size:12.5px">Nomor SK</label>
                             <input type="text" class="form-control form-control-sm" id="efNoSk"
-                                placeholder="Nomor SK / surat keputusan" />
+                                placeholder="Nomor SK / surat keputusan" disabled />
                         </div>
                         <div class="col-md-3" id="efResignDateWrap" style="display:none">
                             <label class="form-label fw-semibold" style="font-size:12.5px">Tanggal Resign / Akhir
@@ -404,13 +400,8 @@
                     </p>
                     <div class="row g-2">
                         <div class="col-12">
-                            <label class="form-label fw-semibold" style="font-size:12.5px">Catatan HR</label>
-                            <textarea class="form-control form-control-sm" id="efHrNotes" rows="3"
-                                placeholder="Catatan internal tim HR..."></textarea>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label fw-semibold" style="font-size:12.5px">Catatan Umum</label>
-                            <textarea class="form-control form-control-sm" id="efNotes" rows="2" placeholder="Catatan umum..."></textarea>
+                            <label class="form-label fw-semibold" style="font-size:12.5px">Catatan</label>
+                            <textarea class="form-control form-control-sm" id="efNotes" rows="4" placeholder="Tulis catatan..."></textarea>
                         </div>
                     </div>
                 </div>
