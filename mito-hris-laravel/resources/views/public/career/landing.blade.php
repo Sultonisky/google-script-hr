@@ -1,14 +1,17 @@
 @extends('layouts.public')
 
 @section('title', 'Karir & Rekrutmen - MITO Group')
-@section('description', 'Temukan informasi proses rekrutmen dan peluang karir melalui MITO HRIS Career Portal. Pendaftaran dilakukan secara online tanpa biaya.')
-@section('structuredData', json_encode([
+@section('description',
+    'Temukan informasi proses rekrutmen dan peluang karir melalui MITO HRIS Career Portal.
+    Pendaftaran dilakukan secara online tanpa biaya.')
+@section('structuredData',
+    json_encode([
     '@context' => 'https://schema.org',
     '@type' => 'Organization',
     'name' => 'MITO Group',
     'url' => config('seo.canonical_base_url'),
     'logo' => asset('assets/mito.png'),
-]))
+    ]))
 
 @section('content')
     <div class="career-landing-page">
@@ -49,7 +52,8 @@
             <!-- 4 Langkah Rekrutmen -->
             <section class="mb-5" aria-labelledby="recruitment-process-title">
                 <div class="text-center mb-4">
-                    <h2 id="recruitment-process-title" class="h5 fw-bold text-navy mb-1"><i class="bi bi-diagram-3 me-2 text-danger"></i>Tahapan Proses
+                    <h2 id="recruitment-process-title" class="h5 fw-bold text-navy mb-1"><i
+                            class="bi bi-diagram-3 me-2 text-danger"></i>Tahapan Proses
                         Rekrutmen</h2>
                     <small class="text-muted">Proses seleksi transparan, terstruktur, dan tanpa dipungut biaya
                         apapun</small>
@@ -109,7 +113,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="card-body p-4 pt-0">
+                <div class="card-body p-4 pt-0 mt-4">
                     <div class="p-3 rounded-3 mb-4"
                         style="background:#f8fafc;border:1px solid #e2e8f0;font-size:13px;line-height:1.7;color:#334155;">
                         <ol class="mb-0 ps-3">
