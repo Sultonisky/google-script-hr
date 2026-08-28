@@ -821,7 +821,7 @@
                                     <th>Employee ID</th>
                                     <th>Nama Lengkap</th>
                                     <th>Departemen</th>
-                                    <th>Posisi</th>
+                                    <th>Jabatan</th>
                                     <th>Status Karyawan</th>
                                     <th>Join Date</th>
                                     <th style="width:160px">Hasil Validasi</th>
