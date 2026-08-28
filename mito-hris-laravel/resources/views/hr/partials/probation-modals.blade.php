@@ -1470,9 +1470,109 @@
 
             document.getElementById('evalEmpPreview').style.display = 'block';
             resetEvalFormState();
+            loadPreviousEvaluation(emp.employeeId || '');
+        };
+
+        function setPrefilledIndicator(key, value) {
+            if (value !== '1' && value !== '0') return;
+            var hiddenEl = document.getElementById('ind_' + key);
+            var button = document.querySelector('.ind-btn-' + (value === '1' ? 'check' : 'cross') + '[data-key="' + key + '"]');
+            if (!hiddenEl || !button) return;
+            hiddenEl.value = value;
+            var row = button.closest('.eval-ind-row');
+            if (!row) return;
+            var checkBtn = row.querySelector('.ind-btn-check');
+            var crossBtn = row.querySelector('.ind-btn-cross');
+            [checkBtn, crossBtn].forEach(function(btn) {
+                if (btn) {
+                    btn.style.borderColor = '#d1d5db';
+                    btn.style.background = '#fff';
+                    btn.style.color = '#374151';
+                }
+            });
+            button.style.borderColor = value === '1' ? '#166534' : '#991b1b';
+            button.style.background = value === '1' ? '#f0fdf4' : '#fef2f2';
+            button.style.color = value === '1' ? '#166534' : '#991b1b';
+        }
+
+        function setPreviousDecisionOptions(canExtend) {
+            var extendOption = document.querySelector('.eval-decision-opt[data-value="Extend"]');
+            if (!extendOption) return;
+            extendOption.style.display = canExtend ? '' : 'none';
+            if (!canExtend && document.getElementById('evalDecisionValue').value === 'Extend') {
+                document.getElementById('evalDecisionValue').value = '';
+                document.getElementById('evalExtendSection').style.display = 'none';
+            }
+        }
+
+        function loadPreviousEvaluation(employeeId) {
+            setPreviousDecisionOptions(true);
             recalcScores();
             updateConfirmBtn();
-        };
+            if (!employeeId) return;
+
+            fetch('/hr/probation/' + encodeURIComponent(employeeId) + '/eval-history', {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    var latest = (data.history || [])[0];
+                    if (!latest) return;
+
+                    var latestType = classifyDecision(latest.decision || '');
+                    setPreviousDecisionOptions(!latestType.isPerp);
+                    if (latestType.isLulus || latestType.isPutus) {
+                        showServerError('Evaluasi probation ini sudah final dan tidak dapat dibuka kembali.');
+                        return;
+                    }
+
+                    ALL_KEYS.forEach(function(key) {
+                        setPrefilledIndicator(key, String(latest['ind_' + key] || ''));
+                    });
+                    var notes = document.getElementById('evalCatatan');
+                    if (notes) notes.value = latest.evaluatorNotes || '';
+                    var reviewer = document.getElementById('evalEmpReviewer');
+                    if (reviewer && latest.reviewer_name) reviewer.textContent = latest.reviewer_name;
+                    var approvalFields = [
+                        ['evalApprovalDept', 'approval_dept'],
+                        ['evalApprovalDeptName', 'approval_dept_name'],
+                        ['evalApprovalDeptDate', 'approval_dept_date'],
+                        ['evalApprovalHrbp', 'approval_hrbp'],
+                        ['evalApprovalHrbpName', 'approval_hrbp_name'],
+                        ['evalApprovalHrbpDate', 'approval_hrbp_date']
+                    ];
+                    approvalFields.forEach(function(field) {
+                        var hidden = document.getElementById(field[0]);
+                        if (hidden) hidden.value = latest[field[1]] || '';
+                    });
+                    [
+                        ['evalApprovalDeptNameInput', latest.approval_dept_name],
+                        ['evalApprovalDeptDateInput', latest.approval_dept_date],
+                        ['evalApprovalHrbpNameInput', latest.approval_hrbp_name],
+                        ['evalApprovalHrbpDateInput', latest.approval_hrbp_date]
+                    ].forEach(function(field) {
+                        var input = document.getElementById(field[0]);
+                        if (input) input.value = field[1] || '';
+                    });
+                    document.querySelectorAll('.approval-btn').forEach(function(button) {
+                        var target = button.getAttribute('data-target');
+                        var selected = document.getElementById(target);
+                        var active = selected && selected.value === button.getAttribute('data-value');
+                        button.style.borderColor = active ? (selected.value === 'Setuju' ? '#166534' : '#991b1b') : '#d1d5db';
+                        button.style.background = active ? (selected.value === 'Setuju' ? '#f0fdf4' : '#fef2f2') : '#fff';
+                        button.style.color = active ? (selected.value === 'Setuju' ? '#166534' : '#991b1b') : '';
+                    });
+                    recalcScores();
+                    updateConfirmBtn();
+                })
+                .catch(function(error) {
+                    console.error('[ProbationEval] history fetch error:', error);
+                    showServerError('Riwayat evaluasi tidak dapat dimuat. Silakan coba lagi.');
+                });
+        }
 
         // ── Full form state reset (indicators, decision, extension) ────
         function resetEvalFormState() {
@@ -1527,6 +1627,7 @@
             // Reset decision
             document.getElementById('evalDecisionValue').value = '';
             document.getElementById('evalExtDuration').value = '';
+            setPreviousDecisionOptions(true);
             document.querySelectorAll('.eval-decision-opt').forEach(function(opt) {
                 opt.style.borderColor = '#e5e7eb';
                 opt.style.background = '';

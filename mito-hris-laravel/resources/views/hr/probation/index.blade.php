@@ -168,7 +168,8 @@
                                     !$isTerm &&
                                     !$isExt &&
                                     $keputusan !== '' &&
-                                    ($keputusan === 'Diangkat sebagai Karyawan Tetap' ||
+                                    ($keputusan === 'Lulus' ||
+                                        $keputusan === 'Diangkat sebagai Karyawan Tetap' ||
                                         $keputusan === 'Lulus → Karyawan Tetap' ||
                                         str_contains($keputusan, 'Pass') ||
                                         str_contains($keputusan, 'Tetap') ||

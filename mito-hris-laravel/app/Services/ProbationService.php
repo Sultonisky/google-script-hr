@@ -138,6 +138,17 @@ class ProbationService
         // Normalize Employee ID — strip leading apostrophe that GAS sometimes prepends
         $employeeId = ltrim(trim($employeeId), "'");
 
+        // Re-read the latest evaluation from the source of truth before any mutation.
+        // PASS/FAIL are terminal; after EXTEND only PASS/FAIL are valid next decisions.
+        $history = $this->getEvalHistory($employeeId);
+        $latest = $history[0] ?? null;
+        if ($latest) {
+            $latestType = ProbationDecisionType::fromDecisionString((string) ($latest['decision'] ?? ''));
+            if ($latestType?->isPass() || $latestType?->isFail()) {
+                throw new RuntimeException('Kandidat sudah menyelesaikan evaluasi probation dan tidak dapat dievaluasi kembali.');
+            }
+        }
+
         $user   = $user ?: 'HR Administrator';
         $now    = now()->timezone('Asia/Jakarta');
         $nowStr = $now->format('Y-m-d H:i:s');
@@ -158,6 +169,9 @@ class ProbationService
         $decisionType = ProbationDecisionType::fromDecisionString($decision);
         if (!$decisionType) {
             throw new RuntimeException('Keputusan evaluasi tidak valid: "' . $decision . '". Pilih salah satu keputusan yang tersedia.');
+        }
+        if ($latest && $decisionType->isExtend()) {
+            throw new RuntimeException('Keputusan Extend tidak tersedia pada evaluasi ulang setelah perpanjangan. Pilih Lulus atau Tidak Lulus.');
         }
         $isLulus = $decisionType->isPass();
         $isPutusKontrak = $decisionType->isFail();
@@ -451,8 +465,8 @@ class ProbationService
             return false;
         }
         if ($type->isExtend()) {
-            // Allow if this is the first evaluation (extend) and no final yet
-            return $count === 1;
+            // An extension keeps the employee eligible for another evaluation.
+            return true;
         }
         return true;
     }
