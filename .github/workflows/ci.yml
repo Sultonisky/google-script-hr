@@ -1,0 +1,68 @@
+name: CI - MITO HRIS
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mito-hris-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    name: Laravel tests and frontend build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mito-hris-laravel
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: mbstring, dom, fileinfo, sqlite3
+          coverage: none
+          tools: composer
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Prepare Laravel test environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --force
+
+      - name: Install Node dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci --no-audit --no-fund
+          else
+            echo 'package-lock.json is missing; using npm install.'
+            npm install --no-audit --no-fund
+          fi
+
+      - name: Validate PHP syntax
+        run: find app routes config database tests -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Build frontend assets
+        run: npm run build
+
+      - name: Run Laravel tests
+        run: php artisan test --without-tty
