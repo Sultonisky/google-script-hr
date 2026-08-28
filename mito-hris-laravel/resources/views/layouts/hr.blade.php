@@ -105,6 +105,38 @@
             wrap.innerHTML = mainBadge + respBadge;
         }
 
+        function normalizeCandidateStatus(status) {
+            var normalized = String(status || '').trim().toLowerCase().replace(/[\s_-]+/g, '');
+            if (normalized === 'accept' || normalized === 'accepted') return 'accepted';
+            if (normalized === 'hold' || normalized === 'onhold') return 'hold';
+            if (normalized === 'blacklist' || normalized === 'blacklisted') return 'blacklist';
+            return normalized;
+        }
+
+        function updateStatusButtonsUI(currentStatus) {
+            var map = {
+                'Accept': 'accepted',
+                'Hold': 'hold',
+                'Blacklist': 'blacklist'
+            };
+            var normalizedStatus = normalizeCandidateStatus(currentStatus);
+            Object.keys(map).forEach(function(key) {
+                var btn = document.getElementById('btn' + key);
+                if (!btn) return;
+                var isCurrent = map[key] === normalizedStatus;
+                btn.classList.toggle('current', isCurrent);
+                btn.disabled = isCurrent;
+                btn.setAttribute('aria-disabled', isCurrent ? 'true' : 'false');
+                btn.style.cursor = isCurrent ? 'not-allowed' : '';
+                btn.style.opacity = isCurrent ? '0.55' : '';
+                btn.style.boxShadow = isCurrent ? '0 0 0 2px currentColor inset' : '';
+            });
+        }
+
+        function resetStatusButtonsUI() {
+            updateStatusButtonsUI('');
+        }
+
         function openDrawer() {
             drawerJustOpened = true;
             if (drawerOverlay) drawerOverlay.classList.add('show');
@@ -171,6 +203,7 @@
 
         window.openCandidateDrawer = function(id) {
             setDrawerMode('candidate');
+            resetStatusButtonsUI();
             document.getElementById('drawerCandidateName').innerText = 'Memuat...';
             openDrawer();
 
@@ -219,19 +252,9 @@
                         '</strong></span>';
                     activeCandidateId = id;
 
-                    // Update status button highlights (1:1 GAS updateStatusButtonsUI)
+                    // Highlight and disable only the action matching current status.
                     var currentStatus = c.status || 'New';
-                    ['Accept', 'Hold', 'Blacklist'].forEach(function(key) {
-                        var statusMap = {
-                            'Accept': 'accepted',
-                            'Hold': 'hold',
-                            'Blacklist': 'blacklist'
-                        };
-                        var btn = document.getElementById('btn' + key);
-                        if (!btn) return;
-                        btn.classList.toggle('current', statusMap[key].toLowerCase() === currentStatus
-                            .toLowerCase());
-                    });
+                    updateStatusButtonsUI(currentStatus);
 
                     // Badge status utama + badge offering response (1:1 GAS renderCandidateDetail)
                     var isAccepted = (currentStatus || '').toLowerCase() === 'accepted';
@@ -1098,26 +1121,11 @@
                 body.insertBefore(banner, body.firstChild);
             }
 
-            // Helper: update status button highlight (same as GAS updateStatusButtonsUI)
-            function updateStatusButtonsUI(currentStatus) {
-                var map = {
-                    'Accept': 'Accepted',
-                    'Hold': 'Hold',
-                    'Blacklist': 'Blacklist'
-                };
-                Object.keys(map).forEach(function(key) {
-                    var btn = document.getElementById('btn' + key);
-                    if (!btn) return;
-                    btn.classList.toggle('current', map[key].toLowerCase() === (currentStatus || '')
-                        .toLowerCase());
-                });
-            }
-
             // btnAccept — opens #modalAccept, sets form action to /{id}/accept
             var btnAccept = document.getElementById('btnAccept');
             if (btnAccept) {
                 btnAccept.addEventListener('click', function() {
-                    if (!activeCandidateId) return;
+                    if (!activeCandidateId || this.disabled) return;
                     var candName = document.getElementById('drawerCandidateName')?.innerText || '';
                     var formAccept = document.getElementById('formAccept');
                     formAccept.action = '/hr/recruitment/' + activeCandidateId + '/accept';
@@ -1136,7 +1144,7 @@
             var btnHold = document.getElementById('btnHold');
             if (btnHold) {
                 btnHold.addEventListener('click', function() {
-                    if (!activeCandidateId) return;
+                    if (!activeCandidateId || this.disabled) return;
                     var candName = document.getElementById('drawerCandidateName')?.innerText || '';
                     document.getElementById('formHold').action = '/hr/recruitment/' + activeCandidateId +
                         '/hold';
@@ -1157,7 +1165,7 @@
             var btnBlacklist = document.getElementById('btnBlacklist');
             if (btnBlacklist) {
                 btnBlacklist.addEventListener('click', function() {
-                    if (!activeCandidateId) return;
+                    if (!activeCandidateId || this.disabled) return;
                     var candName = document.getElementById('drawerCandidateName')?.innerText || '';
                     document.getElementById('formBlacklist').action = '/hr/recruitment/' +
                         activeCandidateId + '/blacklist';
