@@ -34,8 +34,9 @@
                 <div>
                     <h6>Data Karyawan Outsource</h6>
                     <div class="panel-subtitle" id="osPanelSubtitle">
-                        @if($total > 0)
-                            Menampilkan {{ (($currentPage - 1) * $perPage + 1) }}–{{ min($currentPage * $perPage, $total) }} dari {{ $total }} data
+                        @if ($total > 0)
+                            Menampilkan {{ ($currentPage - 1) * $perPage + 1 }}–{{ min($currentPage * $perPage, $total) }}
+                            dari {{ $total }} data
                         @else
                             Tidak ada data karyawan outsource
                         @endif
@@ -50,16 +51,14 @@
                 <div class="filter-bar">
                     <div class="table-search">
                         <i class="bi bi-search"></i>
-                        <input type="text" name="search" id="osSearchInput" placeholder="Cari nama, ID, vendor, posisi..."
-                            value="{{ $searchFilter ?? '' }}" />
+                        <input type="text" name="search" id="osSearchInput"
+                            placeholder="Cari nama, ID, vendor, posisi..." value="{{ $searchFilter ?? '' }}" />
                     </div>
                     <select class="filter-select" name="sort" id="osSortSelect" onchange="this.form.submit()">
-                        <option value="newest" {{ ($sortFilter ?? 'newest') === 'newest' ? 'selected' : '' }}>Terbaru</option>
-                        <option value="oldest" {{ ($sortFilter ?? '') === 'oldest' ? 'selected' : '' }}>Terlama</option>
-                        <option value="name_asc" {{ ($sortFilter ?? '') === 'name_asc' ? 'selected' : '' }}>Nama A-Z</option>
-                        <option value="name_desc" {{ ($sortFilter ?? '') === 'name_desc' ? 'selected' : '' }}>Nama Z-A</option>
+                        <option value="name_asc" selected>Nama A-Z</option>
                     </select>
-                    <select class="filter-select" name="per_page" id="osPerPage" onchange="this.form.submit()" style="flex: 0 0 auto; width: 90px;">
+                    <select class="filter-select" name="per_page" id="osPerPage" onchange="this.form.submit()"
+                        style="flex: 0 0 auto; width: 90px;">
                         <option value="10" {{ ($perPage ?? 10) == 10 ? 'selected' : '' }}>10 / hal</option>
                         <option value="20" {{ ($perPage ?? 10) == 20 ? 'selected' : '' }}>20 / hal</option>
                         <option value="50" {{ ($perPage ?? 10) == 50 ? 'selected' : '' }}>50 / hal</option>
@@ -120,20 +119,16 @@
 
             <div class="panel-footer">
                 <span id="osFooterCount">
-                    @if($total > 0)
-                        Menampilkan {{ (($currentPage - 1) * $perPage + 1) }}–{{ min($currentPage * $perPage, $total) }} dari {{ $total }} data
+                    @if ($total > 0)
+                        Menampilkan {{ ($currentPage - 1) * $perPage + 1 }}–{{ min($currentPage * $perPage, $total) }}
+                        dari {{ $total }} data
                     @else
                         Tidak ada data
                     @endif
                 </span>
-                @if($total > $perPage)
-                    <x-pagination
-                        :currentPage="$currentPage"
-                        :total="$total"
-                        :perPage="$perPage"
-                        :route="'hr.outsource.index'"
-                        :queryParams="['search' => $searchFilter, 'sort' => $sortFilter, 'per_page' => $perPage]"
-                    />
+                @if ($total > $perPage)
+                    <x-pagination :currentPage="$currentPage" :total="$total" :perPage="$perPage" :route="'hr.outsource.index'"
+                        :queryParams="['search' => $searchFilter, 'sort' => $sortFilter, 'per_page' => $perPage]" />
                 @endif
             </div>
         </div>

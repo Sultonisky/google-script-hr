@@ -60,7 +60,7 @@ class EmployeeController extends Controller
             // 'contract' matches 'contract' and 'pkwt'
             $filtered = $filtered->filter(function ($e) use ($st) {
                 $es = strtolower(trim($e->statusEmployee ?? ''));
-                return match($st) {
+                return match ($st) {
                     'permanent' => in_array($es, ['permanent', 'pkwtt']),
                     'contract'  => in_array($es, ['contract', 'pkwt']),
                     default     => $es === $st,
@@ -71,23 +71,19 @@ class EmployeeController extends Controller
         $searchFilter = $request->query('search');
         if ($searchFilter) {
             $search = strtolower(trim($searchFilter));
-            $filtered = $filtered->filter(fn($e) =>
+            $filtered = $filtered->filter(
+                fn($e) =>
                 str_contains(strtolower($e->fullName ?? ''), $search)
-                || str_contains(strtolower($e->employeeId ?? ''), $search)
-                || str_contains(strtolower($e->personalEmail ?? ''), $search)
-                || str_contains(strtolower($e->workingEmail ?? ''), $search)
-                || str_contains(strtolower($e->jobPosition ?? ''), $search)
-                || str_contains(strtolower($e->nikNpwp ?? ''), $search)
+                    || str_contains(strtolower($e->employeeId ?? ''), $search)
+                    || str_contains(strtolower($e->personalEmail ?? ''), $search)
+                    || str_contains(strtolower($e->workingEmail ?? ''), $search)
+                    || str_contains(strtolower($e->jobPosition ?? ''), $search)
+                    || str_contains(strtolower($e->nikNpwp ?? ''), $search)
             );
         }
 
-        $sortFilter = $request->query('sort', 'newest');
-        $filtered = match ($sortFilter) {
-            'oldest'    => $filtered->sortBy('joinDate'),
-            'name_asc'  => $filtered->sortBy(fn($e) => strtolower($e->fullName ?? '')),
-            'name_desc' => $filtered->sortByDesc(fn($e) => strtolower($e->fullName ?? '')),
-            default     => $filtered->sortByDesc('joinDate'),  // newest
-        };
+        $sortFilter = 'name_asc';
+        $filtered = $filtered->sortBy(fn($e) => strtolower(trim($e->fullName ?? '')));
 
         $filtered = $filtered->values();
         $total = $filtered->count();
@@ -100,8 +96,18 @@ class EmployeeController extends Controller
         $departments = $all->pluck('department')->filter()->unique()->sort()->values();
 
         return view('hr.employees.index', compact(
-            'employees', 'stats', 'departments', 'all', 'contractEmployees',
-            'total', 'currentPage', 'perPage', 'searchFilter', 'statusFilter', 'departmentFilter', 'sortFilter'
+            'employees',
+            'stats',
+            'departments',
+            'all',
+            'contractEmployees',
+            'total',
+            'currentPage',
+            'perPage',
+            'searchFilter',
+            'statusFilter',
+            'departmentFilter',
+            'sortFilter'
         ));
     }
 
@@ -390,7 +396,7 @@ class EmployeeController extends Controller
                     return $s === 'contract' || $s === 'pkwt' || str_contains($s, 'contract');
                 }
                 if ($statusLower === 'active') {
-                    return !in_array($s, ['resigned','terminated','retired','deceased','inactive','contract finished','']);
+                    return !in_array($s, ['resigned', 'terminated', 'retired', 'deceased', 'inactive', 'contract finished', '']);
                 }
                 return $s === $statusLower;
             });
@@ -464,8 +470,13 @@ class EmployeeController extends Controller
         }
 
         // Validate uploaded files: max 5MB, allowed MIME types (1:1 GAS _OFFB_DOC_MAX_BYTES / _OFFB_DOC_ACCEPT)
-        $allowedMimes = ['application/pdf', 'image/jpeg', 'image/png', 'application/msword',
-                         'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+        $allowedMimes = [
+            'application/pdf',
+            'image/jpeg',
+            'image/png',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        ];
         foreach ($request->allFiles() as $key => $file) {
             if (!str_starts_with($key, 'attachment_')) {
                 continue;

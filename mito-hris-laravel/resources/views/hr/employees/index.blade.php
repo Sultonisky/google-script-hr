@@ -64,28 +64,28 @@
                     <div class="panel-subtitle">Klik baris atau nama untuk melihat detail lengkap dari spreadsheet.</div>
                 </div>
                 @can('manage_employees')
-                <div class="export-btns d-flex flex-wrap gap-2">
-                    <button class="btn btn-sm text-white fw-semibold"
-                        style="background:#166534;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
-                        type="button" data-bs-toggle="modal" data-bs-target="#empImportModal">
-                        <i class="bi bi-upload me-1"></i>Import
-                    </button>
-                    <button class="btn btn-sm fw-semibold text-white"
-                        style="background:#0B2540;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
-                        type="button" data-bs-toggle="modal" data-bs-target="#rotationModal">
-                        <i class="bi bi-arrow-left-right me-1"></i>Rotasi
-                    </button>
-                    <button class="btn btn-sm fw-semibold text-white"
-                        style="background:#d97706;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
-                        type="button" data-bs-toggle="modal" data-bs-target="#offContractModal">
-                        <i class="bi bi-calendar-x me-1"></i>Off Contract
-                    </button>
-                    <button class="btn btn-sm fw-semibold text-white"
-                        style="background:#991b1b;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
-                        type="button" data-bs-toggle="modal" data-bs-target="#offboardingModal">
-                        <i class="bi bi-box-arrow-right me-1"></i>Offboarding
-                    </button>
-                </div>
+                    <div class="export-btns d-flex flex-wrap gap-2">
+                        <button class="btn btn-sm text-white fw-semibold"
+                            style="background:#166534;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
+                            type="button" data-bs-toggle="modal" data-bs-target="#empImportModal">
+                            <i class="bi bi-upload me-1"></i>Import
+                        </button>
+                        <button class="btn btn-sm fw-semibold text-white"
+                            style="background:#0B2540;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
+                            type="button" data-bs-toggle="modal" data-bs-target="#rotationModal">
+                            <i class="bi bi-arrow-left-right me-1"></i>Rotasi
+                        </button>
+                        <button class="btn btn-sm fw-semibold text-white"
+                            style="background:#d97706;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
+                            type="button" data-bs-toggle="modal" data-bs-target="#offContractModal">
+                            <i class="bi bi-calendar-x me-1"></i>Off Contract
+                        </button>
+                        <button class="btn btn-sm fw-semibold text-white"
+                            style="background:#eb1c24;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
+                            type="button" data-bs-toggle="modal" data-bs-target="#offboardingModal">
+                            <i class="bi bi-box-arrow-right me-1"></i>Offboarding
+                        </button>
+                    </div>
                 @endcan
             </div>
 
@@ -97,8 +97,7 @@
                     <div class="table-search">
                         <i class="bi bi-search"></i>
                         <input type="text" name="search" id="empSearchInput"
-                            placeholder="Cari nama, NIK, email, posisi, dept..."
-                            value="{{ $searchFilter ?? '' }}" />
+                            placeholder="Cari nama, NIK, email, posisi, dept..." value="{{ $searchFilter ?? '' }}" />
                     </div>
                     <select class="filter-select" name="department" id="empDeptFilter" onchange="this.form.submit()">
                         <option value="">Semua Dept</option>
@@ -129,21 +128,22 @@
                         <option value="Outsource" {{ ($statusFilter ?? '') === 'Outsource' ? 'selected' : '' }}>
                             Outsource ({{ $stats['outsource'] ?? 0 }})
                         </option>
-                        <option value="Resigned" {{ ($statusFilter ?? '') === 'Resigned' ? 'selected' : '' }}>Resigned</option>
-                        <option value="Terminated" {{ ($statusFilter ?? '') === 'Terminated' ? 'selected' : '' }}>Terminated</option>
+                        <option value="Resigned" {{ ($statusFilter ?? '') === 'Resigned' ? 'selected' : '' }}>Resigned
+                        </option>
+                        <option value="Terminated" {{ ($statusFilter ?? '') === 'Terminated' ? 'selected' : '' }}>
+                            Terminated</option>
                     </select>
                     <select class="filter-select" name="sort" id="empSortSelect" onchange="this.form.submit()">
-                        <option value="newest" {{ ($sortFilter ?? 'newest') === 'newest' ? 'selected' : '' }}>Terbaru</option>
-                        <option value="oldest" {{ ($sortFilter ?? '') === 'oldest' ? 'selected' : '' }}>Terlama</option>
-                        <option value="name_asc" {{ ($sortFilter ?? '') === 'name_asc' ? 'selected' : '' }}>Nama A-Z</option>
-                        <option value="name_desc" {{ ($sortFilter ?? '') === 'name_desc' ? 'selected' : '' }}>Nama Z-A</option>
+                        <option value="name_asc" selected>Nama A-Z</option>
                     </select>
-                    <select class="filter-select" name="per_page" id="empPerPage" onchange="this.form.submit()" style="flex: 0 0 auto; width: 90px;">
+                    <select class="filter-select" name="per_page" id="empPerPage" onchange="this.form.submit()"
+                        style="flex: 0 0 auto; width: 90px;">
                         <option value="10" {{ ($perPage ?? 10) == 10 ? 'selected' : '' }}>10 / hal</option>
                         <option value="20" {{ ($perPage ?? 10) == 20 ? 'selected' : '' }}>20 / hal</option>
                         <option value="50" {{ ($perPage ?? 10) == 50 ? 'selected' : '' }}>50 / hal</option>
                     </select>
-                    <a href="{{ route('hr.employees.index') }}" class="btn-reset-filter text-decoration-none" title="Reset filter">
+                    <a href="{{ route('hr.employees.index') }}" class="btn-reset-filter text-decoration-none"
+                        title="Reset filter">
                         <i class="bi bi-arrow-counterclockwise"></i> Reset
                     </a>
                     <button class="btn-refresh" type="button" title="Muat ulang data" onclick="location.reload()">
@@ -206,20 +206,22 @@
 
             <div class="panel-footer">
                 <span id="empFooterCount">
-                    @if($total > 0)
-                        Menampilkan {{ (($currentPage - 1) * $perPage + 1) }}–{{ min($currentPage * $perPage, $total) }} dari {{ $total }} data
+                    @if ($total > 0)
+                        Menampilkan {{ ($currentPage - 1) * $perPage + 1 }}–{{ min($currentPage * $perPage, $total) }}
+                        dari {{ $total }} data
                     @else
                         Tidak ada data
                     @endif
                 </span>
-                @if($total > $perPage)
-                    <x-pagination
-                        :currentPage="$currentPage"
-                        :total="$total"
-                        :perPage="$perPage"
-                        :route="'hr.employees.index'"
-                        :queryParams="['search' => $searchFilter, 'status' => $statusFilter, 'department' => $departmentFilter, 'sort' => $sortFilter, 'per_page' => $perPage]"
-                    />
+                @if ($total > $perPage)
+                    <x-pagination :currentPage="$currentPage" :total="$total" :perPage="$perPage" :route="'hr.employees.index'"
+                        :queryParams="[
+                            'search' => $searchFilter,
+                            'status' => $statusFilter,
+                            'department' => $departmentFilter,
+                            'sort' => $sortFilter,
+                            'per_page' => $perPage,
+                        ]" />
                 @endif
             </div>
         </div>

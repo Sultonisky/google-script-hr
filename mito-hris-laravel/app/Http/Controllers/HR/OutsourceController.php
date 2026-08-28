@@ -37,22 +37,18 @@ class OutsourceController extends Controller
         $searchFilter = $request->query('search');
         if ($searchFilter) {
             $search = strtolower(trim($searchFilter));
-            $filtered = $filtered->filter(fn($e) =>
+            $filtered = $filtered->filter(
+                fn($e) =>
                 str_contains(strtolower($e->fullName ?? ''), $search) ||
-                str_contains(strtolower($e->employeeId ?? ''), $search) ||
-                str_contains(strtolower($e->jobPosition ?? ''), $search) ||
-                str_contains(strtolower($e->outsourceVendor ?? ''), $search)
+                    str_contains(strtolower($e->employeeId ?? ''), $search) ||
+                    str_contains(strtolower($e->jobPosition ?? ''), $search) ||
+                    str_contains(strtolower($e->outsourceVendor ?? ''), $search)
             );
         }
 
         // Sort
-        $sortFilter = $request->query('sort', 'newest');
-        $filtered = match ($sortFilter) {
-            'oldest'    => $filtered->sortBy('joinDate'),
-            'name_asc'  => $filtered->sortBy(fn($e) => strtolower($e->fullName ?? '')),
-            'name_desc' => $filtered->sortByDesc(fn($e) => strtolower($e->fullName ?? '')),
-            default     => $filtered->sortByDesc('joinDate'),
-        };
+        $sortFilter = 'name_asc';
+        $filtered = $filtered->sortBy(fn($e) => strtolower(trim($e->fullName ?? '')));
 
         $filtered = $filtered->values();
         $total = $filtered->count();
@@ -62,7 +58,13 @@ class OutsourceController extends Controller
         $outsources = $filtered->slice($offset, $perPage)->values();
 
         return view('hr.outsource.index', compact(
-            'outsources', 'stats', 'total', 'currentPage', 'perPage', 'searchFilter', 'sortFilter'
+            'outsources',
+            'stats',
+            'total',
+            'currentPage',
+            'perPage',
+            'searchFilter',
+            'sortFilter'
         ));
     }
 }
