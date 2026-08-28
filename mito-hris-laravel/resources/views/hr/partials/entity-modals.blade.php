@@ -27,7 +27,7 @@
 <div class="modal fade" id="offboardingModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content" style="border-radius:16px">
-            <div class="modal-header" style="background:#991b1b;border-radius:16px 16px 0 0">
+            <div class="modal-header" style="background:#eb1c24;border-radius:16px 16px 0 0">
                 <div class="d-flex align-items-center gap-2">
                     <i class="bi bi-box-arrow-right text-white fs-5"></i>
                     <h6 class="modal-title mb-0 text-white fw-bold">Proses Offboarding Karyawan</h6>
@@ -44,7 +44,7 @@
                     <!-- STEP 1: Live Search karyawan -->
                     <div class="mb-3">
                         <label class="form-label fw-semibold" style="font-size:13px">
-                            <i class="bi bi-search me-1"></i>Cari Karyawan Aktif <span class="text-danger">*</span>
+                            <i class="bi bi-search me-1"></i>Cari Karyawan Aktif <span class="text-primary">*</span>
                         </label>
                         <div class="position-relative">
                             <input type="text" class="form-control" id="offEmpSearch"
@@ -61,10 +61,10 @@
 
                     <!-- STEP 2: Preview karyawan terpilih + form -->
                     <div id="offEmpPreview" style="display:none">
-                        <div class="p-3 rounded-3 mb-4" style="background:#fef2f2;border:1px solid #fecaca">
+                        <div class="p-3 rounded-3 mb-4" style="background:#fff;border:1px solid #eb1c24">
                             <div class="d-flex align-items-center gap-3">
                                 <div id="offEmpAvatar"
-                                    style="width:44px;height:44px;font-size:16px;flex-shrink:0;background:#991b1b;color:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800">
+                                    style="width:44px;height:44px;font-size:16px;flex-shrink:0;background:#eb1c24;color:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800">
                                     ?</div>
                                 <div class="flex-grow-1">
                                     <div class="fw-bold text-navy" id="offEmpName" style="font-size:15px">-</div>
@@ -75,7 +75,7 @@
                                 </div>
                                 <div class="text-end flex-shrink-0" style="font-size:11.5px">
                                     <div class="text-muted">Employee ID</div>
-                                    <div class="fw-semibold text-danger" id="offEmpIdDisp">-</div>
+                                    <div class="fw-semibold text-primary" id="offEmpIdDisp">-</div>
                                     <div class="text-muted mt-1">Status Saat Ini</div>
                                     <div class="fw-semibold" id="offEmpStatusDisp">-</div>
                                 </div>
@@ -85,7 +85,7 @@
                         <!-- Form offboarding -->
                         <div id="offFormSection">
                             <p class="fw-bold mb-3"
-                                style="font-size:12px;text-transform:uppercase;letter-spacing:0.05em;color:#991b1b">
+                                style="font-size:12px;text-transform:uppercase;letter-spacing:0.05em;color:#eb1c24">
                                 <i class="bi bi-info-circle me-1"></i>Detail Offboarding
                             </p>
                             <div class="row g-3 mb-3">
@@ -146,7 +146,7 @@
                             <div id="offAttachmentSection" style="display:none;">
                                 <hr class="my-3">
                                 <p class="fw-bold mb-3"
-                                    style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#991b1b">
+                                    style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#eb1c24">
                                     <i class="bi bi-paperclip me-1"></i>Lampiran Dokumen
                                 </p>
                                 <div id="offAttachmentRequired" class="mb-2"></div>
@@ -166,7 +166,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary btn-sm"
                         data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-sm text-white fw-semibold" style="background:#991b1b"
+                    <button type="submit" class="btn btn-sm text-white fw-semibold" style="background:#eb1c24"
                         id="btnConfirmOffboarding" disabled>
                         <span id="btnOffbText"><i class="bi bi-box-arrow-right me-1"></i>Proses Offboarding</span>
                         <span id="btnOffbLoading" class="d-none"><span
@@ -529,7 +529,7 @@
                                     .then(function(response) {
                                         if (!response.ok) throw new Error(
                                             'offboarding bundle HTTP ' + response.status
-                                            );
+                                        );
                                         return response.blob();
                                     })
                                     .then(function(blob) {
@@ -768,7 +768,8 @@
                                 class="bi bi-info-circle me-1"></i>Header yang dikenali (case-insensitive,
                             spasi/underscore diabaikan)</div>
                         <div class="mb-1"><span class="badge bg-danger me-1">Wajib</span><code>Full Name</code> /
-                            <code>fullName</code> / <code>Nama Lengkap</code></div>
+                            <code>fullName</code> / <code>Nama Lengkap</code>
+                        </div>
                         <div style="color:var(--color-text-soft)">
                             <strong>Identitas:</strong> <code>NIK</code>, <code>NPWP</code>, <code>Tempat Lahir</code>,
                             <code>Tanggal Lahir</code>, <code>Jenis Kelamin</code>, <code>Agama</code>, <code>Status
@@ -1673,7 +1674,7 @@
 <div class="modal fade" id="promoteToProbationModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius:16px">
-            <div class="modal-header" style="background:#0B2540;border-radius:16px 16px 0 0">
+            <div class="modal-header" style="background:#eb1c24;border-radius:16px 16px 0 0">
                 <div class="d-flex align-items-center gap-2 text-white">
                     <i class="bi bi-person-up fs-5"></i>
                     <h6 class="modal-title mb-0 fw-bold">Ajukan Onboarding Probation</h6>
@@ -1686,17 +1687,17 @@
                     <input type="hidden" id="promoteProbEmpId" name="employee_id" />
 
                     <!-- Info Karyawan -->
-                    <div class="p-3 rounded-3 mb-3" style="background:#f0f7ff;border:1px solid #c7dff7">
+                    <div class="p-3 rounded-3 mb-3" style="background:#f0f7ff;border:1px solid #eb1c24">
                         <div class="d-flex align-items-center gap-3">
                             <div class="avatar-sm" id="promoteProbAvatar"
-                                style="width:40px;height:40px;font-size:14px;flex-shrink:0;background:#0B2540;color:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700">
+                                style="width:40px;height:40px;font-size:14px;flex-shrink:0;background:#eb1c24;color:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700">
                                 ?</div>
                             <div class="flex-grow-1">
                                 <div class="fw-bold text-navy" id="promoteProbEmpName" style="font-size:14px">-</div>
                                 <div class="text-muted" id="promoteProbPosition" style="font-size:12px">-</div>
                             </div>
                             <div class="text-end">
-                                <span class="badge bg-secondary" id="promoteProbBadge">Contract</span>
+                                <span class="badge bg-primary" id="promoteProbBadge">Contract</span>
                             </div>
                         </div>
                     </div>
@@ -1734,7 +1735,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary btn-sm"
                         data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-sm text-white fw-semibold" style="background:#0B2540">
+                    <button type="submit" class="btn btn-sm text-white fw-semibold" style="background:#eb1c24">
                         <i class="bi bi-person-check-fill me-1"></i>Daftarkan ke Probation
                     </button>
                 </div>
@@ -1746,7 +1747,7 @@
 <div class="modal fade" id="exportPdfModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content" style="border-radius:16px">
-            <div class="modal-header" style="background:#0B2540;border-radius:16px 16px 0 0">
+            <div class="modal-header" style="background:#eb1c24;border-radius:16px 16px 0 0">
                 <div class="d-flex align-items-center gap-2">
                     <i class="bi bi-file-earmark-pdf text-white fs-5"></i>
                     <h6 class="modal-title mb-0 text-white fw-bold">Export PDF Dokumen Karyawan</h6>
@@ -1777,7 +1778,7 @@
                     <div class="p-3 rounded-3 mb-4" style="background:#f0f7ff;border:1px solid #b8d4ff">
                         <div class="d-flex align-items-center gap-3">
                             <div id="pdfEmpAvatar"
-                                style="width:44px;height:44px;font-size:16px;flex-shrink:0;background:#0B2540;color:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800">
+                                style="width:44px;height:44px;font-size:16px;flex-shrink:0;background:#eb1c24;color:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800">
                                 ?</div>
                             <div class="flex-grow-1">
                                 <div class="fw-bold text-navy" id="pdfEmpName" style="font-size:15px">-</div>
@@ -1812,7 +1813,7 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary btn-sm"
                     data-bs-dismiss="modal">Batal</button>
-                <button class="btn btn-sm text-white fw-semibold" style="background:#0B2540" id="btnExportPdf"
+                <button class="btn btn-sm text-white fw-semibold" style="background:#eb1c24" id="btnExportPdf"
                     disabled onclick="generatePdfFromModal()">
                     <i class="bi bi-file-earmark-pdf me-1"></i>Unduh PDF
                 </button>
