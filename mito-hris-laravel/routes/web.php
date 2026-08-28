@@ -123,13 +123,15 @@ Route::prefix('hr')->name('hr.')->middleware(['hr.auth', 'mpr.auth'])->group(fun
         Route::get('/', [SettingsController::class, 'index'])->name('index')->middleware('can:manage_settings');
         Route::post('/', [SettingsController::class, 'update'])->name('update')->middleware('can:manage_settings');
     });
-    Route::prefix('users')->name('users.')->middleware('can:manage_settings')->group(function () {
+    Route::prefix('users')->name('users.')->middleware(['can:manage_settings', 'role:Super Admin'])->group(function () {
         Route::get('/', [UserController::class, 'index'])->name('index')->middleware('can:manage_settings');
         Route::post('/', [UserController::class, 'store'])->name('store')->middleware('can:manage_settings');
+        Route::put('/{email}', [UserController::class, 'update'])->name('update')->middleware('can:manage_settings');
     });
-    Route::prefix('mpr-requestors')->name('mpr-requestors.')->middleware('can:manage_settings')->group(function () {
+    Route::prefix('mpr-requestors')->name('mpr-requestors.')->middleware(['can:manage_settings', 'role:Super Admin'])->group(function () {
         Route::get('/', [MprRequestorController::class, 'index'])->name('index')->middleware('can:manage_settings');
         Route::post('/', [MprRequestorController::class, 'store'])->name('store')->middleware('can:manage_settings');
+        Route::put('/{email}', [MprRequestorController::class, 'update'])->name('update')->middleware('can:manage_settings');
     });
 
     // 6. Candidate profile print is available to every recruitment viewer.
