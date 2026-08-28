@@ -4,69 +4,21 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: mito-hris-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: mito-hris-production
+  cancel-in-progress: false
 
 jobs:
-  verify:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: mito-hris-laravel
-
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
-
-      - name: Set up PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: "8.3"
-          extensions: mbstring, dom, fileinfo, sqlite3
-          coverage: none
-          tools: composer
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Install PHP dependencies
-        run: composer install --prefer-dist --no-interaction --no-progress
-
-      - name: Prepare Laravel environment
-        run: |
-          cp .env.example .env
-          php artisan key:generate --force
-
-      - name: Install Node dependencies
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci --no-audit --no-fund
-          else
-            npm install --no-audit --no-fund
-          fi
-
-      - name: Build frontend assets
-        run: npm run build
-
-      - name: Run Laravel tests
-        run: php artisan test --without-tty
-
   deploy:
-    needs: verify
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    environment:
+      name: production
 
     steps:
       - name: Deploy via SSH
@@ -86,6 +38,10 @@ jobs:
             echo "== Updating source =="
             git fetch --prune origin main
             git reset --hard origin/main
+            test "$(git rev-parse HEAD)" = "${{ github.sha }}" || {
+              echo "Server checkout does not match the workflow commit." >&2
+              exit 1
+            }
 
             echo "== Installing PHP dependencies =="
             composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress
@@ -130,5 +86,8 @@ jobs:
 
             echo "== Reloading PHP-FPM =="
             sudo systemctl reload php8.3-fpm
+
+            echo "== Post-deploy application check =="
+            php artisan about >/dev/null
 
             echo "== Deployment completed successfully =="
