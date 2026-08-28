@@ -38,7 +38,10 @@ class CareerController extends Controller
             'consent.required' => 'Anda harus menyetujui syarat & ketentuan pendaftaran untuk melanjutkan.',
         ]);
 
-        session(['candidate_consent' => true]);
+        session([
+            'candidate_consent' => true,
+            'candidate_consent_evidence' => $this->consentEvidence($request, 'landing_consent'),
+        ]);
 
         return redirect()->route('public.career.form');
     }
@@ -67,7 +70,12 @@ class CareerController extends Controller
 
         try {
             $candidate = $this->recruitmentService->apply(
-                validatedData: $request->validated(),
+                validatedData: array_merge($request->validated(), [
+                    'consent_evidence' => [
+                        'landing_consent' => session('candidate_consent_evidence', []),
+                        'application_agreement' => $this->consentEvidence($request, 'application_agreement'),
+                    ],
+                ]),
                 cvFile: $request->file('cv_file')
             );
 
@@ -136,5 +144,21 @@ class CareerController extends Controller
         } catch (\Throwable $e) {
             return back()->with('error', $e->getMessage());
         }
+    }
+
+    private function consentEvidence(Request $request, string $stage): array
+    {
+        return [
+            'stage' => $stage,
+            'accepted' => true,
+            'server_timestamp' => now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
+            'ip' => $request->ip(),
+            'user_agent' => substr((string) $request->userAgent(), 0, 500),
+            'device' => substr((string) $request->input('consent_device', $request->input('device')), 0, 120),
+            'client_timestamp' => $request->input('consent_timestamp', $request->input('client_timestamp')),
+            'latitude' => $request->input('consent_latitude', $request->input('latitude')),
+            'longitude' => $request->input('consent_longitude', $request->input('longitude')),
+            'location' => $request->input('consent_location', $request->input('location')),
+        ];
     }
 }

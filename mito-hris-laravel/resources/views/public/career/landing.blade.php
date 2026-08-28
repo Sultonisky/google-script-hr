@@ -136,6 +136,10 @@
                     <!-- FORM CONSENT CHECKLIST -->
                     <form action="{{ route('public.career.consent') }}" method="POST" id="formConsent">
                         @csrf
+                        <input type="hidden" name="consent_timestamp" id="consentTimestamp">
+                        <input type="hidden" name="consent_device" id="consentDevice">
+                        <input type="hidden" name="consent_latitude" id="consentLatitude">
+                        <input type="hidden" name="consent_longitude" id="consentLongitude">
                         <div class="p-3 rounded-3 mb-4" style="background:#fff5f5;border:1px solid #fed7d7;">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="consentCheckbox" name="consent"
@@ -150,10 +154,7 @@
                         </div>
 
                         <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-                            <a href="{{ route('public.outsource.index') }}" class="text-decoration-none text-muted"
-                                style="font-size:13px">
-                                <i class="bi bi-building me-1"></i>Pendaftaran Karyawan Outsource? Klik di sini
-                            </a>
+
                             <button type="submit" class="btn btn-submit" id="btnProceedApply" disabled>
                                 <i class="bi bi-arrow-right-circle me-1"></i> Lanjutkan ke Formulir Pendaftaran
                             </button>
@@ -166,6 +167,25 @@
     </div>
 
     <script>
+        (function() {
+            var timestamp = document.getElementById('consentTimestamp');
+            var device = document.getElementById('consentDevice');
+            var latitude = document.getElementById('consentLatitude');
+            var longitude = document.getElementById('consentLongitude');
+
+            if (timestamp) timestamp.value = new Date().toISOString();
+            if (device) device.value = navigator.userAgentData && navigator.userAgentData.platform ?
+                navigator.userAgentData.platform :
+                navigator.platform || 'Unknown';
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    if (latitude) latitude.value = position.coords.latitude;
+                    if (longitude) longitude.value = position.coords.longitude;
+                }, function() {});
+            }
+        }());
+
         function toggleProceedButton(isChecked) {
             const btn = document.getElementById('btnProceedApply');
             if (btn) {
