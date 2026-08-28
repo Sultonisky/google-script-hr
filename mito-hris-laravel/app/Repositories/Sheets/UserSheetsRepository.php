@@ -7,6 +7,19 @@ use App\Services\Google\GoogleSheetsService;
 
 class UserSheetsRepository implements UserRepositoryInterface
 {
+    private const DEFAULT_USER_HEADERS = [
+        'Email',
+        'Username',
+        'Full Name',
+        'Role',
+        'Status',
+        'Password Hash',
+        'Last Login',
+        'Created At',
+        'Updated At',
+        'Created By',
+    ];
+
     protected GoogleSheetsService $sheets;
     protected string $sheetName;
 
@@ -50,19 +63,20 @@ class UserSheetsRepository implements UserRepositoryInterface
     {
         $row = [
             'Email' => $data['email'] ?? '',
-            'Full Name' => $data['fullName'] ?? '',
             'Username' => $data['username'] ?? '',
+            'Full Name' => $data['fullName'] ?? '',
             'Role' => $data['role'] ?? 'Viewer',
             'Status' => $data['status'] ?? 'Active',
             'Password Hash' => $data['passwordHash'] ?? '',
-            'Last Login' => '',
+            'Last Login' => $data['lastLogin'] ?? '',
+            'Created At' => $data['createdAt'] ?? now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
+            'Updated At' => $data['updatedAt'] ?? now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
             'Created By' => $data['createdBy'] ?? 'system',
-            'Created At' => now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
-            'Updated At' => now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
-            'Entities' => is_array($data['entities'] ?? null) ? implode(', ', $data['entities']) : ($data['entities'] ?? ''),
-            'Branch' => $data['branch'] ?? '',
         ];
-        $this->sheets->appendRow($this->sheetName, array_values($row));
+        $this->sheets->appendRow($this->sheetName, array_map(
+            fn (string $header): string => (string) ($row[$header] ?? ''),
+            $this->userHeaders()
+        ));
     }
 
     public function updateByEmail(string $email, array $data): void
@@ -79,9 +93,9 @@ class UserSheetsRepository implements UserRepositoryInterface
             return;
         }
 
-        $headers = ['Email', 'Full Name', 'Username', 'Role', 'Status', 'Password Hash', 'Last Login', 'Created By', 'Created At', 'Updated At', 'Entities', 'Branch'];
+        $headers = $this->userHeaders();
         $rowNumber = $targetIndex + 2; // +2 karena header row + zero-based
-        $currentRow = $this->sheets->getRange($this->sheetName, "A{$rowNumber}:L{$rowNumber}", false)[0] ?? [];
+        $currentRow = $this->sheets->getRange($this->sheetName, "A{$rowNumber}:J{$rowNumber}", false)[0] ?? [];
 
         // Pad row to full header length so new columns can be set
         while (count($currentRow) < count($headers)) {
@@ -96,14 +110,14 @@ class UserSheetsRepository implements UserRepositoryInterface
                 'role'         => 'Role',
                 'status'       => 'Status',
                 'lastLogin'    => 'Last Login',
-                'entities'     => 'Entities',
-                'branch'       => 'Branch',
+                'createdAt'    => 'Created At',
+                'updatedAt'    => 'Updated At',
+                'createdBy'    => 'Created By',
             ];
             if (isset($colMap[$key])) {
                 $colIdx = array_search($colMap[$key], $headers);
                 if ($colIdx !== false) {
-                    // Normalize entities array to comma-separated string
-                    $currentRow[$colIdx] = is_array($value) ? implode(', ', $value) : $value;
+                    $currentRow[$colIdx] = $value;
                 }
             }
         }
@@ -131,5 +145,10 @@ class UserSheetsRepository implements UserRepositoryInterface
     public function updateLastLogin(string $email): void
     {
         $this->updateByEmail($email, ['lastLogin' => now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')]);
+    }
+
+    private function userHeaders(): array
+    {
+        return config('hris.schemas.Users', self::DEFAULT_USER_HEADERS);
     }
 }

@@ -274,43 +274,43 @@ class RbacTest extends TestCase
     }
 
     // =========================================================================
-    // 5. Super User — only configured permissions
+    // 5. Privileged User — only configured permissions
     // =========================================================================
 
     /** @test */
     public function hr_recruitment_gate_permissions_match_config(): void
     {
-        $this->actingAsRole('Super User');
+        $this->actingAsRole('Privileged User');
 
         $allowed = ['view_recruitment', 'update_candidates', 'create_offering', 'manage_hold_blacklist'];
         $denied  = ['view_employees', 'manage_employees', 'manage_probation', 'view_reports', 'manage_settings'];
 
         foreach ($allowed as $p) {
-            $this->assertTrue(Gate::allows($p), "Super User should have: {$p}");
+            $this->assertTrue(Gate::allows($p), "Privileged User should have: {$p}");
         }
         foreach ($denied as $p) {
-            $this->assertFalse(Gate::allows($p), "Super User should NOT have: {$p}");
+            $this->assertFalse(Gate::allows($p), "Privileged User should NOT have: {$p}");
         }
     }
 
     /** @test */
     public function hr_recruitment_can_access_recruitment(): void
     {
-        $this->actingAsRole('Super User');
+        $this->actingAsRole('Privileged User');
         $this->get('/hr/recruitment')->assertOk();
     }
 
     /** @test */
     public function hr_recruitment_cannot_access_employees(): void
     {
-        $this->actingAsRole('Super User');
+        $this->actingAsRole('Privileged User');
         $this->get('/hr/employees')->assertStatus(403);
     }
 
     /** @test */
     public function hr_recruitment_cannot_access_settings(): void
     {
-        $this->actingAsRole('Super User');
+        $this->actingAsRole('Privileged User');
         $this->get('/hr/settings')->assertStatus(403);
     }
 

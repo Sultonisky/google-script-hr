@@ -130,7 +130,7 @@ Route::prefix('hr')->name('hr.')->middleware(['hr.auth', 'mpr.auth'])->group(fun
     });
 
     // Other PDFs and CSV exports are restricted to operational HR roles.
-    Route::prefix('export')->name('export.')->middleware('role:Super Admin,Admin,Super User')->group(function () {
+    Route::prefix('export')->name('export.')->middleware('role:Super Admin,Admin,Privileged User')->group(function () {
         Route::get('/offering-letter/{id}', [ExportController::class, 'offeringLetterPdf'])->name('offering-letter');
         Route::get('/kontrak-pkwt/{id}', [ExportController::class, 'kontrakPkwtPdf'])->name('kontrak-pkwt');
         Route::get('/sk-pengangkatan/{id}', [ExportController::class, 'skPengangkatanPdf'])->name('sk-pengangkatan');
