@@ -17,20 +17,21 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+          command_timeout: 20m
           script: |
             set -e
 
             cd /home/ubuntu/hris/mito-hris-laravel
 
             echo "========================================"
-            echo "== Updating source =="
+            echo "== 1. Updating source =="
             echo "========================================"
 
             git fetch origin main
             git reset --hard origin/main
 
             echo "========================================"
-            echo "== Installing dependencies for testing =="
+            echo "== 2. Installing dependencies =="
             echo "========================================"
 
             composer install \
@@ -39,43 +40,43 @@ jobs:
               --optimize-autoloader
 
             echo "========================================"
-            echo "== Running Laravel tests =="
+            echo "== 3. Running Laravel tests =="
             echo "========================================"
 
             php artisan test
 
             echo "========================================"
-            echo "== Running deep diagnostics =="
+            echo "== 4. MITO deep diagnostics =="
             echo "========================================"
 
             php artisan mito:diagnose
 
             echo "========================================"
-            echo "== Checking Google Sheets / Drive / Credentials =="
+            echo "== 5. Google Sheets health check =="
             echo "========================================"
 
             php artisan mito:health-check
 
             echo "========================================"
-            echo "== Validating Google Sheets schema =="
+            echo "== 6. Google Sheets schema validation =="
             echo "========================================"
 
             php artisan mito:validate-schema
 
             echo "========================================"
-            echo "== Setting up Google Sheets =="
+            echo "== 7. Google Sheets setup =="
             echo "========================================"
 
             php artisan mito:setup-sheets
 
             echo "========================================"
-            echo "== Syncing Google Sheets to Laravel =="
+            echo "== 8. Google Sheets sync =="
             echo "========================================"
 
             php artisan mito:sync
 
             echo "========================================"
-            echo "== Installing production dependencies =="
+            echo "== 9. Production dependencies =="
             echo "========================================"
 
             composer install \
@@ -84,7 +85,7 @@ jobs:
               --no-interaction
 
             echo "========================================"
-            echo "== Laravel optimization =="
+            echo "== 10. Laravel optimization =="
             echo "========================================"
 
             php artisan optimize:clear
