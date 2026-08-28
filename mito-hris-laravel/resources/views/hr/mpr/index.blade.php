@@ -796,8 +796,7 @@
                 <div
                     class="card-header bg-white mpr-list-header py-3 d-flex flex-wrap justify-content-between align-items-center gap-2 border-bottom">
                     <div>
-                        <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-list-task me-2 text-primary"></i> Daftar
-                            Manpower Request (MPR)</h5>
+                        <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-list-task me-2 text-primary"></i> Daftar Manpower Request (MPR)</h5>
                         <small class="text-muted">Menampilkan {{ $total }} pengajuan kebutuhan tenaga kerja</small>
                     </div>
                     <div class="d-flex gap-2">
