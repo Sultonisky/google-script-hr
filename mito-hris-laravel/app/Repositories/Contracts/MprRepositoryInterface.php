@@ -33,4 +33,6 @@ interface MprRepositoryInterface
      * Create and persist a new MPR record.
      */
     public function create(MprData $data): MprData;
+
+    public function update(string $mprNumber, MprData $data): MprData;
 }
