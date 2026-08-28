@@ -659,16 +659,9 @@ class EmployeeService
             'approved_by' => $data['approved_by'] ?? $user,
         ];
 
-        $pdfs = [];
-        $pdfs[] = $this->pdfService->generatePaklaringPdf($employee, $extraData)->output();
-        if (($data['generate_bpjs'] ?? false) !== false) {
-            $pdfs[] = $this->pdfService->generateSuratBpjsPdf($employee, $extraData)->output();
-        }
-
         return [
             'success' => $success,
             'message' => $success ? "Off Contract karyawan {$employeeId} berhasil diproses." : "Gagal memproses Off Contract.",
-            'pdfs_generated' => count($pdfs),
             'employeeId' => $employeeId,
         ];
     }

@@ -81,6 +81,7 @@ class EmployeeSheetsRepository implements EmployeeRepositoryInterface
 
         $rowValues = $data->toSheetRow();
         $this->sheets->appendRow($this->sheetName, $rowValues);
+        $this->sheets->clearCache($this->sheetName);
 
         return $data;
     }
@@ -110,7 +111,12 @@ class EmployeeSheetsRepository implements EmployeeRepositoryInterface
             $currentRow[$updatedAtIdx] = now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s');
         }
 
-        return $this->sheets->updateRow($this->sheetName, $existing->rowNumber, $currentRow);
+        $success = $this->sheets->updateRow($this->sheetName, $existing->rowNumber, $currentRow);
+        if ($success) {
+            $this->sheets->clearCache($this->sheetName);
+        }
+
+        return $success;
     }
 
     public function delete(string $employeeId): bool
