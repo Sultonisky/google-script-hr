@@ -4,6 +4,7 @@ namespace App\Http\Controllers\HR;
 
 use App\Http\Controllers\Controller;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
+use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Services\EmployeeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -15,13 +16,16 @@ class EmployeeController extends Controller
 {
     protected EmployeeRepositoryInterface $employeeRepo;
     protected EmployeeService $employeeService;
+    protected AuditLogRepositoryInterface $auditRepo;
 
     public function __construct(
         EmployeeRepositoryInterface $employeeRepo,
-        EmployeeService $employeeService
+        EmployeeService $employeeService,
+        AuditLogRepositoryInterface $auditRepo
     ) {
         $this->employeeRepo = $employeeRepo;
         $this->employeeService = $employeeService;
+        $this->auditRepo = $auditRepo;
     }
 
     public function index(Request $request): View
@@ -313,6 +317,14 @@ class EmployeeController extends Controller
             $request->input('employees', []),
             Auth::user()?->name ?? 'HR Administrator'
         );
+
+        if ($result['success']) {
+            $this->auditRepo->log('Employee', 'IMPORT-' . now()->format('YmdHis'), 'imported', 'summary', null, [
+                'total_rows' => count($request->input('employees', [])),
+                'inserted' => $result['imported'] ?? 0,
+                'invalid' => count($result['errors'] ?? []),
+            ], Auth::user()?->email ?? Auth::user()?->name ?? 'HR Administrator', 'Import');
+        }
 
         // Always return JSON — modal uses Fetch API
         $httpStatus = $result['success'] ? 200 : 422;

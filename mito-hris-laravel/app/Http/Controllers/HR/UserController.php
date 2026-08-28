@@ -8,9 +8,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 use Illuminate\Validation\Rule;
+use App\Repositories\Contracts\AuditLogRepositoryInterface;
 
 class UserController extends Controller
 {
+    public function __construct(protected AuditLogRepositoryInterface $auditRepo) {}
+
     public function index(): View
     {
         $users = Cache::get('hr_system_users', [
@@ -26,7 +29,7 @@ class UserController extends Controller
                 'id'         => 2,
                 'name'       => 'HR Recruiter Team',
                 'email'      => 'recruitment@mitocareer.com',
-                'role'       => 'Super User',
+                'role'       => 'Privileged User',
                 'status'     => 'Aktif',
                 'last_login' => now()->timezone('Asia/Jakarta')->subHours(2)->format('Y-m-d H:i:s'),
             ]
@@ -54,6 +57,10 @@ class UserController extends Controller
         ];
 
         Cache::forever('hr_system_users', $users);
+
+        $this->auditRepo->log('User', $validated['email'], 'created', null, null, [
+            'name' => $validated['name'], 'role' => $validated['role'], 'status' => 'Aktif'
+        ], session('hr_user.email', 'HR Administrator'), 'Dashboard');
 
         return redirect()->route('hr.users.index')->with('success', "Pengguna '{$validated['name']}' berhasil ditambahkan.");
     }

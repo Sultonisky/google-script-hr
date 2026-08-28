@@ -131,12 +131,14 @@ class OutsourceApplyController extends Controller
         $this->employeeRepo->create($employee);
 
         $this->auditRepo->log(
-            recruitmentId: $employeeId,
-            action: 'OUTSOURCE_REGISTER',
+            entityType: 'Outsource',
+            entityId: $employeeId,
+            action: 'created',
             field: 'Employee ID',
             oldValue: '-',
             newValue: "{$employeeId} ({$validated['vendor_outsource']})",
-            user: 'Portal Outsource'
+            user: 'Public Applicant',
+            source: 'Public'
         );
 
         return redirect()->route('public.career.success', ['id' => $employeeId])

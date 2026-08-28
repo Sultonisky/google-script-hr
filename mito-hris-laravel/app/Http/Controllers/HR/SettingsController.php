@@ -7,9 +7,12 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
+use App\Repositories\Contracts\AuditLogRepositoryInterface;
 
 class SettingsController extends Controller
 {
+    public function __construct(protected AuditLogRepositoryInterface $auditRepo) {}
+
     public function index(): View
     {
         $settings = Cache::get('portal_settings', [
@@ -37,10 +40,15 @@ class SettingsController extends Controller
             'company_email'    => 'nullable|email',
         ]);
 
-        Cache::forever('portal_settings', array_merge(
-            Cache::get('portal_settings', []),
-            $validated
-        ));
+        $oldSettings = Cache::get('portal_settings', []);
+        Cache::forever('portal_settings', array_merge($oldSettings, $validated));
+
+        $actor = session('hr_user.email', 'HR Administrator');
+        foreach ($validated as $field => $newValue) {
+            if ((string) ($oldSettings[$field] ?? '') !== (string) $newValue) {
+                $this->auditRepo->log('Setting', 'portal_settings', 'updated', $field, $oldSettings[$field] ?? null, $newValue, $actor, 'Dashboard');
+            }
+        }
 
         return redirect()->route('hr.settings.index')->with('success', 'Pengaturan portal berhasil disimpan.');
     }

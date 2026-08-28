@@ -5,13 +5,14 @@ namespace App\Console\Commands;
 use App\Services\Google\GoogleSheetsService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
+use App\Repositories\Contracts\AuditLogRepositoryInterface;
 
 class ClearDataCommand extends Command
 {
     protected $signature = 'mito:clear-data {--force : Skip confirmation} {--sheets : Also clear Google Sheets data}';
     protected $description = 'Clear application data (database and optionally Google Sheets)';
 
-    public function handle(GoogleSheetsService $sheets): int
+    public function handle(GoogleSheetsService $sheets, AuditLogRepositoryInterface $auditRepo): int
     {
         $env = config('app.env');
         if ($env !== 'local' && !$this->option('force')) {
@@ -42,6 +43,7 @@ class ClearDataCommand extends Command
         }
 
         $this->info('Clear complete.');
+        $auditRepo->log('System', 'mito:clear-data', 'cleared', 'scope', null, $this->option('sheets') ? 'Sheets and cache' : 'Cache and session', 'SYSTEM', 'Command');
         return Command::SUCCESS;
     }
 }

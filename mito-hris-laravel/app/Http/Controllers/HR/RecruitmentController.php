@@ -409,12 +409,14 @@ class RecruitmentController extends Controller
 
             // Log audit
             $this->auditRepo->log(
+                'Candidate',
                 $id,
-                $hasExistingOffering ? 'Offering Letter Updated' : 'Offering Letter Created',
-                'Offering ' . ucfirst($action),
-                '-',
+                $hasExistingOffering ? 'updated' : 'created',
+                'Offering',
+                null,
                 $now . ' by ' . $user,
-                $user
+                $user,
+                'Dashboard'
             );
 
             return response()->json([
@@ -465,12 +467,14 @@ class RecruitmentController extends Controller
             }
 
             $this->auditRepo->log(
+                'Candidate',
                 $id,
+                'updated',
                 'Offering Response',
-                'Offering Response',
-                '-',
+                null,
                 $response . ($notes ? " — {$notes}" : '') . " by {$user}",
-                $user
+                $user,
+                'Dashboard'
             );
 
             return response()->json([

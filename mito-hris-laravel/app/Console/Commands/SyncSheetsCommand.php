@@ -6,6 +6,7 @@ use App\Repositories\Contracts\CandidateRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Repositories\Contracts\MprRepositoryInterface;
 use App\Repositories\Contracts\MprRequestorRepositoryInterface;
+use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use Illuminate\Console\Command;
 
 class SyncSheetsCommand extends Command
@@ -17,7 +18,8 @@ class SyncSheetsCommand extends Command
         CandidateRepositoryInterface $candidateRepo,
         EmployeeRepositoryInterface $employeeRepo,
         MprRepositoryInterface $mprRepo,
-        MprRequestorRepositoryInterface $requestorRepo
+        MprRequestorRepositoryInterface $requestorRepo,
+        AuditLogRepositoryInterface $auditRepo
     ): int {
         $this->info('Memulai sinkronisasi data dari Google Sheets...');
 
@@ -35,6 +37,12 @@ class SyncSheetsCommand extends Command
             $this->line("  ✓ Berhasil mengambil " . count($requestors) . " MPR Requestor dari sheet 'mpr_requestor'");
 
             $this->info('Sinkronisasi selesai! Cache lokal berhasil diperbarui.');
+            $auditRepo->log('System', 'mito:sync', 'synced', 'summary', null, [
+                'candidates' => $candidates->count(),
+                'employees' => $employees->count(),
+                'mprs' => $mprs->count(),
+                'requestors' => count($requestors),
+            ], 'SYSTEM', 'Command');
             return Command::SUCCESS;
         } catch (\Throwable $e) {
             $this->error('Gagal melakukan sinkronisasi: ' . $e->getMessage());

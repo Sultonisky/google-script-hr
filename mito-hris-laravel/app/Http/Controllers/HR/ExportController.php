@@ -5,6 +5,7 @@ namespace App\Http\Controllers\HR;
 use App\Http\Controllers\Controller;
 use App\Repositories\Contracts\CandidateRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
+use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Services\PdfGeneratorService;
 use App\Services\ProbationService;
 use Illuminate\Http\Request;
@@ -16,17 +17,20 @@ class ExportController extends Controller
     protected EmployeeRepositoryInterface $employeeRepo;
     protected PdfGeneratorService $pdfService;
     protected ProbationService $probationService;
+    protected AuditLogRepositoryInterface $auditRepo;
 
     public function __construct(
         CandidateRepositoryInterface $candidateRepo,
         EmployeeRepositoryInterface $employeeRepo,
         PdfGeneratorService $pdfService,
-        ProbationService $probationService
+        ProbationService $probationService,
+        AuditLogRepositoryInterface $auditRepo
     ) {
         $this->candidateRepo    = $candidateRepo;
         $this->employeeRepo     = $employeeRepo;
         $this->pdfService       = $pdfService;
         $this->probationService = $probationService;
+        $this->auditRepo = $auditRepo;
     }
 
     private function employeeDocumentStem($employee): string
@@ -48,6 +52,7 @@ class ExportController extends Controller
         }
 
         $pdf = $this->pdfService->generateCandidateResumePdf($candidate);
+        $this->auditRepo->log('Candidate', $candidate->recruitmentId, 'generated', 'candidate_resume', null, 'PDF', session('hr_user.email', 'HR Administrator'), 'Export');
         return $pdf->stream("Resume_{$candidate->recruitmentId}_{$candidate->fullName}.pdf");
     }
 
@@ -63,6 +68,7 @@ class ExportController extends Controller
 
         $extraData = $request->all();
         $pdf = $this->pdfService->generateOfferingLetterPdf($candidate, $extraData);
+        $this->auditRepo->log('Candidate', $candidate->recruitmentId, 'generated', 'offering_letter', null, 'PDF', session('hr_user.email', 'HR Administrator'), 'Export');
         return $pdf->download("Offering_Letter_{$candidate->recruitmentId}.pdf");
     }
 
@@ -118,6 +124,7 @@ class ExportController extends Controller
 
         // Gunakan download() agar browser menerima disposition attachment
         // dan Content-Type application/pdf — dibutuhkan oleh Fetch+Blob di frontend.
+        $this->auditRepo->log($employee ? 'Employee' : 'Candidate', $nameId, 'generated', 'contract', null, 'PDF', session('hr_user.email', 'HR Administrator'), 'Export');
         return $pdf->download("Kontrak_PKWT_{$nameId}.pdf");
     }
 
@@ -133,6 +140,7 @@ class ExportController extends Controller
 
         $extraData = $request->all();
         $pdf = $this->pdfService->generateSkPengangkatanPdf($employee, $extraData);
+        $this->auditRepo->log('Employee', $employee->employeeId, 'generated', 'sk_pengangkatan', null, 'PDF', session('hr_user.email', 'HR Administrator'), 'Export');
         return $pdf->download("SK_Pengangkatan_{$employee->employeeId}.pdf");
     }
 
@@ -148,6 +156,7 @@ class ExportController extends Controller
 
         $extraData = $request->all();
         $pdf = $this->pdfService->generateSkOffPdf($employee, $extraData);
+        $this->auditRepo->log('Employee', $employee->employeeId, 'generated', 'sk_offboarding', null, 'PDF', session('hr_user.email', 'HR Administrator'), 'Export');
         return $pdf->download("SK_Offboarding_{$this->employeeDocumentStem($employee)}.pdf");
     }
 
@@ -163,6 +172,7 @@ class ExportController extends Controller
 
         $extraData = $request->all();
         $pdf = $this->pdfService->generateSuratBpjsPdf($employee, $extraData);
+        $this->auditRepo->log('Employee', $employee->employeeId, 'generated', 'surat_bpjs', null, 'PDF', session('hr_user.email', 'HR Administrator'), 'Export');
         return $pdf->download("Surat_BPJS_{$this->employeeDocumentStem($employee)}.pdf");
     }
 
@@ -196,6 +206,8 @@ class ExportController extends Controller
         }
         $zip->close();
 
+        $this->auditRepo->log('Employee', $employee->employeeId, 'generated', 'offboarding_bundle', null, 'ZIP/PDF', session('hr_user.email', 'HR Administrator'), 'Export');
+
         return response()->download(
             $zipPath,
             "Dokumen_Offboarding_{$this->employeeDocumentStem($employee)}.zip",
@@ -227,6 +239,7 @@ class ExportController extends Controller
         $filename = "SK_{$typeSlug}_{$safeName}_{$employee->employeeId}.pdf";
 
         $pdf = $this->pdfService->generateSkRotationPdf($employee, $extraData);
+        $this->auditRepo->log('Employee', $employee->employeeId, 'generated', 'sk_rotation', null, 'PDF', session('hr_user.email', 'HR Administrator'), 'Export');
         return $pdf->download($filename);
     }
 
@@ -255,6 +268,7 @@ class ExportController extends Controller
         }
 
         $pdf = $this->pdfService->generatePaklaringPdf($employee, $extraData);
+        $this->auditRepo->log('Employee', $employee->employeeId, 'generated', 'paklaring', null, 'PDF', session('hr_user.email', 'HR Administrator'), 'Export');
         return $pdf->download("Paklaring_{$this->employeeDocumentStem($employee)}.pdf");
     }
 
@@ -318,6 +332,7 @@ class ExportController extends Controller
 
         $pdf = $this->pdfService->generatePerformanceReviewPdf($employee, $evalData, $extraData);
         $safeName = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $employee->employeeId ?? 'emp');
+        $this->auditRepo->log('Probation', $employee->employeeId, 'generated', 'performance_review', null, 'PDF', session('hr_user.email', 'HR Administrator'), 'Export');
         return $pdf->download("PerformanceReview_{$safeName}.pdf");
     }
 
@@ -328,6 +343,7 @@ class ExportController extends Controller
     public function exportCandidatesCsv(): StreamedResponse
     {
         $candidates = $this->candidateRepo->getAll();
+        $this->auditRepo->log('Candidate', null, 'exported', 'format', null, ['format' => 'CSV', 'total_records' => $candidates->count()], session('hr_user.email', 'HR Administrator'), 'Export');
 
         $headers = [
             'Content-Type'        => 'text/csv',
@@ -377,6 +393,7 @@ class ExportController extends Controller
     public function exportEmployeesCsv(): StreamedResponse
     {
         $employees = $this->employeeRepo->getAll();
+        $this->auditRepo->log('Employee', null, 'exported', 'format', null, ['format' => 'CSV', 'total_records' => $employees->count()], session('hr_user.email', 'HR Administrator'), 'Export');
 
         $headers = [
             'Content-Type'        => 'text/csv',
