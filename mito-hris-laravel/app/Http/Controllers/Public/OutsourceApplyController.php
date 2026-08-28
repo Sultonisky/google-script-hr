@@ -32,7 +32,7 @@ class OutsourceApplyController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'nama_lengkap'              => 'required|string|min:3',
+            'nama_lengkap'              => ['required', 'string', 'min:3', 'max:255', 'regex:/^[\p{L}]+(?:[ ]+[\p{L}]+)*$/u'],
             'nik'                       => 'required|digits:16',
             'birth_date'                => 'required|string|max:10', // DD/MM/YYYY from JS auto-slash
             'tempat_lahir'              => 'required|string',
@@ -73,6 +73,7 @@ class OutsourceApplyController extends Controller
             'bpjs_kesehatan'            => 'required|string',
             'agreement'                 => 'required|in:1',
         ], [
+            'nama_lengkap.regex'       => 'Nama lengkap hanya boleh berisi huruf dan spasi.',
             'agreement.required'        => 'Anda harus menyetujui pernyataan keabsahan data untuk melanjutkan.',
         ]);
 
