@@ -107,6 +107,17 @@ class RecruitmentService
         // Fire Domain Event for Audit Log & Cache Invalidation
         event(new CandidateApplied($created));
 
+        $this->auditRepo->log(
+            entityType: 'Candidate',
+            entityId: $created->recruitmentId ?? 'NEW',
+            action: 'consent_accepted',
+            field: 'agreement_evidence',
+            oldValue: null,
+            newValue: $validatedData['consent_evidence'] ?? ['accepted' => true],
+            user: 'Public Applicant',
+            source: 'Public'
+        );
+
         return $created;
     }
 

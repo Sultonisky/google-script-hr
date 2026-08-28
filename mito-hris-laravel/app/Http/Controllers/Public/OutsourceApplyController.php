@@ -77,6 +77,19 @@ class OutsourceApplyController extends Controller
             'agreement.required'        => 'Anda harus menyetujui pernyataan keabsahan data untuk melanjutkan.',
         ]);
 
+        $consentEvidence = [
+            'stage' => 'outsource_agreement',
+            'accepted' => true,
+            'server_timestamp' => now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
+            'ip' => $request->ip(),
+            'user_agent' => substr((string) $request->userAgent(), 0, 500),
+            'device' => substr((string) $request->input('consent_device', $request->input('device')), 0, 120),
+            'client_timestamp' => $request->input('consent_timestamp', $request->input('client_timestamp')),
+            'latitude' => $request->input('consent_latitude', $request->input('latitude')),
+            'longitude' => $request->input('consent_longitude', $request->input('longitude')),
+            'location' => $request->input('consent_location', $request->input('location')),
+        ];
+
         $now = now()->timezone('Asia/Jakarta');
         $employeeId = 'EMP-OS-' . $now->format('Y') . '-' . str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT);
 
@@ -137,7 +150,11 @@ class OutsourceApplyController extends Controller
             action: 'created',
             field: 'Employee ID',
             oldValue: '-',
-            newValue: "{$employeeId} ({$validated['vendor_outsource']})",
+            newValue: [
+                'employee_id' => $employeeId,
+                'vendor' => $validated['vendor_outsource'],
+                'agreement_evidence' => $consentEvidence,
+            ],
             user: 'Public Applicant',
             source: 'Public'
         );

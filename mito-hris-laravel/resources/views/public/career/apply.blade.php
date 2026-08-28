@@ -1,7 +1,8 @@
 @extends('layouts.public')
 
 @section('title', 'Form Pendaftaran - MITO Group')
-@section('description', 'Lengkapi formulir pendaftaran karir MITO dengan data yang valid untuk mengikuti proses
+@section('description',
+    'Lengkapi formulir pendaftaran karir MITO dengan data yang valid untuk mengikuti proses
     rekrutmen.')
 @section('robots', 'noindex,follow,noarchive')
 
@@ -66,6 +67,11 @@
             <div id="registrationForm">
                 <form action="{{ route('public.career.store') }}" method="POST" id="formPendaftaran" novalidate>
                     @csrf
+                    <input type="hidden" name="consent_timestamp" id="consentTimestamp">
+                    <input type="hidden" name="consent_device" id="consentDevice">
+                    <input type="hidden" name="consent_latitude" id="consentLatitude">
+                    <input type="hidden" name="consent_longitude" id="consentLongitude">
+                    <input type="hidden" name="consent_location" id="consentLocation">
 
                     <!-- SECTION 1: PERSONAL INFORMATION -->
                     <div class="form-section" id="sectionPersonal">
@@ -177,9 +183,11 @@
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold" for="email" style="font-size:13px">Alamat
                                         Email <span class="text-danger">*</span></label>
-                                    <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email"
-                                        value="{{ old('email') }}" required autocomplete="email" aria-describedby="emailFeedback">
-                                    <div class="invalid-feedback" id="emailFeedback">{{ $errors->first('email') ?: 'Silakan masukkan alamat email yang valid.' }}</div>
+                                    <input type="email" class="form-control @error('email') is-invalid @enderror"
+                                        id="email" name="email" value="{{ old('email') }}" required
+                                        autocomplete="email" aria-describedby="emailFeedback">
+                                    <div class="invalid-feedback" id="emailFeedback">
+                                        {{ $errors->first('email') ?: 'Silakan masukkan alamat email yang valid.' }}</div>
                                     <div id="emailValidation" class="mt-1" style="display:none;font-size:12px;"></div>
                                 </div>
 

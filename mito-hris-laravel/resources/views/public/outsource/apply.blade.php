@@ -64,6 +64,11 @@
             <div id="registrationForm">
                 <form action="{{ route('public.outsource.store') }}" method="POST" id="formOutsource" novalidate>
                     @csrf
+                    <input type="hidden" name="consent_timestamp" id="consentTimestamp">
+                    <input type="hidden" name="consent_device" id="consentDevice">
+                    <input type="hidden" name="consent_latitude" id="consentLatitude">
+                    <input type="hidden" name="consent_longitude" id="consentLongitude">
+                    <input type="hidden" name="consent_location" id="consentLocation">
 
                     <!-- SECTION 1: PERSONAL INFORMATION -->
                     <div class="form-section" id="sectionPersonal">
