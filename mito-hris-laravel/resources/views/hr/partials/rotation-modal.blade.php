@@ -186,24 +186,9 @@
     @endif
 
     function _showRotToast(msg, type) {
-        type = type || 'success';
-        var cls = type === 'success' ? 'alert-success' : (type === 'error' ? 'alert-danger' : 'alert-warning');
-        var icon = type === 'success' ? 'bi-check-circle-fill' : (type === 'error' ? 'bi-x-circle-fill' :
-            'bi-exclamation-triangle-fill');
-        var toast = document.createElement('div');
-        toast.className = 'toast align-items-center text-white border-0 show fade ' + cls;
-        toast.style.cssText =
-            'position:fixed;top:20px;right:20px;z-index:99999;min-width:320px;padding:12px 16px;border-radius:12px;box-shadow:0 10px 25px rgba(0,0,0,0.15);';
-        toast.innerHTML = '<div class="d-flex align-items-center gap-2"><i class="bi ' + icon +
-            ' fs-5"></i><div class="fw-medium">' + msg + '</div></div>';
-        document.body.appendChild(toast);
-        setTimeout(function() {
-            toast.style.opacity = '0';
-            toast.style.transition = 'opacity 0.4s ease';
-            setTimeout(function() {
-                toast.remove();
-            }, 500);
-        }, 4500);
+        if (typeof window.showToast === 'function') {
+            window.showToast(msg, type || 'success');
+        }
     }
 
     function handleRotEmpSearch(query) {
