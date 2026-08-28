@@ -562,21 +562,19 @@ class EmployeeController extends Controller
         // Build PDF download URLs for Surat BPJS (auto-generate after success)
         $pdfUrls = [];
         if ($result['success']) {
-            $employee = $this->employeeRepo->findById($id);
-            if ($employee) {
-                $lwd = $request->input('last_working_date');
-                $extraQ = http_build_query([
-                    'effective_date'    => $lwd,
-                    'last_working_date' => $lwd,
-                    'notes'             => $request->input('notes', ''),
-                    'approved_by'       => $request->input('approved_by', ''),
-                ]);
-                // Paklaring URL
-                $pdfUrls['paklaring']  = route('hr.export.paklaring',  ['id' => $id]) . '?' . $extraQ;
-                // Surat BPJS URL — only if checkbox checked (default: generate)
-                if ($request->input('generate_bpjs', 'on') !== false) {
-                    $pdfUrls['surat_bpjs'] = route('hr.export.surat-bpjs', ['id' => $id]) . '?' . $extraQ;
-                }
+            $lwd = $request->input('last_working_date');
+            $extraQ = http_build_query([
+                'effective_date'    => $lwd,
+                'last_working_date' => $lwd,
+                'notes'             => $request->input('notes', ''),
+                'approved_by'       => $request->input('approved_by', ''),
+            ]);
+            // The service has already confirmed the employee update. Do not
+            // perform a second Sheets lookup here: eventual consistency can
+            // otherwise make a successful update return no PDF URLs.
+            $pdfUrls['paklaring'] = route('hr.export.paklaring', ['id' => $id]) . '?' . $extraQ;
+            if ($request->input('generate_bpjs', 'on') !== false) {
+                $pdfUrls['surat_bpjs'] = route('hr.export.surat-bpjs', ['id' => $id]) . '?' . $extraQ;
             }
         }
 

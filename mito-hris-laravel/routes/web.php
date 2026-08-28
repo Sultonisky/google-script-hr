@@ -137,9 +137,13 @@ Route::prefix('hr')->name('hr.')->middleware(['hr.auth', 'mpr.auth'])->group(fun
         Route::get('/candidate-pdf/{id}', [ExportController::class, 'candidatePdf'])->name('candidate-pdf');
     });
 
-    // Other PDFs and CSV exports are restricted to operational HR roles.
-    Route::prefix('export')->name('export.')->middleware('role:Super Admin,Admin,Privileged User')->group(function () {
+    // Offering Letter follows recruitment permission; lifecycle documents
+    // require employee-management permission.
+    Route::prefix('export')->name('export.')->middleware('can:create_offering')->group(function () {
         Route::get('/offering-letter/{id}', [ExportController::class, 'offeringLetterPdf'])->name('offering-letter');
+    });
+
+    Route::prefix('export')->name('export.')->middleware('can:manage_employees')->group(function () {
         Route::get('/kontrak-pkwt/{id}', [ExportController::class, 'kontrakPkwtPdf'])->name('kontrak-pkwt');
         Route::get('/sk-pengangkatan/{id}', [ExportController::class, 'skPengangkatanPdf'])->name('sk-pengangkatan');
         Route::get('/sk-off/{id}', [ExportController::class, 'skOffPdf'])->name('sk-off');
@@ -148,7 +152,9 @@ Route::prefix('hr')->name('hr.')->middleware(['hr.auth', 'mpr.auth'])->group(fun
         Route::get('/paklaring/{id}', [ExportController::class, 'paklaringPdf'])->name('paklaring');
         Route::get('/offboarding-bundle/{id}', [ExportController::class, 'offboardingBundlePdf'])->name('offboarding-bundle');
         Route::get('/performance-review/{id}', [ExportController::class, 'performanceReviewPdf'])->name('performance-review');
+    });
 
+    Route::prefix('export')->name('export.')->middleware('role:Super Admin,Admin,Privileged User')->group(function () {
         Route::get('/candidates-csv', [ExportController::class, 'exportCandidatesCsv'])->name('candidates-csv');
         Route::get('/employees-csv', [ExportController::class, 'exportEmployeesCsv'])->name('employees-csv');
     });
