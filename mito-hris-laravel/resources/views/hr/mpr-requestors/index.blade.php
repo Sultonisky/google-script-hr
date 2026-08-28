@@ -52,7 +52,8 @@
                     <div class="panel-subtitle">Data akun diambil langsung dari sheet <strong>mpr_requestor</strong>.</div>
                 </div>
                 <div class="export-btns ms-auto">
-                    <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#mprRequestorAddModal">
+                    <button class="btn btn-primary" type="button" data-bs-toggle="modal"
+                        data-bs-target="#mprRequestorAddModal">
                         <i class="bi bi-plus-lg me-1"></i> Tambah Requestor
                     </button>
                     <button class="btn-refresh" type="button" title="Muat ulang data requestor"
@@ -96,6 +97,7 @@
                             <th>Branch</th>
                             <th>Login Terakhir</th>
                             <th>Dibuat</th>
+                            <th>Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="mprRequestorsTableBody">
@@ -104,23 +106,41 @@
                                 $status = $requestor['Status'] ?? '-';
                                 $statusClass = strtolower(trim($status)) === 'active' ? 'bg-success' : 'bg-secondary';
                             @endphp
-                            <tr>
+                            <tr data-requestor-email="{{ $requestor['Email'] ?? '' }}">
                                 <td class="id-mono">{{ $loop->iteration }}</td>
                                 <td>
                                     <div class="cand-name requestor-name">{{ $requestor['Full Name'] ?? '-' }}</div>
                                     <div class="cand-sub requestor-email">{{ $requestor['Email'] ?? '-' }}</div>
                                 </td>
                                 <td class="id-mono requestor-username">{{ $requestor['Username'] ?? '-' }}</td>
-                                <td><span class="fw-semibold text-navy requestor-role">{{ $requestor['Role'] ?? '-' }}</span></td>
-                                <td><span class="badge {{ $statusClass }} requestor-status">{{ $status }}</span></td>
+                                <td><span
+                                        class="fw-semibold text-navy requestor-role">{{ $requestor['Role'] ?? '-' }}</span>
+                                </td>
+                                <td><span class="badge {{ $statusClass }} requestor-status">{{ $status }}</span>
+                                </td>
                                 <td class="requestor-entity">{{ $requestor['Entity'] ?? '-' }}</td>
                                 <td>{{ $requestor['Branch'] ?? '-' }}</td>
                                 <td class="id-mono">{{ $requestor['Last Login'] ?? '-' }}</td>
                                 <td class="id-mono">{{ $requestor['Created At'] ?? '-' }}</td>
+                                <td>
+                                    @can('manage_settings')
+                                        <button type="button" class="btn btn-sm btn-primary" title="Edit MPR Requestor"
+                                            aria-label="Edit MPR requestor" data-bs-toggle="modal"
+                                            data-bs-target="#mprRequestorEditModal"
+                                            data-email="{{ $requestor['Email'] ?? '' }}"
+                                            data-name="{{ $requestor['Full Name'] ?? '' }}"
+                                            data-username="{{ $requestor['Username'] ?? '' }}"
+                                            data-role="{{ $requestor['Role'] ?? '' }}" data-status="{{ $status }}"
+                                            data-entity="{{ $requestor['Entity'] ?? '' }}"
+                                            data-branch="{{ $requestor['Branch'] ?? '' }}">
+                                            <i class="bi bi-pencil-fill" aria-hidden="true"></i>
+                                        </button>
+                                    @endcan
+                                </td>
                             </tr>
                         @empty
                             <tr id="mprRequestorEmptyRow">
-                                <td colspan="9">
+                                <td colspan="10">
                                     <div class="table-empty">
                                         <i class="bi bi-person-x"></i>
                                         <p class="mb-0">Belum ada MPR requestor.</p>
@@ -129,7 +149,7 @@
                             </tr>
                         @endforelse
                         <tr id="mprRequestorSearchEmptyRow" class="d-none">
-                            <td colspan="9">
+                            <td colspan="10">
                                 <div class="table-empty">
                                     <i class="bi bi-search"></i>
                                     <p class="mb-0">Tidak ada requestor yang sesuai filter.</p>
@@ -142,7 +162,7 @@
             <div class="panel-footer">
                 <span class="small" id="mprRequestorResultCount">
                     @if ($total > 0)
-                        Menampilkan {{ (($currentPage - 1) * $perPage) + 1 }}–{{ min($currentPage * $perPage, $total) }}
+                        Menampilkan {{ ($currentPage - 1) * $perPage + 1 }}–{{ min($currentPage * $perPage, $total) }}
                         dari {{ $total }} requestor
                     @else
                         Tidak ada requestor
@@ -151,8 +171,7 @@
                 <div class="d-flex align-items-center gap-3">
                     <span class="small text-muted">Sumber: sheet mpr_requestor</span>
                     @if ($total > $perPage)
-                        <x-pagination :currentPage="$currentPage" :total="$total" :perPage="$perPage"
-                            :route="'hr.mpr-requestors.index'" />
+                        <x-pagination :currentPage="$currentPage" :total="$total" :perPage="$perPage" :route="'hr.mpr-requestors.index'" />
                     @endif
                 </div>
             </div>
@@ -174,19 +193,26 @@
                     <div class="modal-body">
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label" for="mprRequestorName">Nama Lengkap <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="mprRequestorName" name="name" required>
+                                <label class="form-label" for="mprRequestorName">Nama Lengkap <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="mprRequestorName" name="name"
+                                    required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label" for="mprRequestorEmail">Email <span class="text-danger">*</span></label>
-                                <input type="email" class="form-control" id="mprRequestorEmail" name="email" required>
+                                <label class="form-label" for="mprRequestorEmail">Email <span
+                                        class="text-danger">*</span></label>
+                                <input type="email" class="form-control" id="mprRequestorEmail" name="email"
+                                    required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label" for="mprRequestorUsername">Username <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="mprRequestorUsername" name="username" required>
+                                <label class="form-label" for="mprRequestorUsername">Username <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="mprRequestorUsername" name="username"
+                                    required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label" for="mprRequestorRole">Role <span class="text-danger">*</span></label>
+                                <label class="form-label" for="mprRequestorRole">Role <span
+                                        class="text-danger">*</span></label>
                                 <select class="form-select" id="mprRequestorRole" name="role" required>
                                     @foreach (config('hris.auth.valid_roles_requestor', []) as $role)
                                         <option value="{{ $role }}">{{ $role }}</option>
@@ -194,20 +220,26 @@
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label" for="mprRequestorEntity">Entity <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="mprRequestorEntity" name="entity" required>
+                                <label class="form-label" for="mprRequestorEntity">Entity <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="mprRequestorEntity" name="entity"
+                                    required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label" for="mprRequestorBranch">Branch <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="mprRequestorBranch" name="branch" required>
+                                <label class="form-label" for="mprRequestorBranch">Branch <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="mprRequestorBranch" name="branch"
+                                    required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label" for="mprRequestorPassword">Password <span class="text-danger">*</span></label>
+                                <label class="form-label" for="mprRequestorPassword">Password <span
+                                        class="text-danger">*</span></label>
                                 <input type="password" class="form-control" id="mprRequestorPassword" name="password"
                                     minlength="8" autocomplete="new-password" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label" for="mprRequestorPasswordConfirmation">Konfirmasi Password <span class="text-danger">*</span></label>
+                                <label class="form-label" for="mprRequestorPasswordConfirmation">Konfirmasi Password <span
+                                        class="text-danger">*</span></label>
                                 <input type="password" class="form-control" id="mprRequestorPasswordConfirmation"
                                     name="password_confirmation" minlength="8" autocomplete="new-password" required>
                             </div>
@@ -215,7 +247,88 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-primary"><i class="bi bi-check2 me-1"></i> Simpan Requestor</button>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-check2 me-1"></i> Simpan
+                            Requestor</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="mprRequestorEditModal" tabindex="-1" aria-labelledby="mprRequestorEditModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="mprRequestorEditModalLabel"><i
+                            class="bi bi-person-gear me-2 text-primary"></i>Edit MPR Requestor</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                </div>
+                <form id="mprRequestorEditForm" method="POST"
+                    data-update-url="{{ route('hr.mpr-requestors.update', ['email' => '__EMAIL__']) }}">
+                    @csrf
+                    @method('PUT')
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label" for="mprEditEmail">Email</label>
+                                <input type="email" class="form-control" id="mprEditEmail" readonly />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="mprEditName">Nama Lengkap <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="mprEditName" name="name"
+                                    minlength="3" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="mprEditUsername">Username <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="mprEditUsername" name="username"
+                                    minlength="3" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="mprEditRole">Role <span
+                                        class="text-danger">*</span></label>
+                                <select class="form-select" id="mprEditRole" name="role" required>
+                                    @foreach (config('hris.auth.valid_roles_requestor', []) as $role)
+                                        <option value="{{ $role }}">{{ $role }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="mprEditEntity">Entity <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="mprEditEntity" name="entity" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="mprEditBranch">Branch <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="mprEditBranch" name="branch" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="mprEditStatus">Status <span
+                                        class="text-danger">*</span></label>
+                                <select class="form-select" id="mprEditStatus" name="status" required>
+                                    <option value="Active">Active</option>
+                                    <option value="Inactive">Inactive</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="mprEditPassword">Password Baru</label>
+                                <input type="password" class="form-control" id="mprEditPassword" name="password"
+                                    minlength="8" autocomplete="new-password">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="mprEditPasswordConfirmation">Konfirmasi Password</label>
+                                <input type="password" class="form-control" id="mprEditPasswordConfirmation"
+                                    name="password_confirmation" minlength="8" autocomplete="new-password">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-check2 me-1"></i>Simpan
+                            Perubahan</button>
                     </div>
                 </form>
             </div>
@@ -231,18 +344,39 @@
             const body = document.getElementById('mprRequestorsTableBody');
             const emptyRow = document.getElementById('mprRequestorSearchEmptyRow');
             const resultCount = document.getElementById('mprRequestorResultCount');
+            const editModal = document.getElementById('mprRequestorEditModal');
+            const editForm = document.getElementById('mprRequestorEditForm');
             if (!search || !body) return;
+
+            editModal?.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                const email = button?.dataset.email || '';
+                editForm.action = editForm.dataset.updateUrl.replace('__EMAIL__', encodeURIComponent(
+                email));
+                document.getElementById('mprEditEmail').value = email;
+                document.getElementById('mprEditName').value = button?.dataset.name || '';
+                document.getElementById('mprEditUsername').value = button?.dataset.username || '';
+                document.getElementById('mprEditRole').value = button?.dataset.role || 'Manpower';
+                document.getElementById('mprEditStatus').value = button?.dataset.status || 'Active';
+                document.getElementById('mprEditEntity').value = button?.dataset.entity || '';
+                document.getElementById('mprEditBranch').value = button?.dataset.branch || '';
+                document.getElementById('mprEditPassword').value = '';
+                document.getElementById('mprEditPasswordConfirmation').value = '';
+            });
 
             function applyFilters() {
                 const query = search.value.trim().toLowerCase();
                 const selectedStatus = statusFilter?.value || '';
-                const rows = Array.from(body.querySelectorAll('tr:not(#mprRequestorSearchEmptyRow):not(#mprRequestorEmptyRow)'));
+                const rows = Array.from(body.querySelectorAll(
+                    'tr:not(#mprRequestorSearchEmptyRow):not(#mprRequestorEmptyRow)'));
                 let visible = 0;
 
                 rows.forEach(function(row) {
                     const searchable = row.textContent.toLowerCase();
-                    const status = row.querySelector('.requestor-status')?.textContent.toLowerCase().trim() || '';
-                    const matches = searchable.includes(query) && (!selectedStatus || status === selectedStatus);
+                    const status = row.querySelector('.requestor-status')?.textContent.toLowerCase()
+                    .trim() || '';
+                    const matches = searchable.includes(query) && (!selectedStatus || status ===
+                        selectedStatus);
                     row.classList.toggle('d-none', !matches);
                     if (matches) visible++;
                 });
@@ -250,9 +384,10 @@
                 const hasFilter = query || selectedStatus;
                 if (emptyRow) emptyRow.classList.toggle('d-none', visible !== 0 || !hasFilter);
                 if (resultCount) {
-                    resultCount.textContent = hasFilter
-                        ? 'Menampilkan ' + visible + ' dari ' + rows.length + ' requestor'
-                        : (rows.length ? 'Menampilkan 1–' + rows.length + ' dari ' + rows.length + ' requestor' : 'Tidak ada requestor');
+                    resultCount.textContent = hasFilter ?
+                        'Menampilkan ' + visible + ' dari ' + rows.length + ' requestor' :
+                        (rows.length ? 'Menampilkan 1–' + rows.length + ' dari ' + rows.length + ' requestor' :
+                            'Tidak ada requestor');
                 }
             }
 
