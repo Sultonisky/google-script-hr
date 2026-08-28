@@ -22,17 +22,76 @@ jobs:
 
             cd /home/ubuntu/hris/mito-hris-laravel
 
+            echo "========================================"
             echo "== Updating source =="
+            echo "========================================"
+
             git fetch origin main
             git reset --hard origin/main
 
-            echo "== Installing PHP dependencies =="
-            composer install --no-dev --optimize-autoloader --no-interaction
+            echo "========================================"
+            echo "== Installing dependencies for testing =="
+            echo "========================================"
 
+            composer install \
+              --no-interaction \
+              --prefer-dist \
+              --optimize-autoloader
+
+            echo "========================================"
+            echo "== Running Laravel tests =="
+            echo "========================================"
+
+            php artisan test
+
+            echo "========================================"
+            echo "== Running deep diagnostics =="
+            echo "========================================"
+
+            php artisan mito:diagnose
+
+            echo "========================================"
+            echo "== Checking Google Sheets / Drive / Credentials =="
+            echo "========================================"
+
+            php artisan mito:health-check
+
+            echo "========================================"
+            echo "== Validating Google Sheets schema =="
+            echo "========================================"
+
+            php artisan mito:validate-schema
+
+            echo "========================================"
+            echo "== Setting up Google Sheets =="
+            echo "========================================"
+
+            php artisan mito:setup-sheets
+
+            echo "========================================"
+            echo "== Syncing Google Sheets to Laravel =="
+            echo "========================================"
+
+            php artisan mito:sync
+
+            echo "========================================"
+            echo "== Installing production dependencies =="
+            echo "========================================"
+
+            composer install \
+              --no-dev \
+              --optimize-autoloader \
+              --no-interaction
+
+            echo "========================================"
             echo "== Laravel optimization =="
-            sudo -u www-data env HOME=/tmp php artisan optimize:clear
-            sudo -u www-data env HOME=/tmp php artisan config:cache
-            sudo -u www-data env HOME=/tmp php artisan route:cache
-            sudo -u www-data env HOME=/tmp php artisan view:cache
+            echo "========================================"
 
-            echo "== Deploy completed =="
+            php artisan optimize:clear
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+
+            echo "========================================"
+            echo "== DEPLOYMENT SUCCESSFUL =="
+            echo "========================================"
