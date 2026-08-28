@@ -1,6 +1,8 @@
 @extends('layouts.public')
 
 @section('title', 'Perbarui Data Lamaran - MITO Group')
+@section('description', 'Perbarui data lamaran Anda secara mandiri melalui MITO HRIS Career Portal.')
+@section('robots', 'noindex,nofollow,noarchive')
 
 @section('content')
     <!-- HERO (Red MITO Theme) -->

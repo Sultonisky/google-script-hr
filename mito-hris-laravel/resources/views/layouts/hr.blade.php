@@ -5,7 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <link rel="icon" type="image/png" href="{{ asset('assets/logo-favicon.png') }}">
-  <title>@yield('title', 'MITO HRIS — Dashboard')</title>
+  @include('components.seo', [
+    'title' => trim($__env->yieldContent('title')) ?: 'MITO HRIS',
+    'description' => 'Halaman internal MITO HRIS.',
+    'robots' => 'noindex,nofollow,noarchive',
+  ])
 
   <script>
     // Immediate theme initializer to avoid light flicker

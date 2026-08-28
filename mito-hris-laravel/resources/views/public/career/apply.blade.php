@@ -1,6 +1,8 @@
 @extends('layouts.public')
 
 @section('title', 'Form Pendaftaran - MITO Group')
+@section('description', 'Lengkapi formulir pendaftaran karir MITO dengan data yang valid untuk mengikuti proses rekrutmen.')
+@section('robots', 'noindex,follow,noarchive')
 
 @section('content')
     <!-- LOADING OVERLAY -->

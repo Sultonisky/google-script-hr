@@ -5,7 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Portal Rekrutmen - MITO Group')</title>
+    @include('components.seo', [
+        'title' => trim($__env->yieldContent('title')) ?: 'MITO Career Portal | Job Opportunities',
+        'description' => trim($__env->yieldContent('description')) ?: 'Temukan informasi rekrutmen dan peluang karir yang tersedia melalui MITO HRIS Career Portal.',
+        'robots' => trim($__env->yieldContent('robots')) ?: 'index,follow',
+        'structuredData' => $__env->yieldContent('structuredData') ? json_decode($__env->yieldContent('structuredData'), true) : null,
+    ])
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -263,14 +268,14 @@
     </main>
 
     {{-- Footer 1:1 from GAS --}}
-    <div class="footer">
+    <footer class="footer">
         <div class="container">
             <div class="footer-brand-name">MITO HRIS</div>
             <div class="footer-tagline">&copy; {{ date('Y') }} &mdash; Crafted for Modern Human Resources</div>
             <div class="footer-help">Apabila mengalami kendala saat mengisi formulir, silakan menghubungi Human
                 Resources MITO Group.</div>
         </div>
-    </div>
+    </footer>
 
     @yield('scripts')
 </body>
