@@ -17,8 +17,10 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          script_stop: true
+          command_timeout: 30m
           script: |
+            set -e
+
             cd /home/ubuntu/hris/mito-hris-laravel
 
             echo "== Updating source =="
@@ -28,10 +30,33 @@ jobs:
             echo "== Installing PHP dependencies =="
             composer install --no-dev --optimize-autoloader --no-interaction
 
+            echo "== Checking Node dependencies =="
+            if [ ! -d "node_modules" ]; then
+              echo "node_modules not found. Installing..."
+              npm install
+            else
+              echo "node_modules already exists. Skipping npm install."
+            fi
+
+            echo "== Building frontend assets =="
+            npm run build
+
+            echo "== Running Laravel tests =="
+            php artisan test
+
+            echo "== Running MITO diagnostics =="
+            php artisan mito:diagnose
+
+            echo "== Checking Google Sheets =="
+            php artisan mito:health-check
+            php artisan mito:setup-sheets
+            php artisan mito:validate-schema
+            php artisan mito:sync
+
             echo "== Laravel optimization =="
             php artisan optimize:clear
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
 
-            echo "== Deployment complete =="
+            echo "== Deployment completed successfully =="
