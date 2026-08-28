@@ -4,10 +4,65 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mito-hris-production
+  cancel-in-progress: false
 
 jobs:
-  deploy:
+  verify:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mito-hris-laravel
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: mbstring, dom, fileinfo, sqlite3
+          coverage: none
+          tools: composer
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Prepare Laravel environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --force
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Install Node dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci --no-audit --no-fund
+          else
+            npm install --no-audit --no-fund
+          fi
+
+      - name: Build frontend assets
+        run: npm run build
+
+      - name: Run Laravel tests
+        run: php artisan test --without-tty
+
+  deploy:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Deploy via SSH
@@ -18,42 +73,38 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           command_timeout: 30m
           script: |
-            set -e
+            set -Eeuo pipefail
+
+            trap 'echo "Deployment failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
 
             cd /home/ubuntu/hris/mito-hris-laravel
 
             echo "== Updating source =="
-            git fetch origin main
+            git fetch --prune origin main
             git reset --hard origin/main
 
             echo "== Installing PHP dependencies =="
-            composer install --optimize-autoloader --no-interaction
+            composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress
 
             echo "== Checking Node dependencies =="
-            if [ ! -d "node_modules" ]; then
-              echo "node_modules not found. Installing..."
-              npm install
+            if [ -f package-lock.json ]; then
+              npm ci --no-audit --no-fund
             else
-              echo "node_modules already exists. Skipping npm install."
+              npm install --no-audit --no-fund
             fi
 
             echo "== Building frontend assets =="
             npm run build
 
             echo "== Running Laravel tests =="
-            if [ -x "vendor/bin/phpunit" ]; then
-              ./vendor/bin/phpunit
-            else
-              echo "PHPUnit not installed in production dependencies."
-              echo "Skipping Laravel tests."
-            fi
+            echo "Tests already passed in the verify job. Production deploy skips dev-only PHPUnit dependencies."
 
             echo "== Running MITO diagnostics =="
             php artisan mito:diagnose
 
             echo "== Checking Google Sheets =="
             php artisan mito:health-check
-            php artisan mito:setup-sheets --fix
+            php artisan mito:setup-sheets --fix --no-interaction
             php artisan mito:validate-schema
             php artisan mito:sync
 
