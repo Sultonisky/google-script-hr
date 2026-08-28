@@ -1387,7 +1387,9 @@
                 return;
             }
 
-            var allEmps = window.__allProbationEmployees || [];
+            var allEmps = (window.__allProbationEmployees || []).filter(function(e) {
+                return e.can_evaluate === true || e.can_evaluate === 1 || e.can_evaluate === '1';
+            });
             var matched = allEmps.filter(function(e) {
                 return (e.fullName || '').toLowerCase().indexOf(q) !== -1 ||
                     (e.employeeId || '').toLowerCase().indexOf(q) !== -1 ||
