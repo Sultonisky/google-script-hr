@@ -100,6 +100,16 @@ jobs:
             echo "== Building frontend assets =="
             npm run build
 
+            echo "== Preparing writable Laravel directories =="
+            PHP_FPM_USER="${PHP_FPM_USER:-www-data}"
+            if ! id "$PHP_FPM_USER" >/dev/null 2>&1; then
+              echo "PHP-FPM user '$PHP_FPM_USER' does not exist. Set PHP_FPM_USER to the server's PHP-FPM account." >&2
+              exit 1
+            fi
+            sudo mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache database
+            sudo chown -R "$(id -un):$PHP_FPM_USER" storage bootstrap/cache database
+            sudo chmod -R ug+rwX storage bootstrap/cache database
+
             echo "== Running Laravel tests =="
             echo "Tests already passed in the verify job. Production deploy skips dev-only PHPUnit dependencies."
 
