@@ -72,8 +72,21 @@
       <form action="{{ route('hr.audit-logs.index') }}" method="GET" class="d-flex flex-wrap gap-2 align-items-center w-100">
         <div class="table-search" style="flex:1;">
           <i class="bi bi-search"></i>
-          <input type="text" name="search" id="auditSearchInput" class="form-control" placeholder="Cari ID, user, action..." value="{{ request('search') }}" />
+          <input type="text" name="search" id="auditSearchInput" class="form-control" placeholder="Cari entity, ID, user, action..." value="{{ request('search') }}" />
         </div>
+        <select class="filter-select" name="entity_type" onchange="this.form.submit()" style="width: 140px; font-size: 13px">
+          <option value="">Semua Entity</option>
+          @foreach(['Candidate', 'Employee', 'Probation', 'Outsource', 'MPR', 'User', 'Settings', 'MasterData', 'Applicant', 'Authentication', 'System'] as $entity)
+            <option value="{{ $entity }}" {{ request('entity_type') === $entity ? 'selected' : '' }}>{{ $entity }}</option>
+          @endforeach
+        </select>
+        <select class="filter-select" name="source" onchange="this.form.submit()" style="width: 130px; font-size: 13px">
+          <option value="">Semua Source</option>
+          @foreach(['Dashboard', 'Public', 'Artisan', 'Google Sheets', 'System', 'Legacy'] as $source)
+            <option value="{{ $source }}" {{ request('source') === $source ? 'selected' : '' }}>{{ $source }}</option>
+          @endforeach
+        </select>
+        <input type="text" name="entity_id" class="form-control" placeholder="Entity ID" value="{{ request('entity_id') }}" style="width: 140px; font-size: 13px" />
         <select class="filter-select" name="action" id="auditActionFilter" onchange="this.form.submit()" style="width: 160px; font-size: 13px">
           <option value="">Semua Action</option>
           <option value="APPLY" {{ request('action') === 'APPLY' ? 'selected' : '' }}>APPLY</option>
@@ -97,7 +110,9 @@
           <tr>
             <th>Timestamp</th>
             <th>User</th>
-            <th>Recruitment ID</th>
+            <th>Entity</th>
+            <th>Entity ID</th>
+            <th>Source</th>
             <th>Action</th>
             <th>Field</th>
             <th>Old Value</th>
@@ -109,7 +124,9 @@
             <tr>
               <td class="id-mono">{{ $log['Timestamp'] ?? '-' }}</td>
               <td class="fw-semibold text-navy">{{ $log['User'] ?? '-' }}</td>
-              <td class="id-mono fw-bold text-primary">{{ $log['Recruitment ID'] ?? '-' }}</td>
+              <td>{{ $log['Entity Type'] ?? 'Candidate' }}</td>
+              <td class="id-mono fw-bold text-primary">{{ $log['Entity ID'] ?? $log['Recruitment ID'] ?? '-' }}</td>
+              <td>{{ $log['Source'] ?? 'Legacy' }}</td>
               <td><span class="badge bg-light text-dark border">{{ $log['Action'] ?? '-' }}</span></td>
               <td>{{ $log['Field'] ?? '-' }}</td>
               <td class="text-danger text-decoration-line-through">{{ $log['Old Value'] ?? '-' }}</td>
@@ -117,7 +134,7 @@
             </tr>
           @empty
             <tr>
-              <td colspan="7" class="text-center text-muted py-4">
+              <td colspan="10" class="text-center text-muted py-4">
                 Belum ada data riwayat audit log.
               </td>
             </tr>
