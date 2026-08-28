@@ -335,8 +335,8 @@
                 </div>
             </div>
 
-            <div class="cv-section-card mb-0">
-                <h6><i class="bi bi-chat-square-text-fill"></i> Catatan &amp; Riwayat Sistem</h6>
+            <div class="cv-section-card">
+                <h6><i class="bi bi-chat-square-text-fill"></i> Catatan</h6>
                 <div class="cv-grid-2 mb-3">
                     <div class="cv-field">
                         <div class="cv-label">Dibuat Oleh</div>
@@ -351,14 +351,15 @@
                         <div class="cv-value" id="empDrUpdated">-</div>
                     </div>
                 </div>
-                <div class="cv-label mb-1">Catatan Umum</div>
-                <div class="cv-value mb-3" id="empDrGeneralNotes"
+                <div class="cv-value" id="empDrUnifiedNotes"
                     style="white-space:pre-wrap;min-height:40px;padding:10px;background:var(--bg-subtle,#f9fafb);border-radius:8px;border:1px solid var(--color-border,#e5e7eb);">
-                    -</div>
-                <div class="cv-label mb-1">Catatan HR</div>
-                <div class="cv-value" id="empDrNotes"
-                    style="white-space:pre-wrap;min-height:40px;padding:10px;background:var(--bg-subtle,#f9fafb);border-radius:8px;border:1px solid var(--color-border,#e5e7eb);">
-                    -</div>
+                    Belum ada catatan.</div>
+            </div>
+            <div class="cv-section-card mb-0">
+                <h6><i class="bi bi-clock-history"></i> Riwayat Aktivitas</h6>
+                <div class="timeline" id="empDrTimeline">
+                    <div class="timeline-empty">Memuat riwayat...</div>
+                </div>
             </div>
         </div>
 
@@ -486,8 +487,8 @@
                 </div>
             </div>
 
-            <div class="cv-section-card mb-0">
-                <h6><i class="bi bi-chat-square-text-fill"></i> Catatan &amp; Metadata</h6>
+            <div class="cv-section-card">
+                <h6><i class="bi bi-chat-square-text-fill"></i> Catatan</h6>
                 <div class="cv-grid-2">
                     <div class="cv-field">
                         <div class="cv-label">Dibuat Oleh</div>
@@ -502,14 +503,15 @@
                         <div class="cv-value" id="osDrUpdated">-</div>
                     </div>
                 </div>
-                <div class="cv-label mb-1 mt-3">Catatan Umum</div>
-                <div class="cv-value mb-3" id="osDrGeneralNotes"
+                <div class="cv-value" id="osDrUnifiedNotes"
                     style="white-space:pre-wrap;min-height:40px;padding:10px;background:var(--bg-subtle,#f9fafb);border-radius:8px;border:1px solid var(--color-border,#e5e7eb);">
-                    -</div>
-                <div class="cv-label mb-1">Catatan HR</div>
-                <div class="cv-value" id="osDrNotes"
-                    style="white-space:pre-wrap;min-height:40px;padding:10px;background:var(--bg-subtle,#f9fafb);border-radius:8px;border:1px solid var(--color-border,#e5e7eb);">
-                    -</div>
+                    Belum ada catatan.</div>
+            </div>
+            <div class="cv-section-card mb-0">
+                <h6><i class="bi bi-clock-history"></i> Riwayat Aktivitas</h6>
+                <div class="timeline" id="osDrTimeline">
+                    <div class="timeline-empty">Memuat riwayat...</div>
+                </div>
             </div>
         </div>
     </div>
@@ -545,8 +547,6 @@
         <div class="status-action-group">
             <button class="btn-status accept" id="btnDrawerEntityEdit" type="button"><i
                     class="bi bi-pencil-fill"></i> Edit</button>
-            <button class="btn-status blacklist" id="btnDrawerEntityDelete" type="button"><i
-                    class="bi bi-trash3-fill"></i> Hapus</button>
         </div>
     </div>
 </div>
