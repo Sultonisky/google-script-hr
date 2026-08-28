@@ -9,12 +9,12 @@ use Illuminate\Support\Facades\Hash;
 class SeedUsersCommand extends Command
 {
     protected $signature = 'mito:seed-users {--force : Overwrite existing users}';
-    protected $description = 'Seed default users for each role (Super Admin, Admin, Super User, User)';
+    protected $description = 'Seed default users for each role (Super Admin, Admin, Privileged User, User)';
 
     protected array $users = [
         ['email' => 'admin@mito.co.id',          'username' => 'admin',          'name' => 'Super Admin',    'role' => 'Super Admin'],
         ['email' => 'hrmanager@mito.co.id',       'username' => 'hrmanager',      'name' => 'HR Manager',          'role' => 'Admin'],
-        ['email' => 'hrrecruitment@mito.co.id',   'username' => 'hrrecruitment',  'name' => 'HR Recruitment',     'role' => 'Super User'],
+        ['email' => 'hrrecruitment@mito.co.id',   'username' => 'hrrecruitment',  'name' => 'HR Recruitment',     'role' => 'Privileged User'],
         ['email' => 'hrstaff@mito.co.id',         'username' => 'hrstaff',        'name' => 'HR Staff',           'role' => 'User'],
         // NOTE: Manager accounts are NOT seeded here.
         // They belong to the mpr_requestor sheet.
@@ -26,6 +26,7 @@ class SeedUsersCommand extends Command
         $this->info('Seeding default users...');
 
         $password = 'Mahakarya2026'; // default password for all seeded users
+        $timestamp = now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s');
         $force = $this->option('force');
         $createdCount = 0;
         $skippedCount = 0;
@@ -44,6 +45,9 @@ class SeedUsersCommand extends Command
                 'role' => $userData['role'],
                 'status' => 'Active',
                 'passwordHash' => Hash::make($password),
+                'lastLogin' => '',
+                'createdAt' => $timestamp,
+                'updatedAt' => $timestamp,
                 'createdBy' => 'seed-command',
             ];
 

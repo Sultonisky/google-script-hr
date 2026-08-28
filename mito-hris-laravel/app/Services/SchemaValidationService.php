@@ -29,14 +29,14 @@ class SchemaValidationService
         }
 
         $actualHeaders = array_map('trim', $data[0]);
-        // Only check for missing expected headers — extra columns in the sheet are tolerated
-        // because GAS appends extra columns over time and we must not flag them as errors.
         $missing = array_values(array_diff($expectedHeaders, $actualHeaders));
+        $extra = array_values(array_diff($actualHeaders, $expectedHeaders));
+        $orderedHeadersMatch = array_slice($actualHeaders, 0, count($expectedHeaders)) === $expectedHeaders;
 
         return [
-            'valid' => empty($missing),
+            'valid' => empty($missing) && empty($extra) && $orderedHeadersMatch,
             'missing' => $missing,
-            'extra' => [], // Extra columns are tolerated, not reported as errors
+            'extra' => $extra,
             'actual' => $actualHeaders,
             'expected' => $expectedHeaders,
         ];
@@ -69,10 +69,32 @@ class SchemaValidationService
             $currentData = $this->sheets->getRange($sheetName, 'A1:ZZ1', false);
             $currentHeaders = !empty($currentData[0]) ? array_map('trim', $currentData[0]) : [];
 
-            // Append any missing expected headers rather than overwriting the entire header row.
-            // This preserves existing columns (including extra/legacy columns) and only adds
-            // what is missing from the expected schema.
             $missing = array_values(array_diff($expectedHeaders, $currentHeaders));
+
+            // Users has a strict schema. Remove legacy trailing columns such as Entity/Branch
+            // after the canonical ten columns have been established.
+            if ($sheetName === 'Users' && count($currentHeaders) > count($expectedHeaders)
+                && array_slice($currentHeaders, 0, count($expectedHeaders)) === $expectedHeaders) {
+                $sheetId = $this->getSheetIdByName($spreadsheetId, $sheetName, $service);
+                if ($sheetId !== null) {
+                    $deleteRequest = new \Google\Service\Sheets\Request([
+                        'deleteDimension' => [
+                            'range' => [
+                                'sheetId' => $sheetId,
+                                'dimension' => 'COLUMNS',
+                                'startIndex' => count($expectedHeaders),
+                                'endIndex' => count($currentHeaders),
+                            ],
+                        ],
+                    ]);
+                    $service->spreadsheets->batchUpdate(
+                        $spreadsheetId,
+                        new \Google\Service\Sheets\BatchUpdateSpreadsheetRequest(['requests' => [$deleteRequest]])
+                    );
+                    $this->sheets->clearCache($sheetName);
+                    return true;
+                }
+            }
 
             if (empty($missing)) {
                 $this->sheets->clearCache($sheetName);

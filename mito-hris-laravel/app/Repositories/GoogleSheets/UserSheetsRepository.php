@@ -7,6 +7,19 @@ use App\Services\Google\GoogleSheetsService;
 
 class UserSheetsRepository implements UserRepositoryInterface
 {
+    private const DEFAULT_USER_HEADERS = [
+        'Email',
+        'Username',
+        'Full Name',
+        'Role',
+        'Status',
+        'Password Hash',
+        'Last Login',
+        'Created At',
+        'Updated At',
+        'Created By',
+    ];
+
     protected GoogleSheetsService $sheets;
     protected string $sheetName;
 
@@ -38,7 +51,7 @@ class UserSheetsRepository implements UserRepositoryInterface
     public function updateByEmail(string $email, array $data): void
     {
         $rows = $this->sheets->getRowsAsAssoc($this->sheetName);
-        $headers = array_keys($rows[0] ?? []);
+        $headers = $this->userHeaders();
         $emailCol = array_search('Email', $headers);
         if ($emailCol === false) {
             return;
@@ -49,7 +62,10 @@ class UserSheetsRepository implements UserRepositoryInterface
                 $rowNumber = $row['_row_number'] ?? ($index + 2);
                 $values = [];
                 foreach ($headers as $col) {
-                    $values[] = $data[$col] ?? $row[$col] ?? '';
+                    $dataKey = $this->dataKeyForHeader($col);
+                    $values[] = array_key_exists($dataKey, $data)
+                        ? $data[$dataKey]
+                        : ($data[$col] ?? $row[$col] ?? '');
                 }
                 $this->sheets->updateRow($this->sheetName, $rowNumber, $values);
                 return;
@@ -59,8 +75,8 @@ class UserSheetsRepository implements UserRepositoryInterface
 
     public function create(array $data): void
     {
-        $headers = $this->sheets->getRange($this->sheetName, '1:1', false);
-        if (empty($headers) || empty($headers[0])) {
+        $sheetHeaders = $this->sheets->getRange($this->sheetName, '1:1', false);
+        if (empty($sheetHeaders) || empty($sheetHeaders[0])) {
             // Sheet has no header row yet; this shouldn't happen in normal usage
             return;
         }
@@ -76,9 +92,8 @@ class UserSheetsRepository implements UserRepositoryInterface
             $normalizedData[$normalize($k)] = $v;
         }
 
-        $sheetHeaders = $headers[0];
         $values = [];
-        foreach ($sheetHeaders as $col) {
+        foreach ($this->userHeaders() as $col) {
             $normalizedCol = $normalize($col);
             $values[] = $normalizedData[$normalizedCol] ?? '';
         }
@@ -107,5 +122,27 @@ class UserSheetsRepository implements UserRepositoryInterface
     {
         // TODO: Implement row deletion from Google Sheets
         throw new \RuntimeException('deleteByEmail not implemented yet');
+    }
+
+    private function dataKeyForHeader(string $header): string
+    {
+        return match ($header) {
+            'Email' => 'email',
+            'Username' => 'username',
+            'Full Name' => 'fullName',
+            'Role' => 'role',
+            'Status' => 'status',
+            'Password Hash' => 'passwordHash',
+            'Last Login' => 'lastLogin',
+            'Created At' => 'createdAt',
+            'Updated At' => 'updatedAt',
+            'Created By' => 'createdBy',
+            default => $header,
+        };
+    }
+
+    private function userHeaders(): array
+    {
+        return config('hris.schemas.Users', self::DEFAULT_USER_HEADERS);
     }
 }

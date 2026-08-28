@@ -387,7 +387,7 @@ class MprFlowTest extends TestCase
         $repo->shouldReceive('update')->once()->withArgs(function (string $id, MprData $data) use (&$updatedData) {
             $updatedData = $data;
             return $id === 'MPR-20260824-0001';
-        })->andReturnUsing(fn (string $id, MprData $data) => $data);
+        })->andReturnUsing(fn(string $id, MprData $data) => $data);
         $this->app->instance(MprRepositoryInterface::class, $repo);
 
         $response = $this->putJson('/hr/mpr/MPR-20260824-0001', [
@@ -415,9 +415,9 @@ class MprFlowTest extends TestCase
     }
 
     /** @test */
-    public function super_user_cannot_update_mpr(): void
+    public function privileged_user_cannot_update_mpr(): void
     {
-        $this->actingAsRole('Super User');
+        $this->actingAsRole('Privileged User');
         $this->putJson('/hr/mpr/MPR-20260824-0001', [])->assertForbidden();
     }
 
