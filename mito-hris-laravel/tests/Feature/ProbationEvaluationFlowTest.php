@@ -85,6 +85,7 @@ class ProbationEvaluationFlowTest extends TestCase
 
     private function loginAsHrAdmin(): void
     {
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
         Session::put('hr_user', [
             'email'       => 'admin@mito.id',
             'fullName'    => 'HR Admin',
@@ -113,7 +114,7 @@ class ProbationEvaluationFlowTest extends TestCase
      * Bind mocks for the evaluate flow. $capturedRows receives every appended
      * kandidat_probation row as a header-mapped assoc array.
      */
-    private function bindEvaluateFlowMocks(array &$capturedRows): GoogleSheetsService
+    private function bindEvaluateFlowMocks(array &$capturedRows, array $existingRows = []): GoogleSheetsService
     {
         $employeeRepo = Mockery::mock(EmployeeRepositoryInterface::class);
         $employeeRepo->shouldReceive('findById')->with('EMP001')->andReturn($this->makeEmployee())->byDefault();
@@ -137,7 +138,7 @@ class ProbationEvaluationFlowTest extends TestCase
             })->andReturn(true)->byDefault();
         $sheets->shouldReceive('clearCache')->andReturn(null)->byDefault();
         $sheets->shouldReceive('updateRange')->andReturn(true)->byDefault();
-        $sheets->shouldReceive('getRowsAsAssoc')->andReturn([])->byDefault();
+        $sheets->shouldReceive('getRowsAsAssoc')->andReturn($existingRows)->byDefault();
 
         $this->app->instance(EmployeeRepositoryInterface::class, $employeeRepo);
         $this->app->instance(AuditLogRepositoryInterface::class, $auditRepo);
@@ -172,12 +173,12 @@ class ProbationEvaluationFlowTest extends TestCase
     }
 
     /** POST an evaluation with mocked sheets; returns [response, capturedRows]. */
-    private function postEvaluation(string $decision, array $extra = []): array
+    private function postEvaluation(string $decision, array $extra = [], array $existingRows = []): array
     {
         $this->loginAsHrAdmin();
 
         $captured = [];
-        $this->bindEvaluateFlowMocks($captured);
+        $this->bindEvaluateFlowMocks($captured, $existingRows);
 
         $payload = array_merge([
             'decision'           => $decision,
@@ -200,12 +201,13 @@ class ProbationEvaluationFlowTest extends TestCase
 
     public function test_t01_pass_returns_download_urls_for_sk_and_performance_review(): void
     {
-        [$response, $rows] = $this->postEvaluation('Diangkat sebagai Karyawan Tetap');
+        [$response, $rows] = $this->postEvaluation('Lulus');
 
         $response->assertOk()->assertJsonPath('success', true)
             ->assertJsonPath('decisionType', 'pass');
 
         $row = end($rows);
+        $this->assertSame('Lulus', self::ref($row, 'Decision'));
         $this->assertSame('13', self::ref($row, 'Overall Total'));
         $this->assertSame('Sangat Baik', self::ref($row, 'Category'));
 
@@ -416,5 +418,47 @@ class ProbationEvaluationFlowTest extends TestCase
         $this->assertSame('sk_pengangkatan', ProbationDecisionType::PASS->documentType());
         $this->assertSame('paklaring', ProbationDecisionType::FAIL->documentType());
         $this->assertNull(ProbationDecisionType::EXTEND->documentType(), 'EXTEND has no decision document.');
+    }
+
+    // =========================================================================
+    // T12/T13 — Re-evaluation after EXTEND uses history and forbids EXTEND
+    // =========================================================================
+
+    private function extendHistoryRow(): array
+    {
+        $row = array_combine(self::HEADERS, array_fill(0, count(self::HEADERS), ''));
+        $row['Employee ID'] = 'EMP001';
+        $row['Eval ID'] = 'EVAL-EXTEND-1';
+        $row['Eval Date'] = '2026-08-01 10:00:00';
+        $row['Decision'] = 'Extend';
+        $row['Extension Duration'] = '3 Bulan';
+        $row['New Contract Start'] = '2026-09-01';
+        $row['New Contract End'] = '2026-12-01';
+        $row['ind_integrity_1'] = '1';
+        $row['ind_ci_1'] = '0';
+        return $row;
+    }
+
+    public function test_t12_re_evaluation_after_extend_allows_lulus_and_preserves_history(): void
+    {
+        $previous = $this->extendHistoryRow();
+        [$response, $secondRows] = $this->postEvaluation('Lulus', [], [$previous]);
+
+        $response->assertOk()->assertJsonPath('success', true)->assertJsonPath('decisionType', 'pass');
+        $this->assertSame('Lulus', self::ref(end($secondRows), 'Decision'));
+        $this->assertSame('Extend', self::ref($previous, 'Decision'));
+    }
+
+    public function test_t13_re_evaluation_after_extend_rejects_forced_extend_without_writing(): void
+    {
+        $previous = $this->extendHistoryRow();
+        [$response, $secondRows] = $this->postEvaluation('Extend', [
+            'extension_duration' => '3 Bulan',
+            'extension_start' => '2026-12-01',
+            'extension_end' => '2027-03-01',
+        ], [$previous]);
+
+        $response->assertStatus(422);
+        $this->assertCount(0, $secondRows, 'A forced second Extend must not append an evaluation row.');
     }
 }
