@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Services\Google\GoogleSheetsService;
 use App\Services\Google\GoogleDriveService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -55,7 +56,38 @@ class DiagnoseCommand extends Command
                 return Storage::disk('local')->exists('') ? 'OK' : 'FAIL';
             },
             'PDF Engine' => function () {
-                return class_exists('Barryvdh\DomPDF\Facade\Pdf') ? 'OK' : 'FAIL (DOMPDF not installed)';
+                if (!class_exists(Pdf::class)) {
+                    return 'FAIL (DOMPDF not installed)';
+                }
+
+                $fontDir = (string) config('dompdf.options.font_dir');
+                $tempDir = (string) config('dompdf.options.temp_dir');
+                $problems = [];
+
+                foreach (['font directory' => $fontDir, 'temp directory' => $tempDir] as $label => $path) {
+                    if ($path === '' || !is_dir($path)) {
+                        $problems[] = "{$label} missing: {$path}";
+                    } elseif (!is_writable($path)) {
+                        $problems[] = "{$label} not writable: {$path}";
+                    }
+                }
+
+                if (!extension_loaded('dom')) {
+                    $problems[] = 'PHP ext-dom missing';
+                }
+
+                if ($problems) {
+                    return 'FAIL: ' . implode('; ', $problems);
+                }
+
+                try {
+                    $output = Pdf::loadHTML('<html><body>MITO HRIS PDF diagnostic</body></html>')->output();
+                    return str_starts_with($output, '%PDF-')
+                        ? 'OK (render test passed)'
+                        : 'FAIL (render output is not a PDF)';
+                } catch (\Throwable $e) {
+                    return 'FAIL (render): ' . $e->getMessage();
+                }
             },
             'RBAC' => function () {
                 $roles = config('hris.auth.valid_roles_internal', []);
