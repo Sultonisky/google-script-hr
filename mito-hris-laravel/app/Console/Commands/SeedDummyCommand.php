@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\DummyDataService;
+use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use Illuminate\Console\Command;
 
 class SeedDummyCommand extends Command
@@ -10,7 +11,7 @@ class SeedDummyCommand extends Command
     protected $signature = 'mito:seed-dummy {--count=50 : Number of candidates to generate per status} {--force : Skip confirmation for destructive operations}';
     protected $description = 'Generate dummy data for development (candidates, employees, probation, audit logs)';
 
-    public function handle(DummyDataService $dummyService): int
+    public function handle(DummyDataService $dummyService, AuditLogRepositoryInterface $auditRepo): int
     {
         $env = config('app.env');
         if ($env !== 'local' && !$this->option('force')) {
@@ -47,6 +48,7 @@ class SeedDummyCommand extends Command
         $this->line("  Employees: {$result['employees']}");
         $this->line("  Probation: {$result['probation']}");
         $this->line("  Audit logs: {$result['audit']}");
+        $auditRepo->log('System', 'mito:seed-dummy', 'generated', 'summary', null, $result, 'SYSTEM', 'Command');
 
         return Command::SUCCESS;
     }

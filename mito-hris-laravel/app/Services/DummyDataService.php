@@ -712,16 +712,16 @@ class DummyDataService
 
         foreach ($candidates as $c) {
             // Created entry
-            $rows[] = [$c['recruitmentId'], 'Created', 'Status', '', 'Pending', 'Demo Generator', $c['createdDate']];
+            $rows[] = ['AUD-DUMMY-' . str_pad((string) (count($rows) + 1), 6, '0', STR_PAD_LEFT), 'Candidate', $c['recruitmentId'], 'created', 'Status', '', 'Pending', 'Demo Generator', 'Artisan', $c['createdDate']];
 
             // Status change entry
             if ($c['status'] !== 'Pending') {
-                $rows[] = [$c['recruitmentId'], 'Status Changed', 'Status', 'Pending', $c['status'], 'HR Admin', $c['updatedAt']];
+                $rows[] = ['AUD-DUMMY-' . str_pad((string) (count($rows) + 1), 6, '0', STR_PAD_LEFT), 'Candidate', $c['recruitmentId'], 'status_changed', 'Status', 'Pending', $c['status'], 'HR Admin', 'Artisan', $c['updatedAt']];
             }
 
             // Notes entry (occasionally)
             if (!empty($c['hrNotes']) && rand(0, 3) > 1) {
-                $rows[] = [$c['recruitmentId'], 'Notes Updated', 'HR Notes', '', $c['hrNotes'], 'HR Admin', $c['updatedAt']];
+                $rows[] = ['AUD-DUMMY-' . str_pad((string) (count($rows) + 1), 6, '0', STR_PAD_LEFT), 'Candidate', $c['recruitmentId'], 'updated', 'HR Notes', '', $c['hrNotes'], 'HR Admin', 'Artisan', $c['updatedAt']];
             }
         }
 

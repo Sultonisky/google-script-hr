@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\DummyDataService;
+use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use Illuminate\Console\Command;
 
 class GenerateDummyData extends Command
@@ -13,7 +14,7 @@ class GenerateDummyData extends Command
 
     protected $description = 'Generate dummy/demo data ke Google Sheets (kandidat, employee, probation, audit log)';
 
-    public function handle(DummyDataService $dummyDataService): int
+    public function handle(DummyDataService $dummyDataService, AuditLogRepositoryInterface $auditRepo): int
     {
         $count = (int) $this->option('count');
         $count = max(10, min(200, $count));
@@ -63,6 +64,7 @@ class GenerateDummyData extends Command
             $this->newLine();
             $this->line("⏱  Selesai dalam {$elapsed} detik.");
             $this->line('💡  Jalankan `php artisan mito:sync` untuk refresh cache.');
+            $auditRepo->log('System', 'mito:dummy', 'generated', 'summary', null, $result, 'SYSTEM', 'Command');
 
             return Command::SUCCESS;
         } catch (\Throwable $e) {
