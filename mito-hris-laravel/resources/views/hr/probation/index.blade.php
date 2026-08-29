@@ -80,25 +80,34 @@
                             placeholder="Cari nama, ID, posisi, departemen..." value="{{ request('search') }}"
                             onkeydown="if(event.key==='Enter'){this.closest('form').submit()}" />
                     </div>
-                    <select class="filter-select" name="department" id="probDeptFilter"
+                    <select class="filter-select" name="status" id="probStatusFilter"
                         onchange="this.closest('form').submit()">
-                        <option value="">Semua Dept</option>
-                        @foreach ($departments ?? [] as $dept)
-                            <option value="{{ $dept }}" {{ request('department') === $dept ? 'selected' : '' }}>
-                                {{ $dept }}
-                            </option>
-                        @endforeach
+                        <option value="">Status</option>
+                        <option value="lulus" {{ request('status') === 'lulus' ? 'selected' : '' }}>Lulus</option>
+                        <option value="tidak_lulus" {{ request('status') === 'tidak_lulus' ? 'selected' : '' }}>Tidak Lulus
+                        </option>
+                        <option value="extend" {{ request('status') === 'extend' ? 'selected' : '' }}>Extend</option>
+                    </select>
+                    <select class="filter-select" name="score" id="probScoreFilter"
+                        onchange="this.closest('form').submit()">
+                        <option value="">Kategori Score</option>
+                        <option value="Sangat Baik" {{ request('score') === 'Sangat Baik' ? 'selected' : '' }}>Sangat Baik
+                        </option>
+                        <option value="Baik" {{ request('score') === 'Baik' ? 'selected' : '' }}>Baik</option>
+                        <option value="Cukup" {{ request('score') === 'Cukup' ? 'selected' : '' }}>Cukup</option>
+                        <option value="Kurang" {{ request('score') === 'Kurang' ? 'selected' : '' }}>Kurang</option>
                     </select>
                     <select class="filter-select" name="sort" id="probSortSelect"
                         onchange="this.closest('form').submit()">
-                        <option value="newest" selected>Terbaru</option>
+                        <option value="newest" {{ request('sort', 'newest') === 'newest' ? 'selected' : '' }}>Terbaru
+                        </option>
+                        <option value="oldest" {{ request('sort') === 'oldest' ? 'selected' : '' }}>Terlama</option>
+                        <option value="name_asc" {{ request('sort') === 'name_asc' ? 'selected' : '' }}>Nama A-Z</option>
+                        <option value="name_desc" {{ request('sort') === 'name_desc' ? 'selected' : '' }}>Nama Z-A</option>
                     </select>
                     <a href="{{ route('hr.probation.index') }}" class="btn-reset-filter text-decoration-none">
                         <i class="bi bi-arrow-counterclockwise"></i> Reset
                     </a>
-                    <button type="submit" class="btn-reset-filter btn-primary">
-                        <i class="bi bi-search me-1"></i>
-                    </button>
                 </div>
             </form>
 
@@ -111,13 +120,15 @@
                 </div>
             @endif
             @if (session('error'))
-                <div class="alert alert-danger alert-dismissible fade show mx-3 mt-2" role="alert" style="font-size:13px">
+                <div class="alert alert-danger alert-dismissible fade show mx-3 mt-2" role="alert"
+                    style="font-size:13px">
                     <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ session('error') }}
                     <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
                 </div>
             @endif
             @if ($errors->any())
-                <div class="alert alert-danger alert-dismissible fade show mx-3 mt-2" role="alert" style="font-size:13px">
+                <div class="alert alert-danger alert-dismissible fade show mx-3 mt-2" role="alert"
+                    style="font-size:13px">
                     <i class="bi bi-exclamation-triangle-fill me-2"></i>
                     <ul class="mb-0">
                         @foreach ($errors->all() as $err)

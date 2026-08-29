@@ -48,13 +48,15 @@
                             placeholder="Cari nama, ID, vendor, posisi..." value="{{ $searchFilter ?? '' }}" />
                     </div>
                     <select class="filter-select" name="sort" id="osSortSelect" onchange="this.form.submit()">
-                        <option value="name_asc" selected>Nama A-Z</option>
+                        <option value="name_asc" {{ ($sortFilter ?? 'name_asc') === 'name_asc' ? 'selected' : '' }}>Nama A-Z
+                        </option>
+                        <option value="name_desc" {{ ($sortFilter ?? 'name_asc') === 'name_desc' ? 'selected' : '' }}>Nama
+                            Z-A</option>
                     </select>
-                    <select class="filter-select" name="per_page" id="osPerPage" onchange="this.form.submit()"
-                        style="flex: 0 0 auto; width: 90px;">
-                        <option value="10" {{ ($perPage ?? 10) == 10 ? 'selected' : '' }}>10 / hal</option>
-                        <option value="20" {{ ($perPage ?? 10) == 20 ? 'selected' : '' }}>20 / hal</option>
-                        <option value="50" {{ ($perPage ?? 10) == 50 ? 'selected' : '' }}>50 / hal</option>
+                    <select class="filter-select" name="order" id="osOrderSelect" onchange="this.form.submit()">
+                        <option value="" {{ empty($orderFilter) ? 'selected' : '' }}>Urutan</option>
+                        <option value="newest" {{ ($orderFilter ?? '') === 'newest' ? 'selected' : '' }}>Terbaru</option>
+                        <option value="oldest" {{ ($orderFilter ?? '') === 'oldest' ? 'selected' : '' }}>Terlama</option>
                     </select>
                     <a href="{{ route('hr.outsource.index') }}" class="btn-reset-filter text-decoration-none"
                         id="osBtnResetFilter">
