@@ -41,10 +41,17 @@ class RecruitmentController extends Controller
         $searchFilter = $request->query('search', '');
         $positionFilter = $request->query('position', '');
         $cityFilter   = $request->query('city', '');
+        $genderFilter = $request->query('gender', '');
         $sortFilter   = $request->query('sort', 'newest');
         $perPage      = $request->query('per_page', 10);
 
         $allCandidates = $this->candidateRepo->getAllFromSheets(['candidates']);
+        $positions = $allCandidates->pluck('positionApplied')
+            ->filter(fn($position) => filled($position))
+            ->map(fn($position) => trim($position))
+            ->unique()
+            ->sort()
+            ->values();
         $pendingCandidates = $allCandidates->filter(function ($c) {
             return in_array(strtolower(trim($c->status ?? '')), ['new', 'pending'], true);
         });
@@ -98,6 +105,11 @@ class RecruitmentController extends Controller
             $candidates = $candidates->filter(fn($c) => strtolower(trim($c->positionApplied ?? '')) === $position);
         }
 
+        if ($genderFilter) {
+            $gender = strtolower(trim($genderFilter));
+            $candidates = $candidates->filter(fn($c) => strtolower(trim($c->gender ?? '')) === $gender);
+        }
+
         if ($cityFilter) {
             $city = strtolower($cityFilter);
             $candidates = $candidates->filter(fn($c) => str_contains(strtolower($c->city ?? ''), $city));
@@ -118,7 +130,7 @@ class RecruitmentController extends Controller
         $offset = ($currentPage - 1) * $perPage;
         $paginatedCandidates = $candidates->slice($offset, $perPage)->values();
 
-        return view('hr.recruitment.index', compact('paginatedCandidates', 'candidates', 'counts', 'statusFilter', 'searchFilter', 'positionFilter', 'cityFilter', 'perPage', 'currentPage', 'total'));
+        return view('hr.recruitment.index', compact('paginatedCandidates', 'candidates', 'counts', 'positions', 'statusFilter', 'searchFilter', 'positionFilter', 'cityFilter', 'genderFilter', 'sortFilter', 'perPage', 'currentPage', 'total'));
     }
 
     /**
@@ -132,6 +144,10 @@ class RecruitmentController extends Controller
         $allCandidates = $this->candidateRepo->getAllFromSheets(['candidates_accepted']);
         $candidates = $allCandidates;
         $searchFilter = $request->query('search');
+        $sortFilter = $request->query('sort', 'newest');
+        $offeringFilter = $request->query('offering', '');
+        $responseFilter = $request->query('response', '');
+        $contractFilter = $request->query('contract', '');
         if ($searchFilter) {
             $search = strtolower($searchFilter);
             $candidates = $candidates->filter(
@@ -140,6 +156,24 @@ class RecruitmentController extends Controller
                     str_contains(strtolower($c->recruitmentId ?? ''), $search)
             )->values();
         }
+
+        if ($offeringFilter === 'exists') {
+            $candidates = $candidates->filter(fn($c) => filled($c->offeringCreated) && $c->offeringCreated !== '-');
+        } elseif ($offeringFilter === 'missing') {
+            $candidates = $candidates->filter(fn($c) => blank($c->offeringCreated) || $c->offeringCreated === '-');
+        }
+
+        if (in_array($responseFilter, ['Menunggu', 'Diterima', 'Ditolak'], true)) {
+            $candidates = $candidates->filter(fn($c) => ($c->offeringResponse ?? '') === $responseFilter);
+        } elseif ($responseFilter === 'none') {
+            $candidates = $candidates->filter(fn($c) => blank($c->offeringResponse) || $c->offeringResponse === '-');
+        }
+
+        if ($contractFilter === 'processed') {
+            $candidates = $candidates->filter(fn($c) => filled($c->onboardingStatus) && $c->onboardingStatus !== '-');
+        } elseif ($contractFilter === 'pending') {
+            $candidates = $candidates->filter(fn($c) => blank($c->onboardingStatus) || $c->onboardingStatus === '-');
+        }
         $stats = [
             // Total Offering Letter = kandidat Accepted yang sudah punya Offering Created (1:1 GAS)
             'offering'   => $allCandidates->filter(fn($c) => !empty($c->offeringCreated) && $c->offeringCreated !== '-')->count(),
@@ -147,13 +181,15 @@ class RecruitmentController extends Controller
             'onboarding' => $allCandidates->filter(fn($c) => !empty($c->onboardingStatus) && $c->onboardingStatus !== '-' && $c->onboardingStatus !== '')->count(),
         ];
 
-        $candidates = $candidates->sortByDesc(fn($c) => $c->createdDate ?? '')->values();
+        $candidates = $sortFilter === 'oldest'
+            ? $candidates->sortBy(fn($c) => $c->createdDate ?? '')->values()
+            : $candidates->sortByDesc(fn($c) => $c->createdDate ?? '')->values();
         $total = $candidates->count();
         $currentPage = max(1, (int) $request->query('page', 1));
         $offset = ($currentPage - 1) * $perPage;
         $paginatedCandidates = $candidates->slice($offset, $perPage)->values();
 
-        return view('hr.recruitment.pages.accepted', compact('paginatedCandidates', 'candidates', 'allCandidates', 'stats', 'perPage', 'currentPage', 'total'));
+        return view('hr.recruitment.pages.accepted', compact('paginatedCandidates', 'candidates', 'allCandidates', 'stats', 'perPage', 'currentPage', 'total', 'sortFilter', 'offeringFilter', 'responseFilter', 'contractFilter'));
     }
 
     public function holdPage(Request $request): View
@@ -525,14 +561,14 @@ class RecruitmentController extends Controller
         }
     }
 
-    public function getJson(string $id): JsonResponse
+    public function getJson(Request $request, string $id): JsonResponse
     {
         $candidate = $this->candidateRepo->findById($id);
         if (!$candidate) {
             return response()->json(['success' => false, 'error' => 'Kandidat tidak ditemukan.'], 404);
         }
 
-        $auditLogs = $this->auditRepo->getLogs($id);
+        $auditLogs = $request->boolean('preview') ? [] : $this->auditRepo->getLogs($id);
 
         return response()->json([
             'success' => true,
