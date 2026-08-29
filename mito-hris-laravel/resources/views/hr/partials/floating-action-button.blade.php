@@ -10,7 +10,7 @@
       <i class="bi bi-arrow-clockwise"></i>
     </button>
   </div>
-  <button class="fab-main" id="fabMain" type="button" aria-label="Menu aksi cepat">
+  <button class="fab-main" id="fabMain" type="button" aria-label="Buka menu aksi cepat" aria-expanded="false">
     <i class="bi bi-plus-lg"></i>
   </button>
 </div>
