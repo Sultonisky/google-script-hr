@@ -882,7 +882,7 @@
                 <div
                     class="card-header bg-white mpr-list-header py-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 border-bottom">
                     <div>
-                        <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-list-task me-2 text-primary"></i> Daftar
+                        <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-list-task me-2 text-primary"></i>Daftar
                             Manpower Request (MPR)</h5>
                         <small class="text-muted">Menampilkan {{ $total }} pengajuan kebutuhan tenaga kerja</small>
                     </div>
@@ -890,7 +890,7 @@
                         @can('create_mpr')
                             <button type="button" class="btn btn-primary btn-sm fw-semibold shadow-sm mpr-create-btn"
                                 data-bs-toggle="modal" data-bs-target="#modalCreateMpr">
-                                <i class="bi bi-plus-circle-fill me-1"></i> Buat MPR Baru
+                                <i class="bi bi-plus-circle-fill me-1"></i>Buat MPR Baru
                             </button>
                         @endcan
                         <button type="button" class="btn btn-outline-secondary mpr-refresh-btn" title="Muat ulang data"
@@ -1260,12 +1260,14 @@
                             <div class="card bg-light border-0 mb-3 p-3 rounded-3">
                                 <div class="row g-3">
                                     <div class="col-md-6">
-                                        <div class="small text-uppercase text-muted fw-semibold mb-2">Pemohon (Manager)</div>
+                                        <div class="small text-uppercase text-muted fw-semibold mb-2">Pemohon (Manager)
+                                        </div>
                                         <div class="fw-semibold text-dark" id="detManagerName">-</div>
                                         <div class="small text-muted" id="detManagerEmail">-</div>
                                     </div>
                                     <div class="col-md-6">
-                                        <div class="small text-uppercase text-muted fw-semibold mb-2">Entitas / Perusahaan</div>
+                                        <div class="small text-uppercase text-muted fw-semibold mb-2">Entitas / Perusahaan
+                                        </div>
                                         <div class="fw-semibold text-dark" id="detCompany">-</div>
                                         <div class="small text-muted" id="detBranch">-</div>
                                         <div class="small text-muted" id="detCreatedBy">Diajukan: -</div>
@@ -1298,11 +1300,13 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="small text-uppercase text-muted fw-semibold mb-2">Jumlah Kebutuhan</div>
-                                    <div class="fw-semibold text-dark"><span class="badge bg-primary fs-6" id="detQuantity">-</span>
+                                    <div class="fw-semibold text-dark"><span class="badge bg-primary fs-6"
+                                            id="detQuantity">-</span>
                                         Orang</div>
                                 </div>
                                 <div class="col-md-6">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Target Tanggal Masuk (Join Date)</div>
+                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Target Tanggal Masuk
+                                        (Join Date)</div>
                                     <div class="fw-bold text-dark" id="detJoinDate">-</div>
                                 </div>
                             </div>
@@ -1313,7 +1317,8 @@
                                 <div class="small text-uppercase text-muted fw-semibold mb-2">Alasan</div>
                                 <div class="mb-2 fw-semibold text-dark" id="detReason">-</div>
                                 <div id="wrapReplacement" class="d-none">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Menggantikan Karyawan</div>
+                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Menggantikan Karyawan
+                                    </div>
                                     <div class="fw-semibold text-dark" id="detReplacementFor">-</div>
                                 </div>
                             </div>
@@ -1322,12 +1327,14 @@
                             <h6 class="fw-bold text-primary mb-2">Kualifikasi & Deskripsi</h6>
                             <div class="row g-3 mb-3">
                                 <div class="col-12">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Kualifikasi Kandidat</div>
+                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Kualifikasi Kandidat
+                                    </div>
                                     <div class="p-2 border rounded bg-white small mpr-markdown-content"
                                         id="detRequirements" style="min-height:60px;">-</div>
                                 </div>
                                 <div class="col-12">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Uraian Tugas & Tanggung Jawab</div>
+                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Uraian Tugas & Tanggung
+                                        Jawab</div>
                                     <div class="p-2 border rounded bg-white small mpr-markdown-content" id="detJobDesc"
                                         style="min-height:60px;">-</div>
                                 </div>
