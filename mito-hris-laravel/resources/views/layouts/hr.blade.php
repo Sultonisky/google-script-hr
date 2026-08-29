@@ -1081,10 +1081,27 @@
             const fabMain = document.getElementById('fabMain');
             const fabActions = document.getElementById('fabActions');
             if (fabMain && fabActions) {
+                const fabIcon = fabMain.querySelector('i');
+
+                const setFabState = (isOpen) => {
+                    fabMain.classList.toggle('open', isOpen);
+                    fabActions.classList.toggle('d-none', !isOpen);
+                    fabMain.setAttribute('aria-expanded', String(isOpen));
+                    fabMain.setAttribute('aria-label', isOpen ? 'Tutup menu aksi cepat' :
+                        'Buka menu aksi cepat');
+
+                    if (fabIcon) {
+                        fabIcon.classList.toggle('bi-plus-lg', !isOpen);
+                        fabIcon.classList.toggle('bi-x-lg', isOpen);
+                    }
+                };
+
                 fabMain.addEventListener('click', () => {
-                    fabMain.classList.toggle('open');
-                    fabActions.classList.toggle('d-none');
+                    const isOpen = !fabMain.classList.contains('open');
+                    setFabState(isOpen);
                 });
+
+                setFabState(false);
             }
 
             // ================================================================

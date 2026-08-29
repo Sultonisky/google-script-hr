@@ -37,6 +37,13 @@ class MprSheetsRepository implements MprRepositoryInterface
             });
         }
 
+        if (!empty($filters['submit_by'])) {
+            $submitBy = strtolower(trim($filters['submit_by']));
+            $collection = $collection->filter(function (MprData $mpr) use ($submitBy) {
+                return strtolower(trim($mpr->requestorName ?? '')) === $submitBy;
+            });
+        }
+
         if (!empty($filters['company'])) {
             $company = strtolower(trim($filters['company']));
             $collection = $collection->filter(function (MprData $mpr) use ($company) {
@@ -110,12 +117,29 @@ class MprSheetsRepository implements MprRepositoryInterface
 
         // Ensure headers exist in the sheet
         $expectedHeaders = config('hris.schemas.MPR', [
-            'MPR Number', 'Request Date', 'Requestor Name', 'Requestor Email',
-            'Entity', 'Branch',
-            'Department', 'Division', 'Position', 'Job Level', 'Work Location',
-            'Employment Type', 'Quantity', 'Expected Join Date', 'Reason',
-            'Replacement For', 'Job Description', 'Requirements', 'Notes',
-            'Status', 'Created By', 'Created At', 'Updated At',
+            'MPR Number',
+            'Request Date',
+            'Requestor Name',
+            'Requestor Email',
+            'Entity',
+            'Branch',
+            'Department',
+            'Division',
+            'Position',
+            'Job Level',
+            'Work Location',
+            'Employment Type',
+            'Quantity',
+            'Expected Join Date',
+            'Reason',
+            'Replacement For',
+            'Job Description',
+            'Requirements',
+            'Notes',
+            'Status',
+            'Created By',
+            'Created At',
+            'Updated At',
         ]);
         $this->sheets->ensureSheetHeaders($this->sheetName, $expectedHeaders);
 

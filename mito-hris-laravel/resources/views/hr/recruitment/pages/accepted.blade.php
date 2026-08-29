@@ -48,41 +48,69 @@
                     <div class="panel-subtitle" id="accPanelSubtitle">Menampilkan {{ $candidates->count() }} kandidat
                         berstatus Accepted</div>
                 </div>
-                <div class="export-btns d-flex flex-wrap gap-2">
-                    <button class="btn-refresh" id="btnAccRefresh" type="button" title="Muat ulang"
-                        onclick="location.reload()">
-                        <i class="bi bi-arrow-clockwise"></i>
-                    </button>
+                <div class="export-btns accepted-header-actions d-flex flex-wrap gap-2">
                     @can('create_offering')
-                        <button class="btn btn-sm text-white fw-semibold"
+                        <button class="btn btn-sm text-white fw-semibold accepted-offering-btn"
                             style="background:var(--color-primary, #eb1c24);border:none;border-radius:8px;padding:6px 14px;font-size:13px"
                             type="button" data-bs-toggle="modal" data-bs-target="#offeringModal">
                             <i class="bi bi-file-earmark-text me-1"></i>Buat Offering Letter
                         </button>
-                        <button class="btn btn-sm text-white fw-semibold"
-                            style="background:#166534;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
-                            type="button" data-bs-toggle="modal" data-bs-target="#onboardingModal">
-                            <i class="bi bi-file-earmark-check-fill me-1"></i>Proses Kontrak PKWT
-                        </button>
+                        <div class="accepted-secondary-actions">
+                            <button class="btn btn-sm text-white fw-semibold accepted-contract-btn"
+                                style="background:#166534;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
+                                type="button" data-bs-toggle="modal" data-bs-target="#onboardingModal">
+                                <i class="bi bi-file-earmark-check-fill me-1"></i>Proses Kontrak PKWT
+                            </button>
+                            <button class="btn-refresh accepted-refresh-btn accepted-refresh-header" type="button"
+                                title="Muat ulang" aria-label="Muat ulang data" onclick="location.reload()">
+                                <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                            </button>
+                        </div>
                     @endcan
                 </div>
             </div>
 
             <!-- Filter bar -->
             <form action="{{ route('hr.recruitment.accepted') }}" method="GET">
-                <div class="filter-bar">
+                <div class="filter-bar accepted-filter-bar">
                     <div class="table-search">
                         <i class="bi bi-search"></i>
                         <input type="text" name="search" id="accSearchInput"
                             placeholder="Cari ID, nama, posisi, Employee ID..." value="{{ request('search') }}" />
                     </div>
                     <select class="filter-select" name="sort" id="accSortSelect" onchange="this.form.submit()">
-                        <option value="newest" selected>Terbaru</option>
+                        <option value="newest" {{ $sortFilter === 'newest' ? 'selected' : '' }}>Terbaru</option>
+                        <option value="oldest" {{ $sortFilter === 'oldest' ? 'selected' : '' }}>Terlama</option>
                     </select>
-                    <a href="{{ route('hr.recruitment.accepted') }}" class="btn-reset-filter text-decoration-none"
-                        id="btnAccReset">
-                        <i class="bi bi-arrow-counterclockwise"></i> Reset
-                    </a>
+                    <select class="filter-select" name="offering" id="accOfferingFilter" onchange="this.form.submit()">
+                        <option value="">Offering Letter</option>
+                        <option value="exists" {{ $offeringFilter === 'exists' ? 'selected' : '' }}>Sudah Ada</option>
+                        <option value="missing" {{ $offeringFilter === 'missing' ? 'selected' : '' }}>Belum Ada</option>
+                    </select>
+                    <select class="filter-select" name="response" id="accResponseFilter" onchange="this.form.submit()">
+                        <option value="">Respon Offering</option>
+                        <option value="Menunggu" {{ $responseFilter === 'Menunggu' ? 'selected' : '' }}>Menunggu</option>
+                        <option value="Diterima" {{ $responseFilter === 'Diterima' ? 'selected' : '' }}>Diterima</option>
+                        <option value="Ditolak" {{ $responseFilter === 'Ditolak' ? 'selected' : '' }}>Ditolak</option>
+                        <option value="none" {{ $responseFilter === 'none' ? 'selected' : '' }}>Belum Ada Respon</option>
+                    </select>
+                    <select class="filter-select" name="contract" id="accContractFilter" onchange="this.form.submit()">
+                        <option value="">Proses Kontrak</option>
+                        <option value="processed" {{ $contractFilter === 'processed' ? 'selected' : '' }}>Sudah Diproses
+                        </option>
+                        <option value="pending" {{ $contractFilter === 'pending' ? 'selected' : '' }}>Belum Diproses
+                        </option>
+                    </select>
+                    <div class="accepted-filter-actions">
+                        <a href="{{ route('hr.recruitment.accepted') }}" class="btn-reset-filter text-decoration-none"
+                            id="btnAccReset">
+                            <i class="bi bi-arrow-counterclockwise"></i> Reset
+                        </a>
+                        <button class="btn-refresh accepted-refresh-btn accepted-refresh-filter" id="btnAccRefresh"
+                            type="button" title="Muat ulang" aria-label="Muat ulang data" onclick="location.reload()">
+                            <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                        </button>
+                    </div>
                 </div>
             </form>
 
@@ -129,7 +157,8 @@
                                         <span style="color:#aaa;font-size:12px">-</span>
                                     @endif
                                 </td>
-                                <td class="id-mono"><small>{{ $c->processedDate ?? ($c->createdDate ?? '-') }}</small></td>
+                                <td class="id-mono"><small>{{ $c->processedDate ?? ($c->createdDate ?? '-') }}</small>
+                                </td>
                                 <td><small>{{ $c->processedBy ?? '-' }}</small></td>
                                 <td>
                                     <button class="btn btn-sm btn-outline-secondary btn-status-move"
@@ -167,7 +196,13 @@
                 <span id="accFooterCount">Menampilkan
                     {{ $paginatedCandidates->count() > 0 ? ($currentPage - 1) * $perPage + 1 . '–' . min($currentPage * $perPage, $total) : 0 }}
                     dari {{ $total }} data</span>
-                <x-pagination :currentPage="$currentPage" :total="$total" :perPage="$perPage" :route="'hr.recruitment.accepted'" :queryParams="['search' => request('search')]" />
+                <x-pagination :currentPage="$currentPage" :total="$total" :perPage="$perPage" :route="'hr.recruitment.accepted'" :queryParams="[
+                    'search' => request('search'),
+                    'sort' => $sortFilter,
+                    'offering' => $offeringFilter,
+                    'response' => $responseFilter,
+                    'contract' => $contractFilter,
+                ]" />
             </div>
         </div>
     </section>

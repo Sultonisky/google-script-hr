@@ -1864,7 +1864,7 @@
     });
 
     function openOfferingPreviewModal(recruitmentId) {
-        fetch('/hr/recruitment/' + recruitmentId + '/json', {
+        fetch('/hr/recruitment/' + recruitmentId + '/json?preview=1', {
                 headers: {
                     'X-CSRF-TOKEN': getCsrfToken(),
                     'Accept': 'application/json'

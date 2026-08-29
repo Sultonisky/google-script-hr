@@ -196,12 +196,14 @@
 
         .mpr-internal-dashboard .mpr-list-panel {
             border-radius: 16px !important;
-            overflow: hidden;
+            overflow: visible;
         }
 
         .mpr-internal-dashboard .mpr-table-wrap {
             border-radius: 0 0 16px 16px;
-            overflow: hidden;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
         }
 
         .mpr-internal-dashboard .mpr-list-header {
@@ -293,6 +295,37 @@
             text-decoration: none;
         }
 
+        .mpr-internal-dashboard .mpr-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 0 0 auto;
+        }
+
+        .mpr-internal-dashboard .mpr-create-btn,
+        .mpr-internal-dashboard .mpr-refresh-btn {
+            height: 40px;
+            white-space: nowrap;
+        }
+
+        .mpr-internal-dashboard .mpr-create-btn {
+            min-width: 136px;
+            padding: 0 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mpr-internal-dashboard .mpr-refresh-btn {
+            width: 40px;
+            min-width: 40px;
+            padding: 0;
+            flex: 0 0 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         .mpr-internal-dashboard .input-group-text,
         .mpr-internal-dashboard .form-control,
         .mpr-internal-dashboard .form-select {
@@ -317,6 +350,136 @@
             background: var(--color-bg) !important;
             color: var(--color-text-soft) !important;
             border-color: var(--color-border) !important;
+        }
+
+        .mpr-internal-dashboard .stat-card-mpr {
+            min-height: 108px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .mpr-internal-dashboard .stat-card-mpr:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+        }
+
+        .mpr-internal-dashboard .stat-card-mpr .fs-4 {
+            line-height: 1.2;
+            font-size: clamp(1.2rem, 2vw, 2rem) !important;
+        }
+
+        .mpr-internal-dashboard .mpr-list-panel .table-responsive,
+        .mpr-internal-dashboard .mpr-table-wrap {
+            display: block;
+            width: 100%;
+            max-width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .mpr-internal-dashboard .mpr-list-panel table {
+            min-width: 980px;
+            width: 100%;
+            margin-bottom: 0;
+            table-layout: auto;
+        }
+
+        .mpr-internal-dashboard .mpr-list-panel .btn-group {
+            white-space: nowrap;
+        }
+
+        @media (max-width: 767.98px) {
+            .mpr-card-header {
+                padding: 14px 16px;
+            }
+
+            .mpr-internal-dashboard .stat-card-mpr {
+                padding: 14px;
+                gap: 12px;
+                min-height: 92px;
+            }
+
+            .mpr-internal-dashboard .stat-icon-mpr {
+                width: 42px;
+                height: 42px;
+                font-size: 18px;
+                flex-shrink: 0;
+            }
+
+            .mpr-internal-dashboard .mpr-list-header,
+            .mpr-internal-dashboard .mpr-filter-bar,
+            .mpr-internal-dashboard .mpr-list-footer {
+                padding-left: 14px !important;
+                padding-right: 14px !important;
+            }
+
+            .mpr-internal-dashboard .mpr-list-header {
+                align-items: flex-start !important;
+            }
+
+            .mpr-internal-dashboard .mpr-header-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+
+            .mpr-internal-dashboard .mpr-header-actions .btn {
+                width: auto;
+            }
+
+            .mpr-internal-dashboard .mpr-create-btn {
+                min-width: 0;
+                flex: 1 1 auto;
+            }
+
+            .mpr-internal-dashboard .mpr-refresh-btn {
+                width: 40px;
+                min-width: 40px;
+                flex: 0 0 40px;
+            }
+
+            .mpr-internal-dashboard .mpr-filter-actions {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .mpr-internal-dashboard .mpr-filter-submit,
+            .mpr-internal-dashboard .mpr-filter-reset {
+                width: 100%;
+                flex: 1 1 auto;
+            }
+
+            .mpr-internal-dashboard .mpr-list-footer {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: 12px;
+            }
+
+            .mpr-internal-dashboard .mpr-list-footer .pagination {
+                width: 100%;
+                justify-content: flex-start;
+                flex-wrap: wrap;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .mpr-internal-dashboard .mpr-filter-bar form>[class*='col-'] {
+                width: 100%;
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+
+            .mpr-internal-dashboard .mpr-filter-bar form {
+                --bs-gutter-x: 8px;
+                --bs-gutter-y: 8px;
+            }
+
+            .mpr-internal-dashboard .stat-card-mpr .text-muted {
+                font-size: 11px;
+            }
+
+            .mpr-internal-dashboard .stat-card-mpr .fw-bold {
+                font-size: 1.15rem !important;
+            }
         }
 
         /* Markdown-rendered content in MPR detail modal */
@@ -794,25 +957,29 @@
             <!-- MAIN TABLE PANEL -->
             <div class="panel mb-4 mpr-internal-dashboard mpr-list-panel">
                 <div
-                    class="card-header bg-white mpr-list-header py-3 d-flex flex-wrap justify-content-between align-items-center gap-2 border-bottom">
+                    class="card-header bg-white mpr-list-header py-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 border-bottom">
                     <div>
                         <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-list-task me-2 text-primary"></i> Daftar Manpower Request (MPR)</h5>
                         <small class="text-muted">Menampilkan {{ $total }} pengajuan kebutuhan tenaga kerja</small>
                     </div>
-                    <div class="d-flex gap-2">
+                    <div class="mpr-header-actions">
                         @can('create_mpr')
-                            <button type="button" class="btn btn-primary btn-sm fw-semibold shadow-sm"
+                            <button type="button" class="btn btn-primary btn-sm fw-semibold shadow-sm mpr-create-btn"
                                 data-bs-toggle="modal" data-bs-target="#modalCreateMpr">
                                 <i class="bi bi-plus-circle-fill me-1"></i> Buat MPR Baru
                             </button>
                         @endcan
+                        <button type="button" class="btn btn-outline-secondary mpr-refresh-btn" title="Muat ulang data"
+                            aria-label="Muat ulang data" onclick="location.reload()">
+                            <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                        </button>
                     </div>
                 </div>
 
                 <!-- FILTER BAR -->
                 <div class="card-body bg-light mpr-filter-bar border-bottom py-3">
                     <form action="{{ route('hr.mpr.index') }}" method="GET" class="row g-2 align-items-center">
-                        <div class="col-12 col-md-4">
+                        <div class="col-12 col-md-3">
                             <div class="input-group input-group-sm">
                                 <span class="input-group-text bg-white border-end-0"><i
                                         class="bi bi-search text-muted"></i></span>
@@ -820,7 +987,7 @@
                                     placeholder="Cari No MPR, pemohon, posisi, divisi..." value="{{ $search }}">
                             </div>
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col-12 col-sm-6 col-md-3">
                             <select name="department" class="form-select form-select-sm" onchange="this.form.submit()">
                                 <option value="">Semua Departemen</option>
                                 @foreach ($departments as $d)
@@ -829,18 +996,22 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-6 col-md-2">
+                        <div class="col-12 col-sm-6 col-md-3">
                             <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
                                 <option value="">Semua Status</option>
                                 <option value="Submitted" {{ $status === 'Submitted' ? 'selected' : '' }}>Submitted
                                 </option>
                             </select>
                         </div>
-                        <div class="col-12 col-md-3 mpr-filter-actions">
-                            <button type="submit" class="btn btn-sm btn-dark mpr-filter-submit">Filter</button>
-                            <a href="{{ route('hr.mpr.index') }}"
-                                class="btn btn-sm btn-outline-secondary mpr-filter-reset" title="Reset Filter"><i
-                                    class="bi bi-arrow-counterclockwise"></i> Reset</a>
+                        <div class="col-12 col-sm-6 col-md-3">
+                            <select name="submit_by" class="form-select form-select-sm" onchange="this.form.submit()">
+                                <option value="">Submit By</option>
+                                @foreach ($submitByOptions as $requestor)
+                                    <option value="{{ $requestor }}" {{ $submitBy === $requestor ? 'selected' : '' }}>
+                                        {{ $requestor }}
+                                    </option>
+                                @endforeach
+                            </select>
                         </div>
                     </form>
                 </div>
@@ -940,7 +1111,7 @@
                 <!-- PAGINATION -->
                 @if ($lastPage > 1)
                     <div
-                        class="card-footer bg-white mpr-list-footer py-3 d-flex justify-content-between align-items-center border-top">
+                        class="card-footer bg-white mpr-list-footer py-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 border-top">
                         <div class="small text-muted">
                             Menampilkan halaman <strong>{{ $currentPage }}</strong> dari
                             <strong>{{ $lastPage }}</strong>

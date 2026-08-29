@@ -29,40 +29,27 @@
                     <div class="panel-subtitle" id="panelSubtitle">Menampilkan {{ $candidates->count() }} data kandidat
                     </div>
                 </div>
-                @can('manage_recruitment')
-                    <div class="export-btns">
-                        <a href="{{ route('hr.export.candidates-csv') }}" class="btn btn-sm btn-outline-success">
-                            <i class="bi bi-file-earmark-spreadsheet me-1"></i>Export CSV
+                <div class="export-btns">
+                    @can('manage_recruitment')
+                        <a href="{{ route('hr.export.candidates-csv') }}" class="btn btn-outline-success btn-export-csv">
+                            <i class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></i>Export CSV
                         </a>
-                    </div>
-                @endcan
+                    @endcan
+                    <button class="btn-refresh" id="btnRefresh" type="button" title="Muat ulang data"
+                        aria-label="Muat ulang data" onclick="location.reload()">
+                        <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                    </button>
+                </div>
             </div>
 
             <!-- FILTER BAR — basic -->
             <form action="{{ route('hr.recruitment.index') }}" method="GET" id="filterForm">
-                <div class="filter-bar">
+                <div class="filter-bar recruitment-filter-bar">
                     <div class="table-search">
                         <i class="bi bi-search"></i>
                         <input type="text" name="search" id="searchInput"
                             placeholder="Cari ID, nama, HP, email, posisi, kota..." value="{{ request('search') }}" />
                     </div>
-                    <select class="filter-select" name="status" id="statusFilter" onchange="this.form.submit()">
-                        <option value="">Semua Status</option>
-                        <option value="Pending"
-                            {{ in_array(request('status'), ['Pending', 'New'], true) ? 'selected' : '' }}>Pending</option>
-                        <option value="Screening" {{ request('status') === 'Screening' ? 'selected' : '' }}>Screening
-                        </option>
-                        <option value="Interview HR" {{ request('status') === 'Interview HR' ? 'selected' : '' }}>Interview
-                            HR</option>
-                        <option value="Interview User" {{ request('status') === 'Interview User' ? 'selected' : '' }}>
-                            Interview User</option>
-                        <option value="Offering" {{ request('status') === 'Offering' ? 'selected' : '' }}>Offering</option>
-                        <option value="Accepted" {{ request('status') === 'Accepted' ? 'selected' : '' }}>Accepted</option>
-                        <option value="Hold" {{ request('status') === 'Hold' ? 'selected' : '' }}>Hold</option>
-                        <option value="Blacklist" {{ request('status') === 'Blacklist' ? 'selected' : '' }}>Blacklist
-                        </option>
-                        <option value="Rejected" {{ request('status') === 'Rejected' ? 'selected' : '' }}>Rejected</option>
-                    </select>
                     <select class="filter-select" name="position" id="positionFilter" onchange="this.form.submit()">
                         <option value="">Semua Posisi</option>
                         @foreach ($positions ?? [] as $pos)
@@ -71,42 +58,17 @@
                         @endforeach
                     </select>
                     <select class="filter-select" name="sort" id="sortSelect" onchange="this.form.submit()">
-                        <option value="newest" selected>Terbaru</option>
+                        <option value="newest" {{ request('sort', 'newest') === 'newest' ? 'selected' : '' }}>Terbaru
+                        </option>
+                        <option value="oldest" {{ request('sort') === 'oldest' ? 'selected' : '' }}>Terlama</option>
                     </select>
-                    <button class="btn-toggle-more" id="btnToggleMore" type="button">
-                        <i class="bi bi-sliders"></i> Filter Lanjutan
-                    </button>
-                    <a href="{{ route('hr.recruitment.index') }}" class="btn-reset-filter text-decoration-none"
-                        id="btnResetFilter">
-                        <i class="bi bi-arrow-counterclockwise"></i> Reset
-                    </a>
-                    <button class="btn-refresh" id="btnRefresh" type="button" title="Muat ulang data"
-                        onclick="location.reload()">
-                        <i class="bi bi-arrow-clockwise"></i>
-                    </button>
-                </div>
-
-                <!-- FILTER BAR — advanced (collapsible) -->
-                <div class="filter-bar filter-bar-collapse" id="filterBarMore">
-                    <select class="filter-select" name="gender" id="genderFilter">
+                    <select class="filter-select" name="gender" id="genderFilter" onchange="this.form.submit()">
                         <option value="">Semua Gender</option>
                         <option value="Laki-laki" {{ request('gender') === 'Laki-laki' ? 'selected' : '' }}>Laki-laki
                         </option>
                         <option value="Perempuan" {{ request('gender') === 'Perempuan' ? 'selected' : '' }}>Perempuan
                         </option>
                     </select>
-                    <select class="filter-select" name="education" id="educationFilter">
-                        <option value="">Semua Pendidikan</option>
-                        <option value="SMA/SMK" {{ request('education') === 'SMA/SMK' ? 'selected' : '' }}>SMA/SMK</option>
-                        <option value="D3" {{ request('education') === 'D3' ? 'selected' : '' }}>D3</option>
-                        <option value="S1" {{ request('education') === 'S1' ? 'selected' : '' }}>S1</option>
-                        <option value="S2" {{ request('education') === 'S2' ? 'selected' : '' }}>S2</option>
-                    </select>
-                    <input type="text" class="filter-select" name="city" id="cityFilter" placeholder="Kota KTP..."
-                        value="{{ request('city') }}">
-                    <button class="btn-reset-filter" type="submit" id="btnApplyMoreFilter">
-                        <i class="bi bi-check2"></i> Terapkan
-                    </button>
                 </div>
             </form>
 
@@ -175,7 +137,12 @@
                 <span id="footerCount">Menampilkan
                     {{ $paginatedCandidates->count() > 0 ? ($currentPage - 1) * $perPage + 1 . '–' . min($currentPage * $perPage, $total) : 0 }}
                     dari {{ $total }} data</span>
-                <x-pagination :currentPage="$currentPage" :total="$total" :perPage="$perPage" :route="'hr.recruitment.index'" :queryParams="['status' => $statusFilter, 'search' => $searchFilter, 'city' => $cityFilter]" />
+                <x-pagination :currentPage="$currentPage" :total="$total" :perPage="$perPage" :route="'hr.recruitment.index'" :queryParams="[
+                    'search' => $searchFilter,
+                    'position' => $positionFilter,
+                    'sort' => $sortFilter,
+                    'gender' => $genderFilter,
+                ]" />
             </div>
         </div>
 
@@ -197,14 +164,6 @@
         });
 
         document.addEventListener('DOMContentLoaded', () => {
-            const btnToggleMore = document.getElementById('btnToggleMore');
-            const filterBarMore = document.getElementById('filterBarMore');
-            if (btnToggleMore && filterBarMore) {
-                btnToggleMore.addEventListener('click', () => {
-                    filterBarMore.classList.toggle('show');
-                });
-            }
-
             const selectAll = document.getElementById('selectAll');
             const checkboxes = document.querySelectorAll('.row-check');
             if (selectAll) {
