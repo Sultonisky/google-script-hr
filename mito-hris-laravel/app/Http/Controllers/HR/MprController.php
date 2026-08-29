@@ -50,12 +50,14 @@ class MprController extends Controller
         $search = $request->query('search', '');
         $dept = $request->query('department', '');
         $status = $request->query('status', '');
+        $submitBy = $request->query('submit_by', '');
         $perPage = (int) $request->query('per_page', 10);
 
         $filters = array_filter([
             'search'     => $search,
             'department' => $dept,
             'status'     => $status,
+            'submit_by'  => $submitBy,
         ]);
 
         if ($isManager) {
@@ -68,6 +70,13 @@ class MprController extends Controller
 
         // Aggregate statistics for dashboard metrics
         $allMprs = $isManpower ? $mprs : $this->mprRepo->getAll();
+        $submitByOptions = $allMprs->map(function ($mpr) {
+            return trim($mpr->requestorName ?: $mpr->requestorEmail ?: $mpr->createdBy ?: '');
+        })
+            ->filter(fn($name) => filled($name))
+            ->unique()
+            ->sort()
+            ->values();
         $thisMonthStr = now()->timezone('Asia/Jakarta')->format('Y-m');
 
         $stats = [
@@ -138,7 +147,9 @@ class MprController extends Controller
             'reasons',
             'search',
             'dept',
-            'status'
+            'status',
+            'submitBy',
+            'submitByOptions'
         ));
     }
 
