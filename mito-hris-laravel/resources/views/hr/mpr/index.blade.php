@@ -1,7 +1,7 @@
 @extends('layouts.hr')
 
-@section('title', 'Manpower Request (MPR) - MITO HRIS')
-@section('page-title', 'Manpower Request (MPR)')
+@section('title', 'Daftar Manpower Request (MPR) - MITO HRIS')
+@section('page-title', 'Daftar Manpower Request (MPR)')
 @section('page-subtitle',
     $isManager
     ? 'Pengajuan dan monitoring kebutuhan tenaga kerja'
@@ -889,9 +889,8 @@
                     <div class="mpr-header-actions">
                         @can('create_mpr')
                             <button type="button" class="btn btn-primary btn-sm fw-semibold shadow-sm mpr-create-btn"
-                                data-bs-toggle="modal" data-bs-target="#modalCreateMpr">
-                                <i class="bi bi-plus-circle-fill me-1"></i>Buat MPR Baru
-                            </button>
+                                data-bs-toggle="modal" data-bs-target="#modalCreateMpr"><i
+                                    class="bi bi-plus-circle-fill me-1"></i>Buat MPR Baru</button>
                         @endcan
                         <button type="button" class="btn btn-outline-secondary mpr-refresh-btn" title="Muat ulang data"
                             aria-label="Muat ulang data" onclick="location.reload()">
