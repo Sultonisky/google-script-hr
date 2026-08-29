@@ -47,8 +47,21 @@ class OutsourceController extends Controller
         }
 
         // Sort
-        $sortFilter = 'name_asc';
-        $filtered = $filtered->sortBy(fn($e) => strtolower(trim($e->fullName ?? '')));
+        $sortFilter = $request->query('sort', 'name_asc');
+        $sortFilter = in_array($sortFilter, ['name_asc', 'name_desc'], true) ? $sortFilter : 'name_asc';
+
+        $orderFilter = $request->query('order');
+        $orderFilter = in_array($orderFilter, ['newest', 'oldest'], true) ? $orderFilter : '';
+
+        if ($orderFilter === 'newest') {
+            $filtered = $filtered->sortByDesc(fn($e) => strtotime((string) ($e->joinDate ?? $e->createdDate ?? '1970-01-01')) ?: 0);
+        } elseif ($orderFilter === 'oldest') {
+            $filtered = $filtered->sortBy(fn($e) => strtotime((string) ($e->joinDate ?? $e->createdDate ?? '1970-01-01')) ?: 0);
+        } elseif ($sortFilter === 'name_asc') {
+            $filtered = $filtered->sortBy(fn($e) => strtolower(trim($e->fullName ?? '')));
+        } elseif ($sortFilter === 'name_desc') {
+            $filtered = $filtered->sortByDesc(fn($e) => strtolower(trim($e->fullName ?? '')));
+        }
 
         $filtered = $filtered->values();
         $total = $filtered->count();
@@ -64,7 +77,8 @@ class OutsourceController extends Controller
             'currentPage',
             'perPage',
             'searchFilter',
-            'sortFilter'
+            'sortFilter',
+            'orderFilter'
         ));
     }
 }

@@ -20,16 +20,20 @@
 
         #pageAuditLog .audit-filter-grid {
             display: grid;
-            grid-template-columns: minmax(180px, 1.5fr) repeat(4, minmax(130px, 1fr)) auto;
+            grid-template-columns: minmax(220px, 1.75fr) repeat(3, minmax(140px, 1fr)) auto;
             gap: .75rem;
             align-items: end;
+        }
+
+        #pageAuditLog .audit-filter-field {
+            min-width: 0;
         }
 
         #pageAuditLog .audit-filter-field label {
             display: block;
             margin-bottom: .35rem;
             color: var(--text-muted, #64748b);
-            font-size: .72rem;
+            font-size: .7rem;
             font-weight: 700;
             letter-spacing: .04em;
             text-transform: uppercase;
@@ -37,14 +41,38 @@
 
         #pageAuditLog .audit-filter-field .form-control,
         #pageAuditLog .audit-filter-field .form-select {
-            min-height: 38px;
+            min-height: 40px;
+            height: 40px;
             font-size: .82rem;
+            border-radius: 10px;
+            border: 1.5px solid rgba(148, 163, 184, 0.38);
+            background: rgba(255, 255, 255, 0.65);
+            padding: 0.55rem 0.8rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        #pageAuditLog .audit-filter-field .form-control:focus,
+        #pageAuditLog .audit-filter-field .form-select:focus {
+            border-color: rgba(0, 91, 172, 0.7);
+            box-shadow: 0 0 0 0.2rem rgba(0, 91, 172, 0.12);
+            outline: none;
         }
 
         #pageAuditLog .audit-filter-actions {
             display: flex;
+            align-items: end;
+            justify-content: flex-end;
             gap: .5rem;
             white-space: nowrap;
+        }
+
+        #pageAuditLog .audit-filter-actions .btn {
+            min-height: 40px;
+            border-radius: 10px;
+            font-size: .8rem;
+            font-weight: 600;
+            padding: 0.55rem 0.9rem;
         }
 
         #pageAuditLog .audit-table-wrap {
@@ -159,12 +187,13 @@
 
         @media (max-width: 1100px) {
             #pageAuditLog .audit-filter-grid {
-                grid-template-columns: repeat(3, minmax(150px, 1fr));
+                grid-template-columns: repeat(2, minmax(180px, 1fr));
             }
 
             #pageAuditLog .audit-filter-actions {
                 grid-column: 1 / -1;
                 justify-content: flex-end;
+                width: 100%;
             }
         }
 
@@ -184,7 +213,8 @@
 
             #pageAuditLog .audit-filter-actions {
                 display: grid;
-                grid-template-columns: 1fr 1fr;
+                grid-template-columns: 1fr;
+                width: 100%;
             }
 
             #pageAuditLog .audit-filter-actions .btn {
@@ -196,14 +226,8 @@
     <section class="page-section active" id="pageAuditLog">
         <!-- Header -->
         <div class="audit-page-header d-flex justify-content-between align-items-center mb-4">
-            <div>
-
-            </div>
-            <div>
-                <button class="btn btn-outline-primary btn-sm" id="btnAuditRefresh" type="button" onclick="location.reload()">
-                    <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i> Refresh
-                </button>
-            </div>
+            <div></div>
+            <div></div>
         </div>
 
         <!-- Stats -->
@@ -252,20 +276,27 @@
 
         <!-- Filter bar -->
         <div class="panel audit-filter-panel mb-4">
-            <div class="d-flex align-items-center gap-2 mb-3">
-                <i class="bi bi-funnel text-primary" aria-hidden="true"></i>
-                <h6 class="mb-0 fw-bold">Filter Audit Log</h6>
+            <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-funnel text-primary" aria-hidden="true"></i>
+                    <h6 class="mb-0 fw-bold">Filter Audit Log</h6>
+                </div>
+
+                <button class="btn btn-primary btn-sm" id="btnAuditRefresh" type="button" onclick="location.reload()">
+                    <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Refresh
+                </button>
             </div>
             <form action="{{ route('hr.audit-logs.index') }}" method="GET">
                 <div class="audit-filter-grid">
                     <div class="audit-filter-field">
                         <label for="auditSearchInput">Pencarian</label>
                         <input type="text" name="search" id="auditSearchInput" class="form-control"
-                            placeholder="Entity, ID, user, action" value="{{ request('search') }}" />
+                            placeholder="Entity, ID, user, action" value="{{ request('search') }}"
+                            onkeydown="if(event.key === 'Enter'){ this.form.submit(); }" />
                     </div>
                     <div class="audit-filter-field">
                         <label for="auditEntityFilter">Entity</label>
-                        <select class="form-select" name="entity_type" id="auditEntityFilter">
+                        <select class="form-select" name="entity_type" id="auditEntityFilter" onchange="this.form.submit()">
                             <option value="">Semua Entity</option>
                             @foreach (['Candidate', 'Employee', 'Probation', 'Outsource', 'MPR', 'User', 'Setting', 'MasterData', 'Applicant', 'Authentication', 'System'] as $entity)
                                 <option value="{{ $entity }}"
@@ -275,7 +306,7 @@
                     </div>
                     <div class="audit-filter-field">
                         <label for="auditActionFilter">Action</label>
-                        <select class="form-select" name="action" id="auditActionFilter">
+                        <select class="form-select" name="action" id="auditActionFilter" onchange="this.form.submit()">
                             <option value="">Semua Action</option>
                             @foreach (['created', 'updated', 'status_changed', 'submitted', 'generated', 'imported', 'exported', 'logged_in', 'logged_out', 'login_failed', 'hold', 'blacklist', 'offboarded'] as $action)
                                 <option value="{{ $action }}" {{ request('action') === $action ? 'selected' : '' }}>
@@ -284,13 +315,8 @@
                         </select>
                     </div>
                     <div class="audit-filter-field">
-                        <label for="auditUserFilter">User</label>
-                        <input type="text" name="user" id="auditUserFilter" class="form-control"
-                            placeholder="Nama atau email" value="{{ request('user') }}" />
-                    </div>
-                    <div class="audit-filter-field">
                         <label for="auditSourceFilter">Source</label>
-                        <select class="form-select" name="source" id="auditSourceFilter">
+                        <select class="form-select" name="source" id="auditSourceFilter" onchange="this.form.submit()">
                             <option value="">Semua Source</option>
                             @foreach (['Dashboard', 'Public', 'Command', 'Import', 'Export', 'Authentication', 'System', 'Legacy'] as $source)
                                 <option value="{{ $source }}" {{ request('source') === $source ? 'selected' : '' }}>
@@ -298,19 +324,11 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="audit-filter-field">
-                        <label for="auditEntityIdFilter">Entity ID</label>
-                        <input type="text" name="entity_id" id="auditEntityIdFilter" class="form-control"
-                            placeholder="ID entity" value="{{ request('entity_id') }}" />
-                    </div>
                     <div class="audit-filter-actions">
                         <a href="{{ route('hr.audit-logs.index') }}" class="btn btn-outline-secondary btn-sm"
                             id="btnAuditReset">
-                            <i class="bi bi-arrow-counterclockwise me-1" aria-hidden="true"></i> Reset
+                            <i class="bi bi-arrow-counterclockwise me-1" aria-hidden="true"></i>
                         </a>
-                        <button type="submit" class="btn btn-primary btn-sm">
-                            <i class="bi bi-search me-1" aria-hidden="true"></i> Terapkan
-                        </button>
                     </div>
                 </div>
             </form>
@@ -398,7 +416,8 @@
             <div class="panel-footer d-flex flex-wrap justify-content-between align-items-center gap-2">
                 <span id="auditFooterCount">
                     @if ($total > 0)
-                        Menampilkan {{ ($currentPage - 1) * $perPage + 1 }}–{{ min($currentPage * $perPage, $total) }} dari {{ $total }} data
+                        Menampilkan {{ ($currentPage - 1) * $perPage + 1 }}–{{ min($currentPage * $perPage, $total) }}
+                        dari {{ $total }} data
                     @else
                         Tidak ada data
                     @endif

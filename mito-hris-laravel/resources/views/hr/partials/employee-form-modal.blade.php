@@ -27,13 +27,12 @@
                 <input type="hidden" id="efId" />
 
                 {{-- Banner preview karyawan --}}
-                <div class="p-3 rounded-3 mb-4" id="efPreviewBanner"
-                    style="background:#f0f7ff;border:1px solid #eb1c24;display:none">
+                <div class="p-3 rounded-3 mb-4" id="efPreviewBanner" style="border:1px solid #eb1c24;display:none">
                     <div class="d-flex align-items-center gap-3">
                         <div style="width:44px;height:44px;font-size:16px;flex-shrink:0;background:#eb1c24;color:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800"
                             id="efBannerAvatar">?</div>
                         <div class="flex-grow-1">
-                            <div class="fw-bold text-navy" id="efBannerName" style="font-size:15px">-</div>
+                            <div class="fw-bold text-primary" id="efBannerName" style="font-size:15px">-</div>
                             <div class="text-muted" style="font-size:12px" id="efBannerMeta">-</div>
                         </div>
                     </div>

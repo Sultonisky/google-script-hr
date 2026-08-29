@@ -1127,13 +1127,16 @@
                     }).join('').substring(0, 2).toUpperCase();
                 var banner = document.createElement('div');
                 banner.className = 'drawer-cand-preview-banner d-flex align-items-center gap-3 p-3 rounded-3 mb-3';
-                banner.style.cssText = 'background:#f0f7ff;border:1px solid #c7dff7;';
+                banner.style.cssText =
+                    'background:var(--color-surface);border:1px solid var(--color-primary);color:var(--color-primary);';
                 banner.innerHTML =
                     '<div style="width:40px;height:40px;border-radius:10px;background:var(--color-primary,#eb1c24);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0">' +
                     initStr + '</div>' +
-                    '<div><div class="fw-bold text-navy" style="font-size:14px">' + (candidateName || '-') +
+                    '<div><div class="fw-bold" style="font-size:14px;color:var(--color-primary);">' + (
+                        candidateName || '-') +
                     '</div>' +
-                    '<div class="text-muted" style="font-size:11.5px">Recruitment ID: <strong>' + (recruitmentId ||
+                    '<div style="font-size:11.5px;color:var(--color-text-soft);">Recruitment ID: <strong style="color:var(--color-text);">' +
+                    (recruitmentId ||
                         '-') + '</strong></div></div>';
                 body.insertBefore(banner, body.firstChild);
             }

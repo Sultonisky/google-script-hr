@@ -568,7 +568,14 @@ class RecruitmentController extends Controller
             return response()->json(['success' => false, 'error' => 'Kandidat tidak ditemukan.'], 404);
         }
 
-        $auditLogs = $request->boolean('preview') ? [] : $this->auditRepo->getLogs($id);
+        $auditLogs = $request->boolean('preview')
+            ? collect()
+            : $this->auditRepo->getLogs($id)->reject(function ($log) {
+                $action = strtolower(trim((string) ($log['Action'] ?? $log['action'] ?? '')));
+                $field = strtolower(trim((string) ($log['Field'] ?? $log['field'] ?? '')));
+
+                return $action === 'consent_accepted' || $field === 'agreement_evidence';
+            })->values();
 
         return response()->json([
             'success' => true,

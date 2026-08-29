@@ -95,11 +95,24 @@ class ProbationController extends Controller
                     || str_contains(strtolower($e->department  ?? ''), $search)
             )->values();
         }
-        if ($request->filled('department')) {
-            $dept       = strtolower(trim($request->query('department')));
+        $statusFilter = $request->query('status');
+        if ($statusFilter !== null && $statusFilter !== '') {
+            $probations = $probations->filter(function ($e) use ($statusFilter) {
+                $decision = ProbationDecisionType::fromDecisionString($e->lastDecision ?? '');
+
+                return match ($statusFilter) {
+                    'lulus' => $decision?->isPass(),
+                    'tidak_lulus' => $decision?->isFail(),
+                    'extend' => $decision?->isExtend(),
+                    default => true,
+                };
+            })->values();
+        }
+
+        $scoreFilter = $request->query('score');
+        if ($scoreFilter !== null && $scoreFilter !== '') {
             $probations = $probations->filter(
-                fn($e) =>
-                strtolower(trim($e->department ?? '')) === $dept
+                fn($e) => strtolower(trim((string) ($e->lastCategory ?? ''))) === strtolower(trim($scoreFilter))
             )->values();
         }
 
@@ -110,8 +123,6 @@ class ProbationController extends Controller
             'oldest'    => $probations->sortBy('joinDate')->values(),
             default     => $probations->sortByDesc('joinDate')->values(),
         };
-
-        $departments = $allProbations->pluck('department')->filter()->unique()->sort()->values();
 
         // Stats based on latest evaluation status
         $evaluated = $allProbations->filter(fn($e) => !empty($e->lastEvalDate))->count();
@@ -134,7 +145,7 @@ class ProbationController extends Controller
             'extended'   => $extended,
         ];
 
-        return view('hr.probation.index', compact('probations', 'allProbations', 'departments', 'stats'));
+        return view('hr.probation.index', compact('probations', 'allProbations', 'stats', 'statusFilter', 'scoreFilter'));
     }
 
     // ==========================================================

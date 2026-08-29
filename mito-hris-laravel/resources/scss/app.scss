@@ -67,8 +67,39 @@ body {
     box-shadow: 0 0 0 0.25rem rgba(235, 28, 36, 0.2);
 }
 
+:root[data-theme="dark"],
+[data-bs-theme="dark"] {
+    .btn-primary {
+        background-color: var(--color-primary) !important;
+        border-color: var(--color-primary) !important;
+        color: #fff !important;
+    }
+
+    .btn-primary:hover,
+    .btn-primary:focus,
+    .btn-primary:active,
+    .btn-primary:focus-visible {
+        background-color: var(--color-primary-dark) !important;
+        border-color: var(--color-primary-dark) !important;
+        box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25) !important;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.2);
+    }
+}
+
 .table {
     --bs-table-hover-bg: rgba(235, 28, 36, 0.03);
+}
+
+:root[data-theme="dark"],
+[data-bs-theme="dark"] {
+    .table {
+        --bs-table-hover-bg: rgba(var(--bs-primary-rgb), 0.08);
+    }
 }
 
 .mito-toast-container {

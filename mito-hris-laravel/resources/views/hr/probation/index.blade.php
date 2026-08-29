@@ -80,25 +80,34 @@
                             placeholder="Cari nama, ID, posisi, departemen..." value="{{ request('search') }}"
                             onkeydown="if(event.key==='Enter'){this.closest('form').submit()}" />
                     </div>
-                    <select class="filter-select" name="department" id="probDeptFilter"
+                    <select class="filter-select" name="status" id="probStatusFilter"
                         onchange="this.closest('form').submit()">
-                        <option value="">Semua Dept</option>
-                        @foreach ($departments ?? [] as $dept)
-                            <option value="{{ $dept }}" {{ request('department') === $dept ? 'selected' : '' }}>
-                                {{ $dept }}
-                            </option>
-                        @endforeach
+                        <option value="">Status</option>
+                        <option value="lulus" {{ request('status') === 'lulus' ? 'selected' : '' }}>Lulus</option>
+                        <option value="tidak_lulus" {{ request('status') === 'tidak_lulus' ? 'selected' : '' }}>Tidak Lulus
+                        </option>
+                        <option value="extend" {{ request('status') === 'extend' ? 'selected' : '' }}>Extend</option>
+                    </select>
+                    <select class="filter-select" name="score" id="probScoreFilter"
+                        onchange="this.closest('form').submit()">
+                        <option value="">Kategori Score</option>
+                        <option value="Sangat Baik" {{ request('score') === 'Sangat Baik' ? 'selected' : '' }}>Sangat Baik
+                        </option>
+                        <option value="Baik" {{ request('score') === 'Baik' ? 'selected' : '' }}>Baik</option>
+                        <option value="Cukup" {{ request('score') === 'Cukup' ? 'selected' : '' }}>Cukup</option>
+                        <option value="Kurang" {{ request('score') === 'Kurang' ? 'selected' : '' }}>Kurang</option>
                     </select>
                     <select class="filter-select" name="sort" id="probSortSelect"
                         onchange="this.closest('form').submit()">
-                        <option value="newest" selected>Terbaru</option>
+                        <option value="newest" {{ request('sort', 'newest') === 'newest' ? 'selected' : '' }}>Terbaru
+                        </option>
+                        <option value="oldest" {{ request('sort') === 'oldest' ? 'selected' : '' }}>Terlama</option>
+                        <option value="name_asc" {{ request('sort') === 'name_asc' ? 'selected' : '' }}>Nama A-Z</option>
+                        <option value="name_desc" {{ request('sort') === 'name_desc' ? 'selected' : '' }}>Nama Z-A</option>
                     </select>
                     <a href="{{ route('hr.probation.index') }}" class="btn-reset-filter text-decoration-none">
                         <i class="bi bi-arrow-counterclockwise"></i> Reset
                     </a>
-                    <button type="submit" class="btn-reset-filter btn-primary">
-                        <i class="bi bi-search me-1"></i>
-                    </button>
                 </div>
             </form>
 
@@ -111,13 +120,15 @@
                 </div>
             @endif
             @if (session('error'))
-                <div class="alert alert-danger alert-dismissible fade show mx-3 mt-2" role="alert" style="font-size:13px">
+                <div class="alert alert-danger alert-dismissible fade show mx-3 mt-2" role="alert"
+                    style="font-size:13px">
                     <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ session('error') }}
                     <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
                 </div>
             @endif
             @if ($errors->any())
-                <div class="alert alert-danger alert-dismissible fade show mx-3 mt-2" role="alert" style="font-size:13px">
+                <div class="alert alert-danger alert-dismissible fade show mx-3 mt-2" role="alert"
+                    style="font-size:13px">
                     <i class="bi bi-exclamation-triangle-fill me-2"></i>
                     <ul class="mb-0">
                         @foreach ($errors->all() as $err)
@@ -238,7 +249,7 @@
                                 <td class="text-end">
                                     @if ($prob->can_evaluate ?? false)
                                         <button class="btn btn-sm prob-btn-eval"
-                                            style="background:#eb1c24;color:#f5f3ff;border:1px solid #ddd6fe;border-radius:6px;padding:4px 8px"
+                                            style="background:#eb1c24;color:#f5f3ff;;border-radius:6px;padding:4px 8px"
                                             type="button" title="Evaluasi" data-bs-toggle="modal"
                                             data-bs-target="#probationEvalModal"
                                             onclick="prefillEvalEmployee('{{ $prob->employeeId }}')">
@@ -246,7 +257,7 @@
                                         </button>
                                     @endif
                                     <button class="btn btn-sm prob-btn-history ms-1"
-                                        style="background:#f0f7ff;color:#0b4a86;border:1px solid #c7dff7;border-radius:6px;padding:4px 8px"
+                                        style="color:#1063b1;border:1px solid #1063b1;border-radius:6px;padding:4px 8px"
                                         type="button" title="Riwayat Evaluasi"
                                         onclick="openEvalHistoryModal('{{ $prob->employeeId }}', '{{ addslashes($prob->fullName) }}')">
                                         <i class="bi bi-clock-history"></i>
@@ -254,9 +265,9 @@
                                     @if (!empty($prob->lastEvalId))
                                         <a href="{{ route('hr.export.performance-review', ['id' => $prob->employeeId, 'eval_id' => $prob->lastEvalId]) }}"
                                             class="btn btn-sm ms-1"
-                                            style="background:#f5f3ff;color:#eb1c24;border:1px solid #ddd6fe;border-radius:6px;padding:4px 8px"
+                                            style="color:#eb1c24;border:1px solid #eb1c24;border-radius:6px;padding:4px 8px"
                                             target="_blank" title="Download Performance Review">
-                                            <i class="bi bi-file-earmark-pdf"></i>
+                                            <i class="bi bi-download"></i>
                                         </a>
                                     @endif
                                 </td>

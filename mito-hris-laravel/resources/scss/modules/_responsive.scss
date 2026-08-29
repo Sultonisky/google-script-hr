@@ -105,24 +105,65 @@ body.sidebar-open {
         .table-search,
         .filter-select,
         .filter-date,
-        .filter-number {
+        .filter-number,
+        .btn-reset-filter,
+        .btn-primary,
+        .btn-refresh {
             width: 100%;
             min-width: 0;
             flex: 1 1 100%;
         }
 
+        .table-search {
+            min-width: 0;
+        }
+
         .btn-toggle-more,
         .btn-reset-filter,
-        .btn-refresh {
+        .btn-refresh,
+        .btn-primary {
             height: 38px;
             font-size: 12.5px;
             justify-content: center;
         }
 
+        .btn-reset-filter,
+        .btn-primary {
+            min-width: 0;
+            width: 100%;
+        }
+
         .filter-bar > .btn-refresh {
-            align-self: flex-end;
-            width: auto;
-            min-width: 38px;
+            align-self: stretch;
+            width: 100%;
+            min-width: 0;
+        }
+    }
+
+    #probFilterForm .filter-bar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        align-items: stretch;
+        gap: 8px;
+
+        .table-search,
+        .filter-select,
+        .btn-reset-filter,
+        .btn-primary {
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .btn-reset-filter {
+            display: inline-flex;
+        }
+
+        .btn-primary {
+            border-radius: 10px;
+            border: none;
+            background: linear-gradient(135deg, #eb1c24 0%, #d7141c 100%);
+            color: #fff;
+            font-weight: 700;
         }
     }
 

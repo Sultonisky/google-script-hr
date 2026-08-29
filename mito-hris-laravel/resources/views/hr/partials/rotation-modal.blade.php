@@ -32,20 +32,20 @@
                                 style="right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;display:none"
                                 onclick="clearRotEmpSearch()"></i>
                         </div>
-                        <div id="rotEmpDropdown" class="border rounded-3 mt-1 shadow-sm"
-                            style="display:none;max-height:220px;overflow-y:auto;background:#fff;z-index:9999;position:relative">
+                        <div id="rotEmpDropdown" class="border text-primary rounded-3 mt-1 shadow-sm"
+                            style="display:none;max-height:220px;overflow-y:auto;z-index:9999;position:relative">
                         </div>
                     </div>
 
                     <!-- STEP 2: Preview karyawan terpilih + form -->
                     <div id="rotEmpPreview" style="display:none">
-                        <div class="p-3 rounded-3 mb-4" style="background:#f0f7ff;border:1px solid #eb1c24">
+                        <div class="p-3 rounded-3 mb-4" style="border:1px solid #eb1c24">
                             <div class="d-flex align-items-center gap-3">
                                 <div id="rotEmpAvatar"
                                     style="width:44px;height:44px;font-size:16px;flex-shrink:0;background:#eb1c24;color:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800">
                                     ?</div>
                                 <div class="flex-grow-1">
-                                    <div class="fw-bold text-navy" id="rotEmpName" style="font-size:15px">-</div>
+                                    <div class="fw-bold text-primary" id="rotEmpName" style="font-size:15px">-</div>
                                     <div class="text-muted" style="font-size:12px">
                                         <span id="rotEmpPosition">-</span> <span class="mx-1">&bull;</span> <span
                                             id="rotEmpDept">-</span>
@@ -223,7 +223,7 @@
                 (emp.fullName || 'E').substring(0, 2).toUpperCase() +
                 '</div>' +
                 '<div class="flex-grow-1" style="font-size:12.5px;">' +
-                '<div class="fw-semibold text-navy">' + (emp.fullName || '-') + '</div>' +
+                '<div class="fw-semibold text-primary">' + (emp.fullName || '-') + '</div>' +
                 '<div class="text-muted" style="font-size:11px">' + (emp.employeeId || '') + ' &bull; ' + (emp
                     .jobPosition || '-') + '</div>' +
                 '</div></div>';

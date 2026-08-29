@@ -10,13 +10,6 @@
 
         <!-- Outsource Stat Cards (1:1 from GAS) -->
         <div class="row g-3 mb-3 mt-2" id="outsourceStats">
-            <div class="col-12">
-                <div
-                    style="font-size:13px;font-weight:700;color:var(--color-text-soft);text-transform:uppercase;letter-spacing:.05em;padding:4px 0 8px;">
-                    <i class="bi bi-building-fill me-2" style="color:var(--color-primary, #eb1c24)"></i>Data Karyawan
-                    Outsource
-                </div>
-            </div>
             <div class="col-6 col-md-3">
                 <div class="stat-card">
                     <div class="stat-icon bg-cyan"><i class="bi bi-people-fill"></i></div>
@@ -55,13 +48,15 @@
                             placeholder="Cari nama, ID, vendor, posisi..." value="{{ $searchFilter ?? '' }}" />
                     </div>
                     <select class="filter-select" name="sort" id="osSortSelect" onchange="this.form.submit()">
-                        <option value="name_asc" selected>Nama A-Z</option>
+                        <option value="name_asc" {{ ($sortFilter ?? 'name_asc') === 'name_asc' ? 'selected' : '' }}>Nama A-Z
+                        </option>
+                        <option value="name_desc" {{ ($sortFilter ?? 'name_asc') === 'name_desc' ? 'selected' : '' }}>Nama
+                            Z-A</option>
                     </select>
-                    <select class="filter-select" name="per_page" id="osPerPage" onchange="this.form.submit()"
-                        style="flex: 0 0 auto; width: 90px;">
-                        <option value="10" {{ ($perPage ?? 10) == 10 ? 'selected' : '' }}>10 / hal</option>
-                        <option value="20" {{ ($perPage ?? 10) == 20 ? 'selected' : '' }}>20 / hal</option>
-                        <option value="50" {{ ($perPage ?? 10) == 50 ? 'selected' : '' }}>50 / hal</option>
+                    <select class="filter-select" name="order" id="osOrderSelect" onchange="this.form.submit()">
+                        <option value="" {{ empty($orderFilter) ? 'selected' : '' }}>Urutan</option>
+                        <option value="newest" {{ ($orderFilter ?? '') === 'newest' ? 'selected' : '' }}>Terbaru</option>
+                        <option value="oldest" {{ ($orderFilter ?? '') === 'oldest' ? 'selected' : '' }}>Terlama</option>
                     </select>
                     <a href="{{ route('hr.outsource.index') }}" class="btn-reset-filter text-decoration-none"
                         id="osBtnResetFilter">

@@ -6,6 +6,7 @@
 :root {
     --color-primary: #eb1c24;
     --color-primary-dark: #c41118;
+    --color-primary-soft: rgba(235, 28, 36, 0.12);
     --color-navy: #0b2540;
     --color-navy-soft: #122f52;
     --color-accent: #fdb913;
@@ -17,10 +18,18 @@
     --color-border: #e5e7eb;
     --sidebar-w: 260px;
     --drawer-w: 520px;
+    --bs-primary: #eb1c24;
+    --bs-primary-rgb: 235, 28, 36;
+    --bs-link-color: var(--color-primary);
+    --bs-link-hover-color: var(--color-primary-dark);
+    --bs-focus-ring-color: rgba(235, 28, 36, 0.25);
 }
 
 :root[data-theme="dark"],
 [data-bs-theme="dark"] {
+    --color-primary: #eb1c24;
+    --color-primary-dark: #eb1c24;
+    --color-primary-soft: rgba(129, 15, 20, 0.16);
     --color-bg: #0f1720;
     --color-surface: #17212c;
     --color-card-bg: #17212c;
@@ -29,6 +38,11 @@
     --color-border: #26313d;
     --color-navy: #1a3a5c;
     --color-navy-soft: #1e4470;
+    --bs-primary: #eb1c24;
+    --bs-primary-rgb: 235, 28, 36;
+    --bs-link-color: #e2a0a3;
+    --bs-link-hover-color: #f7d1d4;
+    --bs-focus-ring-color: rgba(235, 28, 36, 0.35);
     color-scheme: dark;
 }
 
@@ -96,9 +110,77 @@ body {
 
 /* Dark Mode Overrides */
 :root[data-theme="dark"] {
+    .btn-primary,
+    .btn-outline-primary,
+    .bg-primary,
+    .bg-primary-subtle,
+    .badge.bg-primary,
+    .page-item.active .page-link,
+    .nav-link.active,
+    .dropdown-item.active,
+    .dropdown-item:active {
+        --bs-btn-bg: var(--color-primary);
+        --bs-btn-border-color: var(--color-primary);
+        --bs-btn-hover-bg: var(--color-primary-dark);
+        --bs-btn-hover-border-color: var(--color-primary-dark);
+        --bs-btn-active-bg: var(--color-primary-dark);
+        --bs-btn-active-border-color: var(--color-primary-dark);
+        --bs-btn-focus-shadow-rgb: 235, 28, 36;
+    }
+
+    .btn-primary {
+        background-color: var(--color-primary) !important;
+        border-color: var(--color-primary) !important;
+        color: #fff !important;
+    }
+
+    .btn-primary:hover,
+    .btn-primary:focus,
+    .btn-primary:active,
+    .btn-primary:focus-visible {
+        background-color: var(--color-primary-dark) !important;
+        border-color: var(--color-primary-dark) !important;
+        box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25) !important;
+    }
+
+    .btn-outline-primary {
+        color: var(--color-primary) !important;
+        border-color: var(--color-primary) !important;
+    }
+
+    .btn-outline-primary:hover,
+    .btn-outline-primary:focus,
+    .btn-outline-primary:active {
+        background-color: var(--color-primary) !important;
+        border-color: var(--color-primary) !important;
+        color: #fff !important;
+    }
+
+    .text-primary,
+    .text-primary-mito,
+    .link-primary,
+    .border-primary,
+    .border-primary-subtle,
+    a.text-primary,
+    a.link-primary,
+    .nav-link.text-primary,
+    .page-link.text-primary,
+    .fw-bold.text-primary {
+        color: var(--color-primary) !important;
+    }
+
+    .border-primary,
+    .border-primary-subtle {
+        border-color: var(--color-primary) !important;
+    }
+
+    .bg-primary-subtle {
+        background-color: rgba(var(--bs-primary-rgb), 0.15) !important;
+    }
+
     .stat-icon.bg-blue {
         background: rgba(235, 28, 36, 0.18);
-        color: #ff6b6b;
+        color: #f4b3b7;
     }
     .stat-icon.bg-gold {
         background: rgba(253, 185, 19, 0.18);
@@ -217,6 +299,139 @@ body {
     .topbar {
         background-color: var(--color-surface) !important;
         border-color: var(--color-border) !important;
+    }
+
+    #probationEvalModal .modal-content,
+    #evalHistoryModal .modal-content {
+        background-color: var(--color-surface) !important;
+        border-color: var(--color-border) !important;
+        color: var(--color-text) !important;
+        box-shadow: 0 1.5rem 3rem rgba(2, 6, 23, 0.42) !important;
+    }
+
+    #probationEvalModal .modal-header,
+    #evalHistoryModal .modal-header {
+        background: linear-gradient(
+            135deg,
+            var(--color-primary) 0%,
+            var(--color-primary-dark) 100%
+        ) !important;
+        border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    #probationEvalModal .modal-header .modal-title,
+    #probationEvalModal .modal-header .text-white,
+    #evalHistoryModal .modal-header .modal-title,
+    #evalHistoryModal .modal-header small {
+        color: #fff !important;
+    }
+
+    #probationEvalModal .modal-body,
+    #evalHistoryModal .modal-body {
+        background: var(--color-surface) !important;
+        color: var(--color-text) !important;
+    }
+
+    #probationEvalModal .form-control,
+    #probationEvalModal textarea,
+    #probationEvalModal .ind-btn-check,
+    #probationEvalModal .ind-btn-cross,
+    #probationEvalModal .ext-dur-btn,
+    #probationEvalModal .approval-btn {
+        background-color: #121c27 !important;
+        border-color: var(--color-border) !important;
+        color: var(--color-text) !important;
+    }
+
+    #probationEvalModal .ind-btn-check .bi,
+    #probationEvalModal .ind-btn-cross .bi,
+    #probationEvalModal .approval-btn .bi {
+        color: inherit !important;
+    }
+
+    #probationEvalModal .ind-btn-check.is-active,
+    #probationEvalModal .ind-btn-cross.is-active,
+    #probationEvalModal .approval-btn.is-active {
+        box-shadow: 0 0 0 1px rgba(22, 101, 52, 0.08) !important;
+    }
+
+    #probationEvalModal .ind-btn-check.is-active,
+    #probationEvalModal .approval-btn[data-value="Setuju"].is-active {
+        border-color: #1a974a !important;
+        color: #1a974a !important;
+    }
+
+    #probationEvalModal .ind-btn-check.is-active .bi,
+    #probationEvalModal .approval-btn[data-value="Setuju"].is-active .bi {
+        color: #1a974a !important;
+    }
+
+    #probationEvalModal .ind-btn-cross.is-active,
+    #probationEvalModal .approval-btn[data-value="Tidak"].is-active {
+        border-color: #eb1c24 !important;
+        color: #eb1c24 !important;
+    }
+
+    #probationEvalModal .ind-btn-cross.is-active .bi,
+    #probationEvalModal .approval-btn[data-value="Tidak"].is-active .bi {
+        color: #eb1c24 !important;
+    }
+
+    #probationEvalModal .form-control::placeholder,
+    #probationEvalModal textarea::placeholder {
+        color: #64748b !important;
+    }
+
+    #probationEvalModal .eval-ind-row {
+        border-bottom-color: var(--color-border) !important;
+    }
+
+    #probationEvalModal .eval-ind-row > .flex-grow-1,
+    #probationEvalModal .eval-decision-opt .text-muted,
+    #probationEvalModal .text-muted,
+    #probationEvalModal .text-success,
+    #probationEvalModal .text-danger,
+    #probationEvalModal .text-warning,
+    #probationEvalModal .text-info {
+        color: var(--color-text) !important;
+    }
+
+    #probationEvalModal .eval-decision-opt,
+    #probationEvalModal #evalSubmitSummary,
+    #probationEvalModal .p-3.rounded-3,
+    #probationEvalModal .alert,
+    #probationEvalModal .modal-footer {
+        background-color: rgba(15, 23, 32, 0.68) !important;
+        border-color: var(--color-border) !important;
+        color: var(--color-text) !important;
+    }
+
+    #probationEvalModal .alert-info,
+    #probationEvalModal .alert-warning,
+    #probationEvalModal .alert-danger {
+        background-color: rgba(15, 23, 32, 0.9) !important;
+        border-color: var(--color-border) !important;
+        color: var(--color-text) !important;
+    }
+
+    #evalHistoryBody > div,
+    #evalHistoryBody .p-3,
+    #evalHistoryBody .rounded-3 {
+        background-color: var(--color-surface) !important;
+        border-color: var(--color-border) !important;
+        color: var(--color-text) !important;
+    }
+
+    #evalHistoryBody .text-muted,
+    #evalHistoryBody small,
+    #evalHistoryBody .small {
+        color: var(--color-text-soft) !important;
+    }
+
+    #evalHistoryBody .btn {
+        background-color: rgba(var(--bs-primary-rgb), 0.08) !important;
+        border-color: rgba(var(--bs-primary-rgb), 0.35) !important;
+        color: var(--color-text) !important;
     }
 
     .text-navy {
