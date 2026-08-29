@@ -238,7 +238,7 @@
                                 <td class="text-end">
                                     @if ($prob->can_evaluate ?? false)
                                         <button class="btn btn-sm prob-btn-eval"
-                                            style="background:#eb1c24;color:#f5f3ff;border:1px solid #ddd6fe;border-radius:6px;padding:4px 8px"
+                                            style="background:#eb1c24;color:#f5f3ff;;border-radius:6px;padding:4px 8px"
                                             type="button" title="Evaluasi" data-bs-toggle="modal"
                                             data-bs-target="#probationEvalModal"
                                             onclick="prefillEvalEmployee('{{ $prob->employeeId }}')">
@@ -246,7 +246,7 @@
                                         </button>
                                     @endif
                                     <button class="btn btn-sm prob-btn-history ms-1"
-                                        style="background:#f0f7ff;color:#0b4a86;border:1px solid #c7dff7;border-radius:6px;padding:4px 8px"
+                                        style="color:#1063b1;border:1px solid #1063b1;border-radius:6px;padding:4px 8px"
                                         type="button" title="Riwayat Evaluasi"
                                         onclick="openEvalHistoryModal('{{ $prob->employeeId }}', '{{ addslashes($prob->fullName) }}')">
                                         <i class="bi bi-clock-history"></i>
@@ -254,9 +254,9 @@
                                     @if (!empty($prob->lastEvalId))
                                         <a href="{{ route('hr.export.performance-review', ['id' => $prob->employeeId, 'eval_id' => $prob->lastEvalId]) }}"
                                             class="btn btn-sm ms-1"
-                                            style="background:#f5f3ff;color:#eb1c24;border:1px solid #ddd6fe;border-radius:6px;padding:4px 8px"
+                                            style="color:#eb1c24;border:1px solid #eb1c24;border-radius:6px;padding:4px 8px"
                                             target="_blank" title="Download Performance Review">
-                                            <i class="bi bi-file-earmark-pdf"></i>
+                                            <i class="bi bi-download"></i>
                                         </a>
                                     @endif
                                 </td>

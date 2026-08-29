@@ -19,7 +19,7 @@
                     <div class="mb-3">
                         <label class="form-label fw-semibold" style="font-size:13px">
                             <i class="bi bi-search me-1"></i>Cari Karyawan PKWT / Kontrak <span
-                                class="text-danger">*</span>
+                                class="text-primary">*</span>
                         </label>
                         <div class="position-relative">
                             <input type="text" class="form-control" id="ocEmpSearch"
@@ -30,19 +30,19 @@
                                 onclick="clearOcEmpSearch()"></i>
                         </div>
                         <div id="ocEmpDropdown" class="border rounded-3 mt-1 shadow-sm"
-                            style="display:none;max-height:220px;overflow-y:auto;background:#fff;z-index:9999;position:relative">
+                            style="display:none;max-height:220px;overflow-y:auto;z-index:9999;position:relative">
                         </div>
                     </div>
 
                     <!-- STEP 2: Preview karyawan terpilih + form -->
                     <div id="ocEmpPreview" style="display:none">
-                        <div class="p-3 rounded-3 mb-4" style="background:#fff;border:1px solid #eb1c24">
+                        <div class="p-3 rounded-3 mb-4" style="border:1px solid #eb1c24">
                             <div class="d-flex align-items-center gap-3">
                                 <div id="ocEmpAvatar"
                                     style="width:44px;height:44px;font-size:16px;flex-shrink:0;background:#eb1c24;color:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800">
                                     ?</div>
                                 <div class="flex-grow-1">
-                                    <div class="fw-bold text-navy" id="ocEmpName" style="font-size:15px">-</div>
+                                    <div class="fw-bold text-primary" id="ocEmpName" style="font-size:15px">-</div>
                                     <div class="text-muted" style="font-size:12px">
                                         <span id="ocEmpPosition">-</span> <span class="mx-1">&bull;</span> <span
                                             id="ocEmpDept">-</span>
@@ -56,8 +56,7 @@
                         </div>
 
                         <!-- Info kontrak -->
-                        <div class="p-3 rounded-3 mb-4"
-                            style="background:#fff;border:1px solid #eb1c24;font-size:12.5px">
+                        <div class="p-3 rounded-3 mb-4" style="border:1px solid #eb1c24;font-size:12.5px">
                             <div class="d-flex align-items-center gap-2 mb-1">
                                 <i class="bi bi-info-circle-fill text-primary"></i>
                                 <span class="fw-semibold">Tipe: <span style="color:#eb1c24">Contract
@@ -189,7 +188,7 @@
                 (emp.fullName || 'E').substring(0, 2).toUpperCase() +
                 '</div>' +
                 '<div class="flex-grow-1" style="font-size:12.5px;">' +
-                '<div class="fw-semibold text-navy">' + (emp.fullName || '-') + '</div>' +
+                '<div class="fw-semibold text-primary">' + (emp.fullName || '-') + '</div>' +
                 '<div class="text-muted" style="font-size:11px">' + (emp.employeeId || '') + ' &bull; ' + (emp
                     .jobPosition || '-') + ' (End: ' + (emp.endDateContract || '-') + ')</div>' +
                 '</div></div>';

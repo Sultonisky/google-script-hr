@@ -352,7 +352,7 @@
                     </div>
                 </div>
                 <div class="cv-value" id="empDrUnifiedNotes"
-                    style="white-space:pre-wrap;min-height:40px;padding:10px;background:var(--bg-subtle,#f9fafb);border-radius:8px;border:1px solid var(--color-border,#e5e7eb);">
+                    style="white-space:pre-wrap;min-height:40px;padding:10px;background:var(--color-surface);color:var(--color-text);border-radius:8px;border:1px solid var(--color-border);">
                     Belum ada catatan.</div>
             </div>
             <div class="cv-section-card mb-0">
@@ -504,7 +504,7 @@
                     </div>
                 </div>
                 <div class="cv-value" id="osDrUnifiedNotes"
-                    style="white-space:pre-wrap;min-height:40px;padding:10px;background:var(--bg-subtle,#f9fafb);border-radius:8px;border:1px solid var(--color-border,#e5e7eb);">
+                    style="white-space:pre-wrap;min-height:40px;padding:10px;background:var(--color-surface);color:var(--color-text);border-radius:8px;border:1px solid var(--color-border);">
                     Belum ada catatan.</div>
             </div>
             <div class="cv-section-card mb-0">

@@ -10,13 +10,6 @@
 
         <!-- Outsource Stat Cards (1:1 from GAS) -->
         <div class="row g-3 mb-3 mt-2" id="outsourceStats">
-            <div class="col-12">
-                <div
-                    style="font-size:13px;font-weight:700;color:var(--color-text-soft);text-transform:uppercase;letter-spacing:.05em;padding:4px 0 8px;">
-                    <i class="bi bi-building-fill me-2" style="color:var(--color-primary, #eb1c24)"></i>Data Karyawan
-                    Outsource
-                </div>
-            </div>
             <div class="col-6 col-md-3">
                 <div class="stat-card">
                     <div class="stat-icon bg-cyan"><i class="bi bi-people-fill"></i></div>

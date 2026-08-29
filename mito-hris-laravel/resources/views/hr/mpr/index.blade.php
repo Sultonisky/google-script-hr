@@ -18,84 +18,21 @@
         }
 
         .stat-card-mpr {
-            background: #ffffff;
-            border-radius: 8px;
-            padding: 16px;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-            display: flex;
-            align-items: center;
-            gap: 16px;
+            /* legacy class retained only for compatibility; layout now follows global stat-card */
         }
 
         .stat-icon-mpr {
-            width: 48px;
-            height: 48px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
+            /* legacy class retained only for compatibility; layout now follows global stat-icon */
         }
 
-        .bg-blue-light {
-            background: #e0f2fe;
-            color: #0284c7;
-        }
-
-        .bg-green-light {
-            background: #dcfce7;
-            color: #16a34a;
-        }
-
-        .bg-purple-light {
-            background: #f3e8ff;
-            color: #9333ea;
-        }
-
+        .bg-blue-light,
+        .bg-green-light,
+        .bg-purple-light,
         .bg-amber-light {
-            background: #fef3c7;
-            color: #d97706;
+            /* legacy custom colors intentionally unused; use shared stat-icon palette */
         }
 
-        .table-mpr th {
-            background: #f8fafc;
-            color: #475569;
-            font-size: 11.5px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 12px 14px;
-            border-bottom: 2px solid #e2e8f0;
-        }
-
-        .table-mpr td {
-            padding: 12px 14px;
-            vertical-align: middle;
-            font-size: 13px;
-            border-bottom: 1px solid #f1f5f9;
-        }
-
-        .badge-mpr-submitted {
-            background: #dcfce7;
-            color: #15803d;
-            font-weight: 600;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 11.5px;
-        }
-
-        .detail-label {
-            color: #64748b;
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 2px;
-        }
-
-        .detail-val {
-            color: #1e293b;
-            font-size: 13.5px;
-            font-weight: 500;
-        }
+        /* Shared Bootstrap/HR table and badge styles are used instead of duplicate MPR-specific overrides. */
 
         #modalMprDetail .modal-content {
             background: var(--color-surface);
@@ -137,14 +74,6 @@
             border-radius: 12px;
         }
 
-        #modalMprDetail .detail-label {
-            color: var(--color-text-soft);
-            font-size: 10.5px;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-        }
-
-        #modalMprDetail .detail-val,
         #modalMprDetail .text-dark {
             color: var(--color-text) !important;
         }
@@ -334,17 +263,7 @@
             color: var(--color-text) !important;
         }
 
-        .mpr-internal-dashboard .table-mpr th,
-        .mpr-internal-dashboard .table-mpr td {
-            background: var(--color-surface) !important;
-            color: var(--color-text) !important;
-            border-color: var(--color-border) !important;
-        }
-
-        .mpr-internal-dashboard .table-mpr th {
-            background: var(--color-bg) !important;
-            color: var(--color-text-soft) !important;
-        }
+        /* MPR uses the shared hr-table styling instead of custom table classes. */
 
         .mpr-internal-dashboard .badge.bg-light {
             background: var(--color-bg) !important;
@@ -353,18 +272,22 @@
         }
 
         .mpr-internal-dashboard .stat-card-mpr {
-            min-height: 108px;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            min-height: 110px;
         }
 
-        .mpr-internal-dashboard .stat-card-mpr:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+        .mpr-internal-dashboard .stat-card-mpr .text-muted {
+            font-size: 11.5px;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            color: var(--color-text-soft) !important;
         }
 
         .mpr-internal-dashboard .stat-card-mpr .fs-4 {
-            line-height: 1.2;
-            font-size: clamp(1.2rem, 2vw, 2rem) !important;
+            line-height: 1.1;
+            font-size: 22px !important;
+            font-weight: 800 !important;
+            color: var(--color-text) !important;
         }
 
         .mpr-internal-dashboard .mpr-list-panel .table-responsive,
@@ -916,39 +839,39 @@
             <!-- METRICS CARDS -->
             <div class="row g-3 mb-4 mpr-internal-dashboard">
                 <div class="col-12 col-sm-6 col-xl-3">
-                    <div class="stat-card-mpr">
-                        <div class="stat-icon-mpr bg-blue-light"><i class="bi bi-file-earmark-text-fill"></i></div>
-                        <div>
-                            <div class="text-muted small fw-semibold">Total Pengajuan MPR</div>
-                            <div class="fs-4 fw-bold text-dark">{{ $stats['total'] ?? 0 }}</div>
+                    <div class="stat-card">
+                        <div class="stat-icon bg-blue"><i class="bi bi-file-earmark-text-fill"></i></div>
+                        <div class="flex-grow-1">
+                            <div class="stat-label">Total Pengajuan MPR</div>
+                            <div class="stat-value">{{ $stats['total'] ?? 0 }}</div>
                         </div>
                     </div>
                 </div>
                 <div class="col-12 col-sm-6 col-xl-3">
-                    <div class="stat-card-mpr">
-                        <div class="stat-icon-mpr bg-green-light"><i class="bi bi-calendar-check-fill"></i></div>
-                        <div>
-                            <div class="text-muted small fw-semibold">Pengajuan Bulan Ini</div>
-                            <div class="fs-4 fw-bold text-dark">{{ $stats['this_month'] ?? 0 }}</div>
+                    <div class="stat-card">
+                        <div class="stat-icon bg-green"><i class="bi bi-calendar-check-fill"></i></div>
+                        <div class="flex-grow-1">
+                            <div class="stat-label">Pengajuan Bulan Ini</div>
+                            <div class="stat-value">{{ $stats['this_month'] ?? 0 }}</div>
                         </div>
                     </div>
                 </div>
                 <div class="col-12 col-sm-6 col-xl-3">
-                    <div class="stat-card-mpr">
-                        <div class="stat-icon-mpr bg-purple-light"><i class="bi bi-people-fill"></i></div>
-                        <div>
-                            <div class="text-muted small fw-semibold">Total Kebutuhan Manpower</div>
-                            <div class="fs-4 fw-bold text-dark">{{ $stats['total_quantity'] ?? 0 }} <span
+                    <div class="stat-card">
+                        <div class="stat-icon bg-purple"><i class="bi bi-people-fill"></i></div>
+                        <div class="flex-grow-1">
+                            <div class="stat-label">Total Kebutuhan Manpower</div>
+                            <div class="stat-value">{{ $stats['total_quantity'] ?? 0 }} <span
                                     class="fs-6 fw-normal text-muted">Orang</span></div>
                         </div>
                     </div>
                 </div>
                 <div class="col-12 col-sm-6 col-xl-3">
-                    <div class="stat-card-mpr">
-                        <div class="stat-icon-mpr bg-amber-light"><i class="bi bi-send-check-fill"></i></div>
-                        <div>
-                            <div class="text-muted small fw-semibold">Status Submitted</div>
-                            <div class="fs-4 fw-bold text-dark">{{ $stats['submitted'] ?? 0 }}</div>
+                    <div class="stat-card">
+                        <div class="stat-icon bg-gold"><i class="bi bi-send-check-fill"></i></div>
+                        <div class="flex-grow-1">
+                            <div class="stat-label">Status Submitted</div>
+                            <div class="stat-value">{{ $stats['submitted'] ?? 0 }}</div>
                         </div>
                     </div>
                 </div>
@@ -959,7 +882,8 @@
                 <div
                     class="card-header bg-white mpr-list-header py-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 border-bottom">
                     <div>
-                        <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-list-task me-2 text-primary"></i> Daftar Manpower Request (MPR)</h5>
+                        <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-list-task me-2 text-primary"></i> Daftar
+                            Manpower Request (MPR)</h5>
                         <small class="text-muted">Menampilkan {{ $total }} pengajuan kebutuhan tenaga kerja</small>
                     </div>
                     <div class="mpr-header-actions">
@@ -1070,7 +994,7 @@
                                         </td>
                                         <td>
                                             <span
-                                                class="badge-mpr-submitted">{{ strtoupper($mpr->status ?? 'SUBMITTED') }}</span>
+                                                class="badge bg-success-subtle text-success border border-success-subtle">{{ strtoupper($mpr->status ?? 'SUBMITTED') }}</span>
                                         </td>
                                         <td class="text-center">
                                             <div class="btn-group btn-group-sm">
@@ -1154,8 +1078,8 @@
                                     @csrf
 
                                     <!-- INFORMASI PEMOHON -->
-                                    <h6 class="fw-bold text-primary mb-3">1. Informasi Pemohon / Requester</h6>
-                                    <div class="row g-3 mb-4 bg-light p-3 rounded-3 border">
+                                    <h6 class="fw-bold text-primary mb-4">1. Informasi Pemohon / Requester</h6>
+                                    <div class="row g-3 mb-4 p-3 rounded-3 border">
                                         <div class="col-md-6">
                                             <label class="form-label fw-semibold small">Nama Manager Pemohon <span
                                                     class="text-danger">*</span></label>
@@ -1336,13 +1260,13 @@
                             <div class="card bg-light border-0 mb-3 p-3 rounded-3">
                                 <div class="row g-3">
                                     <div class="col-md-6">
-                                        <div class="detail-label">Pemohon (Manager)</div>
-                                        <div class="detail-val" id="detManagerName">-</div>
+                                        <div class="small text-uppercase text-muted fw-semibold mb-2">Pemohon (Manager)</div>
+                                        <div class="fw-semibold text-dark" id="detManagerName">-</div>
                                         <div class="small text-muted" id="detManagerEmail">-</div>
                                     </div>
                                     <div class="col-md-6">
-                                        <div class="detail-label">Entitas / Perusahaan</div>
-                                        <div class="detail-val" id="detCompany">-</div>
+                                        <div class="small text-uppercase text-muted fw-semibold mb-2">Entitas / Perusahaan</div>
+                                        <div class="fw-semibold text-dark" id="detCompany">-</div>
                                         <div class="small text-muted" id="detBranch">-</div>
                                         <div class="small text-muted" id="detCreatedBy">Diajukan: -</div>
                                     </div>
@@ -1353,44 +1277,44 @@
                             <h6 class="fw-bold text-primary mb-2">Detail Posisi & Kebutuhan</h6>
                             <div class="row g-3 mb-3">
                                 <div class="col-md-6">
-                                    <div class="detail-label">Posisi / Jabatan</div>
-                                    <div class="detail-val text-primary fw-bold" id="detPosition">-</div>
+                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Posisi / Jabatan</div>
+                                    <div class="text-primary fw-bold" id="detPosition">-</div>
                                 </div>
                                 <div class="col-md-6">
-                                    <div class="detail-label">Departemen / Divisi</div>
-                                    <div class="detail-val" id="detDeptDiv">-</div>
+                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Departemen / Divisi</div>
+                                    <div class="fw-semibold text-dark" id="detDeptDiv">-</div>
                                 </div>
                                 <div class="col-md-4">
-                                    <div class="detail-label">Level Jabatan</div>
-                                    <div class="detail-val" id="detJobLevel">-</div>
+                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Level Jabatan</div>
+                                    <div class="fw-semibold text-dark" id="detJobLevel">-</div>
                                 </div>
                                 <div class="col-md-4">
-                                    <div class="detail-label">Status Kepegawaian</div>
-                                    <div class="detail-val" id="detEmpType">-</div>
+                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Status Kepegawaian</div>
+                                    <div class="fw-semibold text-dark" id="detEmpType">-</div>
                                 </div>
                                 <div class="col-md-4">
-                                    <div class="detail-label">Lokasi Penempatan</div>
-                                    <div class="detail-val" id="detLocation">-</div>
+                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Lokasi Penempatan</div>
+                                    <div class="fw-semibold text-dark" id="detLocation">-</div>
                                 </div>
                                 <div class="col-md-6">
-                                    <div class="detail-label">Jumlah Kebutuhan</div>
-                                    <div class="detail-val"><span class="badge bg-primary fs-6" id="detQuantity">-</span>
+                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Jumlah Kebutuhan</div>
+                                    <div class="fw-semibold text-dark"><span class="badge bg-primary fs-6" id="detQuantity">-</span>
                                         Orang</div>
                                 </div>
                                 <div class="col-md-6">
-                                    <div class="detail-label">Target Tanggal Masuk (Join Date)</div>
-                                    <div class="detail-val fw-bold text-dark" id="detJoinDate">-</div>
+                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Target Tanggal Masuk (Join Date)</div>
+                                    <div class="fw-bold text-dark" id="detJoinDate">-</div>
                                 </div>
                             </div>
 
                             <!-- SECTION 3 -->
                             <h6 class="fw-bold text-primary mb-2">Alasan Permintaan</h6>
                             <div class="bg-light p-3 rounded-3 mb-3 border">
-                                <div class="detail-label">Alasan</div>
-                                <div class="detail-val mb-2" id="detReason">-</div>
+                                <div class="small text-uppercase text-muted fw-semibold mb-2">Alasan</div>
+                                <div class="mb-2 fw-semibold text-dark" id="detReason">-</div>
                                 <div id="wrapReplacement" class="d-none">
-                                    <div class="detail-label">Menggantikan Karyawan</div>
-                                    <div class="detail-val" id="detReplacementFor">-</div>
+                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Menggantikan Karyawan</div>
+                                    <div class="fw-semibold text-dark" id="detReplacementFor">-</div>
                                 </div>
                             </div>
 
@@ -1398,17 +1322,17 @@
                             <h6 class="fw-bold text-primary mb-2">Kualifikasi & Deskripsi</h6>
                             <div class="row g-3 mb-3">
                                 <div class="col-12">
-                                    <div class="detail-label">Kualifikasi Kandidat</div>
+                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Kualifikasi Kandidat</div>
                                     <div class="p-2 border rounded bg-white small mpr-markdown-content"
                                         id="detRequirements" style="min-height:60px;">-</div>
                                 </div>
                                 <div class="col-12">
-                                    <div class="detail-label">Uraian Tugas & Tanggung Jawab</div>
+                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Uraian Tugas & Tanggung Jawab</div>
                                     <div class="p-2 border rounded bg-white small mpr-markdown-content" id="detJobDesc"
                                         style="min-height:60px;">-</div>
                                 </div>
                                 <div class="col-12" id="wrapNotes">
-                                    <div class="detail-label">Catatan Tambahan</div>
+                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Catatan Tambahan</div>
                                     <div class="p-2 border rounded bg-white small mpr-markdown-content" id="detNotes">-
                                     </div>
                                 </div>
@@ -1814,7 +1738,7 @@
                 const form = document.getElementById('formEditMpr');
                 const value = name => form.elements[name]?.value || '-';
                 const section = (label, content, markdown = false) =>
-                    `<div class="mb-3"><div class="detail-label">${label}</div><div class="p-2 border rounded ${markdown ? 'mpr-markdown-content' : ''}">${markdown ? renderMprMarkdown(content) : escapeHtml(content)}</div></div>`;
+                    `<div class="mb-3"><div class="small text-uppercase text-muted fw-semibold mb-2">${label}</div><div class="p-2 border rounded ${markdown ? 'mpr-markdown-content' : ''}">${markdown ? renderMprMarkdown(content) : escapeHtml(content)}</div></div>`;
                 document.getElementById('mprPreviewContent').innerHTML =
                     `<h6 class="text-primary fw-bold mb-3">MPR ${escapeHtml(currentMprId)}</h6>` +
                     section('Posisi', value('position')) + section('Departemen / Divisi',

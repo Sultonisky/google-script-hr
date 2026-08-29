@@ -55,19 +55,19 @@
                                 onclick="clearOffEmpSearch()"></i>
                         </div>
                         <div id="offEmpDropdown" class="border rounded-3 mt-1 shadow-sm"
-                            style="display:none;max-height:220px;overflow-y:auto;background:#fff;z-index:9999;position:relative">
+                            style="display:none;max-height:220px;overflow-y:auto;z-index:9999;position:relative">
                         </div>
                     </div>
 
                     <!-- STEP 2: Preview karyawan terpilih + form -->
                     <div id="offEmpPreview" style="display:none">
-                        <div class="p-3 rounded-3 mb-4" style="background:#fff;border:1px solid #eb1c24">
+                        <div class="p-3 rounded-3 mb-4" style="border:1px solid #eb1c24">
                             <div class="d-flex align-items-center gap-3">
                                 <div id="offEmpAvatar"
                                     style="width:44px;height:44px;font-size:16px;flex-shrink:0;background:#eb1c24;color:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800">
                                     ?</div>
                                 <div class="flex-grow-1">
-                                    <div class="fw-bold text-navy" id="offEmpName" style="font-size:15px">-</div>
+                                    <div class="fw-bold text-primary" id="offEmpName" style="font-size:15px">-</div>
                                     <div class="text-muted" style="font-size:12px">
                                         <span id="offEmpPosition">-</span> <span class="mx-1">&bull;</span> <span
                                             id="offEmpDept">-</span>
@@ -95,7 +95,7 @@
                     Resignation / Termination / Retirement / Death
                   --}}
                                     <label class="form-label fw-semibold" style="font-size:13px">Tipe Offboarding <span
-                                            class="text-danger">*</span></label>
+                                            class="text-primary">*</span></label>
                                     <select class="form-select form-select-sm" name="offboarding_type" id="offType"
                                         required>
                                         <option value="">— Pilih Tipe —</option>
@@ -107,13 +107,13 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold" style="font-size:13px">Tanggal Efektif <span
-                                            class="text-danger">*</span></label>
+                                            class="text-primary">*</span></label>
                                     <input type="date" class="form-control form-control-sm" name="last_working_date"
                                         id="offEffectiveDate" value="{{ date('Y-m-d') }}" required />
                                 </div>
                                 <div class="col-md-12">
                                     <label class="form-label fw-semibold" style="font-size:13px">Alasan Offboarding
-                                        <span class="text-danger">*</span></label>
+                                        <span class="text-primary">*</span></label>
                                     <textarea class="form-control form-control-sm" name="reason" id="offReason" rows="2"
                                         placeholder="Tuliskan alasan pengunduran diri / pemutusan hubungan kerja..." required></textarea>
                                 </div>
@@ -154,7 +154,7 @@
                             </div>
 
                             <!-- Validation feedback -->
-                            <div id="offAttachmentError" class="alert alert-danger py-2 d-none"
+                            <div id="offAttachmentError" class="alert alert-primary py-2 d-none"
                                 style="font-size:13px" role="alert">
                                 <i class="bi bi-exclamation-triangle-fill me-1"></i>
                                 <span id="offAttachmentErrorMsg"></span>
@@ -235,8 +235,8 @@
             reqEl.innerHTML +=
                 '<div class="mb-3">' +
                 '<label class="form-label fw-semibold" style="font-size:13px">' +
-                '<span class="text-danger me-1">*</span>' + _escHtml(docType) +
-                ' <span class="badge bg-danger ms-1" style="font-size:10px">Wajib</span>' +
+                '<span class="text-primary me-1">*</span>' + _escHtml(docType) +
+                ' <span class="badge bg-primary ms-1" style="font-size:10px">Wajib</span>' +
                 '</label>' +
                 '<input type="file" class="form-control form-control-sm offb-attach-input" ' +
                 'name="' + inputName + '" accept="' + _OFFB_ACCEPT + '" ' +
@@ -755,7 +755,7 @@
                                 <div class="fw-semibold" style="font-size:13px" id="empImportFileName">-</div>
                                 <div class="text-muted" style="font-size:12px" id="empImportFileSize">-</div>
                             </div>
-                            <button class="btn btn-sm btn-outline-danger" type="button" id="btnEmpImportClearFile">
+                            <button class="btn btn-sm btn-outline-primary" type="button" id="btnEmpImportClearFile">
                                 <i class="bi bi-x"></i>
                             </button>
                         </div>
@@ -767,7 +767,7 @@
                         <div class="fw-semibold mb-1" style="font-size:12px"><i
                                 class="bi bi-info-circle me-1"></i>Header yang dikenali (case-insensitive,
                             spasi/underscore diabaikan)</div>
-                        <div class="mb-1"><span class="badge bg-danger me-1">Wajib</span><code>Full Name</code> /
+                        <div class="mb-1"><span class="badge bg-primary me-1">Wajib</span><code>Full Name</code> /
                             <code>fullName</code> / <code>Nama Lengkap</code>
                         </div>
                         <div style="color:var(--color-text-soft)">
@@ -799,7 +799,7 @@
                         <span class="badge bg-success" style="font-size:13px" id="empImportBadgeNew">Baru: 0</span>
                         <span class="badge bg-warning text-dark" style="font-size:13px"
                             id="empImportBadgeExist">Sudah Ada: 0</span>
-                        <span class="badge bg-danger" style="font-size:13px" id="empImportBadgeInvalid">Invalid:
+                        <span class="badge bg-primary" style="font-size:13px" id="empImportBadgeInvalid">Invalid:
                             0</span>
                         <span class="badge bg-info text-dark" style="font-size:13px"
                             id="empImportBadgeDupFile">Duplikat File: 0</span>
@@ -1434,9 +1434,9 @@
                                 statusLabel = 'DUPLIKAT FILE';
                                 rowCls = 'table-info';
                             } else {
-                                statusCls = 'bg-danger';
+                                statusCls = 'bg-primary';
                                 statusLabel = 'INVALID';
-                                rowCls = 'table-danger';
+                                rowCls = 'table-primary';
                             }
                             var issues = (r.issues && r.issues.length) ?
                                 '<br><span style="font-size:10.5px;color:#888">' + esc(r.issues.join(
@@ -1572,7 +1572,7 @@
                         var errList = el('empImportErrorList');
                         if (errList) {
                             errList.innerHTML = errors.map(function(e) {
-                                return '<li class="py-1 border-bottom"><i class="bi bi-x-circle text-danger me-1"></i>' +
+                                return '<li class="py-1 border-bottom"><i class="bi bi-x-circle text-primary me-1"></i>' +
                                     esc(e) + '</li>';
                             }).join('');
                         }
@@ -1693,7 +1693,8 @@
                                 style="width:40px;height:40px;font-size:14px;flex-shrink:0;background:#eb1c24;color:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700">
                                 ?</div>
                             <div class="flex-grow-1">
-                                <div class="fw-bold text-navy" id="promoteProbEmpName" style="font-size:14px">-</div>
+                                <div class="fw-bold text-primary" id="promoteProbEmpName" style="font-size:14px">-
+                                </div>
                                 <div class="text-muted" id="promoteProbPosition" style="font-size:12px">-</div>
                             </div>
                             <div class="text-end">
@@ -1710,13 +1711,13 @@
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label class="form-label fw-semibold" style="font-size:12.5px">Mulai Probation <span
-                                    class="text-danger">*</span></label>
+                                    class="text-primary">*</span></label>
                             <input type="date" class="form-control form-control-sm" name="probation_start"
                                 id="promoteProbStart" value="{{ date('Y-m-d') }}" required />
                         </div>
                         <div class="col-6">
                             <label class="form-label fw-semibold" style="font-size:12.5px">Durasi Probation <span
-                                    class="text-danger">*</span></label>
+                                    class="text-primary">*</span></label>
                             <select class="form-select form-select-sm" name="probation_duration"
                                 id="promoteProbDuration" required>
                                 <option value="1 Bulan">1 Bulan</option>
@@ -1758,7 +1759,7 @@
                 <!-- STEP 1: Pilih karyawan -->
                 <div class="mb-3">
                     <label class="form-label fw-semibold" style="font-size:13px">
-                        <i class="bi bi-person me-1"></i>Cari Karyawan <span class="text-danger">*</span>
+                        <i class="bi bi-person me-1"></i>Cari Karyawan <span class="text-primary">*</span>
                     </label>
                     <div class="position-relative">
                         <input type="text" class="form-control" id="pdfEmpSearch"
@@ -1781,7 +1782,7 @@
                                 style="width:44px;height:44px;font-size:16px;flex-shrink:0;background:#eb1c24;color:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800">
                                 ?</div>
                             <div class="flex-grow-1">
-                                <div class="fw-bold text-navy" id="pdfEmpName" style="font-size:15px">-</div>
+                                <div class="fw-bold text-primary" id="pdfEmpName" style="font-size:15px">-</div>
                                 <div class="text-muted" style="font-size:12px">
                                     <span id="pdfEmpPosition">-</span> <span class="mx-1">&bull;</span> <span
                                         id="pdfEmpDept">-</span>
@@ -1797,7 +1798,7 @@
                     <div class="row g-3">
                         <div class="col-12">
                             <label class="form-label fw-semibold" style="font-size:13px">Pilih Jenis Dokumen <span
-                                    class="text-danger">*</span></label>
+                                    class="text-primary">*</span></label>
                             <select class="form-select" id="pdfDocType">
                                 <option value="">— Pilih Dokumen —</option>
                                 <option value="sk-rotation">SK Rotasi / Mutasi</option>
@@ -1879,7 +1880,7 @@
                 (emp.fullName || 'E').substring(0, 2).toUpperCase() +
                 '</div>' +
                 '<div class="flex-grow-1" style="font-size:12.5px;">' +
-                '<div class="fw-semibold text-navy">' + (emp.fullName || '-') + '</div>' +
+                '<div class="fw-semibold text-primary">' + (emp.fullName || '-') + '</div>' +
                 '<div class="text-muted" style="font-size:11px">' + (emp.employeeId || '') + ' &bull; ' + (emp
                     .jobPosition || '-') + '</div>' +
                 '</div></div>';

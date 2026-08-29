@@ -89,7 +89,7 @@
                 <div id="evalEmpPreview" style="display:none">
 
                     {{-- ─── EMPLOYEE INFO CARD ───────────────────────────── --}}
-                    <div class="mx-4 mt-3 p-3 rounded-3" style="background:#f5f3ff;border:1px solid #ddd6fe">
+                    <div class="mx-4 mt-3 p-3 rounded-3" style="background:#f5f3ff;border:1px solid #eb1c24">
                         {{-- Row 1: avatar + name/position + IDs --}}
                         <div class="d-flex align-items-center gap-3 mb-2">
                             <div id="evalEmpAvatar"
@@ -159,7 +159,6 @@
                                 'key' => 'integrity',
                                 'icon' => 'bi-shield-check',
                                 'color' => '#eb1c24',
-                                'bg' => '#faf5ff',
                                 'border' => '#e9d5ff',
                                 'no' => '1',
                                 'title' => 'Integrity',
@@ -179,7 +178,6 @@
                                 'key' => 'ci',
                                 'icon' => 'bi-arrow-up-circle',
                                 'color' => '#eb1c24',
-                                'bg' => '#f0f9ff',
                                 'border' => '#e9d5ff',
                                 'no' => '2',
                                 'title' => 'Continuous Improvement',
@@ -199,7 +197,6 @@
                                 'key' => 'ee',
                                 'icon' => 'bi-star',
                                 'color' => '#eb1c24',
-                                'bg' => '#f0f9ff',
                                 'border' => '#e9d5ff',
                                 'no' => '3',
                                 'title' => 'Execution Excellence',
@@ -217,7 +214,6 @@
                                 'key' => 'tw',
                                 'icon' => 'bi-people',
                                 'color' => '#eb1c24',
-                                'bg' => '#f0f9ff',
                                 'border' => '#e9d5ff',
                                 'no' => '4',
                                 'title' => 'Teamwork',
@@ -240,7 +236,7 @@
                             style="border:1px solid {{ $comp['border'] }};overflow:hidden">
                             {{-- Competency header --}}
                             <div class="d-flex align-items-center justify-content-between px-3 py-2"
-                                style="background:{{ $comp['bg'] }};border-bottom:1px solid {{ $comp['border'] }}">
+                                style="border-bottom:1px solid {{ $comp['border'] }}">
                                 <div class="d-flex align-items-center gap-2">
                                     <i class="bi {{ $comp['icon'] }}"
                                         style="color:{{ $comp['color'] }};font-size:15px"></i>
@@ -294,7 +290,7 @@
                                 </div>
                             @endforeach
                             {{-- Evidence note --}}
-                            <div class="px-3 py-2" style="background:#fafafa">
+                            <div class="px-3 py-2">
                                 <span style="font-size:10.5px;color:#9ca3af">
                                     <i class="bi bi-paperclip me-1"></i><em>Contoh bukti: {{ $comp['evidence'] }}</em>
                                 </span>
@@ -776,25 +772,33 @@
 
                 // Reset both to neutral
                 if (checkBtn) {
+                    checkBtn.classList.remove('is-active');
                     checkBtn.style.borderColor = '#d1d5db';
                     checkBtn.style.background = '#fff';
                     checkBtn.style.color = '#374151';
+                    checkBtn.querySelector('.bi') && (checkBtn.querySelector('.bi').style.color = '#374151');
                 }
                 if (crossBtn) {
+                    crossBtn.classList.remove('is-active');
                     crossBtn.style.borderColor = '#d1d5db';
                     crossBtn.style.background = '#fff';
                     crossBtn.style.color = '#374151';
+                    crossBtn.querySelector('.bi') && (crossBtn.querySelector('.bi').style.color = '#374151');
                 }
 
                 // Activate selected button (if not toggled off)
                 if (newVal === '1' && checkBtn) {
+                    checkBtn.classList.add('is-active');
                     checkBtn.style.borderColor = '#166534';
                     checkBtn.style.background = '#f0fdf4';
                     checkBtn.style.color = '#166534';
+                    checkBtn.querySelector('.bi') && (checkBtn.querySelector('.bi').style.color = '#166534');
                 } else if (newVal === '0' && crossBtn) {
+                    crossBtn.classList.add('is-active');
                     crossBtn.style.borderColor = '#991b1b';
                     crossBtn.style.background = '#fef2f2';
                     crossBtn.style.color = '#991b1b';
+                    crossBtn.querySelector('.bi') && (crossBtn.querySelector('.bi').style.color = '#991b1b');
                 }
             }
 
@@ -962,20 +966,26 @@
             // Style all sibling buttons for this target
             var isSetuju = (value === 'Setuju');
             document.querySelectorAll('.approval-btn[data-target="' + hiddenId + '"]').forEach(function(b) {
-                var bVal = b.getAttribute('data-value');
                 var isThis = (b === btnEl);
+                b.classList.toggle('is-active', isThis);
                 if (isThis && isSetuju) {
                     b.style.borderColor = '#166534';
                     b.style.background = '#f0fdf4';
                     b.style.color = '#166534';
+                    var checkIcon = b.querySelector('.bi');
+                    if (checkIcon) checkIcon.style.color = '#166534';
                 } else if (isThis && !isSetuju) {
                     b.style.borderColor = '#991b1b';
                     b.style.background = '#fef2f2';
                     b.style.color = '#991b1b';
+                    var crossIcon = b.querySelector('.bi');
+                    if (crossIcon) crossIcon.style.color = '#991b1b';
                 } else {
                     b.style.borderColor = '#d1d5db';
                     b.style.background = '#fff';
-                    b.style.color = '';
+                    b.style.color = '#374151';
+                    var neutralIcon = b.querySelector('.bi');
+                    if (neutralIcon) neutralIcon.style.color = '#374151';
                 }
             });
         };
@@ -1478,7 +1488,8 @@
         function setPrefilledIndicator(key, value) {
             if (value !== '1' && value !== '0') return;
             var hiddenEl = document.getElementById('ind_' + key);
-            var button = document.querySelector('.ind-btn-' + (value === '1' ? 'check' : 'cross') + '[data-key="' + key + '"]');
+            var button = document.querySelector('.ind-btn-' + (value === '1' ? 'check' : 'cross') + '[data-key="' +
+                key + '"]');
             if (!hiddenEl || !button) return;
             hiddenEl.value = value;
             var row = button.closest('.eval-ind-row');
@@ -1487,14 +1498,19 @@
             var crossBtn = row.querySelector('.ind-btn-cross');
             [checkBtn, crossBtn].forEach(function(btn) {
                 if (btn) {
+                    btn.classList.remove('is-active');
                     btn.style.borderColor = '#d1d5db';
                     btn.style.background = '#fff';
                     btn.style.color = '#374151';
+                    btn.querySelector('.bi') && (btn.querySelector('.bi').style.color = '#374151');
                 }
             });
+            button.classList.add('is-active');
             button.style.borderColor = value === '1' ? '#166534' : '#991b1b';
             button.style.background = value === '1' ? '#f0fdf4' : '#fef2f2';
             button.style.color = value === '1' ? '#166534' : '#991b1b';
+            button.querySelector('.bi') && (button.querySelector('.bi').style.color = value === '1' ? '#166534' :
+                '#991b1b');
         }
 
         function setPreviousDecisionOptions(canExtend) {
@@ -1514,12 +1530,14 @@
             if (!employeeId) return;
 
             fetch('/hr/probation/' + encodeURIComponent(employeeId) + '/eval-history', {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json'
-                }
-            })
-                .then(function(response) { return response.json(); })
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(function(response) {
+                    return response.json();
+                })
                 .then(function(data) {
                     var latest = (data.history || [])[0];
                     if (!latest) return;
@@ -1563,9 +1581,16 @@
                         var target = button.getAttribute('data-target');
                         var selected = document.getElementById(target);
                         var active = selected && selected.value === button.getAttribute('data-value');
-                        button.style.borderColor = active ? (selected.value === 'Setuju' ? '#166534' : '#991b1b') : '#d1d5db';
-                        button.style.background = active ? (selected.value === 'Setuju' ? '#f0fdf4' : '#fef2f2') : '#fff';
-                        button.style.color = active ? (selected.value === 'Setuju' ? '#166534' : '#991b1b') : '';
+                        button.classList.toggle('is-active', !!active);
+                        button.style.borderColor = active ? (selected.value === 'Setuju' ? '#166534' :
+                            '#991b1b') : '#d1d5db';
+                        button.style.background = active ? (selected.value === 'Setuju' ? '#f0fdf4' :
+                            '#fef2f2') : '#fff';
+                        button.style.color = active ? (selected.value === 'Setuju' ? '#166534' :
+                            '#991b1b') : '#374151';
+                        var icon = button.querySelector('.bi');
+                        if (icon) icon.style.color = active ? (selected.value === 'Setuju' ? '#166534' :
+                            '#991b1b') : '#374151';
                     });
                     recalcScores();
                     updateConfirmBtn();
@@ -1586,16 +1611,22 @@
                 // Reset ✓ button to neutral
                 var checkBtn = document.querySelector('.ind-btn-check[data-key="' + k + '"]');
                 if (checkBtn) {
+                    checkBtn.classList.remove('is-active');
                     checkBtn.style.borderColor = '#d1d5db';
                     checkBtn.style.background = '#fff';
                     checkBtn.style.color = '#374151';
+                    checkBtn.querySelector('.bi') && (checkBtn.querySelector('.bi').style.color =
+                        '#374151');
                 }
                 // Reset ✗ button to neutral
                 var crossBtn = document.querySelector('.ind-btn-cross[data-key="' + k + '"]');
                 if (crossBtn) {
+                    crossBtn.classList.remove('is-active');
                     crossBtn.style.borderColor = '#d1d5db';
                     crossBtn.style.background = '#fff';
                     crossBtn.style.color = '#374151';
+                    crossBtn.querySelector('.bi') && (crossBtn.querySelector('.bi').style.color =
+                        '#374151');
                 }
                 // Hide per-indicator error
                 var errEl = document.getElementById('ind_err_' + k);
