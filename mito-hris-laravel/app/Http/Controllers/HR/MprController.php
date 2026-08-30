@@ -38,9 +38,9 @@ class MprController extends Controller
     }
 
     /**
-     * Display list of MPR records (for HR) or Manpower's own requests + submission form.
+     * Shared MPR page context for requestor pages while preserving existing business logic.
      */
-    public function index(Request $request): View
+    protected function buildRequestorPageData(Request $request, bool $includeRecords = true): array
     {
         $user = session('hr_user', []);
         $role = $user['role'] ?? 'Viewer';
@@ -51,6 +51,7 @@ class MprController extends Controller
         $dept = $request->query('department', '');
         $status = $request->query('status', '');
         $submitBy = $request->query('submit_by', '');
+        $sort = strtolower((string) $request->query('sort', 'newest'));
         $perPage = (int) $request->query('per_page', 10);
 
         $filters = array_filter([
@@ -60,50 +61,62 @@ class MprController extends Controller
             'submit_by'  => $submitBy,
         ]);
 
-        if ($isManager) {
-            $mprs = $this->mprRepo->getAllForManager($user['email'] ?? '', $filters);
+        if ($includeRecords) {
+            if ($isManager) {
+                $mprs = $this->mprRepo->getAllForManager($user['email'] ?? '', $filters);
+            } else {
+                $mprs = $this->mprRepo->getAll($filters);
+            }
+
+            if ($sort === 'oldest') {
+                $mprs = $mprs->sortBy(fn($mpr) => $mpr->requestDate ?? $mpr->createdAt ?? '')->values();
+            } else {
+                $mprs = $mprs->sortByDesc(fn($mpr) => $mpr->requestDate ?? $mpr->createdAt ?? '')->values();
+            }
+
+            $allMprs = $isManpower ? $mprs : $this->mprRepo->getAll();
+            $submitByOptions = $allMprs->map(function ($mpr) {
+                return trim($mpr->requestorName ?: $mpr->requestorEmail ?: $mpr->createdBy ?: '');
+            })
+                ->filter(fn($name) => filled($name))
+                ->unique()
+                ->sort()
+                ->values();
+            $thisMonthStr = now()->timezone('Asia/Jakarta')->format('Y-m');
+
+            $stats = [
+                'total'           => $allMprs->count(),
+                'this_month'      => $allMprs->filter(fn($m) => str_starts_with($m->requestDate ?? $m->createdAt ?? '', $thisMonthStr))->count(),
+                'total_quantity'  => $allMprs->sum(fn($m) => (int) ($m->quantity ?? 1)),
+                'submitted'       => $allMprs->filter(fn($m) => strtolower($m->status ?? '') === 'submitted')->count(),
+            ];
+
+            $total = $mprs->count();
+            $currentPage = max(1, (int) $request->query('page', 1));
+            $offset = ($currentPage - 1) * $perPage;
+            $paginatedMprs = $mprs->slice($offset, $perPage)->values();
+            $lastPage = max(1, (int) ceil($total / $perPage));
         } else {
-            $mprs = $this->mprRepo->getAll($filters);
+            $paginatedMprs = collect();
+            $total = 0;
+            $currentPage = 1;
+            $lastPage = 1;
+            $perPage = 10;
+            $stats = [
+                'total' => 0,
+                'this_month' => 0,
+                'total_quantity' => 0,
+                'submitted' => 0,
+            ];
+            $submitByOptions = collect();
         }
 
-        $mprs = $mprs->sortByDesc(fn($mpr) => $mpr->requestDate ?? $mpr->createdAt ?? '')->values();
-
-        // Aggregate statistics for dashboard metrics
-        $allMprs = $isManpower ? $mprs : $this->mprRepo->getAll();
-        $submitByOptions = $allMprs->map(function ($mpr) {
-            return trim($mpr->requestorName ?: $mpr->requestorEmail ?: $mpr->createdBy ?: '');
-        })
-            ->filter(fn($name) => filled($name))
-            ->unique()
-            ->sort()
-            ->values();
-        $thisMonthStr = now()->timezone('Asia/Jakarta')->format('Y-m');
-
-        $stats = [
-            'total'           => $allMprs->count(),
-            'this_month'      => $allMprs->filter(fn($m) => str_starts_with($m->requestDate ?? $m->createdAt ?? '', $thisMonthStr))->count(),
-            'total_quantity'  => $allMprs->sum(fn($m) => (int) ($m->quantity ?? 1)),
-            'submitted'       => $allMprs->filter(fn($m) => strtolower($m->status ?? '') === 'submitted')->count(),
-        ];
-
-        // Pagination
-        $total = $mprs->count();
-        $currentPage = max(1, (int) $request->query('page', 1));
-        $offset = ($currentPage - 1) * $perPage;
-        $paginatedMprs = $mprs->slice($offset, $perPage)->values();
-        $lastPage = max(1, (int) ceil($total / $perPage));
-
-        // MPR organization catalog is shared by the form and validation rules.
         $departmentDivisionMap = config('hris.mpr_department_divisions', []);
         $departments = array_keys($departmentDivisionMap);
-
         $jobLevels = ['Associate', 'Staff', 'Senior Staff', 'Supervisor', 'Team Lead', 'Manager', 'General Manager', 'Director'];
-
         $workLocations = ['Head Office (HO)', 'Depo Jakarta', 'Depo Bandung', 'Depo Surabaya', 'Pabrik'];
-
         $employmentTypes = ['Permanent (PKWTT)', 'Contract (PKWT)', 'Outsource', 'Intern', 'Freelance / Project'];
 
-        // All available entity names (kode entitas) untuk HR/Super Admin
         $entityOptions = [
             'MSI' => 'PT Mahakarya Sukses Indonesia (MSI)',
             'SPI' => 'PT Stein Perkasa Internasional (SPI)',
@@ -111,9 +124,6 @@ class MprController extends Controller
             'MEP' => 'PT Mitra Elektro Perkasa (MEP)',
         ];
 
-        // Entity yang diizinkan untuk user yang sedang login
-        // - Manpower: hanya entity yang menjadi assignment-nya (dari session)
-        // - HR/Super Admin: semua entity tersedia
         $userEntities = $user['entities'] ?? [];
         $allowedEntities = $isManpower
             ? array_filter($entityOptions, fn($label, $code) => in_array($code, $userEntities, true), ARRAY_FILTER_USE_BOTH)
@@ -127,7 +137,7 @@ class MprController extends Controller
             'Kebutuhan Restrukturisasi Organisasi',
         ];
 
-        return view('hr.mpr.index', compact(
+        return compact(
             'isManager',
             'user',
             'role',
@@ -150,7 +160,129 @@ class MprController extends Controller
             'status',
             'submitBy',
             'submitByOptions'
-        ));
+        );
+    }
+
+    /**
+     * Display list of MPR records (for HR) or redirect requestor to dedicated history page.
+     */
+    public function index(Request $request): View|RedirectResponse
+    {
+        $user = session('hr_user', []);
+        $role = $user['role'] ?? 'Viewer';
+        $isManpower = strtolower(trim($role)) === 'manpower';
+
+        if ($isManpower) {
+            return redirect()->route('hr.mpr.create');
+        }
+
+        $search = $request->query('search', '');
+        $dept = $request->query('department', '');
+        $status = $request->query('status', '');
+        $submitBy = $request->query('submit_by', '');
+        $sort = strtolower((string) $request->query('sort', 'newest'));
+        $perPage = (int) $request->query('per_page', 10);
+
+        $filters = array_filter([
+            'search'     => $search,
+            'department' => $dept,
+            'status'     => $status,
+            'submit_by'  => $submitBy,
+        ]);
+
+        $mprs = $this->mprRepo->getAll($filters);
+        if ($sort === 'oldest') {
+            $mprs = $mprs->sortBy(fn($mpr) => $mpr->requestDate ?? $mpr->createdAt ?? '')->values();
+        } else {
+            $mprs = $mprs->sortByDesc(fn($mpr) => $mpr->requestDate ?? $mpr->createdAt ?? '')->values();
+        }
+
+        $allMprs = $this->mprRepo->getAll();
+        $submitByOptions = $allMprs->map(function ($mpr) {
+            return trim($mpr->requestorName ?: $mpr->requestorEmail ?: $mpr->createdBy ?: '');
+        })
+            ->filter(fn($name) => filled($name))
+            ->unique()
+            ->sort()
+            ->values();
+        $thisMonthStr = now()->timezone('Asia/Jakarta')->format('Y-m');
+
+        $stats = [
+            'total'           => $allMprs->count(),
+            'this_month'      => $allMprs->filter(fn($m) => str_starts_with($m->requestDate ?? $m->createdAt ?? '', $thisMonthStr))->count(),
+            'total_quantity'  => $allMprs->sum(fn($m) => (int) ($m->quantity ?? 1)),
+            'submitted'       => $allMprs->filter(fn($m) => strtolower($m->status ?? '') === 'submitted')->count(),
+        ];
+
+        $total = $mprs->count();
+        $currentPage = max(1, (int) $request->query('page', 1));
+        $offset = ($currentPage - 1) * $perPage;
+        $paginatedMprs = $mprs->slice($offset, $perPage)->values();
+        $lastPage = max(1, (int) ceil($total / $perPage));
+
+        $departmentDivisionMap = config('hris.mpr_department_divisions', []);
+        $departments = array_keys($departmentDivisionMap);
+        $jobLevels = ['Associate', 'Staff', 'Senior Staff', 'Supervisor', 'Team Lead', 'Manager', 'General Manager', 'Director'];
+        $workLocations = ['Head Office (HO)', 'Depo Jakarta', 'Depo Bandung', 'Depo Surabaya', 'Pabrik'];
+        $employmentTypes = ['Permanent (PKWTT)', 'Contract (PKWT)', 'Outsource', 'Intern', 'Freelance / Project'];
+        $entityOptions = [
+            'MSI' => 'PT Mahakarya Sukses Indonesia (MSI)',
+            'SPI' => 'PT Stein Perkasa Internasional (SPI)',
+            'PII' => 'PT Perkasa Injeksi Indonesia (PII)',
+            'MEP' => 'PT Mitra Elektro Perkasa (MEP)',
+        ];
+        $allowedEntities = $entityOptions;
+        $reasons = [
+            'Penambahan Karyawan Baru (Business Expansion)',
+            'Penggantian Karyawan Resign / Mutasi / Demosi',
+            'Beban Kerja Musiman / Peak Season',
+            'Proyek Khusus',
+            'Kebutuhan Restrukturisasi Organisasi',
+        ];
+
+        return view('hr.mpr.index', array_merge(compact(
+            'user',
+            'role',
+            'paginatedMprs',
+            'total',
+            'currentPage',
+            'lastPage',
+            'perPage',
+            'stats',
+            'departments',
+            'departmentDivisionMap',
+            'jobLevels',
+            'workLocations',
+            'employmentTypes',
+            'entityOptions',
+            'allowedEntities',
+            'reasons',
+            'search',
+            'dept',
+            'status',
+            'submitBy',
+            'submitByOptions'
+        ), ['isManager' => false]));
+    }
+
+    public function create(Request $request): View
+    {
+        $user = session('hr_user', []);
+        if (strtolower(trim($user['role'] ?? '')) !== 'manpower') {
+            return $this->index($request);
+        }
+
+        return view('hr.mpr.create', $this->buildRequestorPageData($request, false));
+    }
+
+    public function history(Request $request): View
+    {
+        $user = session('hr_user', []);
+        if (strtolower(trim($user['role'] ?? '')) !== 'manpower') {
+            return $this->index($request);
+        }
+
+        return view('hr.mpr.history', $this->buildRequestorPageData($request));
     }
 
     /**

@@ -571,7 +571,7 @@
 
                                     {{-- Entity Selector: hanya entity yang menjadi assignment Manager ini --}}
                                     <div class="row g-3 mt-1">
-                                        <div class="col-md-6">
+                                        <div class="col-md-12">
                                             <label class="form-label text-muted small fw-semibold mb-1">
                                                 Entitas yang Dituju <span class="text-danger">*</span>
                                                 <span class="ms-1 text-muted fw-normal" style="font-size:10px;">(pilih dari
@@ -610,13 +610,13 @@
                                                 </select>
                                             @endif
                                         </div>
-                                        <div class="col-md-6 d-flex align-items-end">
-                                            <div class="text-muted bg-white border rounded px-3 py-2 w-100 small">
+                                        {{-- <div class="col-md-12 d-inline-flex align-items-end">
+                                            <div class="text-mute border py-2 px-3 rounded small">
                                                 <i class="bi bi-info-circle-fill text-primary me-1"></i>
                                                 <strong>Entity</strong> = perusahaan yang menjadi tanggung jawab Anda.<br>
                                                 <strong>Branch</strong> = lokasi Anda bertugas, otomatis dari profil akun.
                                             </div>
-                                        </div>
+                                        </div> --}}
                                     </div>
 
                                     <div class="mt-2 text-muted" style="font-size: 11px;">
@@ -742,7 +742,7 @@
                                 <hr class="my-4">
 
                                 <div class="d-flex justify-content-end gap-2">
-                                    <button type="reset" class="btn btn-light px-3">Reset Form</button>
+                                    <button type="reset" class="btn btn-outline-secondary px-3">Reset Form</button>
                                     <button type="submit" id="btnSubmitMprManager"
                                         class="btn btn-primary px-4 fw-semibold shadow-sm">
                                         <span class="spinner-border spinner-border-sm me-1 d-none"
