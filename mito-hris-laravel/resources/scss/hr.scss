@@ -1,14 +1,88 @@
 // MITO HRIS - HR Dashboard SCSS (1:1 from GAS CSS)
-@use 'variables' as *;
+@use "variables" as *;
 
 // Import original modular CSS from GAS
-@import 'modules/theme';
-@import 'modules/sidebar';
-@import 'modules/topbar';
-@import 'modules/dashboard';
-@import 'modules/table';
-@import 'modules/drawer';
-@import 'modules/modal';
-@import 'modules/employee';
-@import 'modules/masterData';
-@import 'modules/responsive';
+@import "modules/theme";
+@import "modules/sidebar";
+@import "modules/topbar";
+@import "modules/dashboard";
+@import "modules/table";
+@import "modules/drawer";
+@import "modules/modal";
+@import "modules/employee";
+@import "modules/masterData";
+@import "modules/responsive";
+
+@keyframes mito-refresh-spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.btn-refresh,
+.mpr-refresh-btn,
+.fab-action,
+[data-mito-refresh] {
+    position: relative;
+    transition:
+        opacity 0.2s ease,
+        transform 0.2s ease,
+        filter 0.2s ease;
+}
+
+.btn-refresh i,
+.mpr-refresh-btn i,
+.fab-action i,
+[data-mito-refresh] i,
+.btn-refresh svg,
+.mpr-refresh-btn svg,
+.fab-action svg,
+[data-mito-refresh] svg {
+    display: inline-block;
+    transform-origin: center;
+    transition: transform 0.2s ease;
+}
+
+.btn-refresh.is-refreshing i,
+.mpr-refresh-btn.is-refreshing i,
+.fab-action.is-refreshing i,
+[data-mito-refresh].is-refreshing i,
+.btn-refresh.is-refreshing svg,
+.mpr-refresh-btn.is-refreshing svg,
+.fab-action.is-refreshing svg,
+[data-mito-refresh].is-refreshing svg {
+    animation: mito-refresh-spin 0.8s linear infinite;
+}
+
+.btn-refresh.is-refreshing,
+.mpr-refresh-btn.is-refreshing,
+.fab-action.is-refreshing,
+[data-mito-refresh].is-refreshing {
+    cursor: wait;
+    opacity: 0.9;
+    pointer-events: none;
+}
+
+.btn-refresh:disabled,
+.mpr-refresh-btn:disabled,
+.fab-action:disabled,
+[data-mito-refresh]:disabled {
+    cursor: wait;
+    opacity: 0.8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .btn-refresh.is-refreshing i,
+    .mpr-refresh-btn.is-refreshing i,
+    .fab-action.is-refreshing i,
+    [data-mito-refresh].is-refreshing i,
+    .btn-refresh.is-refreshing svg,
+    .mpr-refresh-btn.is-refreshing svg,
+    .fab-action.is-refreshing svg,
+    [data-mito-refresh].is-refreshing svg {
+        animation: none;
+    }
+}
