@@ -56,6 +56,8 @@ Route::post('/outsource/apply', [OutsourceApplyController::class, 'store'])->nam
 // DOMAIN 3: HR INTERNAL MANAGEMENT SYSTEM (Protected by hr.auth Middleware)
 // =========================================================================
 Route::prefix('hr')->name('hr.')->middleware(['hr.auth', 'mpr.auth'])->group(function () {
+    Route::post('/refresh-data', [\App\Http\Controllers\HR\RefreshController::class, 'refreshData'])->name('refresh-data');
+
     // 1. Dashboard — all authenticated users can view
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 

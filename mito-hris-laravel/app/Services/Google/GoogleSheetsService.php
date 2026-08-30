@@ -60,6 +60,59 @@ class GoogleSheetsService
     }
 
     /**
+     * Run a lightweight Google Sheets health check without exposing credentials.
+     */
+    public function healthCheck(array $sheetNames = ['Employee', 'data_kandidat', 'MPR']): array
+    {
+        if (empty($this->spreadsheetId)) {
+            return [
+                'success' => false,
+                'status' => 'unhealthy',
+                'message' => 'Spreadsheet ID belum dikonfigurasi.',
+                'sheets' => [],
+            ];
+        }
+
+        $healthySheets = [];
+
+        foreach ($sheetNames as $sheetName) {
+            if (empty($sheetName) || ! is_string($sheetName)) {
+                continue;
+            }
+
+            try {
+                $values = $this->getRange($sheetName, 'A1:Z1', false);
+                if (! is_array($values) || empty($values) || empty($values[0])) {
+                    return [
+                        'success' => false,
+                        'status' => 'unhealthy',
+                        'message' => "Sheet {$sheetName} tidak dapat diakses atau belum memiliki header.",
+                        'sheets' => $healthySheets,
+                    ];
+                }
+
+                $healthySheets[] = $sheetName;
+            } catch (\Throwable $e) {
+                Log::warning("GoogleSheetsService::healthCheck failed for {$sheetName}: " . $e->getMessage());
+
+                return [
+                    'success' => false,
+                    'status' => 'unhealthy',
+                    'message' => 'Koneksi Google Sheets gagal saat health check.',
+                    'sheets' => $healthySheets,
+                ];
+            }
+        }
+
+        return [
+            'success' => true,
+            'status' => 'healthy',
+            'message' => 'Koneksi Google Sheets berhasil.',
+            'sheets' => $healthySheets,
+        ];
+    }
+
+    /**
      * Get all rows as associative arrays using the first row as keys.
      */
     public function getRowsAsAssoc(string $sheetName, bool $useCache = true): array
