@@ -304,7 +304,8 @@ class MprFlowTest extends TestCase
         ]));
 
         $response->assertStatus(200);
-        $response->assertSee('Reset Filter');
+        $response->assertSee('class="btn-reset-filter text-decoration-none"', false);
+        $response->assertSee('title="Reset semua filter"', false);
         $response->assertSee('href="' . route('hr.mpr.history') . '"', false);
     }
 
