@@ -24,7 +24,7 @@ class DashboardController extends Controller
     {
         $user = session('hr_user');
         if (($user['role'] ?? '') === 'Manpower') {
-            return redirect()->route('hr.mpr.index');
+            return redirect()->route('hr.mpr.create');
         }
 
         $allCandidates = $this->candidateRepo->getAllFromSheets();

@@ -23,8 +23,11 @@
         @if (session('hr_user.auth_domain') === 'mpr_requestor')
             <!-- MPR Requestor Navigation (source: mpr_requestor sheet) -->
             <div class="nav-section-label">Manpower Request</div>
-            <a href="{{ route('hr.mpr.index') }}" class="nav-item {{ request()->routeIs('hr.mpr.*') ? 'active' : '' }}">
-                <i class="bi bi-file-earmark-text-fill"></i> Manpower Request (MPR)
+            <a href="{{ route('hr.mpr.create') }}" class="nav-item {{ request()->routeIs('hr.mpr.create') ? 'active' : '' }}">
+                <i class="bi bi-file-earmark-plus-fill"></i> Pengajuan MPR
+            </a>
+            <a href="{{ route('hr.mpr.history') }}" class="nav-item {{ request()->routeIs('hr.mpr.history') ? 'active' : '' }}">
+                <i class="bi bi-clock-history"></i> Riwayat Pengajuan
             </a>
         @else
             <!-- Main Section -->

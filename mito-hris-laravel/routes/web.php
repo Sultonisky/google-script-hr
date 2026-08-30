@@ -166,7 +166,8 @@ Route::prefix('hr')->name('hr.')->middleware(['hr.auth', 'mpr.auth'])->group(fun
     // 7. Manpower Request (MPR) — View, Create, Show, PDF Export
     Route::prefix('mpr')->name('mpr.')->middleware('can:view_mpr')->group(function () {
         Route::get('/', [MprController::class, 'index'])->name('index');
-        Route::get('/create', [MprController::class, 'index'])->name('create')->middleware('can:create_mpr');
+        Route::get('/create', [MprController::class, 'create'])->name('create')->middleware('can:create_mpr');
+        Route::get('/history', [MprController::class, 'history'])->name('history')->middleware('can:view_mpr');
         Route::post('/', [MprController::class, 'store'])->name('store')->middleware('can:create_mpr');
         Route::put('/{id}', [MprController::class, 'update'])->name('update')->middleware('can:update_mpr');
         Route::get('/{id}/preview', [MprController::class, 'preview'])->name('preview');

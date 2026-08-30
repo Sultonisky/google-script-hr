@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\DTOs\MprData;
 use App\Repositories\Contracts\MprRepositoryInterface;
+use App\Services\Google\GoogleSheetsService;
 use App\Services\MprPdfService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
@@ -114,11 +115,11 @@ class MprFlowTest extends TestCase
     {
         $this->actingAsRole('Manpower');
 
-        // Manager accessing HR Dashboard -> automatically redirected to their allowed MPR page
-        $this->get('/hr/dashboard')->assertRedirect(route('hr.mpr.index'));
+        // Manpower accessing HR Dashboard -> automatically redirected to the create form
+        $this->get('/hr/dashboard')->assertRedirect(route('hr.mpr.create'));
 
-        // Manager visiting login page when authenticated -> redirected to MPR page
-        $this->get('/login')->assertRedirect(route('hr.mpr.index'));
+        // Manpower visiting login page when authenticated -> redirected to create form
+        $this->get('/login')->assertRedirect(route('hr.mpr.create'));
 
         // Manager accessing Recruitment -> 403
         $this->get('/hr/recruitment')->assertStatus(403);
@@ -140,18 +141,58 @@ class MprFlowTest extends TestCase
     }
 
     /** @test */
-    public function manpower_can_view_mpr_index_and_sees_own_records(): void
+    public function manpower_default_landing_redirects_to_create_form(): void
     {
-        $manpowerEmail = 'manager1@mito.id';
-        $this->actingAsRole('Manpower', $manpowerEmail, 'Budi Manpower', ['MSI', 'SPI'], 'Bandung');
+        $this->actingAsRole('Manpower', 'manager1@mito.id', 'Budi Manpower', ['MSI', 'SPI'], 'Bandung');
+
+        $response = $this->get('/hr/mpr');
+        $response->assertRedirect(route('hr.mpr.create'));
+    }
+
+    /** @test */
+    public function manpower_can_access_refresh_endpoint_for_data_reload(): void
+    {
+        $this->actingAsRole('Manpower', 'manager.refresh@mito.id', 'Rina Manpower', ['MSI'], 'Bandung');
+
+        $mockSheets = Mockery::mock(GoogleSheetsService::class);
+        $mockSheets->shouldReceive('healthCheck')
+            ->once()
+            ->with(['Employee', 'data_kandidat', 'MPR'])
+            ->andReturn([
+                'success' => true,
+                'sheets' => ['Employee', 'data_kandidat', 'MPR'],
+            ]);
+
+        foreach (['Employee', 'data_kandidat', 'MPR'] as $sheetName) {
+            $mockSheets->shouldReceive('clearCache')->once()->with($sheetName);
+            $mockSheets->shouldReceive('getRange')->once()->with($sheetName, 'A:ZZ', false)->andReturn([
+                ['Employee ID', 'Name'],
+                ['E-001', 'Contoh'],
+            ]);
+        }
+
+        $this->app->instance(GoogleSheetsService::class, $mockSheets);
+
+        $response = $this->postJson('/hr/refresh-data');
+
+        $response->assertOk();
+        $response->assertJsonPath('success', true);
+        $response->assertJsonPath('status', 'healthy');
+    }
+
+    /** @test */
+    public function manpower_has_dedicated_create_and_history_routes(): void
+    {
+        $manpowerEmail = 'manager2@mito.id';
+        $this->actingAsRole('Manpower', $manpowerEmail, 'Dewi Manpower', ['MSI'], 'Bandung');
 
         $mockMpr = $this->makeMprData([
-            'mprNumber'     => 'MPR-20260824-0001',
-            'requestorName' => 'Budi Manpower',
+            'mprNumber'     => 'MPR-20260824-0002',
+            'requestorName' => 'Dewi Manpower',
             'requestorEmail' => $manpowerEmail,
             'entity'        => 'MSI',
             'branch'        => 'Bandung',
-            'position'      => 'Backend Developer',
+            'position'      => 'QA Engineer',
             'createdBy'     => $manpowerEmail,
         ]);
 
@@ -163,11 +204,109 @@ class MprFlowTest extends TestCase
 
         $this->app->instance(MprRepositoryInterface::class, $mockRepo);
 
-        $response = $this->get('/hr/mpr');
+        $createResponse = $this->get(route('hr.mpr.create'));
+        $createResponse->assertStatus(200);
+        $createResponse->assertViewIs('hr.mpr.create');
+        $createResponse->assertSee('Formulir Pengajuan Manpower Request');
+
+        $historyResponse = $this->get(route('hr.mpr.history'));
+        $historyResponse->assertStatus(200);
+        $historyResponse->assertViewIs('hr.mpr.history');
+        $historyResponse->assertSee('Riwayat Pengajuan MPR');
+        $historyResponse->assertSee('MPR-20260824-0002');
+    }
+
+    /** @test */
+    public function manpower_history_page_shows_clear_stats_for_requestors(): void
+    {
+        $manpowerEmail = 'manager.stats@mito.id';
+        $this->actingAsRole('Manpower', $manpowerEmail, 'Rina MPR', ['MSI'], 'Bandung');
+
+        $mockRepo = Mockery::mock(MprRepositoryInterface::class);
+        $mockRepo->shouldReceive('getAllForManager')
+            ->once()
+            ->with($manpowerEmail, Mockery::any())
+            ->andReturn(collect([
+                $this->makeMprData(['mprNumber' => 'MPR-1', 'status' => 'Submitted', 'quantity' => 2, 'requestDate' => '2026-08-01', 'requestorEmail' => $manpowerEmail, 'createdBy' => $manpowerEmail]),
+                $this->makeMprData(['mprNumber' => 'MPR-2', 'status' => 'Approved', 'quantity' => 3, 'requestDate' => '2026-08-05', 'requestorEmail' => $manpowerEmail, 'createdBy' => $manpowerEmail]),
+                $this->makeMprData(['mprNumber' => 'MPR-3', 'status' => 'Rejected', 'quantity' => 1, 'requestDate' => '2026-08-10', 'requestorEmail' => $manpowerEmail, 'createdBy' => $manpowerEmail]),
+            ]));
+
+        $this->app->instance(MprRepositoryInterface::class, $mockRepo);
+
+        $response = $this->get(route('hr.mpr.history'));
+
         $response->assertStatus(200);
-        $response->assertSee('MPR-20260824-0001');
-        $response->assertSee('Backend Developer');
-        $response->assertSee('Role: Manpower');
+        $response->assertSee('Total Pengajuan');
+        $response->assertSee('Menunggu Review');
+        $response->assertSee('Disetujui');
+        $response->assertSee('Total Kebutuhan');
+    }
+
+    /** @test */
+    public function manpower_history_page_supports_sort_order_filter(): void
+    {
+        $manpowerEmail = 'manager.sort@mito.id';
+        $this->actingAsRole('Manpower', $manpowerEmail, 'Sort Manpower', ['MSI'], 'Bandung');
+
+        $older = $this->makeMprData([
+            'mprNumber' => 'MPR-20260801-0001',
+            'status' => 'Submitted',
+            'requestDate' => '2026-08-01',
+            'requestorEmail' => $manpowerEmail,
+            'createdBy' => $manpowerEmail,
+        ]);
+
+        $newer = $this->makeMprData([
+            'mprNumber' => 'MPR-20260815-0002',
+            'status' => 'Approved',
+            'requestDate' => '2026-08-15',
+            'requestorEmail' => $manpowerEmail,
+            'createdBy' => $manpowerEmail,
+        ]);
+
+        $mockRepo = Mockery::mock(MprRepositoryInterface::class);
+        $mockRepo->shouldReceive('getAllForManager')
+            ->once()
+            ->with($manpowerEmail, Mockery::any())
+            ->andReturn(collect([$newer, $older]));
+
+        $this->app->instance(MprRepositoryInterface::class, $mockRepo);
+
+        $response = $this->get(route('hr.mpr.history', ['sort' => 'oldest']));
+
+        $response->assertStatus(200);
+        $response->assertSee('MPR-20260801-0001');
+        $response->assertSee('Terlama');
+        $response->assertSee('value="oldest"', false);
+    }
+
+    /** @test */
+    public function manpower_history_page_provides_reset_filter_button(): void
+    {
+        $manpowerEmail = 'manager.reset@mito.id';
+        $this->actingAsRole('Manpower', $manpowerEmail, 'Reset Manpower', ['MSI'], 'Bandung');
+
+        $mockRepo = Mockery::mock(MprRepositoryInterface::class);
+        $mockRepo->shouldReceive('getAllForManager')
+            ->once()
+            ->with($manpowerEmail, Mockery::any())
+            ->andReturn(collect());
+
+        $this->app->instance(MprRepositoryInterface::class, $mockRepo);
+
+        $response = $this->get(route('hr.mpr.history', [
+            'search' => 'keyword',
+            'department' => 'IT',
+            'status' => 'Submitted',
+            'sort' => 'oldest',
+            'page' => 2,
+        ]));
+
+        $response->assertStatus(200);
+        $response->assertSee('class="btn-reset-filter text-decoration-none"', false);
+        $response->assertSee('title="Reset semua filter"', false);
+        $response->assertSee('href="' . route('hr.mpr.history') . '"', false);
     }
 
     /** @test */

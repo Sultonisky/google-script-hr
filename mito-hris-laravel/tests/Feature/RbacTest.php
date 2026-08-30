@@ -501,7 +501,8 @@ class RbacTest extends TestCase
     public function mpr_requestor_can_access_mpr_index(): void
     {
         $this->actingAsMprRequestor();
-        $this->get('/hr/mpr')->assertStatus(200);
+        $this->get('/hr/mpr')
+            ->assertRedirect(route('hr.mpr.create'));
     }
 
     /** @test */

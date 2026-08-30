@@ -25,6 +25,7 @@ class MprRequestorMiddleware
     // Routes accessible by an MPR Requestor (pattern-matched against full path)
     protected const ALLOWED_PREFIXES = [
         '/hr/mpr',
+        '/hr/refresh-data',
         '/logout',
     ];
 
@@ -76,7 +77,7 @@ class MprRequestorMiddleware
 
             if (!$allowed) {
                 if ($path === '/hr/dashboard') {
-                    return redirect()->route('hr.mpr.index')
+                    return redirect()->route('hr.mpr.create')
                         ->with('error', 'Anda hanya dapat mengakses halaman Manpower Request (MPR).');
                 }
                 if ($request->expectsJson()) {
