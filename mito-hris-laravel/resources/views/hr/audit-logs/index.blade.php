@@ -282,7 +282,7 @@
                     <h6 class="mb-0 fw-bold">Filter Audit Log</h6>
                 </div>
 
-                <button class="btn btn-primary btn-sm" id="btnAuditRefresh" type="button" onclick="location.reload()">
+                <button class="btn btn-primary btn-sm" id="btnAuditRefresh" type="button" data-refresh="page" aria-label="Refresh data" title="Muat ulang data">
                     <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Refresh
                 </button>
             </div>

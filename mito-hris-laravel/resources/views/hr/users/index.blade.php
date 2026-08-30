@@ -59,7 +59,7 @@
                         </button>
                     </div>
                     <button class="btn-refresh" type="button" title="Muat ulang data pengguna"
-                        aria-label="Muat ulang data pengguna" onclick="location.reload()">
+                        aria-label="Muat ulang data pengguna" data-refresh="page">
                         <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
                     </button>
                 @endcan

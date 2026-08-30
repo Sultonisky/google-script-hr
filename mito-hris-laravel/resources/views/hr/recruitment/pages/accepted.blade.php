@@ -62,7 +62,7 @@
                                 <i class="bi bi-file-earmark-check-fill me-1"></i>Proses Kontrak PKWT
                             </button>
                             <button class="btn-refresh accepted-refresh-btn accepted-refresh-header" type="button"
-                                title="Muat ulang" aria-label="Muat ulang data" onclick="location.reload()">
+                                title="Muat ulang" aria-label="Muat ulang data" data-refresh="page">
                                 <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
                             </button>
                         </div>
@@ -107,7 +107,7 @@
                             <i class="bi bi-arrow-counterclockwise"></i> Reset
                         </a>
                         <button class="btn-refresh accepted-refresh-btn accepted-refresh-filter" id="btnAccRefresh"
-                            type="button" title="Muat ulang" aria-label="Muat ulang data" onclick="location.reload()">
+                            type="button" title="Muat ulang" aria-label="Muat ulang data" data-refresh="page">
                             <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
                         </button>
                     </div>

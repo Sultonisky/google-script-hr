@@ -36,7 +36,7 @@
                         </a>
                     @endcan
                     <button class="btn-refresh" id="btnRefresh" type="button" title="Muat ulang data"
-                        aria-label="Muat ulang data" onclick="location.reload()">
+                        aria-label="Muat ulang data" data-refresh="page">
                         <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
                     </button>
                 </div>

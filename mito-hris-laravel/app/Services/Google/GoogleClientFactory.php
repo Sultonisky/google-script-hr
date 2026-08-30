@@ -15,13 +15,28 @@ class GoogleClientFactory
     /**
      * Create or retrieve singleton Google Client instance.
      */
+    protected function resolveCredentialsPath(string $path): string
+    {
+        if (empty($path)) {
+            return storage_path('app/google/service-account.json');
+        }
+
+        if (preg_match('/^[A-Za-z]:[\\\\\/]/', $path) || str_starts_with($path, '/')) {
+            return $path;
+        }
+
+        $absolutePath = base_path($path);
+
+        return file_exists($absolutePath) ? $absolutePath : $path;
+    }
+
     public function getClient(): GoogleClient
     {
         if ($this->client !== null) {
             return $this->client;
         }
 
-        $credentialsPath = config('google.credentials_path');
+        $credentialsPath = $this->resolveCredentialsPath(config('google.credentials_path', storage_path('app/google/service-account.json')));
 
         $client = new GoogleClient();
         $client->setApplicationName('MITO HRIS Laravel');

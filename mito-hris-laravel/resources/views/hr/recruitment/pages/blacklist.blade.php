@@ -30,7 +30,7 @@
                 </div>
                 <div class="export-btns">
                     <button class="btn-refresh" id="btnBlRefresh" type="button" title="Muat ulang"
-                        onclick="location.reload()">
+                        aria-label="Muat ulang data" data-refresh="page">
                         <i class="bi bi-arrow-clockwise"></i>
                     </button>
                 </div>
