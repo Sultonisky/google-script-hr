@@ -893,7 +893,7 @@
                                     class="bi bi-plus-circle-fill me-1"></i>Buat MPR Baru</button>
                         @endcan
                         <button type="button" class="btn btn-outline-secondary mpr-refresh-btn" title="Muat ulang data"
-                            aria-label="Muat ulang data" onclick="location.reload()">
+                            aria-label="Muat ulang data" data-refresh="page">
                             <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
                         </button>
                     </div>

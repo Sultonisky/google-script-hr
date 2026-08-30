@@ -57,7 +57,7 @@
                         <i class="bi bi-plus-lg me-1"></i> Tambah Requestor
                     </button>
                     <button class="btn-refresh" type="button" title="Muat ulang data requestor"
-                        aria-label="Muat ulang data requestor" onclick="location.reload()">
+                        aria-label="Muat ulang data requestor" data-refresh="page">
                         <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
                     </button>
                 </div>

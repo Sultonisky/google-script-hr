@@ -5,7 +5,7 @@
       Buka Spreadsheet
       <i class="bi bi-table"></i>
     </a>
-    <button class="fab-action" id="fabRefresh" type="button" onclick="location.reload()">
+    <button class="fab-action" id="fabRefresh" type="button" data-refresh="page" aria-label="Refresh data" title="Muat ulang data">
       Refresh Data
       <i class="bi bi-arrow-clockwise"></i>
     </button>
