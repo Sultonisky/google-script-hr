@@ -13,8 +13,16 @@ class DomainMiddleware
         $host = strtolower($request->getHost());
         $path = strtolower(ltrim((string) $request->path(), '/'));
         $domains = config('hris.domains', []);
+        $hostToPortal = [];
 
-        $portal = $domains[$host] ?? null;
+        foreach ($domains as $portal => $domain) {
+            $domain = strtolower(trim((string) $domain));
+            if ($domain !== '') {
+                $hostToPortal[$domain] = $portal;
+            }
+        }
+
+        $portal = $hostToPortal[$host] ?? null;
 
         if ($portal === null && in_array($host, ['localhost', '127.0.0.1', '[::1]', '::1'], true)) {
             if (str_starts_with($path, 'mpr')) {
