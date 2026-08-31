@@ -37,14 +37,31 @@ class MprController extends Controller
         $this->auditRepo = $auditRepo;
     }
 
+    protected function currentRequestorUser(): array
+    {
+        $sessionKey = config('mpr.session_key', 'mpr_requestor_auth');
+        $dedicatedUser = session($sessionKey, []);
+
+        if (!empty($dedicatedUser) && (($dedicatedUser['auth_domain'] ?? '') === 'mpr_requestor' || strtolower(trim((string) ($dedicatedUser['role'] ?? ''))) === 'manpower')) {
+            return $dedicatedUser;
+        }
+
+        return session('hr_user', []);
+    }
+
+    protected function isManpowerUser(array $user = []): bool
+    {
+        return strtolower(trim((string) ($user['role'] ?? ''))) === 'manpower';
+    }
+
     /**
      * Shared MPR page context for requestor pages while preserving existing business logic.
      */
     protected function buildRequestorPageData(Request $request, bool $includeRecords = true): array
     {
-        $user = session('hr_user', []);
+        $user = $this->currentRequestorUser();
         $role = $user['role'] ?? 'Viewer';
-        $isManpower = strtolower(trim($role)) === 'manpower';
+        $isManpower = $this->isManpowerUser($user);
         $isManager = $isManpower;
 
         $search = $request->query('search', '');
@@ -168,9 +185,9 @@ class MprController extends Controller
      */
     public function index(Request $request): View|RedirectResponse
     {
-        $user = session('hr_user', []);
+        $user = $this->currentRequestorUser();
         $role = $user['role'] ?? 'Viewer';
-        $isManpower = strtolower(trim($role)) === 'manpower';
+        $isManpower = $this->isManpowerUser($user);
 
         if ($isManpower) {
             return redirect()->route('hr.mpr.create');
@@ -267,8 +284,8 @@ class MprController extends Controller
 
     public function create(Request $request): View
     {
-        $user = session('hr_user', []);
-        if (strtolower(trim($user['role'] ?? '')) !== 'manpower') {
+        $user = $this->currentRequestorUser();
+        if (!$this->isManpowerUser($user)) {
             return $this->index($request);
         }
 
@@ -277,8 +294,8 @@ class MprController extends Controller
 
     public function history(Request $request): View
     {
-        $user = session('hr_user', []);
-        if (strtolower(trim($user['role'] ?? '')) !== 'manpower') {
+        $user = $this->currentRequestorUser();
+        if (!$this->isManpowerUser($user)) {
             return $this->index($request);
         }
 
@@ -295,9 +312,9 @@ class MprController extends Controller
      */
     public function store(StoreMprRequest $request): JsonResponse|RedirectResponse
     {
-        $user    = session('hr_user', []);
+        $user    = $this->currentRequestorUser();
         $role    = $user['role'] ?? 'Viewer';
-        $isManager = strtolower(trim($role)) === 'manpower';
+        $isManager = $this->isManpowerUser($user);
 
         $validated = $request->validated();
 
