@@ -34,7 +34,6 @@ return [
         'valid_roles' => [
             'Super Admin',
             'Admin',
-            'Privileged User',
             'User',
         ],
         // Manager role is NOT an internal HRIS role.
@@ -42,7 +41,6 @@ return [
         'valid_roles_internal' => [
             'Super Admin',
             'Admin',
-            'Privileged User',
             'User',
         ],
         'valid_roles_requestor' => [
@@ -50,14 +48,14 @@ return [
         ],
         'role_aliases' => [
             'HR Manager' => 'Admin',
-            'HR Recruitment' => 'Privileged User',
+            'Privileged User' => 'User',
+            'HR Recruitment' => 'User',
             'HR Staff' => 'User',
         ],
         'role_permissions' => [
             'Super Admin' => ['*'],
             'Admin' => ['manage_recruitment', 'manage_employees', 'manage_probation', 'view_employees', 'view_recruitment', 'update_candidates', 'create_offering', 'manage_hold_blacklist', 'view_mpr', 'create_mpr', 'update_mpr', 'export_mpr'],
-            'Privileged User' => ['view_recruitment', 'update_candidates', 'create_offering', 'manage_hold_blacklist', 'view_mpr', 'export_mpr'],
-            'User' => ['view_recruitment', 'update_candidates'],
+            'User' => ['view_recruitment', 'update_candidates', 'create_offering', 'manage_hold_blacklist', 'view_mpr', 'export_mpr'],
             'Manpower' => ['view_mpr', 'create_mpr', 'export_mpr'],
         ],
     ],

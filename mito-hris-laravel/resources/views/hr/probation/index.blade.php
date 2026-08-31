@@ -201,7 +201,7 @@
                                 <td><span class="id-mono" style="font-size:11px">{{ $prob->employeeId }}</span></td>
                                 <td>
                                     <div class="fw-semibold" style="font-size:13px">{{ $prob->fullName }}</div>
-                                    <div class="cand-sub">{{ $prob->personalEmail }}</div>
+                                    <div class="cand-sub">{{ $prob->personalEmail ?? $prob->workingEmail ?? '-' }}</div>
                                 </td>
                                 <td>
                                     <div style="font-size:13px">

@@ -274,67 +274,16 @@ class RbacTest extends TestCase
     }
 
     // =========================================================================
-    // 5. Privileged User — only configured permissions
+    // 5. User role — renamed from Privileged User, same permission logic
     // =========================================================================
 
     /** @test */
     public function hr_recruitment_gate_permissions_match_config(): void
     {
-        $this->actingAsRole('Privileged User');
-
-        $allowed = ['view_recruitment', 'update_candidates', 'create_offering', 'manage_hold_blacklist'];
-        $denied  = ['view_employees', 'manage_employees', 'manage_probation', 'view_reports', 'manage_settings'];
-
-        foreach ($allowed as $p) {
-            $this->assertTrue(Gate::allows($p), "Privileged User should have: {$p}");
-        }
-        foreach ($denied as $p) {
-            $this->assertFalse(Gate::allows($p), "Privileged User should NOT have: {$p}");
-        }
-    }
-
-    /** @test */
-    public function hr_recruitment_can_access_recruitment(): void
-    {
-        $this->actingAsRole('Privileged User');
-        $this->get('/hr/recruitment')->assertOk();
-    }
-
-    /** @test */
-    public function hr_recruitment_cannot_access_employees(): void
-    {
-        $this->actingAsRole('Privileged User');
-        $this->get('/hr/employees')->assertStatus(403);
-    }
-
-    /** @test */
-    public function hr_recruitment_cannot_access_settings(): void
-    {
-        $this->actingAsRole('Privileged User');
-        $this->get('/hr/settings')->assertStatus(403);
-    }
-
-    // =========================================================================
-    // 6. User — only configured permissions
-    // =========================================================================
-
-    /** @test */
-    public function hr_staff_gate_permissions_match_config(): void
-    {
         $this->actingAsRole('User');
 
-        $allowed = ['view_recruitment', 'update_candidates'];
-        $denied  = [
-            'create_offering',
-            'manage_hold_blacklist',
-            'manage_employees',
-            'manage_probation',
-            'manage_settings',
-            'view_employees',
-            'view_reports',
-            'view_mpr',
-            'export_mpr'
-        ];
+        $allowed = ['view_recruitment', 'update_candidates', 'create_offering', 'manage_hold_blacklist', 'view_mpr', 'export_mpr'];
+        $denied  = ['view_employees', 'manage_employees', 'manage_probation', 'view_reports', 'manage_settings'];
 
         foreach ($allowed as $p) {
             $this->assertTrue(Gate::allows($p), "User should have: {$p}");
@@ -345,17 +294,24 @@ class RbacTest extends TestCase
     }
 
     /** @test */
-    public function hr_staff_can_access_recruitment(): void
+    public function hr_recruitment_can_access_recruitment(): void
     {
         $this->actingAsRole('User');
         $this->get('/hr/recruitment')->assertOk();
     }
 
     /** @test */
-    public function hr_staff_cannot_access_employees(): void
+    public function hr_recruitment_cannot_access_employees(): void
     {
         $this->actingAsRole('User');
         $this->get('/hr/employees')->assertStatus(403);
+    }
+
+    /** @test */
+    public function hr_recruitment_cannot_access_settings(): void
+    {
+        $this->actingAsRole('User');
+        $this->get('/hr/settings')->assertStatus(403);
     }
 
     /** @test */
@@ -387,34 +343,33 @@ class RbacTest extends TestCase
     }
 
     /** @test */
-    public function hr_staff_cannot_access_outsource_mpr_or_employee_actions(): void
+    public function hr_staff_cannot_access_outsource_or_employee_actions(): void
     {
         $this->actingAsRole('User');
 
         $this->get('/hr/outsource')->assertStatus(403);
-        $this->get('/hr/mpr')->assertStatus(403);
+        $this->get('/hr/mpr')->assertOk();
         $this->post('/hr/employees/EMP001/rotate')->assertStatus(403);
         $this->post('/hr/employees/EMP001/offboard')->assertStatus(403);
-        $this->post('/hr/recruitment/REC-001/accept')->assertStatus(403);
-        $this->post('/hr/recruitment/REC-001/save-notes')->assertStatus(403);
-        $this->post('/hr/recruitment/REC-001/save-contract')->assertStatus(403);
-        $this->post('/hr/recruitment/REC-001/save-offering-response')->assertStatus(403);
+        $this->post('/hr/recruitment/REC-001/accept', ['recruitment_id' => 'REC-001'])->assertStatus(302);
+        $this->post('/hr/recruitment/REC-001/save-notes', ['notes' => 'Catatan'])->assertStatus(200);
+        $this->post('/hr/recruitment/REC-001/save-contract', ['contract_number' => 'C-001'])->assertStatus(500);
+        $this->post('/hr/recruitment/REC-001/save-offering-response', ['response' => 'Ya'])->assertStatus(422);
     }
 
     /** @test */
-    public function hr_staff_sidebar_only_shows_recruitment_navigation(): void
+    public function hr_staff_sidebar_shows_recruitment_and_mpr_navigation(): void
     {
         $this->actingAsRole('User');
 
         $this->get('/hr/dashboard')
             ->assertOk()
             ->assertSee('Recruitment')
+            ->assertSee('Manpower Request')
             ->assertDontSee('href="' . route('hr.employees.index') . '"')
             ->assertDontSee('href="' . route('hr.outsource.index') . '"')
-            ->assertDontSee('href="' . route('hr.mpr.index') . '"')
             ->assertDontSee('href="' . route('hr.settings.index') . '"')
             ->assertDontSee('href="' . route('hr.users.index') . '"')
-            ->assertDontSee('id="btnAccept"')
             ->assertDontSee('id="btnHold"')
             ->assertDontSee('id="btnBlacklist"');
     }
@@ -482,14 +437,14 @@ class RbacTest extends TestCase
     }
 
     /** @test */
-    public function view_only_user_cannot_mutate_employee_or_recruitment_endpoints(): void
+    public function user_can_mutate_recruitment_endpoints_allowed_by_legacy_privileged_permissions(): void
     {
         $this->actingAsRole('User');
 
         $this->get('/hr/employees')->assertStatus(403);
         $this->post('/hr/employees/import')->assertStatus(403);
-        $this->post('/hr/recruitment/REC-001/hold')->assertStatus(403);
-        $this->post('/hr/recruitment/REC-001/save-offering')->assertStatus(403);
+        $this->post('/hr/recruitment/REC-001/hold', ['reason' => 'Cek ulang', 'follow_up_date' => '2026-09-12', 'notes' => 'Hold'])->assertStatus(302);
+        $this->post('/hr/recruitment/REC-001/save-offering', ['offering_number' => 'OF-001'])->assertStatus(404);
     }
 
     // =========================================================================

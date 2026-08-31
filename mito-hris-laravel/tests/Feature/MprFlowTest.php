@@ -561,16 +561,29 @@ class MprFlowTest extends TestCase
     }
 
     /** @test */
-    public function user_cannot_access_mpr_or_create_mpr(): void
+    public function user_can_view_mpr_but_cannot_create_or_update_mpr(): void
     {
         $this->actingAsRole('User', 'hrstaff@mito.id', 'User User', [], '');
 
-        // User cannot view MPR index, detail, or PDF.
-        $this->get('/hr/mpr')->assertStatus(403);
-        $this->getJson('/hr/mpr/MPR-20260824-0001/json')->assertStatus(403);
-        $this->get('/hr/mpr/MPR-20260824-0001/pdf')->assertStatus(403);
+        $mockMpr = $this->makeMprData([
+            'mprNumber'     => 'MPR-20260824-0001',
+            'requestorName' => 'User User',
+            'requestorEmail' => 'hrstaff@mito.id',
+            'createdBy'     => 'hrstaff@mito.id',
+            'entity'        => 'MSI',
+            'position'      => 'Staff Admin',
+        ]);
 
-        // User cannot create MPR either.
+        $mockRepo = Mockery::mock(MprRepositoryInterface::class);
+        $mockRepo->shouldReceive('getAll')->andReturn(collect([$mockMpr]));
+        $mockRepo->shouldReceive('findByMprNumber')->with('MPR-20260824-0001')->andReturn($mockMpr);
+        $this->app->instance(MprRepositoryInterface::class, $mockRepo);
+
+        // Renamed User keeps the previous Privileged User permissions: view MPR but cannot mutate it.
+        $this->get('/hr/mpr')->assertStatus(200);
+        $this->getJson('/hr/mpr/MPR-20260824-0001/json')->assertStatus(200);
+        $this->get('/hr/mpr/MPR-20260824-0001/pdf')->assertStatus(200);
+
         $payload = [
             'position'           => 'Staff Admin',
             'department'         => 'GA',
@@ -584,6 +597,7 @@ class MprFlowTest extends TestCase
             'entity'             => 'MSI',
         ];
         $this->post('/hr/mpr', $payload)->assertStatus(403);
+        $this->putJson('/hr/mpr/MPR-20260824-0001', [])->assertStatus(403);
     }
 
     /** @test */

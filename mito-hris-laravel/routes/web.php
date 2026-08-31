@@ -158,7 +158,7 @@ Route::prefix('hr')->name('hr.')->middleware(['hr.auth', 'mpr.auth'])->group(fun
         Route::get('/performance-review/{id}', [ExportController::class, 'performanceReviewPdf'])->name('performance-review');
     });
 
-    Route::prefix('export')->name('export.')->middleware('role:Super Admin,Admin,Privileged User')->group(function () {
+    Route::prefix('export')->name('export.')->middleware('role:Super Admin,Admin,User')->group(function () {
         Route::get('/candidates-csv', [ExportController::class, 'exportCandidatesCsv'])->name('candidates-csv');
         Route::get('/employees-csv', [ExportController::class, 'exportEmployeesCsv'])->name('employees-csv');
     });
