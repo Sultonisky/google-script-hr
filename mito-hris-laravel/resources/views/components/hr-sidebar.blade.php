@@ -28,10 +28,10 @@
         @if ($isMprRequestorUi)
             <!-- MPR Requestor Navigation (source: mpr_requestor sheet) -->
             <div class="nav-section-label">Manpower Request</div>
-            <a href="{{ route('hr.mpr.create') }}" class="nav-item {{ request()->routeIs('hr.mpr.create') ? 'active' : '' }}">
+            <a href="{{ route('mpr.auth.request') }}" class="nav-item {{ request()->routeIs('mpr.auth.request') ? 'active' : '' }}">
                 <i class="bi bi-file-earmark-plus-fill"></i> Pengajuan MPR
             </a>
-            <a href="{{ route('hr.mpr.history') }}" class="nav-item {{ request()->routeIs('hr.mpr.history') ? 'active' : '' }}">
+            <a href="{{ route('mpr.auth.request.history') }}" class="nav-item {{ request()->routeIs('mpr.auth.request.history') ? 'active' : '' }}">
                 <i class="bi bi-clock-history"></i> Riwayat Pengajuan
             </a>
         @else
