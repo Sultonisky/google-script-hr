@@ -291,12 +291,11 @@
                     <div class="audit-filter-field">
                         <label for="auditSearchInput">Pencarian</label>
                         <input type="text" name="search" id="auditSearchInput" class="form-control"
-                            placeholder="Entity, ID, user, action" value="{{ request('search') }}"
-                            onkeydown="if(event.key === 'Enter'){ this.form.submit(); }" />
+                            placeholder="Entity, ID, user, action" value="{{ request('search') }}" data-submit-on-enter="true" />
                     </div>
                     <div class="audit-filter-field">
                         <label for="auditEntityFilter">Entity</label>
-                        <select class="form-select" name="entity_type" id="auditEntityFilter" onchange="this.form.submit()">
+                        <select class="form-select" name="entity_type" id="auditEntityFilter" data-auto-submit="true">
                             <option value="">Semua Entity</option>
                             @foreach (['Candidate', 'Employee', 'Probation', 'Outsource', 'MPR', 'User', 'Setting', 'MasterData', 'Applicant', 'Authentication', 'System'] as $entity)
                                 <option value="{{ $entity }}"
@@ -306,7 +305,7 @@
                     </div>
                     <div class="audit-filter-field">
                         <label for="auditActionFilter">Action</label>
-                        <select class="form-select" name="action" id="auditActionFilter" onchange="this.form.submit()">
+                        <select class="form-select" name="action" id="auditActionFilter" data-auto-submit="true">
                             <option value="">Semua Action</option>
                             @foreach (['created', 'updated', 'status_changed', 'submitted', 'generated', 'imported', 'exported', 'logged_in', 'logged_out', 'login_failed', 'hold', 'blacklist', 'offboarded'] as $action)
                                 <option value="{{ $action }}" {{ request('action') === $action ? 'selected' : '' }}>
@@ -316,7 +315,7 @@
                     </div>
                     <div class="audit-filter-field">
                         <label for="auditSourceFilter">Source</label>
-                        <select class="form-select" name="source" id="auditSourceFilter" onchange="this.form.submit()">
+                        <select class="form-select" name="source" id="auditSourceFilter" data-auto-submit="true">
                             <option value="">Semua Source</option>
                             @foreach (['Dashboard', 'Public', 'Command', 'Import', 'Export', 'Authentication', 'System', 'Legacy'] as $source)
                                 <option value="{{ $source }}" {{ request('source') === $source ? 'selected' : '' }}>

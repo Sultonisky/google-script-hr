@@ -99,7 +99,7 @@
                         <input type="text" name="search" id="empSearchInput"
                             placeholder="Cari nama, NIK, email, posisi, dept..." value="{{ $searchFilter ?? '' }}" />
                     </div>
-                    <select class="filter-select" name="department" id="empDeptFilter" onchange="this.form.submit()">
+                    <select class="filter-select" name="department" id="empDeptFilter" data-auto-submit="true">
                         <option value="">Semua Dept</option>
                         @foreach ($departments ?? [] as $dept)
                             <option value="{{ $dept }}" {{ ($departmentFilter ?? '') === $dept ? 'selected' : '' }}>
@@ -112,7 +112,7 @@
                         Legacy sheet data may use PKWTT/PKWT — both are included for coverage.
                         Controller does strtolower(trim()) comparison so all values are matched case-insensitively.
                     --}}
-                    <select class="filter-select" name="status" id="empStatusFilter" onchange="this.form.submit()">
+                    <select class="filter-select" name="status" id="empStatusFilter" data-auto-submit="true">
                         <option value="">
                             Semua Status ({{ $stats['total'] ?? 0 }})
                         </option>
@@ -133,11 +133,11 @@
                         <option value="Terminated" {{ ($statusFilter ?? '') === 'Terminated' ? 'selected' : '' }}>
                             Terminated</option>
                     </select>
-                    <select class="filter-select" name="sort" id="empSortSelect" onchange="this.form.submit()">
+                    <select class="filter-select" name="sort" id="empSortSelect" data-auto-submit="true">
                         <option value="name_asc" selected>Nama A-Z</option>
                     </select>
                     <select class="filter-select employee-per-page" name="per_page" id="empPerPage"
-                        onchange="this.form.submit()">
+                        data-auto-submit="true">
                         <option value="10" {{ ($perPage ?? 10) == 10 ? 'selected' : '' }}>10 / hal</option>
                         <option value="20" {{ ($perPage ?? 10) == 20 ? 'selected' : '' }}>20 / hal</option>
                         <option value="50" {{ ($perPage ?? 10) == 50 ? 'selected' : '' }}>50 / hal</option>

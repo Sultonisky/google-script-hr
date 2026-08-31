@@ -50,19 +50,19 @@
                         <input type="text" name="search" id="searchInput"
                             placeholder="Cari ID, nama, HP, email, posisi, kota..." value="{{ request('search') }}" />
                     </div>
-                    <select class="filter-select" name="position" id="positionFilter" onchange="this.form.submit()">
+                    <select class="filter-select" name="position" id="positionFilter" data-auto-submit="true">
                         <option value="">Semua Posisi</option>
                         @foreach ($positions ?? [] as $pos)
                             <option value="{{ $pos }}" {{ request('position') === $pos ? 'selected' : '' }}>
                                 {{ $pos }}</option>
                         @endforeach
                     </select>
-                    <select class="filter-select" name="sort" id="sortSelect" onchange="this.form.submit()">
+                    <select class="filter-select" name="sort" id="sortSelect" data-auto-submit="true">
                         <option value="newest" {{ request('sort', 'newest') === 'newest' ? 'selected' : '' }}>Terbaru
                         </option>
                         <option value="oldest" {{ request('sort') === 'oldest' ? 'selected' : '' }}>Terlama</option>
                     </select>
-                    <select class="filter-select" name="gender" id="genderFilter" onchange="this.form.submit()">
+                    <select class="filter-select" name="gender" id="genderFilter" data-auto-submit="true">
                         <option value="">Semua Gender</option>
                         <option value="Laki-laki" {{ request('gender') === 'Laki-laki' ? 'selected' : '' }}>Laki-laki
                         </option>
@@ -94,7 +94,7 @@
                         @forelse($paginatedCandidates as $candidate)
                             <tr data-drawer-type="candidate" data-drawer-id="{{ $candidate->recruitmentId }}"
                                 style="cursor:pointer;">
-                                <td class="col-check" onclick="event.stopPropagation();">
+                                <td class="col-check" data-stop-row-propagation="true">
                                     <input type="checkbox" class="form-check-input row-check"
                                         value="{{ $candidate->recruitmentId }}" />
                                 </td>

@@ -47,13 +47,13 @@
                         <input type="text" name="search" id="osSearchInput"
                             placeholder="Cari nama, ID, vendor, posisi..." value="{{ $searchFilter ?? '' }}" />
                     </div>
-                    <select class="filter-select" name="sort" id="osSortSelect" onchange="this.form.submit()">
+                    <select class="filter-select" name="sort" id="osSortSelect" data-auto-submit="true">
                         <option value="name_asc" {{ ($sortFilter ?? 'name_asc') === 'name_asc' ? 'selected' : '' }}>Nama A-Z
                         </option>
                         <option value="name_desc" {{ ($sortFilter ?? 'name_asc') === 'name_desc' ? 'selected' : '' }}>Nama
                             Z-A</option>
                     </select>
-                    <select class="filter-select" name="order" id="osOrderSelect" onchange="this.form.submit()">
+                    <select class="filter-select" name="order" id="osOrderSelect" data-auto-submit="true">
                         <option value="" {{ empty($orderFilter) ? 'selected' : '' }}>Urutan</option>
                         <option value="newest" {{ ($orderFilter ?? '') === 'newest' ? 'selected' : '' }}>Terbaru</option>
                         <option value="oldest" {{ ($orderFilter ?? '') === 'oldest' ? 'selected' : '' }}>Terlama</option>

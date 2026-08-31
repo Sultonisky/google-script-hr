@@ -68,7 +68,7 @@
                         value="{{ $search }}">
                 </div>
 
-                <select name="department" class="filter-select" onchange="this.form.submit()">
+                <select name="department" class="filter-select" data-auto-submit="true">
                     <option value="">Semua Departemen</option>
                     @foreach ($departments as $d)
                         <option value="{{ $d }}" {{ $dept === $d ? 'selected' : '' }}>{{ $d }}
@@ -76,12 +76,12 @@
                     @endforeach
                 </select>
 
-                <select name="status" class="filter-select" onchange="this.form.submit()">
+                <select name="status" class="filter-select" data-auto-submit="true">
                     <option value="">Semua Status</option>
                     <option value="Submitted" {{ $status === 'Submitted' ? 'selected' : '' }}>Submitted</option>
                 </select>
 
-                <select name="sort" class="filter-select" onchange="this.form.submit()">
+                <select name="sort" class="filter-select" data-auto-submit="true">
                     <option value="newest" {{ request('sort', 'newest') === 'newest' ? 'selected' : '' }}>Terbaru</option>
                     <option value="oldest" {{ request('sort') === 'oldest' ? 'selected' : '' }}>Terlama</option>
                 </select>

@@ -75,7 +75,7 @@
                     <option value="inactive">Inactive</option>
                 </select>
                 <select class="filter-select" aria-label="Jumlah data per halaman"
-                    onchange="window.location.href='{{ route('hr.mpr-requestors.index') }}?per_page=' + this.value">
+                    data-per-page-url="{{ route('hr.mpr-requestors.index') }}">
                     @foreach ([10, 20, 50] as $pageSize)
                         <option value="{{ $pageSize }}" {{ $perPage === $pageSize ? 'selected' : '' }}>
                             {{ $pageSize }} / hal
