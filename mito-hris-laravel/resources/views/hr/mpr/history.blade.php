@@ -55,13 +55,13 @@
                         data-refresh="page">
                         <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
                     </button>
-                    <a href="{{ route('hr.mpr.create') }}" class="btn btn-primary fw-semibold">
+                    <a href="{{ request()->routeIs('mpr.auth.*') ? route('mpr.auth.request') : route('hr.mpr.create') }}" class="btn btn-primary fw-semibold">
                         <i class="bi bi-plus-circle-fill me-1"></i> Buat Pengajuan MPR
                     </a>
                 </div>
             </div>
 
-            <form action="{{ route('hr.mpr.history') }}" method="GET" class="filter-bar">
+            <form action="{{ request()->routeIs('mpr.auth.*') ? route('mpr.auth.request.history') : route('hr.mpr.history') }}" method="GET" class="filter-bar">
                 <div class="table-search">
                     <i class="bi bi-search"></i>
                     <input type="text" name="search" placeholder="Cari No MPR, posisi, dept..."
@@ -86,7 +86,7 @@
                     <option value="oldest" {{ request('sort') === 'oldest' ? 'selected' : '' }}>Terlama</option>
                 </select>
 
-                <a href="{{ route('hr.mpr.history') }}" class="btn-reset-filter text-decoration-none"
+                <a href="{{ request()->routeIs('mpr.auth.*') ? route('mpr.auth.request.history') : route('hr.mpr.history') }}" class="btn-reset-filter text-decoration-none"
                     title="Reset semua filter">
                     <i class="bi bi-arrow-counterclockwise"></i>
                 </a>
@@ -146,7 +146,7 @@
                                             <i class="bi bi-eye"></i>
                                         </button>
                                         @if (filled($mpr->mprNumber))
-                                            <a href="{{ route('hr.mpr.pdf', ['id' => $mpr->mprNumber]) }}" target="_blank"
+                                            <a href="{{ request()->routeIs('mpr.auth.*') ? route('mpr.auth.pdf', ['id' => $mpr->mprNumber]) : route('hr.mpr.pdf', ['id' => $mpr->mprNumber]) }}" target="_blank"
                                                 class="btn btn-outline-danger" title="Unduh PDF">
                                                 <i class="bi bi-file-earmark-pdf"></i>
                                             </a>
