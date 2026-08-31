@@ -115,13 +115,20 @@ textarea.form-control:focus {
 
 .btn-refresh i,
 .mpr-refresh-btn i,
-.fab-action i,
 [data-mito-refresh] i,
 .btn-refresh svg,
 .mpr-refresh-btn svg,
-.fab-action svg,
 [data-mito-refresh] svg {
     display: inline-block;
+    transform-origin: center;
+    transition: transform 0.2s ease;
+}
+
+.fab-action i,
+.fab-action svg {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     transform-origin: center;
     transition: transform 0.2s ease;
 }
