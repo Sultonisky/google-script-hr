@@ -318,14 +318,6 @@ class EmployeeController extends Controller
             Auth::user()?->name ?? 'HR Administrator'
         );
 
-        if ($result['success']) {
-            $this->auditRepo->log('Employee', 'IMPORT-' . now()->format('YmdHis'), 'imported', 'summary', null, [
-                'total_rows' => count($request->input('employees', [])),
-                'inserted' => $result['imported'] ?? 0,
-                'invalid' => count($result['errors'] ?? []),
-            ], Auth::user()?->email ?? Auth::user()?->name ?? 'HR Administrator', 'Import');
-        }
-
         // Always return JSON — modal uses Fetch API
         $httpStatus = $result['success'] ? 200 : 422;
         return response()->json($result, $httpStatus);

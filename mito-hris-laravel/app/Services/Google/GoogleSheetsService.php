@@ -246,6 +246,34 @@ class GoogleSheetsService
     }
 
     /**
+     * Append multiple rows in a single API call to avoid per-row latency.
+     */
+    public function appendRows(string $sheetName, array $rows): bool
+    {
+        if (empty($rows)) {
+            return true;
+        }
+
+        try {
+            $service = $this->factory->getSheetsService();
+            $body = new ValueRange([
+                'values' => array_map(function (array $rowValues) {
+                    return $this->sanitizeRow($rowValues);
+                }, $rows)
+            ]);
+
+            $params = ['valueInputOption' => 'USER_ENTERED'];
+            $service->spreadsheets_values->append($this->spreadsheetId, "{$sheetName}!A:A", $body, $params);
+
+            $this->clearCache($sheetName);
+            return true;
+        } catch (\Throwable $e) {
+            Log::error("GoogleSheetsService::appendRows error on {$sheetName}: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Update an entire row by 1-indexed row number.
      */
     public function updateRow(string $sheetName, int $rowNumber, array $rowValues): bool
