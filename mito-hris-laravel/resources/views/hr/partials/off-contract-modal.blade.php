@@ -272,11 +272,13 @@
                     if (res && res.success) {
                         showToast('Off Contract berhasil diproses.', 'success', 4000);
 
-                        // Auto-download PDFs via hidden iframe (non-blocking)
+                        // Auto-download PDFs via hidden iframe (non-blocking).
+                        // Keep the page alive so production Network errors remain visible.
                         var pdfUrls = res.pdf_urls || {};
                         var delay = 300;
                         Object.values(pdfUrls).forEach(function(url) {
                             if (!url) return;
+                            console.info('[PDF off contract] request:', url);
                             setTimeout(function() {
                                 var iframe = document.createElement('iframe');
                                 iframe.style.cssText =
@@ -291,14 +293,17 @@
                             }, delay);
                             delay += 1200; // stagger multiple PDFs
                         });
+                        if (!Object.keys(pdfUrls).length) {
+                            console.error('[PDF off contract] URL download tidak tersedia:', res);
+                        }
 
                         // Close modal + reload
                         var modal = bootstrap.Modal.getInstance(document.getElementById(
                             'offContractModal'));
                         if (modal) modal.hide();
-                        setTimeout(function() {
-                            window.location.reload();
-                        }, 800);
+                        console.info(
+                            '[PDF off contract] Refresh otomatis ditahan untuk debugging Network.'
+                            );
                     } else {
                         showToast('Gagal: ' + (res ? (res.message || 'Error') : 'Tidak ada respon'),
                             'error');

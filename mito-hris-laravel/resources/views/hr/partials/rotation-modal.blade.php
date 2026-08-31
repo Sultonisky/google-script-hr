@@ -356,6 +356,7 @@
                     // -- Auto download PDF SK Rotasi --
                     var downloadUrl = res.download_url || res.downloadUrl;
                     if (downloadUrl) {
+                        console.info('[PDF rotasi] request:', downloadUrl);
                         var iframe = document.createElement('iframe');
                         iframe.style.display = 'none';
                         iframe.style.width = '0';
@@ -368,6 +369,8 @@
                                 document.body.removeChild(iframe);
                             } catch (_) {}
                         }, 15000);
+                    } else {
+                        console.error('[PDF rotasi] URL download tidak tersedia:', res);
                     }
 
                     // -- Tutup modal & reload data --
@@ -379,10 +382,7 @@
                         }
                     } catch (_) {}
 
-                    setTimeout(function() {
-                        if (typeof clearRotEmpSearch === 'function') clearRotEmpSearch();
-                        window.location.reload();
-                    }, 800);
+                    console.info('[PDF rotasi] Refresh otomatis ditahan untuk debugging Network.');
                 })
                 .catch(function(err) {
                     btn.disabled = false;
