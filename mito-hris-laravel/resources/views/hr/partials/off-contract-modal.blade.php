@@ -238,14 +238,17 @@
         var ocForm = document.getElementById('formOffContract');
         var ocBtn = document.getElementById('btnConfirmOffContract');
         if (!ocForm || !ocBtn) return;
+        var ocSubmitting = false;
 
         ocForm.addEventListener('submit', function(e) {
             e.preventDefault();
+            if (ocSubmitting) return;
 
             var empId = (document.getElementById('ocEmployeeId') || {}).value || '';
             var lwd = ((document.getElementById('ocLastWorkingDate') || {}).value || '').trim();
             if (!empId || !lwd) return;
 
+            ocSubmitting = true;
             var origHtml = ocBtn.innerHTML;
             ocBtn.disabled = true;
             ocBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Memproses...';
@@ -278,7 +281,6 @@
                         var delay = 300;
                         Object.values(pdfUrls).forEach(function(url) {
                             if (!url) return;
-                            console.info('[PDF off contract] request:', url);
                             setTimeout(function() {
                                 var iframe = document.createElement('iframe');
                                 iframe.style.cssText =
@@ -293,23 +295,19 @@
                             }, delay);
                             delay += 1200; // stagger multiple PDFs
                         });
-                        if (!Object.keys(pdfUrls).length) {
-                            console.error('[PDF off contract] URL download tidak tersedia:', res);
-                        }
 
                         // Close modal + reload
                         var modal = bootstrap.Modal.getInstance(document.getElementById(
                             'offContractModal'));
                         if (modal) modal.hide();
-                        console.info(
-                            '[PDF off contract] Refresh otomatis ditahan untuk debugging Network.'
-                            );
                     } else {
+                        ocSubmitting = false;
                         showToast('Gagal: ' + (res ? (res.message || 'Error') : 'Tidak ada respon'),
                             'error');
                     }
                 })
                 .catch(function(err) {
+                    ocSubmitting = false;
                     ocBtn.disabled = false;
                     ocBtn.innerHTML = origHtml;
                     showToast('Error: ' + (err ? err.message : 'Network error'), 'error');
