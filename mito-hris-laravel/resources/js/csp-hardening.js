@@ -275,12 +275,20 @@
                 return;
             }
 
-            const emp = (window.__allProbationEmployees || []).find(function (entry) {
-                return (entry.employeeId || "").replace(/^'+/, "") === String(employeeId).replace(/^'+/, "");
-            });
+            const emp = (window.__allProbationEmployees || []).find(
+                function (entry) {
+                    return (
+                        (entry.employeeId || "").replace(/^'+/, "") ===
+                        String(employeeId).replace(/^'+/, "")
+                    );
+                },
+            );
 
             if (typeof window.openEvalHistoryModal === "function") {
-                window.openEvalHistoryModal(employeeId, emp ? (emp.fullName || "-") : "-");
+                window.openEvalHistoryModal(
+                    employeeId,
+                    emp ? emp.fullName || "-" : "-",
+                );
             }
         });
     }
@@ -292,14 +300,18 @@
 
         window.__mitoStatusPageModalHandlersBound = true;
 
-        const onboardingSearch = document.getElementById("onboardingCandSearch");
+        const onboardingSearch = document.getElementById(
+            "onboardingCandSearch",
+        );
         if (onboardingSearch) {
             onboardingSearch.addEventListener("input", function (event) {
                 handleOnboardingSearch(event.target.value);
             });
         }
 
-        const onboardingClear = document.getElementById("onboardingSearchClear");
+        const onboardingClear = document.getElementById(
+            "onboardingSearchClear",
+        );
         if (onboardingClear) {
             onboardingClear.addEventListener("click", function () {
                 clearOnboardingSearch();
@@ -320,7 +332,9 @@
             });
         }
 
-        const workingHoursPreset = document.getElementById("offerWorkingHoursPreset");
+        const workingHoursPreset = document.getElementById(
+            "offerWorkingHoursPreset",
+        );
         if (workingHoursPreset) {
             workingHoursPreset.addEventListener("change", function () {
                 applyWorkingHoursPreset(this);
@@ -407,11 +421,21 @@
         }
     }
 
+    function displayFlashToasts() {
+        const flashToasts = window.__flashToasts || [];
+        flashToasts.forEach(function (toast) {
+            if (typeof window.showToast === "function") {
+                window.showToast(toast);
+            }
+        });
+    }
+
     if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", function () {
             applySavedTheme();
             enableConsentToggle();
             enablePagination();
+            displayFlashToasts();
             bindPublicCareerFormHelpers();
             bindMasterDataHelpers();
             bindMasterDataWarnings();
@@ -432,6 +456,7 @@
     applySavedTheme();
     enableConsentToggle();
     enablePagination();
+    displayFlashToasts();
     bindPublicCareerFormHelpers();
     bindMasterDataHelpers();
     bindMasterDataWarnings();
