@@ -24,10 +24,9 @@
                         <div class="position-relative">
                             <input type="text" class="form-control" id="ocEmpSearch"
                                 placeholder="Ketik nama atau Employee ID..." autocomplete="off"
-                                style="font-size:13px;padding-right:36px" oninput="handleOcEmpSearch(this.value)" />
+                                style="font-size:13px;padding-right:36px" />
                             <i class="bi bi-x-circle-fill position-absolute" id="ocEmpSearchClear"
-                                style="right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;display:none"
-                                onclick="clearOcEmpSearch()"></i>
+                                style="right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;display:none"></i>
                         </div>
                         <div id="ocEmpDropdown" class="border rounded-3 mt-1 shadow-sm"
                             style="display:none;max-height:220px;overflow-y:auto;z-index:9999;position:relative">

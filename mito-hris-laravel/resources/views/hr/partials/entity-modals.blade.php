@@ -49,10 +49,9 @@
                         <div class="position-relative">
                             <input type="text" class="form-control" id="offEmpSearch"
                                 placeholder="Ketik nama atau Employee ID..." autocomplete="off"
-                                style="font-size:13px;padding-right:36px" oninput="handleOffEmpSearch(this.value)" />
+                                style="font-size:13px;padding-right:36px" />
                             <i class="bi bi-x-circle-fill position-absolute" id="offEmpSearchClear"
-                                style="right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;display:none"
-                                onclick="clearOffEmpSearch()"></i>
+                                style="right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;display:none"></i>
                         </div>
                         <div id="offEmpDropdown" class="border rounded-3 mt-1 shadow-sm"
                             style="display:none;max-height:220px;overflow-y:auto;z-index:9999;position:relative">
@@ -1764,10 +1763,9 @@
                     <div class="position-relative">
                         <input type="text" class="form-control" id="pdfEmpSearch"
                             placeholder="Ketik nama atau Employee ID..." autocomplete="off"
-                            style="font-size:13px;padding-right:36px" oninput="handlePdfEmpSearch(this.value)" />
+                            style="font-size:13px;padding-right:36px" />
                         <i class="bi bi-x-circle-fill position-absolute" id="pdfEmpSearchClear"
-                            style="right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;display:none"
-                            onclick="clearPdfEmpSearch()"></i>
+                            style="right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;display:none"></i>
                     </div>
                     <div id="pdfEmpDropdown" class="border rounded-3 mt-1 shadow-sm"
                         style="display:none;max-height:220px;overflow-y:auto;background:#fff;z-index:9999;position:relative">
@@ -1815,7 +1813,7 @@
                 <button type="button" class="btn btn-outline-secondary btn-sm"
                     data-bs-dismiss="modal">Batal</button>
                 <button class="btn btn-sm text-white fw-semibold" style="background:#eb1c24" id="btnExportPdf"
-                    disabled onclick="generatePdfFromModal()">
+                    disabled>
                     <i class="bi bi-file-earmark-pdf me-1"></i>Unduh PDF
                 </button>
             </div>

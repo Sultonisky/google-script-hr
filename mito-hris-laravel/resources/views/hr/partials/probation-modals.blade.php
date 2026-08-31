@@ -74,11 +74,9 @@
                             style="left:10px;top:50%;transform:translateY(-50%);color:#9ca3af;font-size:13px"></i>
                         <input type="text" class="form-control form-control-sm" id="evalEmpSearch"
                             placeholder="Ketik nama atau Employee ID (status: Probation)…" autocomplete="off"
-                            style="padding-left:30px;padding-right:32px;font-size:13px"
-                            oninput="handleEvalEmpSearch(this.value)" />
+                            style="padding-left:30px;padding-right:32px;font-size:13px" />
                         <i class="bi bi-x-circle-fill position-absolute" id="evalEmpSearchClear"
-                            style="right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;display:none;font-size:14px"
-                            onclick="clearEvalEmpSearch()"></i>
+                            style="right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;display:none;font-size:14px"></i>
                     </div>
                     <div id="evalEmpDropdown" class="border rounded-3 mt-1 shadow-sm"
                         style="display:none;max-height:220px;overflow-y:auto;overflow-x:hidden;background:#fff;z-index:9999;position:relative">
@@ -269,16 +267,14 @@
                                             class="ind-btn-check btn btn-sm d-inline-flex align-items-center justify-content-center"
                                             data-key="{{ $key }}" data-val="1"
                                             aria-label="Indikator terpenuhi" title="Terpenuhi"
-                                            style="width:34px;height:32px;border:2px solid #d1d5db;background:#fff;color:#374151;font-size:15px;font-weight:600;border-radius:8px;padding:0;transition:all .15s"
-                                            onclick="setIndicator('{{ $key }}', '1', this)">
+                                            style="width:34px;height:32px;border:2px solid #d1d5db;background:#fff;color:#374151;font-size:15px;font-weight:600;border-radius:8px;padding:0;transition:all .15s">
                                             <i class="bi bi-check-circle" aria-hidden="true"></i>
                                         </button>
                                         <button type="button"
                                             class="ind-btn-cross btn btn-sm d-inline-flex align-items-center justify-content-center"
                                             data-key="{{ $key }}" data-val="0"
                                             aria-label="Indikator tidak terpenuhi" title="Tidak terpenuhi"
-                                            style="width:34px;height:32px;border:2px solid #d1d5db;background:#fff;color:#374151;font-size:15px;font-weight:600;border-radius:8px;padding:0;transition:all .15s"
-                                            onclick="setIndicator('{{ $key }}', '0', this)">
+                                            style="width:34px;height:32px;border:2px solid #d1d5db;background:#fff;color:#374151;font-size:15px;font-weight:600;border-radius:8px;padding:0;transition:all .15s">
                                             <i class="bi bi-x-circle" aria-hidden="true"></i>
                                         </button>
                                     </div>
@@ -372,8 +368,7 @@
 
                             {{-- 1. LULUS --}}
                             <div class="eval-decision-opt rounded-3 p-3" data-value="Lulus"
-                                style="border:2px solid #e5e7eb;cursor:pointer;transition:all .15s"
-                                onclick="selectEvalDecision(this)">
+                                style="border:2px solid #e5e7eb;cursor:pointer;transition:all .15s">
                                 <div class="d-flex align-items-start gap-3">
                                     <div class="eval-dec-dot flex-shrink-0 mt-1"
                                         style="width:18px;height:18px;border-radius:50%;border:2px solid #d1d5db;
@@ -404,8 +399,7 @@
 
                             {{-- 2. TIDAK LULUS / PAKLARING --}}
                             <div class="eval-decision-opt rounded-3 p-3" data-value="Tidak Lulus"
-                                style="border:2px solid #e5e7eb;cursor:pointer;transition:all .15s"
-                                onclick="selectEvalDecision(this)">
+                                style="border:2px solid #e5e7eb;cursor:pointer;transition:all .15s">
                                 <div class="d-flex align-items-start gap-3">
                                     <div class="eval-dec-dot flex-shrink-0 mt-1"
                                         style="width:18px;height:18px;border-radius:50%;border:2px solid #d1d5db;
@@ -430,8 +424,7 @@
 
                             {{-- 3. EXTEND PROBATION --}}
                             <div class="eval-decision-opt rounded-3 p-3" data-value="Extend"
-                                style="border:2px solid #e5e7eb;cursor:pointer;transition:all .15s"
-                                onclick="selectEvalDecision(this)">
+                                style="border:2px solid #e5e7eb;cursor:pointer;transition:all .15s">
                                 <div class="d-flex align-items-start gap-3">
                                     <div class="eval-dec-dot flex-shrink-0 mt-1"
                                         style="width:18px;height:18px;border-radius:50%;border:2px solid #d1d5db;
@@ -482,8 +475,7 @@
                                             data-dur="{{ $dur }}"
                                             style="border:2px solid #d1d5db;font-weight:600;font-size:13px;
                            padding:6px 16px;border-radius:8px;background:#fff;
-                           transition:all .15s"
-                                            onclick="selectExtDuration('{{ $dur }}', this)">
+                           transition:all .15s">
                                             {{ $dur }}
                                         </button>
                                     @endforeach
@@ -499,8 +491,7 @@
                                     <label class="form-label fw-semibold" style="font-size:12px">
                                         Tanggal Mulai Kontrak Baru <span class="text-danger">*</span>
                                     </label>
-                                    <input type="date" class="form-control form-control-sm" id="evalExtStart"
-                                        onchange="calcExtendEnd();updateConfirmBtn()" />
+                                    <input type="date" class="form-control form-control-sm" id="evalExtStart" />
                                     <div id="evalExtStartError"
                                         style="display:none;font-size:12px;color:#dc2626;margin-top:4px">
                                         <i class="bi bi-exclamation-triangle-fill me-1"></i>Tanggal mulai wajib diisi.
@@ -563,24 +554,20 @@
                                     <div class="d-flex gap-2 mb-2">
                                         <button type="button" class="approval-btn btn btn-sm flex-fill"
                                             data-target="evalApprovalDept" data-value="Setuju"
-                                            style="border:2px solid #d1d5db;font-size:12px;font-weight:600;background:#fff"
-                                            onclick="selectApproval('evalApprovalDept','Setuju',this)">
+                                            style="border:2px solid #d1d5db;font-size:12px;font-weight:600;background:#fff">
                                             <i class="bi bi-check-circle me-1"></i>Setuju
                                         </button>
                                         <button type="button" class="approval-btn btn btn-sm flex-fill"
                                             data-target="evalApprovalDept" data-value="Tidak"
-                                            style="border:2px solid #d1d5db;font-size:12px;font-weight:600;background:#fff"
-                                            onclick="selectApproval('evalApprovalDept','Tidak',this)">
+                                            style="border:2px solid #d1d5db;font-size:12px;font-weight:600;background:#fff">
                                             <i class="bi bi-x-circle me-1"></i>Tidak
                                         </button>
                                     </div>
                                     <input type="text" class="form-control form-control-sm mb-2"
                                         id="evalApprovalDeptNameInput" placeholder="Nama Department Manager/Head"
-                                        style="font-size:12px"
-                                        oninput="document.getElementById('evalApprovalDeptName').value=this.value" />
+                                        style="font-size:12px" />
                                     <input type="date" class="form-control form-control-sm"
-                                        id="evalApprovalDeptDateInput" style="font-size:12px"
-                                        onchange="document.getElementById('evalApprovalDeptDate').value=this.value" />
+                                        id="evalApprovalDeptDateInput" style="font-size:12px" />
                                 </div>
                                 {{-- HRBP / HR & Legal Manager --}}
                                 <div class="col-md-6">
@@ -592,24 +579,20 @@
                                     <div class="d-flex gap-2 mb-2">
                                         <button type="button" class="approval-btn btn btn-sm flex-fill"
                                             data-target="evalApprovalHrbp" data-value="Setuju"
-                                            style="border:2px solid #d1d5db;font-size:12px;font-weight:600;background:#fff"
-                                            onclick="selectApproval('evalApprovalHrbp','Setuju',this)">
+                                            style="border:2px solid #d1d5db;font-size:12px;font-weight:600;background:#fff">
                                             <i class="bi bi-check-circle me-1"></i>Setuju
                                         </button>
                                         <button type="button" class="approval-btn btn btn-sm flex-fill"
                                             data-target="evalApprovalHrbp" data-value="Tidak"
-                                            style="border:2px solid #d1d5db;font-size:12px;font-weight:600;background:#fff"
-                                            onclick="selectApproval('evalApprovalHrbp','Tidak',this)">
+                                            style="border:2px solid #d1d5db;font-size:12px;font-weight:600;background:#fff">
                                             <i class="bi bi-x-circle me-1"></i>Tidak
                                         </button>
                                     </div>
                                     <input type="text" class="form-control form-control-sm mb-2"
                                         id="evalApprovalHrbpNameInput" placeholder="Nama HRBP / HR & Legal Manager"
-                                        style="font-size:12px"
-                                        oninput="document.getElementById('evalApprovalHrbpName').value=this.value" />
+                                        style="font-size:12px" />
                                     <input type="date" class="form-control form-control-sm"
-                                        id="evalApprovalHrbpDateInput" style="font-size:12px"
-                                        onchange="document.getElementById('evalApprovalHrbpDate').value=this.value" />
+                                        id="evalApprovalHrbpDateInput" style="font-size:12px" />
                                 </div>
                             </div>
                         </div>
@@ -666,7 +649,7 @@
                 <button type="button" class="btn btn-outline-secondary btn-sm px-4"
                     data-bs-dismiss="modal">Batal</button>
                 <button type="button" class="btn btn-sm text-white fw-semibold px-4" id="btnConfirmProbationEval"
-                    style="background:#eb1c24;border:none;min-width:180px" disabled onclick="submitProbationEval()">
+                    style="background:#eb1c24;border:none;min-width:180px" disabled>
                     <span id="btnEvalText">
                         <i class="bi bi-clipboard-check me-1"></i>Simpan Evaluasi
                     </span>
@@ -687,6 +670,114 @@
 <script>
     (function() {
         'use strict';
+
+        function bindProbationModalEvents() {
+            var searchInput = document.getElementById('evalEmpSearch');
+            var searchClear = document.getElementById('evalEmpSearchClear');
+            var decisionOptions = document.querySelectorAll('.eval-decision-opt');
+            var durationButtons = document.querySelectorAll('.ext-dur-btn');
+            var approvalButtons = document.querySelectorAll('.approval-btn');
+            var indicatorButtons = document.querySelectorAll('.ind-btn-check, .ind-btn-cross');
+            var submitButton = document.getElementById('btnConfirmProbationEval');
+
+            if (searchInput) {
+                searchInput.addEventListener('input', function (event) {
+                    if (typeof window.handleEvalEmpSearch === 'function') {
+                        window.handleEvalEmpSearch(event.target.value);
+                    }
+                });
+            }
+
+            if (searchClear) {
+                searchClear.addEventListener('click', function () {
+                    if (typeof window.clearEvalEmpSearch === 'function') {
+                        window.clearEvalEmpSearch();
+                    }
+                });
+            }
+
+            decisionOptions.forEach(function (option) {
+                option.addEventListener('click', function () {
+                    if (typeof window.selectEvalDecision === 'function') {
+                        window.selectEvalDecision(this);
+                    }
+                });
+            });
+
+            durationButtons.forEach(function (button) {
+                button.addEventListener('click', function () {
+                    if (typeof window.selectExtDuration === 'function') {
+                        window.selectExtDuration(this.dataset.dur, this);
+                    }
+                });
+            });
+
+            var extStart = document.getElementById('evalExtStart');
+            if (extStart) {
+                extStart.addEventListener('change', function () {
+                    if (typeof window.calcExtendEnd === 'function') {
+                        window.calcExtendEnd();
+                    }
+                    if (typeof window.updateConfirmBtn === 'function') {
+                        window.updateConfirmBtn();
+                    }
+                });
+            }
+
+            approvalButtons.forEach(function (button) {
+                button.addEventListener('click', function () {
+                    if (typeof window.selectApproval === 'function') {
+                        window.selectApproval(this.dataset.target, this.dataset.value, this);
+                    }
+                });
+            });
+
+            document.querySelectorAll('#evalApprovalDeptNameInput, #evalApprovalHrbpNameInput').forEach(function (input) {
+                input.addEventListener('input', function () {
+                    var targetId = input.id === 'evalApprovalDeptNameInput' ? 'evalApprovalDeptName' : 'evalApprovalHrbpName';
+                    var target = document.getElementById(targetId);
+                    if (target) {
+                        target.value = input.value;
+                    }
+                });
+            });
+
+            document.querySelectorAll('#evalApprovalDeptDateInput, #evalApprovalHrbpDateInput').forEach(function (input) {
+                input.addEventListener('change', function () {
+                    var targetId = input.id === 'evalApprovalDeptDateInput' ? 'evalApprovalDeptDate' : 'evalApprovalHrbpDate';
+                    var target = document.getElementById(targetId);
+                    if (target) {
+                        target.value = input.value;
+                    }
+                });
+            });
+
+            indicatorButtons.forEach(function (button) {
+                button.addEventListener('click', function () {
+                    if (typeof window.setIndicator === 'function') {
+                        window.setIndicator(this.dataset.key, this.dataset.val, this);
+                    }
+                });
+            });
+
+            if (submitButton) {
+                submitButton.addEventListener('click', function () {
+                    if (typeof window.submitProbationEval === 'function') {
+                        window.submitProbationEval();
+                    }
+                });
+            }
+
+            document.addEventListener('click', function (event) {
+                var row = event.target.closest('[data-action="select-eval-employee"]');
+                if (!row) return;
+
+                var employee = row.dataset.employee ? JSON.parse(row.dataset.employee.replace(/&quot;/g, '"').replace(/&#39;/g, '\'')) : null;
+                if (employee && typeof window.selectEvalEmployee === 'function') {
+                    window.selectEvalEmployee(employee);
+                }
+            });
+        }
 
         // ── Constants ──────────────────────────────────────────────────
         var COMPETENCIES = {
@@ -1421,8 +1512,8 @@
                 var eJson = JSON.stringify(e).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
                 return '<div class="d-flex align-items-center gap-2 px-3 py-2 eval-search-row"' +
                     ' style="cursor:pointer;border-bottom:1px solid #f3f4f6;font-size:13px"' +
-                    ' onmouseenter="this.style.background=\'#f5f3ff\'" onmouseleave="this.style.background=\'\'"' +
-                    ' onclick=\'selectEvalEmployee(' + eJson.replace(/'/g, "&#39;") + ')\'>' +
+                    ' data-action="select-eval-employee"' +
+                    ' data-employee="' + eJson + '">' +
                     '<div style="width:32px;height:32px;border-radius:8px;background:#eb1c24;color:#fff;' +
                     'font-size:11px;font-weight:700;flex-shrink:0;display:flex;align-items:center;justify-content:center">' +
                     initl + '</div>' +
