@@ -707,22 +707,43 @@ class DummyDataService
 
     private function writeAuditLog(array $candidates, $now): int
     {
-        $rows   = [];
+        $rows = [];
         $nowStr = $now->format('Y-m-d H:i:s');
+        $statusCounts = [
+            'Pending' => 0,
+            'Hold' => 0,
+            'Accepted' => 0,
+            'Blacklist' => 0,
+        ];
 
         foreach ($candidates as $c) {
-            // Created entry
-            $rows[] = ['AUD-DUMMY-' . str_pad((string) (count($rows) + 1), 6, '0', STR_PAD_LEFT), 'Candidate', $c['recruitmentId'], 'created', 'Status', '', 'Pending', 'Demo Generator', 'Artisan', $c['createdDate']];
+            $status = $c['status'] ?? 'Pending';
+            if (!isset($statusCounts[$status])) {
+                $statusCounts[$status] = 0;
+            }
+            $statusCounts[$status]++;
+        }
 
-            // Status change entry
-            if ($c['status'] !== 'Pending') {
-                $rows[] = ['AUD-DUMMY-' . str_pad((string) (count($rows) + 1), 6, '0', STR_PAD_LEFT), 'Candidate', $c['recruitmentId'], 'status_changed', 'Status', 'Pending', $c['status'], 'HR Admin', 'Artisan', $c['updatedAt']];
+        foreach ($statusCounts as $status => $count) {
+            if ($count <= 0) {
+                continue;
             }
 
-            // Notes entry (occasionally)
-            if (!empty($c['hrNotes']) && rand(0, 3) > 1) {
-                $rows[] = ['AUD-DUMMY-' . str_pad((string) (count($rows) + 1), 6, '0', STR_PAD_LEFT), 'Candidate', $c['recruitmentId'], 'updated', 'HR Notes', '', $c['hrNotes'], 'HR Admin', 'Artisan', $c['updatedAt']];
-            }
+            $rows[] = [
+                'AUD-DUMMY-' . str_pad((string) (count($rows) + 1), 6, '0', STR_PAD_LEFT),
+                'Candidate',
+                'SUMMARY-' . strtolower(str_replace(' ', '-', $status)),
+                'generated',
+                'summary',
+                '',
+                json_encode([
+                    'status' => $status,
+                    'count' => $count,
+                ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                'Demo Generator',
+                'Artisan',
+                $nowStr,
+            ];
         }
 
         if (empty($rows)) return 0;
