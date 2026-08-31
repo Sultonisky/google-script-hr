@@ -20,7 +20,12 @@
 
     <!-- Navigation Menu -->
     <nav class="sidebar-nav" id="sidebarNav">
-        @if (session('hr_user.auth_domain') === 'mpr_requestor')
+        @php
+            $currentAuthDomain = session('hr_user.auth_domain', session('mpr_requestor_auth.auth_domain', 'users'));
+            $currentRole = session('hr_user.role', session('mpr_requestor_auth.role', 'Viewer'));
+            $isMprRequestorUi = ($currentAuthDomain === 'mpr_requestor') || (strtolower(trim((string) $currentRole)) === 'manpower' && !empty(session('mpr_requestor_auth')));
+        @endphp
+        @if ($isMprRequestorUi)
             <!-- MPR Requestor Navigation (source: mpr_requestor sheet) -->
             <div class="nav-section-label">Manpower Request</div>
             <a href="{{ route('hr.mpr.create') }}" class="nav-item {{ request()->routeIs('hr.mpr.create') ? 'active' : '' }}">
