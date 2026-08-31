@@ -109,9 +109,7 @@
                                         Lengkap <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="full_name" name="nama_lengkap"
                                         value="{{ old('nama_lengkap') }}" required minlength="3" maxlength="255"
-                                        pattern="[\p{L}]+( [\p{L}]+)*" autocomplete="name"
-                                        oninput="this.value=this.value.replace(/[^\p{L} ]/gu,'').replace(/ {2,}/g,' ')"
-                                        onblur="this.value=this.value.trim()">
+                                        pattern="[\p{L}]+( [\p{L}]+)*" autocomplete="name">
                                     <div class="invalid-feedback">Nama lengkap hanya boleh berisi huruf dan spasi.</div>
                                 </div>
 

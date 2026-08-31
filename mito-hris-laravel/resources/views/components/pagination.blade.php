@@ -17,14 +17,20 @@
 @endphp
 
 <nav class="pagination-ui" aria-label="Pagination">
+    @php
+        $pageUrl = function (int $page) use ($route, $queryParams, $perPage) {
+            return route($route, array_merge($queryParams, ['page' => $page, 'per_page' => $perPage]));
+        };
+    @endphp
+
     {{-- Previous Button --}}
-    <button class="page-btn" type="button" @if($prevDisabled) disabled @else onclick="window.location.href='{{ route($route, array_merge($queryParams, ['page' => $currentPage - 1, 'per_page' => $perPage])) }}'" @endif>
+    <button class="page-btn" type="button" data-page-url="{{ $prevDisabled ? '' : $pageUrl($currentPage - 1) }}" @if($prevDisabled) disabled @endif>
         <i class="bi bi-chevron-left"></i>
     </button>
 
     {{-- First page --}}
     @if($showStart)
-        <button class="page-btn" type="button" onclick="window.location.href='{{ route($route, array_merge($queryParams, ['page' => 1, 'per_page' => $perPage])) }}'">
+        <button class="page-btn" type="button" data-page-url="{{ $pageUrl(1) }}">
             1
         </button>
         @if($startPage > 2)
@@ -34,7 +40,7 @@
 
     {{-- Page numbers --}}
     @for($p = $startPage; $p <= $endPage; $p++)
-        <button class="page-btn @if($p === $currentPage) active @endif" type="button" onclick="window.location.href='{{ route($route, array_merge($queryParams, ['page' => $p, 'per_page' => $perPage])) }}'">
+        <button class="page-btn @if($p === $currentPage) active @endif" type="button" data-page-url="{{ $pageUrl($p) }}">
             {{ $p }}
         </button>
     @endfor
@@ -44,13 +50,13 @@
         @if($endPage < $totalPages - 1)
             <span class="page-btn" style="border:none;background:transparent;cursor:default">&hellip;</span>
         @endif
-        <button class="page-btn" type="button" onclick="window.location.href='{{ route($route, array_merge($queryParams, ['page' => $totalPages, 'per_page' => $perPage])) }}'">
+        <button class="page-btn" type="button" data-page-url="{{ $pageUrl($totalPages) }}">
             {{ $totalPages }}
         </button>
     @endif
 
     {{-- Next Button --}}
-    <button class="page-btn" type="button" @if($nextDisabled) disabled @else onclick="window.location.href='{{ route($route, array_merge($queryParams, ['page' => $currentPage + 1, 'per_page' => $perPage])) }}'" @endif>
+    <button class="page-btn" type="button" data-page-url="{{ $nextDisabled ? '' : $pageUrl($currentPage + 1) }}" @if($nextDisabled) disabled @endif>
         <i class="bi bi-chevron-right"></i>
     </button>
 </nav>

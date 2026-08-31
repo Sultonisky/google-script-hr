@@ -104,9 +104,7 @@
                                         Lengkap <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="full_name" name="nama_lengkap"
                                         value="{{ old('nama_lengkap') }}" required minlength="3" maxlength="255"
-                                        pattern="[\p{L}]+( [\p{L}]+)*" autocomplete="name"
-                                        oninput="this.value=this.value.replace(/[^\p{L} ]/gu,'').replace(/ {2,}/g,' ')"
-                                        onblur="this.value=this.value.trim()">
+                                        pattern="[\p{L}]+( [\p{L}]+)*" autocomplete="name" data-sanitize-name="true">
                                     <div class="invalid-feedback">Nama lengkap hanya boleh berisi huruf dan spasi.</div>
                                 </div>
 
@@ -288,8 +286,7 @@
 
                                 <div class="col-12">
                                     <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox" id="same_address"
-                                            onchange="copyKtpAddress(this.checked)">
+                                        <input class="form-check-input" type="checkbox" id="same_address">
                                         <label class="form-check-label fw-semibold" for="same_address"
                                             style="font-size:12.5px">Alamat domisili saat ini sama dengan alamat
                                             KTP</label>
@@ -1365,15 +1362,6 @@
         // ============================================================
         // COPY KTP ADDRESS
         // ============================================================
-        function copyKtpAddress(isChecked) {
-            if (isChecked) {
-                document.getElementById('address_residential').value = document.getElementById('address').value;
-            } else {
-                document.getElementById('address_residential').value = '';
-            }
-            updateProgress();
-        }
-
         // ============================================================
         // FIELD VALIDATION HELPER
         // ============================================================

@@ -143,8 +143,7 @@
                         <div class="p-3 rounded-3 mb-4" style="background:#fff5f5;border:1px solid #fed7d7;">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="consentCheckbox" name="consent"
-                                    value="1" onchange="toggleProceedButton(this.checked)"
-                                    style="cursor:pointer;width:20px;height:20px;margin-top:2px;">
+                                    value="1" style="cursor:pointer;width:20px;height:20px;margin-top:2px;">
                                 <label class="form-check-label ms-2 fw-bold text-navy" for="consentCheckbox"
                                     style="cursor:pointer;font-size:13.5px;">
                                     Saya telah membaca, memahami, dan menyetujui seluruh syarat &amp; ketentuan pendaftaran
@@ -166,7 +165,7 @@
         </div>
     </div>
 
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         (function() {
             var timestamp = document.getElementById('consentTimestamp');
             var device = document.getElementById('consentDevice');
@@ -185,12 +184,5 @@
                 }, function() {});
             }
         }());
-
-        function toggleProceedButton(isChecked) {
-            const btn = document.getElementById('btnProceedApply');
-            if (btn) {
-                btn.disabled = !isChecked;
-            }
-        }
     </script>
 @endsection
