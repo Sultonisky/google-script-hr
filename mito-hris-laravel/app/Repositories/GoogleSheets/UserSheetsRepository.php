@@ -63,10 +63,24 @@ class UserSheetsRepository implements UserRepositoryInterface
                 $values = [];
                 foreach ($headers as $col) {
                     $dataKey = $this->dataKeyForHeader($col);
-                    $values[] = array_key_exists($dataKey, $data)
-                        ? $data[$dataKey]
-                        : ($data[$col] ?? $row[$col] ?? '');
+                    $normalizedData = [];
+                    foreach ($data as $key => $value) {
+                        $normalizedData[strtolower(preg_replace('/[\s_\-]/', '', (string) $key))] = $value;
+                    }
+
+                    $lookupKey = strtolower(preg_replace('/[\s_\-]/', '', (string) $dataKey));
+                    $values[] = array_key_exists($lookupKey, $normalizedData)
+                        ? $normalizedData[$lookupKey]
+                        : (array_key_exists($dataKey, $data)
+                            ? $data[$dataKey]
+                            : ($data[$col] ?? $row[$col] ?? ''));
                 }
+
+                $updatedAtIdx = array_search('Updated At', $headers);
+                if ($updatedAtIdx !== false && !isset($normalizedData['updatedat'])) {
+                    $values[$updatedAtIdx] = now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s');
+                }
+
                 $this->sheets->updateRow($this->sheetName, $rowNumber, $values);
                 return;
             }

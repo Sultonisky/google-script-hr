@@ -103,19 +103,21 @@ class UserSheetsRepository implements UserRepositoryInterface
         }
 
         foreach ($data as $key => $value) {
+            $normalizedKey = strtolower(preg_replace('/[\s_\-]/', '', (string) $key));
             $colMap = [
-                'passwordHash' => 'Password Hash',
-                'fullName'     => 'Full Name',
+                'passwordhash' => 'Password Hash',
+                'fullname'     => 'Full Name',
                 'username'     => 'Username',
                 'role'         => 'Role',
                 'status'       => 'Status',
-                'lastLogin'    => 'Last Login',
-                'createdAt'    => 'Created At',
-                'updatedAt'    => 'Updated At',
-                'createdBy'    => 'Created By',
+                'lastlogin'    => 'Last Login',
+                'createdat'    => 'Created At',
+                'updatedat'    => 'Updated At',
+                'createdby'    => 'Created By',
             ];
-            if (isset($colMap[$key])) {
-                $colIdx = array_search($colMap[$key], $headers);
+            $header = $colMap[$normalizedKey] ?? null;
+            if ($header !== null) {
+                $colIdx = array_search($header, $headers);
                 if ($colIdx !== false) {
                     $currentRow[$colIdx] = $value;
                 }
