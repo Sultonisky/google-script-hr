@@ -22,7 +22,7 @@
                     <!-- STEP 1: Live Search karyawan -->
                     <div class="mb-3">
                         <label class="form-label fw-semibold" style="font-size:13px">
-                            <i class="bi bi-search me-1"></i>Cari Karyawan Aktif <span class="text-danger">*</span>
+                            <i class="bi bi-search me-1"></i>Cari Karyawan Permanent <span class="text-danger">*</span>
                         </label>
                         <div class="position-relative">
                             <input type="text" class="form-control" id="rotEmpSearch"
@@ -141,6 +141,9 @@
 <script>
     @php
         $allEmpForRotation = collect($all ?? ($employees ?? []))
+            ->filter(function ($e) {
+                return in_array(strtolower(trim($e->statusEmployee ?? '')), ['permanent', 'pkwtt'], true);
+            })
             ->map(function ($e) {
                 if (!is_object($e)) {
                     return $e;
@@ -202,10 +205,12 @@
         }
 
         const matched = (window.__allEmployeesForRotation || []).filter(e => {
+            const status = (e.statusEmployee || '').toLowerCase().trim();
             const name = (e.fullName || '').toLowerCase();
             const id = (e.employeeId || '').toLowerCase();
             const pos = (e.jobPosition || '').toLowerCase();
-            return name.includes(q) || id.includes(q) || pos.includes(q);
+            return ['permanent', 'pkwtt'].includes(status) &&
+                (name.includes(q) || id.includes(q) || pos.includes(q));
         }).slice(0, 8);
 
         if (matched.length === 0) {
@@ -356,7 +361,6 @@
                     // -- Auto download PDF SK Rotasi --
                     var downloadUrl = res.download_url || res.downloadUrl;
                     if (downloadUrl) {
-                        console.info('[PDF rotasi] request:', downloadUrl);
                         var iframe = document.createElement('iframe');
                         iframe.style.display = 'none';
                         iframe.style.width = '0';
@@ -369,8 +373,6 @@
                                 document.body.removeChild(iframe);
                             } catch (_) {}
                         }, 15000);
-                    } else {
-                        console.error('[PDF rotasi] URL download tidak tersedia:', res);
                     }
 
                     // -- Tutup modal & reload data --
@@ -382,7 +384,6 @@
                         }
                     } catch (_) {}
 
-                    console.info('[PDF rotasi] Refresh otomatis ditahan untuk debugging Network.');
                 })
                 .catch(function(err) {
                     btn.disabled = false;

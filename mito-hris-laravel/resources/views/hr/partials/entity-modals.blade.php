@@ -522,14 +522,10 @@
                             var pdfUrls = res.pdf_urls || {};
                             var bundleUrl = pdfUrls.bundle;
                             if (bundleUrl) {
-                                console.info('[PDF offboarding ZIP] request:', bundleUrl);
                                 fetch(bundleUrl, {
                                         credentials: 'same-origin'
                                     })
                                     .then(function(response) {
-                                        console.info('[PDF offboarding ZIP] response:', response
-                                            .status,
-                                            response.headers.get('content-type'));
                                         if (!response.ok) throw new Error(
                                             'offboarding bundle HTTP ' + response.status
                                         );
@@ -549,8 +545,6 @@
                                         }, 1000);
                                     })
                                     .catch(function(error) {
-                                        console.warn('Gagal mengunduh bundle PDF offboarding:',
-                                            error);
                                         if (typeof showToast === 'function') {
                                             showToast(
                                                 'Bundle PDF offboarding gagal diunduh. Silakan gunakan menu export.',
@@ -558,9 +552,6 @@
                                         }
                                     });
                             } else {
-                                console.error('[PDF offboarding ZIP] URL download tidak tersedia:',
-                                    res);
-                                console.warn('URL bundle PDF offboarding tidak tersedia.');
                                 if (typeof showToast === 'function') {
                                     showToast(
                                         'Bundle PDF offboarding tidak tersedia. Silakan gunakan menu export.',
@@ -570,9 +561,6 @@
                             var modal = bootstrap.Modal.getInstance(document.getElementById(
                                 'offboardingModal'));
                             if (modal) modal.hide();
-                            console.info(
-                                '[PDF offboarding ZIP] Refresh otomatis ditahan untuk debugging Network.'
-                                );
                         } else {
                             showToast('Gagal: ' + (res ? (res.message || 'Error') :
                                 'Tidak ada respon'), 'error');
