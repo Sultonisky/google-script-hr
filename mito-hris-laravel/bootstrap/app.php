@@ -13,13 +13,18 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
+            'domain' => \App\Http\Middleware\DomainMiddleware::class,
+            'portal.access' => \App\Http\Middleware\PortalAccessMiddleware::class,
             'hr.auth' => \App\Http\Middleware\HrAuthMiddleware::class,
             'role' => \App\Http\Middleware\CheckRole::class,
             'mpr.auth' => \App\Http\Middleware\MprRequestorMiddleware::class,
+            'mpr.auth.requestor' => \App\Http\Middleware\MprRequestorMiddleware::class,
+            'mpr.auth.dedicated' => \App\Http\Middleware\EnsureMprAuthenticated::class,
         ]);
 
         $middleware->appendToGroup('web', [
             \App\Http\Middleware\SecurityHeaders::class,
+            \App\Http\Middleware\DomainMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
