@@ -36,6 +36,10 @@ Route::post('/login', [LoginController::class, 'login'])
     ->name('login.post');
 Route::any('/logout', [LoginController::class, 'logout'])->name('logout');
 
+Route::domain('hrismitogroup.web.id')->middleware(['web'])->group(function () {
+    Route::get('/', [LoginController::class, 'showLoginForm'])->name('hris.domain.root');
+});
+
 Route::get('/mpr', [MprAuthController::class, 'portal'])->name('mpr.auth.portal');
 Route::get('/mpr/login', [MprAuthController::class, 'showLoginForm'])->name('mpr.auth.login');
 Route::post('/mpr/login', [MprAuthController::class, 'login'])->middleware('throttle:mpr-login')->name('mpr.auth.login.post');
@@ -51,6 +55,7 @@ Route::middleware(['portal.access', 'mpr.auth.dedicated'])->group(function () {
 Route::domain(config('mpr.domain', 'localhost'))
     ->middleware(['web'])
     ->group(function () {
+        Route::get('/', [MprAuthController::class, 'showLoginForm'])->name('mpr.auth.domain.root');
         Route::get('/login', [MprAuthController::class, 'showLoginForm'])->name('mpr.auth.domain.login');
         Route::post('/login', [MprAuthController::class, 'login'])->middleware('throttle:mpr-login')->name('mpr.auth.domain.login.post');
         Route::post('/logout', [MprAuthController::class, 'logout'])->middleware('mpr.auth.dedicated')->name('mpr.auth.domain.logout');
@@ -63,6 +68,20 @@ Route::domain(config('mpr.domain', 'localhost'))
         });
     });
 
+Route::domain('mpr.hrismitogroup.web.id')->middleware(['web'])->group(function () {
+    Route::get('/', [MprAuthController::class, 'showLoginForm'])->name('mpr.auth.domain.root.production');
+    Route::get('/login', [MprAuthController::class, 'showLoginForm'])->name('mpr.auth.domain.login.production');
+    Route::post('/login', [MprAuthController::class, 'login'])->middleware('throttle:mpr-login')->name('mpr.auth.domain.login.post.production');
+    Route::post('/logout', [MprAuthController::class, 'logout'])->middleware('mpr.auth.dedicated')->name('mpr.auth.domain.logout.production');
+
+    Route::middleware(['portal.access', 'mpr.auth.dedicated'])->group(function () {
+        Route::get('/request', [MprController::class, 'create'])->name('mpr.auth.domain.request.production');
+        Route::get('/request/history', [MprController::class, 'history'])->name('mpr.auth.domain.history.production');
+        Route::post('/request', [MprController::class, 'store'])->name('mpr.auth.domain.request.store.production');
+        Route::get('/request/{id}/pdf', [MprController::class, 'exportPdf'])->name('mpr.auth.domain.pdf.production');
+    });
+});
+
 // =========================================================================
 // DOMAIN 2: PUBLIC CAREER & APPLICANT PORTAL (with Landing & Consent Gate)
 // =========================================================================
@@ -70,7 +89,8 @@ Route::domain(config('mpr.domain', 'localhost'))
 // subdomain-specific public portal takes precedence when the request host
 // matches production hostnames.
 Route::domain('outsource.hrismitogroup.web.id')->middleware(['web'])->group(function () {
-    Route::get('/apply', [OutsourceApplyController::class, 'index'])->name('public.outsource.domain.index');
+    Route::get('/', [OutsourceApplyController::class, 'index'])->name('public.outsource.domain.index');
+    Route::get('/apply', [OutsourceApplyController::class, 'index'])->name('public.outsource.domain.apply');
     Route::post('/apply', [OutsourceApplyController::class, 'store'])->name('public.outsource.domain.store');
 });
 
