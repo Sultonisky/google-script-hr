@@ -150,7 +150,7 @@ class EmployeeService
                 'employeeId'   => $rawId ?: '(auto)',
                 'fullName'     => $fullName ?: '-',
                 'department'   => trim($row['department'] ?? $row['dept'] ?? $row['departemen'] ?? ''),
-                'jobPosition'  => trim($row['positionCurrent'] ?? $row['jobPositionLocation'] ?? $row['position'] ?? $row['jabatan'] ?? ''),
+                'jobPosition'  => trim($row['positionCurrent'] ?? $row['jobPositionLocation'] ?? $row['positionNoLocCurrent'] ?? $row['jobPosition'] ?? $row['position'] ?? $row['jabatan'] ?? ''),
                 'statusEmployee' => $empStatus ?: 'Contract',
                 'joinDate'     => trim($row['joinDate'] ?? $row['tanggalMasuk'] ?? ''),
                 'status'       => $status,   // new | duplicate_existing | duplicate_internal | invalid
@@ -195,6 +195,7 @@ class EmployeeService
         $errors = [];
         $warnings = [];
         $imported = 0;
+        $sheetRows = [];
 
         $existingEmployees = $this->employeeRepo->getAll();
         $existingIds = $existingEmployees->pluck('employeeId')->filter()->map('strtoupper')->toArray();
@@ -249,8 +250,8 @@ class EmployeeService
                 branchName: trim($row['branchName'] ?? $row['branch'] ?? $row['cabang'] ?? ''),
                 division: trim($row['division'] ?? $row['divisi'] ?? ''),
                 department: trim($row['department'] ?? $row['dept'] ?? $row['departemen'] ?? ''),
-                jobPositionLocation: trim($row['jobPositionLocation'] ?? $row['positionCurrent'] ?? $row['posisi_lokasi'] ?? ''),
-                jobPosition: trim($row['jobPosition'] ?? $row['position'] ?? $row['jabatan'] ?? ''),
+                jobPositionLocation: trim($row['jobPositionLocation'] ?? $row['positionCurrent'] ?? $row['posisi_lokasi'] ?? $row['positionNoLocCurrent'] ?? $row['jobPosition'] ?? $row['position'] ?? $row['jabatan'] ?? ''),
+                jobPosition: trim($row['jobPosition'] ?? $row['positionNoLocCurrent'] ?? $row['position'] ?? $row['jabatan'] ?? $row['positionCurrent'] ?? $row['jobPositionLocation'] ?? $row['posisi_lokasi'] ?? ''),
                 areaKerja: trim($row['areaKerja'] ?? $row['district'] ?? ''),
                 lokasiKerja: trim($row['lokasiKerja'] ?? $row['city'] ?? ''),
                 jobLevel: trim($row['jobLevel'] ?? $row['level'] ?? ''),
@@ -279,8 +280,8 @@ class EmployeeService
                 gender: trim($row['gender'] ?? $row['jenisKelamin'] ?? ''),
                 maritalStatus: trim($row['maritalStatus'] ?? $row['statusPernikahan'] ?? ''),
                 bloodType: trim($row['bloodType'] ?? $row['golonganDarah'] ?? ''),
-                costCenter: trim($row['costCenter'] ?? ''),
-                jobPositionFormer: trim($row['positionFormer'] ?? ''),
+                costCenter: trim($row['costCenter'] ?? $row['costcenter'] ?? $row['pusatbiaya'] ?? ''),
+                jobPositionFormer: trim($row['positionFormer'] ?? $row['jobPositionFormer'] ?? ''),
                 typeOfRotation: trim($row['typeOfRotation'] ?? $row['jenisRotasi'] ?? ''),
                 rotationDate: trim($row['rotationDate'] ?? $row['mutasiDate'] ?? ''),
                 nomorSk: trim($row['nomorSk'] ?? ''),
@@ -295,16 +296,33 @@ class EmployeeService
                 updatedAt: now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
             );
 
-            $this->employeeRepo->create($employee);
+            $sheetRows[] = $employee->toSheetRow();
             $imported++;
+        }
 
+        if (!empty($sheetRows)) {
+            $sheetName = config('google.sheets.employees', 'Employee');
+            $wrote = $this->sheets->appendRows($sheetName, $sheetRows);
+
+            if (!$wrote) {
+                return [
+                    'success' => false,
+                    'imported' => 0,
+                    'errors' => ['Gagal menulis data karyawan ke Google Sheets.'],
+                    'warnings' => $warnings,
+                    'message' => 'Gagal menulis data karyawan ke Google Sheets.'
+                ];
+            }
+        }
+
+        if ($imported > 0) {
             $this->auditRepo->log(
                 entityType: 'Employee',
-                entityId: $empId,
+                entityId: 'IMPORT-' . now()->format('YmdHis'),
                 action: 'Import',
                 field: 'Status Employee',
                 oldValue: '-',
-                newValue: $employee->statusEmployee ?? 'Active',
+                newValue: $imported . ' karyawan ditambahkan via import massal',
                 user: $user,
                 source: 'Dashboard'
             );
