@@ -9,13 +9,15 @@ use Illuminate\Support\Facades\Hash;
 class SeedUsersCommand extends Command
 {
     protected $signature = 'mito:seed-users {--force : Overwrite existing users}';
-    protected $description = 'Seed default users for each role (Super Admin, Admin, Privileged User, User)';
+    protected $description = 'Seed default users for each role (Super Admin, Admin, User)';
 
     protected array $users = [
-        ['email' => 'admin@mito.co.id',          'username' => 'admin',          'name' => 'Super Admin',    'role' => 'Super Admin'],
+        ['email' => 'admin@mito.co.id',          'username' => 'admin',          'name' => 'Super Admin HRIS',    'role' => 'Super Admin'],
         ['email' => 'hrmanager@mito.co.id',       'username' => 'hrmanager',      'name' => 'HR Manager',          'role' => 'Admin'],
-        ['email' => 'hrrecruitment@mito.co.id',   'username' => 'hrrecruitment',  'name' => 'HR Recruitment',     'role' => 'Privileged User'],
-        ['email' => 'hrstaff@mito.co.id',         'username' => 'hrstaff',        'name' => 'HR Staff',           'role' => 'User'],
+        ['email' => 'hrrecruitment@mito.co.id',   'username' => 'hrrecruitment',  'name' => 'HR Recruitment',     'role' => 'User'],
+
+        ['email' => 'hisar.hesti@mito.co.id',       'username' => 'hisar.hesti',      'name' => 'Hisar Hesti',          'role' => 'Admin'],
+        ['email' => 'stephanie@mito.co.id',   'username' => 'stephanie',  'name' => 'Stephanie',     'role' => 'User'],
         // NOTE: Manager accounts are NOT seeded here.
         // They belong to the mpr_requestor sheet.
         // Run: php artisan mito:seed-mpr-requestors

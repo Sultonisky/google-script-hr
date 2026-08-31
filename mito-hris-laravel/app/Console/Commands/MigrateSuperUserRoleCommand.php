@@ -8,7 +8,7 @@ use Illuminate\Console\Command;
 class MigrateSuperUserRoleCommand extends Command
 {
     protected $signature = 'mito:migrate-super-user-role {--dry-run : Report changes without writing to the Users sheet}';
-    protected $description = 'Rename existing Users sheet roles from Super User to Privileged User';
+    protected $description = 'Rename existing Users sheet roles from Super User to User';
 
     public function handle(UserRepositoryInterface $userRepository): int
     {
@@ -25,11 +25,11 @@ class MigrateSuperUserRoleCommand extends Command
         foreach ($matches as $user) {
             $email = trim((string) ($user['Email'] ?? ''));
             if ($email !== '') {
-                $userRepository->updateByEmail($email, ['role' => 'Privileged User']);
+                $userRepository->updateByEmail($email, ['role' => 'User']);
             }
         }
 
-        $this->info(sprintf('%d user(s) migrated to Privileged User.', count($matches)));
+        $this->info(sprintf('%d user(s) migrated to User.', count($matches)));
         return self::SUCCESS;
     }
 }
