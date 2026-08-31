@@ -151,4 +151,21 @@ class MprDedicatedLoginTest extends TestCase
             ],
         ])->get(route('mpr.auth.request'))->assertOk()->assertViewIs('hr.mpr.create');
     }
+
+    public function test_mpr_requestor_topbar_uses_dedicated_logout_route(): void
+    {
+        $this->withSession([
+            config('mpr.session_key', 'mpr_requestor_auth') => [
+                'email' => 'manager@mito.co.id',
+                'fullName' => 'John Manager',
+                'role' => 'Manpower',
+                'auth_domain' => 'mpr_requestor',
+                'entities' => ['MSI'],
+                'branch' => 'Bandung',
+            ],
+        ])->get(route('mpr.auth.request'))
+            ->assertOk()
+            ->assertSee(route('mpr.auth.logout'))
+            ->assertDontSee(route('logout'));
+    }
 }

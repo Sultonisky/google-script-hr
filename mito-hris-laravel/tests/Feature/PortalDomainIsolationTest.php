@@ -123,4 +123,35 @@ class PortalDomainIsolationTest extends TestCase
         $response->assertOk();
         $response->assertViewIs('public.outsource.apply');
     }
+
+    public function test_hris_internal_routes_are_not_available_on_mpr_domain(): void
+    {
+        $response = $this->get('http://mpr.hrismitogroup.web.id/hr/dashboard');
+
+        $response->assertNotFound();
+    }
+
+    public function test_hris_internal_routes_are_not_available_on_recruitment_domain(): void
+    {
+        $response = $this->get('http://recruitment.hrismitogroup.web.id/hr/dashboard');
+
+        $response->assertNotFound();
+    }
+
+    public function test_hris_internal_routes_are_not_available_on_outsource_domain(): void
+    {
+        $response = $this->get('http://outsource.hrismitogroup.web.id/hr/dashboard');
+
+        $response->assertNotFound();
+    }
+
+    public function test_unknown_host_does_not_resolve_to_hris(): void
+    {
+        // Under strict domain isolation, an unknown host matches no Route::domain()
+        // group and therefore returns 404. There is intentionally no global fallback
+        // route — this is the correct architecture contract.
+        $response = $this->get('http://example.com/');
+
+        $response->assertNotFound();
+    }
 }
