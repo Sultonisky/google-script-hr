@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\MprAuthController;
 use App\Http\Controllers\Public\CareerController;
 use App\Http\Controllers\Public\OutsourceApplyController;
 use App\Http\Controllers\Public\SeoController;
@@ -17,230 +18,140 @@ use App\Http\Controllers\HR\UserController;
 use App\Http\Controllers\HR\MprRequestorController;
 use App\Http\Controllers\HR\ExportController;
 use App\Http\Controllers\HR\MprController;
-use App\Http\Controllers\Auth\MprAuthController;
-
-/*
-|--------------------------------------------------------------------------
-| Web Routes - MITO HRIS
-| 1:1 Mapping with Google Apps Script Routing Architecture
-|--------------------------------------------------------------------------
-*/
-
-// =========================================================================
-// DOMAIN 1: AUTHENTICATION & INTERNAL PORTAL GATEWAY
-// =========================================================================
-Route::get('/portal', [LoginController::class, 'portal'])->name('auth.portal');
-Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
-Route::post('/login', [LoginController::class, 'login'])
-    ->middleware('throttle:login')
-    ->name('login.post');
-Route::any('/logout', [LoginController::class, 'logout'])->name('logout');
-
-Route::domain('hrismitogroup.web.id')->middleware(['web'])->group(function () {
-    Route::get('/', [LoginController::class, 'showLoginForm'])->name('hris.domain.root');
-});
-
-Route::get('/mpr', [MprAuthController::class, 'portal'])->name('mpr.auth.portal');
-Route::get('/mpr/login', [MprAuthController::class, 'showLoginForm'])->name('mpr.auth.login');
-Route::post('/mpr/login', [MprAuthController::class, 'login'])->middleware('throttle:mpr-login')->name('mpr.auth.login.post');
-Route::post('/mpr/logout', [MprAuthController::class, 'logout'])->middleware('mpr.auth.dedicated')->name('mpr.auth.logout');
-
-Route::middleware(['portal.access', 'mpr.auth.dedicated'])->group(function () {
-    Route::get('/mpr/request', [MprController::class, 'create'])->name('mpr.auth.request');
-    Route::get('/mpr/request/history', [MprController::class, 'history'])->name('mpr.auth.history');
-    Route::post('/mpr/request', [MprController::class, 'store'])->name('mpr.auth.request.store');
-    Route::get('/mpr/request/{id}/pdf', [MprController::class, 'exportPdf'])->name('mpr.auth.pdf');
-});
-
-Route::domain(config('mpr.domain', 'localhost'))
-    ->middleware(['web'])
-    ->group(function () {
-        Route::get('/', [MprAuthController::class, 'showLoginForm'])->name('mpr.auth.domain.root');
-        Route::get('/login', [MprAuthController::class, 'showLoginForm'])->name('mpr.auth.domain.login');
-        Route::post('/login', [MprAuthController::class, 'login'])->middleware('throttle:mpr-login')->name('mpr.auth.domain.login.post');
-        Route::post('/logout', [MprAuthController::class, 'logout'])->middleware('mpr.auth.dedicated')->name('mpr.auth.domain.logout');
-
-        Route::middleware(['portal.access', 'mpr.auth.dedicated'])->group(function () {
-            Route::get('/request', [MprController::class, 'create'])->name('mpr.auth.domain.request');
-            Route::get('/request/history', [MprController::class, 'history'])->name('mpr.auth.domain.history');
-            Route::post('/request', [MprController::class, 'store'])->name('mpr.auth.domain.request.store');
-            Route::get('/request/{id}/pdf', [MprController::class, 'exportPdf'])->name('mpr.auth.domain.pdf');
-        });
-    });
-
-Route::domain('mpr.hrismitogroup.web.id')->middleware(['web'])->group(function () {
-    Route::get('/', [MprAuthController::class, 'showLoginForm'])->name('mpr.auth.domain.root.production');
-    Route::get('/login', [MprAuthController::class, 'showLoginForm'])->name('mpr.auth.domain.login.production');
-    Route::post('/login', [MprAuthController::class, 'login'])->middleware('throttle:mpr-login')->name('mpr.auth.domain.login.post.production');
-    Route::post('/logout', [MprAuthController::class, 'logout'])->middleware('mpr.auth.dedicated')->name('mpr.auth.domain.logout.production');
-
-    Route::middleware(['portal.access', 'mpr.auth.dedicated'])->group(function () {
-        Route::get('/request', [MprController::class, 'create'])->name('mpr.auth.domain.request.production');
-        Route::get('/request/history', [MprController::class, 'history'])->name('mpr.auth.domain.history.production');
-        Route::post('/request', [MprController::class, 'store'])->name('mpr.auth.domain.request.store.production');
-        Route::get('/request/{id}/pdf', [MprController::class, 'exportPdf'])->name('mpr.auth.domain.pdf.production');
-    });
-});
-
-// =========================================================================
-// DOMAIN 2: PUBLIC CAREER & APPLICANT PORTAL (with Landing & Consent Gate)
-// =========================================================================
-// Host-specific public routes are registered before generic paths so the
-// subdomain-specific public portal takes precedence when the request host
-// matches production hostnames.
-Route::domain('outsource.hrismitogroup.web.id')->middleware(['web'])->group(function () {
-    Route::get('/', [OutsourceApplyController::class, 'index'])->name('public.outsource.domain.index');
-    Route::get('/apply', [OutsourceApplyController::class, 'index'])->name('public.outsource.domain.apply');
-    Route::post('/apply', [OutsourceApplyController::class, 'store'])->name('public.outsource.domain.store');
-});
-
-Route::domain('recruitment.hrismitogroup.web.id')->middleware(['web'])->group(function () {
-    Route::get('/', [CareerController::class, 'index'])->name('public.career.domain.index');
-    Route::post('/career/consent', [CareerController::class, 'consent'])->name('public.career.domain.consent');
-    Route::get('/apply', [CareerController::class, 'form'])->name('public.career.domain.form');
-    Route::post('/apply', [CareerController::class, 'store'])->name('public.career.domain.store');
-    Route::get('/career/success', [CareerController::class, 'success'])->name('public.career.domain.success');
-    Route::get('/check-status', [CareerController::class, 'checkStatus'])->name('public.career.domain.check-status');
-    Route::get('/self-update/{id}', [CareerController::class, 'selfUpdate'])->name('public.career.domain.self-update');
-    Route::post('/self-update/{id}', [CareerController::class, 'storeSelfUpdate'])->name('public.career.domain.self-update.store');
-});
 
 Route::get('/robots.txt', [SeoController::class, 'robots'])->name('public.seo.robots');
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('public.seo.sitemap');
-Route::get('/', [CareerController::class, 'index'])->name('public.career.index');
-Route::post('/career/consent', [CareerController::class, 'consent'])->name('public.career.consent');
-Route::get('/apply', [CareerController::class, 'form'])->name('public.career.form');
-Route::post('/apply', [CareerController::class, 'store'])->name('public.career.store');
-Route::get('/career/success', [CareerController::class, 'success'])->name('public.career.success');
-Route::get('/check-status', [CareerController::class, 'checkStatus'])->name('public.career.check-status');
-Route::get('/self-update/{id}', [CareerController::class, 'selfUpdate'])->name('public.career.self-update');
-Route::post('/self-update/{id}', [CareerController::class, 'storeSelfUpdate'])->name('public.career.self-update.store');
 
-// Outsource Public Registration (1:1 from GAS OutsourceForm.html)
-Route::get('/outsource/apply', [OutsourceApplyController::class, 'index'])->name('public.outsource.index');
-Route::post('/outsource/apply', [OutsourceApplyController::class, 'store'])->name('public.outsource.store');
+Route::domain(config('hris.domains.hris'))->middleware('web')->group(function () {
+    Route::get('/', [LoginController::class, 'showLoginForm'])->name('hris.domain.root');
+    Route::get('/portal', [LoginController::class, 'portal'])->name('auth.portal');
+    Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:login')->name('login.post');
+    Route::any('/logout', [LoginController::class, 'logout'])->name('logout');
 
-// =========================================================================
-// DOMAIN 3: HR INTERNAL MANAGEMENT SYSTEM (Protected by hr.auth Middleware)
-// =========================================================================
-Route::prefix('hr')->name('hr.')->middleware(['portal.access', 'hr.auth', 'mpr.auth'])->group(function () {
-    Route::post('/refresh-data', [\App\Http\Controllers\HR\RefreshController::class, 'refreshData'])->name('refresh-data');
+    Route::prefix('hr')->name('hr.')->middleware(['portal.access', 'hr.auth', 'mpr.auth'])->group(function () {
+        Route::post('/refresh-data', [\App\Http\Controllers\HR\RefreshController::class, 'refreshData'])->name('refresh-data');
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::prefix('recruitment')->name('recruitment.')->middleware('can:view_recruitment')->group(function () {
+            Route::get('/', [RecruitmentController::class, 'index'])->name('index');
+            Route::get('/accepted', [RecruitmentController::class, 'accepted'])->name('accepted');
+            Route::get('/hold', [RecruitmentController::class, 'holdPage'])->name('hold');
+            Route::get('/blacklist', [RecruitmentController::class, 'blacklistPage'])->name('blacklist');
+            Route::post('/{id}/status', [RecruitmentController::class, 'updateStatus'])->name('update-status')->middleware('can:update_candidates');
+            Route::post('/{id}/hold', [RecruitmentController::class, 'hold'])->name('hold.post')->middleware('can:manage_hold_blacklist');
+            Route::post('/{id}/blacklist', [RecruitmentController::class, 'blacklist'])->name('blacklist.post')->middleware('can:manage_hold_blacklist');
+            Route::post('/{id}/accept', [RecruitmentController::class, 'accept'])->name('accept')->middleware('can:create_offering');
+            Route::post('/{id}/save-notes', [RecruitmentController::class, 'saveNotes'])->name('save-notes')->middleware('can:create_offering');
+            Route::post('/{id}/move-status', [RecruitmentController::class, 'moveStatus'])->name('move-status')->middleware('can:update_candidates');
+            Route::post('/{id}/save-offering', [RecruitmentController::class, 'saveOffering'])->name('save-offering')->middleware('can:create_offering');
+            Route::post('/{id}/save-offering-response', [RecruitmentController::class, 'saveOfferingResponse'])->name('save-offering-response')->middleware('can:create_offering');
+            Route::post('/{id}/save-contract', [RecruitmentController::class, 'saveContract'])->name('save-contract')->middleware('can:create_offering');
+            Route::get('/{id}/json', [RecruitmentController::class, 'getJson'])->name('json');
+        });
+        Route::prefix('employees')->name('employees.')->middleware('can:view_employees')->group(function () {
+            Route::get('/', [EmployeeController::class, 'index'])->name('index');
+            Route::get('/search', [EmployeeController::class, 'search'])->name('search');
+            Route::post('/import/preview', [EmployeeController::class, 'importPreview'])->name('import.preview')->middleware('can:manage_employees');
+            Route::get('/import/template', [EmployeeController::class, 'importTemplate'])->name('import.template')->middleware('can:manage_employees');
+            Route::post('/import', [EmployeeController::class, 'import'])->name('import')->middleware('can:manage_employees');
+            Route::put('/{id}', [EmployeeController::class, 'update'])->name('update')->middleware('can:manage_employees');
+            Route::post('/{id}/rotate', [EmployeeController::class, 'rotate'])->name('rotate')->middleware('can:manage_employees');
+            Route::post('/{id}/offboard', [EmployeeController::class, 'offboard'])->name('offboard')->middleware('can:manage_employees');
+            Route::post('/{id}/off-contract', [EmployeeController::class, 'offContract'])->name('off-contract')->middleware('can:manage_employees');
+            Route::post('/{id}/promote-probation', [EmployeeController::class, 'promoteToProbation'])->name('promote-probation')->middleware('can:manage_employees');
+            Route::get('/{id}/json', [EmployeeController::class, 'getJson'])->name('json');
+        });
+        Route::prefix('probation')->name('probation.')->middleware('can:manage_probation')->group(function () {
+            Route::get('/', [ProbationController::class, 'index'])->name('index');
+            Route::post('/{id}/evaluate', [ProbationController::class, 'evaluate'])->name('evaluate');
+            Route::get('/{id}/eval-history', [ProbationController::class, 'evalHistory'])->name('eval-history');
+            Route::get('/{id}/preview', [ProbationController::class, 'previewPerformanceReview'])->name('preview');
+        });
+        Route::prefix('outsource')->name('outsource.')->middleware('can:view_employees')->group(function () {
+            Route::get('/', [OutsourceController::class, 'index'])->name('index');
+        });
+        Route::prefix('audit-logs')->name('audit-logs.')->middleware('can:view_reports')->group(function () {
+            Route::get('/', [AuditLogController::class, 'index'])->name('index');
+        });
+        Route::prefix('master-data')->name('master-data.')->middleware('can:manage_settings')->group(function () {
+            Route::get('/', [MasterDataController::class, 'index'])->name('index');
+            Route::post('/', [MasterDataController::class, 'store'])->name('store');
+        });
+        Route::prefix('settings')->name('settings.')->middleware('can:manage_settings')->group(function () {
+            Route::get('/', [SettingsController::class, 'index'])->name('index');
+            Route::post('/', [SettingsController::class, 'update'])->name('update');
+        });
+        Route::prefix('users')->name('users.')->middleware(['can:manage_settings', 'role:Super Admin'])->group(function () {
+            Route::get('/', [UserController::class, 'index'])->name('index');
+            Route::post('/', [UserController::class, 'store'])->name('store');
+            Route::put('/{email}', [UserController::class, 'update'])->name('update');
+        });
+        Route::prefix('mpr-requestors')->name('mpr-requestors.')->middleware(['can:manage_settings', 'role:Super Admin'])->group(function () {
+            Route::get('/', [MprRequestorController::class, 'index'])->name('index');
+            Route::post('/', [MprRequestorController::class, 'store'])->name('store');
+            Route::put('/{email}', [MprRequestorController::class, 'update'])->name('update');
+        });
+        Route::prefix('export')->name('export.')->middleware('can:view_recruitment')->group(function () {
+            Route::get('/candidate-pdf/{id}', [ExportController::class, 'candidatePdf'])->name('candidate-pdf');
+        });
+        Route::prefix('export')->name('export.')->middleware('can:create_offering')->group(function () {
+            Route::get('/offering-letter/{id}', [ExportController::class, 'offeringLetterPdf'])->name('offering-letter');
+        });
+        Route::prefix('export')->name('export.')->middleware('can:manage_employees')->group(function () {
+            Route::get('/kontrak-pkwt/{id}', [ExportController::class, 'kontrakPkwtPdf'])->name('kontrak-pkwt');
+            Route::get('/sk-pengangkatan/{id}', [ExportController::class, 'skPengangkatanPdf'])->name('sk-pengangkatan');
+            Route::get('/sk-off/{id}', [ExportController::class, 'skOffPdf'])->name('sk-off');
+            Route::get('/sk-rotation/{id}', [ExportController::class, 'skRotationPdf'])->name('sk-rotation');
+            Route::get('/surat-bpjs/{id}', [ExportController::class, 'suratBpjsPdf'])->name('surat-bpjs');
+            Route::get('/paklaring/{id}', [ExportController::class, 'paklaringPdf'])->name('paklaring');
+            Route::get('/offboarding-bundle/{id}', [ExportController::class, 'offboardingBundlePdf'])->name('offboarding-bundle');
+            Route::get('/performance-review/{id}', [ExportController::class, 'performanceReviewPdf'])->name('performance-review');
+        });
+        Route::prefix('export')->name('export.')->middleware('role:Super Admin,Admin,User')->group(function () {
+            Route::get('/candidates-csv', [ExportController::class, 'exportCandidatesCsv'])->name('candidates-csv');
+            Route::get('/employees-csv', [ExportController::class, 'exportEmployeesCsv'])->name('employees-csv');
+        });
+        Route::prefix('mpr')->name('mpr.')->middleware('can:view_mpr')->group(function () {
+            Route::get('/', [MprController::class, 'index'])->name('index');
+            Route::get('/create', [MprController::class, 'create'])->name('create')->middleware('can:create_mpr');
+            Route::get('/history', [MprController::class, 'history'])->name('history');
+            Route::post('/', [MprController::class, 'store'])->name('store')->middleware('can:create_mpr');
+            Route::put('/{id}', [MprController::class, 'update'])->name('update')->middleware('can:update_mpr');
+            Route::get('/{id}/preview', [MprController::class, 'preview'])->name('preview');
+            Route::get('/{id}', [MprController::class, 'show'])->name('show');
+            Route::get('/{id}/json', [MprController::class, 'getJson'])->name('json');
+            Route::get('/{id}/pdf', [MprController::class, 'exportPdf'])->name('pdf')->middleware('can:export_mpr');
+        });
+    });
+});
 
-    // 1. Dashboard — all authenticated users can view
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+Route::domain(config('hris.domains.mpr'))->middleware('web')->group(function () {
+    Route::get('/', [MprAuthController::class, 'showLoginForm'])->name('mpr.auth.domain.root');
+    Route::get('/mpr', [MprAuthController::class, 'portal'])->name('mpr.auth.portal');
+    Route::get('/mpr/login', [MprAuthController::class, 'showLoginForm'])->name('mpr.auth.login');
+    Route::post('/mpr/login', [MprAuthController::class, 'login'])->middleware('throttle:mpr-login')->name('mpr.auth.login.post');
+    Route::post('/mpr/logout', [MprAuthController::class, 'logout'])->middleware('mpr.auth.dedicated')->name('mpr.auth.logout');
+    Route::middleware(['portal.access', 'mpr.auth.dedicated'])->group(function () {
+        Route::get('/mpr/request', [MprController::class, 'create'])->name('mpr.auth.request');
+        Route::get('/mpr/request/history', [MprController::class, 'history'])->name('mpr.auth.request.history');
+        Route::post('/mpr/request', [MprController::class, 'store'])->name('mpr.auth.request.store');
+        Route::get('/mpr/request/{id}/pdf', [MprController::class, 'exportPdf'])->name('mpr.auth.pdf');
+    });
+});
 
-    // 2. Recruitment Pipeline — uses can middleware for permission-based access
-    Route::prefix('recruitment')->name('recruitment.')->middleware('can:view_recruitment')->group(function () {
-        Route::get('/', [RecruitmentController::class, 'index'])->name('index')->middleware('can:view_recruitment');
-        Route::get('/accepted', [RecruitmentController::class, 'accepted'])->name('accepted')->middleware('can:view_recruitment');
-        Route::get('/hold', [RecruitmentController::class, 'holdPage'])->name('hold')->middleware('can:view_recruitment');
-        Route::get('/blacklist', [RecruitmentController::class, 'blacklistPage'])->name('blacklist')->middleware('can:view_recruitment');
+Route::domain(config('hris.domains.recruitment'))->middleware('web')->group(function () {
+    Route::get('/', [CareerController::class, 'index'])->name('public.career.index');
+    Route::post('/career/consent', [CareerController::class, 'consent'])->name('public.career.consent');
+    Route::get('/apply', [CareerController::class, 'form'])->name('public.career.form');
+    Route::post('/apply', [CareerController::class, 'store'])->name('public.career.store');
+    Route::get('/career/success', [CareerController::class, 'success'])->name('public.career.success');
+    Route::get('/check-status', [CareerController::class, 'checkStatus'])->name('public.career.check-status');
+    Route::get('/self-update/{id}', [CareerController::class, 'selfUpdate'])->name('public.career.self-update');
+    Route::post('/self-update/{id}', [CareerController::class, 'storeSelfUpdate'])->name('public.career.self-update.store');
+});
 
-        Route::post('/{id}/status', [RecruitmentController::class, 'updateStatus'])->name('update-status')->middleware('can:update_candidates');
-        Route::post('/{id}/hold', [RecruitmentController::class, 'hold'])->name('hold.post')->middleware('can:manage_hold_blacklist');
-        Route::post('/{id}/blacklist', [RecruitmentController::class, 'blacklist'])->name('blacklist.post')->middleware('can:manage_hold_blacklist');
-        Route::post('/{id}/accept', [RecruitmentController::class, 'accept'])->name('accept')->middleware('can:create_offering');
-        Route::post('/{id}/save-notes', [RecruitmentController::class, 'saveNotes'])->name('save-notes')->middleware('can:create_offering');
-        Route::post('/{id}/move-status', [RecruitmentController::class, 'moveStatus'])->name('move-status')->middleware('can:update_candidates');
-        Route::post('/{id}/save-offering', [RecruitmentController::class, 'saveOffering'])->name('save-offering')->middleware('can:create_offering');
-        Route::post('/{id}/save-offering-response', [RecruitmentController::class, 'saveOfferingResponse'])->name('save-offering-response')->middleware('can:create_offering');
-        Route::post('/{id}/save-contract', [RecruitmentController::class, 'saveContract'])->name('save-contract')->middleware('can:create_offering');
-        Route::get('/{id}/json', [RecruitmentController::class, 'getJson'])->name('json')->middleware('can:view_recruitment');
-    });
-
-    // 3. Master Data Employee — view_employees for viewing, manage_employees for mutations
-    Route::prefix('employees')->name('employees.')->middleware('can:view_employees')->group(function () {
-        Route::get('/', [EmployeeController::class, 'index'])->name('index')->middleware('can:view_employees');
-        // IMPORTANT: literal routes (search, import/*, template) MUST come before wildcard routes ({id})
-        // to prevent Laravel routing literal segments as {id} parameter
-        Route::get('/search', [EmployeeController::class, 'search'])->name('search')->middleware('can:view_employees');
-        // Import — preview (no write) + execute + template download
-        Route::post('/import/preview', [EmployeeController::class, 'importPreview'])->name('import.preview')->middleware('can:manage_employees');
-        Route::get('/import/template', [EmployeeController::class, 'importTemplate'])->name('import.template')->middleware('can:manage_employees');
-        Route::post('/import', [EmployeeController::class, 'import'])->name('import')->middleware('can:manage_employees');
-        Route::put('/{id}', [EmployeeController::class, 'update'])->name('update')->middleware('can:manage_employees');
-        Route::post('/{id}/rotate', [EmployeeController::class, 'rotate'])->name('rotate')->middleware('can:manage_employees');
-        Route::post('/{id}/offboard', [EmployeeController::class, 'offboard'])->name('offboard')->middleware('can:manage_employees');
-        Route::post('/{id}/off-contract', [EmployeeController::class, 'offContract'])->name('off-contract')->middleware('can:manage_employees');
-        Route::post('/{id}/promote-probation', [EmployeeController::class, 'promoteToProbation'])->name('promote-probation')->middleware('can:manage_employees');
-        Route::get('/{id}/json', [EmployeeController::class, 'getJson'])->name('json')->middleware('can:view_employees');
-    });
-
-    // 4. Employee Lifecycle — Probation requires manage_probation, Outsource requires view_employees
-    Route::prefix('probation')->name('probation.')->middleware('can:manage_probation')->group(function () {
-        Route::get('/', [ProbationController::class, 'index'])->name('index')->middleware('can:manage_probation');
-        Route::post('/{id}/evaluate', [ProbationController::class, 'evaluate'])->name('evaluate')->middleware('can:manage_probation');
-        Route::get('/{id}/eval-history', [ProbationController::class, 'evalHistory'])->name('eval-history')->middleware('can:manage_probation');
-
-        // Performance Review preview (HTML, same template as the PDF) —
-        // data always resolved from the sheet via route {id}, never query params.
-        // PDF downloads use the existing on-demand hr.export.* routes.
-        Route::get('/{id}/preview', [ProbationController::class, 'previewPerformanceReview'])->name('preview');
-    });
-    Route::prefix('outsource')->name('outsource.')->middleware('can:view_employees')->group(function () {
-        Route::get('/', [OutsourceController::class, 'index'])->name('index')->middleware('can:view_employees');
-    });
-
-    // 5. System Management
-    Route::prefix('audit-logs')->name('audit-logs.')->middleware('can:view_reports')->group(function () {
-        Route::get('/', [AuditLogController::class, 'index'])->name('index')->middleware('can:view_reports');
-    });
-    Route::prefix('master-data')->name('master-data.')->middleware('can:manage_settings')->group(function () {
-        Route::get('/', [MasterDataController::class, 'index'])->name('index')->middleware('can:manage_settings');
-        Route::post('/', [MasterDataController::class, 'store'])->name('store')->middleware('can:manage_settings');
-    });
-    Route::prefix('settings')->name('settings.')->middleware('can:manage_settings')->group(function () {
-        Route::get('/', [SettingsController::class, 'index'])->name('index')->middleware('can:manage_settings');
-        Route::post('/', [SettingsController::class, 'update'])->name('update')->middleware('can:manage_settings');
-    });
-    Route::prefix('users')->name('users.')->middleware(['can:manage_settings', 'role:Super Admin'])->group(function () {
-        Route::get('/', [UserController::class, 'index'])->name('index')->middleware('can:manage_settings');
-        Route::post('/', [UserController::class, 'store'])->name('store')->middleware('can:manage_settings');
-        Route::put('/{email}', [UserController::class, 'update'])->name('update')->middleware('can:manage_settings');
-    });
-    Route::prefix('mpr-requestors')->name('mpr-requestors.')->middleware(['can:manage_settings', 'role:Super Admin'])->group(function () {
-        Route::get('/', [MprRequestorController::class, 'index'])->name('index')->middleware('can:manage_settings');
-        Route::post('/', [MprRequestorController::class, 'store'])->name('store')->middleware('can:manage_settings');
-        Route::put('/{email}', [MprRequestorController::class, 'update'])->name('update')->middleware('can:manage_settings');
-    });
-
-    // 6. Candidate profile print is available to every recruitment viewer.
-    Route::prefix('export')->name('export.')->middleware('can:view_recruitment')->group(function () {
-        Route::get('/candidate-pdf/{id}', [ExportController::class, 'candidatePdf'])->name('candidate-pdf');
-    });
-
-    // Offering Letter follows recruitment permission; lifecycle documents
-    // require employee-management permission.
-    Route::prefix('export')->name('export.')->middleware('can:create_offering')->group(function () {
-        Route::get('/offering-letter/{id}', [ExportController::class, 'offeringLetterPdf'])->name('offering-letter');
-    });
-
-    Route::prefix('export')->name('export.')->middleware('can:manage_employees')->group(function () {
-        Route::get('/kontrak-pkwt/{id}', [ExportController::class, 'kontrakPkwtPdf'])->name('kontrak-pkwt');
-        Route::get('/sk-pengangkatan/{id}', [ExportController::class, 'skPengangkatanPdf'])->name('sk-pengangkatan');
-        Route::get('/sk-off/{id}', [ExportController::class, 'skOffPdf'])->name('sk-off');
-        Route::get('/sk-rotation/{id}', [ExportController::class, 'skRotationPdf'])->name('sk-rotation');
-        Route::get('/surat-bpjs/{id}', [ExportController::class, 'suratBpjsPdf'])->name('surat-bpjs');
-        Route::get('/paklaring/{id}', [ExportController::class, 'paklaringPdf'])->name('paklaring');
-        Route::get('/offboarding-bundle/{id}', [ExportController::class, 'offboardingBundlePdf'])->name('offboarding-bundle');
-        Route::get('/performance-review/{id}', [ExportController::class, 'performanceReviewPdf'])->name('performance-review');
-    });
-
-    Route::prefix('export')->name('export.')->middleware('role:Super Admin,Admin,User')->group(function () {
-        Route::get('/candidates-csv', [ExportController::class, 'exportCandidatesCsv'])->name('candidates-csv');
-        Route::get('/employees-csv', [ExportController::class, 'exportEmployeesCsv'])->name('employees-csv');
-    });
-
-    // 7. Manpower Request (MPR) — View, Create, Show, PDF Export
-    Route::prefix('mpr')->name('mpr.')->middleware('can:view_mpr')->group(function () {
-        Route::get('/', [MprController::class, 'index'])->name('index');
-        Route::get('/create', [MprController::class, 'create'])->name('create')->middleware('can:create_mpr');
-        Route::get('/history', [MprController::class, 'history'])->name('history')->middleware('can:view_mpr');
-        Route::post('/', [MprController::class, 'store'])->name('store')->middleware('can:create_mpr');
-        Route::put('/{id}', [MprController::class, 'update'])->name('update')->middleware('can:update_mpr');
-        Route::get('/{id}/preview', [MprController::class, 'preview'])->name('preview');
-        Route::get('/{id}', [MprController::class, 'show'])->name('show');
-        Route::get('/{id}/json', [MprController::class, 'getJson'])->name('json');
-        Route::get('/{id}/pdf', [MprController::class, 'exportPdf'])->name('pdf')->middleware('can:export_mpr');
-    });
+Route::domain(config('hris.domains.outsource'))->middleware('web')->group(function () {
+    Route::get('/', [OutsourceApplyController::class, 'index'])->name('public.outsource.index');
+    Route::get('/apply', [OutsourceApplyController::class, 'index'])->name('public.outsource.apply');
+    Route::post('/apply', [OutsourceApplyController::class, 'store'])->name('public.outsource.store');
 });
