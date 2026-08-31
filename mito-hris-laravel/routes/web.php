@@ -17,6 +17,7 @@ use App\Http\Controllers\HR\UserController;
 use App\Http\Controllers\HR\MprRequestorController;
 use App\Http\Controllers\HR\ExportController;
 use App\Http\Controllers\HR\MprController;
+use App\Http\Controllers\Auth\MprAuthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -26,17 +27,64 @@ use App\Http\Controllers\HR\MprController;
 */
 
 // =========================================================================
-// DOMAIN 1: AUTHENTICATION & LOGIN (Manual GSheets Auth)
+// DOMAIN 1: AUTHENTICATION & INTERNAL PORTAL GATEWAY
 // =========================================================================
+Route::get('/portal', [LoginController::class, 'portal'])->name('auth.portal');
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])
     ->middleware('throttle:login')
     ->name('login.post');
 Route::any('/logout', [LoginController::class, 'logout'])->name('logout');
 
+Route::get('/mpr', [MprAuthController::class, 'portal'])->name('mpr.auth.portal');
+Route::get('/mpr/login', [MprAuthController::class, 'showLoginForm'])->name('mpr.auth.login');
+Route::post('/mpr/login', [MprAuthController::class, 'login'])->middleware('throttle:mpr-login')->name('mpr.auth.login.post');
+Route::post('/mpr/logout', [MprAuthController::class, 'logout'])->middleware('mpr.auth.dedicated')->name('mpr.auth.logout');
+
+Route::middleware(['portal.access', 'mpr.auth.dedicated'])->group(function () {
+    Route::get('/mpr/request', [MprController::class, 'create'])->name('mpr.auth.request');
+    Route::get('/mpr/request/history', [MprController::class, 'history'])->name('mpr.auth.history');
+    Route::post('/mpr/request', [MprController::class, 'store'])->name('mpr.auth.request.store');
+    Route::get('/mpr/request/{id}/pdf', [MprController::class, 'exportPdf'])->name('mpr.auth.pdf');
+});
+
+Route::domain(config('mpr.domain', 'localhost'))
+    ->middleware(['web'])
+    ->group(function () {
+        Route::get('/login', [MprAuthController::class, 'showLoginForm'])->name('mpr.auth.domain.login');
+        Route::post('/login', [MprAuthController::class, 'login'])->middleware('throttle:mpr-login')->name('mpr.auth.domain.login.post');
+        Route::post('/logout', [MprAuthController::class, 'logout'])->middleware('mpr.auth.dedicated')->name('mpr.auth.domain.logout');
+
+        Route::middleware(['portal.access', 'mpr.auth.dedicated'])->group(function () {
+            Route::get('/request', [MprController::class, 'create'])->name('mpr.auth.domain.request');
+            Route::get('/request/history', [MprController::class, 'history'])->name('mpr.auth.domain.history');
+            Route::post('/request', [MprController::class, 'store'])->name('mpr.auth.domain.request.store');
+            Route::get('/request/{id}/pdf', [MprController::class, 'exportPdf'])->name('mpr.auth.domain.pdf');
+        });
+    });
+
 // =========================================================================
 // DOMAIN 2: PUBLIC CAREER & APPLICANT PORTAL (with Landing & Consent Gate)
 // =========================================================================
+// Host-specific public routes are registered before generic paths so the
+// subdomain-specific public portal takes precedence when the request host
+// matches production hostnames.
+Route::domain('outsource.hrismitogroup.web.id')->middleware(['web'])->group(function () {
+    Route::get('/apply', [OutsourceApplyController::class, 'index'])->name('public.outsource.domain.index');
+    Route::post('/apply', [OutsourceApplyController::class, 'store'])->name('public.outsource.domain.store');
+});
+
+Route::domain('recruitment.hrismitogroup.web.id')->middleware(['web'])->group(function () {
+    Route::get('/', [CareerController::class, 'index'])->name('public.career.domain.index');
+    Route::post('/career/consent', [CareerController::class, 'consent'])->name('public.career.domain.consent');
+    Route::get('/apply', [CareerController::class, 'form'])->name('public.career.domain.form');
+    Route::post('/apply', [CareerController::class, 'store'])->name('public.career.domain.store');
+    Route::get('/career/success', [CareerController::class, 'success'])->name('public.career.domain.success');
+    Route::get('/check-status', [CareerController::class, 'checkStatus'])->name('public.career.domain.check-status');
+    Route::get('/self-update/{id}', [CareerController::class, 'selfUpdate'])->name('public.career.domain.self-update');
+    Route::post('/self-update/{id}', [CareerController::class, 'storeSelfUpdate'])->name('public.career.domain.self-update.store');
+});
+
 Route::get('/robots.txt', [SeoController::class, 'robots'])->name('public.seo.robots');
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('public.seo.sitemap');
 Route::get('/', [CareerController::class, 'index'])->name('public.career.index');
@@ -55,7 +103,7 @@ Route::post('/outsource/apply', [OutsourceApplyController::class, 'store'])->nam
 // =========================================================================
 // DOMAIN 3: HR INTERNAL MANAGEMENT SYSTEM (Protected by hr.auth Middleware)
 // =========================================================================
-Route::prefix('hr')->name('hr.')->middleware(['hr.auth', 'mpr.auth'])->group(function () {
+Route::prefix('hr')->name('hr.')->middleware(['portal.access', 'hr.auth', 'mpr.auth'])->group(function () {
     Route::post('/refresh-data', [\App\Http\Controllers\HR\RefreshController::class, 'refreshData'])->name('refresh-data');
 
     // 1. Dashboard — all authenticated users can view

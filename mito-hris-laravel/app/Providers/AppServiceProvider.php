@@ -47,6 +47,12 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by($identifier . '|' . $request->ip());
         });
 
+        RateLimiter::for('mpr-login', function (Request $request) {
+            $email = strtolower(trim((string) $request->input('email', '')));
+
+            return Limit::perMinute(5)->by($email . '|' . $request->ip());
+        });
+
         // ==============================================================
         // Register Event → Listener mappings.
         // These listeners were previously NOT wired, so cache invalidation

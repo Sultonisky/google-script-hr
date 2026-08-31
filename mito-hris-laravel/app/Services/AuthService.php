@@ -86,6 +86,7 @@ class AuthService
                 // Internal HRIS users do NOT use entity/branch for auth
                 'entities'    => [],
                 'branch'      => '',
+                'portal'      => 'hris',
                 // Identity source marker
                 'auth_domain' => 'users',
             ],
