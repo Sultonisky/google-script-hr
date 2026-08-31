@@ -522,10 +522,14 @@
                             var pdfUrls = res.pdf_urls || {};
                             var bundleUrl = pdfUrls.bundle;
                             if (bundleUrl) {
+                                console.info('[PDF offboarding ZIP] request:', bundleUrl);
                                 fetch(bundleUrl, {
                                         credentials: 'same-origin'
                                     })
                                     .then(function(response) {
+                                        console.info('[PDF offboarding ZIP] response:', response
+                                            .status,
+                                            response.headers.get('content-type'));
                                         if (!response.ok) throw new Error(
                                             'offboarding bundle HTTP ' + response.status
                                         );
@@ -554,6 +558,8 @@
                                         }
                                     });
                             } else {
+                                console.error('[PDF offboarding ZIP] URL download tidak tersedia:',
+                                    res);
                                 console.warn('URL bundle PDF offboarding tidak tersedia.');
                                 if (typeof showToast === 'function') {
                                     showToast(
@@ -564,9 +570,9 @@
                             var modal = bootstrap.Modal.getInstance(document.getElementById(
                                 'offboardingModal'));
                             if (modal) modal.hide();
-                            setTimeout(function() {
-                                window.location.reload();
-                            }, 800);
+                            console.info(
+                                '[PDF offboarding ZIP] Refresh otomatis ditahan untuk debugging Network.'
+                                );
                         } else {
                             showToast('Gagal: ' + (res ? (res.message || 'Error') :
                                 'Tidak ada respon'), 'error');

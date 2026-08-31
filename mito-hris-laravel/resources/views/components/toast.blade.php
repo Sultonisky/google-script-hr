@@ -7,11 +7,6 @@
 
 @if ($flashToasts->isNotEmpty())
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const flashToasts = @json($flashToasts);
-            flashToasts.forEach(function(toast) {
-                if (typeof window.showToast === 'function') window.showToast(toast);
-            });
-        });
+        window.__flashToasts = @json($flashToasts);
     </script>
 @endif
