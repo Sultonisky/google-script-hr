@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Repositories\Contracts\MprRequestorRepositoryInterface;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
@@ -24,7 +25,7 @@ class MprAuthController extends Controller
         ]);
     }
 
-    public function showLoginForm(): View
+    public function showLoginForm(): View|RedirectResponse
     {
         if (session()->has(config('mpr.session_key', 'mpr_requestor_auth'))) {
             return redirect()->route('mpr.auth.request');
