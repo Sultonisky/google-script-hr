@@ -2,10 +2,10 @@
 
 return [
     'domains' => [
-        'hrismitogroup.web.id' => 'hris',
-        'mpr.hrismitogroup.web.id' => 'mpr',
-        'outsource.hrismitogroup.web.id' => 'outsource',
-        'recruitment.hrismitogroup.web.id' => 'recruitment',
+        'hris' => env('HRIS_DOMAIN', 'hrismitogroup.web.id'),
+        'mpr' => env('MPR_DOMAIN', 'mpr.hrismitogroup.web.id'),
+        'recruitment' => env('RECRUITMENT_DOMAIN', 'recruitment.hrismitogroup.web.id'),
+        'outsource' => env('OUTSOURCE_DOMAIN', 'outsource.hrismitogroup.web.id'),
     ],
     'portal_access' => [
         'hris' => [
