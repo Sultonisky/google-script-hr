@@ -64,8 +64,7 @@
                     </button>
                     <button class="btn btn-sm text-white ms-2 fw-semibold"
                         style="background:#eb1c24;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
-                        id="btnOpenEvalModal" type="button" data-bs-toggle="modal" data-bs-target="#probationEvalModal"
-                        onclick="resetProbationEvalModal()">
+                        id="btnOpenEvalModal" type="button" data-bs-toggle="modal" data-bs-target="#probationEvalModal">
                         <i class="bi bi-clipboard-check me-1"></i>Evaluasi Karyawan
                     </button>
                 </div>
@@ -77,19 +76,16 @@
                     <div class="table-search">
                         <i class="bi bi-search"></i>
                         <input type="text" name="search" id="probSearchInput"
-                            placeholder="Cari nama, ID, posisi, departemen..." value="{{ request('search') }}"
-                            onkeydown="if(event.key==='Enter'){this.closest('form').submit()}" />
+                            placeholder="Cari nama, ID, posisi, departemen..." value="{{ request('search') }}" data-submit-on-enter="true" />
                     </div>
-                    <select class="filter-select" name="status" id="probStatusFilter"
-                        onchange="this.closest('form').submit()">
+                    <select class="filter-select" name="status" id="probStatusFilter" data-auto-submit="true">
                         <option value="">Status</option>
                         <option value="lulus" {{ request('status') === 'lulus' ? 'selected' : '' }}>Lulus</option>
                         <option value="tidak_lulus" {{ request('status') === 'tidak_lulus' ? 'selected' : '' }}>Tidak Lulus
                         </option>
                         <option value="extend" {{ request('status') === 'extend' ? 'selected' : '' }}>Extend</option>
                     </select>
-                    <select class="filter-select" name="score" id="probScoreFilter"
-                        onchange="this.closest('form').submit()">
+                    <select class="filter-select" name="score" id="probScoreFilter" data-auto-submit="true">
                         <option value="">Kategori Score</option>
                         <option value="Sangat Baik" {{ request('score') === 'Sangat Baik' ? 'selected' : '' }}>Sangat Baik
                         </option>
@@ -97,8 +93,7 @@
                         <option value="Cukup" {{ request('score') === 'Cukup' ? 'selected' : '' }}>Cukup</option>
                         <option value="Kurang" {{ request('score') === 'Kurang' ? 'selected' : '' }}>Kurang</option>
                     </select>
-                    <select class="filter-select" name="sort" id="probSortSelect"
-                        onchange="this.closest('form').submit()">
+                    <select class="filter-select" name="sort" id="probSortSelect" data-auto-submit="true">
                         <option value="newest" {{ request('sort', 'newest') === 'newest' ? 'selected' : '' }}>Terbaru
                         </option>
                         <option value="oldest" {{ request('sort') === 'oldest' ? 'selected' : '' }}>Terlama</option>
@@ -252,14 +247,14 @@
                                             style="background:#eb1c24;color:#f5f3ff;;border-radius:6px;padding:4px 8px"
                                             type="button" title="Evaluasi" data-bs-toggle="modal"
                                             data-bs-target="#probationEvalModal"
-                                            onclick="prefillEvalEmployee('{{ $prob->employeeId }}')">
+                                            data-employee-id="{{ $prob->employeeId }}">
                                             <i class="bi bi-clipboard-check"></i>
                                         </button>
                                     @endif
                                     <button class="btn btn-sm prob-btn-history ms-1"
                                         style="color:#1063b1;border:1px solid #1063b1;border-radius:6px;padding:4px 8px"
                                         type="button" title="Riwayat Evaluasi"
-                                        onclick="openEvalHistoryModal('{{ $prob->employeeId }}', '{{ addslashes($prob->fullName) }}')">
+                                        data-employee-id="{{ $prob->employeeId }}">
                                         <i class="bi bi-clock-history"></i>
                                     </button>
                                     @if (!empty($prob->lastEvalId))

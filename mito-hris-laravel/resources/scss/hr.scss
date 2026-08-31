@@ -10,8 +10,88 @@
 @import "modules/drawer";
 @import "modules/modal";
 @import "modules/employee";
-@import "modules/masterData";
 @import "modules/responsive";
+
+.mpr-form-shell {
+    max-width: 1100px;
+}
+
+.mpr-form-body {
+    padding: 1.25rem;
+}
+
+.mpr-form-body .row {
+    --bs-gutter-y: 1rem;
+}
+
+.mpr-section-header {
+    background: linear-gradient(
+        135deg,
+        var(--color-primary) 0%,
+        var(--color-primary-dark) 100%
+    );
+    color: #fff;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 1rem 1.25rem;
+}
+
+.mpr-section-header h5 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.mpr-identity-box {
+    background: rgba(0, 91, 172, 0.03);
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    padding: 1rem;
+}
+
+.mpr-badge {
+    font-size: 0.72rem;
+    border-radius: 999px;
+    padding: 0.38rem 0.7rem;
+}
+
+.form-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 0.45rem;
+}
+
+.form-control,
+.form-select,
+.form-select-sm,
+.form-control-sm,
+textarea.form-control {
+    border-radius: 10px;
+    border: 1.5px solid var(--color-border);
+    min-height: 42px;
+    background: var(--color-surface);
+    color: var(--color-text);
+}
+
+.form-control:focus,
+.form-select:focus,
+textarea.form-control:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 0.2rem rgba(0, 91, 172, 0.15);
+}
+
+@media (max-width: 767.98px) {
+    .mpr-form-body {
+        padding: 1rem;
+    }
+
+    .d-flex.justify-content-end.gap-2 {
+        flex-direction: column-reverse;
+    }
+
+    .d-flex.justify-content-end.gap-2 .btn {
+        width: 100%;
+    }
+}
 
 @keyframes mito-refresh-spin {
     from {

@@ -78,23 +78,23 @@
                         <input type="text" name="search" id="accSearchInput"
                             placeholder="Cari ID, nama, posisi, Employee ID..." value="{{ request('search') }}" />
                     </div>
-                    <select class="filter-select" name="sort" id="accSortSelect" onchange="this.form.submit()">
+                    <select class="filter-select" name="sort" id="accSortSelect" data-auto-submit="true">
                         <option value="newest" {{ $sortFilter === 'newest' ? 'selected' : '' }}>Terbaru</option>
                         <option value="oldest" {{ $sortFilter === 'oldest' ? 'selected' : '' }}>Terlama</option>
                     </select>
-                    <select class="filter-select" name="offering" id="accOfferingFilter" onchange="this.form.submit()">
+                    <select class="filter-select" name="offering" id="accOfferingFilter" data-auto-submit="true">
                         <option value="">Offering Letter</option>
                         <option value="exists" {{ $offeringFilter === 'exists' ? 'selected' : '' }}>Sudah Ada</option>
                         <option value="missing" {{ $offeringFilter === 'missing' ? 'selected' : '' }}>Belum Ada</option>
                     </select>
-                    <select class="filter-select" name="response" id="accResponseFilter" onchange="this.form.submit()">
+                    <select class="filter-select" name="response" id="accResponseFilter" data-auto-submit="true">
                         <option value="">Respon Offering</option>
                         <option value="Menunggu" {{ $responseFilter === 'Menunggu' ? 'selected' : '' }}>Menunggu</option>
                         <option value="Diterima" {{ $responseFilter === 'Diterima' ? 'selected' : '' }}>Diterima</option>
                         <option value="Ditolak" {{ $responseFilter === 'Ditolak' ? 'selected' : '' }}>Ditolak</option>
                         <option value="none" {{ $responseFilter === 'none' ? 'selected' : '' }}>Belum Ada Respon</option>
                     </select>
-                    <select class="filter-select" name="contract" id="accContractFilter" onchange="this.form.submit()">
+                    <select class="filter-select" name="contract" id="accContractFilter" data-auto-submit="true">
                         <option value="">Proses Kontrak</option>
                         <option value="processed" {{ $contractFilter === 'processed' ? 'selected' : '' }}>Sudah Diproses
                         </option>
@@ -163,7 +163,7 @@
                                 <td>
                                     <button class="btn btn-sm btn-outline-secondary btn-status-move"
                                         data-id="{{ $c->recruitmentId }}" data-from="Accepted" title="Ubah Status"
-                                        onclick="event.stopPropagation(); openMoveStatusModal('{{ $c->recruitmentId }}', 'Accepted')">
+                                        data-action="open-move-status-modal" data-recruitment-id="{{ $c->recruitmentId }}" data-from-status="Accepted">
                                         <i class="bi bi-arrow-repeat"></i>
                                     </button>
                                     @can('create_offering')
@@ -171,7 +171,7 @@
                                             <button class="btn btn-sm btn-offering-preview" data-id="{{ $c->recruitmentId }}"
                                                 title="Dibuat: {{ $c->offeringCreated }} oleh {{ $c->offeringCreatedBy ?? '-' }}"
                                                 style="background:#e8f4e8;color:#166534;border:1px solid #bbf7d0;border-radius:6px;padding:4px 8px"
-                                                onclick="event.stopPropagation(); openOfferingPreviewModal('{{ $c->recruitmentId }}')">
+                                                data-action="open-offering-preview-modal" data-recruitment-id="{{ $c->recruitmentId }}">
                                                 <i class="bi bi-eye"></i>
                                             </button>
                                         @endif

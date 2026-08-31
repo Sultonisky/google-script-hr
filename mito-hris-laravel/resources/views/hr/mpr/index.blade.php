@@ -911,7 +911,7 @@
                             </div>
                         </div>
                         <div class="col-12 col-sm-6 col-md-3">
-                            <select name="department" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <select name="department" class="form-select form-select-sm" data-auto-submit="true">
                                 <option value="">Semua Departemen</option>
                                 @foreach ($departments as $d)
                                     <option value="{{ $d }}" {{ $dept === $d ? 'selected' : '' }}>
@@ -920,14 +920,14 @@
                             </select>
                         </div>
                         <div class="col-12 col-sm-6 col-md-3">
-                            <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <select name="status" class="form-select form-select-sm" data-auto-submit="true">
                                 <option value="">Semua Status</option>
                                 <option value="Submitted" {{ $status === 'Submitted' ? 'selected' : '' }}>Submitted
                                 </option>
                             </select>
                         </div>
                         <div class="col-12 col-sm-6 col-md-3">
-                            <select name="submit_by" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <select name="submit_by" class="form-select form-select-sm" data-auto-submit="true">
                                 <option value="">Submit By</option>
                                 @foreach ($submitByOptions as $requestor)
                                     <option value="{{ $requestor }}" {{ $submitBy === $requestor ? 'selected' : '' }}>

@@ -67,7 +67,7 @@
     <div class="md-toolbar">
       <div class="md-search">
         <i class="bi bi-search"></i>
-        <input type="text" id="mdSearch" placeholder="Cari item..." autocomplete="off" onkeyup="filterMasterTable()" />
+        <input type="text" id="mdSearch" placeholder="Cari item..." autocomplete="off" />
       </div>
       <div class="text-muted small" id="mdCountInfo">{{ count($items ?? []) }} item</div>
     </div>
@@ -97,7 +97,7 @@
                 <td class="text-muted item-desc" style="font-size:12.5px">{{ $itemDesc }}</td>
                 <td><span class="cat-badge">{{ strtoupper(request('cat', 'positions')) }}</span></td>
                 <td class="text-end">
-                  <button class="btn btn-sm btn-light border text-danger" title="Hapus Item" onclick="showToast('Item referensi master terproteksi dari spreadsheet.', 'warning')">
+                  <button class="btn btn-sm btn-light border text-danger" title="Hapus Item" data-master-delete-warning="true">
                     <i class="bi bi-trash"></i>
                   </button>
                 </td>
@@ -155,22 +155,4 @@
     </div>
   </div>
 </div>
-@endsection
-
-@section('scripts')
-<script>
-  function filterMasterTable() {
-    const q = document.getElementById('mdSearch').value.toLowerCase();
-    const rows = document.querySelectorAll('#mdTableBody tr');
-    let visible = 0;
-    rows.forEach(r => {
-      const name = r.querySelector('.item-name')?.textContent.toLowerCase() || '';
-      const desc = r.querySelector('.item-desc')?.textContent.toLowerCase() || '';
-      const match = name.includes(q) || desc.includes(q);
-      r.style.display = match ? '' : 'none';
-      if (match) visible++;
-    });
-    document.getElementById('mdCountInfo').textContent = `${visible} item`;
-  }
-</script>
 @endsection

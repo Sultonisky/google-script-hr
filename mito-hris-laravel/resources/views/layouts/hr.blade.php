@@ -12,7 +12,7 @@
         'robots' => 'noindex,nofollow,noarchive',
     ])
 
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         // Immediate theme initializer to avoid light flicker
         (function() {
             const savedTheme = localStorage.getItem('mito_theme') || 'light';
@@ -21,7 +21,7 @@
         })();
     </script>
 
-    @vite(['resources/scss/app.scss', 'resources/scss/hr.scss', 'resources/js/app.js'])
+    @vite(['resources/scss/app.scss', 'resources/scss/hr.scss', 'resources/js/app.js', 'resources/js/csp-hardening.js'])
     @yield('styles')
 </head>
 

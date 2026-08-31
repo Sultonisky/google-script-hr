@@ -44,7 +44,7 @@
                         <input type="text" name="search" id="blSearchInput"
                             placeholder="Cari ID, nama, posisi, alasan..." value="{{ request('search') }}" />
                     </div>
-                    <select class="filter-select" name="sort" id="blSortSelect" onchange="this.form.submit()">
+                    <select class="filter-select" name="sort" id="blSortSelect" data-auto-submit="true">
                         <option value="newest" selected>Terbaru</option>
                     </select>
                     <a href="{{ route('hr.recruitment.blacklist') }}" class="btn-reset-filter text-decoration-none"

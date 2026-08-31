@@ -26,10 +26,9 @@
                         <div class="position-relative">
                             <input type="text" class="form-control" id="onboardingCandSearch"
                                 placeholder="Ketik nama atau Recruitment ID..." autocomplete="off"
-                                style="font-size: 13px; padding-right: 36px" oninput="handleOnboardingSearch(this.value)" />
+                                style="font-size: 13px; padding-right: 36px" />
                             <i class="bi bi-x-circle-fill position-absolute" id="onboardingSearchClear"
-                                style="right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #aaa; display: none"
-                                onclick="clearOnboardingSearch()"></i>
+                                style="right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #aaa; display: none"></i>
                         </div>
                         <div id="onboardingSearchDropdown" class="border rounded-3 mt-1 shadow-sm"
                             style="display: none; max-height: 200px; overflow-y: auto; background: #fff; z-index: 9999; position: relative">
@@ -247,10 +246,9 @@
                         <div class="position-relative">
                             <input type="text" class="form-control" id="offeringCandSearch"
                                 placeholder="Ketik nama atau Recruitment ID..." autocomplete="off"
-                                style="font-size: 13px; padding-right: 36px" oninput="handleOfferingSearch(this.value)" />
+                                style="font-size: 13px; padding-right: 36px" />
                             <i class="bi bi-x-circle-fill position-absolute" id="offeringSearchClear"
-                                style="right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #aaa; display: none"
-                                onclick="clearOfferingSearch()"></i>
+                                style="right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #aaa; display: none"></i>
                         </div>
                         <div id="offeringSearchDropdown" class="border rounded-3 mt-1 shadow-sm"
                             style="display: none; max-height: 200px; overflow-y: auto; background: #fff; z-index: 9999; position: relative">
@@ -374,18 +372,17 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold" style="font-size: 12px">Jam Kerja</label>
-                                <select class="form-select form-select-sm" id="offerWorkingHoursPreset"
-                                    onchange="applyWorkingHoursPreset(this)">
+                                <select class="form-select form-select-sm" id="offerWorkingHoursPreset">
                                     <option value="">— Pilih pola jam kerja —</option>
-                                    <option value="Senin – Jumat mulai pukul 08.00 – 17.00 WIB" selected>Kantor
-                                        (Senin–Jumat 08.00–17.00 WIB)</option>
-                                    <option value="Senin – Sabtu mulai pukul 08.00 – 16.30 WIB">Pabrik/Cabang (Senin–Sabtu
-                                        08.00–16.30 WIB)</option>
+                                    <option value="Senin - Jumat mulai pukul 08.00 - 17.00 WIB" selected>Kantor
+                                        (Senin-Jumat 08.00-17.00 WIB)</option>
+                                    <option value="Senin - Sabtu mulai pukul 08.00 - 16.30 WIB">Pabrik/Cabang (Senin-Sabtu
+                                        08.00-16.30 WIB)</option>
                                     <option value="Shift sesuai penempatan">Shift sesuai penempatan</option>
                                     <option value="custom">Kustom (ketik manual)</option>
                                 </select>
                                 <input type="text" class="form-control form-control-sm mt-1" id="offerWorkingHours"
-                                    value="Senin – Jumat mulai pukul 08.00 – 17.00 WIB" placeholder="Jam kerja..." />
+                                    value="Senin - Jumat mulai pukul 08.00 - 17.00 WIB" placeholder="Jam kerja..." />
                             </div>
                         </div>
                     </div>

@@ -167,17 +167,60 @@ class GoogleSheetsService
     }
 
     /**
+     * Prevent spreadsheet formula injection without corrupting legitimate data.
+     * Google Sheets only treats values beginning with '=' as formulas. Numeric and
+     * phone-like values such as +628..., -123, and @username are preserved.
+     */
+    private function sanitizeCellValue(mixed $value): string
+    {
+        if ($value === null || $value === false) {
+            return '';
+        }
+
+        if (is_array($value) || is_object($value)) {
+            return '';
+        }
+
+        if (is_bool($value)) {
+            return $value ? 'TRUE' : 'FALSE';
+        }
+
+        $string = trim((string) $value);
+
+        if ($string === '') {
+            return '';
+        }
+
+        if (str_starts_with($string, '=')) {
+            return "'{$string}";
+        }
+
+        return $string;
+    }
+
+    /**
      * Sanitize a row array so every value is a scalar string accepted by the
      * Google Sheets API v4. null, bool, array and object values are coerced.
      */
     private function sanitizeRow(array $row): array
     {
-        return array_values(array_map(function ($v) {
-            if ($v === null || $v === false) return '';
-            if (is_array($v) || is_object($v)) return '';
-            if (is_bool($v)) return $v ? 'TRUE' : 'FALSE';
-            return (string) $v;
+        return array_values(array_map(function ($value) {
+            return $this->sanitizeCellValue($value);
         }, $row));
+    }
+
+    /**
+     * Sanitize nested row data for range updates.
+     */
+    private function sanitizeValues(array $values): array
+    {
+        return array_map(function ($row) {
+            if (!is_array($row)) {
+                return [$this->sanitizeCellValue($row)];
+            }
+
+            return $this->sanitizeRow($row);
+        }, $values);
     }
 
     /**
@@ -234,7 +277,7 @@ class GoogleSheetsService
             $service = $this->factory->getSheetsService();
             $fullRange = "{$sheetName}!{$range}";
             $body = new ValueRange([
-                'values' => $values
+                'values' => $this->sanitizeValues($values)
             ]);
 
             $params = ['valueInputOption' => 'USER_ENTERED'];

@@ -119,7 +119,7 @@
         }
     </style>
 
-    @vite(['resources/scss/app.scss', 'resources/scss/public.scss', 'resources/js/app.js'])
+    @vite(['resources/scss/app.scss', 'resources/scss/public.scss', 'resources/js/app.js', 'resources/js/csp-hardening.js'])
     @yield('styles')
     <style>
         :root {

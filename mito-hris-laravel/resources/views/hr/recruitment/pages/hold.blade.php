@@ -44,7 +44,7 @@
                         <input type="text" name="search" id="holdSearchInput"
                             placeholder="Cari ID, nama, posisi, kota..." value="{{ request('search') }}" />
                     </div>
-                    <select class="filter-select" name="sort" id="holdSortSelect" onchange="this.form.submit()">
+                    <select class="filter-select" name="sort" id="holdSortSelect" data-auto-submit="true">
                         <option value="newest" selected>Terbaru</option>
                     </select>
                     <a href="{{ route('hr.recruitment.hold') }}" class="btn-reset-filter text-decoration-none"
