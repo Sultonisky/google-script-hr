@@ -42,6 +42,8 @@ class UserController extends Controller
             'password' => 'required|string|min:8|confirmed',
         ]);
 
+        $timestamp = now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s');
+
         $this->userRepo->create([
             'email' => $validated['email'],
             'username' => $validated['username'],
@@ -49,6 +51,10 @@ class UserController extends Controller
             'role' => $validated['role'],
             'status' => 'Active',
             'passwordHash' => Hash::make($validated['password']),
+            'createdAt' => $timestamp,
+            'updatedAt' => $timestamp,
+            'created_at' => $timestamp,
+            'updated_at' => $timestamp,
             'createdBy' => session('hr_user.email', 'HR Administrator'),
         ]);
 
@@ -92,6 +98,8 @@ class UserController extends Controller
             'username' => $validated['username'],
             'role' => $validated['role'],
             'status' => $validated['status'],
+            'updatedAt' => now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
+            'updated_at' => now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
         ];
         if (!empty($validated['password'])) {
             $updates['passwordHash'] = Hash::make($validated['password']);

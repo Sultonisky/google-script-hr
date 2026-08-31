@@ -70,6 +70,9 @@ class UserManagementTest extends TestCase
                 && $data['fullName'] === 'New User'
                 && $data['role'] === 'Admin'
                 && $data['status'] === 'Active'
+                && isset($data['createdAt'])
+                && isset($data['updatedAt'])
+                && $data['createdAt'] === $data['updatedAt']
                 && Hash::check('secret-password', $data['passwordHash'])
                 && $data['passwordHash'] !== 'secret-password';
         }));
@@ -96,16 +99,25 @@ class UserManagementTest extends TestCase
     {
         $this->actingAsRole('Super Admin');
         $existing = [
-            'Email' => 'admin@example.test', 'Username' => 'admin', 'Full Name' => 'Admin Test',
-            'Role' => 'User', 'Status' => 'Active', 'Password Hash' => Hash::make('old-password'),
+            'Email' => 'admin@example.test',
+            'Username' => 'admin',
+            'Full Name' => 'Admin Test',
+            'Role' => 'User',
+            'Status' => 'Active',
+            'Password Hash' => Hash::make('old-password'),
         ];
         $updated = array_merge($existing, ['Username' => 'admin.updated', 'Full Name' => 'Admin Updated', 'Role' => 'Admin', 'Status' => 'Inactive']);
         $repository = Mockery::mock(UserRepositoryInterface::class);
         $repository->shouldReceive('findByEmail')->once()->with('admin@example.test')->andReturn($existing);
         $repository->shouldReceive('getAll')->once()->andReturn([$existing]);
-        $repository->shouldReceive('updateByEmail')->once()->with('admin@example.test', Mockery::on(fn(array $data): bool => $data === [
-            'fullName' => 'Admin Updated', 'username' => 'admin.updated', 'role' => 'Admin', 'status' => 'Inactive',
-        ]));
+        $repository->shouldReceive('updateByEmail')->once()->with('admin@example.test', Mockery::on(function (array $data): bool {
+            return $data['fullName'] === 'Admin Updated'
+                && $data['username'] === 'admin.updated'
+                && $data['role'] === 'Admin'
+                && $data['status'] === 'Inactive'
+                && isset($data['updatedAt'])
+                && !empty($data['updatedAt']);
+        }));
         $repository->shouldReceive('findByEmail')->once()->with('admin@example.test')->andReturn($updated);
         $this->app->instance(UserRepositoryInterface::class, $repository);
         $audit = Mockery::mock(AuditLogRepositoryInterface::class);
@@ -116,7 +128,10 @@ class UserManagementTest extends TestCase
 
         $this->withoutMiddleware(VerifyCsrfToken::class)
             ->put(route('hr.users.update', ['email' => 'admin@example.test']), [
-                'name' => 'Admin Updated', 'username' => 'admin.updated', 'role' => 'Admin', 'status' => 'Inactive',
+                'name' => 'Admin Updated',
+                'username' => 'admin.updated',
+                'role' => 'Admin',
+                'status' => 'Inactive',
             ])
             ->assertRedirect(route('hr.users.index'))
             ->assertSessionHas('success');
@@ -200,15 +215,26 @@ class UserManagementTest extends TestCase
     {
         $this->actingAsRole('Super Admin');
         $existing = [
-            'Requestor ID' => 'MPR-REQ-001', 'Email' => 'manager@example.test', 'Username' => 'manager',
-            'Full Name' => 'Manager Test', 'Role' => 'Manpower', 'Status' => 'Active', 'Entity' => 'MSI', 'Branch' => 'Jakarta',
+            'Requestor ID' => 'MPR-REQ-001',
+            'Email' => 'manager@example.test',
+            'Username' => 'manager',
+            'Full Name' => 'Manager Test',
+            'Role' => 'Manpower',
+            'Status' => 'Active',
+            'Entity' => 'MSI',
+            'Branch' => 'Jakarta',
         ];
         $updated = array_merge($existing, ['Full Name' => 'Manager Updated', 'Entity' => 'MSI, SPI', 'Branch' => 'Bandung']);
         $repository = Mockery::mock(MprRequestorRepositoryInterface::class);
         $repository->shouldReceive('findByEmail')->once()->with('manager@example.test')->andReturn($existing);
         $repository->shouldReceive('getAll')->once()->andReturn([$existing]);
         $repository->shouldReceive('updateByEmail')->once()->with('manager@example.test', Mockery::on(fn(array $data): bool => $data === [
-            'fullName' => 'Manager Updated', 'username' => 'manager', 'role' => 'Manpower', 'entity' => 'MSI, SPI', 'branch' => 'Bandung', 'status' => 'Active',
+            'fullName' => 'Manager Updated',
+            'username' => 'manager',
+            'role' => 'Manpower',
+            'entity' => 'MSI, SPI',
+            'branch' => 'Bandung',
+            'status' => 'Active',
         ]));
         $repository->shouldReceive('findByEmail')->once()->with('manager@example.test')->andReturn($updated);
         $this->app->instance(MprRequestorRepositoryInterface::class, $repository);
@@ -220,7 +246,12 @@ class UserManagementTest extends TestCase
 
         $this->withoutMiddleware(VerifyCsrfToken::class)
             ->put(route('hr.mpr-requestors.update', ['email' => 'manager@example.test']), [
-                'name' => 'Manager Updated', 'username' => 'manager', 'role' => 'Manpower', 'entity' => 'MSI, SPI', 'branch' => 'Bandung', 'status' => 'Active',
+                'name' => 'Manager Updated',
+                'username' => 'manager',
+                'role' => 'Manpower',
+                'entity' => 'MSI, SPI',
+                'branch' => 'Bandung',
+                'status' => 'Active',
             ])
             ->assertRedirect(route('hr.mpr-requestors.index'))
             ->assertSessionHas('success');
