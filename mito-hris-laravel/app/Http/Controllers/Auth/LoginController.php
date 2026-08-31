@@ -22,6 +22,17 @@ class LoginController extends Controller
     ) {}
 
     /**
+     * Show the Internal HRIS Portal Landing Page (Gateway before login).
+     */
+    public function portal(): View
+    {
+        $user = session('hr_user');
+        return view('auth.portal', [
+            'user' => $user,
+        ]);
+    }
+
+    /**
      * Show the HR / MPR login form.
      * If already authenticated, redirect to the appropriate area.
      */
@@ -144,6 +155,7 @@ class LoginController extends Controller
     ): RedirectResponse|JsonResponse {
         $request->session()->regenerate();
         $request->session()->forget('hris_remember');
+        $user['portal'] = $user['portal'] ?? 'hris';
         $request->session()->put('hr_user', $user);
         $this->auditRepo->log('Authentication', $user['email'] ?? $user['username'] ?? 'UNKNOWN', 'logged_in', null, null, null, $user['email'] ?? 'UNKNOWN', 'Authentication');
 
@@ -151,7 +163,8 @@ class LoginController extends Controller
             $request->session()->put('hris_remember', true);
         }
 
-        $redirect = ($user['role'] ?? '') === 'Manpower'
+        $role = strtolower(trim((string) ($user['role'] ?? '')));
+        $redirect = ($user['auth_domain'] ?? '') === 'mpr_requestor' || in_array($role, ['manpower', 'manager'], true)
             ? route('hr.mpr.create')
             : route('hr.dashboard');
 

@@ -31,7 +31,9 @@ class MprRequestorMiddleware
 
     public function handle(Request $request, Closure $next): Response
     {
-        $user = session('hr_user');
+        $legacyUser = session('hr_user');
+        $dedicatedUser = session(config('mpr.session_key', 'mpr_requestor_auth'));
+        $user = $legacyUser ?: $dedicatedUser;
 
         // Not authenticated at all — redirect to login
         if (!$user) {
@@ -49,12 +51,13 @@ class MprRequestorMiddleware
         $authDomain = $user['auth_domain'] ?? 'users';
         $role       = $user['role']        ?? 'Viewer';
 
-        // Restrict any Manpower session (regardless of auth_domain) to MPR routes only.
+        // Restrict MPR requestor sessions (Manager or Manpower) to MPR routes only.
         // This covers both legitimate MPR Requestors and anomalous cross-domain data.
-        if ($authDomain === 'mpr_requestor' || strtolower($role) === 'manpower') {
+        if ($authDomain === 'mpr_requestor' || in_array(strtolower($role), ['manpower', 'manager'], true)) {
             // For mpr_requestor domain: additional role sanity check
-            if ($authDomain === 'mpr_requestor' && strtolower($role) !== 'manpower') {
+            if ($authDomain === 'mpr_requestor' && !in_array(strtolower($role), ['manpower', 'manager'], true)) {
                 session()->forget('hr_user');
+                session()->forget(config('mpr.session_key', 'mpr_requestor_auth'));
                 if ($request->expectsJson()) {
                     return response()->json([
                         'success' => false,
