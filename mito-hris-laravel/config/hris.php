@@ -1,6 +1,30 @@
 <?php
 
 return [
+    'domains' => [
+        'hrismitogroup.web.id' => 'hris',
+        'mpr.hrismitogroup.web.id' => 'mpr',
+        'outsource.hrismitogroup.web.id' => 'outsource',
+        'recruitment.hrismitogroup.web.id' => 'recruitment',
+    ],
+    'portal_access' => [
+        'hris' => [
+            'access' => 'private',
+            'auth_source' => 'users',
+        ],
+        'mpr' => [
+            'access' => 'private',
+            'auth_source' => 'mpr_requestor',
+        ],
+        'outsource' => [
+            'access' => 'public',
+            'auth_source' => 'none',
+        ],
+        'recruitment' => [
+            'access' => 'public',
+            'auth_source' => 'none',
+        ],
+    ],
     'mpr_department_divisions' => [
         'Human Resources' => [
             'HR Operations',
