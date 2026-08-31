@@ -559,7 +559,7 @@ class EmployeeController extends Controller
 
         $result = $this->employeeService->processOffContract($id, $request->all(), Auth::user()?->name ?? 'HR Team');
 
-        // Build PDF download URLs for Surat BPJS (auto-generate after success)
+        // Off Contract hanya menghasilkan satu dokumen: Paklaring.
         $pdfUrls = [];
         if ($result['success']) {
             $lwd = $request->input('last_working_date');
@@ -573,9 +573,6 @@ class EmployeeController extends Controller
             // perform a second Sheets lookup here: eventual consistency can
             // otherwise make a successful update return no PDF URLs.
             $pdfUrls['paklaring'] = route('hr.export.paklaring', ['id' => $id]) . '?' . $extraQ;
-            if ($request->input('generate_bpjs', 'on') !== false) {
-                $pdfUrls['surat_bpjs'] = route('hr.export.surat-bpjs', ['id' => $id]) . '?' . $extraQ;
-            }
         }
 
         $result['pdf_urls'] = $pdfUrls;
