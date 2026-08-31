@@ -54,7 +54,7 @@
                 </div>
                 <div class="card-body p-0">
                     <div class="mpr-form-body">
-                        <form id="formManagerMpr" action="{{ route('hr.mpr.store') }}" method="POST">
+                        <form id="formManagerMpr" action="{{ request()->routeIs('mpr.auth.*') ? route('mpr.auth.request.store') : route('hr.mpr.store') }}" method="POST">
                             @csrf
 
                             <div class="mpr-identity-box mb-4">
@@ -252,7 +252,7 @@
                             <hr class="my-4">
 
                             <div class="d-flex justify-content-end gap-2">
-                                <a href="{{ route('hr.mpr.history') }}" class="btn btn-outline-secondary px-3">Batal</a>
+                                <a href="{{ request()->routeIs('mpr.auth.*') ? route('mpr.auth.request.history') : route('hr.mpr.history') }}" class="btn btn-outline-secondary px-3">Batal</a>
                                 <button type="submit" id="btnSubmitMprManager"
                                     class="btn btn-primary px-4 fw-semibold shadow-sm">
                                     <span class="spinner-border spinner-border-sm me-1 d-none"
@@ -360,7 +360,7 @@
                         }
 
                         setTimeout(() => {
-                            window.location.href = '{{ route('hr.mpr.history') }}';
+                            window.location.href = '{{ request()->routeIs('mpr.auth.*') ? route('mpr.auth.request.history') : route('hr.mpr.history') }}';
                         }, 1200);
                     })
                     .catch(error => {
