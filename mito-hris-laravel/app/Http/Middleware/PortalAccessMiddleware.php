@@ -18,8 +18,8 @@ class PortalAccessMiddleware
             $legacyHrisUser = session('hr_user', []);
 
             $portalUser = $portal === 'mpr'
-                ? $legacyMprUser
-                : $legacyHrisUser;
+                ? ($legacyMprUser ?: $legacyHrisUser)
+                : ($legacyHrisUser ?: $legacyMprUser);
             $user = $portalUser ?: ($portal === 'hris' ? $legacyHrisUser : $legacyMprUser);
 
             $otherPortalSession = $portal === 'mpr'
@@ -88,7 +88,7 @@ class PortalAccessMiddleware
                         return response()->json(['success' => false, 'error' => 'Anda hanya dapat mengakses halaman Manpower Request (MPR).'], 403);
                     }
 
-                    return redirect()->route('hr.mpr.create')->with('error', 'Anda hanya dapat mengakses halaman Manpower Request (MPR).');
+                    return redirect()->route('mpr.auth.request')->with('error', 'Anda hanya dapat mengakses halaman Manpower Request (MPR).');
                 }
 
                 if (!$isMprLegacyRoute) {

@@ -134,25 +134,25 @@ class MprController extends Controller
         $workLocations = ['Head Office (HO)', 'Depo Jakarta', 'Depo Bandung', 'Depo Surabaya', 'Pabrik'];
         $employmentTypes = ['Permanent (PKWTT)', 'Contract (PKWT)', 'Outsource', 'Intern', 'Freelance / Project'];
 
-        $entityOptions = [
+        $entityOptions = config('hris.mpr_form_options.target_entities', [
             'MSI' => 'PT Mahakarya Sukses Indonesia (MSI)',
             'SPI' => 'PT Stein Perkasa Internasional (SPI)',
             'PII' => 'PT Perkasa Injeksi Indonesia (PII)',
             'MEP' => 'PT Mitra Elektro Perkasa (MEP)',
-        ];
+        ]);
 
         $userEntities = $user['entities'] ?? [];
         $allowedEntities = $isManpower
             ? array_filter($entityOptions, fn($label, $code) => in_array($code, $userEntities, true), ARRAY_FILTER_USE_BOTH)
             : $entityOptions;
 
-        $reasons = [
-            'Penambahan Karyawan Baru (Business Expansion)',
+        $reasons = array_values(config('hris.mpr_form_options.reasons', [
+            'Penambahan Karyawan Baru',
+            'Restrukturisasi',
             'Penggantian Karyawan Resign / Mutasi / Demosi',
             'Beban Kerja Musiman / Peak Season',
             'Proyek Khusus',
-            'Kebutuhan Restrukturisasi Organisasi',
-        ];
+        ]));
 
         return compact(
             'isManager',
@@ -190,7 +190,7 @@ class MprController extends Controller
         $isManpower = $this->isManpowerUser($user);
 
         if ($isManpower) {
-            return redirect()->route('hr.mpr.create');
+            return redirect()->route('mpr.auth.request');
         }
 
         $search = $request->query('search', '');
@@ -242,20 +242,20 @@ class MprController extends Controller
         $jobLevels = ['Associate', 'Staff', 'Senior Staff', 'Supervisor', 'Team Lead', 'Manager', 'General Manager', 'Director'];
         $workLocations = ['Head Office (HO)', 'Depo Jakarta', 'Depo Bandung', 'Depo Surabaya', 'Pabrik'];
         $employmentTypes = ['Permanent (PKWTT)', 'Contract (PKWT)', 'Outsource', 'Intern', 'Freelance / Project'];
-        $entityOptions = [
+        $entityOptions = config('hris.mpr_form_options.target_entities', [
             'MSI' => 'PT Mahakarya Sukses Indonesia (MSI)',
             'SPI' => 'PT Stein Perkasa Internasional (SPI)',
             'PII' => 'PT Perkasa Injeksi Indonesia (PII)',
             'MEP' => 'PT Mitra Elektro Perkasa (MEP)',
-        ];
+        ]);
         $allowedEntities = $entityOptions;
-        $reasons = [
-            'Penambahan Karyawan Baru (Business Expansion)',
+        $reasons = array_values(config('hris.mpr_form_options.reasons', [
+            'Penambahan Karyawan Baru',
+            'Restrukturisasi',
             'Penggantian Karyawan Resign / Mutasi / Demosi',
             'Beban Kerja Musiman / Peak Season',
             'Proyek Khusus',
-            'Kebutuhan Restrukturisasi Organisasi',
-        ];
+        ]));
 
         return view('hr.mpr.index', array_merge(compact(
             'user',
@@ -410,6 +410,7 @@ class MprController extends Controller
             branch: $branch,
             department: $validated['department'],
             division: $validated['division'],
+            approvalDivision: $validated['approval_division'] ?? null,
             position: $validated['position'],
             jobLevel: $validated['job_level'],
             workLocation: $validated['work_location'],
@@ -424,8 +425,6 @@ class MprController extends Controller
             createdBy: $createdBy,
             // -- Field baru (Refactor Create MPR) --
             requestorPosition: $validated['requestor_position'] ?? null,
-            grade: $validated['grade'] ?? null,
-            workArea: $validated['work_area'] ?? null,
             workingDays: $workingDaysLabels !== '' ? $workingDaysLabels : null,
             workingHours: $workingHoursLabels !== '' ? $workingHoursLabels : null,
             shiftDetail: $validated['shift_detail'] ?? null,
@@ -534,6 +533,19 @@ class MprController extends Controller
         }
 
         $validated = $request->validated();
+        $formOptions = config('hris.mpr_form_options', []);
+        $toLabels = function (array $values, string $group) use ($formOptions): string {
+            $map = $formOptions[$group] ?? [];
+            $labels = array_map(fn($v) => $map[$v] ?? $v, $values);
+            return implode(', ', $labels);
+        };
+
+        $workingDaysLabels = $toLabels((array) ($validated['working_days'] ?? []), 'working_days');
+        $workingHoursLabels = $toLabels((array) ($validated['working_hours'] ?? []), 'working_hours');
+        $benefitsLabels = $toLabels((array) ($validated['benefits'] ?? []), 'benefits');
+        $educationLabel = $formOptions['education_background'][$validated['education_background'] ?? ''] ?? null;
+        $experienceLabel = $formOptions['work_experience'][$validated['work_experience'] ?? ''] ?? null;
+
         $updated = new MprData(
             mprNumber: $existing->mprNumber,
             requestDate: $existing->requestDate,
@@ -543,6 +555,7 @@ class MprController extends Controller
             branch: $existing->branch,
             department: $validated['department'],
             division: $validated['division'],
+            approvalDivision: $validated['approval_division'] ?? $existing->approvalDivision,
             position: $validated['position'],
             jobLevel: $validated['job_level'],
             workLocation: $validated['work_location'],
@@ -557,21 +570,18 @@ class MprController extends Controller
             createdBy: $existing->createdBy,
             createdAt: $existing->createdAt,
             updatedAt: now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
-            // -- Field baru: preserve dari data existing (tidak di-overwrite oleh update flow) --
-            requestorPosition: $existing->requestorPosition,
-            grade: $existing->grade,
-            workArea: $existing->workArea,
-            workingDays: $existing->workingDays,
-            workingHours: $existing->workingHours,
-            shiftDetail: $existing->shiftDetail,
-            benefits: $existing->benefits,
-            educationBackground: $existing->educationBackground,
-            workExperience: $existing->workExperience,
-            skillsCompetencies: $existing->skillsCompetencies,
-            languages: $existing->languages,
-            industryReference: $existing->industryReference,
-            specialNotes: $existing->specialNotes,
-            keyResultsTargets: $existing->keyResultsTargets,
+            requestorPosition: $validated['requestor_position'] ?? $existing->requestorPosition,
+            workingDays: $workingDaysLabels !== '' ? $workingDaysLabels : ($existing->workingDays ?? null),
+            workingHours: $workingHoursLabels !== '' ? $workingHoursLabels : ($existing->workingHours ?? null),
+            shiftDetail: $validated['shift_detail'] ?? $existing->shiftDetail,
+            benefits: $benefitsLabels !== '' ? $benefitsLabels : ($existing->benefits ?? null),
+            educationBackground: $educationLabel ?? $existing->educationBackground,
+            workExperience: $experienceLabel ?? $existing->workExperience,
+            skillsCompetencies: $validated['skills_competencies'] ?? $existing->skillsCompetencies,
+            languages: $validated['languages'] ?? $existing->languages,
+            industryReference: $validated['industry_reference'] ?? $existing->industryReference,
+            specialNotes: $validated['special_notes'] ?? $existing->specialNotes,
+            keyResultsTargets: $validated['key_results_targets'] ?? $existing->keyResultsTargets,
         );
 
         try {
