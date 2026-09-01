@@ -64,6 +64,42 @@
                                 Date)</div>
                             <div class="fw-bold text-dark" id="detJoinDate">-</div>
                         </div>
+                        <div class="col-md-6" id="wrapGrade">
+                            <div class="small text-uppercase text-muted fw-semibold mb-2">Grade</div>
+                            <div class="fw-semibold text-dark" id="detGrade">-</div>
+                        </div>
+                        <div class="col-md-6" id="wrapWorkArea">
+                            <div class="small text-uppercase text-muted fw-semibold mb-2">Area Kerja</div>
+                            <div class="fw-semibold text-dark" id="detWorkArea">-</div>
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold text-primary mb-2">Waktu Kerja & Benefits</h6>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <div class="small text-uppercase text-muted fw-semibold mb-2">Hari Kerja</div>
+                            <div class="fw-semibold text-dark" id="detWorkingDays">-</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="small text-uppercase text-muted fw-semibold mb-2">Jam Kerja</div>
+                            <div class="fw-semibold text-dark" id="detWorkingHours">-</div>
+                        </div>
+                        <div class="col-12" id="wrapShiftDetail">
+                            <div class="small text-uppercase text-muted fw-semibold mb-2">Detail Shift</div>
+                            <div class="fw-semibold text-dark" id="detShiftDetail">-</div>
+                        </div>
+                        <div class="col-12">
+                            <div class="small text-uppercase text-muted fw-semibold mb-2">Benefits / Tunjangan</div>
+                            <div class="fw-semibold text-dark" id="detBenefits">-</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="small text-uppercase text-muted fw-semibold mb-2">Latar Belakang Pendidikan</div>
+                            <div class="fw-semibold text-dark" id="detEducation">-</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="small text-uppercase text-muted fw-semibold mb-2">Pengalaman Kerja</div>
+                            <div class="fw-semibold text-dark" id="detExperience">-</div>
+                        </div>
                     </div>
 
                     <h6 class="fw-bold text-primary mb-2">Alasan Permintaan</h6>
@@ -89,9 +125,62 @@
                             <div class="p-2 border rounded bg-white small mpr-markdown-content" id="detJobDesc"
                                 style="min-height:60px;">-</div>
                         </div>
-                        <div class="col-12" id="wrapNotes">
-                            <div class="small text-uppercase text-muted fw-semibold mb-2">Catatan Tambahan</div>
-                            <div class="p-2 border rounded bg-white small mpr-markdown-content" id="detNotes">-</div>
+                        <div class="col-md-6" id="wrapSkills">
+                            <div class="small text-uppercase text-muted fw-semibold mb-2">Skills & Kompetensi</div>
+                            <div class="fw-semibold text-dark" id="detSkills">-</div>
+                        </div>
+                        <div class="col-md-6" id="wrapLanguages">
+                            <div class="small text-uppercase text-muted fw-semibold mb-2">Bahasa</div>
+                            <div class="fw-semibold text-dark" id="detLanguages">-</div>
+                        </div>
+                        <div class="col-12" id="wrapIndustryRef">
+                            <div class="small text-uppercase text-muted fw-semibold mb-2">Referensi Industri Sejenis</div>
+                            <div class="fw-semibold text-dark" id="detIndustryRef">-</div>
+                        </div>
+                        <div class="col-12" id="wrapKeyResults">
+                            <div class="small text-uppercase text-muted fw-semibold mb-2">Key Results / Target Posisi Ini</div>
+                            <div class="fw-semibold text-dark" id="detKeyResults">-</div>
+                        </div>
+                        <div class="col-12" id="wrapSpecialNotes">
+                            <div class="small text-uppercase text-muted fw-semibold mb-2">Catatan Khusus MPR</div>
+                            <div class="fw-semibold text-dark" id="detSpecialNotes">-</div>
+                        </div>
+                    </div>
+
+                    <!-- TANDA TANGAN (match PDF: 3 + 2 centered) -->
+                    <h6 class="fw-bold text-primary mb-2 mt-3">Tanda Tangan</h6>
+                    <div class="row text-center g-3 mb-1">
+                        <div class="col-4">
+                            <div class="small fw-bold text-dark mb-4">Diajukan oleh (Pemohon)</div>
+                            <div class="fw-semibold text-dark d-inline-block border-top border-dark pt-1 px-2"
+                                style="min-width: 140px;" id="detSignRequestorName">-</div>
+                            <div class="small text-muted" id="detSignRequestorPosition">-</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="small fw-bold text-dark mb-4">Diperiksa oleh (HRD)</div>
+                            <div class="fw-semibold text-dark d-inline-block border-top border-dark pt-1 px-2"
+                                style="min-width: 140px;">( ........................................ )</div>
+                            <div class="small text-muted">HR Manager / Recruiter</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="small fw-bold text-dark mb-4">Disetujui oleh (Management)</div>
+                            <div class="fw-semibold text-dark d-inline-block border-top border-dark pt-1 px-2"
+                                style="min-width: 140px;">( ........................................ )</div>
+                            <div class="small text-muted">Direksi / General Manager</div>
+                        </div>
+                    </div>
+                    <div class="row text-center g-3 justify-content-center">
+                        <div class="col-4">
+                            <div class="small fw-bold text-dark mb-4">Disetujui oleh (COO)</div>
+                            <div class="fw-semibold text-dark d-inline-block border-top border-dark pt-1 px-2"
+                                style="min-width: 140px;">Frans Arsianto</div>
+                            <div class="small text-muted">COO</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="small fw-bold text-dark mb-4">Disetujui oleh (CEO)</div>
+                            <div class="fw-semibold text-dark d-inline-block border-top border-dark pt-1 px-2"
+                                style="min-width: 140px;">Jacksen Lie</div>
+                            <div class="small text-muted">CEO</div>
                         </div>
                     </div>
                 </div>

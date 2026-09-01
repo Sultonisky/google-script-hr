@@ -732,11 +732,7 @@
                                         <textarea name="job_description" class="form-control" rows="3"
                                             placeholder="Contoh: Mengembangkan fitur web HRIS, melakukan code review, memastikan performa database..."></textarea>
                                     </div>
-                                    <div class="col-12">
-                                        <label class="form-label fw-semibold small">Catatan Tambahan (Opsional)</label>
-                                        <textarea name="notes" class="form-control" rows="2"
-                                            placeholder="Catatan atau instruksi tambahan untuk tim rekrutmen..."></textarea>
-                                    </div>
+                                   
                                 </div>
 
                                 <hr class="my-4">
@@ -1330,10 +1326,6 @@
                                             <textarea name="special_notes" class="form-control form-control-sm" rows="2"
                                                 placeholder="Catatan khusus terkait kebutuhan ini..."></textarea>
                                         </div>
-                                        <div class="col-12">
-                                            <label class="form-label fw-semibold small">Catatan Tambahan (Opsional)</label>
-                                            <textarea name="notes" class="form-control form-control-sm" rows="2" placeholder="Catatan lain..."></textarea>
-                                        </div>
                                     </div>
 
                                     <div class="modal-footer px-0 pb-0 mt-4 border-top">
@@ -1516,10 +1508,43 @@
                                     <div class="small text-uppercase text-muted fw-semibold mb-2">Catatan Khusus MPR</div>
                                     <div class="fw-semibold text-dark" id="detSpecialNotes">-</div>
                                 </div>
-                                <div class="col-12" id="wrapNotes">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Catatan Tambahan</div>
-                                    <div class="p-2 border rounded bg-white small mpr-markdown-content" id="detNotes">-
-                                    </div>
+
+                            </div>
+
+                            <!-- TANDA TANGAN (match PDF: 3 + 2 centered) -->
+                            <h6 class="fw-bold text-primary mb-2 mt-3">Tanda Tangan</h6>
+                            <div class="row text-center g-3 mb-1">
+                                <div class="col-4">
+                                    <div class="small fw-bold text-dark mb-4">Diajukan oleh (Pemohon)</div>
+                                    <div class="fw-semibold text-dark d-inline-block border-top border-dark pt-1 px-2"
+                                        style="min-width: 140px;" id="detSignRequestorName">-</div>
+                                    <div class="small text-muted" id="detSignRequestorPosition">-</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="small fw-bold text-dark mb-4">Diperiksa oleh (HRD)</div>
+                                    <div class="fw-semibold text-dark d-inline-block border-top border-dark pt-1 px-2"
+                                        style="min-width: 140px;">( ........................................ )</div>
+                                    <div class="small text-muted">HR Manager / Recruiter</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="small fw-bold text-dark mb-4">Disetujui oleh (Management)</div>
+                                    <div class="fw-semibold text-dark d-inline-block border-top border-dark pt-1 px-2"
+                                        style="min-width: 140px;">( ........................................ )</div>
+                                    <div class="small text-muted">Direksi / General Manager</div>
+                                </div>
+                            </div>
+                            <div class="row text-center g-3 justify-content-center">
+                                <div class="col-4">
+                                    <div class="small fw-bold text-dark mb-4">Disetujui oleh (COO)</div>
+                                    <div class="fw-semibold text-dark d-inline-block border-top border-dark pt-1 px-2"
+                                        style="min-width: 140px;">Frans Arsianto</div>
+                                    <div class="small text-muted">COO</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="small fw-bold text-dark mb-4">Disetujui oleh (CEO)</div>
+                                    <div class="fw-semibold text-dark d-inline-block border-top border-dark pt-1 px-2"
+                                        style="min-width: 140px;">Jacksen Lie</div>
+                                    <div class="small text-muted">CEO</div>
                                 </div>
                             </div>
                         </div>
@@ -1613,9 +1638,6 @@
                                     </div>
                                     <div class="col-12"><label class="form-label small fw-semibold">Uraian Tugas</label>
                                         <textarea name="job_description" rows="4" class="form-control"></textarea>
-                                    </div>
-                                    <div class="col-12"><label class="form-label small fw-semibold">Catatan</label>
-                                        <textarea name="notes" rows="3" class="form-control"></textarea>
                                     </div>
                                 </div>
                             </div>
@@ -1907,8 +1929,12 @@
                             document.getElementById('detJobDesc').innerHTML = m
                                 .job_description_html ||
                                 '<span class="text-muted fst-italic">Tidak ada uraian pekerjaan khusus.</span>';
-                            document.getElementById('detNotes').innerHTML = m.notes_html ||
-                                '<span class="text-muted fst-italic">-</span>';
+
+                            // Tanda tangan (match PDF: 3 + 2 centered)
+                            const signName = document.getElementById('detSignRequestorName');
+                            if (signName) signName.innerText = m.requestor_name || m.manager_name || '-';
+                            const signPos = document.getElementById('detSignRequestorPosition');
+                            if (signPos) signPos.innerText = m.requestor_position || 'Manager / User Dept';
 
                             if (btnPdf) {
                                 btnPdf.href = `/hr/mpr/${encodeURIComponent(m.mpr_number)}/pdf`;
@@ -1986,7 +2012,7 @@
                         `${value('quantity')} Orang / ${value('expected_join_date')}`) + section('Alasan', value(
                         'reason')) +
                     section('Kualifikasi & Persyaratan', value('requirements'), true) + section('Uraian Tugas',
-                        value('job_description'), true) + section('Catatan', value('notes'), true);
+                        value('job_description'), true);
                 bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPreviewMpr')).show();
             }
 
