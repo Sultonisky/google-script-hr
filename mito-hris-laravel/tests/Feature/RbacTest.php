@@ -457,7 +457,7 @@ class RbacTest extends TestCase
     {
         $this->actingAsMprRequestor();
         $this->get('/hr/mpr')
-            ->assertRedirect(route('hr.mpr.create'));
+            ->assertRedirect(route('mpr.auth.request'));
     }
 
     /** @test */

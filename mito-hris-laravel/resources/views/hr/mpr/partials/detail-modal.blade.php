@@ -64,14 +64,6 @@
                                 Date)</div>
                             <div class="fw-bold text-dark" id="detJoinDate">-</div>
                         </div>
-                        <div class="col-md-6" id="wrapGrade">
-                            <div class="small text-uppercase text-muted fw-semibold mb-2">Grade</div>
-                            <div class="fw-semibold text-dark" id="detGrade">-</div>
-                        </div>
-                        <div class="col-md-6" id="wrapWorkArea">
-                            <div class="small text-uppercase text-muted fw-semibold mb-2">Area Kerja</div>
-                            <div class="fw-semibold text-dark" id="detWorkArea">-</div>
-                        </div>
                     </div>
 
                     <h6 class="fw-bold text-primary mb-2">Waktu Kerja & Benefits</h6>
@@ -163,10 +155,10 @@
                             <div class="small text-muted">HR Manager / Recruiter</div>
                         </div>
                         <div class="col-4">
-                            <div class="small fw-bold text-dark mb-4">Disetujui oleh (Management)</div>
+                            <div class="small fw-bold text-dark mb-4">Disetujui oleh (Divisi)</div>
                             <div class="fw-semibold text-dark d-inline-block border-top border-dark pt-1 px-2"
-                                style="min-width: 140px;">( ........................................ )</div>
-                            <div class="small text-muted">Direksi / General Manager</div>
+                                style="min-width: 140px;" id="detApprovalDivision">( ........................................ )</div>
+                            <div class="small text-muted">Pimpinan Divisi</div>
                         </div>
                     </div>
                     <div class="row text-center g-3 justify-content-center">

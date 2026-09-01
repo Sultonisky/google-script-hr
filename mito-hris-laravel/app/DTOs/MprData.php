@@ -10,13 +10,14 @@ class MprData
         // Requestor fields (canonical)
         public ?string $requestorName = null,
         public ?string $requestorEmail = null,
-        // Entity = company yang dipilih Manager dari daftar entity-nya
+        // Entitas yang dituju / target company untuk kebutuhan posisi.
         public ?string $entity = null,
         // Branch = lokasi/cabang milik authenticated requestor (fixed, tidak bisa diubah user)
         public ?string $branch = null,
         // -- Detail posisi --
         public ?string $department = null,
         public ?string $division = null,
+        public ?string $approvalDivision = null,
         public ?string $position = null,
         public ?string $jobLevel = null,
         public ?string $workLocation = null,
@@ -34,8 +35,6 @@ class MprData
         public ?string $updatedAt = null,
         // -- Refactor Create MPR: field baru (backward compatible, nullable) --
         public ?string $requestorPosition = null,
-        public ?string $grade = null,
-        public ?string $workArea = null,
         public ?string $workingDays = null,   // multi-select, disimpan sebagai label dipisah ", "
         public ?string $workingHours = null,  // multi-select, disimpan sebagai label dipisah ", "
         public ?string $shiftDetail = null,   // free text, wajib hanya jika shifting dipilih
@@ -75,7 +74,7 @@ class MprData
         // Support both old column names (Manager Name / Company) and new ones (Requestor Name / Entity)
         $requestorName  = $row['Requestor Name']  ?? $row['Manager Name']  ?? null; // 'Manager Name' is legacy
         $requestorEmail = $row['Requestor Email'] ?? $row['Manager Email'] ?? null; // 'Manager Email' is legacy
-        $entity         = $row['Entity']           ?? $row['Company']       ?? null; // 'Company' is legacy
+        $entity         = $row['Entitas yang Dituju'] ?? $row['Entity'] ?? $row['Company'] ?? null; // 'Company' is legacy
         $branch         = $row['Branch']           ?? null;
 
         return new self(
@@ -87,6 +86,7 @@ class MprData
             branch:          $branch,
             department:      $row['Department']         ?? null,
             division:        $row['Division']           ?? null,
+            approvalDivision: $row['Approval Division']  ?? null,
             position:        $row['Position']           ?? null,
             jobLevel:        $row['Job Level']          ?? null,
             workLocation:    $row['Work Location']      ?? null,
@@ -104,8 +104,6 @@ class MprData
             updatedAt:       $row['Updated At']         ?? null,
             // -- Field baru: safe fallback null untuk row lama yang belum punya kolom --
             requestorPosition:    $row['Requestor Position']    ?? null,
-            grade:                $row['Grade']                 ?? null,
-            workArea:             $row['Work Area']             ?? null,
             workingDays:          $row['Working Days']          ?? null,
             workingHours:         $row['Working Hours']         ?? null,
             shiftDetail:          $row['Shift Detail']          ?? null,
@@ -130,10 +128,10 @@ class MprData
             'Request Date'       => (string) ($this->requestDate      ?? ''),
             'Requestor Name'     => (string) ($this->requestorName    ?? ''),
             'Requestor Email'    => (string) ($this->requestorEmail   ?? ''),
-            'Entity'             => (string) ($this->entity           ?? ''),
-            'Branch'             => (string) ($this->branch           ?? ''),
+            'Entitas yang Dituju' => (string) ($this->entity           ?? ''),
             'Department'         => (string) ($this->department       ?? ''),
             'Division'           => (string) ($this->division         ?? ''),
+            'Approval Division'  => (string) ($this->approvalDivision ?? ''),
             'Position'           => (string) ($this->position         ?? ''),
             'Job Level'          => (string) ($this->jobLevel         ?? ''),
             'Work Location'      => (string) ($this->workLocation     ?? ''),
@@ -147,8 +145,6 @@ class MprData
             // 'Notes' deprecated — diganti 'Special Notes' (kolom legacy tetap dibaca via fromSheetRow)
             // -- Refactor Create MPR: field baru (backward compatible, append-only) --
             'Requestor Position'      => (string) ($this->requestorPosition   ?? ''),
-            'Grade'                   => (string) ($this->grade               ?? ''),
-            'Work Area'               => (string) ($this->workArea            ?? ''),
             'Working Days'            => (string) ($this->workingDays         ?? ''),
             'Working Hours'           => (string) ($this->workingHours        ?? ''),
             'Shift Detail'            => (string) ($this->shiftDetail         ?? ''),
@@ -164,6 +160,8 @@ class MprData
             'Created By'         => (string) ($this->createdBy        ?? ''),
             'Created At'         => (string) ($this->createdAt        ?? ''),
             'Updated At'         => (string) ($this->updatedAt        ?? ''),
+            // Note: Legacy 'Entity' and 'Company' columns dropped to align with final 12-col mpr_requestor schema.
+            // Canonical source is 'Entitas yang Dituju' (read by fromSheetRow). Backward compat via aliases.
         ];
     }
 
@@ -186,6 +184,7 @@ class MprData
             'company'            => $this->entity,
             'department'         => $this->department,
             'division'           => $this->division,
+            'approval_division'  => $this->approvalDivision,
             'position'           => $this->position,
             'job_level'          => $this->jobLevel,
             'work_location'      => $this->workLocation,
@@ -202,8 +201,7 @@ class MprData
             'created_at'         => $this->createdAt,
             'updated_at'         => $this->updatedAt,
             'requestor_position'    => $this->requestorPosition,
-            'grade'                 => $this->grade,
-            'work_area'             => $this->workArea,
+            'target_entity'         => $this->entity,
             'working_days'          => $this->workingDays,
             'working_hours'         => $this->workingHours,
             'shift_detail'          => $this->shiftDetail,

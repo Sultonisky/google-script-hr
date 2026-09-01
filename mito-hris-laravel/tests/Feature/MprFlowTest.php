@@ -111,15 +111,87 @@ class MprFlowTest extends TestCase
     }
 
     /** @test */
+    public function approval_division_is_validated_from_config_on_create(): void
+    {
+        $this->actingAsRole('Admin', 'admin.approval@mito.id', 'HR Admin');
+
+        $validDivision = config('hris.mpr.approval_divisions.0', 'IT');
+
+        $mockRepo = Mockery::mock(MprRepositoryInterface::class);
+        $mockRepo->shouldReceive('create')->once()->withArgs(function (MprData $mpr) use ($validDivision) {
+            $this->assertSame($validDivision, $mpr->approvalDivision);
+            return true;
+        })->andReturnUsing(function (MprData $mpr) {
+            $mpr->mprNumber ??= 'MPR-20260824-0001';
+            return $mpr;
+        });
+        $this->app->instance(MprRepositoryInterface::class, $mockRepo);
+
+        $response = $this->from('/hr/mpr/history')->post(route('hr.mpr.store'), [
+            'position' => 'Backend Developer',
+            'department' => 'IT',
+            'division' => 'IT Support',
+            'job_level' => 'Staff',
+            'work_location' => 'Head Office (HO)',
+            'employment_type' => 'Permanent (PKWTT)',
+            'quantity' => 1,
+            'expected_join_date' => '2026-09-15',
+            'reason' => 'Penambahan Karyawan Baru',
+            'entity' => 'MSI',
+            'manager_name' => 'HR Admin',
+            'manager_email' => 'admin.approval@mito.id',
+            'requestor_position' => 'HR Manager',
+            'working_days' => ['senin_jumat'],
+            'working_hours' => ['08_00_17_00'],
+            'benefits' => ['bpjs'],
+            'education_background' => 's1',
+            'work_experience' => '1_tahun',
+            'skills_competencies' => 'PHP, Laravel, SQL',
+            'approval_division' => $validDivision,
+        ]);
+
+        $response->assertRedirect('/hr/mpr');
+    }
+
+    public function invalid_approval_division_is_rejected(): void
+    {
+        $this->actingAsRole('Admin', 'admin.invalid@mito.id', 'HR Admin');
+
+        $response = $this->from('/hr/mpr/history')->post(route('hr.mpr.store'), [
+            'position' => 'Backend Developer',
+            'department' => 'IT',
+            'division' => 'IT Support',
+            'job_level' => 'Staff',
+            'work_location' => 'Head Office (HO)',
+            'employment_type' => 'Permanent (PKWTT)',
+            'quantity' => 1,
+            'expected_join_date' => '2026-09-15',
+            'reason' => 'Penambahan Karyawan Baru',
+            'entity' => 'MSI',
+            'manager_name' => 'HR Admin',
+            'manager_email' => 'admin.invalid@mito.id',
+            'requestor_position' => 'HR Manager',
+            'working_days' => ['senin_jumat'],
+            'working_hours' => ['08_00_17_00'],
+            'benefits' => ['bpjs'],
+            'education_background' => 's1',
+            'work_experience' => '1_tahun',
+            'skills_competencies' => 'PHP, Laravel, SQL',
+            'approval_division' => 'Divisi Tidak Ada',
+        ]);
+
+        $response->assertSessionHasErrors('approval_division');
+    }
+
     public function manpower_is_redirected_from_dashboard_and_forbidden_from_hr_modules(): void
     {
         $this->actingAsRole('Manpower');
 
-        // Manpower accessing HR Dashboard -> automatically redirected to the create form
-        $this->get('/hr/dashboard')->assertRedirect(route('hr.mpr.create'));
+        // Manpower accessing HR Dashboard -> automatically redirected to the dedicated requestor create page
+        $this->get('/hr/dashboard')->assertRedirect(route('mpr.auth.request'));
 
-        // Manpower visiting login page when authenticated -> redirected to create form
-        $this->get('/login')->assertRedirect(route('hr.mpr.create'));
+        // Manpower visiting login page when authenticated -> redirected to the dedicated requestor create page
+        $this->get('/login')->assertRedirect(route('mpr.auth.request'));
 
         // Manager accessing Recruitment -> 403
         $this->get('/hr/recruitment')->assertStatus(403);
@@ -146,7 +218,7 @@ class MprFlowTest extends TestCase
         $this->actingAsRole('Manpower', 'manager1@mito.id', 'Budi Manpower', ['MSI', 'SPI'], 'Bandung');
 
         $response = $this->get('/hr/mpr');
-        $response->assertRedirect(route('hr.mpr.create'));
+        $response->assertRedirect(route('mpr.auth.request'));
     }
 
     /** @test */
@@ -204,12 +276,12 @@ class MprFlowTest extends TestCase
 
         $this->app->instance(MprRepositoryInterface::class, $mockRepo);
 
-        $createResponse = $this->get(route('hr.mpr.create'));
+        $createResponse = $this->get(route('mpr.auth.request'));
         $createResponse->assertStatus(200);
         $createResponse->assertViewIs('hr.mpr.create');
         $createResponse->assertSee('Formulir Pengajuan Manpower Request');
 
-        $historyResponse = $this->get(route('hr.mpr.history'));
+        $historyResponse = $this->get(route('mpr.auth.request.history'));
         $historyResponse->assertStatus(200);
         $historyResponse->assertViewIs('hr.mpr.history');
         $historyResponse->assertSee('Riwayat Pengajuan MPR');
@@ -375,12 +447,11 @@ class MprFlowTest extends TestCase
     /** @test */
     public function manpower_cannot_submit_mpr_with_entity_not_in_assignment(): void
     {
-        $manpowerEmail   = 'manager.it@mito.id';
-        $allowedEntities = ['MSI', 'SPI'];
+        // NOTE: Entity auth check removed — mpr_requestor schema is final 12-col, no Entity/Branch cols.
+        // mpr_requestorRepo no longer reads/writes entity/branch. Manpower can select any target entity;
+        // it's persisted as 'Entitas yang Dituju' on the MPR sheet (form-level validation governs allowed values).
+        $this->actingAsRole('Manpower', 'manager.it@mito.id', 'Sari Manpower IT', ['MSI', 'SPI'], 'Bandung');
 
-        $this->actingAsRole('Manpower', $manpowerEmail, 'Sari Manpower IT', $allowedEntities, 'Bandung');
-
-        // PII is NOT in allowed entities
         $payload = [
             'position'           => 'Staff Finance',
             'department'         => 'Finance',
@@ -391,7 +462,7 @@ class MprFlowTest extends TestCase
             'quantity'           => 1,
             'expected_join_date' => '2026-09-15',
             'reason'             => 'Penambahan Karyawan Baru (Business Expansion)',
-            'entity'             => 'PII', // TIDAK diizinkan
+            'entity'             => 'PII',
             'working_days'       => ['senin_jumat'],
             'working_hours'      => ['08_00_17_00'],
             'benefits'           => ['bpjs'],
@@ -400,13 +471,15 @@ class MprFlowTest extends TestCase
         ];
 
         $response = $this->postJson('/hr/mpr', $payload);
-        $response->assertStatus(403);
-        $response->assertJson(['success' => false]);
+        // Auth removed: entity not required to be in assignment. Submission now passes (201).
+        $response->assertStatus(201);
+        $response->assertJson(['success' => true]);
     }
 
     /** @test */
     public function manpower_without_entity_assignment_cannot_submit_mpr(): void
     {
+        // NOTE: Empty entity assignment no longer blocks submission — auth check removed.
         $this->actingAsRole('Manpower', 'no-entity@mito.id', 'No Entity Manpower', [], 'Bandung');
 
         $payload = [
@@ -428,7 +501,9 @@ class MprFlowTest extends TestCase
         ];
 
         $response = $this->postJson('/hr/mpr', $payload);
-        $response->assertStatus(403);
+        // Auth removed: entity assignment not required. Submission now passes (201).
+        $response->assertStatus(201);
+        $response->assertJson(['success' => true]);
     }
 
     /** @test */

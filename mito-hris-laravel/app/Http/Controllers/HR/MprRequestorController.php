@@ -31,7 +31,7 @@ class MprRequestorController extends Controller
             'total' => $total,
             'active' => count(array_filter($allRequestors, fn(array $requestor): bool => strtolower(trim($requestor['Status'] ?? '')) === 'active')),
             'inactive' => count(array_filter($allRequestors, fn(array $requestor): bool => strtolower(trim($requestor['Status'] ?? '')) !== 'active')),
-            'entities' => count(array_filter($allRequestors, fn(array $requestor): bool => trim($requestor['Entity'] ?? '') !== '')),
+            'job_positions' => count(array_filter($allRequestors, fn(array $requestor): bool => trim((string) ($requestor['Job Position'] ?? '')) !== '')),
         ];
 
         return view('hr.mpr-requestors.index', compact('requestors', 'stats', 'total', 'perPage', 'currentPage', 'lastPage'));
@@ -43,21 +43,21 @@ class MprRequestorController extends Controller
             'name' => 'required|string|min:3',
             'email' => 'required|email',
             'username' => 'required|string|min:3',
+            'job_position' => 'required|string|min:2|max:255',
             'role' => ['required', 'string', Rule::in(config('hris.auth.valid_roles_requestor', []))],
-            'entity' => 'required|string',
-            'branch' => 'required|string',
             'password' => 'required|string|min:8|confirmed',
         ]);
+
+        $jobPosition = trim((string) $validated['job_position']);
 
         $this->requestorRepo->create([
             'email' => $validated['email'],
             'username' => $validated['username'],
             'fullName' => $validated['name'],
+            'jobPosition' => $jobPosition,
             'role' => $validated['role'],
             'status' => 'Active',
             'passwordHash' => Hash::make($validated['password']),
-            'entity' => $validated['entity'],
-            'branch' => $validated['branch'],
             'createdBy' => session('hr_user.email', 'HR Administrator'),
         ]);
 
@@ -79,12 +79,13 @@ class MprRequestorController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|min:3',
             'username' => 'required|string|min:3',
+            'job_position' => 'required|string|min:2|max:255',
             'role' => ['required', 'string', Rule::in(config('hris.auth.valid_roles_requestor', []))],
-            'entity' => 'required|string',
-            'branch' => 'required|string',
             'status' => ['required', 'string', Rule::in(['Active', 'Inactive'])],
             'password' => 'nullable|string|min:8|confirmed',
         ]);
+
+        $jobPosition = trim((string) $validated['job_position']);
 
         foreach ($this->requestorRepo->getAll() as $requestor) {
             $sameRequestor = strtolower(trim($requestor['Email'] ?? '')) === strtolower(trim($email));
@@ -96,9 +97,8 @@ class MprRequestorController extends Controller
         $updates = [
             'fullName' => $validated['name'],
             'username' => $validated['username'],
+            'jobPosition' => $jobPosition,
             'role' => $validated['role'],
-            'entity' => $validated['entity'],
-            'branch' => $validated['branch'],
             'status' => $validated['status'],
         ];
         if (!empty($validated['password'])) {
@@ -106,8 +106,10 @@ class MprRequestorController extends Controller
         }
 
         $hasChanges = false;
-        foreach (['Full Name' => 'fullName', 'Username' => 'username', 'Role' => 'role', 'Entity' => 'entity', 'Branch' => 'branch', 'Status' => 'status'] as $field => $key) {
-            if ((string) ($existing[$field] ?? '') !== (string) $updates[$key]) {
+        foreach (['Full Name' => 'fullName', 'Username' => 'username', 'Job Position' => 'jobPosition', 'Role' => 'role', 'Status' => 'status'] as $field => $key) {
+            $oldValue = $existing[$field] ?? '';
+            $newValue = $updates[$key] ?? '';
+            if ((string) $oldValue !== (string) $newValue) {
                 $hasChanges = true;
                 break;
             }
@@ -122,10 +124,10 @@ class MprRequestorController extends Controller
             return $this->updateError($request, 'MPR requestor gagal diperbarui di sheet mpr_requestor.', 500);
         }
 
-        $auditFields = ['Full Name' => 'fullName', 'Username' => 'username', 'Role' => 'role', 'Entity' => 'entity', 'Branch' => 'branch', 'Status' => 'status'];
+        $auditFields = ['Full Name' => 'fullName', 'Username' => 'username', 'Job Position' => 'jobPosition', 'Role' => 'role', 'Status' => 'status'];
         foreach ($auditFields as $field => $key) {
             $oldValue = $existing[$field] ?? '';
-            $newValue = $updated[$field] ?? $updates[$key];
+            $newValue = $updated[$field] ?? $updates[$key] ?? '';
             if ((string) $oldValue !== (string) $newValue) {
                 $this->auditRepo->log('MPR Requestor', $existing['Requestor ID'] ?? $email, 'UPDATE', $field, $oldValue, $newValue, session('hr_user.email', 'HR Administrator'), 'Dashboard');
             }

@@ -23,11 +23,69 @@ class MprAuthController extends Controller
 
     public function showLoginForm(): View|RedirectResponse
     {
-        if (session()->has(config('mpr.session_key', 'mpr_requestor_auth'))) {
+        $sessionKey = config('mpr.session_key', 'mpr_requestor_auth');
+        $user = session($sessionKey, []);
+
+        if (empty($user)) {
+            $fallbackUser = session('hr_user', []);
+            $role = strtolower(trim((string) ($fallbackUser['role'] ?? '')));
+            $authDomain = strtolower(trim((string) ($fallbackUser['auth_domain'] ?? '')));
+
+            if ($authDomain === 'mpr_requestor' || $role === 'manpower') {
+                $user = $fallbackUser;
+            }
+        }
+
+        if (!empty($user) && (($user['auth_domain'] ?? '') === 'mpr_requestor' || strtolower(trim((string) ($user['role'] ?? ''))) === 'manpower')) {
             return redirect()->route('mpr.auth.request');
         }
 
         return view('auth.mpr-auth');
+    }
+
+    protected function normalizeEntities(array $requestor): array
+    {
+        $raw = $requestor['Entities'] ?? $requestor['Entity'] ?? $requestor['entities'] ?? $requestor['entity'] ?? '';
+
+        if (is_array($raw)) {
+            $items = $raw;
+        } else {
+            $items = preg_split('/[,;\n|]+/', (string) $raw) ?: [];
+        }
+
+        $normalized = [];
+        foreach ($items as $item) {
+            $value = trim((string) $item);
+            if ($value !== '') {
+                $normalized[] = $value;
+            }
+        }
+
+        return $normalized;
+    }
+
+    protected function normalizeBranch(array $requestor): string
+    {
+        foreach (['Branch', 'branch'] as $key) {
+            $value = trim((string) ($requestor[$key] ?? ''));
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return '';
+    }
+
+    protected function normalizeJobPosition(array $requestor): string
+    {
+        foreach (['Job Position', 'jobPosition', 'job_position'] as $key) {
+            $value = trim((string) ($requestor[$key] ?? ''));
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return '';
     }
 
     public function login(Request $request)
@@ -75,12 +133,13 @@ class MprAuthController extends Controller
         $request->session()->put(config('mpr.session_key', 'mpr_requestor_auth'), [
             'email' => strtolower(trim((string) ($requestor['Email'] ?? $identifier))),
             'fullName' => trim((string) ($requestor['Full Name'] ?? $requestor['Email'] ?? 'Requestor')),
+            'jobPosition' => $this->normalizeJobPosition($requestor),
             'role' => 'Manpower',
             'auth_domain' => 'mpr_requestor',
             'portal' => 'mpr',
             'requestor_id' => trim((string) ($requestor['Requestor ID'] ?? '')),
-            'entities' => array_values(array_filter(array_map('trim', explode(',', (string) ($requestor['Entity'] ?? ''))))),
-            'branch' => trim((string) ($requestor['Branch'] ?? '')),
+            'entities' => $this->normalizeEntities($requestor),
+            'branch' => $this->normalizeBranch($requestor),
         ]);
 
         return redirect()->route('mpr.auth.request');
