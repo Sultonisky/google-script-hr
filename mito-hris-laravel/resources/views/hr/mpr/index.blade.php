@@ -631,7 +631,7 @@
                                     Posisi yang Dibutuhkan</h6>
                                 <div class="row g-3 mb-3">
                                     <div class="col-md-6">
-                                        <label class="form-label fw-semibold small">Posisi / Jabatan yang Diminta <span
+                                        <label class="form-label fw-semibold small">Posisi / Nama Jabatan yang Diminta <span
                                                 class="text-danger">*</span></label>
                                         <input type="text" name="position" class="form-control"
                                             placeholder="Contoh: Frontend Developer, Sales Executive" required>
@@ -1111,7 +1111,7 @@
                                     <h6 class="fw-bold text-primary mb-3">2. Detail Posisi & Organisasi</h6>
                                     <div class="row g-3 mb-4">
                                         <div class="col-md-6">
-                                            <label class="form-label fw-semibold small">Posisi / Jabatan yang Diminta <span
+                                            <label class="form-label fw-semibold small">Posisi / Nama Jabatan yang Diminta <span
                                                     class="text-danger">*</span></label>
                                             <input type="text" name="position" class="form-control form-control-sm"
                                                 placeholder="Contoh: Digital Marketing Lead" required>
@@ -1165,16 +1165,6 @@
                                                     <option value="{{ $et }}">{{ $et }}</option>
                                                 @endforeach
                                             </select>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label fw-semibold small">Grade</label>
-                                            <input type="text" name="grade" class="form-control form-control-sm"
-                                                placeholder="Contoh: G7, G8, Staff">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label fw-semibold small">Area Kerja</label>
-                                            <input type="text" name="work_area" class="form-control form-control-sm"
-                                                placeholder="Contoh: Site Kalimantan, HO Jakarta">
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-semibold small">Jumlah Kebutuhan (Orang) <span
@@ -1392,7 +1382,7 @@
                             <h6 class="fw-bold text-primary mb-2">Detail Posisi & Kebutuhan</h6>
                             <div class="row g-3 mb-3">
                                 <div class="col-md-6">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Posisi / Jabatan</div>
+                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Posisi /Nama Jabatan</div>
                                     <div class="text-primary fw-bold" id="detPosition">-</div>
                                 </div>
                                 <div class="col-md-6">
@@ -1421,14 +1411,6 @@
                                     <div class="small text-uppercase text-muted fw-semibold mb-2">Target Tanggal Masuk
                                         (Join Date)</div>
                                     <div class="fw-bold text-dark" id="detJoinDate">-</div>
-                                </div>
-                                <div class="col-md-6" id="wrapGrade">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Grade</div>
-                                    <div class="fw-semibold text-dark" id="detGrade">-</div>
-                                </div>
-                                <div class="col-md-6" id="wrapWorkArea">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Area Kerja</div>
-                                    <div class="fw-semibold text-dark" id="detWorkArea">-</div>
                                 </div>
                             </div>
 
@@ -1592,6 +1574,13 @@
                                             name="division" class="form-select"
                                             data-selected-division="{{ old('division') }}" required disabled>
                                             <option value="">-- Pilih Departemen terlebih dahulu --</option>
+                                        </select></div>
+                                    <div class="col-md-6"><label class="form-label small fw-semibold">Disetujui oleh (Divisi) *</label><select
+                                            name="approval_division" class="form-select" required>
+                                            <option value="">-- Pilih Divisi --</option>
+                                            @foreach (config('hris.mpr.approval_divisions', []) as $division)
+                                                <option value="{{ $division }}">{{ $division }}</option>
+                                            @endforeach
                                         </select></div>
                                     <div class="col-md-6"><label class="form-label small fw-semibold">Level Jabatan
                                             *</label><select name="job_level" class="form-select" required>
@@ -1892,10 +1881,6 @@
                             const reqPos = document.getElementById('detRequestorPosition');
                             if (reqPos) reqPos.innerText = m.requestor_position ?
                                 `Jabatan: ${m.requestor_position}` : '';
-                            setDetText('detGrade', m.grade);
-                            toggleWrap('wrapGrade', m.grade);
-                            setDetText('detWorkArea', m.work_area);
-                            toggleWrap('wrapWorkArea', m.work_area);
                             setDetText('detWorkingDays', m.working_days);
                             setDetText('detWorkingHours', m.working_hours);
                             setDetText('detShiftDetail', m.shift_detail);
@@ -1935,6 +1920,8 @@
                             if (signName) signName.innerText = m.requestor_name || m.manager_name || '-';
                             const signPos = document.getElementById('detSignRequestorPosition');
                             if (signPos) signPos.innerText = m.requestor_position || 'Manager / User Dept';
+                            const approvalDivision = document.getElementById('detApprovalDivision');
+                            if (approvalDivision) approvalDivision.innerText = m.approval_division || '( ........................................ )';
 
                             if (btnPdf) {
                                 btnPdf.href = `/hr/mpr/${encodeURIComponent(m.mpr_number)}/pdf`;
@@ -1954,6 +1941,10 @@
                                             'division') field.value = m[key] ?? '';
                                     });
                                     editForm.elements.department.value = m.department || '';
+                                    const approvalSelect = editForm.elements.approval_division;
+                                    if (approvalSelect) {
+                                        approvalSelect.value = m.approval_division || '';
+                                    }
                                     setupDepartmentDivision(editForm, m.division || '');
                                     document.getElementById('editMprErrors').classList.add(
                                         'd-none');

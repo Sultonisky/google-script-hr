@@ -1,7 +1,7 @@
 @extends('layouts.hr')
 
-@section('title', 'Pengajuan Manpower Request (MPR) - MITO HRIS')
-@section('page-title', 'Pengajuan Manpower Request')
+@section('title', 'Formulir Pengajuan Manpower Request (MPR) - MITO HRIS')
+@section('page-title', 'Formulir Pengajuan Manpower Request')
 @section('page-subtitle', 'Isi kebutuhan tenaga kerja untuk diproses HR')
 
 @section('content')
@@ -149,7 +149,7 @@
                                         @endif
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Posisi / Jabatan yang Diminta <span
+                                        <label class="form-label">Posisi / Nama Jabatan yang Diminta <span
                                                 class="text-danger">*</span></label>
                                         <input type="text" name="position" class="form-control"
                                             value="{{ old('position') }}"
@@ -171,235 +171,231 @@
                                         <select name="division" class="form-select"
                                             data-selected-division="{{ old('division') }}" required>
                                             <option value="">-- Pilih Departemen terlebih dahulu --</option>
-                                            <div class="col-md-6">
-                                                <label class="form-label">Level Jabatan <span
-                                                        class="text-danger">*</span></label>
-                                                <select name="job_level" class="form-select" required>
-                                                    <option value="">-- Pilih Level Jabatan --</option>
-                                                    @foreach ($jobLevels as $jl)
-                                                        <option value="{{ $jl }}"
-                                                            {{ old('job_level') === $jl ? 'selected' : '' }}>
-                                                            {{ $jl }}</option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">Grade</label>
-                                                <input type="text" name="grade" class="form-control"
-                                                    value="{{ old('grade') }}" placeholder="Contoh: G7, G8, Staff">
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">Area Kerja</label>
-                                                <input type="text" name="work_area" class="form-control"
-                                                    value="{{ old('work_area') }}"
-                                                    placeholder="Contoh: Site Kalimantan, HO Jakarta">
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">Lokasi Kerja Penempatan <span
-                                                        class="text-danger">*</span></label>
-                                                <select name="work_location" class="form-select" required>
-                                                    <option value="">-- Pilih Lokasi Kerja --</option>
-                                                    @foreach ($workLocations as $wl)
-                                                        <option value="{{ $wl }}"
-                                                            {{ old('work_location') === $wl ? 'selected' : '' }}>
-                                                            {{ $wl }}</option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">Status Kepegawaian <span
-                                                        class="text-danger">*</span></label>
-                                                <select name="employment_type" class="form-select" required>
-                                                    <option value="">-- Pilih Status Kepegawaian --</option>
-                                                    @foreach ($employmentTypes as $et)
-                                                        <option value="{{ $et }}"
-                                                            {{ old('employment_type') === $et ? 'selected' : '' }}>
-                                                            {{ $et }}</option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">Jumlah Kebutuhan (Orang) <span
-                                                        class="text-danger">*</span></label>
-                                                <input type="number" name="quantity" class="form-control"
-                                                    value="{{ old('quantity', 1) }}" min="1" max="100"
-                                                    required>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">Target Tanggal Bergabung (Join Date) <span
-                                                        class="text-danger">*</span></label>
-                                                <input type="date" name="expected_join_date" class="form-control"
-                                                    value="{{ old('expected_join_date') }}" min="{{ date('Y-m-d') }}"
-                                                    required>
-                                            </div>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Disetujui oleh (Divisi) <span class="text-danger">*</span></label>
+                                        <select name="approval_division" class="form-select" required>
+                                            <option value="">-- Pilih Divisi --</option>
+                                            @foreach (config('hris.mpr.approval_divisions', []) as $division)
+                                                <option value="{{ $division }}" {{ old('approval_division') === $division ? 'selected' : '' }}>
+                                                    {{ $division }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Level Jabatan <span class="text-danger">*</span></label>
+                                        <select name="job_level" class="form-select" required>
+                                            <option value="">-- Pilih Level Jabatan --</option>
+                                            @foreach ($jobLevels as $jl)
+                                                <option value="{{ $jl }}"
+                                                    {{ old('job_level') === $jl ? 'selected' : '' }}>
+                                                    {{ $jl }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Lokasi Kerja Penempatan <span
+                                                class="text-danger">*</span></label>
+                                        <select name="work_location" class="form-select" required>
+                                            <option value="">-- Pilih Lokasi Kerja --</option>
+                                            @foreach ($workLocations as $wl)
+                                                <option value="{{ $wl }}"
+                                                    {{ old('work_location') === $wl ? 'selected' : '' }}>
+                                                    {{ $wl }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Status Kepegawaian <span
+                                                class="text-danger">*</span></label>
+                                        <select name="employment_type" class="form-select" required>
+                                            <option value="">-- Pilih Status Kepegawaian --</option>
+                                            @foreach ($employmentTypes as $et)
+                                                <option value="{{ $et }}"
+                                                    {{ old('employment_type') === $et ? 'selected' : '' }}>
+                                                    {{ $et }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Jumlah Kebutuhan (Orang) <span
+                                                class="text-danger">*</span></label>
+                                        <input type="number" name="quantity" class="form-control"
+                                            value="{{ old('quantity', 1) }}" min="1" max="100" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Target Tanggal Bergabung (Join Date) <span
+                                                class="text-danger">*</span></label>
+                                        <input type="date" name="expected_join_date" class="form-control"
+                                            value="{{ old('expected_join_date') }}" min="{{ date('Y-m-d') }}" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- ===================== JADWAL KERJA & FASILITAS ===================== --}}
+                            <div class="mb-4">
+                                <h6 class="fw-bold text-primary mb-3"><i class="bi bi-clock-fill me-2"></i>Jadwal
+                                    Kerja
+                                    &amp; Fasilitas</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Hari Kerja <span class="text-danger">*</span></label>
+                                        <div class="border rounded p-2 d-flex flex-column gap-1">
+                                            @foreach ($mprOptions['working_days'] ?? [] as $dayKey => $dayLabel)
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="working_days[]"
+                                                        value="{{ $dayKey }}" id="wd_{{ $dayKey }}"
+                                                        {{ in_array($dayKey, $oldWorkingDays) ? 'checked' : '' }}>
+                                                    <label class="form-check-label"
+                                                        for="wd_{{ $dayKey }}">{{ $dayLabel }}</label>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Jam Kerja <span class="text-danger">*</span></label>
+                                        <div class="border rounded p-2 d-flex flex-column gap-1">
+                                            @foreach ($mprOptions['working_hours'] ?? [] as $hourKey => $hourLabel)
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox"
+                                                        name="working_hours[]" value="{{ $hourKey }}"
+                                                        id="wh_{{ $hourKey }}"
+                                                        {{ in_array($hourKey, $oldWorkingHours) ? 'checked' : '' }}>
+                                                    <label class="form-check-label"
+                                                        for="wh_{{ $hourKey }}">{{ $hourLabel }}</label>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Detail Shift <span class="text-danger d-none"
+                                                id="shiftDetailRequiredMark">*</span>
+                                            <span class="text-muted fw-normal small">(wajib jika Hari Kerja
+                                                "Shifting" dipilih)</span></label>
+                                        <textarea name="shift_detail" class="form-control" rows="2" id="shiftDetailField"
+                                            placeholder="Contoh: Shift pagi 07:00-15:00, shift siang 15:00-23:00, rotasi mingguan...">{{ old('shift_detail') }}</textarea>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Benefits / Tunjangan <span
+                                                class="text-danger">*</span></label>
+                                        <div class="border rounded p-2 row g-1">
+                                            @foreach ($mprOptions['benefits'] ?? [] as $benefitKey => $benefitLabel)
+                                                <div class="col-md-4 col-6">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="benefits[]"
+                                                            value="{{ $benefitKey }}" id="bn_{{ $benefitKey }}"
+                                                            {{ in_array($benefitKey, $oldBenefits) ? 'checked' : '' }}>
+                                                        <label class="form-check-label"
+                                                            for="bn_{{ $benefitKey }}">{{ $benefitLabel }}</label>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
                                     </div>
                                 </div>
 
-                                {{-- ===================== JADWAL KERJA & FASILITAS ===================== --}}
+                                {{-- ===================== ALASAN & KUALIFIKASI ===================== --}}
                                 <div class="mb-4">
-                                    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-clock-fill me-2"></i>Jadwal
-                                        Kerja
-                                        &amp; Fasilitas</h6>
+                                    <h6 class="fw-bold text-primary mb-3"><i
+                                            class="bi bi-question-circle-fill me-2"></i>Alasan &amp; Kualifikasi</h6>
                                     <div class="row g-3">
                                         <div class="col-md-6">
-                                            <label class="form-label">Hari Kerja <span
+                                            <label class="form-label">Alasan Permintaan <span
                                                     class="text-danger">*</span></label>
-                                            <div class="border rounded p-2 d-flex flex-column gap-1">
-                                                @foreach ($mprOptions['working_days'] ?? [] as $dayKey => $dayLabel)
-                                                    <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox"
-                                                            name="working_days[]" value="{{ $dayKey }}"
-                                                            id="wd_{{ $dayKey }}"
-                                                            {{ in_array($dayKey, $oldWorkingDays) ? 'checked' : '' }}>
-                                                        <label class="form-check-label"
-                                                            for="wd_{{ $dayKey }}">{{ $dayLabel }}</label>
-                                                    </div>
+                                            <select name="reason" class="form-select" id="mprReasonSelect" required>
+                                                <option value="">-- Pilih Alasan Permintaan --</option>
+                                                @foreach ($reasons as $r)
+                                                    <option value="{{ $r }}"
+                                                        {{ old('reason') === $r ? 'selected' : '' }}>
+                                                        {{ $r }}</option>
                                                 @endforeach
-                                            </div>
+                                            </select>
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label">Jam Kerja <span class="text-danger">*</span></label>
-                                            <div class="border rounded p-2 d-flex flex-column gap-1">
-                                                @foreach ($mprOptions['working_hours'] ?? [] as $hourKey => $hourLabel)
-                                                    <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox"
-                                                            name="working_hours[]" value="{{ $hourKey }}"
-                                                            id="wh_{{ $hourKey }}"
-                                                            {{ in_array($hourKey, $oldWorkingHours) ? 'checked' : '' }}>
-                                                        <label class="form-check-label"
-                                                            for="wh_{{ $hourKey }}">{{ $hourLabel }}</label>
-                                                    </div>
-                                                @endforeach
-                                            </div>
+                                            <label class="form-label">Nama Karyawan yang Digantikan (Opsional)</label>
+                                            <input type="text" name="replacement_for" class="form-control"
+                                                value="{{ old('replacement_for') }}"
+                                                placeholder="Diisi jika alasan adalah penggantian">
                                         </div>
-                                        <div class="col-12">
-                                            <label class="form-label">Detail Shift <span class="text-danger d-none"
-                                                    id="shiftDetailRequiredMark">*</span>
-                                                <span class="text-muted fw-normal small">(wajib jika Hari Kerja
-                                                    "Shifting" dipilih)</span></label>
-                                            <textarea name="shift_detail" class="form-control" rows="2" id="shiftDetailField"
-                                                placeholder="Contoh: Shift pagi 07:00-15:00, shift siang 15:00-23:00, rotasi mingguan...">{{ old('shift_detail') }}</textarea>
-                                        </div>
-                                        <div class="col-12">
-                                            <label class="form-label">Benefits / Tunjangan <span
+                                        <div class="col-md-6">
+                                            <label class="form-label">Latar Belakang Pendidikan <span
                                                     class="text-danger">*</span></label>
-                                            <div class="border rounded p-2 row g-1">
-                                                @foreach ($mprOptions['benefits'] ?? [] as $benefitKey => $benefitLabel)
-                                                    <div class="col-md-4 col-6">
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox"
-                                                                name="benefits[]" value="{{ $benefitKey }}"
-                                                                id="bn_{{ $benefitKey }}"
-                                                                {{ in_array($benefitKey, $oldBenefits) ? 'checked' : '' }}>
-                                                            <label class="form-check-label"
-                                                                for="bn_{{ $benefitKey }}">{{ $benefitLabel }}</label>
-                                                        </div>
-                                                    </div>
+                                            <select name="education_background" class="form-select" required>
+                                                <option value="">-- Pilih Pendidikan --</option>
+                                                @foreach ($mprOptions['education_background'] ?? [] as $eduKey => $eduLabel)
+                                                    <option value="{{ $eduKey }}"
+                                                        {{ old('education_background') === $eduKey ? 'selected' : '' }}>
+                                                        {{ $eduLabel }}</option>
                                                 @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Pengalaman Kerja <span
+                                                    class="text-danger">*</span></label>
+                                            <select name="work_experience" class="form-select" required>
+                                                <option value="">-- Pilih Pengalaman --</option>
+                                                @foreach ($mprOptions['work_experience'] ?? [] as $expKey => $expLabel)
+                                                    <option value="{{ $expKey }}"
+                                                        {{ old('work_experience') === $expKey ? 'selected' : '' }}>
+                                                        {{ $expLabel }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Skills &amp; Kompetensi</label>
+                                            <textarea name="skills_competencies" class="form-control" rows="2"
+                                                placeholder="Contoh: Laravel, Excel lanjutan, leadership...">{{ old('skills_competencies') }}</textarea>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Bahasa yang Dikuasai</label>
+                                            <textarea name="languages" class="form-control" rows="2"
+                                                placeholder="Contoh: Bahasa Indonesia (aktif), Bahasa Inggris (pasif)...">{{ old('languages') }}</textarea>
+                                            <div class="col-12">
+                                                <label class="form-label">Referensi Industri Sejenis</label>
+                                                <textarea name="industry_reference" class="form-control" rows="2"
+                                                    placeholder="Contoh: Pengalaman dari industri mining, logistik, atau FMCG...">{{ old('industry_reference') }}</textarea>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label">Kualifikasi &amp; Persyaratan Khusus
+                                                    Kandidat</label>
+                                                <textarea name="requirements" class="form-control" rows="3"
+                                                    placeholder="Contoh: Pendidikan min. S1 Informatika, Pengalaman min. 2 tahun di Laravel, memiliki komunikasi baik...">{{ old('requirements') }}</textarea>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label">Uraian Tugas &amp; Tanggung Jawab
+                                                    Utama</label>
+                                                <textarea name="job_description" class="form-control" rows="3"
+                                                    placeholder="Contoh: Mengembangkan fitur web HRIS, melakukan code review, memastikan performa database...">{{ old('job_description') }}</textarea>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label">Key Results / Target Posisi Ini</label>
+                                                <textarea name="key_results_targets" class="form-control" rows="3"
+                                                    placeholder="Contoh: Mencapai target penjualan 100 unit/bulan, menyelesaikan integrasi ERP dalam 6 bulan...">{{ old('key_results_targets') }}</textarea>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label">Catatan Khusus MPR</label>
+                                                <textarea name="special_notes" class="form-control" rows="2"
+                                                    placeholder="Catatan khusus terkait kebutuhan ini...">{{ old('special_notes') }}</textarea>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {{-- ===================== ALASAN & KUALIFIKASI ===================== --}}
-                                    <div class="mb-4">
-                                        <h6 class="fw-bold text-primary mb-3"><i
-                                                class="bi bi-question-circle-fill me-2"></i>Alasan &amp; Kualifikasi</h6>
-                                        <div class="row g-3">
-                                            <div class="col-md-6">
-                                                <label class="form-label">Alasan Permintaan <span
-                                                        class="text-danger">*</span></label>
-                                                <select name="reason" class="form-select" id="mprReasonSelect" required>
-                                                    <option value="">-- Pilih Alasan Permintaan --</option>
-                                                    @foreach ($reasons as $r)
-                                                        <option value="{{ $r }}"
-                                                            {{ old('reason') === $r ? 'selected' : '' }}>
-                                                            {{ $r }}</option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">Nama Karyawan yang Digantikan (Opsional)</label>
-                                                <input type="text" name="replacement_for" class="form-control"
-                                                    value="{{ old('replacement_for') }}"
-                                                    placeholder="Diisi jika alasan adalah penggantian">
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">Latar Belakang Pendidikan <span
-                                                        class="text-danger">*</span></label>
-                                                <select name="education_background" class="form-select" required>
-                                                    <option value="">-- Pilih Pendidikan --</option>
-                                                    @foreach ($mprOptions['education_background'] ?? [] as $eduKey => $eduLabel)
-                                                        <option value="{{ $eduKey }}"
-                                                            {{ old('education_background') === $eduKey ? 'selected' : '' }}>
-                                                            {{ $eduLabel }}</option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">Pengalaman Kerja <span
-                                                        class="text-danger">*</span></label>
-                                                <select name="work_experience" class="form-select" required>
-                                                    <option value="">-- Pilih Pengalaman --</option>
-                                                    @foreach ($mprOptions['work_experience'] ?? [] as $expKey => $expLabel)
-                                                        <option value="{{ $expKey }}"
-                                                            {{ old('work_experience') === $expKey ? 'selected' : '' }}>
-                                                            {{ $expLabel }}</option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">Skills &amp; Kompetensi</label>
-                                                <textarea name="skills_competencies" class="form-control" rows="2"
-                                                    placeholder="Contoh: Laravel, Excel lanjutan, leadership...">{{ old('skills_competencies') }}</textarea>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">Bahasa yang Dikuasai</label>
-                                                <textarea name="languages" class="form-control" rows="2"
-                                                    placeholder="Contoh: Bahasa Indonesia (aktif), Bahasa Inggris (pasif)...">{{ old('languages') }}</textarea>
-                                                <div class="col-12">
-                                                    <label class="form-label">Referensi Industri Sejenis</label>
-                                                    <textarea name="industry_reference" class="form-control" rows="2"
-                                                        placeholder="Contoh: Pengalaman dari industri mining, logistik, atau FMCG...">{{ old('industry_reference') }}</textarea>
-                                                </div>
-                                                <div class="col-12">
-                                                    <label class="form-label">Kualifikasi &amp; Persyaratan Khusus
-                                                        Kandidat</label>
-                                                    <textarea name="requirements" class="form-control" rows="3"
-                                                        placeholder="Contoh: Pendidikan min. S1 Informatika, Pengalaman min. 2 tahun di Laravel, memiliki komunikasi baik...">{{ old('requirements') }}</textarea>
-                                                </div>
-                                                <div class="col-12">
-                                                    <label class="form-label">Uraian Tugas &amp; Tanggung Jawab
-                                                        Utama</label>
-                                                    <textarea name="job_description" class="form-control" rows="3"
-                                                        placeholder="Contoh: Mengembangkan fitur web HRIS, melakukan code review, memastikan performa database...">{{ old('job_description') }}</textarea>
-                                                </div>
-                                                <div class="col-12">
-                                                    <label class="form-label">Key Results / Target Posisi Ini</label>
-                                                    <textarea name="key_results_targets" class="form-control" rows="3"
-                                                        placeholder="Contoh: Mencapai target penjualan 100 unit/bulan, menyelesaikan integrasi ERP dalam 6 bulan...">{{ old('key_results_targets') }}</textarea>
-                                                </div>
-                                                <div class="col-12">
-                                                    <label class="form-label">Catatan Khusus MPR</label>
-                                                    <textarea name="special_notes" class="form-control" rows="2"
-                                                        placeholder="Catatan khusus terkait kebutuhan ini...">{{ old('special_notes') }}</textarea>
-                                                </div>
-                                            </div>
-                                        </div>
+                                    <hr class="my-4">
 
-                                        <hr class="my-4">
-
-                                        <div class="d-flex justify-content-end gap-2">
-                                            <a href="{{ request()->routeIs('mpr.auth.*') ? route('mpr.auth.request.history') : route('hr.mpr.history') }}"
-                                                class="btn btn-outline-secondary px-3">Batal</a>
-                                            <button type="submit" id="btnSubmitMprManager"
-                                                class="btn btn-primary px-4 fw-semibold shadow-sm">
-                                                <span class="spinner-border spinner-border-sm me-1 d-none"
-                                                    id="spinnerSubmitManager"></span>
-                                                <i class="bi bi-send-fill me-1" id="iconSubmitManager"></i> Kirim
-                                                Pengajuan & Generate
-                                                PDF
-                                            </button>
-                                        </div>
+                                    <div class="d-flex justify-content-end gap-2">
+                                        <a href="{{ request()->routeIs('mpr.auth.*') ? route('mpr.auth.request.history') : route('hr.mpr.history') }}"
+                                            class="btn btn-outline-secondary px-3">Batal</a>
+                                        <button type="submit" id="btnSubmitMprManager"
+                                            class="btn btn-primary px-4 fw-semibold shadow-sm">
+                                            <span class="spinner-border spinner-border-sm me-1 d-none"
+                                                id="spinnerSubmitManager"></span>
+                                            <i class="bi bi-send-fill me-1" id="iconSubmitManager"></i> Kirim
+                                            Pengajuan & Generate
+                                            PDF
+                                        </button>
+                                    </div>
                         </form>
                     </div>
                 </div>

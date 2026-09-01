@@ -80,19 +80,21 @@
         table.data-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
 
         table.data-table td {
-            padding: 3.5px 6px;
+            padding: 2px 5px;
             vertical-align: top;
             font-size: 9pt;
+            line-height: 1.28;
         }
 
         .label-col {
             width: 28%;
             color: #000;
             font-weight: bold;
+            white-space: nowrap;
         }
 
         .colon-col {
@@ -103,6 +105,20 @@
         .value-col {
             width: 69%;
             color: #0f172a;
+        }
+
+        .value-col p,
+        .value-col ul,
+        .value-col ol,
+        .value-col li {
+            margin: 0;
+            padding-left: 16px;
+        }
+
+        .value-col ul,
+        .value-col ol {
+            margin-top: 2px;
+            margin-bottom: 2px;
         }
 
         .grid-2 {
@@ -308,7 +324,7 @@
             <td>
                 <table class="data-table">
                     <tr>
-                        <td class="label-col">Posisi / Jabatan</td>
+                        <td class="label-col">Posisi / Nama Jabatan</td>
                         <td class="colon-col">:</td>
                         <td class="value-col"><strong>{{ $mpr->position ?: '-' }}</strong></td>
                     </tr>
@@ -326,16 +342,6 @@
                         <td class="label-col">Level Jabatan</td>
                         <td class="colon-col">:</td>
                         <td class="value-col">{{ $mpr->jobLevel ?: '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label-col">Grade</td>
-                        <td class="colon-col">:</td>
-                        <td class="value-col">{{ $mpr->grade ?: '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label-col">Area Kerja</td>
-                        <td class="colon-col">:</td>
-                        <td class="value-col">{{ $mpr->workArea ?: '-' }}</td>
                     </tr>
                     <tr>
                         <td class="label-col">Lokasi Penempatan</td>
@@ -413,19 +419,19 @@
 
     <!-- SECTION 4: KUALIFIKASI KANDIDAT -->
     <div class="section-title">IV. Kualifikasi Kandidat</div>
-    <table class="data-table">
+    <table class="data-table" style="margin-top:0;">
         <tr>
-            <td class="label-col" style="width:20%;">Latar Belakang Pendidikan</td>
+            <td class="label-col" style="width:22%;">Latar Belakang Pendidikan</td>
             <td class="colon-col">:</td>
             <td class="value-col">{{ $mpr->educationBackground ?: '-' }}</td>
         </tr>
         <tr>
-            <td class="label-col" style="width:20%;">Pengalaman Kerja</td>
+            <td class="label-col" style="width:22%;">Pengalaman Kerja</td>
             <td class="colon-col">:</td>
             <td class="value-col">{{ $mpr->workExperience ?: '-' }}</td>
         </tr>
         <tr>
-            <td class="label-col" style="width:20%;">Skills & Kompetensi</td>
+            <td class="label-col" style="width:22%;">Skills &amp; Kompetensi</td>
             <td class="colon-col">:</td>
             <td class="value-col">
                 @if (!empty($skillsHtml))
@@ -436,7 +442,7 @@
             </td>
         </tr>
         <tr>
-            <td class="label-col" style="width:20%;">Bahasa yang Dikuasai</td>
+            <td class="label-col" style="width:22%;">Bahasa yang Dikuasai</td>
             <td class="colon-col">:</td>
             <td class="value-col">
                 @if (!empty($languagesHtml))
@@ -447,7 +453,7 @@
             </td>
         </tr>
         <tr>
-            <td class="label-col" style="width:20%;">Referensi Industri Sejenis</td>
+            <td class="label-col" style="width:22%;">Referensi Industri Sejenis</td>
             <td class="colon-col">:</td>
             <td class="value-col">
                 @if (!empty($industryHtml))
@@ -514,14 +520,14 @@
                 <div class="sign-role">{{ $mpr->requestorPosition ?: 'Manager / User Dept' }}</div>
             </td>
             <td>
-                <div class="sign-title">Diperiksa oleh (HRD)</div>
-                <div class="sign-name">( ........................................ )</div>
-                <div class="sign-role">HR Manager / Recruiter</div>
+                <div class="sign-title">Disetujui oleh (Divisi)</div>
+                <div class="sign-name">( {{ $mpr->approvalDivision ?: '........................................' }} )</div>
+                <div class="sign-role">Pimpinan Divisi</div>
             </td>
             <td>
-                <div class="sign-title">Disetujui oleh (Management)</div>
-                <div class="sign-name">( ........................................ )</div>
-                <div class="sign-role">Direksi / General Manager</div>
+                <div class="sign-title">Diperiksa oleh (HRD)</div>
+                <div class="sign-name">Hisar Hesti</div>
+                <div class="sign-role">HR Manager</div>
             </td>
         </tr>
     </table>

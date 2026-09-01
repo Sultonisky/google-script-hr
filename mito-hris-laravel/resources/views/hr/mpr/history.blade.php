@@ -55,7 +55,7 @@
                         data-refresh="page">
                         <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
                     </button>
-                    <a href="{{ request()->routeIs('mpr.auth.*') ? route('mpr.auth.request') : route('hr.mpr.create') }}" class="btn btn-primary fw-semibold">
+                    <a href="{{ request()->routeIs('mpr.auth.*') ? route('mpr.auth.request') : route('mpr.auth.request') }}" class="btn btn-primary fw-semibold">
                         <i class="bi bi-plus-circle-fill me-1"></i> Buat Pengajuan MPR
                     </a>
                 </div>
@@ -282,10 +282,6 @@
                             const reqPos = document.getElementById('detRequestorPosition');
                             if (reqPos) reqPos.innerText = m.requestor_position ?
                                 `Jabatan: ${m.requestor_position}` : '';
-                            setDetText('detGrade', m.grade);
-                            toggleWrap('wrapGrade', m.grade);
-                            setDetText('detWorkArea', m.work_area);
-                            toggleWrap('wrapWorkArea', m.work_area);
                             setDetText('detWorkingDays', m.working_days);
                             setDetText('detWorkingHours', m.working_hours);
                             setDetText('detShiftDetail', m.shift_detail);

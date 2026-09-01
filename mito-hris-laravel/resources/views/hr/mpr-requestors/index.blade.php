@@ -36,10 +36,10 @@
             </div>
             <div class="col-6 col-md-3">
                 <div class="stat-card">
-                    <div class="stat-icon bg-gold"><i class="bi bi-building-fill"></i></div>
+                    <div class="stat-icon bg-gold"><i class="bi bi-briefcase-fill"></i></div>
                     <div>
-                        <div class="stat-label">Dengan Entity</div>
-                        <div class="stat-value">{{ $stats['entities'] ?? 0 }}</div>
+                        <div class="stat-label">Dengan Job Position</div>
+                        <div class="stat-value">{{ $stats['job_positions'] ?? 0 }}</div>
                     </div>
                 </div>
             </div>
@@ -66,7 +66,7 @@
             <div class="filter-bar">
                 <div class="table-search">
                     <i class="bi bi-search"></i>
-                    <input type="search" id="mprRequestorSearch" placeholder="Cari nama, email, username, atau entity..."
+                    <input type="search" id="mprRequestorSearch" placeholder="Cari nama, email, username, atau job position..."
                         aria-label="Cari MPR requestor" autocomplete="off" />
                 </div>
                 <select class="filter-select" id="mprRequestorStatusFilter" aria-label="Filter status requestor">
@@ -91,10 +91,9 @@
                             <th scope="col">No.</th>
                             <th>Requestor</th>
                             <th>Username</th>
+                            <th>Job Position</th>
                             <th>Role</th>
                             <th>Status</th>
-                            <th>Entity</th>
-                            <th>Branch</th>
                             <th>Login Terakhir</th>
                             <th>Dibuat</th>
                             <th>Aksi</th>
@@ -113,13 +112,12 @@
                                     <div class="cand-sub requestor-email">{{ $requestor['Email'] ?? '-' }}</div>
                                 </td>
                                 <td class="id-mono requestor-username">{{ $requestor['Username'] ?? '-' }}</td>
+                                <td class="requestor-job-position">{{ $requestor['Job Position'] ?? '-' }}</td>
                                 <td><span
                                         class="fw-semibold text-navy requestor-role">{{ $requestor['Role'] ?? '-' }}</span>
                                 </td>
                                 <td><span class="badge {{ $statusClass }} requestor-status">{{ $status }}</span>
                                 </td>
-                                <td class="requestor-entity">{{ $requestor['Entity'] ?? '-' }}</td>
-                                <td>{{ $requestor['Branch'] ?? '-' }}</td>
                                 <td class="id-mono">{{ $requestor['Last Login'] ?? '-' }}</td>
                                 <td class="id-mono">{{ $requestor['Created At'] ?? '-' }}</td>
                                 <td>
@@ -130,9 +128,8 @@
                                             data-email="{{ $requestor['Email'] ?? '' }}"
                                             data-name="{{ $requestor['Full Name'] ?? '' }}"
                                             data-username="{{ $requestor['Username'] ?? '' }}"
-                                            data-role="{{ $requestor['Role'] ?? '' }}" data-status="{{ $status }}"
-                                            data-entity="{{ $requestor['Entity'] ?? '' }}"
-                                            data-branch="{{ $requestor['Branch'] ?? '' }}">
+                                            data-job-position="{{ $requestor['Job Position'] ?? '' }}"
+                                            data-role="{{ $requestor['Role'] ?? '' }}" data-status="{{ $status }}">
                                             <i class="bi bi-pencil-fill" aria-hidden="true"></i>
                                         </button>
                                     @endcan
@@ -220,16 +217,10 @@
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label" for="mprRequestorEntity">Entity <span
+                                <label class="form-label" for="mprRequestorJobPosition">Job Position <span
                                         class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="mprRequestorEntity" name="entity"
-                                    required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label" for="mprRequestorBranch">Branch <span
-                                        class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="mprRequestorBranch" name="branch"
-                                    required>
+                                <input type="text" class="form-control" id="mprRequestorJobPosition" name="job_position"
+                                    maxlength="255" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label" for="mprRequestorPassword">Password <span
@@ -296,14 +287,10 @@
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label" for="mprEditEntity">Entity <span
+                                <label class="form-label" for="mprEditJobPosition">Job Position <span
                                         class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="mprEditEntity" name="entity" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label" for="mprEditBranch">Branch <span
-                                        class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="mprEditBranch" name="branch" required>
+                                <input type="text" class="form-control" id="mprEditJobPosition" name="job_position"
+                                    maxlength="255" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label" for="mprEditStatus">Status <span
@@ -356,10 +343,9 @@
                 document.getElementById('mprEditEmail').value = email;
                 document.getElementById('mprEditName').value = button?.dataset.name || '';
                 document.getElementById('mprEditUsername').value = button?.dataset.username || '';
+                document.getElementById('mprEditJobPosition').value = button?.dataset.jobPosition || button?.dataset.job_position || '';
                 document.getElementById('mprEditRole').value = button?.dataset.role || 'Manpower';
                 document.getElementById('mprEditStatus').value = button?.dataset.status || 'Active';
-                document.getElementById('mprEditEntity').value = button?.dataset.entity || '';
-                document.getElementById('mprEditBranch').value = button?.dataset.branch || '';
                 document.getElementById('mprEditPassword').value = '';
                 document.getElementById('mprEditPasswordConfirmation').value = '';
             });
