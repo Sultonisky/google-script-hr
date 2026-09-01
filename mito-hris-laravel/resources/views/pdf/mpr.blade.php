@@ -166,7 +166,20 @@
       width: 33.33%;
       text-align: center;
       vertical-align: top;
-      padding: 4px 8px;
+      padding: 4px 6px;
+    }
+    /* Baris kedua: 2 box (COO & CEO) center terhadap 3 box baris pertama */
+    .sign-table-second {
+      width: 66.66%;
+      border-collapse: collapse;
+      margin: 18px auto 0 auto;
+      page-break-inside: avoid;
+    }
+    .sign-table-second td {
+      width: 50%;
+      text-align: center;
+      vertical-align: top;
+      padding: 4px 6px;
     }
     .sign-title {
       font-size: 8.5pt;
@@ -238,40 +251,21 @@
             <td class="value-col"><strong>{{ $mpr->requestorName ?: '-' }}</strong></td>
           </tr>
           <tr>
-            <td class="label-col">Email Pemohon</td>
+            <td class="label-col">Jabatan Pemohon</td>
             <td class="colon-col">:</td>
-            <td class="value-col">{{ $mpr->requestorEmail ?: '-' }}</td>
+            <td class="value-col">{{ $mpr->requestorPosition ?: '-' }}</td>
           </tr>
           <tr>
             <td class="label-col">Entitas / Perusahaan</td>
             <td class="colon-col">:</td>
             <td class="value-col">{{ $company['name'] ?? ($mpr->entity ?: '-') }}</td>
           </tr>
-          @if(!empty($mpr->branch))
-          <tr>
-            <td class="label-col">Branch / Lokasi Pemohon</td>
-            <td class="colon-col">:</td>
-            <td class="value-col">{{ $mpr->branch }}</td>
-          </tr>
-          @endif
-        </table>
-      </td>
       <td>
         <table class="data-table">
           <tr>
-            <td class="label-col">Departemen</td>
+            <td class="label-col">Branch / Lokasi Pemohon</td>
             <td class="colon-col">:</td>
-            <td class="value-col">{{ $mpr->department ?: '-' }}</td>
-          </tr>
-          <tr>
-            <td class="label-col">Divisi</td>
-            <td class="colon-col">:</td>
-            <td class="value-col">{{ $mpr->division ?: '-' }}</td>
-          </tr>
-          <tr>
-            <td class="label-col">Diajukan Oleh</td>
-            <td class="colon-col">:</td>
-            <td class="value-col">{{ $mpr->createdBy ?: '-' }}</td>
+            <td class="value-col">{{ $mpr->branch ?: '-' }}</td>
           </tr>
         </table>
       </td>
@@ -290,9 +284,29 @@
             <td class="value-col"><strong>{{ $mpr->position ?: '-' }}</strong></td>
           </tr>
           <tr>
+            <td class="label-col">Departemen</td>
+            <td class="colon-col">:</td>
+            <td class="value-col">{{ $mpr->department ?: '-' }}</td>
+          </tr>
+          <tr>
+            <td class="label-col">Divisi</td>
+            <td class="colon-col">:</td>
+            <td class="value-col">{{ $mpr->division ?: '-' }}</td>
+          </tr>
+          <tr>
             <td class="label-col">Level Jabatan</td>
             <td class="colon-col">:</td>
             <td class="value-col">{{ $mpr->jobLevel ?: '-' }}</td>
+          </tr>
+          <tr>
+            <td class="label-col">Grade</td>
+            <td class="colon-col">:</td>
+            <td class="value-col">{{ $mpr->grade ?: '-' }}</td>
+          </tr>
+          <tr>
+            <td class="label-col">Area Kerja</td>
+            <td class="colon-col">:</td>
+            <td class="value-col">{{ $mpr->workArea ?: '-' }}</td>
           </tr>
           <tr>
             <td class="label-col">Lokasi Penempatan</td>
@@ -323,6 +337,32 @@
     </tr>
   </table>
 
+  <!-- JADWAL KERJA & FASILITAS -->
+  <table class="data-table" style="margin-top:2px;">
+    <tr>
+      <td class="label-col" style="width:20%;">Hari Kerja</td>
+      <td class="colon-col">:</td>
+      <td class="value-col">{{ $mpr->workingDays ?: '-' }}</td>
+    </tr>
+    <tr>
+      <td class="label-col" style="width:20%;">Jam Kerja</td>
+      <td class="colon-col">:</td>
+      <td class="value-col">{{ $mpr->workingHours ?: '-' }}</td>
+    </tr>
+    @if(!empty($mpr->shiftDetail))
+    <tr>
+      <td class="label-col" style="width:20%;">Detail Shift</td>
+      <td class="colon-col">:</td>
+      <td class="value-col">{{ $mpr->shiftDetail }}</td>
+    </tr>
+    @endif
+    <tr>
+      <td class="label-col" style="width:20%;">Benefits / Tunjangan</td>
+      <td class="colon-col">:</td>
+      <td class="value-col">{{ $mpr->benefits ?: '-' }}</td>
+    </tr>
+  </table>
+
   <!-- SECTION 3: ALASAN PERMINTAAN -->
   <div class="section-title">III. Alasan Permintaan Karyawan</div>
   <table class="data-table">
@@ -340,8 +380,38 @@
     @endif
   </table>
 
-  <!-- SECTION 4: KUALIFIKASI & URAIAN PEKERJAAN -->
-  <div class="section-title">IV. Kualifikasi & Uraian Pekerjaan</div>
+  <!-- SECTION 4: KUALIFIKASI KANDIDAT -->
+  <div class="section-title">IV. Kualifikasi Kandidat</div>
+  <table class="data-table">
+    <tr>
+      <td class="label-col" style="width:20%;">Latar Belakang Pendidikan</td>
+      <td class="colon-col">:</td>
+      <td class="value-col">{{ $mpr->educationBackground ?: '-' }}</td>
+    </tr>
+    <tr>
+      <td class="label-col" style="width:20%;">Pengalaman Kerja</td>
+      <td class="colon-col">:</td>
+      <td class="value-col">{{ $mpr->workExperience ?: '-' }}</td>
+    </tr>
+    <tr>
+      <td class="label-col" style="width:20%;">Skills & Kompetensi</td>
+      <td class="colon-col">:</td>
+      <td class="value-col">@if(!empty($skillsHtml)) {!! $skillsHtml !!} @else - @endif</td>
+    </tr>
+    <tr>
+      <td class="label-col" style="width:20%;">Bahasa yang Dikuasai</td>
+      <td class="colon-col">:</td>
+      <td class="value-col">@if(!empty($languagesHtml)) {!! $languagesHtml !!} @else - @endif</td>
+    </tr>
+    <tr>
+      <td class="label-col" style="width:20%;">Referensi Industri Sejenis</td>
+      <td class="colon-col">:</td>
+      <td class="value-col">@if(!empty($industryHtml)) {!! $industryHtml !!} @else - @endif</td>
+    </tr>
+  </table>
+
+  <!-- SECTION 5: KUALIFIKASI & URAIAN PEKERJAAN -->
+  <div class="section-title">V. Kualifikasi & Uraian Pekerjaan</div>
   <table class="grid-2">
     <tr>
       <td>
@@ -366,20 +436,40 @@
       </td>
     </tr>
   </table>
+  <div style="margin-top:6px;">
+    <strong>Key Results / Target Posisi Ini:</strong>
+    <div class="content-box" style="margin-top:3px;">
+      @if(!empty($keyResultsHtml))
+        {!! $keyResultsHtml !!}
+      @else
+        Tidak ada target khusus yang dilampirkan.
+      @endif
+    </div>
+  </div>
 
-  <!-- SECTION 5: CATATAN TAMBAHAN -->
+  <!-- SECTION 6: CATATAN -->
+  @if(!empty($mpr->specialNotes) || !empty($mpr->notes))
+  <div class="section-title">VI. Catatan Tambahan</div>
+  @if(!empty($mpr->specialNotes))
+  <div style="margin-bottom:5px;"><strong>Catatan Khusus MPR:</strong>
+    <div class="content-box" style="min-height: 25px; margin-top:3px; margin-bottom: 8px;">{!! $specialNotesHtml !!}</div>
+  </div>
+  @endif
   @if(!empty($mpr->notes))
-  <div class="section-title">V. Catatan Tambahan</div>
-  <div class="content-box" style="min-height: 25px; margin-bottom: 8px;">{!! $notesHtml !!}</div>
+  <div><strong>Catatan:</strong>
+    <div class="content-box" style="min-height: 25px; margin-top:3px; margin-bottom: 8px;">{!! $notesHtml !!}</div>
+  </div>
+  @endif
   @endif
 
-  <!-- SECTION 6: TANDA TANGAN -->
+  <!-- SECTION 7: TANDA TANGAN -->
+  <!-- Baris 1: 3 signature box -->
   <table class="sign-table">
     <tr>
       <td>
         <div class="sign-title">Diajukan oleh (Pemohon)</div>
         <div class="sign-name">{{ $mpr->requestorName ?: 'Manager Pemohon' }}</div>
-        <div class="sign-role">Manager / User Dept</div>
+        <div class="sign-role">{{ $mpr->requestorPosition ?: 'Manager / User Dept' }}</div>
       </td>
       <td>
         <div class="sign-title">Diperiksa oleh (HRD)</div>
@@ -390,6 +480,22 @@
         <div class="sign-title">Disetujui oleh (Management)</div>
         <div class="sign-name">( ........................................ )</div>
         <div class="sign-role">Direksi / General Manager</div>
+      </td>
+    </tr>
+  </table>
+
+  <!-- Baris 2: 2 signature box (COO & CEO) horizontal-center terhadap baris 1 -->
+  <table class="sign-table-second">
+    <tr>
+      <td>
+        <div class="sign-title">Disahkan oleh (COO)</div>
+        <div class="sign-name">Frans Arsianto</div>
+        <div class="sign-role">COO</div>
+      </td>
+      <td>
+        <div class="sign-title">Disahkan oleh (CEO)</div>
+        <div class="sign-name">Jacksen Lie</div>
+        <div class="sign-role">CEO</div>
       </td>
     </tr>
   </table>

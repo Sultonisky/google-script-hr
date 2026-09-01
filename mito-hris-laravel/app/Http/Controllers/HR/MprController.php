@@ -385,6 +385,22 @@ class MprController extends Controller
             $branch = trim($user['branch'] ?? '');
         }
 
+        // ==============================================================
+        // FIELD BARU: konversi value selection → label human-readable
+        // (single source of truth label: config hris.mpr_form_options)
+        // ==============================================================
+        $formOptions = config('hris.mpr_form_options', []);
+        $toLabels = function (array $values, string $group) use ($formOptions): string {
+            $map = $formOptions[$group] ?? [];
+            $labels = array_map(fn($v) => $map[$v] ?? $v, $values);
+            return implode(', ', $labels);
+        };
+        $workingDaysLabels   = $toLabels((array) ($validated['working_days'] ?? []), 'working_days');
+        $workingHoursLabels  = $toLabels((array) ($validated['working_hours'] ?? []), 'working_hours');
+        $benefitsLabels      = $toLabels((array) ($validated['benefits'] ?? []), 'benefits');
+        $educationLabel      = $formOptions['education_background'][$validated['education_background'] ?? ''] ?? null;
+        $experienceLabel     = $formOptions['work_experience'][$validated['work_experience'] ?? ''] ?? null;
+
         $now = now()->timezone('Asia/Jakarta');
         $mprData = new MprData(
             requestDate: $now->format('Y-m-d'),
@@ -407,6 +423,21 @@ class MprController extends Controller
             notes: $validated['notes'] ?? null,
             status: 'Submitted',
             createdBy: $createdBy,
+            // -- Field baru (Refactor Create MPR) --
+            requestorPosition: $validated['requestor_position'] ?? null,
+            grade: $validated['grade'] ?? null,
+            workArea: $validated['work_area'] ?? null,
+            workingDays: $workingDaysLabels !== '' ? $workingDaysLabels : null,
+            workingHours: $workingHoursLabels !== '' ? $workingHoursLabels : null,
+            shiftDetail: $validated['shift_detail'] ?? null,
+            benefits: $benefitsLabels !== '' ? $benefitsLabels : null,
+            educationBackground: $educationLabel,
+            workExperience: $experienceLabel,
+            skillsCompetencies: $validated['skills_competencies'] ?? null,
+            languages: $validated['languages'] ?? null,
+            industryReference: $validated['industry_reference'] ?? null,
+            specialNotes: $validated['special_notes'] ?? null,
+            keyResultsTargets: $validated['key_results_targets'] ?? null,
         );
 
         try {
@@ -528,6 +559,21 @@ class MprController extends Controller
             createdBy: $existing->createdBy,
             createdAt: $existing->createdAt,
             updatedAt: now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
+            // -- Field baru: preserve dari data existing (tidak di-overwrite oleh update flow) --
+            requestorPosition: $existing->requestorPosition,
+            grade: $existing->grade,
+            workArea: $existing->workArea,
+            workingDays: $existing->workingDays,
+            workingHours: $existing->workingHours,
+            shiftDetail: $existing->shiftDetail,
+            benefits: $existing->benefits,
+            educationBackground: $existing->educationBackground,
+            workExperience: $existing->workExperience,
+            skillsCompetencies: $existing->skillsCompetencies,
+            languages: $existing->languages,
+            industryReference: $existing->industryReference,
+            specialNotes: $existing->specialNotes,
+            keyResultsTargets: $existing->keyResultsTargets,
         );
 
         try {

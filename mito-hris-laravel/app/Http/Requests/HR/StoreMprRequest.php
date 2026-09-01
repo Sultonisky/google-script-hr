@@ -36,6 +36,38 @@ class StoreMprRequest extends FormRequest
             'entity'             => ['required', 'string', 'max:255'],
             // company: alias lama, opsional (digunakan form HR lama, akan dipetakan ke entity di controller)
             'company'            => ['nullable', 'string', 'max:255'],
+            // -- Field baru (Refactor Create MPR) --
+            'requestor_position'    => ['nullable', 'string', 'max:255'],
+            'grade'                 => ['nullable', 'string', 'max:100'],
+            'work_area'             => ['nullable', 'string', 'max:255'],
+            // Hari Kerja: multiple checkbox
+            'working_days'          => ['required', 'array', 'min:1'],
+            'working_days.*'        => ['string', Rule::in(array_keys(config('hris.mpr_form_options.working_days', [])))],
+            // Jam Kerja: multiple checkbox
+            'working_hours'         => ['required', 'array', 'min:1'],
+            'working_hours.*'       => ['string', Rule::in(array_keys(config('hris.mpr_form_options.working_hours', [])))],
+            // Shift Detail: free text, wajib hanya jika Hari Kerja "Shifting" dipilih
+            'shift_detail'          => [
+                'nullable', 'string', 'max:1000',
+                function (string $attribute, mixed $value, \Closure $fail) {
+                    $days = (array) $this->input('working_days', []);
+                    if (in_array('shifting', $days, true) && trim((string) $value) === '') {
+                        $fail('Detail Shift wajib diisi jika Hari Kerja "Shifting" dipilih.');
+                    }
+                },
+            ],
+            // Benefits: multiple checkbox
+            'benefits'              => ['required', 'array', 'min:1'],
+            'benefits.*'            => ['string', Rule::in(array_keys(config('hris.mpr_form_options.benefits', [])))],
+            // Pendidikan & Pengalaman: single selection
+            'education_background'  => ['required', 'string', Rule::in(array_keys(config('hris.mpr_form_options.education_background', [])))],
+            'work_experience'       => ['required', 'string', Rule::in(array_keys(config('hris.mpr_form_options.work_experience', [])))],
+            // Free text kualifikasi
+            'skills_competencies'   => ['nullable', 'string', 'max:2000'],
+            'languages'             => ['nullable', 'string', 'max:1000'],
+            'industry_reference'    => ['nullable', 'string', 'max:1000'],
+            'special_notes'         => ['nullable', 'string', 'max:2000'],
+            'key_results_targets'   => ['nullable', 'string', 'max:4000'],
         ];
     }
 
@@ -57,6 +89,16 @@ class StoreMprRequest extends FormRequest
             'expected_join_date.date'     => 'Format tanggal target bergabung tidak valid.',
             'reason.required'             => 'Alasan permintaan manpower wajib dipilih.',
             'entity.required'             => 'Pilih entitas / perusahaan untuk pengajuan MPR ini.',
+            'working_days.required'       => 'Hari Kerja wajib dipilih minimal satu.',
+            'working_days.*.in'           => 'Pilihan Hari Kerja tidak valid.',
+            'working_hours.required'      => 'Jam Kerja wajib dipilih minimal satu.',
+            'working_hours.*.in'          => 'Pilihan Jam Kerja tidak valid.',
+            'benefits.required'           => 'Benefits wajib dipilih minimal satu.',
+            'benefits.*.in'               => 'Pilihan Benefits tidak valid.',
+            'education_background.required' => 'Latar Belakang Pendidikan wajib dipilih.',
+            'education_background.in'     => 'Pilihan Latar Belakang Pendidikan tidak valid.',
+            'work_experience.required'    => 'Pengalaman Kerja wajib dipilih.',
+            'work_experience.in'          => 'Pilihan Pengalaman Kerja tidak valid.',
         ];
     }
 }

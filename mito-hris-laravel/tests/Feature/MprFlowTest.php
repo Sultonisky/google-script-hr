@@ -353,6 +353,11 @@ class MprFlowTest extends TestCase
             'requirements'       => 'Pendidikan S1, Pengalaman 3 tahun',
             'job_description'    => 'Membangun backend microservice',
             'entity'             => 'SPI', // valid: ada di $allowedEntities
+            'working_days'       => ['senin_jumat'],
+            'working_hours'      => ['08_00_17_00'],
+            'benefits'           => ['bpjs'],
+            'education_background' => 's1',
+            'work_experience'    => '2_3_tahun',
             // These forged fields should be ignored for Manpower role
             'manager_name'       => 'Forged Name',
             'manager_email'      => 'forged@other.com',
@@ -387,6 +392,11 @@ class MprFlowTest extends TestCase
             'expected_join_date' => '2026-09-15',
             'reason'             => 'Penambahan Karyawan Baru (Business Expansion)',
             'entity'             => 'PII', // TIDAK diizinkan
+            'working_days'       => ['senin_jumat'],
+            'working_hours'      => ['08_00_17_00'],
+            'benefits'           => ['bpjs'],
+            'education_background' => 's1',
+            'work_experience'    => '2_3_tahun',
         ];
 
         $response = $this->postJson('/hr/mpr', $payload);
@@ -410,6 +420,11 @@ class MprFlowTest extends TestCase
             'expected_join_date' => '2026-09-15',
             'reason'             => 'Penambahan Karyawan Baru (Business Expansion)',
             'entity'             => 'MSI',
+            'working_days'       => ['senin_jumat'],
+            'working_hours'      => ['08_00_17_00'],
+            'benefits'           => ['bpjs'],
+            'education_background' => 's1',
+            'work_experience'    => '2_3_tahun',
         ];
 
         $response = $this->postJson('/hr/mpr', $payload);
@@ -500,6 +515,11 @@ class MprFlowTest extends TestCase
             'manager_name'       => 'Admin',
             'manager_email'      => 'admin@mito.id',
             'entity'             => 'MSI',
+            'working_days'       => ['senin_jumat'],
+            'working_hours'      => ['08_00_17_00'],
+            'benefits'           => ['bpjs'],
+            'education_background' => 's1',
+            'work_experience'    => '2_3_tahun',
         ];
 
         $postResponse = $this->postJson('/hr/mpr', $payload);
@@ -657,6 +677,11 @@ class MprFlowTest extends TestCase
             'expected_join_date',
             'reason',
             'entity',
+            'working_days',
+            'working_hours',
+            'benefits',
+            'education_background',
+            'work_experience',
         ]);
     }
 
