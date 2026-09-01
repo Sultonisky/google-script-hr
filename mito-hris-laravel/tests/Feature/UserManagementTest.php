@@ -21,8 +21,6 @@ class UserManagementTest extends TestCase
             'role' => $role,
             'permissions' => config('hris.auth.role_permissions.' . $role, []),
             'auth_domain' => 'users',
-            'entities' => [],
-            'branch' => '',
         ]);
     }
 
@@ -156,8 +154,6 @@ class UserManagementTest extends TestCase
             'Job Position' => 'Manager Regional',
             'Role' => 'Manpower',
             'Status' => 'Active',
-            'Entity' => 'MSI',
-            'Branch' => 'Jakarta',
         ]];
         $repository = Mockery::mock(MprRequestorRepositoryInterface::class);
         $repository->shouldReceive('getAll')->once()->andReturn($requestors);
@@ -166,8 +162,7 @@ class UserManagementTest extends TestCase
         $this->get(route('hr.mpr-requestors.index'))
             ->assertOk()
             ->assertViewIs('hr.mpr-requestors.index')
-            ->assertSee('Manager Test')
-            ->assertSee('MSI');
+            ->assertSee('Manager Test');
     }
 
     public function test_non_super_admin_cannot_access_mpr_requestors(): void
@@ -188,8 +183,6 @@ class UserManagementTest extends TestCase
                 && $data['jobPosition'] === 'Regional Manager'
                 && $data['role'] === 'Manpower'
                 && $data['status'] === 'Active'
-                && $data['entity'] === 'MSI'
-                && $data['branch'] === 'Jakarta'
                 && Hash::check('requestor-password', $data['passwordHash'])
                 && $data['passwordHash'] !== 'requestor-password';
         }));
@@ -205,8 +198,6 @@ class UserManagementTest extends TestCase
                 'username' => 'newrequestor',
                 'job_position' => 'Regional Manager',
                 'role' => 'Manpower',
-                'entity' => 'MSI',
-                'branch' => 'Jakarta',
                 'password' => 'requestor-password',
                 'password_confirmation' => 'requestor-password',
             ])
@@ -225,10 +216,8 @@ class UserManagementTest extends TestCase
             'Job Position' => 'Manager Regional',
             'Role' => 'Manpower',
             'Status' => 'Active',
-            'Entity' => 'MSI',
-            'Branch' => 'Jakarta',
         ];
-        $updated = array_merge($existing, ['Full Name' => 'Manager Updated', 'Job Position' => 'Regional Head', 'Entity' => 'MSI, SPI', 'Branch' => 'Bandung']);
+        $updated = array_merge($existing, ['Full Name' => 'Manager Updated', 'Job Position' => 'Regional Head']);
         $repository = Mockery::mock(MprRequestorRepositoryInterface::class);
         $repository->shouldReceive('findByEmail')->once()->with('manager@example.test')->andReturn($existing);
         $repository->shouldReceive('getAll')->once()->andReturn([$existing]);
@@ -237,14 +226,12 @@ class UserManagementTest extends TestCase
             'username' => 'manager',
             'jobPosition' => 'Regional Head',
             'role' => 'Manpower',
-            'entity' => 'MSI, SPI',
-            'branch' => 'Bandung',
             'status' => 'Active',
         ]));
         $repository->shouldReceive('findByEmail')->once()->with('manager@example.test')->andReturn($updated);
         $this->app->instance(MprRequestorRepositoryInterface::class, $repository);
         $audit = Mockery::mock(AuditLogRepositoryInterface::class);
-        $audit->shouldReceive('log')->times(4)->withArgs(function (...$args): bool {
+        $audit->shouldReceive('log')->times(2)->withArgs(function (...$args): bool {
             return $args[0] === 'MPR Requestor' && $args[2] === 'UPDATE' && $args[7] === 'Dashboard';
         })->andReturnTrue();
         $this->app->instance(AuditLogRepositoryInterface::class, $audit);
@@ -255,8 +242,6 @@ class UserManagementTest extends TestCase
                 'username' => 'manager',
                 'job_position' => 'Regional Head',
                 'role' => 'Manpower',
-                'entity' => 'MSI, SPI',
-                'branch' => 'Bandung',
                 'status' => 'Active',
             ])
             ->assertRedirect(route('hr.mpr-requestors.index'))

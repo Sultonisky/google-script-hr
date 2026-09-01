@@ -45,8 +45,6 @@ class MprRequestorController extends Controller
             'username' => 'required|string|min:3',
             'job_position' => 'required|string|min:2|max:255',
             'role' => ['required', 'string', Rule::in(config('hris.auth.valid_roles_requestor', []))],
-            'entity' => ['nullable', 'string', 'max:255'],
-            'branch' => ['nullable', 'string', 'max:255'],
             'password' => 'required|string|min:8|confirmed',
         ]);
 
@@ -60,8 +58,6 @@ class MprRequestorController extends Controller
             'role' => $validated['role'],
             'status' => 'Active',
             'passwordHash' => Hash::make($validated['password']),
-            'entity' => $validated['entity'] ?? null,
-            'branch' => $validated['branch'] ?? null,
             'createdBy' => session('hr_user.email', 'HR Administrator'),
         ]);
 
@@ -86,8 +82,6 @@ class MprRequestorController extends Controller
             'job_position' => 'required|string|min:2|max:255',
             'role' => ['required', 'string', Rule::in(config('hris.auth.valid_roles_requestor', []))],
             'status' => ['required', 'string', Rule::in(['Active', 'Inactive'])],
-            'entity' => ['nullable', 'string', 'max:255'],
-            'branch' => ['nullable', 'string', 'max:255'],
             'password' => 'nullable|string|min:8|confirmed',
         ]);
 
@@ -105,21 +99,14 @@ class MprRequestorController extends Controller
             'username' => $validated['username'],
             'jobPosition' => $jobPosition,
             'role' => $validated['role'],
+            'status' => $validated['status'],
         ];
-
-        if (array_key_exists('entity', $validated) && $validated['entity'] !== null) {
-            $updates['entity'] = $validated['entity'];
-        }
-        if (array_key_exists('branch', $validated) && $validated['branch'] !== null) {
-            $updates['branch'] = $validated['branch'];
-        }
-        $updates['status'] = $validated['status'];
         if (!empty($validated['password'])) {
             $updates['passwordHash'] = Hash::make($validated['password']);
         }
 
         $hasChanges = false;
-        foreach (['Full Name' => 'fullName', 'Username' => 'username', 'Job Position' => 'jobPosition', 'Role' => 'role', 'Status' => 'status', 'Entity' => 'entity', 'Branch' => 'branch'] as $field => $key) {
+        foreach (['Full Name' => 'fullName', 'Username' => 'username', 'Job Position' => 'jobPosition', 'Role' => 'role', 'Status' => 'status'] as $field => $key) {
             $oldValue = $existing[$field] ?? '';
             $newValue = $updates[$key] ?? '';
             if ((string) $oldValue !== (string) $newValue) {
@@ -137,7 +124,7 @@ class MprRequestorController extends Controller
             return $this->updateError($request, 'MPR requestor gagal diperbarui di sheet mpr_requestor.', 500);
         }
 
-        $auditFields = ['Full Name' => 'fullName', 'Username' => 'username', 'Job Position' => 'jobPosition', 'Role' => 'role', 'Status' => 'status', 'Entity' => 'entity', 'Branch' => 'branch'];
+        $auditFields = ['Full Name' => 'fullName', 'Username' => 'username', 'Job Position' => 'jobPosition', 'Role' => 'role', 'Status' => 'status'];
         foreach ($auditFields as $field => $key) {
             $oldValue = $existing[$field] ?? '';
             $newValue = $updated[$field] ?? $updates[$key] ?? '';

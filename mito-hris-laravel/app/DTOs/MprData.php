@@ -129,8 +129,6 @@ class MprData
             'Requestor Name'     => (string) ($this->requestorName    ?? ''),
             'Requestor Email'    => (string) ($this->requestorEmail   ?? ''),
             'Entitas yang Dituju' => (string) ($this->entity           ?? ''),
-            'Entity'             => (string) ($this->entity           ?? ''),
-            'Branch'             => (string) ($this->branch           ?? ''),
             'Department'         => (string) ($this->department       ?? ''),
             'Division'           => (string) ($this->division         ?? ''),
             'Approval Division'  => (string) ($this->approvalDivision ?? ''),
@@ -162,6 +160,8 @@ class MprData
             'Created By'         => (string) ($this->createdBy        ?? ''),
             'Created At'         => (string) ($this->createdAt        ?? ''),
             'Updated At'         => (string) ($this->updatedAt        ?? ''),
+            // Note: Legacy 'Entity' and 'Company' columns dropped to align with final 12-col mpr_requestor schema.
+            // Canonical source is 'Entitas yang Dituju' (read by fromSheetRow). Backward compat via aliases.
         ];
     }
 

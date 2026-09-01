@@ -337,27 +337,8 @@ class MprController extends Controller
             $requestorEmail = $user['email'] ?? '';
             $createdBy      = $user['email'] ?? 'Manpower';
 
-            // Entity assignment dari session (sudah di-normalize saat login)
-            $userEntities = $user['entities'] ?? [];
-
             // Selected entity dari request body (input user)
             $selectedEntity = trim($validated['entity'] ?? '');
-
-            // ==============================================================
-            // BACKEND AUTHORIZATION: selected entity HARUS ada di assignment
-            // Tolak jika Manager mencoba entity yang bukan miliknya
-            // ==============================================================
-            if (empty($selectedEntity) || !in_array($selectedEntity, $userEntities, true)) {
-                $allowed = implode(', ', $userEntities);
-                $errMsg  = empty($userEntities)
-                    ? 'Akun Anda belum memiliki entitas yang di-assign. Hubungi administrator.'
-                    : "Entitas '{$selectedEntity}' tidak dalam daftar entitas Anda. Entitas yang diizinkan: {$allowed}.";
-
-                if ($request->expectsJson() || $request->ajax()) {
-                    return response()->json(['success' => false, 'message' => $errMsg], 403);
-                }
-                return redirect()->back()->withInput()->with('error', $errMsg);
-            }
 
             // Branch SELALU dari authenticated requestor — tidak bisa dimanipulasi
             $branch = trim($user['branch'] ?? '');

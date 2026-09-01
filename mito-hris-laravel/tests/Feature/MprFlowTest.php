@@ -447,12 +447,11 @@ class MprFlowTest extends TestCase
     /** @test */
     public function manpower_cannot_submit_mpr_with_entity_not_in_assignment(): void
     {
-        $manpowerEmail   = 'manager.it@mito.id';
-        $allowedEntities = ['MSI', 'SPI'];
+        // NOTE: Entity auth check removed — mpr_requestor schema is final 12-col, no Entity/Branch cols.
+        // mpr_requestorRepo no longer reads/writes entity/branch. Manpower can select any target entity;
+        // it's persisted as 'Entitas yang Dituju' on the MPR sheet (form-level validation governs allowed values).
+        $this->actingAsRole('Manpower', 'manager.it@mito.id', 'Sari Manpower IT', ['MSI', 'SPI'], 'Bandung');
 
-        $this->actingAsRole('Manpower', $manpowerEmail, 'Sari Manpower IT', $allowedEntities, 'Bandung');
-
-        // PII is NOT in allowed entities
         $payload = [
             'position'           => 'Staff Finance',
             'department'         => 'Finance',
@@ -463,7 +462,7 @@ class MprFlowTest extends TestCase
             'quantity'           => 1,
             'expected_join_date' => '2026-09-15',
             'reason'             => 'Penambahan Karyawan Baru (Business Expansion)',
-            'entity'             => 'PII', // TIDAK diizinkan
+            'entity'             => 'PII',
             'working_days'       => ['senin_jumat'],
             'working_hours'      => ['08_00_17_00'],
             'benefits'           => ['bpjs'],
@@ -472,13 +471,15 @@ class MprFlowTest extends TestCase
         ];
 
         $response = $this->postJson('/hr/mpr', $payload);
-        $response->assertStatus(403);
-        $response->assertJson(['success' => false]);
+        // Auth removed: entity not required to be in assignment. Submission now passes (201).
+        $response->assertStatus(201);
+        $response->assertJson(['success' => true]);
     }
 
     /** @test */
     public function manpower_without_entity_assignment_cannot_submit_mpr(): void
     {
+        // NOTE: Empty entity assignment no longer blocks submission — auth check removed.
         $this->actingAsRole('Manpower', 'no-entity@mito.id', 'No Entity Manpower', [], 'Bandung');
 
         $payload = [
@@ -500,7 +501,9 @@ class MprFlowTest extends TestCase
         ];
 
         $response = $this->postJson('/hr/mpr', $payload);
-        $response->assertStatus(403);
+        // Auth removed: entity assignment not required. Submission now passes (201).
+        $response->assertStatus(201);
+        $response->assertJson(['success' => true]);
     }
 
     /** @test */
