@@ -164,52 +164,68 @@ class SchemaValidationService
 
         try {
             $data = $this->sheets->getRange('MPR', 'A:ZZ', false);
-            $currentHeaders = !empty($data[0]) ? array_map('trim', $data[0]) : [];
-            if (empty($currentHeaders)) {
+            if (empty($data)) {
                 return false;
             }
 
-            $headerIndexes = [];
+            $currentHeaders = !empty($data[0]) ? array_map(static fn($header) => trim((string) $header), $data[0]) : [];
+            $headerLookup = [];
             foreach ($currentHeaders as $index => $header) {
-                if ($header !== '') {
-                    $headerIndexes[$header][] = $index;
+                if ($header === '') {
+                    continue;
                 }
+                $headerLookup[strtolower($header)][] = $index;
             }
 
-            $rows = [];
+            $rewrittenRows = [
+                $expectedHeaders,
+            ];
+
             foreach (array_slice($data, 1) as $row) {
                 $newRow = [];
                 foreach ($expectedHeaders as $header) {
                     $candidateHeaders = array_merge($legacyAliases[$header] ?? [], [$header]);
                     $value = '';
+
                     foreach ($candidateHeaders as $candidate) {
-                        foreach ($headerIndexes[$candidate] ?? [] as $index) {
+                        $candidateKey = strtolower(trim((string) $candidate));
+                        foreach ($headerLookup[$candidateKey] ?? [] as $index) {
                             if (isset($row[$index]) && trim((string) $row[$index]) !== '') {
                                 $value = $row[$index];
                                 break 2;
                             }
                         }
                     }
+
+                    if ($header === 'Approval Division' && $value === '') {
+                        $divisionCandidates = array_merge(['Division'], ['Divisi']);
+                        foreach ($divisionCandidates as $candidate) {
+                            $candidateKey = strtolower(trim((string) $candidate));
+                            foreach ($headerLookup[$candidateKey] ?? [] as $index) {
+                                if (isset($row[$index]) && trim((string) $row[$index]) !== '') {
+                                    $value = $row[$index];
+                                    break 2;
+                                }
+                            }
+                        }
+                    }
+
                     $newRow[] = $value;
                 }
-                $rows[] = $newRow;
+
+                $rewrittenRows[] = $newRow;
             }
+
+            $sheetWidth = max(count($expectedHeaders), count($currentHeaders));
+            $endColumnLetter = $this->columnIndexToLetter($sheetWidth);
+            $range = 'MPR!A1:' . $endColumnLetter . count($rewrittenRows);
 
             $service->spreadsheets_values->update(
                 $spreadsheetId,
-                'MPR!A1:W' . max(1, count($rows) + 1),
-                new \Google\Service\Sheets\ValueRange(['values' => array_merge([$expectedHeaders], $rows)]),
+                $range,
+                new \Google\Service\Sheets\ValueRange(['values' => $rewrittenRows]),
                 ['valueInputOption' => 'USER_ENTERED']
             );
-
-            // Remove obsolete duplicate headers without deleting any row data.
-            if (count($currentHeaders) > count($expectedHeaders)) {
-                $service->spreadsheets_values->clear(
-                    $spreadsheetId,
-                    'MPR!X1:ZZ1',
-                    new \Google\Service\Sheets\ClearValuesRequest()
-                );
-            }
 
             $this->sheets->clearCache('MPR');
             return true;
