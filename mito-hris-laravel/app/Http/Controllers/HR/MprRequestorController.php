@@ -104,7 +104,6 @@ class MprRequestorController extends Controller
             'fullName' => $validated['name'],
             'username' => $validated['username'],
             'role' => $validated['role'],
-            'status' => $validated['status'],
         ];
 
         $hasJobPositionInput = $request->has('job_position') || $request->has('position');
@@ -118,6 +117,7 @@ class MprRequestorController extends Controller
         if (array_key_exists('branch', $validated) && $validated['branch'] !== null) {
             $updates['branch'] = $validated['branch'];
         }
+        $updates['status'] = $validated['status'];
         if (!empty($validated['password'])) {
             $updates['passwordHash'] = Hash::make($validated['password']);
         }
