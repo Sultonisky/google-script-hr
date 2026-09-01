@@ -115,7 +115,9 @@ Route::domain(config('hris.domains.hris'))->middleware('web')->group(function ()
         });
         Route::prefix('mpr')->name('mpr.')->middleware('can:view_mpr')->group(function () {
             Route::get('/', [MprController::class, 'index'])->name('index');
-            Route::get('/create', [MprController::class, 'create'])->name('create')->middleware('can:create_mpr');
+            Route::get('/create', function () {
+                return redirect()->route('mpr.auth.request');
+            })->name('create')->middleware('can:create_mpr');
             Route::get('/history', [MprController::class, 'history'])->name('history');
             Route::post('/', [MprController::class, 'store'])->name('store')->middleware('can:create_mpr');
             Route::put('/{id}', [MprController::class, 'update'])->name('update')->middleware('can:update_mpr');
@@ -265,7 +267,9 @@ if (app()->environment('local')) {
 
             Route::prefix('mpr')->name('mpr.')->middleware('can:view_mpr')->group(function () {
                 Route::get('/', [MprController::class, 'index'])->name('index');
-                Route::get('/create', [MprController::class, 'create'])->name('create')->middleware('can:create_mpr');
+                Route::get('/create', function () {
+                    return redirect()->route('local.mpr.request');
+                })->name('create')->middleware('can:create_mpr');
                 Route::get('/history', [MprController::class, 'history'])->name('history');
                 Route::post('/', [MprController::class, 'store'])->name('store')->middleware('can:create_mpr');
                 Route::put('/{id}', [MprController::class, 'update'])->name('update')->middleware('can:update_mpr');
