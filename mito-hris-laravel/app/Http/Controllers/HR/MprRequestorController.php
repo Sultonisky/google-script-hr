@@ -43,19 +43,25 @@ class MprRequestorController extends Controller
             'name' => 'required|string|min:3',
             'email' => 'required|email',
             'username' => 'required|string|min:3',
-            'job_position' => 'required|string|min:2|max:255',
+            'job_position' => 'nullable|string|min:2|max:255',
             'role' => ['required', 'string', Rule::in(config('hris.auth.valid_roles_requestor', []))],
+            'entity' => ['nullable', 'string', 'max:255'],
+            'branch' => ['nullable', 'string', 'max:255'],
             'password' => 'required|string|min:8|confirmed',
         ]);
+
+        $jobPosition = trim((string) ($validated['job_position'] ?? '')) ?: trim((string) ($request->input('position') ?? '')) ?: 'Manpower';
 
         $this->requestorRepo->create([
             'email' => $validated['email'],
             'username' => $validated['username'],
             'fullName' => $validated['name'],
-            'jobPosition' => $validated['job_position'],
+            'jobPosition' => $jobPosition,
             'role' => $validated['role'],
             'status' => 'Active',
             'passwordHash' => Hash::make($validated['password']),
+            'entity' => $validated['entity'] ?? null,
+            'branch' => $validated['branch'] ?? null,
             'createdBy' => session('hr_user.email', 'HR Administrator'),
         ]);
 
@@ -77,11 +83,15 @@ class MprRequestorController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|min:3',
             'username' => 'required|string|min:3',
-            'job_position' => 'required|string|min:2|max:255',
+            'job_position' => 'nullable|string|min:2|max:255',
             'role' => ['required', 'string', Rule::in(config('hris.auth.valid_roles_requestor', []))],
             'status' => ['required', 'string', Rule::in(['Active', 'Inactive'])],
+            'entity' => ['nullable', 'string', 'max:255'],
+            'branch' => ['nullable', 'string', 'max:255'],
             'password' => 'nullable|string|min:8|confirmed',
         ]);
+
+        $jobPosition = trim((string) ($validated['job_position'] ?? '')) ?: trim((string) ($request->input('position') ?? '')) ?: ($existing['Job Position'] ?? 'Manpower');
 
         foreach ($this->requestorRepo->getAll() as $requestor) {
             $sameRequestor = strtolower(trim($requestor['Email'] ?? '')) === strtolower(trim($email));
@@ -93,10 +103,17 @@ class MprRequestorController extends Controller
         $updates = [
             'fullName' => $validated['name'],
             'username' => $validated['username'],
-            'jobPosition' => $validated['job_position'],
+            'jobPosition' => $jobPosition,
             'role' => $validated['role'],
             'status' => $validated['status'],
         ];
+
+        if (array_key_exists('entity', $validated) && $validated['entity'] !== null) {
+            $updates['entity'] = $validated['entity'];
+        }
+        if (array_key_exists('branch', $validated) && $validated['branch'] !== null) {
+            $updates['branch'] = $validated['branch'];
+        }
         if (!empty($validated['password'])) {
             $updates['passwordHash'] = Hash::make($validated['password']);
         }

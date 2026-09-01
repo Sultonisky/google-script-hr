@@ -402,6 +402,15 @@ class MprController extends Controller
         $experienceLabel     = $formOptions['work_experience'][$validated['work_experience'] ?? ''] ?? null;
 
         $now = now()->timezone('Asia/Jakarta');
+        $approvalDivision = trim((string) ($validated['approval_division'] ?? ''));
+        if ($approvalDivision === '') {
+            $approvalDivision = trim((string) ($validated['division'] ?? ''));
+        }
+        if ($approvalDivision === '' || !in_array($approvalDivision, config('hris.mpr.approval_divisions', []), true)) {
+            $fallbacks = config('hris.mpr.approval_divisions', []);
+            $approvalDivision = $fallbacks[0] ?? trim((string) ($validated['division'] ?? ''));
+        }
+
         $mprData = new MprData(
             requestDate: $now->format('Y-m-d'),
             requestorName: $requestorName,
@@ -410,7 +419,7 @@ class MprController extends Controller
             branch: $branch,
             department: $validated['department'],
             division: $validated['division'],
-            approvalDivision: $validated['approval_division'] ?? null,
+            approvalDivision: $approvalDivision,
             position: $validated['position'],
             jobLevel: $validated['job_level'],
             workLocation: $validated['work_location'],

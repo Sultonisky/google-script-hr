@@ -19,7 +19,7 @@ class StoreMprRequest extends FormRequest
             'position'           => ['required', 'string', 'max:255'],
             'department'         => ['required', 'string', 'max:255', Rule::in(array_keys(config('hris.mpr_department_divisions', [])))],
             'division'           => ['required', 'string', 'max:255', new DivisionBelongsToDepartment((string) $this->input('department'))],
-            'approval_division'  => ['required', 'string', 'max:255', Rule::in(config('hris.mpr.approval_divisions', []))],
+            'approval_division'  => ['nullable', 'string', 'max:255', Rule::in(config('hris.mpr.approval_divisions', []))],
             'job_level'          => ['required', 'string', 'max:255'],
             'work_location'      => ['required', 'string', 'max:255'],
             'employment_type'    => ['required', 'string', 'max:255'],

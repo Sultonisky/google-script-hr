@@ -19,7 +19,7 @@ class UpdateMprRequest extends FormRequest
             'position'           => ['sometimes', 'required', 'string', 'max:255'],
             'department'         => ['sometimes', 'required', 'string', 'max:255', Rule::in(array_keys(config('hris.mpr_department_divisions', [])))],
             'division'           => ['sometimes', 'required', 'string', 'max:255', new DivisionBelongsToDepartment((string) $this->input('department'))],
-            'approval_division'  => ['sometimes', 'required', 'string', 'max:255', Rule::in(config('hris.mpr.approval_divisions', []))],
+            'approval_division'  => ['nullable', 'string', 'max:255', Rule::in(config('hris.mpr.approval_divisions', []))],
             'job_level'          => ['sometimes', 'required', 'string', 'max:255'],
             'work_location'      => ['sometimes', 'required', 'string', 'max:255'],
             'employment_type'    => ['sometimes', 'required', 'string', 'max:255'],
