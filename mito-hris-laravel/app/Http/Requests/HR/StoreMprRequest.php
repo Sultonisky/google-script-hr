@@ -28,7 +28,7 @@ class StoreMprRequest extends FormRequest
             'replacement_for'    => ['nullable', 'string', 'max:255'],
             'job_description'    => ['nullable', 'string'],
             'requirements'       => ['nullable', 'string'],
-            'notes'              => ['nullable', 'string'],
+            // 'Notes' deprecated — diganti 'Special Notes'
             // Requestor identity (for HR/Super Admin creating on behalf of manager)
             'manager_name'       => ['nullable', 'string', 'max:255'],
             'manager_email'      => ['nullable', 'email', 'max:255'],

@@ -420,7 +420,6 @@ class MprController extends Controller
             replacementFor: $validated['replacement_for'] ?? null,
             jobDescription: $validated['job_description'] ?? null,
             requirements: $validated['requirements'] ?? null,
-            notes: $validated['notes'] ?? null,
             status: 'Submitted',
             createdBy: $createdBy,
             // -- Field baru (Refactor Create MPR) --
@@ -519,7 +518,7 @@ class MprController extends Controller
             'mpr'     => array_merge($mpr->toArray(), [
                 'requirements_html'    => $this->markdownRenderer->render($mpr->requirements),
                 'job_description_html' => $this->markdownRenderer->render($mpr->jobDescription),
-                'notes_html'           => $this->markdownRenderer->render($mpr->notes),
+                // 'notes_html'           => $this->markdownRenderer->render($mpr->notes),
             ]),
         ]);
     }
@@ -554,7 +553,6 @@ class MprController extends Controller
             replacementFor: $validated['replacement_for'] ?? null,
             jobDescription: $validated['job_description'] ?? null,
             requirements: $validated['requirements'] ?? null,
-            notes: $validated['notes'] ?? null,
             status: $existing->status,
             createdBy: $existing->createdBy,
             createdAt: $existing->createdAt,

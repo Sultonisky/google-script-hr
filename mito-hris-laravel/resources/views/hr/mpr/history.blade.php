@@ -226,7 +226,10 @@
                     detailMprNum.innerText = id;
                     detailModal.show();
 
-                    fetch(`/hr/mpr/${encodeURIComponent(id)}/json`, {
+                    // Route-aware base path: dedicated MPR domain vs HR dashboard
+                    const basePath = @json(request()->routeIs('mpr.auth.*') ? '/mpr/request' : '/hr/mpr');
+
+                    fetch(`${basePath}/${encodeURIComponent(id)}/json`, {
                             headers: {
                                 'X-CSRF-TOKEN': getCsrfToken(),
                                 'Accept': 'application/json',
@@ -267,6 +270,40 @@
                                 .expected_join_date || '-';
                             document.getElementById('detReason').innerText = m.reason || '-';
 
+                            // --- Field baru (Refactor Create MPR) — backward compatible ---
+                            const setDetText = (elId, val) => {
+                                const el = document.getElementById(elId);
+                                if (el) el.innerText = (val === null || val === undefined || val === '') ? '-' : val;
+                            };
+                            const toggleWrap = (wrapId, val) => {
+                                const el = document.getElementById(wrapId);
+                                if (el) el.classList.toggle('d-none', !(val && String(val).trim() !== ''));
+                            };
+                            const reqPos = document.getElementById('detRequestorPosition');
+                            if (reqPos) reqPos.innerText = m.requestor_position ?
+                                `Jabatan: ${m.requestor_position}` : '';
+                            setDetText('detGrade', m.grade);
+                            toggleWrap('wrapGrade', m.grade);
+                            setDetText('detWorkArea', m.work_area);
+                            toggleWrap('wrapWorkArea', m.work_area);
+                            setDetText('detWorkingDays', m.working_days);
+                            setDetText('detWorkingHours', m.working_hours);
+                            setDetText('detShiftDetail', m.shift_detail);
+                            toggleWrap('wrapShiftDetail', m.shift_detail);
+                            setDetText('detBenefits', m.benefits);
+                            setDetText('detEducation', m.education_background);
+                            setDetText('detExperience', m.work_experience);
+                            setDetText('detSkills', m.skills_competencies);
+                            toggleWrap('wrapSkills', m.skills_competencies);
+                            setDetText('detLanguages', m.languages);
+                            toggleWrap('wrapLanguages', m.languages);
+                            setDetText('detIndustryRef', m.industry_reference);
+                            toggleWrap('wrapIndustryRef', m.industry_reference);
+                            setDetText('detKeyResults', m.key_results_targets);
+                            toggleWrap('wrapKeyResults', m.key_results_targets);
+                            setDetText('detSpecialNotes', m.special_notes);
+                            toggleWrap('wrapSpecialNotes', m.special_notes);
+
                             const wrapRepl = document.getElementById('wrapReplacement');
                             if (m.replacement_for) {
                                 document.getElementById('detReplacementFor').innerText = m
@@ -282,11 +319,15 @@
                             document.getElementById('detJobDesc').innerHTML = m
                                 .job_description_html ||
                                 '<span class="text-muted fst-italic">Tidak ada uraian pekerjaan khusus.</span>';
-                            document.getElementById('detNotes').innerHTML = m.notes_html ||
-                                '<span class="text-muted fst-italic">-</span>';
+
+                            // Tanda tangan (match PDF: 3 + 2 centered)
+                            const signName = document.getElementById('detSignRequestorName');
+                            if (signName) signName.innerText = m.requestor_name || m.manager_name || '-';
+                            const signPos = document.getElementById('detSignRequestorPosition');
+                            if (signPos) signPos.innerText = m.requestor_position || 'Manager / User Dept';
 
                             if (btnPdf) {
-                                btnPdf.href = `/hr/mpr/${encodeURIComponent(m.mpr_number)}/pdf`;
+                                btnPdf.href = `${basePath}/${encodeURIComponent(m.mpr_number)}/pdf`;
                             }
 
                             loadingEl.classList.add('d-none');

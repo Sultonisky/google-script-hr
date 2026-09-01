@@ -144,11 +144,8 @@ class MprData
             'Replacement For'    => (string) ($this->replacementFor   ?? ''),
             'Job Description'    => (string) ($this->jobDescription   ?? ''),
             'Requirements'       => (string) ($this->requirements     ?? ''),
-            'Notes'              => (string) ($this->notes            ?? ''),
-            'Status'             => (string) ($this->status           ?? 'Submitted'),
-            'Created By'         => (string) ($this->createdBy        ?? ''),
-            'Created At'         => (string) ($this->createdAt        ?? ''),
-            'Updated At'         => (string) ($this->updatedAt        ?? ''),
+            // 'Notes' deprecated — diganti 'Special Notes' (kolom legacy tetap dibaca via fromSheetRow)
+            // -- Refactor Create MPR: field baru (backward compatible, append-only) --
             'Requestor Position'      => (string) ($this->requestorPosition   ?? ''),
             'Grade'                   => (string) ($this->grade               ?? ''),
             'Work Area'               => (string) ($this->workArea            ?? ''),
@@ -163,6 +160,10 @@ class MprData
             'Industry Reference'      => (string) ($this->industryReference   ?? ''),
             'Special Notes'           => (string) ($this->specialNotes        ?? ''),
             'Key Results / Targets'   => (string) ($this->keyResultsTargets   ?? ''),
+            'Status'             => (string) ($this->status           ?? 'Submitted'),
+            'Created By'         => (string) ($this->createdBy        ?? ''),
+            'Created At'         => (string) ($this->createdAt        ?? ''),
+            'Updated At'         => (string) ($this->updatedAt        ?? ''),
         ];
     }
 

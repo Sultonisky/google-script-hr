@@ -28,7 +28,7 @@ class UpdateMprRequest extends FormRequest
             'replacement_for'    => ['nullable', 'string', 'max:255'],
             'job_description'    => ['nullable', 'string'],
             'requirements'       => ['nullable', 'string'],
-            'notes'              => ['nullable', 'string'],
+            // 'Notes' deprecated — diganti 'Special Notes'
         ];
     }
 }
