@@ -8,7 +8,7 @@
     <!-- Branded submit loading overlay -->
     <div class="public-submit-loader" id="loadingOverlay" role="status" aria-label="Mengirim data">
         <div class="public-submit-loader-content">
-            <img class="public-loader-logo" src="{{ asset('assets/mito-red.png') }}" alt="MITO">
+            <img class="public-loader-logo" src="{{ asset('assets/mito-red-load.png') }}" alt="MITO">
             <div class="public-loader-dots" aria-hidden="true"><span></span><span></span><span></span></div>
             <span class="public-submit-loader-label">Mengirim data...</span>
         </div>

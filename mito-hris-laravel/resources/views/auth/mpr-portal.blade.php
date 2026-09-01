@@ -6,8 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @include('components.seo', [
-        'title' => 'Portal Manpower Request (MPR) — PT MITO Elektronik',
-        'description' => 'Portal Manpower Request untuk pengajuan kebutuhan tenaga kerja internal, riwayat pengajuan, dan akses requestor MITO.',
+        'title' => 'Portal Manpower Request (MPR) - MITO Group HRIS',
+        'description' =>
+            'Portal Manpower Request untuk pengajuan kebutuhan tenaga kerja internal, riwayat pengajuan, dan akses requestor MITO.',
         'robots' => 'index,follow',
         'canonical' => route('mpr.auth.domain.root'),
     ])
@@ -50,13 +51,12 @@
             position: fixed;
             inset: 0;
             z-index: 99999;
+            display: grid;
+            place-items: center;
             background-color: var(--mito-surface);
-            display: flex;
-            align-items: center;
-            justify-content: center;
             opacity: 1;
             visibility: visible;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
+            transition: opacity 0.42s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0.42s;
         }
 
         .portal-loader.fade-out {
@@ -65,66 +65,79 @@
             pointer-events: none;
         }
 
-        .loader-content {
+        .portal-loader-content {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 14px;
+            gap: 0.7rem;
             text-align: center;
+            animation: portalLoaderEnter 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
 
-        .loader-logo-wrap {
-            width: 60px;
-            height: 60px;
+        .portal-loader-logo {
+            display: block;
+            width: min(180px, 52vw);
+            height: auto;
+        }
+
+        .portal-loader-dots {
             display: flex;
             align-items: center;
-            justify-content: center;
-            background-color: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-            border: 1px solid var(--mito-border);
-            animation: loaderPulse 1.6s ease-in-out infinite;
+            gap: 0.45rem;
         }
 
-        .loader-logo {
-            width: 44px;
-            height: 44px;
-            object-fit: contain;
+        .portal-loader-dots span {
+            display: block;
+            width: 0.56rem;
+            height: 0.56rem;
+            border-radius: 50%;
+            background: var(--mito-red);
+            animation: portalLoaderDot 1.15s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+            will-change: transform, opacity;
         }
 
-        @keyframes loaderPulse {
+        .portal-loader-dots span:nth-child(2) {
+            animation-delay: 0.14s;
+        }
+
+        .portal-loader-dots span:nth-child(3) {
+            animation-delay: 0.28s;
+        }
+
+        @keyframes portalLoaderEnter {
+            from {
+                opacity: 0;
+                transform: translateY(0.5rem);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes portalLoaderDot {
 
             0%,
+            70%,
             100% {
-                transform: scale(1);
+                opacity: 0.3;
+                transform: translate3d(0, 0, 0) scale(0.82);
             }
 
-            50% {
-                transform: scale(1.05);
-            }
-        }
-
-        .mito-spinner {
-            width: 32px;
-            height: 32px;
-            border: 3px solid #fee2e2;
-            border-top-color: var(--mito-red);
-            border-radius: 50%;
-            animation: mitoSpin 0.75s linear infinite;
-        }
-
-        @keyframes mitoSpin {
-            to {
-                transform: rotate(360deg);
+            35% {
+                opacity: 1;
+                transform: translate3d(0, -0.38rem, 0) scale(1);
             }
         }
 
         .loader-text {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: 600;
             color: var(--mito-muted);
-            letter-spacing: 0.2px;
+            letter-spacing: 0.1px;
+            margin-top: 0.1rem;
         }
 
         .btn-mito-primary {
@@ -241,22 +254,24 @@
             margin-bottom: 0;
         }
 
-        .info-notice {
-            background-color: var(--mito-surface);
-            border: 1px solid var(--mito-border);
-            border-left: 4px solid var(--mito-red);
-            border-radius: 8px;
-            padding: 16px 20px;
-            margin-top: 32px;
-        }
-
         .portal-footer {
             margin-top: auto;
-            background-color: var(--mito-surface);
-            border-top: 1px solid var(--mito-border);
-            padding: 18px 0;
-            font-size: 0.82rem;
-            color: var(--mito-muted);
+            padding: 16px 24px;
+            text-align: center;
+            font-size: 11px;
+            color: #9ca3af;
+            background: transparent;
+        }
+
+        .portal-footer-badge {
+            display: inline-block;
+            background: #e5e7eb;
+            color: #9ca3af;
+            padding: 1px 8px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-left: 6px;
         }
 
         @media (max-width: 767.98px) {
@@ -273,12 +288,10 @@
 
 <body>
     <div class="portal-loader" id="portalLoader">
-        <div class="loader-content">
-            <div class="loader-logo-wrap">
-                <img src="{{ asset('assets/mito-red.png') }}" alt="MITO Logo" class="loader-logo"
-                    onerror="this.style.display='none';this.parentElement.innerHTML='<span class=\'fw-bold text-danger fs-4\'>MITO</span>'">
-            </div>
-            <div class="mito-spinner"></div>
+        <div class="portal-loader-content">
+            <img class="portal-loader-logo" src="{{ asset('assets/mito-red-load.png') }}" alt="MITO Logo"
+                onerror="this.style.display='none';this.parentElement.innerHTML='<span class=\'fw-bold text-danger fs-4\'>MITO</span>'">
+            <div class="portal-loader-dots" aria-hidden="true"><span></span><span></span><span></span></div>
             <div class="loader-text" id="loaderText">Memuat Portal MPR...</div>
         </div>
     </div>
@@ -297,7 +310,7 @@
                         <a href="{{ route('mpr.auth.login') }}" class="btn-mito-primary" id="btnPortalLogin"
                             data-portal-redirect data-portal-msg="Membuka Halaman Login MPR...">
                             <i class="bi bi-box-arrow-in-right"></i>
-                            Masuk ke Portal MPR
+                            Get Started
                         </a>
                     </div>
                 </div>
@@ -337,27 +350,13 @@
                     </div>
                 </div>
             </div>
-
-            <div class="info-notice">
-                <div class="d-flex align-items-start gap-3">
-                    <div class="fs-5 text-danger flex-shrink-0 mt-0.5">
-                        <i class="bi bi-info-circle-fill"></i>
-                    </div>
-                    <div>
-                        <div class="fw-bold mb-1" style="color: var(--mito-heading);">Informasi Akses</div>
-                        <div class="small" style="color: var(--mito-muted);">
-                            Portal ini hanya untuk requestor MPR yang memiliki akun terdaftar. Jika Anda mengalami
-                            kendala login, silakan hubungi administrator HR atau tim IT internal.
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     </main>
 
     <footer class="portal-footer">
         <div class="container text-center">
-            &copy; {{ date('Y') }} PT MITO Elektronik Indonesia &bull; Manpower Request Portal
+            <span>{{ config('app.name', 'MITO HRIS') }}</span> &copy; {{ date('Y') }}
+            <span class="portal-footer-badge">v1.0.0</span>
         </div>
     </footer>
 

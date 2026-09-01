@@ -363,7 +363,7 @@
 
     <div class="public-loader" id="publicLoader" role="status" aria-label="Memuat halaman">
         <div class="public-loader-content">
-            <img class="public-loader-logo" src="{{ asset('assets/mito-red.png') }}" alt="MITO">
+            <img class="public-loader-logo" src="{{ asset('assets/mito-red-load.png') }}" alt="MITO">
             <div class="public-loader-dots" aria-hidden="true">
                 <span></span>
                 <span></span>

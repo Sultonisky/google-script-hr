@@ -448,6 +448,7 @@
             bindProbationResetModal();
             bindProbationIndexHandlers();
             bindEntityModalSearchHandlers();
+            bindStatusPageModalHandlers();
             bindOffContractAndRotationSearchHandlers();
         });
         return;
@@ -469,5 +470,6 @@
     bindProbationResetModal();
     bindProbationIndexHandlers();
     bindEntityModalSearchHandlers();
+    bindStatusPageModalHandlers();
     bindOffContractAndRotationSearchHandlers();
 })();

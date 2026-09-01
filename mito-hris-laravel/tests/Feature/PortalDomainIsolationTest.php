@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Illuminate\Support\Facades\Session;
+use Symfony\Component\Process\Process;
 use Tests\TestCase;
 
 class PortalDomainIsolationTest extends TestCase
@@ -95,7 +96,7 @@ class PortalDomainIsolationTest extends TestCase
         $response->assertOk();
         $response->assertViewIs('auth.mpr-portal');
         $response->assertSee('Portal Manpower Request (MPR)');
-        $response->assertSee('Masuk ke Portal MPR');
+        $response->assertSee('Get Started');
     }
 
     public function test_mpr_domain_root_keeps_public_portal_visible_for_authenticated_requestor(): void
@@ -160,5 +161,34 @@ class PortalDomainIsolationTest extends TestCase
         $response = $this->get('http://example.com/');
 
         $response->assertNotFound();
+    }
+
+    public function test_local_environment_exposes_local_compatibility_routes(): void
+    {
+        $process = new Process(['php', 'artisan', 'route:list', '--json'], base_path());
+        $process->setEnv([
+            'APP_ENV' => 'local',
+            'APP_DEBUG' => 'false',
+            'BCRYPT_ROUNDS' => '4',
+            'CACHE_STORE' => 'array',
+            'SESSION_DRIVER' => 'array',
+            'QUEUE_CONNECTION' => 'sync',
+            'MAIL_MAILER' => 'array',
+        ]);
+
+        $process->run();
+
+        $this->assertSame(0, $process->getExitCode(), $process->getErrorOutput() ?: $process->getOutput());
+
+        $routes = json_decode($process->getOutput(), true, 512, JSON_THROW_ON_ERROR);
+        $routeNames = array_filter(array_map(static fn (array $route) => $route['name'] ?? null, $routes));
+
+        $this->assertContains('local.hris.domain.root', $routeNames);
+        $this->assertContains('local.auth.portal', $routeNames);
+        $this->assertContains('local.mpr.domain.root', $routeNames);
+        $this->assertContains('local.public.career.index', $routeNames);
+        $this->assertContains('local.public.outsource.index', $routeNames);
+        $this->assertContains('local.login', $routeNames);
+        $this->assertContains('local.mpr.login', $routeNames);
     }
 }
