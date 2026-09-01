@@ -415,10 +415,44 @@ class GoogleSheetsService
         try {
             $this->createSheetIfNotExists($sheetName);
             $existing = $this->getRange($sheetName, '1:1', false);
-            if (!empty($existing[0]) && !empty(array_filter($existing[0]))) {
-                // Header sudah ada — tidak overwrite
+            $existingHeaders = !empty($existing[0]) ? array_map('trim', $existing[0]) : [];
+
+            if (!empty(array_filter($existingHeaders))) {
+                // Header sudah ada — migrasi tambahan: tulis HANYA header baru
+                // pada kolom di luar cakupan header existing (append-only),
+                // sehingga mapping kolom lama tidak pernah bergeser/tertimpa.
+                $newHeaders = [];
+                foreach ($headers as $idx => $header) {
+                    $isExisting = in_array($header, $existingHeaders, true);
+                    $isBeyondExisting = $idx >= count($existingHeaders);
+                    if (!$isExisting && $isBeyondExisting) {
+                        $newHeaders[$idx] = $header;
+                    }
+                }
+
+                if (!empty($newHeaders)) {
+                    $firstColIndex = min(array_keys($newHeaders)); // 0-based
+                    $startColLetter = $this->columnLetter($firstColIndex + 1); // 1-based
+                    $row = [];
+                    foreach ($newHeaders as $idx => $header) {
+                        while (count($row) + $firstColIndex < $idx) {
+                            $row[] = '';
+                        }
+                        $row[] = $header;
+                    }
+                    $endColLetter = $this->columnLetter($firstColIndex + count($row));
+                    $this->updateRange(
+                        $sheetName,
+                        "{$startColLetter}1:{$endColLetter}1",
+                        [$this->sanitizeRow($row)]
+                    );
+                    $this->clearCache($sheetName);
+                    Log::info("GoogleSheetsService::ensureSheetHeaders migrated " . count($newHeaders) .
+                        " new header(s) for {$sheetName} starting at column {$startColLetter}.");
+                }
                 return;
             }
+
             // Sheet kosong atau baris 1 kosong — tulis header
             $service   = $this->factory->getSheetsService();
             $range     = "{$sheetName}!A1";
@@ -429,5 +463,19 @@ class GoogleSheetsService
         } catch (\Throwable $e) {
             Log::warning("GoogleSheetsService::ensureSheetHeaders({$sheetName}): " . $e->getMessage());
         }
+    }
+
+    /**
+     * Convert a 1-based column index to its spreadsheet column letter (A, B, ..., AA, AB, ...).
+     */
+    private function columnLetter(int $colIndex): string
+    {
+        $letter = '';
+        while ($colIndex > 0) {
+            $mod = ($colIndex - 1) % 26;
+            $letter = chr(65 + $mod) . $letter;
+            $colIndex = intdiv($colIndex - 1, 26);
+        }
+        return $letter;
     }
 }
