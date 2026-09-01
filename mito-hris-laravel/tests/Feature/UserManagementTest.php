@@ -153,6 +153,7 @@ class UserManagementTest extends TestCase
             'Email' => 'manager@example.test',
             'Username' => 'manager',
             'Full Name' => 'Manager Test',
+            'Job Position' => 'Manager Regional',
             'Role' => 'Manpower',
             'Status' => 'Active',
             'Entity' => 'MSI',
@@ -184,6 +185,7 @@ class UserManagementTest extends TestCase
             return $data['email'] === 'new.requestor@example.test'
                 && $data['username'] === 'newrequestor'
                 && $data['fullName'] === 'New Requestor'
+                && $data['jobPosition'] === 'Regional Manager'
                 && $data['role'] === 'Manpower'
                 && $data['status'] === 'Active'
                 && $data['entity'] === 'MSI'
@@ -201,6 +203,7 @@ class UserManagementTest extends TestCase
                 'name' => 'New Requestor',
                 'email' => 'new.requestor@example.test',
                 'username' => 'newrequestor',
+                'job_position' => 'Regional Manager',
                 'role' => 'Manpower',
                 'entity' => 'MSI',
                 'branch' => 'Jakarta',
@@ -219,18 +222,20 @@ class UserManagementTest extends TestCase
             'Email' => 'manager@example.test',
             'Username' => 'manager',
             'Full Name' => 'Manager Test',
+            'Job Position' => 'Manager Regional',
             'Role' => 'Manpower',
             'Status' => 'Active',
             'Entity' => 'MSI',
             'Branch' => 'Jakarta',
         ];
-        $updated = array_merge($existing, ['Full Name' => 'Manager Updated', 'Entity' => 'MSI, SPI', 'Branch' => 'Bandung']);
+        $updated = array_merge($existing, ['Full Name' => 'Manager Updated', 'Job Position' => 'Regional Head', 'Entity' => 'MSI, SPI', 'Branch' => 'Bandung']);
         $repository = Mockery::mock(MprRequestorRepositoryInterface::class);
         $repository->shouldReceive('findByEmail')->once()->with('manager@example.test')->andReturn($existing);
         $repository->shouldReceive('getAll')->once()->andReturn([$existing]);
         $repository->shouldReceive('updateByEmail')->once()->with('manager@example.test', Mockery::on(fn(array $data): bool => $data === [
             'fullName' => 'Manager Updated',
             'username' => 'manager',
+            'jobPosition' => 'Regional Head',
             'role' => 'Manpower',
             'entity' => 'MSI, SPI',
             'branch' => 'Bandung',
@@ -239,7 +244,7 @@ class UserManagementTest extends TestCase
         $repository->shouldReceive('findByEmail')->once()->with('manager@example.test')->andReturn($updated);
         $this->app->instance(MprRequestorRepositoryInterface::class, $repository);
         $audit = Mockery::mock(AuditLogRepositoryInterface::class);
-        $audit->shouldReceive('log')->times(3)->withArgs(function (...$args): bool {
+        $audit->shouldReceive('log')->times(4)->withArgs(function (...$args): bool {
             return $args[0] === 'MPR Requestor' && $args[2] === 'UPDATE' && $args[7] === 'Dashboard';
         })->andReturnTrue();
         $this->app->instance(AuditLogRepositoryInterface::class, $audit);
@@ -248,6 +253,7 @@ class UserManagementTest extends TestCase
             ->put(route('hr.mpr-requestors.update', ['email' => 'manager@example.test']), [
                 'name' => 'Manager Updated',
                 'username' => 'manager',
+                'job_position' => 'Regional Head',
                 'role' => 'Manpower',
                 'entity' => 'MSI, SPI',
                 'branch' => 'Bandung',

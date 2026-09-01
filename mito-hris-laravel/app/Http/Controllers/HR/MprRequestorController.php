@@ -43,14 +43,14 @@ class MprRequestorController extends Controller
             'name' => 'required|string|min:3',
             'email' => 'required|email',
             'username' => 'required|string|min:3',
-            'job_position' => 'nullable|string|min:2|max:255',
+            'job_position' => 'required|string|min:2|max:255',
             'role' => ['required', 'string', Rule::in(config('hris.auth.valid_roles_requestor', []))],
             'entity' => ['nullable', 'string', 'max:255'],
             'branch' => ['nullable', 'string', 'max:255'],
             'password' => 'required|string|min:8|confirmed',
         ]);
 
-        $jobPosition = trim((string) ($validated['job_position'] ?? '')) ?: trim((string) ($request->input('position') ?? '')) ?: 'Manpower';
+        $jobPosition = trim((string) $validated['job_position']);
 
         $this->requestorRepo->create([
             'email' => $validated['email'],
@@ -83,7 +83,7 @@ class MprRequestorController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|min:3',
             'username' => 'required|string|min:3',
-            'job_position' => 'nullable|string|min:2|max:255',
+            'job_position' => 'required|string|min:2|max:255',
             'role' => ['required', 'string', Rule::in(config('hris.auth.valid_roles_requestor', []))],
             'status' => ['required', 'string', Rule::in(['Active', 'Inactive'])],
             'entity' => ['nullable', 'string', 'max:255'],
@@ -91,7 +91,7 @@ class MprRequestorController extends Controller
             'password' => 'nullable|string|min:8|confirmed',
         ]);
 
-        $jobPosition = trim((string) ($validated['job_position'] ?? '')) ?: trim((string) ($request->input('position') ?? '')) ?: ($existing['Job Position'] ?? 'Manpower');
+        $jobPosition = trim((string) $validated['job_position']);
 
         foreach ($this->requestorRepo->getAll() as $requestor) {
             $sameRequestor = strtolower(trim($requestor['Email'] ?? '')) === strtolower(trim($email));
@@ -103,13 +103,9 @@ class MprRequestorController extends Controller
         $updates = [
             'fullName' => $validated['name'],
             'username' => $validated['username'],
+            'jobPosition' => $jobPosition,
             'role' => $validated['role'],
         ];
-
-        $hasJobPositionInput = $request->has('job_position') || $request->has('position');
-        if ($hasJobPositionInput && trim((string) $jobPosition) !== '') {
-            $updates['jobPosition'] = $jobPosition;
-        }
 
         if (array_key_exists('entity', $validated) && $validated['entity'] !== null) {
             $updates['entity'] = $validated['entity'];
