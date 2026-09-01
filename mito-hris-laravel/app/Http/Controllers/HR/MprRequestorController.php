@@ -103,10 +103,14 @@ class MprRequestorController extends Controller
         $updates = [
             'fullName' => $validated['name'],
             'username' => $validated['username'],
-            'jobPosition' => $jobPosition,
             'role' => $validated['role'],
             'status' => $validated['status'],
         ];
+
+        $hasJobPositionInput = $request->has('job_position') || $request->has('position');
+        if ($hasJobPositionInput && trim((string) $jobPosition) !== '') {
+            $updates['jobPosition'] = $jobPosition;
+        }
 
         if (array_key_exists('entity', $validated) && $validated['entity'] !== null) {
             $updates['entity'] = $validated['entity'];
@@ -119,8 +123,10 @@ class MprRequestorController extends Controller
         }
 
         $hasChanges = false;
-        foreach (['Full Name' => 'fullName', 'Username' => 'username', 'Job Position' => 'jobPosition', 'Role' => 'role', 'Status' => 'status'] as $field => $key) {
-            if ((string) ($existing[$field] ?? '') !== (string) $updates[$key]) {
+        foreach (['Full Name' => 'fullName', 'Username' => 'username', 'Job Position' => 'jobPosition', 'Role' => 'role', 'Status' => 'status', 'Entity' => 'entity', 'Branch' => 'branch'] as $field => $key) {
+            $oldValue = $existing[$field] ?? '';
+            $newValue = $updates[$key] ?? '';
+            if ((string) $oldValue !== (string) $newValue) {
                 $hasChanges = true;
                 break;
             }
@@ -135,10 +141,10 @@ class MprRequestorController extends Controller
             return $this->updateError($request, 'MPR requestor gagal diperbarui di sheet mpr_requestor.', 500);
         }
 
-        $auditFields = ['Full Name' => 'fullName', 'Username' => 'username', 'Job Position' => 'jobPosition', 'Role' => 'role', 'Status' => 'status'];
+        $auditFields = ['Full Name' => 'fullName', 'Username' => 'username', 'Job Position' => 'jobPosition', 'Role' => 'role', 'Status' => 'status', 'Entity' => 'entity', 'Branch' => 'branch'];
         foreach ($auditFields as $field => $key) {
             $oldValue = $existing[$field] ?? '';
-            $newValue = $updated[$field] ?? $updates[$key];
+            $newValue = $updated[$field] ?? $updates[$key] ?? '';
             if ((string) $oldValue !== (string) $newValue) {
                 $this->auditRepo->log('MPR Requestor', $existing['Requestor ID'] ?? $email, 'UPDATE', $field, $oldValue, $newValue, session('hr_user.email', 'HR Administrator'), 'Dashboard');
             }

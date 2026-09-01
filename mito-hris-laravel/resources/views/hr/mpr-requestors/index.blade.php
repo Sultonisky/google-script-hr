@@ -66,8 +66,9 @@
             <div class="filter-bar">
                 <div class="table-search">
                     <i class="bi bi-search"></i>
-                    <input type="search" id="mprRequestorSearch" placeholder="Cari nama, email, username, atau job position..."
-                        aria-label="Cari MPR requestor" autocomplete="off" />
+                    <input type="search" id="mprRequestorSearch"
+                        placeholder="Cari nama, email, username, atau job position..." aria-label="Cari MPR requestor"
+                        autocomplete="off" />
                 </div>
                 <select class="filter-select" id="mprRequestorStatusFilter" aria-label="Filter status requestor">
                     <option value="">Semua Status</option>
@@ -93,6 +94,8 @@
                             <th>Username</th>
                             <th>Job Position</th>
                             <th>Role</th>
+                            <th>Entity</th>
+                            <th>Branch</th>
                             <th>Status</th>
                             <th>Login Terakhir</th>
                             <th>Dibuat</th>
@@ -116,6 +119,8 @@
                                 <td><span
                                         class="fw-semibold text-navy requestor-role">{{ $requestor['Role'] ?? '-' }}</span>
                                 </td>
+                                <td class="requestor-entity">{{ $requestor['Entity'] ?? '-' }}</td>
+                                <td class="requestor-branch">{{ $requestor['Branch'] ?? '-' }}</td>
                                 <td><span class="badge {{ $statusClass }} requestor-status">{{ $status }}</span>
                                 </td>
                                 <td class="id-mono">{{ $requestor['Last Login'] ?? '-' }}</td>
@@ -129,7 +134,9 @@
                                             data-name="{{ $requestor['Full Name'] ?? '' }}"
                                             data-username="{{ $requestor['Username'] ?? '' }}"
                                             data-job-position="{{ $requestor['Job Position'] ?? '' }}"
-                                            data-role="{{ $requestor['Role'] ?? '' }}" data-status="{{ $status }}">
+                                            data-role="{{ $requestor['Role'] ?? '' }}" data-status="{{ $status }}"
+                                            data-entity="{{ $requestor['Entity'] ?? '' }}"
+                                            data-branch="{{ $requestor['Branch'] ?? '' }}">
                                             <i class="bi bi-pencil-fill" aria-hidden="true"></i>
                                         </button>
                                     @endcan
@@ -137,7 +144,7 @@
                             </tr>
                         @empty
                             <tr id="mprRequestorEmptyRow">
-                                <td colspan="10">
+                                <td colspan="11">
                                     <div class="table-empty">
                                         <i class="bi bi-person-x"></i>
                                         <p class="mb-0">Belum ada MPR requestor.</p>
@@ -146,7 +153,7 @@
                             </tr>
                         @endforelse
                         <tr id="mprRequestorSearchEmptyRow" class="d-none">
-                            <td colspan="10">
+                            <td colspan="11">
                                 <div class="table-empty">
                                     <i class="bi bi-search"></i>
                                     <p class="mb-0">Tidak ada requestor yang sesuai filter.</p>
@@ -219,8 +226,8 @@
                             <div class="col-md-6">
                                 <label class="form-label" for="mprRequestorJobPosition">Job Position <span
                                         class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="mprRequestorJobPosition" name="job_position"
-                                    maxlength="255" required>
+                                <input type="text" class="form-control" id="mprRequestorJobPosition"
+                                    name="job_position" maxlength="255" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label" for="mprRequestorPassword">Password <span
@@ -339,11 +346,12 @@
                 const button = event.relatedTarget;
                 const email = button?.dataset.email || '';
                 editForm.action = editForm.dataset.updateUrl.replace('__EMAIL__', encodeURIComponent(
-                email));
+                    email));
                 document.getElementById('mprEditEmail').value = email;
                 document.getElementById('mprEditName').value = button?.dataset.name || '';
                 document.getElementById('mprEditUsername').value = button?.dataset.username || '';
-                document.getElementById('mprEditJobPosition').value = button?.dataset.jobPosition || button?.dataset.job_position || '';
+                document.getElementById('mprEditJobPosition').value = button?.dataset.jobPosition || button
+                    ?.dataset.job_position || '';
                 document.getElementById('mprEditRole').value = button?.dataset.role || 'Manpower';
                 document.getElementById('mprEditStatus').value = button?.dataset.status || 'Active';
                 document.getElementById('mprEditPassword').value = '';
@@ -360,7 +368,7 @@
                 rows.forEach(function(row) {
                     const searchable = row.textContent.toLowerCase();
                     const status = row.querySelector('.requestor-status')?.textContent.toLowerCase()
-                    .trim() || '';
+                        .trim() || '';
                     const matches = searchable.includes(query) && (!selectedStatus || status ===
                         selectedStatus);
                     row.classList.toggle('d-none', !matches);
