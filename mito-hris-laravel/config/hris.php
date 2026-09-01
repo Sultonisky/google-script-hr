@@ -445,11 +445,7 @@ return [
             'Replacement For',
             'Job Description',
             'Requirements',
-            'Notes',
-            'Status',
-            'Created By',
-            'Created At',
-            'Updated At',
+            // 'Notes',
             // -- Refactor Create MPR: field baru (append-only, backward compatible) --
             'Requestor Position',
             'Grade',
@@ -465,6 +461,10 @@ return [
             'Industry Reference',
             'Special Notes',
             'Key Results / Targets',
+            'Status',
+            'Created By',
+            'Created At',
+            'Updated At',
         ],
         'mpr_requestor' => [
             'Requestor ID',
