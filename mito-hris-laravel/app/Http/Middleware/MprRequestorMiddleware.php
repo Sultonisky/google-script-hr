@@ -80,7 +80,7 @@ class MprRequestorMiddleware
 
             if (!$allowed) {
                 if ($path === '/hr/dashboard') {
-                    return redirect()->route('hr.mpr.create')
+                    return redirect()->route('mpr.auth.request')
                         ->with('error', 'Anda hanya dapat mengakses halaman Manpower Request (MPR).');
                 }
                 if ($request->expectsJson()) {

@@ -9,9 +9,9 @@ class MprRequestorSheetsRepository implements MprRequestorRepositoryInterface
 {
     // Column header names — MUST match config/hris.php schemas.mpr_requestor
     protected const HEADERS = [
-        'Requestor ID', 'Email', 'Username', 'Full Name', 'Role',
-        'Status', 'Password Hash', 'Entity', 'Branch',
-        'Last Login', 'Created At', 'Updated At', 'Created By',
+        'Requestor ID', 'Email', 'Username', 'Full Name', 'Job Position',
+        'Role', 'Status', 'Password Hash', 'Last Login', 'Created At',
+        'Updated At', 'Created By',
     ];
 
     protected GoogleSheetsService $sheets;
@@ -70,21 +70,15 @@ class MprRequestorSheetsRepository implements MprRequestorRepositoryInterface
     {
         $now = now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s');
 
-        // Normalize entity: accept string or array
-        $entity = is_array($data['entity'] ?? null)
-            ? implode(', ', $data['entity'])
-            : ($data['entity'] ?? '');
-
         $row = [
             'Requestor ID' => $data['requestorId']  ?? $this->generateNextId(),
             'Email'        => $data['email']         ?? '',
             'Username'     => $data['username']      ?? '',
             'Full Name'    => $data['fullName']      ?? '',
+            'Job Position' => $data['jobPosition'] ?? $data['job_position'] ?? '',
             'Role'         => $data['role']          ?? 'Manager',
             'Status'       => $data['status']        ?? 'Active',
             'Password Hash' => $data['passwordHash'] ?? '',
-            'Entity'       => $entity,
-            'Branch'       => $data['branch']        ?? '',
             'Last Login'   => '',
             'Created At'   => $now,
             'Updated At'   => $now,
@@ -137,11 +131,11 @@ class MprRequestorSheetsRepository implements MprRequestorRepositoryInterface
             'passwordHash' => 'Password Hash',
             'fullName'     => 'Full Name',
             'username'     => 'Username',
+            'jobPosition'  => 'Job Position',
+            'job_position' => 'Job Position',
             'role'         => 'Role',
             'status'       => 'Status',
             'lastLogin'    => 'Last Login',
-            'entity'       => 'Entity',
-            'branch'       => 'Branch',
         ];
 
         foreach ($data as $key => $value) {

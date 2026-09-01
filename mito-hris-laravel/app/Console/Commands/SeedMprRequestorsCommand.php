@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Hash;
  * Seed default MPR Requestor (Manpower) accounts into the mpr_requestor sheet.
  *
  * These accounts are completely separate from the internal HRIS Users sheet.
- * Each Manager is assigned one or more entities and a branch location.
+ * Each Manager is assigned a job position.
  *
  * Usage:
  *   php artisan mito:seed-mpr-requestors
@@ -25,276 +25,209 @@ class SeedMprRequestorsCommand extends Command
 
     /**
      * Default requestor accounts to seed.
-     * entity: comma-separated string of entity codes (MSI, SPI, PII, MEP)
-     * branch: physical location of the manager
+     *
+     * The "job_position" field is retained for compatibility with
+     * the existing repository/schema, but its value now contains
+     * the Job Position.
      */
     protected array $requestors = [
-        [
-            'email'    => 'manager.msi@mito.co.id',
-            'username' => 'manager.msi',
-            'name'     => 'Manager MSI',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
-        ],
-        [
-            'email'    => 'manager.spi@mito.co.id',
-            'username' => 'manager.spi',
-            'name'     => 'Manager SPI',
-            'entity'   => 'SPI',
-            'branch'   => 'Jakarta',
-        ],
-        [
-            'email'    => 'manager.pii@mito.co.id',
-            'username' => 'manager.pii',
-            'name'     => 'Manager PII',
-            'entity'   => 'PII',
-            'branch'   => 'Tangerang',
-        ],
-        [
-            'email'    => 'manager.mep@mito.co.id',
-            'username' => 'manager.mep',
-            'name'     => 'Manager MEP',
-            'entity'   => 'MEP',
-            'branch'   => 'Jakarta',
-        ],
-        [
-            // Example: Manager with multiple entities
-            'email'    => 'manager.multi@mito.co.id',
-            'username' => 'manager.multi',
-            'name'     => 'Manager Multi Entity',
-            'entity'   => 'MSI, SPI, MEP',
-            'branch'   => 'Bandung',
-        ],
         [
             'email'    => 'achmad.rusdianto@mito.co.id',
             'username' => 'achmad.rusdianto',
             'name'     => 'Achmad Rusdianto',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'Regional Sales Manager (Kalimantan & Sulawesi)',
         ],
         [
             'email'    => 'adhytia.aprisada@mito.co.id',
             'username' => 'adhytia.aprisada',
             'name'     => 'Adhytia Aprisada',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'Manager (Semarang)',
         ],
         [
             'email'    => 'aditya.adipradhana@mito.co.id',
             'username' => 'aditya.adipradhana',
             'name'     => 'Aditya Adipradhana',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'Marketing Head',
         ],
         [
             'email'    => 'andrew.andreson@mito.co.id',
             'username' => 'andrew.andreson',
             'name'     => 'Andrew Andreson',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'Purchasing Expert',
         ],
         [
             'email'    => 'awanda.rhadifa@mito.co.id',
             'username' => 'awanda.rhadifa',
             'name'     => 'Awanda Rhadifa',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'Product Marketing Manager',
         ],
         [
             'email'    => 'azka.daulika@mito.co.id',
             'username' => 'azka.daulika',
             'name'     => 'Azka Daulika',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'Creative Manager',
         ],
         [
             'email'    => 'dedy.ishak.ibrahim@mito.co.id',
             'username' => 'dedy.ishak.ibrahim',
             'name'     => 'Dedy Ishak Ibrahim',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'Manager (Makassar)',
         ],
         [
             'email'    => 'deryan.triarya.toetoeko@mito.co.id',
             'username' => 'deryan.triarya.toetoeko',
             'name'     => 'Deryan Triarya Toetoeko',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'Brand Marketing Manager',
         ],
         [
             'email'    => 'destyani.wijaya@mito.co.id',
             'username' => 'destyani.wijaya',
             'name'     => 'Destyani Wijaya',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'Finance, Accounting, & Tax Head',
         ],
         [
             'email'    => 'dionysius.kurnia.apriliawan@mito.co.id',
             'username' => 'dionysius.kurnia.apriliawan',
             'name'     => 'Dionysius Kurnia Apriliawan',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'Manager (Bandung)',
         ],
         [
             'email'    => 'edwin.sumargo@mito.co.id',
             'username' => 'edwin.sumargo',
             'name'     => 'Edwin Sumargo',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'Manufacture Manager',
         ],
         [
             'email'    => 'erly.viwajayati.yulius@mito.co.id',
             'username' => 'erly.viwajayati.yulius',
             'name'     => 'Erly Viwajayati Yulius',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'Digital Marketing Assistant Manager',
         ],
         [
             'email'    => 'fabiola.aihwa@mito.co.id',
             'username' => 'fabiola.aihwa',
             'name'     => 'Fabiola Aihwa',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'Finance AP & GA Asisstant Manager',
         ],
         [
             'email'    => 'harmen.remon@mito.co.id',
             'username' => 'harmen.remon',
             'name'     => 'Harmen Remon',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'Manager (Palembang)',
         ],
         [
             'email'    => 'hisar.hesti@mito.co.id',
             'username' => 'hisar.hesti',
             'name'     => 'Hisar Hesti',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'HR & Legal Manager',
         ],
         [
             'email'    => 'irenceva@mito.co.id',
             'username' => 'irenceva',
             'name'     => 'Irenceva',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'Sales Head',
         ],
         [
             'email'    => 'karya.rezki.mulia.umida@mito.co.id',
             'username' => 'karya.rezki.mulia.umida',
             'name'     => 'Karya Rezki Mulia Umida',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'Manager (Medan)',
         ],
         [
             'email'    => 'lydia.oktavia.kurniawan@mito.co.id',
             'username' => 'lydia.oktavia.kurniawan',
             'name'     => 'Lydia Oktavia Kurniawan',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'Accounting Manager',
         ],
         [
             'email'    => 'm.sigit.trisetyo@mito.co.id',
             'username' => 'm.sigit.trisetyo',
             'name'     => 'M.Sigit Trisetyo',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'Manager (Lampung)',
         ],
         [
             'email'    => 'mardiansyah.matondang@mito.co.id',
             'username' => 'mardiansyah.matondang',
             'name'     => 'Mardiansyah Matondang',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'Manager (Jabo)',
         ],
         [
             'email'    => 'mia.meidiana@mito.co.id',
             'username' => 'mia.meidiana',
             'name'     => 'Mia Meidiana',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'E-COMMERCE MANAGER',
         ],
         [
             'email'    => 'nadia.witaningtyas@mito.co.id',
             'username' => 'nadia.witaningtyas',
             'name'     => 'Nadia Witaningtyas',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'Marketing Head',
         ],
         [
             'email'    => 'natalia.peregrina@mito.co.id',
             'username' => 'natalia.peregrina',
             'name'     => 'Natalia Peregrina',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'Marketing Communication & Activation Manager',
         ],
         [
             'email'    => 'nungky.kendi.astini@mito.co.id',
             'username' => 'nungky.kendi.astini',
             'name'     => 'Nungky Kendi Astini',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'Import Assistant Manager',
         ],
         [
             'email'    => 'permana.dewa.putra@mito.co.id',
             'username' => 'permana.dewa.putra',
             'name'     => 'Permana Dewa Putra',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'Manager (Surabaya)',
         ],
         [
             'email'    => 'reginald.hirawan@mito.co.id',
             'username' => 'reginald.hirawan',
             'name'     => 'Reginald Hirawan',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'IT Manager',
         ],
         [
             'email'    => 'retno.hardiani@mito.co.id',
             'username' => 'retno.hardiani',
             'name'     => 'Retno Hardiani',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'Key Account Assistant Manager',
         ],
         [
             'email'    => 'romanus.pandu.wibisono@mito.co.id',
             'username' => 'romanus.pandu.wibisono',
             'name'     => 'Romanus Pandu Wibisono',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'Regional Sales Manager (Java Island)',
         ],
         [
             'email'    => 'saraswening.purbawihayu@mito.co.id',
             'username' => 'saraswening.purbawihayu',
             'name'     => 'Saraswening Purbawihayu',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'Trade Marketing Manager',
         ],
         [
             'email'    => 'sinta.jumiati@mito.co.id',
             'username' => 'sinta.jumiati',
             'name'     => 'Sinta Jumiati',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'RnD & Aftersales Manager',
         ],
         [
             'email'    => 'sisilia.chandra.halim@mito.co.id',
             'username' => 'sisilia.chandra.halim',
             'name'     => 'Sisilia Chandra Halim',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'Finance AR Manager',
         ],
         [
             'email'    => 'sri.rahayu.ayu@mito.co.id',
             'username' => 'sri.rahayu.ayu',
             'name'     => 'Sri Rahayu (Ayu)',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'Manager (Jabo)',
         ],
         [
             'email'    => 'wahana.noerhib@mito.co.id',
             'username' => 'wahana.noerhib',
             'name'     => 'Wahana Noerhib',
-            'entity'   => 'MSI',
-            'branch'   => 'Tangerang',
+            'job_position'   => 'Manager (Samarinda)',
         ],
     ];
 
@@ -304,17 +237,20 @@ class SeedMprRequestorsCommand extends Command
         $this->line('Sheet: mpr_requestor (independent from Users)');
         $this->newLine();
 
-        $password      = 'Mahakarya2026'; // default password for all seeded requestors
-        $force         = $this->option('force');
-        $createdCount  = 0;
-        $updatedCount  = 0;
-        $skippedCount  = 0;
+        $password     = 'Mahakarya2026';
+        $force        = $this->option('force');
+        $createdCount = 0;
+        $updatedCount = 0;
+        $skippedCount = 0;
 
         foreach ($this->requestors as $data) {
             $existing = $requestorRepo->findByEmail($data['email']);
 
             if ($existing && !$force) {
-                $this->warn("  [SKIP] {$data['email']} — already exists. Use --force to overwrite.");
+                $this->warn(
+                    "  [SKIP] {$data['email']} — already exists. Use --force to overwrite."
+                );
+
                 $skippedCount++;
                 continue;
             }
@@ -322,11 +258,10 @@ class SeedMprRequestorsCommand extends Command
             $payload = [
                 'username'     => $data['username'],
                 'fullName'     => $data['name'],
+                'jobPosition'        => $data['job_position'],
                 'role'         => 'Manpower',
                 'status'       => 'Active',
                 'passwordHash' => Hash::make($password),
-                'entity'       => $data['entity'],
-                'branch'       => $data['branch'],
                 'createdBy'    => 'seed-command',
             ];
 
@@ -334,7 +269,13 @@ class SeedMprRequestorsCommand extends Command
                 $requestorRepo->updateByEmail($data['email'], $payload);
                 $updatedCount++;
             } else {
-                $requestorRepo->create(array_merge(['email' => $data['email']], $payload));
+                $requestorRepo->create(
+                    array_merge(
+                        ['email' => $data['email']],
+                        $payload
+                    )
+                );
+
                 $createdCount++;
             }
         }
@@ -347,12 +288,19 @@ class SeedMprRequestorsCommand extends Command
         $this->line('  Total   : ' . count($this->requestors));
 
         if ($createdCount > 0) {
-            $this->line("  Default password : <comment>{$password}</comment>");
-            $this->line('  Change passwords before deploying to production!');
+            $this->line(
+                "  Default password : <comment>{$password}</comment>"
+            );
+
+            $this->line(
+                '  Change passwords before deploying to production!'
+            );
         }
 
         if ($skippedCount > 0 && !$force) {
-            $this->line('  Use --force to overwrite skipped accounts.');
+            $this->line(
+                '  Use --force to overwrite skipped accounts.'
+            );
         }
 
         return Command::SUCCESS;
