@@ -23,8 +23,10 @@ Route::get('/robots.txt', [SeoController::class, 'robots'])->name('public.seo.ro
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('public.seo.sitemap');
 
 Route::domain(config('hris.domains.hris'))->middleware('web')->group(function () {
-    Route::get('/', [LoginController::class, 'showLoginForm'])->name('hris.domain.root');
-    Route::get('/portal', [LoginController::class, 'portal'])->name('auth.portal');
+    Route::get('/', [LoginController::class, 'portal'])->name('hris.domain.root');
+    Route::get('/portal', function () {
+        return redirect()->route('hris.domain.root');
+    })->name('auth.portal');
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:login')->name('login.post');
     Route::any('/logout', [LoginController::class, 'logout'])->name('logout');
@@ -126,7 +128,7 @@ Route::domain(config('hris.domains.hris'))->middleware('web')->group(function ()
 });
 
 Route::domain(config('hris.domains.mpr'))->middleware('web')->group(function () {
-    Route::get('/', [MprAuthController::class, 'showLoginForm'])->name('mpr.auth.domain.root');
+    Route::get('/', [MprAuthController::class, 'portal'])->name('mpr.auth.domain.root');
     Route::get('/mpr', [MprAuthController::class, 'portal'])->name('mpr.auth.portal');
     Route::get('/mpr/login', [MprAuthController::class, 'showLoginForm'])->name('mpr.auth.login');
     Route::post('/mpr/login', [MprAuthController::class, 'login'])->middleware('throttle:mpr-login')->name('mpr.auth.login.post');
