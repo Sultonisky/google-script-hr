@@ -96,7 +96,7 @@ class PortalDomainIsolationTest extends TestCase
         $response->assertOk();
         $response->assertViewIs('auth.mpr-portal');
         $response->assertSee('Portal Manpower Request (MPR)');
-        $response->assertSee('Masuk ke Portal MPR');
+        $response->assertSee('Get Started');
     }
 
     public function test_mpr_domain_root_keeps_public_portal_visible_for_authenticated_requestor(): void
