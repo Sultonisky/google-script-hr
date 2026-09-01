@@ -467,7 +467,7 @@ class MprController extends Controller
         }
 
         // Check ownership authorization for Manager role (IDOR Protection)
-        $user = session('hr_user', []);
+        $user = $this->currentRequestorUser();
         $role = $user['role'] ?? 'Viewer';
 
         if ($role === 'Manpower') {
@@ -570,7 +570,7 @@ class MprController extends Controller
             abort(404, "Dokumen MPR '{$id}' tidak ditemukan.");
         }
 
-        $user = session('hr_user', []);
+        $user = $this->currentRequestorUser();
         if (($user['role'] ?? '') === 'Manpower') {
             $email = strtolower(trim($user['email'] ?? ''));
             if (
@@ -596,7 +596,7 @@ class MprController extends Controller
         }
 
         // Check ownership authorization for Manager role (IDOR Protection)
-        $user = session('hr_user', []);
+        $user = $this->currentRequestorUser();
         $role = $user['role'] ?? 'Viewer';
 
         if ($role === 'Manpower') {
@@ -624,7 +624,7 @@ class MprController extends Controller
         }
 
         // Check ownership authorization for Manager role (IDOR Protection)
-        $user = session('hr_user', []);
+        $user = $this->currentRequestorUser();
         $role = $user['role'] ?? 'Viewer';
 
         if ($role === 'Manpower') {
