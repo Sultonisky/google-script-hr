@@ -38,7 +38,7 @@ class LoginController extends Controller
         if (session()->has('hr_user')) {
             $user = session('hr_user');
             if (($user['role'] ?? '') === 'Manpower') {
-                return redirect()->route('hr.mpr.create');
+                return redirect()->route('mpr.auth.request');
             }
             return redirect()->route('hr.dashboard');
         }
@@ -162,7 +162,7 @@ class LoginController extends Controller
 
         $role = strtolower(trim((string) ($user['role'] ?? '')));
         $redirect = ($user['auth_domain'] ?? '') === 'mpr_requestor' || in_array($role, ['manpower', 'manager'], true)
-            ? route('hr.mpr.create')
+            ? route('mpr.auth.request')
             : route('hr.dashboard');
 
         if ($request->expectsJson()) {
