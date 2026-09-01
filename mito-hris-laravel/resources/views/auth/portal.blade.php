@@ -5,7 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Portal Internal HRIS — PT MITO Elektronik</title>
+    @include('components.seo', [
+        'title' => 'Portal Internal HRIS — PT MITO Elektronik',
+        'description' => 'Portal layanan internal HRIS untuk rekrutmen, data karyawan, evaluasi masa percobaan, dan kebutuhan tenaga kerja MITO.',
+        'robots' => 'index,follow',
+        'canonical' => route('hris.domain.root'),
+    ])
     <link rel="icon" type="image/png" href="{{ asset('assets/logo-favicon.png') }}">
 
     <!-- Bootstrap 5, Bootstrap Icons, Inter Font -->
@@ -336,53 +341,23 @@
                         Sistem informasi SDM terpadu untuk staf HR dan pimpinan unit kerja dalam mengelola proses rekrutmen, administrasi data karyawan, pengajuan tenaga kerja (MPR), dan evaluasi masa percobaan.
                     </p>
 
-                    @if(!empty($user))
-                        <div class="session-card d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3">
-                            <div>
-                                <div class="fw-bold" style="color: var(--mito-heading);">Sesi Aktif: {{ $user['fullName'] ?? $user['name'] ?? 'Pengguna Internal' }}</div>
-                                <div class="small" style="color: var(--mito-muted);">Hak Akses: {{ $user['role'] ?? 'Staff' }}</div>
-                            </div>
-                            <div class="d-flex align-items-center gap-2 flex-wrap">
-                                <a href="{{ ($user['role'] ?? '') === 'Manpower' ? route('hr.mpr.create') : route('hr.dashboard') }}"
-                                   class="btn-mito-primary"
-                                   data-portal-redirect
-                                   data-portal-msg="Membuka Dashboard HRIS...">
-                                    Buka Workspace
-                                </a>
-                                <a href="{{ route('mpr.auth.portal') }}"
-                                   class="btn btn-outline-secondary btn-sm rounded-2 py-2 px-3"
-                                   data-portal-redirect
-                                   data-portal-msg="Membuka Portal MPR...">
-                                    <i class="bi bi-file-earmark-text"></i>
-                                    Portal MPR
-                                </a>
-                                <form method="POST" action="{{ route('logout') }}" class="d-inline">
-                                    @csrf
-                                    <button type="submit" class="btn btn-outline-danger btn-sm rounded-2 py-2 px-2.5" title="Keluar">
-                                        <i class="bi bi-box-arrow-right"></i>
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    @else
-                        <div class="d-flex align-items-center gap-2 flex-wrap">
-                            <a href="{{ route('login') }}"
-                               class="btn-mito-primary"
-                               id="btnPortalLogin"
-                               data-portal-redirect
-                               data-portal-msg="Membuka Halaman Login...">
-                                <i class="bi bi-box-arrow-in-right"></i>
-                                Masuk ke Portal Login
-                            </a>
-                            <a href="{{ route('mpr.auth.portal') }}"
-                               class="btn btn-outline-secondary btn-sm rounded-2 py-2 px-3"
-                               data-portal-redirect
-                               data-portal-msg="Membuka Portal MPR...">
-                                <i class="bi bi-file-earmark-text"></i>
-                                Portal MPR
-                            </a>
-                        </div>
-                    @endif
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <a href="{{ route('login') }}"
+                           class="btn-mito-primary"
+                           id="btnPortalLogin"
+                           data-portal-redirect
+                           data-portal-msg="Membuka Halaman Login...">
+                            <i class="bi bi-box-arrow-in-right"></i>
+                            Masuk ke Portal Login
+                        </a>
+                        <a href="{{ route('mpr.auth.portal') }}"
+                           class="btn btn-outline-secondary btn-sm rounded-2 py-2 px-3"
+                           data-portal-redirect
+                           data-portal-msg="Membuka Portal MPR...">
+                            <i class="bi bi-file-earmark-text"></i>
+                            Portal MPR
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>

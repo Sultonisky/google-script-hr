@@ -18,11 +18,7 @@ class MprAuthController extends Controller
 
     public function portal(): View
     {
-        $user = session(config('mpr.session_key', 'mpr_requestor_auth'));
-
-        return view('auth.mpr-portal', [
-            'user' => $user,
-        ]);
+        return view('auth.mpr-portal');
     }
 
     public function showLoginForm(): View|RedirectResponse

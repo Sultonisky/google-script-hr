@@ -26,10 +26,7 @@ class LoginController extends Controller
      */
     public function portal(): View
     {
-        $user = session('hr_user');
-        return view('auth.portal', [
-            'user' => $user,
-        ]);
+        return view('auth.portal');
     }
 
     /**

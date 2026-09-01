@@ -63,15 +63,16 @@ class PortalDomainIsolationTest extends TestCase
         $response->assertRedirect(route('mpr.auth.request'));
     }
 
-    public function test_hris_domain_root_redirects_anonymous_to_login_and_not_recruitment(): void
+    public function test_hris_domain_root_returns_public_portal_for_anonymous_user(): void
     {
         $response = $this->get('http://hrismitogroup.web.id/');
 
         $response->assertOk();
-        $response->assertViewIs('auth.login');
+        $response->assertViewIs('auth.portal');
+        $response->assertSee('Portal Layanan Internal HRIS');
     }
 
-    public function test_hris_domain_root_redirects_authenticated_user_to_dashboard(): void
+    public function test_hris_domain_root_keeps_portal_visible_for_authenticated_user(): void
     {
         Session::put('hr_user', [
             'email' => 'admin@mito.id',
@@ -82,18 +83,22 @@ class PortalDomainIsolationTest extends TestCase
 
         $response = $this->get('http://hrismitogroup.web.id/');
 
-        $response->assertRedirect(route('hr.dashboard'));
+        $response->assertOk();
+        $response->assertViewIs('auth.portal');
+        $response->assertSee('Portal Layanan Internal HRIS');
     }
 
-    public function test_mpr_domain_root_redirects_anonymous_to_mpr_login_and_not_recruitment(): void
+    public function test_mpr_domain_root_returns_public_portal_for_anonymous_user(): void
     {
         $response = $this->get('http://mpr.hrismitogroup.web.id/');
 
         $response->assertOk();
-        $response->assertViewIs('auth.mpr-auth');
+        $response->assertViewIs('auth.mpr-portal');
+        $response->assertSee('Portal Manpower Request (MPR)');
+        $response->assertSee('Masuk ke Portal MPR');
     }
 
-    public function test_mpr_domain_root_redirects_authenticated_requestor_to_request_flow(): void
+    public function test_mpr_domain_root_keeps_public_portal_visible_for_authenticated_requestor(): void
     {
         Session::put(config('mpr.session_key', 'mpr_requestor_auth'), [
             'email' => 'manager@mito.id',
@@ -105,7 +110,9 @@ class PortalDomainIsolationTest extends TestCase
 
         $response = $this->get('http://mpr.hrismitogroup.web.id/');
 
-        $response->assertRedirect(route('mpr.auth.request'));
+        $response->assertOk();
+        $response->assertViewIs('auth.mpr-portal');
+        $response->assertSee('Portal Manpower Request (MPR)');
     }
 
     public function test_recruitment_domain_root_returns_recruitment_landing(): void
