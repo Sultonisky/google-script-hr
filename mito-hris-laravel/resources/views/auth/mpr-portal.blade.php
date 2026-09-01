@@ -5,7 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Portal MPR — PT MITO Elektronik</title>
+    @include('components.seo', [
+        'title' => 'Portal Manpower Request (MPR) — PT MITO Elektronik',
+        'description' => 'Portal Manpower Request untuk pengajuan kebutuhan tenaga kerja internal, riwayat pengajuan, dan akses requestor MITO.',
+        'robots' => 'index,follow',
+        'canonical' => route('mpr.auth.domain.root'),
+    ])
     <link rel="icon" type="image/png" href="{{ asset('assets/logo-favicon.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -288,39 +293,13 @@
                         akun requestor MPR yang telah terdaftar untuk mengelola formulir dan riwayat pengajuan.
                     </p>
 
-                    @if (!empty($user))
-                        <div
-                            class="session-card d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3">
-                            <div>
-                                <div class="fw-bold" style="color: var(--mito-heading);">Sesi Aktif:
-                                    {{ $user['fullName'] ?? ($user['email'] ?? 'Requestor MPR') }}</div>
-                                <div class="small" style="color: var(--mito-muted);">Hak Akses:
-                                    {{ $user['role'] ?? 'Manpower' }}</div>
-                            </div>
-                            <div class="d-flex align-items-center gap-2 flex-wrap">
-                                <a href="{{ route('mpr.auth.request') }}" class="btn-mito-primary" data-portal-redirect
-                                    data-portal-msg="Membuka Form MPR...">
-                                    Buka Form MPR
-                                </a>
-                                <form method="POST" action="{{ route('mpr.auth.logout') }}" class="d-inline">
-                                    @csrf
-                                    <button type="submit" class="btn btn-outline-danger btn-sm rounded-2 py-2 px-2.5"
-                                        title="Keluar">
-                                        <i class="bi bi-box-arrow-right"></i>
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    @else
-                        <div class="d-flex align-items-center gap-2 flex-wrap">
-                            <a href="{{ route('mpr.auth.login') }}" class="btn-mito-primary" id="btnPortalLogin"
-                                data-portal-redirect data-portal-msg="Membuka Halaman Login MPR...">
-                                <i class="bi bi-box-arrow-in-right"></i>
-                                Masuk ke Portal MPR
-                            </a>
-
-                        </div>
-                    @endif
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <a href="{{ route('mpr.auth.login') }}" class="btn-mito-primary" id="btnPortalLogin"
+                            data-portal-redirect data-portal-msg="Membuka Halaman Login MPR...">
+                            <i class="bi bi-box-arrow-in-right"></i>
+                            Masuk ke Portal MPR
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
