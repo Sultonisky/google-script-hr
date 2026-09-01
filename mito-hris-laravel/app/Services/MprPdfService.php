@@ -77,13 +77,23 @@ class MprPdfService
         $requirementsHtml   = $this->markdownRenderer->render($mpr->requirements ?? null);
         $jobDescriptionHtml = $this->markdownRenderer->render($mpr->jobDescription ?? null);
         $notesHtml          = $this->markdownRenderer->render($mpr->notes ?? null);
+        $skillsHtml         = $this->markdownRenderer->render($mpr->skillsCompetencies ?? null);
+        $languagesHtml      = $this->markdownRenderer->render($mpr->languages ?? null);
+        $industryHtml       = $this->markdownRenderer->render($mpr->industryReference ?? null);
+        $keyResultsHtml     = $this->markdownRenderer->render($mpr->keyResultsTargets ?? null);
+        $specialNotesHtml   = $this->markdownRenderer->render($mpr->specialNotes ?? null);
 
         return Pdf::loadView('pdf.mpr', compact(
             'mpr',
             'company',
             'requirementsHtml',
             'jobDescriptionHtml',
-            'notesHtml'
+            'notesHtml',
+            'skillsHtml',
+            'languagesHtml',
+            'industryHtml',
+            'keyResultsHtml',
+            'specialNotesHtml'
         ))->setPaper('a4', 'portrait');
     }
 }

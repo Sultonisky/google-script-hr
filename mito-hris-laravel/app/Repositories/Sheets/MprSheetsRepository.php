@@ -140,6 +140,20 @@ class MprSheetsRepository implements MprRepositoryInterface
             'Created By',
             'Created At',
             'Updated At',
+            'Requestor Position',
+            'Grade',
+            'Work Area',
+            'Working Days',
+            'Working Hours',
+            'Shift Detail',
+            'Benefits',
+            'Education Background',
+            'Work Experience',
+            'Skills / Competencies',
+            'Languages',
+            'Industry Reference',
+            'Special Notes',
+            'Key Results / Targets',
         ]);
         $this->sheets->ensureSheetHeaders($this->sheetName, $expectedHeaders);
 

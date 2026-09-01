@@ -32,6 +32,21 @@ class MprData
         public ?string $createdBy = null,
         public ?string $createdAt = null,
         public ?string $updatedAt = null,
+        // -- Refactor Create MPR: field baru (backward compatible, nullable) --
+        public ?string $requestorPosition = null,
+        public ?string $grade = null,
+        public ?string $workArea = null,
+        public ?string $workingDays = null,   // multi-select, disimpan sebagai label dipisah ", "
+        public ?string $workingHours = null,  // multi-select, disimpan sebagai label dipisah ", "
+        public ?string $shiftDetail = null,   // free text, wajib hanya jika shifting dipilih
+        public ?string $benefits = null,      // multi-select, disimpan sebagai label dipisah ", "
+        public ?string $educationBackground = null, // single selection
+        public ?string $workExperience = null,      // single selection
+        public ?string $skillsCompetencies = null,
+        public ?string $languages = null,
+        public ?string $industryReference = null,
+        public ?string $specialNotes = null,
+        public ?string $keyResultsTargets = null,
     ) {}
 
     // -------------------------------------------------------------------------
@@ -87,6 +102,21 @@ class MprData
             createdBy:       $row['Created By']         ?? null,
             createdAt:       $row['Created At']         ?? null,
             updatedAt:       $row['Updated At']         ?? null,
+            // -- Field baru: safe fallback null untuk row lama yang belum punya kolom --
+            requestorPosition:    $row['Requestor Position']    ?? null,
+            grade:                $row['Grade']                 ?? null,
+            workArea:             $row['Work Area']             ?? null,
+            workingDays:          $row['Working Days']          ?? null,
+            workingHours:         $row['Working Hours']         ?? null,
+            shiftDetail:          $row['Shift Detail']          ?? null,
+            benefits:             $row['Benefits']              ?? null,
+            educationBackground:  $row['Education Background']  ?? null,
+            workExperience:       $row['Work Experience']       ?? null,
+            skillsCompetencies:   $row['Skills / Competencies'] ?? null,
+            languages:            $row['Languages']             ?? null,
+            industryReference:    $row['Industry Reference']    ?? null,
+            specialNotes:         $row['Special Notes']         ?? null,
+            keyResultsTargets:    $row['Key Results / Targets'] ?? null,
         );
     }
 
@@ -119,6 +149,20 @@ class MprData
             'Created By'         => (string) ($this->createdBy        ?? ''),
             'Created At'         => (string) ($this->createdAt        ?? ''),
             'Updated At'         => (string) ($this->updatedAt        ?? ''),
+            'Requestor Position'      => (string) ($this->requestorPosition   ?? ''),
+            'Grade'                   => (string) ($this->grade               ?? ''),
+            'Work Area'               => (string) ($this->workArea            ?? ''),
+            'Working Days'            => (string) ($this->workingDays         ?? ''),
+            'Working Hours'           => (string) ($this->workingHours        ?? ''),
+            'Shift Detail'            => (string) ($this->shiftDetail         ?? ''),
+            'Benefits'                => (string) ($this->benefits            ?? ''),
+            'Education Background'    => (string) ($this->educationBackground ?? ''),
+            'Work Experience'         => (string) ($this->workExperience      ?? ''),
+            'Skills / Competencies'   => (string) ($this->skillsCompetencies  ?? ''),
+            'Languages'               => (string) ($this->languages           ?? ''),
+            'Industry Reference'      => (string) ($this->industryReference   ?? ''),
+            'Special Notes'           => (string) ($this->specialNotes        ?? ''),
+            'Key Results / Targets'   => (string) ($this->keyResultsTargets   ?? ''),
         ];
     }
 
@@ -156,6 +200,20 @@ class MprData
             'created_by'         => $this->createdBy,
             'created_at'         => $this->createdAt,
             'updated_at'         => $this->updatedAt,
+            'requestor_position'    => $this->requestorPosition,
+            'grade'                 => $this->grade,
+            'work_area'             => $this->workArea,
+            'working_days'          => $this->workingDays,
+            'working_hours'         => $this->workingHours,
+            'shift_detail'          => $this->shiftDetail,
+            'benefits'              => $this->benefits,
+            'education_background'  => $this->educationBackground,
+            'work_experience'       => $this->workExperience,
+            'skills_competencies'   => $this->skillsCompetencies,
+            'languages'             => $this->languages,
+            'industry_reference'    => $this->industryReference,
+            'special_notes'         => $this->specialNotes,
+            'key_results_targets'   => $this->keyResultsTargets,
         ];
     }
 }
