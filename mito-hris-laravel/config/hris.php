@@ -54,6 +54,42 @@ return [
         'Customer Service' => ['Customer Service Operations', 'Customer Support', 'Customer Complaint', 'After Sales Service'],
         'Creative' => ['Graphic Design', 'Multimedia', 'Content Production', 'Creative Design', 'Photography & Videography'],
     ],
+    'mpr_form_options' => [
+        // Multiple checkbox — Hari Kerja
+        'working_days' => [
+            'senin_jumat' => 'Senin - Jumat',
+            'senin_sabtu' => 'Senin - Sabtu',
+            'shifting'    => 'Shifting',
+        ],
+        // Multiple checkbox — Jam Kerja
+        'working_hours' => [
+            '08_00_17_00' => '08:00 - 17:00',
+            '08_30_17_30' => '08:30 - 17:30',
+        ],
+        // Multiple checkbox — Benefits
+        'benefits' => [
+            'bpjs'                  => 'BPJS',
+            'asuransi_kesehatan'    => 'Asuransi Kesehatan',
+            'insentif_komisi'       => 'Insentif / Komisi',
+            'tunjangan_pulsa'       => 'Tunjangan Pulsa',
+            'tunjangan_transportasi' => 'Tunjangan Transportasi',
+            'laptop_pc'             => 'Laptop / PC',
+        ],
+        // Single selection — Latar Belakang Pendidikan
+        'education_background' => [
+            'slta'  => 'SLTA',
+            'd1_d3' => 'D1/D3',
+            's1'    => 'S1',
+            's2'    => 'S2',
+        ],
+        // Single selection — Pengalaman Kerja
+        'work_experience' => [
+            'fresh_graduate' => 'Fresh Graduate',
+            '1_tahun'        => '1 Tahun',
+            '2_3_tahun'      => '2-3 Tahun',
+            'lebih_3_tahun'  => '> 3 Tahun',
+        ],
+    ],
     'auth' => [
         'valid_roles' => [
             'Super Admin',
@@ -414,6 +450,21 @@ return [
             'Created By',
             'Created At',
             'Updated At',
+            // -- Refactor Create MPR: field baru (append-only, backward compatible) --
+            'Requestor Position',
+            'Grade',
+            'Work Area',
+            'Working Days',
+            'Working Hours',
+            'Shift Detail',
+            'Benefits',
+            'Education Background',
+            'Work Experience',
+            'Skills / Competencies',
+            'Languages',
+            'Industry Reference',
+            'Special Notes',
+            'Key Results / Targets',
         ],
         'mpr_requestor' => [
             'Requestor ID',
