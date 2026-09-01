@@ -1859,13 +1859,21 @@
             }
         });
 
-        // ── Reset on modal hidden ────────────────────────────────────────
-        document.addEventListener('DOMContentLoaded', function() {
+        // ── Init on DOM ready: bind modal events + reset on modal hidden ──
+        function initProbationEvalModal() {
+            bindProbationModalEvents();
+
             var modalEl = document.getElementById('probationEvalModal');
             if (modalEl) {
                 modalEl.addEventListener('hidden.bs.modal', window.resetProbationEvalModal);
             }
-        });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initProbationEvalModal);
+        } else {
+            initProbationEvalModal();
+        }
 
     })();
 </script>
