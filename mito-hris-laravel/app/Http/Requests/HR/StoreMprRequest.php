@@ -19,27 +19,36 @@ class StoreMprRequest extends FormRequest
             'position'           => ['required', 'string', 'max:255'],
             'department'         => ['required', 'string', 'max:255', Rule::in(array_keys(config('hris.mpr_department_divisions', [])))],
             'division'           => ['required', 'string', 'max:255', new DivisionBelongsToDepartment((string) $this->input('department'))],
+            'approval_division'  => ['required', 'string', 'max:255', Rule::in(config('hris.mpr.approval_divisions', []))],
             'job_level'          => ['required', 'string', 'max:255'],
             'work_location'      => ['required', 'string', 'max:255'],
             'employment_type'    => ['required', 'string', 'max:255'],
             'quantity'           => ['required', 'integer', 'min:1', 'max:100'],
             'expected_join_date' => ['required', 'date'],
-            'reason'             => ['required', 'string', 'max:255'],
-            'replacement_for'    => ['nullable', 'string', 'max:255'],
+            'reason'             => ['required', 'string', 'max:255', Rule::in(array_values(config('hris.mpr_form_options.reasons', [])))],
+            'replacement_for'    => [
+                'nullable', 'string', 'max:255',
+                function (string $attribute, mixed $value, \Closure $fail) {
+                    $reason = trim((string) $this->input('reason', ''));
+                    $replacementReasons = config('hris.mpr_form_options.replacement_reasons', ['Penambahan Karyawan Baru', 'Restrukturisasi']);
+                    $allowed = array_map('strval', $replacementReasons);
+                    if (in_array($reason, $allowed, true) && trim((string) $value) === '') {
+                        $fail('Nama karyawan yang digantikan wajib diisi ketika alasan permintaan memerlukan penggantian.');
+                    }
+                },
+            ],
             'job_description'    => ['nullable', 'string'],
             'requirements'       => ['nullable', 'string'],
             // 'Notes' deprecated — diganti 'Special Notes'
             // Requestor identity (for HR/Super Admin creating on behalf of manager)
             'manager_name'       => ['nullable', 'string', 'max:255'],
             'manager_email'      => ['nullable', 'email', 'max:255'],
-            // entity: entity yang dipilih requestor — WAJIB diisi
-            'entity'             => ['required', 'string', 'max:255'],
+            // entity: target entity yang dituju untuk kebutuhan posisi
+            'entity'             => ['required', 'string', 'max:255', Rule::in(array_keys(config('hris.mpr_form_options.target_entities', [])))],
             // company: alias lama, opsional (digunakan form HR lama, akan dipetakan ke entity di controller)
             'company'            => ['nullable', 'string', 'max:255'],
             // -- Field baru (Refactor Create MPR) --
             'requestor_position'    => ['nullable', 'string', 'max:255'],
-            'grade'                 => ['nullable', 'string', 'max:100'],
-            'work_area'             => ['nullable', 'string', 'max:255'],
             // Hari Kerja: multiple checkbox
             'working_days'          => ['required', 'array', 'min:1'],
             'working_days.*'        => ['string', Rule::in(array_keys(config('hris.mpr_form_options.working_days', [])))],
@@ -50,7 +59,7 @@ class StoreMprRequest extends FormRequest
             'shift_detail'          => [
                 'nullable', 'string', 'max:1000',
                 function (string $attribute, mixed $value, \Closure $fail) {
-                    $days = (array) $this->input('working_days', []);
+                    $days = array_map('strtolower', array_map('trim', (array) $this->input('working_days', [])));
                     if (in_array('shifting', $days, true) && trim((string) $value) === '') {
                         $fail('Detail Shift wajib diisi jika Hari Kerja "Shifting" dipilih.');
                     }
@@ -77,6 +86,8 @@ class StoreMprRequest extends FormRequest
             'position.required'           => 'Posisi / jabatan yang diminta wajib diisi.',
             'department.required'         => 'Departemen wajib dipilih.',
             'division.required'           => 'Divisi wajib dipilih.',
+            'approval_division.required'  => 'Disetujui oleh (Divisi) wajib dipilih.',
+            'approval_division.in'        => 'Divisi penandatangan tidak valid.',
             'department.in'               => 'Departemen yang dipilih tidak tersedia.',
             'division.*'                  => 'Divisi yang dipilih tidak sesuai dengan departemen.',
             'job_level.required'          => 'Level jabatan wajib dipilih.',
