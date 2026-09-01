@@ -138,6 +138,7 @@ Route::domain(config('hris.domains.mpr'))->middleware('web')->group(function () 
         Route::get('/mpr/request/history', [MprController::class, 'history'])->name('mpr.auth.request.history');
         Route::post('/mpr/request', [MprController::class, 'store'])->name('mpr.auth.request.store');
         Route::get('/mpr/request/{id}/pdf', [MprController::class, 'exportPdf'])->name('mpr.auth.pdf');
+        Route::get('/mpr/request/{id}/json', [MprController::class, 'getJson'])->name('mpr.auth.json');
     });
 });
 
