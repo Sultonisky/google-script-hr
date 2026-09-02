@@ -47,7 +47,7 @@ class MprSheetsRepository implements MprRepositoryInterface
         if (!empty($filters['company'])) {
             $company = strtolower(trim($filters['company']));
             $collection = $collection->filter(function (MprData $mpr) use ($company) {
-                return str_contains(strtolower(trim($mpr->company ?? '')), $company);
+                return str_contains(strtolower(trim($mpr->entity ?? '')), $company);
             });
         }
 
@@ -58,7 +58,6 @@ class MprSheetsRepository implements MprRepositoryInterface
                     || str_contains(strtolower($mpr->requestorName ?? ''), $search)
                     || str_contains(strtolower($mpr->requestorEmail ?? ''), $search)
                     || str_contains(strtolower($mpr->entity ?? ''), $search)
-                    || str_contains(strtolower($mpr->branch ?? ''), $search)
                     || str_contains(strtolower($mpr->position ?? ''), $search)
                     || str_contains(strtolower($mpr->department ?? ''), $search)
                     || str_contains(strtolower($mpr->division ?? ''), $search);
@@ -121,8 +120,7 @@ class MprSheetsRepository implements MprRepositoryInterface
             'Request Date',
             'Requestor Name',
             'Requestor Email',
-            'Entity',
-            'Branch',
+            'Entitas yang Dituju',
             'Department',
             'Division',
             'Approval Division',
@@ -136,7 +134,6 @@ class MprSheetsRepository implements MprRepositoryInterface
             'Replacement For',
             'Job Description',
             'Requirements',
-            'Notes',
             'Status',
             'Created By',
             'Created At',

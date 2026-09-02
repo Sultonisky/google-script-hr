@@ -45,8 +45,6 @@ class StoreMprRequest extends FormRequest
             'manager_email'      => ['nullable', 'email', 'max:255'],
             // entity: target entity yang dituju untuk kebutuhan posisi
             'entity'             => ['required', 'string', 'max:255', Rule::in(array_keys(config('hris.mpr_form_options.target_entities', [])))],
-            // company: alias lama, opsional (digunakan form HR lama, akan dipetakan ke entity di controller)
-            'company'            => ['nullable', 'string', 'max:255'],
             // -- Field baru (Refactor Create MPR) --
             'requestor_position'    => ['nullable', 'string', 'max:255'],
             // Hari Kerja: multiple checkbox

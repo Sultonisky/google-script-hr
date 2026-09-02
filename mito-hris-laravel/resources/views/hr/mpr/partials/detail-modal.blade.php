@@ -25,8 +25,7 @@
                             </div>
                             <div class="col-md-6">
                                 <div class="small text-uppercase text-muted fw-semibold mb-2">Entitas / Perusahaan</div>
-                                <div class="fw-semibold text-dark" id="detCompany">-</div>
-                                <div class="small text-muted" id="detBranch">-</div>
+                                <div class="fw-semibold text-dark" id="detEntity">-</div>
                                 <div class="small text-muted" id="detCreatedBy">Diajukan: -</div>
                             </div>
                         </div>

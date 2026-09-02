@@ -30,40 +30,6 @@ class MprRequestorAuthService
      *   error:   string  (only when success = false)
      *   user:    array   (only when success = true) — this is put into session('hr_user')
      */
-    protected function normalizeEntities(array $requestor): array
-    {
-        $raw = $requestor['Entities'] ?? $requestor['Entity'] ?? $requestor['entities'] ?? $requestor['entity'] ?? '';
-
-        if (is_array($raw)) {
-            $items = $raw;
-        } else {
-            $items = preg_split('/[,;\n|]+/', (string) $raw) ?: [];
-        }
-
-        $normalized = [];
-        foreach ($items as $item) {
-            $value = trim((string) $item);
-            if ($value === '') {
-                continue;
-            }
-            $normalized[] = $value;
-        }
-
-        return $normalized;
-    }
-
-    protected function normalizeBranch(array $requestor): string
-    {
-        foreach (['Branch', 'branch'] as $key) {
-            $value = trim((string) ($requestor[$key] ?? ''));
-            if ($value !== '') {
-                return $value;
-            }
-        }
-
-        return '';
-    }
-
     protected function normalizeJobPosition(array $requestor): string
     {
         foreach (['Job Position', 'jobPosition', 'job_position'] as $key) {
@@ -146,8 +112,6 @@ class MprRequestorAuthService
         $this->requestorRepo->updateLastLogin($requestor['Email']);
 
         $jobPosition = $this->normalizeJobPosition($requestor);
-        $entities = $this->normalizeEntities($requestor);
-        $branch = $this->normalizeBranch($requestor);
 
         return [
             'success' => true,
@@ -161,8 +125,6 @@ class MprRequestorAuthService
                 'portal'      => 'mpr',
                 'auth_domain' => 'mpr_requestor',
                 'requestor_id' => $requestor['Requestor ID'] ?? '',
-                'entities'    => $entities,
-                'branch'      => $branch,
             ],
         ];
     }

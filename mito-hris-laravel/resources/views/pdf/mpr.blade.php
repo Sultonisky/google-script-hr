@@ -305,15 +305,8 @@
                         <td class="colon-col">:</td>
                         <td class="value-col">{{ $company['name'] ?? ($mpr->entity ?: '-') }}</td>
                     </tr>
-                    <td>
-                        <table class="data-table">
-                            <tr>
-                                <td class="label-col">Branch / Lokasi Pemohon</td>
-                                <td class="colon-col">:</td>
-                                <td class="value-col">{{ $mpr->branch ?: '-' }}</td>
-                            </tr>
-                        </table>
-                    </td>
+                </table>
+            </td>
         </tr>
     </table>
 

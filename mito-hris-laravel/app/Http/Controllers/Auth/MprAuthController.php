@@ -43,39 +43,6 @@ class MprAuthController extends Controller
         return view('auth.mpr-auth');
     }
 
-    protected function normalizeEntities(array $requestor): array
-    {
-        $raw = $requestor['Entities'] ?? $requestor['Entity'] ?? $requestor['entities'] ?? $requestor['entity'] ?? '';
-
-        if (is_array($raw)) {
-            $items = $raw;
-        } else {
-            $items = preg_split('/[,;\n|]+/', (string) $raw) ?: [];
-        }
-
-        $normalized = [];
-        foreach ($items as $item) {
-            $value = trim((string) $item);
-            if ($value !== '') {
-                $normalized[] = $value;
-            }
-        }
-
-        return $normalized;
-    }
-
-    protected function normalizeBranch(array $requestor): string
-    {
-        foreach (['Branch', 'branch'] as $key) {
-            $value = trim((string) ($requestor[$key] ?? ''));
-            if ($value !== '') {
-                return $value;
-            }
-        }
-
-        return '';
-    }
-
     protected function normalizeJobPosition(array $requestor): string
     {
         foreach (['Job Position', 'jobPosition', 'job_position'] as $key) {
@@ -138,8 +105,6 @@ class MprAuthController extends Controller
             'auth_domain' => 'mpr_requestor',
             'portal' => 'mpr',
             'requestor_id' => trim((string) ($requestor['Requestor ID'] ?? '')),
-            'entities' => $this->normalizeEntities($requestor),
-            'branch' => $this->normalizeBranch($requestor),
         ]);
 
         return redirect()->route('mpr.auth.request');

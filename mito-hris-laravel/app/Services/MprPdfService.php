@@ -16,47 +16,19 @@ class MprPdfService
     }
 
     /**
-     * Resolve company profile array from entity code OR company full name.
-     * Supports both new (entity code: 'MSI', 'SPI', 'PII', 'MEP')
-     * and legacy (full company name) inputs.
+     * Resolve company profile array from entity code (canonical config: hris.mpr.companies).
      */
-    public function resolveCompany(string $entityOrName = ''): array
+    public function resolveCompany(string $entityCode = ''): array
     {
-        $b = strtolower(trim($entityOrName));
+        $code = strtoupper(trim($entityCode));
+        $companies = config('hris.mpr.companies', []);
 
-        // Match by entity code first (new format)
-        if ($b === 'spi' || str_contains($b, 'stein')) {
-            return [
-                'name'    => 'PT STEIN PERKASA INTERNASIONAL',
-                'address' => 'Rukan Mangga Dua Square Blok H No. 18-21, Jl. Gunung Sahari Raya Nomor 1, Kel. Ancol, Kec. Pademangan, Kota Jakarta Utara, DKI Jakarta - 14430',
-                'city'    => 'Jakarta',
-                'brand'   => 'STEIN',
-                'code'    => 'SPI',
-            ];
-        }
-
-        if ($b === 'pii' || str_contains($b, 'injeksi')) {
-            return [
-                'name'    => 'PT PERKASA INJEKSI INDONESIA',
-                'address' => 'Jl. Gajah Tunggal, Kp. Gembor, RT.004/RW.001, Kel. Pasir Jaya, Kec. Jatiuwung, Kota Tangerang, Banten 15135',
-                'city'    => 'Tangerang',
-                'brand'   => 'PERKASA INJEKSI',
-                'code'    => 'PII',
-            ];
-        }
-
-        if ($b === 'mep' || str_contains($b, 'mitra') || str_contains($b, 'elektro')) {
-            return [
-                'name'    => 'PT MITRA ELEKTRO PERKASA',
-                'address' => 'Rukan Mangga Dua Square Blok H No. 18-21, Jln. Gunung Sahari Raya Nomor 1, Kel. Ancol/Kec. Pademangan, Kota Jakarta Utara, DKI Jakarta',
-                'city'    => 'Jakarta',
-                'brand'   => 'MITRA ELEKTRO',
-                'code'    => 'MEP',
-            ];
+        if (isset($companies[$code]) && is_array($companies[$code])) {
+            return $companies[$code];
         }
 
         // Default: PT Mahakarya Sukses Indonesia (MSI)
-        return [
+        return $companies['MSI'] ?? [
             'name'    => 'PT MAHAKARYA SUKSES INDONESIA',
             'address' => 'Jl. Gajah Tunggal, Kp. Gembor, RT.004/RW.001, Kel. Pasir Jaya, Kec. Jatiuwung, Kota Tangerang, Banten 15135',
             'city'    => 'Tangerang',
@@ -70,8 +42,8 @@ class MprPdfService
      */
     public function generate(MprData $mpr): DomPdfInstance
     {
-        // Resolve company from entity code (new) or legacy company field
-        $company = $this->resolveCompany($mpr->entity ?? $mpr->company ?? '');
+        // Resolve company profile dari entity code (config hris.mpr.companies)
+        $company = $this->resolveCompany($mpr->entity ?? '');
 
         // Pre-render Markdown fields to safe HTML for DomPDF
         $requirementsHtml   = $this->markdownRenderer->render($mpr->requirements ?? null);

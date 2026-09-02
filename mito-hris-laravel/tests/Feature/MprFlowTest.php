@@ -68,7 +68,6 @@ class MprFlowTest extends TestCase
             requestorName: $overrides['requestorName']   ?? 'Manpower User',
             requestorEmail: $overrides['requestorEmail']  ?? 'manager@mito.id',
             entity: $overrides['entity']          ?? 'MSI',
-            branch: $overrides['branch']          ?? 'Head Office (HO)',
             department: $overrides['department']      ?? 'IT',
             division: $overrides['division']        ?? 'IT Support',
             position: $overrides['position']        ?? 'Backend Developer',
@@ -263,7 +262,6 @@ class MprFlowTest extends TestCase
             'requestorName' => 'Dewi Manpower',
             'requestorEmail' => $manpowerEmail,
             'entity'        => 'MSI',
-            'branch'        => 'Bandung',
             'position'      => 'QA Engineer',
             'createdBy'     => $manpowerEmail,
         ]);
@@ -394,11 +392,10 @@ class MprFlowTest extends TestCase
         $mockRepo = Mockery::mock(MprRepositoryInterface::class);
         $mockRepo->shouldReceive('create')
             ->once()
-            ->withArgs(function (MprData $data) use ($manpowerEmail, $manpowerName, $manpowerBranch) {
+            ->withArgs(function (MprData $data) use ($manpowerEmail, $manpowerName) {
                 // Identity MUST come from session, not from payload
                 return $data->requestorEmail === $manpowerEmail
                     && $data->requestorName  === $manpowerName
-                    && $data->branch         === $manpowerBranch
                     && $data->entity         === 'SPI'      // entity yang dipilih dari form
                     && $data->createdBy      === $manpowerEmail
                     && $data->position       === 'Senior Laravel Engineer'
@@ -809,7 +806,6 @@ class MprFlowTest extends TestCase
             'requestorName'   => 'Hendra Manpower',
             'requestorEmail'  => 'hendra@mito.id',
             'entity'          => 'MSI',
-            'branch'          => 'Tangerang',
             'position'        => 'Fullstack Developer',
             'quantity'        => 2,
             'reason'          => 'Penambahan Karyawan Baru (Business Expansion)',
