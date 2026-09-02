@@ -1443,13 +1443,17 @@
             // Province / city / district
             provinceEl.addEventListener('change', function() {
                 populateCities(this.value, provinceEl, cityEl);
+                // Clear kotaNama when province changes — city is reset to blank,
+                // so any previously stored name would be stale.
+                var kotaNamaInput = document.getElementById('kotaNama');
+                if (kotaNamaInput) kotaNamaInput.value = '';
                 validateField(this);
                 updateProgress();
             });
             cityEl.addEventListener('change', function() {
                 validateField(this);
                 loadDistricts(this.value);
-                // BUG FIX #2: keep kotaNama in sync with the human-readable city name
+                // Keep kotaNama in sync with the human-readable city name.
                 var kotaNamaInput = document.getElementById('kotaNama');
                 if (kotaNamaInput) {
                     kotaNamaInput.value = this.value ? (REGIONS.cities[this.value] || '') : '';
@@ -1576,6 +1580,12 @@
                         block: 'center'
                     });
                     return;
+                }
+                // Final authoritative sync: ensure kota_nama always reflects the
+                // current city dropdown value regardless of prior event timing.
+                var kotaNamaInput = document.getElementById('kotaNama');
+                if (kotaNamaInput && cityEl) {
+                    kotaNamaInput.value = cityEl.value ? (REGIONS.cities[cityEl.value] || '') : '';
                 }
                 isSubmitting = true;
                 submitBtn.disabled = true;

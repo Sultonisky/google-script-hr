@@ -75,6 +75,14 @@ class MprAuthController extends Controller
         }
 
         $request->session()->regenerate();
+
+        // Remove any stale HRIS session so that MPR and HRIS authentication contexts
+        // remain strictly isolated. Both portals share the same PHP session storage
+        // (shared cookie domain), so without this forget() the hr_user key would survive
+        // into the MPR session and could be read by any code that incorrectly falls
+        // back to hr_user inside the MPR portal.
+        $request->session()->forget('hr_user');
+
         $request->session()->put(config('mpr.session_key', 'mpr_requestor_auth'), [
             'email' => strtolower(trim((string) ($requestor['Email'] ?? $identifier))),
             'fullName' => trim((string) ($requestor['Full Name'] ?? $requestor['Email'] ?? 'Requestor')),

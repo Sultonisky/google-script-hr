@@ -39,19 +39,34 @@ class MprController extends Controller
 
     protected function currentRequestorUser(): array
     {
-        $sessionKey = config('mpr.session_key', 'mpr_requestor_auth');
-        $dedicatedUser = session($sessionKey, []);
+        // ── Portal-aware identity resolution ──────────────────────────────────────
+        // DomainMiddleware sets request attribute 'portal' = 'hris' | 'mpr'.
+        // This is the authoritative signal — we never guess the portal from session
+        // content, because both sessions can coexist in a shared session store.
+        //
+        // MPR portal (/mpr/*): return mpr_requestor_auth ONLY (auth_domain check).
+        // HRIS portal (/hr/*): return hr_user ONLY (auth_domain check).
+        //
+        // Without this, MprController@index called from the HRIS domain while a
+        // valid mpr_requestor_auth session also existed would return the MPR
+        // Requestor identity and immediately redirect to mpr.auth.request — which
+        // is exactly the bug this fix addresses.
+        $portal = request()->attributes->get('portal', 'hris');
 
-        // Jika config key berbeda dari default, cek juga 'mpr_requestor_auth' langsung
-        // sebagai fallback agar konsisten dengan hr-topbar yang hardcode key ini.
-        if (empty($dedicatedUser) && $sessionKey !== 'mpr_requestor_auth') {
-            $dedicatedUser = session('mpr_requestor_auth', []);
+        if ($portal === 'mpr') {
+            $sessionKey    = config('mpr.session_key', 'mpr_requestor_auth');
+            $dedicatedUser = session($sessionKey, []);
+
+            if (!empty($dedicatedUser) && ($dedicatedUser['auth_domain'] ?? '') === 'mpr_requestor') {
+                return $dedicatedUser;
+            }
+
+            // No valid MPR session — return empty (EnsureMprAuthenticated would have
+            // blocked this request already; this path should not normally be reached).
+            return [];
         }
 
-        if (!empty($dedicatedUser) && (($dedicatedUser['auth_domain'] ?? '') === 'mpr_requestor' || strtolower(trim((string) ($dedicatedUser['role'] ?? ''))) === 'manpower')) {
-            return $dedicatedUser;
-        }
-
+        // HRIS portal — return hr_user only. Never read mpr_requestor_auth here.
         return session('hr_user', []);
     }
 

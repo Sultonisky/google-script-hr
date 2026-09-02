@@ -131,6 +131,13 @@ class LoginController extends Controller
         bool $remember
     ): RedirectResponse|JsonResponse {
         $request->session()->regenerate();
+
+        // Remove any stale MPR session so that HRIS and MPR authentication contexts
+        // remain strictly isolated. Both portals share the same PHP session storage
+        // (shared cookie domain), so without this forget() the mpr_requestor_auth key
+        // would survive into the HRIS session and leak MPR identity into HRIS views.
+        $request->session()->forget(config('mpr.session_key', 'mpr_requestor_auth'));
+
         $request->session()->forget('hris_remember');
         $user['portal'] = $user['portal'] ?? 'hris';
         $request->session()->put('hr_user', $user);
