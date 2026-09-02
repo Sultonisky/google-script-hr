@@ -21,9 +21,30 @@
     <!-- Navigation Menu -->
     <nav class="sidebar-nav" id="sidebarNav">
         @php
-            $currentAuthDomain = session('hr_user.auth_domain', session('mpr_requestor_auth.auth_domain', 'users'));
-            $currentRole = session('hr_user.role', session('mpr_requestor_auth.role', 'Viewer'));
-            $isMprRequestorUi = ($currentAuthDomain === 'mpr_requestor') || (strtolower(trim((string) $currentRole)) === 'manpower' && !empty(session('mpr_requestor_auth')));
+            // ── Sidebar navigation — strict portal isolation ─────────────────────────────
+            // DomainMiddleware sets request attribute 'portal' = 'hris' | 'mpr' | ...
+            // This is the authoritative signal for which portal is currently being rendered.
+            // We never infer the portal from session content — that is how cross-portal
+            // leakage happened before the fix.
+            //
+            // MPR portal (/mpr/*): read ONLY mpr_requestor_auth (auth_domain='mpr_requestor').
+            // HRIS portal (/hr/*): read ONLY hr_user (auth_domain='users').
+            // Neither portal ever falls back to the other portal's session key.
+            $currentPortal = request()->attributes->get('portal', 'hris');
+
+            if ($currentPortal === 'mpr') {
+                $mprSidebarKey    = config('mpr.session_key', 'mpr_requestor_auth');
+                $mprSidebarSess   = session($mprSidebarKey, []);
+                $isMprRequestorUi = !empty($mprSidebarSess)
+                                    && ($mprSidebarSess['auth_domain'] ?? '') === 'mpr_requestor';
+            } else {
+                // HRIS portal — always show HRIS navigation regardless of any MPR session.
+                $isMprRequestorUi = false;
+            }
+
+            // HRIS identity variables (only used when $isMprRequestorUi = false).
+            $currentAuthDomain = session('hr_user.auth_domain', 'users');
+            $currentRole       = session('hr_user.role', 'Viewer');
         @endphp
         @if ($isMprRequestorUi)
             <!-- MPR Requestor Navigation (source: mpr_requestor sheet) -->
