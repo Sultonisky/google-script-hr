@@ -112,13 +112,14 @@
         .value-col ol,
         .value-col li {
             margin: 0;
-            padding-left: 16px;
+            padding-left: 0;
         }
 
         .value-col ul,
         .value-col ol {
             margin-top: 2px;
             margin-bottom: 2px;
+            padding-left: 14px;
         }
 
         .grid-2 {
@@ -266,8 +267,23 @@
                     </div>
                 </td>
                 <td style="text-align:right; vertical-align:middle;">
-                    <span
-                        style="font-size: 16pt; font-weight: bold; color: #000;">{{ $company['brand'] ?? 'MITO' }}</span>
+                    @php
+                        $entityCode = strtoupper(trim($mpr->entity ?? ''));
+                        $isMito = $entityCode === 'MSI';
+                        $logoPath = $isMito
+                            ? public_path('assets/mito.png')
+                            : public_path('assets/stein.jpg');
+                        $logoBase64 = file_exists($logoPath)
+                            ? 'data:image/' . ($isMito ? 'png' : 'jpeg') . ';base64,' . base64_encode(file_get_contents($logoPath))
+                            : null;
+                    @endphp
+                    @if ($logoBase64)
+                        <img src="{{ $logoBase64 }}"
+                             style="max-height: 38px; max-width: 90px; object-fit: contain;"
+                             alt="{{ $company['brand'] ?? 'LOGO' }}">
+                    @else
+                        <span style="font-size: 16pt; font-weight: bold; color: #000;">{{ $company['brand'] ?? 'MITO' }}</span>
+                    @endif
                 </td>
             </tr>
         </table>
@@ -286,43 +302,16 @@
 
     <!-- SECTION 1: INFORMASI PEMOHON -->
     <div class="section-title">I. Informasi Pemohon & Organisasi</div>
-    <table class="grid-2">
+    <table class="data-table">
         <tr>
-            <td>
-                <table class="data-table">
-                    <tr>
-                        <td class="label-col">Nama Pemohon</td>
-                        <td class="colon-col">:</td>
-                        <td class="value-col"><strong>{{ $mpr->requestorName ?: '-' }}</strong></td>
-                    </tr>
-                    <tr>
-                        <td class="label-col">Jabatan Pemohon</td>
-                        <td class="colon-col">:</td>
-                        <td class="value-col">{{ $mpr->requestorPosition ?: '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label-col">Entitas / Perusahaan</td>
-                        <td class="colon-col">:</td>
-                        <td class="value-col">{{ $company['name'] ?? ($mpr->entity ?: '-') }}</td>
-                    </tr>
-                </table>
-            </td>
-            <td>
-                <table class="data-table">
-                    <tr>
-                        <td class="label-col">Disetujui oleh (Divisi)</td>
-                        <td class="colon-col">:</td>
-                        <td class="value-col">{{ $mpr->approvalDivision ?: '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label-col">Tanggal Pengajuan</td>
-                        <td class="colon-col">:</td>
-                        <td class="value-col">
-                            {{ $mpr->requestDate ? date('d F Y', strtotime($mpr->requestDate)) : date('d F Y') }}
-                        </td>
-                    </tr>
-                </table>
-            </td>
+            <td class="label-col">Nama Pemohon</td>
+            <td class="colon-col">:</td>
+            <td class="value-col"><strong>{{ $mpr->requestorName ?: '-' }}</strong></td>
+        </tr>
+        <tr>
+            <td class="label-col">Jabatan Pemohon</td>
+            <td class="colon-col">:</td>
+            <td class="value-col">{{ $mpr->requestorPosition ?: '-' }}</td>
         </tr>
     </table>
 
@@ -332,6 +321,11 @@
         <tr>
             <td>
                 <table class="data-table">
+                    <tr>
+                        <td class="label-col">Entitas / Perusahaan</td>
+                        <td class="colon-col">:</td>
+                        <td class="value-col">{{ $company['name'] ?? ($mpr->entity ?: '-') }}</td>
+                    </tr>
                     <tr>
                         <td class="label-col">Posisi / Nama Jabatan</td>
                         <td class="colon-col">:</td>
@@ -393,19 +387,19 @@
         </tr>
     </table>
 
-    <!-- JADWAL LANJUTAN: Detail Shift & Benefits -->
+    <!-- Detail Shift & Benefits — full width agar tidak overflow -->
     <table class="data-table" style="margin-top:2px;">
         @if (!empty($mpr->shiftDetail))
         <tr>
-            <td class="label-col" style="width:22%;">Detail Shift</td>
+            <td class="label-col">Detail Shift</td>
             <td class="colon-col">:</td>
             <td class="value-col">{{ $mpr->shiftDetail }}</td>
         </tr>
         @endif
         <tr>
-            <td class="label-col" style="width:22%;">Benefits / Tunjangan</td>
+            <td class="label-col">Benefits / Tunjangan</td>
             <td class="colon-col">:</td>
-            <td class="value-col">{{ $mpr->benefits ?: '-' }}</td>
+            <td class="value-col" style="white-space: normal; word-wrap: break-word;">{{ $mpr->benefits ?: '-' }}</td>
         </tr>
     </table>
 
@@ -413,13 +407,13 @@
     <div class="section-title">III. Alasan Permintaan Karyawan</div>
     <table class="data-table">
         <tr>
-            <td class="label-col" style="width:20%;">Alasan Kebutuhan</td>
+            <td class="label-col">Alasan Kebutuhan</td>
             <td class="colon-col">:</td>
             <td class="value-col"><strong>{{ $mpr->reason ?: '-' }}</strong></td>
         </tr>
         @if (!empty($mpr->replacementFor))
             <tr>
-                <td class="label-col" style="width:20%;">Menggantikan Karyawan</td>
+                <td class="label-col">Menggantikan Karyawan</td>
                 <td class="colon-col">:</td>
                 <td class="value-col">{{ $mpr->replacementFor }}</td>
             </tr>
@@ -430,17 +424,17 @@
     <div class="section-title">IV. Kualifikasi Kandidat</div>
     <table class="data-table" style="margin-top:0;">
         <tr>
-            <td class="label-col" style="width:22%;">Latar Belakang Pendidikan</td>
+            <td class="label-col">Latar Belakang Pendidikan</td>
             <td class="colon-col">:</td>
             <td class="value-col">{{ $mpr->educationBackground ?: '-' }}</td>
         </tr>
         <tr>
-            <td class="label-col" style="width:22%;">Pengalaman Kerja</td>
+            <td class="label-col">Pengalaman Kerja</td>
             <td class="colon-col">:</td>
             <td class="value-col">{{ $mpr->workExperience ?: '-' }}</td>
         </tr>
         <tr>
-            <td class="label-col" style="width:22%;">Skills &amp; Kompetensi</td>
+            <td class="label-col">Skills &amp; Kompetensi</td>
             <td class="colon-col">:</td>
             <td class="value-col">
                 @if (!empty($skillsHtml))
@@ -451,7 +445,7 @@
             </td>
         </tr>
         <tr>
-            <td class="label-col" style="width:22%;">Bahasa yang Dikuasai</td>
+            <td class="label-col">Bahasa yang Dikuasai</td>
             <td class="colon-col">:</td>
             <td class="value-col">
                 @if (!empty($languagesHtml))
@@ -462,7 +456,7 @@
             </td>
         </tr>
         <tr>
-            <td class="label-col" style="width:22%;">Referensi Industri Sejenis</td>
+            <td class="label-col">Referensi Industri Sejenis</td>
             <td class="colon-col">:</td>
             <td class="value-col">
                 @if (!empty($industryHtml))
