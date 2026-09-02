@@ -69,6 +69,8 @@
                     <input type="hidden" name="consent_latitude" id="consentLatitude">
                     <input type="hidden" name="consent_longitude" id="consentLongitude">
                     <input type="hidden" name="consent_location" id="consentLocation">
+                    {{-- BUG FIX #2: carries resolved city NAME so backend never stores the numeric code --}}
+                    <input type="hidden" name="kota_nama" id="kotaNama" value="{{ old('kota_nama') }}">
 
                     <!-- SECTION 1: PERSONAL INFORMATION -->
                     <div class="form-section" id="sectionPersonal">
@@ -1240,6 +1242,11 @@
                 if (REGIONS.cities[r.cityCode]) {
                     cityEl.value = r.cityCode;
                     loadDistricts(r.cityCode);
+                    // BUG FIX #2: sync kotaNama from NIK autofill
+                    var kotaNamaInput = document.getElementById('kotaNama');
+                    if (kotaNamaInput) {
+                        kotaNamaInput.value = REGIONS.cities[r.cityCode];
+                    }
                 }
             }
             showNIKFeedback(nikFeedback, true, r);
@@ -1442,6 +1449,11 @@
             cityEl.addEventListener('change', function() {
                 validateField(this);
                 loadDistricts(this.value);
+                // BUG FIX #2: keep kotaNama in sync with the human-readable city name
+                var kotaNamaInput = document.getElementById('kotaNama');
+                if (kotaNamaInput) {
+                    kotaNamaInput.value = this.value ? (REGIONS.cities[this.value] || '') : '';
+                }
                 updateProgress();
             });
             districtInput.addEventListener('change', function() {
