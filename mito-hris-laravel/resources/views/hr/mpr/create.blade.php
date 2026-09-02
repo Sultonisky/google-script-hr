@@ -74,13 +74,30 @@
                                     <span class="badge bg-secondary-subtle text-secondary border mpr-badge"><i
                                             class="bi bi-lock-fill me-1"></i> Terkunci Permanen</span>
                                 </div>
+                                @php
+                                    // Ambil data requestor langsung dari session sebagai sumber canonical,
+                                    // identik dengan cara hr-topbar membacanya.
+                                    // Ini menghindari ketergantungan pada $user dari controller yang
+                                    // mungkin ter-resolve ke session yang salah jika config key berbeda.
+                                    $mprSessionKey = config('mpr.session_key', 'mpr_requestor_auth');
+                                    $mprSession = session($mprSessionKey, []);
+                                    $identityName = $mprSession['fullName']
+                                        ?? $user['fullName']
+                                        ?? $user['name']
+                                        ?? session('mpr_requestor_auth.fullName')
+                                        ?? 'Manpower';
+                                    $identityPosition = $mprSession['jobPosition']
+                                        ?? $user['jobPosition']
+                                        ?? session('mpr_requestor_auth.jobPosition')
+                                        ?? '';
+                                @endphp
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <label class="form-label text-muted small fw-semibold mb-1">Nama Pemohon</label>
                                         <div class="input-group input-group-sm">
                                             <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
                                             <input type="text" class="form-control"
-                                                value="{{ $user['fullName'] ?? ($user['name'] ?? 'Manpower') }}" readonly
+                                                value="{{ $identityName }}" readonly
                                                 disabled>
                                         </div>
                                     </div>
@@ -89,10 +106,10 @@
                                         <div class="input-group input-group-sm">
                                             <span class="input-group-text"><i class="bi bi-briefcase-fill"></i></span>
                                             <input type="text" class="form-control"
-                                                value="{{ $user['jobPosition'] ?? '-' }}" readonly disabled>
+                                                value="{{ $identityPosition ?: '-' }}" readonly disabled>
                                         </div>
                                         <input type="hidden" name="requestor_position"
-                                            value="{{ $user['jobPosition'] ?? '' }}">
+                                            value="{{ $identityPosition }}">
                                     </div>
                                 </div>
                                 <div class="mt-3 text-muted small">
@@ -242,12 +259,18 @@
                                         </div>
                                     </div>
                                     <div class="col-12">
-                                        <label class="form-label">Detail Shift <span class="text-danger d-none"
-                                                id="shiftDetailRequiredMark">*</span>
-                                            <span class="text-muted fw-normal small">(wajib jika Hari Kerja
-                                                "Shifting" dipilih)</span></label>
-                                        <textarea name="shift_detail" class="form-control" rows="2" id="shiftDetailField"
-                                            placeholder="Contoh: Shift pagi 07:00-15:00, shift siang 15:00-23:00, rotasi mingguan...">{{ old('shift_detail') }}</textarea>
+                                        <label class="form-label" id="shiftDetailLabel">
+                                            Detail Shift
+                                            <span class="text-danger d-none" id="shiftDetailRequiredMark">*</span>
+                                            <span class="text-muted fw-normal small" id="shiftDetailHint">(aktif &amp; wajib jika "Shifting" dipilih)</span>
+                                        </label>
+                                        <textarea name="shift_detail" class="form-control" rows="2"
+                                            id="shiftDetailField"
+                                            placeholder="Contoh: Shift pagi 07:00-15:00, shift siang 15:00-23:00, rotasi mingguan..."
+                                            disabled>{{ old('shift_detail') }}</textarea>
+                                        <div class="form-text text-muted small mt-1" id="shiftDetailNote">
+                                            <i class="bi bi-info-circle me-1"></i>Centang "Shifting" pada Hari Kerja untuk mengisi detail shift.
+                                        </div>
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label">Benefits / Tunjangan <span
@@ -268,106 +291,130 @@
                                     </div>
                                 </div>
 
-                                {{-- ===================== ALASAN & KUALIFIKASI ===================== --}}
-                                <div class="mb-4">
-                                    <h6 class="fw-bold text-primary mb-3"><i
-                                            class="bi bi-question-circle-fill me-2"></i>Alasan &amp; Kualifikasi</h6>
-                                    <div class="row g-3">
-                                        <div class="col-md-6">
-                                            <label class="form-label">Alasan Permintaan <span
-                                                    class="text-danger">*</span></label>
-                                            <select name="reason" class="form-select" id="mprReasonSelect" required>
-                                                <option value="">-- Pilih Alasan Permintaan --</option>
-                                                @foreach ($reasons as $r)
-                                                    <option value="{{ $r }}"
-                                                        {{ old('reason') === $r ? 'selected' : '' }}>
-                                                        {{ $r }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Nama Karyawan yang Digantikan (Opsional)</label>
-                                            <input type="text" name="replacement_for" class="form-control"
-                                                value="{{ old('replacement_for') }}"
-                                                placeholder="Diisi jika alasan adalah penggantian">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Latar Belakang Pendidikan <span
-                                                    class="text-danger">*</span></label>
-                                            <select name="education_background" class="form-select" required>
-                                                <option value="">-- Pilih Pendidikan --</option>
-                                                @foreach ($mprOptions['education_background'] ?? [] as $eduKey => $eduLabel)
-                                                    <option value="{{ $eduKey }}"
-                                                        {{ old('education_background') === $eduKey ? 'selected' : '' }}>
-                                                        {{ $eduLabel }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Pengalaman Kerja <span
-                                                    class="text-danger">*</span></label>
-                                            <select name="work_experience" class="form-select" required>
-                                                <option value="">-- Pilih Pengalaman --</option>
-                                                @foreach ($mprOptions['work_experience'] ?? [] as $expKey => $expLabel)
-                                                    <option value="{{ $expKey }}"
-                                                        {{ old('work_experience') === $expKey ? 'selected' : '' }}>
-                                                        {{ $expLabel }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Skills &amp; Kompetensi</label>
-                                            <textarea name="skills_competencies" class="form-control" rows="2"
-                                                placeholder="Contoh: Laravel, Excel lanjutan, leadership...">{{ old('skills_competencies') }}</textarea>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Bahasa yang Dikuasai</label>
-                                            <textarea name="languages" class="form-control" rows="2"
-                                                placeholder="Contoh: Bahasa Indonesia (aktif), Bahasa Inggris (pasif)...">{{ old('languages') }}</textarea>
-                                            <div class="col-12">
-                                                <label class="form-label">Referensi Industri Sejenis</label>
-                                                <textarea name="industry_reference" class="form-control" rows="2"
-                                                    placeholder="Contoh: Pengalaman dari industri mining, logistik, atau FMCG...">{{ old('industry_reference') }}</textarea>
-                                            </div>
-                                            <div class="col-12">
-                                                <label class="form-label">Kualifikasi &amp; Persyaratan Khusus
-                                                    Kandidat</label>
-                                                <textarea name="requirements" class="form-control" rows="3"
-                                                    placeholder="Contoh: Pendidikan min. S1 Informatika, Pengalaman min. 2 tahun di Laravel, memiliki komunikasi baik...">{{ old('requirements') }}</textarea>
-                                            </div>
-                                            <div class="col-12">
-                                                <label class="form-label">Uraian Tugas &amp; Tanggung Jawab
-                                                    Utama</label>
-                                                <textarea name="job_description" class="form-control" rows="3"
-                                                    placeholder="Contoh: Mengembangkan fitur web HRIS, melakukan code review, memastikan performa database...">{{ old('job_description') }}</textarea>
-                                            </div>
-                                            <div class="col-12">
-                                                <label class="form-label">Key Results / Target Posisi Ini</label>
-                                                <textarea name="key_results_targets" class="form-control" rows="3"
-                                                    placeholder="Contoh: Mencapai target penjualan 100 unit/bulan, menyelesaikan integrasi ERP dalam 6 bulan...">{{ old('key_results_targets') }}</textarea>
-                                            </div>
-                                            <div class="col-12">
-                                                <label class="form-label">Catatan Khusus MPR</label>
-                                                <textarea name="special_notes" class="form-control" rows="2"
-                                                    placeholder="Catatan khusus terkait kebutuhan ini...">{{ old('special_notes') }}</textarea>
-                                            </div>
+                            </div>{{-- end Jadwal Kerja & Fasilitas --}}
+
+                            {{-- ===================== ALASAN & KUALIFIKASI ===================== --}}
+                            <div class="mb-4">
+                                <h6 class="fw-bold text-primary mb-3"><i
+                                        class="bi bi-question-circle-fill me-2"></i>Alasan &amp; Kualifikasi</h6>
+                                <div class="row g-3">
+
+                                    {{-- Baris 1: Alasan + Penggantian --}}
+                                    <div class="col-md-6">
+                                        <label class="form-label">Alasan Permintaan <span
+                                                class="text-danger">*</span></label>
+                                        <select name="reason" class="form-select" id="mprReasonSelect" required>
+                                            <option value="">-- Pilih Alasan Permintaan --</option>
+                                            @foreach ($reasons as $r)
+                                                <option value="{{ $r }}"
+                                                    {{ old('reason') === $r ? 'selected' : '' }}>
+                                                    {{ $r }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" id="replacementForLabel">
+                                            Nama Karyawan yang Digantikan
+                                            <span class="text-danger d-none" id="replacementForRequiredMark">*</span>
+                                            <span class="text-muted fw-normal small" id="replacementForHint">(aktif jika alasan "Penggantian Karyawan")</span>
+                                        </label>
+                                        <input type="text" name="replacement_for" class="form-control"
+                                            id="replacementForField"
+                                            value="{{ old('replacement_for') }}"
+                                            placeholder="Nama karyawan yang akan digantikan"
+                                            disabled>
+                                        <div class="form-text text-muted small mt-1" id="replacementForNote">
+                                            <i class="bi bi-info-circle me-1"></i>Pilih alasan "Penggantian Karyawan Resign / Mutasi / Demosi" untuk mengisi field ini.
                                         </div>
                                     </div>
 
-                                    <hr class="my-4">
-
-                                    <div class="d-flex justify-content-end gap-2">
-                                        <a href="{{ request()->routeIs('mpr.auth.*') ? route('mpr.auth.request.history') : route('hr.mpr.history') }}"
-                                            class="btn btn-outline-secondary px-3">Batal</a>
-                                        <button type="submit" id="btnSubmitMprManager"
-                                            class="btn btn-primary px-4 fw-semibold shadow-sm">
-                                            <span class="spinner-border spinner-border-sm me-1 d-none"
-                                                id="spinnerSubmitManager"></span>
-                                            <i class="bi bi-send-fill me-1" id="iconSubmitManager"></i> Kirim
-                                            Pengajuan & Generate
-                                            PDF
-                                        </button>
+                                    {{-- Baris 2: Pendidikan + Pengalaman --}}
+                                    <div class="col-md-6">
+                                        <label class="form-label">Latar Belakang Pendidikan <span
+                                                class="text-danger">*</span></label>
+                                        <select name="education_background" class="form-select" required>
+                                            <option value="">-- Pilih Pendidikan --</option>
+                                            @foreach ($mprOptions['education_background'] ?? [] as $eduKey => $eduLabel)
+                                                <option value="{{ $eduKey }}"
+                                                    {{ old('education_background') === $eduKey ? 'selected' : '' }}>
+                                                    {{ $eduLabel }}</option>
+                                            @endforeach
+                                        </select>
                                     </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Pengalaman Kerja <span
+                                                class="text-danger">*</span></label>
+                                        <select name="work_experience" class="form-select" required>
+                                            <option value="">-- Pilih Pengalaman --</option>
+                                            @foreach ($mprOptions['work_experience'] ?? [] as $expKey => $expLabel)
+                                                <option value="{{ $expKey }}"
+                                                    {{ old('work_experience') === $expKey ? 'selected' : '' }}>
+                                                    {{ $expLabel }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+
+                                    {{-- Baris 3: Skills + Bahasa --}}
+                                    <div class="col-md-6">
+                                        <label class="form-label">Skills &amp; Kompetensi</label>
+                                        <textarea name="skills_competencies" class="form-control" rows="3"
+                                            placeholder="Contoh: Laravel, Excel lanjutan, leadership...">{{ old('skills_competencies') }}</textarea>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Bahasa yang Dikuasai</label>
+                                        <textarea name="languages" class="form-control" rows="3"
+                                            placeholder="Contoh: Bahasa Indonesia (aktif), Bahasa Inggris (pasif)...">{{ old('languages') }}</textarea>
+                                    </div>
+
+                                    {{-- Baris 4: Referensi Industri (full width) --}}
+                                    <div class="col-12">
+                                        <label class="form-label">Referensi Industri Sejenis</label>
+                                        <textarea name="industry_reference" class="form-control" rows="2"
+                                            placeholder="Contoh: Pengalaman dari industri mining, logistik, atau FMCG...">{{ old('industry_reference') }}</textarea>
+                                    </div>
+
+                                    {{-- Baris 5: Kualifikasi (full width) --}}
+                                    <div class="col-12">
+                                        <label class="form-label">Kualifikasi &amp; Persyaratan Khusus Kandidat</label>
+                                        <textarea name="requirements" class="form-control" rows="3"
+                                            placeholder="Contoh: Pendidikan min. S1 Informatika, pengalaman min. 2 tahun di Laravel, komunikasi baik...">{{ old('requirements') }}</textarea>
+                                    </div>
+
+                                    {{-- Baris 6: Uraian Tugas + Key Results (2 kolom) --}}
+                                    <div class="col-md-6">
+                                        <label class="form-label">Uraian Tugas &amp; Tanggung Jawab Utama</label>
+                                        <textarea name="job_description" class="form-control" rows="4"
+                                            placeholder="Contoh: Mengembangkan fitur web HRIS, melakukan code review, memastikan performa database...">{{ old('job_description') }}</textarea>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Key Results / Target Posisi Ini</label>
+                                        <textarea name="key_results_targets" class="form-control" rows="4"
+                                            placeholder="Contoh: Mencapai target penjualan 100 unit/bulan, menyelesaikan integrasi ERP dalam 6 bulan...">{{ old('key_results_targets') }}</textarea>
+                                    </div>
+
+                                    {{-- Baris 7: Catatan Khusus (full width) --}}
+                                    <div class="col-12">
+                                        <label class="form-label">Catatan Khusus MPR <span class="text-muted fw-normal small">(Opsional)</span></label>
+                                        <textarea name="special_notes" class="form-control" rows="2"
+                                            placeholder="Catatan khusus terkait kebutuhan ini...">{{ old('special_notes') }}</textarea>
+                                    </div>
+
+                                </div>{{-- end row Alasan & Kualifikasi --}}
+                            </div>{{-- end Alasan & Kualifikasi --}}
+
+                            <hr class="my-4">
+
+                            <div class="d-flex justify-content-end gap-2">
+                                <a href="{{ request()->routeIs('mpr.auth.*') ? route('mpr.auth.request.history') : route('hr.mpr.history') }}"
+                                    class="btn btn-outline-secondary px-3">Batal</a>
+                                <button type="submit" id="btnSubmitMprManager"
+                                    class="btn btn-primary px-4 fw-semibold shadow-sm">
+                                    <span class="spinner-border spinner-border-sm me-1 d-none"
+                                        id="spinnerSubmitManager"></span>
+                                    <i class="bi bi-send-fill me-1" id="iconSubmitManager"></i> Kirim
+                                    Pengajuan &amp; Generate PDF
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -405,24 +452,122 @@
 
             document.querySelectorAll('form').forEach(form => setupDepartmentDivision(form));
 
-            // Toggle wajib isi Detail Shift bila "Shifting" dipilih
-            const shiftDetailField = document.getElementById('shiftDetailField');
-            const shiftDetailRequiredMark = document.getElementById('shiftDetailRequiredMark');
-            const updateShiftDetail = () => {
-                const shiftingChecked = formMpr ? Array.from(
-                    formMpr.querySelectorAll('input[name="working_days[]"]')
-                ).some(cb => cb.value === 'shifting' && cb.checked) : false;
-                if (shiftDetailField) shiftDetailField.required = shiftingChecked;
-                if (shiftDetailRequiredMark) shiftDetailRequiredMark.classList.toggle('d-none', !
-                    shiftingChecked);
-            };
-
             const formMpr = document.getElementById('formManagerMpr');
-            if (formMpr) {
-                formMpr.querySelectorAll('input[name="working_days[]"]').forEach(cb => {
-                    cb.addEventListener('change', updateShiftDetail);
+
+            /**
+             * Logika Shifting:
+             * - Jika "Shifting" diceklis:
+             *   → Semua checkbox hari kerja lain (non-shifting) di-uncheck & disabled
+             *   → Semua checkbox jam kerja di-uncheck & disabled
+             *   → Textarea detail shift: enabled, required, border highlight
+             * - Jika "Shifting" di-unceklis:
+             *   → Semua checkbox hari kerja lain kembali enabled
+             *   → Semua checkbox jam kerja kembali enabled
+             *   → Textarea detail shift: disabled, not required, clear value
+             */
+            function applyShiftingState(form) {
+                if (!form) return;
+
+                const shiftingCb   = form.querySelector('input[name="working_days[]"][value="shifting"]');
+                const otherDayCbs  = Array.from(form.querySelectorAll('input[name="working_days[]"]'))
+                                         .filter(cb => cb.value !== 'shifting');
+                const hourCbs      = Array.from(form.querySelectorAll('input[name="working_hours[]"]'));
+                const shiftField   = form.querySelector('#shiftDetailField');
+                const requiredMark = form.querySelector('#shiftDetailRequiredMark');
+                const hintNote     = form.querySelector('#shiftDetailNote');
+
+                if (!shiftingCb) return;
+
+                const isShifting = shiftingCb.checked;
+
+                // --- Hari Kerja lain ---
+                otherDayCbs.forEach(cb => {
+                    if (isShifting) {
+                        cb.checked  = false;
+                        cb.disabled = true;
+                        cb.closest('.form-check')?.classList.add('opacity-50');
+                    } else {
+                        cb.disabled = false;
+                        cb.closest('.form-check')?.classList.remove('opacity-50');
+                    }
                 });
-                updateShiftDetail();
+
+                // --- Jam Kerja ---
+                hourCbs.forEach(cb => {
+                    if (isShifting) {
+                        cb.checked  = false;
+                        cb.disabled = true;
+                        cb.closest('.form-check')?.classList.add('opacity-50');
+                    } else {
+                        cb.disabled = false;
+                        cb.closest('.form-check')?.classList.remove('opacity-50');
+                    }
+                });
+
+                // --- Detail Shift textarea ---
+                if (shiftField) {
+                    shiftField.disabled = !isShifting;
+                    shiftField.required = isShifting;
+                    if (!isShifting) {
+                        shiftField.value = '';
+                        shiftField.classList.remove('border-primary');
+                    } else {
+                        shiftField.classList.add('border-primary');
+                        shiftField.focus();
+                    }
+                }
+                if (requiredMark) requiredMark.classList.toggle('d-none', !isShifting);
+                if (hintNote)     hintNote.classList.toggle('d-none', isShifting);
+            }
+
+            if (formMpr) {
+                const shiftingCb = formMpr.querySelector('input[name="working_days[]"][value="shifting"]');
+                if (shiftingCb) {
+                    shiftingCb.addEventListener('change', () => applyShiftingState(formMpr));
+                }
+                // Inisialisasi state saat halaman dimuat (handle old() value saat validation error)
+                applyShiftingState(formMpr);
+            }
+
+            /**
+             * Logika Replacement:
+             * - Jika alasan = "Penggantian Karyawan Resign / Mutasi / Demosi":
+             *   → Input nama karyawan yang digantikan: enabled, required
+             * - Selain itu:
+             *   → Input disabled, not required, value dikosongkan
+             */
+            const REPLACEMENT_REASON_VALUE = 'Penggantian Karyawan Resign / Mutasi / Demosi';
+
+            function applyReplacementState(form) {
+                if (!form) return;
+                const reasonSelect     = form.querySelector('[name="reason"]');
+                const replacementField = form.querySelector('#replacementForField');
+                const requiredMark     = form.querySelector('#replacementForRequiredMark');
+                const hintText         = form.querySelector('#replacementForHint');
+                const noteText         = form.querySelector('#replacementForNote');
+                if (!reasonSelect || !replacementField) return;
+
+                const isReplacement = reasonSelect.value === REPLACEMENT_REASON_VALUE;
+
+                replacementField.disabled = !isReplacement;
+                replacementField.required = isReplacement;
+                if (!isReplacement) {
+                    replacementField.value = '';
+                    replacementField.classList.remove('border-primary');
+                } else {
+                    replacementField.classList.add('border-primary');
+                }
+                if (requiredMark) requiredMark.classList.toggle('d-none', !isReplacement);
+                if (hintText)     hintText.classList.toggle('d-none', isReplacement);
+                if (noteText)     noteText.classList.toggle('d-none', isReplacement);
+            }
+
+            if (formMpr) {
+                const reasonSelect = formMpr.querySelector('[name="reason"]');
+                if (reasonSelect) {
+                    reasonSelect.addEventListener('change', () => applyReplacementState(formMpr));
+                }
+                applyReplacementState(formMpr);
             }
 
             function getCsrfToken() {

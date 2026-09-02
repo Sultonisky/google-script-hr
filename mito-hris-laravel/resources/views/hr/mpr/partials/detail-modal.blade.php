@@ -22,6 +22,7 @@
                                 <div class="small text-uppercase text-muted fw-semibold mb-2">Pemohon (Manager)</div>
                                 <div class="fw-semibold text-dark" id="detManagerName">-</div>
                                 <div class="small text-muted" id="detManagerEmail">-</div>
+                                <div class="small text-muted" id="detRequestorPosition"></div>
                             </div>
                             <div class="col-md-6">
                                 <div class="small text-uppercase text-muted fw-semibold mb-2">Entitas / Perusahaan</div>

@@ -520,6 +520,7 @@
 
                             <form id="formManagerMpr" action="{{ route('hr.mpr.store') }}" method="POST">
                                 @csrf
+                                @php $mprOptions = config('hris.mpr_form_options', []); @endphp
 
                                 <!-- SECTION: IDENTITAS PEMOHON (READONLY & DISABLED - ANTI FRAUD) -->
                                 <div class="mpr-applicant-identity p-3 rounded-3 mb-4 border">
@@ -550,25 +551,9 @@
                                             <input type="hidden" name="requestor_position" value="{{ $user['jobPosition'] ?? '' }}">
                                         </div>
                                     </div>
-
-                                    {{-- Entity / Perusahaan yang dituju — input MPR form (dari config) --}}
-                                    <div class="row g-3 mt-1">
-                                        <div class="col-md-12">
-                                            <label class="form-label text-muted small fw-semibold mb-1">
-                                                Entitas / Perusahaan yang dituju <span class="text-danger">*</span>
-                                            </label>
-                                            <select name="entity" class="form-select form-select-sm" required>
-                                                <option value="">-- Pilih Entitas --</option>
-                                                @foreach ($entityOptions as $code => $label)
-                                                    <option value="{{ $code }}">{{ $code }} - {{ $label }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                    </div>
-
                                     <div class="mt-2 text-muted" style="font-size: 11px;">
                                         <i class="bi bi-shield-check-fill text-success me-1"></i>
-                                        Identitas dan jabatan pemohon diambil dari sesi akun login Anda. Pilih entitas yang sesuai untuk pengajuan ini.
+                                        Identitas dan jabatan pemohon diambil otomatis dari sesi akun login Anda.
                                     </div>
                                 </div>
 
@@ -576,6 +561,16 @@
                                 <h6 class="fw-bold text-primary mb-3"><i class="bi bi-briefcase-fill me-2"></i>Detail
                                     Posisi yang Dibutuhkan</h6>
                                 <div class="row g-3 mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold small">Entitas / Perusahaan yang Dituju <span
+                                                class="text-danger">*</span></label>
+                                        <select name="entity" class="form-select" required>
+                                            <option value="">-- Pilih Entitas --</option>
+                                            @foreach ($entityOptions as $code => $label)
+                                                <option value="{{ $code }}">{{ $code }} - {{ $label }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
                                     <div class="col-md-6">
                                         <label class="form-label fw-semibold small">Posisi / Nama Jabatan yang Diminta <span
                                                 class="text-danger">*</span></label>
@@ -600,6 +595,16 @@
                                         <select name="division" class="form-select"
                                             data-selected-division="{{ old('division') }}" required>
                                             <option value="">-- Pilih Departemen terlebih dahulu --</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold small">Disetujui oleh (Divisi) <span
+                                                class="text-danger">*</span></label>
+                                        <select name="approval_division" class="form-select" required>
+                                            <option value="">-- Pilih Divisi --</option>
+                                            @foreach (config('hris.mpr.approval_divisions', []) as $division)
+                                                <option value="{{ $division }}">{{ $division }}</option>
+                                            @endforeach
                                         </select>
                                     </div>
                                     <div class="col-md-6">
@@ -646,14 +651,71 @@
                                     </div>
                                 </div>
 
-                                <!-- SECTION: ALASAN PERMINTAAN -->
+                                <!-- SECTION: JADWAL KERJA & FASILITAS -->
+                                <h6 class="fw-bold text-primary mb-3 mt-4"><i class="bi bi-clock-fill me-2"></i>Jadwal Kerja &amp; Fasilitas</h6>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold small">Hari Kerja <span class="text-danger">*</span></label>
+                                        <div class="border rounded p-2 d-flex flex-column gap-1">
+                                            @foreach ($mprOptions['working_days'] ?? [] as $dayKey => $dayLabel)
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="working_days[]"
+                                                        value="{{ $dayKey }}" id="mgwd_{{ $dayKey }}">
+                                                    <label class="form-check-label small" for="mgwd_{{ $dayKey }}">{{ $dayLabel }}</label>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold small">Jam Kerja <span class="text-danger">*</span></label>
+                                        <div class="border rounded p-2 d-flex flex-column gap-1">
+                                            @foreach ($mprOptions['working_hours'] ?? [] as $hourKey => $hourLabel)
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="working_hours[]"
+                                                        value="{{ $hourKey }}" id="mgwh_{{ $hourKey }}">
+                                                    <label class="form-check-label small" for="mgwh_{{ $hourKey }}">{{ $hourLabel }}</label>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label fw-semibold small">
+                                            Detail Shift
+                                            <span class="text-danger d-none" id="mgShiftDetailRequiredMark">*</span>
+                                            <span class="text-muted fw-normal small" id="mgShiftDetailHint">(aktif &amp; wajib jika "Shifting" dipilih)</span>
+                                        </label>
+                                        <textarea name="shift_detail" class="form-control" rows="2"
+                                            id="mgShiftDetailField"
+                                            placeholder="Contoh: Shift pagi 07:00-15:00, shift siang 15:00-23:00, rotasi mingguan..."
+                                            disabled></textarea>
+                                        <div class="form-text text-muted small mt-1" id="mgShiftDetailNote">
+                                            <i class="bi bi-info-circle me-1"></i>Centang "Shifting" pada Hari Kerja untuk mengisi detail shift.
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label fw-semibold small">Benefits / Tunjangan <span class="text-danger">*</span></label>
+                                        <div class="border rounded p-2 row g-1">
+                                            @foreach ($mprOptions['benefits'] ?? [] as $benefitKey => $benefitLabel)
+                                                <div class="col-md-4 col-6">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="benefits[]"
+                                                            value="{{ $benefitKey }}" id="mgbn_{{ $benefitKey }}">
+                                                        <label class="form-check-label small" for="mgbn_{{ $benefitKey }}">{{ $benefitLabel }}</label>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- SECTION: ALASAN & KUALIFIKASI -->
                                 <h6 class="fw-bold text-primary mb-3 mt-4"><i
-                                        class="bi bi-question-circle-fill me-2"></i>Alasan & Kualifikasi</h6>
+                                        class="bi bi-question-circle-fill me-2"></i>Alasan &amp; Kualifikasi</h6>
                                 <div class="row g-3 mb-3">
                                     <div class="col-md-6">
                                         <label class="form-label fw-semibold small">Alasan Permintaan <span
                                                 class="text-danger">*</span></label>
-                                        <select name="reason" class="form-select" id="mprReasonSelect" required>
+                                        <select name="reason" class="form-select" required>
                                             <option value="">-- Pilih Alasan Permintaan --</option>
                                             @foreach ($reasons as $r)
                                                 <option value="{{ $r }}">{{ $r }}</option>
@@ -661,24 +723,72 @@
                                         </select>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label fw-semibold small">Nama Karyawan yang Digantikan
-                                            (Opsional)</label>
+                                        <label class="form-label fw-semibold small">
+                                            Nama Karyawan yang Digantikan
+                                            <span class="text-danger d-none" id="mgReplacementForRequiredMark">*</span>
+                                            <span class="text-muted fw-normal small" id="mgReplacementForHint">(aktif jika alasan "Penggantian Karyawan")</span>
+                                        </label>
                                         <input type="text" name="replacement_for" class="form-control"
-                                            placeholder="Diisi jika alasan adalah penggantian">
+                                            id="mgReplacementForField"
+                                            placeholder="Nama karyawan yang akan digantikan"
+                                            disabled>
+                                        <div class="form-text text-muted small mt-1" id="mgReplacementForNote">
+                                            <i class="bi bi-info-circle me-1"></i>Pilih alasan "Penggantian Karyawan Resign / Mutasi / Demosi" untuk mengisi field ini.
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold small">Latar Belakang Pendidikan <span class="text-danger">*</span></label>
+                                        <select name="education_background" class="form-select" required>
+                                            <option value="">-- Pilih Pendidikan --</option>
+                                            @foreach ($mprOptions['education_background'] ?? [] as $eduKey => $eduLabel)
+                                                <option value="{{ $eduKey }}">{{ $eduLabel }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold small">Pengalaman Kerja <span class="text-danger">*</span></label>
+                                        <select name="work_experience" class="form-select" required>
+                                            <option value="">-- Pilih Pengalaman --</option>
+                                            @foreach ($mprOptions['work_experience'] ?? [] as $expKey => $expLabel)
+                                                <option value="{{ $expKey }}">{{ $expLabel }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold small">Skills &amp; Kompetensi</label>
+                                        <textarea name="skills_competencies" class="form-control" rows="2"
+                                            placeholder="Contoh: Laravel, Excel lanjutan, leadership..."></textarea>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold small">Bahasa yang Dikuasai</label>
+                                        <textarea name="languages" class="form-control" rows="2"
+                                            placeholder="Contoh: Bahasa Indonesia (aktif), Bahasa Inggris (pasif)..."></textarea>
                                     </div>
                                     <div class="col-12">
-                                        <label class="form-label fw-semibold small">Kualifikasi & Persyaratan Khusus
-                                            Kandidat</label>
+                                        <label class="form-label fw-semibold small">Kualifikasi &amp; Persyaratan Khusus Kandidat</label>
                                         <textarea name="requirements" class="form-control" rows="3"
-                                            placeholder="Contoh: Pendidikan min. S1 Informatika, Pengalaman min. 2 tahun di Laravel, memiliki komunikasi baik..."></textarea>
+                                            placeholder="Contoh: Pendidikan min. S1 Informatika, pengalaman min. 2 tahun di Laravel, komunikasi baik..."></textarea>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold small">Uraian Tugas &amp; Tanggung Jawab Utama</label>
+                                        <textarea name="job_description" class="form-control" rows="4"
+                                            placeholder="Contoh: Mengembangkan fitur web HRIS, melakukan code review..."></textarea>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold small">Key Results / Target Posisi Ini</label>
+                                        <textarea name="key_results_targets" class="form-control" rows="4"
+                                            placeholder="Contoh: Mencapai target penjualan 100 unit/bulan..."></textarea>
                                     </div>
                                     <div class="col-12">
-                                        <label class="form-label fw-semibold small">Uraian Tugas & Tanggung Jawab
-                                            Utama</label>
-                                        <textarea name="job_description" class="form-control" rows="3"
-                                            placeholder="Contoh: Mengembangkan fitur web HRIS, melakukan code review, memastikan performa database..."></textarea>
+                                        <label class="form-label fw-semibold small">Referensi Industri Sejenis</label>
+                                        <textarea name="industry_reference" class="form-control" rows="2"
+                                            placeholder="Contoh: Pengalaman dari industri mining, logistik, atau FMCG..."></textarea>
                                     </div>
-                                   
+                                    <div class="col-12">
+                                        <label class="form-label fw-semibold small">Catatan Khusus MPR <span class="text-muted fw-normal">(Opsional)</span></label>
+                                        <textarea name="special_notes" class="form-control" rows="2"
+                                            placeholder="Catatan khusus terkait kebutuhan ini..."></textarea>
+                                    </div>
                                 </div>
 
                                 <hr class="my-4">
@@ -1016,9 +1126,9 @@
                                         $mprOptions = config('hris.mpr_form_options', []);
                                     @endphp
 
-                                    <!-- INFORMASI PEMOHON -->
-                                    <h6 class="fw-bold text-primary mb-4">1. Informasi Pemohon / Requester</h6>
-                                    <div class="row g-3 mb-4 p-3 rounded-3 border">
+                                    <!-- 1. INFORMASI PEMOHON -->
+                                    <h6 class="fw-bold text-primary mb-3">1. Informasi Pemohon / Requester</h6>
+                                    <div class="row g-3 mb-4 p-3 rounded-3 border bg-light">
                                         <div class="col-md-6">
                                             <label class="form-label fw-semibold small">Nama Pemohon <span
                                                     class="text-danger">*</span></label>
@@ -1032,25 +1142,28 @@
                                                 class="form-control form-control-sm"
                                                 placeholder="Contoh: Area Manager, Branch Manager" required>
                                         </div>
-                                        <div class="col-md-12">
-                                            <label class="form-label fw-semibold small">Entitas / Perusahaan <span
+                                        <input type="hidden" name="manager_email" value="{{ $user['email'] ?? '' }}">
+                                        <div class="col-12">
+                                            <div class="form-text text-muted" style="font-size:11px;">
+                                                <i class="bi bi-shield-check-fill text-success me-1"></i>
+                                                Nama pemohon diisi otomatis dari akun login. Jabatan dapat disesuaikan jika mengajukan atas nama orang lain.
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 2. DETAIL POSISI & ORGANISASI -->
+                                    <h6 class="fw-bold text-primary mb-3">2. Detail Posisi & Organisasi</h6>
+                                    <div class="row g-3 mb-4">
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold small">Entitas / Perusahaan yang Dituju <span
                                                     class="text-danger">*</span></label>
                                             <select name="entity" class="form-select form-select-sm" required>
                                                 <option value="">-- Pilih Entitas --</option>
                                                 @foreach ($entityOptions as $code => $label)
-                                                    <option value="{{ $code }}">{{ $code }} —
-                                                        {{ $label }}</option>
+                                                    <option value="{{ $code }}">{{ $code }} — {{ $label }}</option>
                                                 @endforeach
                                             </select>
-                                            <div class="form-text text-muted" style="font-size:11px;">Pilih entitas / perusahaan
-                                                yang akan tercantum di dokumen MPR ini.</div>
                                         </div>
-                                        <input type="hidden" name="manager_email" value="{{ $user['email'] ?? '' }}">
-                                    </div>
-
-                                    <!-- DETAIL POSISI -->
-                                    <h6 class="fw-bold text-primary mb-3">2. Detail Posisi & Organisasi</h6>
-                                    <div class="row g-3 mb-4">
                                         <div class="col-md-6">
                                             <label class="form-label fw-semibold small">Posisi / Nama Jabatan yang Diminta <span
                                                     class="text-danger">*</span></label>
@@ -1075,6 +1188,16 @@
                                             <select name="division" class="form-select form-select-sm"
                                                 data-selected-division="{{ old('division') }}" required>
                                                 <option value="">-- Pilih Departemen terlebih dahulu --</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold small">Disetujui oleh (Divisi) <span
+                                                    class="text-danger">*</span></label>
+                                            <select name="approval_division" class="form-select form-select-sm" required>
+                                                <option value="">-- Pilih Divisi --</option>
+                                                @foreach (config('hris.mpr.approval_divisions', []) as $division)
+                                                    <option value="{{ $division }}">{{ $division }}</option>
+                                                @endforeach
                                             </select>
                                         </div>
                                         <div class="col-md-6">
@@ -1117,7 +1240,7 @@
                                             <label class="form-label fw-semibold small">Target Tanggal Bergabung <span
                                                     class="text-danger">*</span></label>
                                             <input type="date" name="expected_join_date"
-                                                class="form-control form-control-sm" required>
+                                                class="form-control form-control-sm" min="{{ date('Y-m-d') }}" required>
                                         </div>
                                     </div>
 
@@ -1155,13 +1278,18 @@
                                             </div>
                                         </div>
                                         <div class="col-12">
-                                            <label class="form-label fw-semibold small">Detail Shift <span
-                                                    class="text-danger d-none" id="hrShiftDetailRequiredMark">*</span>
-                                                <span class="text-muted fw-normal">(wajib jika Hari Kerja "Shifting"
-                                                    dipilih)</span></label>
+                                            <label class="form-label fw-semibold small">
+                                                Detail Shift
+                                                <span class="text-danger d-none" id="hrShiftDetailRequiredMark">*</span>
+                                                <span class="text-muted fw-normal" id="hrShiftDetailHint">(aktif &amp; wajib jika "Shifting" dipilih)</span>
+                                            </label>
                                             <textarea name="shift_detail" class="form-control form-control-sm" rows="2"
                                                 id="hrShiftDetailField"
-                                                placeholder="Contoh: Shift pagi 07:00-15:00, shift siang 15:00-23:00, rotasi mingguan..."></textarea>
+                                                placeholder="Contoh: Shift pagi 07:00-15:00, shift siang 15:00-23:00, rotasi mingguan..."
+                                                disabled></textarea>
+                                            <div class="form-text text-muted small mt-1" id="hrShiftDetailNote">
+                                                <i class="bi bi-info-circle me-1"></i>Centang "Shifting" pada Hari Kerja untuk mengisi detail shift.
+                                            </div>
                                         </div>
                                         <div class="col-12">
                                             <label class="form-label fw-semibold small">Benefits / Tunjangan <span
@@ -1197,9 +1325,16 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-semibold small">Nama Karyawan yang Digantikan
-                                                (Opsional)</label>
+                                                <span class="text-danger d-none" id="hrReplacementForRequiredMark">*</span>
+                                                <span class="text-muted fw-normal" id="hrReplacementForHint">(aktif jika alasan "Penggantian Karyawan")</span>
+                                            </label>
                                             <input type="text" name="replacement_for" class="form-control form-control-sm"
-                                                placeholder="Diisi jika penggantian">
+                                                id="hrReplacementForField"
+                                                placeholder="Nama karyawan yang akan digantikan"
+                                                disabled>
+                                            <div class="form-text text-muted small mt-1" id="hrReplacementForNote">
+                                                <i class="bi bi-info-circle me-1"></i>Pilih alasan "Penggantian Karyawan Resign / Mutasi / Demosi" untuk mengisi field ini.
+                                            </div>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-semibold small">Latar Belakang Pendidikan <span
@@ -1280,212 +1415,7 @@
         @endif
 
         <!-- MODAL DETAIL MPR (SHARED) -->
-        <div class="modal fade" id="modalMprDetail" tabindex="-1" aria-labelledby="modalMprDetailLabel"
-            aria-hidden="true">
-            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-                <div class="modal-content border-0 shadow">
-                    <div class="modal-header bg-primary text-white">
-                        <div>
-                            <h5 class="modal-title fw-bold" id="modalMprDetailLabel"><i
-                                    class="bi bi-file-earmark-text me-2"></i> Detail Manpower Request</h5>
-                            <small class="text-white" id="detailMprNumber">-</small>
-                        </div>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                            aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body p-4" id="modalMprDetailBody">
-                        <div class="text-center py-5" id="detailLoading">
-                            <div class="spinner-border text-primary" role="status"></div>
-                            <div class="mt-2 text-muted small">Memuat data MPR...</div>
-                        </div>
-                        <div id="detailContent" class="d-none">
-                            <!-- SECTION 1 -->
-                            <div class="card bg-light border-0 mb-3 p-3 rounded-3">
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <div class="small text-uppercase text-muted fw-semibold mb-2">Pemohon (Manager)
-                                        </div>
-                                        <div class="fw-semibold text-dark" id="detManagerName">-</div>
-                                        <div class="small text-muted" id="detManagerEmail">-</div>
-                                        <div class="small text-muted" id="detRequestorPosition"></div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="small text-uppercase text-muted fw-semibold mb-2">Entitas / Perusahaan
-                                        </div>
-                                        <div class="fw-semibold text-dark" id="detEntity">-</div>
-                                        <div class="small text-muted" id="detCreatedBy">Diajukan: -</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- SECTION 2 -->
-                            <h6 class="fw-bold text-primary mb-2">Detail Posisi & Kebutuhan</h6>
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-6">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Posisi /Nama Jabatan</div>
-                                    <div class="text-primary fw-bold" id="detPosition">-</div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Departemen / Divisi</div>
-                                    <div class="fw-semibold text-dark" id="detDeptDiv">-</div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Level Jabatan</div>
-                                    <div class="fw-semibold text-dark" id="detJobLevel">-</div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Status Kepegawaian</div>
-                                    <div class="fw-semibold text-dark" id="detEmpType">-</div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Lokasi Penempatan</div>
-                                    <div class="fw-semibold text-dark" id="detLocation">-</div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Jumlah Kebutuhan</div>
-                                    <div class="fw-semibold text-dark"><span class="badge bg-primary fs-6"
-                                            id="detQuantity">-</span>
-                                        Orang</div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Target Tanggal Masuk
-                                        (Join Date)</div>
-                                    <div class="fw-bold text-dark" id="detJoinDate">-</div>
-                                </div>
-                            </div>
-
-                            <!-- SECTION WAKTU KERJA -->
-                            <h6 class="fw-bold text-primary mb-2">Waktu Kerja & Benefits</h6>
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-6">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Hari Kerja</div>
-                                    <div class="fw-semibold text-dark" id="detWorkingDays">-</div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Jam Kerja</div>
-                                    <div class="fw-semibold text-dark" id="detWorkingHours">-</div>
-                                </div>
-                                <div class="col-12" id="wrapShiftDetail">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Detail Shift</div>
-                                    <div class="fw-semibold text-dark" id="detShiftDetail">-</div>
-                                </div>
-                                <div class="col-12">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Benefits / Tunjangan</div>
-                                    <div class="fw-semibold text-dark" id="detBenefits">-</div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Latar Belakang Pendidikan</div>
-                                    <div class="fw-semibold text-dark" id="detEducation">-</div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Pengalaman Kerja</div>
-                                    <div class="fw-semibold text-dark" id="detExperience">-</div>
-                                </div>
-                            </div>
-
-                            <!-- SECTION 3 -->
-                            <h6 class="fw-bold text-primary mb-2">Alasan Permintaan</h6>
-                            <div class="bg-light p-3 rounded-3 mb-3 border">
-                                <div class="small text-uppercase text-muted fw-semibold mb-2">Alasan</div>
-                                <div class="mb-2 fw-semibold text-dark" id="detReason">-</div>
-                                <div id="wrapReplacement" class="d-none">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Menggantikan Karyawan
-                                    </div>
-                                    <div class="fw-semibold text-dark" id="detReplacementFor">-</div>
-                                </div>
-                            </div>
-
-                            <!-- SECTION 4 -->
-                            <h6 class="fw-bold text-primary mb-2">Kualifikasi & Deskripsi</h6>
-                            <div class="row g-3 mb-3">
-                                <div class="col-12">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Kualifikasi Kandidat
-                                    </div>
-                                    <div class="p-2 border rounded bg-white small mpr-markdown-content"
-                                        id="detRequirements" style="min-height:60px;">-</div>
-                                </div>
-                                <div class="col-12">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Uraian Tugas & Tanggung
-                                        Jawab</div>
-                                    <div class="p-2 border rounded bg-white small mpr-markdown-content" id="detJobDesc"
-                                        style="min-height:60px;">-</div>
-                                </div>
-                                <div class="col-md-6" id="wrapSkills">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Skills & Kompetensi</div>
-                                    <div class="fw-semibold text-dark" id="detSkills">-</div>
-                                </div>
-                                <div class="col-md-6" id="wrapLanguages">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Bahasa</div>
-                                    <div class="fw-semibold text-dark" id="detLanguages">-</div>
-                                </div>
-                                <div class="col-12" id="wrapIndustryRef">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Referensi Industri</div>
-                                    <div class="fw-semibold text-dark" id="detIndustryRef">-</div>
-                                </div>
-                                <div class="col-12" id="wrapKeyResults">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Key Results / Target</div>
-                                    <div class="fw-semibold text-dark" id="detKeyResults">-</div>
-                                </div>
-                                <div class="col-12" id="wrapSpecialNotes">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">Catatan Khusus MPR</div>
-                                    <div class="fw-semibold text-dark" id="detSpecialNotes">-</div>
-                                </div>
-
-                            </div>
-
-                            <!-- TANDA TANGAN (match PDF: 3 + 2 centered) -->
-                            <h6 class="fw-bold text-primary mb-2 mt-3">Tanda Tangan</h6>
-                            <div class="row text-center g-3 mb-1">
-                                <div class="col-4">
-                                    <div class="small fw-bold text-dark mb-4">Diajukan oleh (Pemohon)</div>
-                                    <div class="fw-semibold text-dark d-inline-block border-top border-dark pt-1 px-2"
-                                        style="min-width: 140px;" id="detSignRequestorName">-</div>
-                                    <div class="small text-muted" id="detSignRequestorPosition">-</div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="small fw-bold text-dark mb-4">Diperiksa oleh (HRD)</div>
-                                    <div class="fw-semibold text-dark d-inline-block border-top border-dark pt-1 px-2"
-                                        style="min-width: 140px;">( ........................................ )</div>
-                                    <div class="small text-muted">HR Manager / Recruiter</div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="small fw-bold text-dark mb-4">Disetujui oleh (Management)</div>
-                                    <div class="fw-semibold text-dark d-inline-block border-top border-dark pt-1 px-2"
-                                        style="min-width: 140px;">( ........................................ )</div>
-                                    <div class="small text-muted">Direksi / General Manager</div>
-                                </div>
-                            </div>
-                            <div class="row text-center g-3 justify-content-center">
-                                <div class="col-4">
-                                    <div class="small fw-bold text-dark mb-4">Disetujui oleh (COO)</div>
-                                    <div class="fw-semibold text-dark d-inline-block border-top border-dark pt-1 px-2"
-                                        style="min-width: 140px;">Frans Arsianto</div>
-                                    <div class="small text-muted">COO</div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="small fw-bold text-dark mb-4">Disetujui oleh (CEO)</div>
-                                    <div class="fw-semibold text-dark d-inline-block border-top border-dark pt-1 px-2"
-                                        style="min-width: 140px;">Jacksen Lie</div>
-                                    <div class="small text-muted">CEO</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer bg-light border-top">
-                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
-                        @can('update_mpr')
-                            <button type="button" id="btnEditMpr" class="btn btn-primary btn-sm fw-semibold">
-                                <i class="bi bi-pencil-square me-1"></i> Edit MPR
-                            </button>
-                        @endcan
-                        <a id="btnModalDownloadPdf" href="#" target="_blank"
-                            class="btn btn-danger btn-sm fw-semibold">
-                            <i class="bi bi-file-earmark-pdf-fill me-1"></i> Unduh PDF Resmi
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
+        @include('hr.mpr.partials.detail-modal')
 
         @can('update_mpr')
             <div class="modal fade" id="modalEditMpr" tabindex="-1" aria-hidden="true">
@@ -1499,74 +1429,120 @@
                         <form id="formEditMpr">
                             <div class="modal-body p-4">
                                 <div id="editMprErrors" class="alert alert-danger d-none"></div>
-                                <div class="row g-3">
-                                    <div class="col-md-6"><label class="form-label small fw-semibold">Posisi *</label><input
-                                            name="position" class="form-control" required></div>
-                                    <div class="col-md-6"><label class="form-label small fw-semibold">Departemen
-                                            *</label><select name="department" class="form-select" required>
+
+                                <!-- 1. Detail Posisi & Organisasi -->
+                                <h6 class="fw-bold text-primary mb-3">1. Detail Posisi &amp; Organisasi</h6>
+                                <div class="row g-3 mb-4">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Posisi / Nama Jabatan <span class="text-danger">*</span></label>
+                                        <input name="position" class="form-control form-control-sm" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Entitas / Perusahaan <span class="text-danger">*</span></label>
+                                        <select name="entity" class="form-select form-select-sm" required>
+                                            <option value="">-- Pilih Entitas --</option>
+                                            @foreach ($entityOptions as $code => $label)
+                                                <option value="{{ $code }}">{{ $code }} — {{ $label }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Departemen <span class="text-danger">*</span></label>
+                                        <select name="department" class="form-select form-select-sm" required>
                                             <option value="">-- Pilih --</option>
                                             @foreach ($departments as $d)
                                                 <option value="{{ $d }}">{{ $d }}</option>
                                             @endforeach
                                         </select>
                                     </div>
-                                    <div class="col-md-6"><label class="form-label small fw-semibold">Divisi *</label><select
-                                            name="division" class="form-select"
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Divisi <span class="text-danger">*</span></label>
+                                        <select name="division" class="form-select form-select-sm"
                                             data-selected-division="{{ old('division') }}" required disabled>
                                             <option value="">-- Pilih Departemen terlebih dahulu --</option>
-                                        </select></div>
-                                    <div class="col-md-6"><label class="form-label small fw-semibold">Disetujui oleh (Divisi) *</label><select
-                                            name="approval_division" class="form-select" required>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Disetujui oleh (Divisi) <span class="text-danger">*</span></label>
+                                        <select name="approval_division" class="form-select form-select-sm" required>
                                             <option value="">-- Pilih Divisi --</option>
                                             @foreach (config('hris.mpr.approval_divisions', []) as $division)
                                                 <option value="{{ $division }}">{{ $division }}</option>
                                             @endforeach
-                                        </select></div>
-                                    <div class="col-md-6"><label class="form-label small fw-semibold">Level Jabatan
-                                            *</label><select name="job_level" class="form-select" required>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Level Jabatan <span class="text-danger">*</span></label>
+                                        <select name="job_level" class="form-select form-select-sm" required>
                                             <option value="">-- Pilih --</option>
                                             @foreach ($jobLevels as $d)
                                                 <option value="{{ $d }}">{{ $d }}</option>
                                             @endforeach
                                         </select>
                                     </div>
-                                    <div class="col-md-6"><label class="form-label small fw-semibold">Lokasi Penempatan
-                                            *</label><select name="work_location" class="form-select" required>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Lokasi Penempatan <span class="text-danger">*</span></label>
+                                        <select name="work_location" class="form-select form-select-sm" required>
                                             <option value="">-- Pilih --</option>
                                             @foreach ($workLocations as $d)
                                                 <option value="{{ $d }}">{{ $d }}</option>
                                             @endforeach
                                         </select>
                                     </div>
-                                    <div class="col-md-6"><label class="form-label small fw-semibold">Status Kepegawaian
-                                            *</label><select name="employment_type" class="form-select" required>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Status Kepegawaian <span class="text-danger">*</span></label>
+                                        <select name="employment_type" class="form-select form-select-sm" required>
                                             <option value="">-- Pilih --</option>
                                             @foreach ($employmentTypes as $d)
                                                 <option value="{{ $d }}">{{ $d }}</option>
                                             @endforeach
                                         </select>
                                     </div>
-                                    <div class="col-md-6"><label class="form-label small fw-semibold">Jumlah Kebutuhan
-                                            *</label><input name="quantity" type="number" min="1" max="100"
-                                            class="form-control" required></div>
-                                    <div class="col-md-6"><label class="form-label small fw-semibold">Target Bergabung
-                                            *</label><input name="expected_join_date" type="date" class="form-control"
-                                            required></div>
-                                    <div class="col-md-6"><label class="form-label small fw-semibold">Alasan Permintaan
-                                            *</label><select name="reason" class="form-select" required>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Jumlah Kebutuhan <span class="text-danger">*</span></label>
+                                        <input name="quantity" type="number" min="1" max="100" class="form-control form-control-sm" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Target Bergabung <span class="text-danger">*</span></label>
+                                        <input name="expected_join_date" type="date" class="form-control form-control-sm" required>
+                                    </div>
+                                </div>
+
+                                <!-- 2. Alasan & Kualifikasi -->
+                                <h6 class="fw-bold text-primary mb-3">2. Alasan &amp; Kualifikasi</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Alasan Permintaan <span class="text-danger">*</span></label>
+                                        <select name="reason" class="form-select form-select-sm" id="editReasonSelect" required>
                                             <option value="">-- Pilih --</option>
                                             @foreach ($reasons as $d)
                                                 <option value="{{ $d }}">{{ $d }}</option>
                                             @endforeach
-                                        </select></div>
-                                    <div class="col-md-6"><label class="form-label small fw-semibold">Karyawan yang
-                                            Digantikan</label><input name="replacement_for" class="form-control"></div>
-                                    <div class="col-12"><label class="form-label small fw-semibold">Kualifikasi &
-                                            Persyaratan</label>
-                                        <textarea name="requirements" rows="4" class="form-control"></textarea>
+                                        </select>
                                     </div>
-                                    <div class="col-12"><label class="form-label small fw-semibold">Uraian Tugas</label>
-                                        <textarea name="job_description" rows="4" class="form-control"></textarea>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">
+                                            Karyawan yang Digantikan
+                                            <span class="text-danger d-none" id="editReplacementForRequiredMark">*</span>
+                                            <span class="text-muted fw-normal small" id="editReplacementForHint">(aktif jika alasan "Penggantian Karyawan")</span>
+                                        </label>
+                                        <input name="replacement_for" class="form-control form-control-sm"
+                                            id="editReplacementForField"
+                                            placeholder="Nama karyawan yang akan digantikan"
+                                            disabled>
+                                        <div class="form-text text-muted small mt-1" id="editReplacementForNote">
+                                            <i class="bi bi-info-circle me-1"></i>Pilih alasan "Penggantian Karyawan" untuk mengisi field ini.
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small fw-semibold">Kualifikasi &amp; Persyaratan</label>
+                                        <textarea name="requirements" rows="4" class="form-control form-control-sm"
+                                            placeholder="Pendidikan, pengalaman, keahlian teknis..."></textarea>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small fw-semibold">Uraian Tugas</label>
+                                        <textarea name="job_description" rows="4" class="form-control form-control-sm"
+                                            placeholder="Ringkasan tanggung jawab posisi..."></textarea>
                                     </div>
                                 </div>
                             </div>
@@ -1632,22 +1608,146 @@
 
             document.querySelectorAll('form').forEach(form => setupDepartmentDivision(form));
 
-            // Toggle wajib Detail Shift bila "Shifting" dipilih (HR Create Modal)
-            const hrShiftField = document.getElementById('hrShiftDetailField');
-            const hrShiftMark = document.getElementById('hrShiftDetailRequiredMark');
-            const hrCreateForm = document.getElementById('formHrCreateMpr');
-            if (hrCreateForm) {
-                const updateHrShift = () => {
-                    const shiftingChecked = Array.from(
-                        hrCreateForm.querySelectorAll('input[name="working_days[]"]')
-                    ).some(cb => cb.value === 'shifting' && cb.checked);
-                    if (hrShiftField) hrShiftField.required = shiftingChecked;
-                    if (hrShiftMark) hrShiftMark.classList.toggle('d-none', !shiftingChecked);
-                };
-                hrCreateForm.querySelectorAll('input[name="working_days[]"]').forEach(cb => {
-                    cb.addEventListener('change', updateHrShift);
+            /**
+             * Logika Shifting (shared helper — digunakan di semua form MPR):
+             * - Shifting diceklis → hari kerja lain + jam kerja di-disable & uncheck,
+             *   textarea detail shift: enabled, required, border highlight
+             * - Shifting di-unceklis → semua checkbox kembali enabled,
+             *   textarea detail shift: disabled, not required, value dikosongkan
+             */
+            function applyShiftingState(form) {
+                if (!form) return;
+
+                const shiftingCb   = form.querySelector('input[name="working_days[]"][value="shifting"]');
+                const otherDayCbs  = Array.from(form.querySelectorAll('input[name="working_days[]"]'))
+                                         .filter(cb => cb.value !== 'shifting');
+                const hourCbs      = Array.from(form.querySelectorAll('input[name="working_hours[]"]'));
+                const shiftField   = form.querySelector('[id$="ShiftDetailField"]');
+                const requiredMark = form.querySelector('[id$="ShiftDetailRequiredMark"]');
+                const hintNote     = form.querySelector('[id$="ShiftDetailNote"]');
+
+                if (!shiftingCb) return;
+                const isShifting = shiftingCb.checked;
+
+                // Hari Kerja lain
+                otherDayCbs.forEach(cb => {
+                    if (isShifting) {
+                        cb.checked  = false;
+                        cb.disabled = true;
+                        cb.closest('.form-check')?.classList.add('opacity-50');
+                    } else {
+                        cb.disabled = false;
+                        cb.closest('.form-check')?.classList.remove('opacity-50');
+                    }
                 });
-                updateHrShift();
+
+                // Jam Kerja
+                hourCbs.forEach(cb => {
+                    if (isShifting) {
+                        cb.checked  = false;
+                        cb.disabled = true;
+                        cb.closest('.form-check')?.classList.add('opacity-50');
+                    } else {
+                        cb.disabled = false;
+                        cb.closest('.form-check')?.classList.remove('opacity-50');
+                    }
+                });
+
+                // Detail Shift textarea
+                if (shiftField) {
+                    shiftField.disabled = !isShifting;
+                    shiftField.required = isShifting;
+                    if (!isShifting) {
+                        shiftField.value = '';
+                        shiftField.classList.remove('border-primary');
+                    } else {
+                        shiftField.classList.add('border-primary');
+                        shiftField.focus();
+                    }
+                }
+                if (requiredMark) requiredMark.classList.toggle('d-none', !isShifting);
+                if (hintNote)     hintNote.classList.toggle('d-none', isShifting);
+            }
+
+            /**
+             * Logika Replacement:
+             * - Jika alasan = "Penggantian Karyawan Resign / Mutasi / Demosi":
+             *   → Input nama karyawan: enabled, required, border highlight
+             * - Selain itu: disabled, not required, value dikosongkan
+             */
+            const REPLACEMENT_REASON_VALUE = 'Penggantian Karyawan Resign / Mutasi / Demosi';
+
+            function applyReplacementState(form) {
+                if (!form) return;
+                const reasonSelect     = form.querySelector('[name="reason"]');
+                const replacementField = form.querySelector('[id$="ReplacementForField"]');
+                const requiredMark     = form.querySelector('[id$="ReplacementForRequiredMark"]');
+                const hintText         = form.querySelector('[id$="ReplacementForHint"]');
+                const noteText         = form.querySelector('[id$="ReplacementForNote"]');
+                if (!reasonSelect || !replacementField) return;
+
+                const isReplacement = reasonSelect.value === REPLACEMENT_REASON_VALUE;
+
+                replacementField.disabled = !isReplacement;
+                replacementField.required = isReplacement;
+                if (!isReplacement) {
+                    replacementField.value = '';
+                    replacementField.classList.remove('border-primary');
+                } else {
+                    replacementField.classList.add('border-primary');
+                }
+                if (requiredMark) requiredMark.classList.toggle('d-none', !isReplacement);
+                if (hintText)     hintText.classList.toggle('d-none', isReplacement);
+                if (noteText)     noteText.classList.toggle('d-none', isReplacement);
+            }
+
+            // Pasang listener & inisialisasi untuk form HR Create MPR (modal)
+            const hrCreateForm = document.getElementById('formHrCreateMpr');
+
+            // Pasang listener & inisialisasi untuk Manager Experience form (inline)
+            const mgForm = document.getElementById('formManagerMpr');
+            if (mgForm) {
+                const mgShiftingCb = mgForm.querySelector('input[name="working_days[]"][value="shifting"]');
+                if (mgShiftingCb) {
+                    mgShiftingCb.addEventListener('change', () => applyShiftingState(mgForm));
+                }
+                applyShiftingState(mgForm);
+
+                const mgReasonSelect = mgForm.querySelector('[name="reason"]');
+                if (mgReasonSelect) {
+                    mgReasonSelect.addEventListener('change', () => applyReplacementState(mgForm));
+                }
+                applyReplacementState(mgForm);
+            }
+
+            if (hrCreateForm) {
+                const shiftingCb = hrCreateForm.querySelector('input[name="working_days[]"][value="shifting"]');
+                if (shiftingCb) {
+                    shiftingCb.addEventListener('change', () => applyShiftingState(hrCreateForm));
+                }
+                applyShiftingState(hrCreateForm);
+
+                // Re-apply saat modal dibuka kembali (setelah reset)
+                const modalCreateEl = document.getElementById('modalCreateMpr');
+                if (modalCreateEl) {
+                    modalCreateEl.addEventListener('shown.bs.modal', () => {
+                        applyShiftingState(hrCreateForm);
+                        applyReplacementState(hrCreateForm);
+                    });
+                    modalCreateEl.addEventListener('hidden.bs.modal', () => {
+                        // Reset shifting state saat modal ditutup
+                        hrCreateForm.reset();
+                        applyShiftingState(hrCreateForm);
+                        applyReplacementState(hrCreateForm);
+                    });
+                }
+
+                // Listener alasan → replacement
+                const hrReasonSelect = hrCreateForm.querySelector('[name="reason"]');
+                if (hrReasonSelect) {
+                    hrReasonSelect.addEventListener('change', () => applyReplacementState(hrCreateForm));
+                }
+                applyReplacementState(hrCreateForm);
             }
 
             function getCsrfToken() {
@@ -1884,6 +1984,12 @@
                                     setupDepartmentDivision(editForm, m.division || '');
                                     document.getElementById('editMprErrors').classList.add(
                                         'd-none');
+                                    // Inisialisasi replacement state setelah data di-populate
+                                    const editReasonSelect = editForm.querySelector('[name="reason"]');
+                                    if (editReasonSelect) {
+                                        editReasonSelect.addEventListener('change', () => applyReplacementState(editForm));
+                                    }
+                                    applyReplacementState(editForm);
                                     bootstrap.Modal.getOrCreateInstance(document
                                         .getElementById('modalMprDetail')).hide();
                                     bootstrap.Modal.getOrCreateInstance(document
