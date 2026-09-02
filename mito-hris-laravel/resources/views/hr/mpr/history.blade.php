@@ -123,7 +123,7 @@
                                 </td>
                                 <td>
                                     <div class="fw-medium text-dark">{{ $mpr->department }}</div>
-                                    <small class="text-muted">{{ $mpr->entity ?: $mpr->company }}</small>
+                                    <small class="text-muted">{{ $mpr->entity }}</small>
                                 </td>
                                 <td>
                                     <span class="badge bg-primary-subtle text-primary border rounded-pill px-2 py-1">
@@ -244,14 +244,10 @@
                         .then(data => {
                             const m = data.mpr;
                             document.getElementById('detManagerName').innerText = m
-                                .requestor_name || m.manager_name || '-';
+                                .requestor_name || '-';
                             document.getElementById('detManagerEmail').innerText = m
-                                .requestor_email || m.manager_email || '-';
-                            document.getElementById('detCompany').innerText = m.entity || m
-                                .company || '-';
-                            const detBranch = document.getElementById('detBranch');
-                            if (detBranch) detBranch.innerText = m.branch ?
-                                `Branch: ${m.branch}` : '';
+                                .requestor_email || '-';
+                            document.getElementById('detEntity').innerText = m.entity || '-';
                             document.getElementById('detCreatedBy').innerText =
                                 `Diajukan: ${m.created_at || m.request_date || '-'}`;
                             document.getElementById('detPosition').innerText = m.position ||
@@ -318,7 +314,7 @@
 
                             // Tanda tangan (match PDF: 3 + 2 centered)
                             const signName = document.getElementById('detSignRequestorName');
-                            if (signName) signName.innerText = m.requestor_name || m.manager_name || '-';
+                            if (signName) signName.innerText = m.requestor_name || '-';
                             const signPos = document.getElementById('detSignRequestorPosition');
                             if (signPos) signPos.innerText = m.requestor_position || 'Manager / User Dept';
 

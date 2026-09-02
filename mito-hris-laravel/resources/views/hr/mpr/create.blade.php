@@ -75,7 +75,7 @@
                                             class="bi bi-lock-fill me-1"></i> Terkunci Permanen</span>
                                 </div>
                                 <div class="row g-3">
-                                    <div class="col-md-4">
+                                    <div class="col-md-6">
                                         <label class="form-label text-muted small fw-semibold mb-1">Nama Pemohon</label>
                                         <div class="input-group input-group-sm">
                                             <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
@@ -84,27 +84,20 @@
                                                 disabled>
                                         </div>
                                     </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label text-muted small fw-semibold mb-1">Jabatan Pemohon <span
-                                                class="text-danger">*</span></label>
-                                        <input type="text" name="requestor_position" class="form-control form-control-sm"
-                                            value="{{ old('requestor_position') }}"
-                                            placeholder="Contoh: Area Manager, Branch Manager" required>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label text-muted small fw-semibold mb-1">Branch / Lokasi
-                                            Pemohon</label>
+                                    <div class="col-md-6">
+                                        <label class="form-label text-muted small fw-semibold mb-1">Jabatan Pemohon</label>
                                         <div class="input-group input-group-sm">
-                                            <span class="input-group-text"><i class="bi bi-geo-alt-fill"></i></span>
+                                            <span class="input-group-text"><i class="bi bi-briefcase-fill"></i></span>
                                             <input type="text" class="form-control"
-                                                value="{{ !empty($user['branch']) ? $user['branch'] : '-' }}" readonly
-                                                disabled title="Branch diambil otomatis dari profil akun Anda">
+                                                value="{{ $user['jobPosition'] ?? '-' }}" readonly disabled>
                                         </div>
+                                        <input type="hidden" name="requestor_position"
+                                            value="{{ $user['jobPosition'] ?? '' }}">
                                     </div>
                                 </div>
                                 <div class="mt-3 text-muted small">
                                     <i class="bi bi-shield-check-fill text-success me-1"></i>
-                                    Identitas dan branch diambil dari sesi akun login Anda.
+                                    Identitas dan jabatan pemohon diambil otomatis dari sesi akun login Anda.
                                 </div>
                             </div>
 
@@ -116,37 +109,16 @@
                                     Posisi yang Dibutuhkan</h6>
                                 <div class="row g-3">
                                     <div class="col-md-6">
-                                        <label class="form-label">Entitas / Perusahaan <span
+                                        <label class="form-label">Entitas / Perusahaan yang dituju <span
                                                 class="text-danger">*</span></label>
-                                        @if (count($allowedEntities) === 0)
-                                            <div class="alert alert-warning py-2 px-3 mb-0 small">
-                                                <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                                                Akun Anda belum memiliki entitas yang di-assign. Hubungi administrator untuk
-                                                menambahkan entitas.
-                                            </div>
-                                            <input type="hidden" name="entity" value="">
-                                        @elseif(count($allowedEntities) === 1)
-                                            @php
-                                                $singleEntityCode = array_key_first($allowedEntities);
-                                            @endphp
-                                            <div class="input-group input-group-sm">
-                                                <span class="input-group-text"><i class="bi bi-building-fill"></i></span>
-                                                <input type="text" class="form-control"
-                                                    value="{{ $singleEntityCode }} — {{ $allowedEntities[$singleEntityCode] }}"
-                                                    readonly disabled>
-                                            </div>
-                                            <input type="hidden" name="entity" value="{{ $singleEntityCode }}">
-                                        @else
-                                            <select name="entity" class="form-select" required>
-                                                <option value="">-- Pilih Entitas --</option>
-                                                @foreach ($allowedEntities as $code => $label)
-                                                    <option value="{{ $code }}"
-                                                        {{ old('entity') === $code ? 'selected' : '' }}>
-                                                        {{ $code }} —
-                                                        {{ $label }}</option>
-                                                @endforeach
-                                            </select>
-                                        @endif
+                                        <select name="entity" class="form-select" required>
+                                            <option value="">-- Pilih Entitas --</option>
+                                            @foreach ($entityOptions as $code => $label)
+                                                <option value="{{ $code }}"
+                                                    {{ old('entity') === $code ? 'selected' : '' }}>
+                                                    {{ $code }} - {{ $label }}</option>
+                                            @endforeach
+                                        </select>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Posisi / Nama Jabatan yang Diminta <span

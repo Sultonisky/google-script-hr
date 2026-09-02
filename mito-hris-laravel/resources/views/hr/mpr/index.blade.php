@@ -530,99 +530,45 @@
                                                 class="bi bi-lock-fill me-1"></i> Terkunci Permanen</span>
                                     </div>
                                     <div class="row g-3">
-                                        <div class="col-md-4">
-                                            <label class="form-label text-muted small fw-semibold mb-1">Nama Pemohon
-                                                (Manager)</label>
+                                        <div class="col-md-6">
+                                            <label class="form-label text-muted small fw-semibold mb-1">Nama Pemohon</label>
                                             <div class="input-group input-group-sm">
-                                                <span class="input-group-text bg-white border-end-0 text-muted"><i
-                                                        class="bi bi-person-fill"></i></span>
-                                                <input type="text"
-                                                    class="form-control bg-white border-start-0 text-dark fw-semibold"
+                                                <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-person-fill"></i></span>
+                                                <input type="text" class="form-control bg-white border-start-0 text-dark fw-semibold"
                                                     value="{{ $user['fullName'] ?? ($user['name'] ?? 'Manager') }}" readonly
                                                     disabled style="cursor: not-allowed;">
                                             </div>
                                         </div>
-                                        <div class="col-md-4">
-                                            <label class="form-label text-muted small fw-semibold mb-1">Email
-                                                Pemohon</label>
+                                        <div class="col-md-6">
+                                            <label class="form-label text-muted small fw-semibold mb-1">Jabatan Pemohon</label>
                                             <div class="input-group input-group-sm">
-                                                <span class="input-group-text bg-white border-end-0 text-muted"><i
-                                                        class="bi bi-envelope-fill"></i></span>
-                                                <input type="text"
-                                                    class="form-control bg-white border-start-0 text-dark fw-semibold"
-                                                    value="{{ $user['email'] ?? '-' }}" readonly disabled
-                                                    style="cursor: not-allowed;">
+                                                <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-briefcase-fill"></i></span>
+                                                <input type="text" class="form-control bg-white border-start-0 text-dark fw-semibold"
+                                                    value="{{ $user['jobPosition'] ?? '-' }}" readonly
+                                                    disabled style="cursor: not-allowed;">
                                             </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <label class="form-label text-muted small fw-semibold mb-1">Branch / Lokasi
-                                                Pemohon</label>
-                                            <div class="input-group input-group-sm">
-                                                <span class="input-group-text bg-white border-end-0 text-muted"><i
-                                                        class="bi bi-geo-alt-fill"></i></span>
-                                                <input type="text"
-                                                    class="form-control bg-white border-start-0 text-dark fw-semibold"
-                                                    value="{{ !empty($user['branch']) ? $user['branch'] : '-' }}" readonly
-                                                    disabled style="cursor: not-allowed;"
-                                                    title="Branch diambil otomatis dari profil akun Anda">
-                                            </div>
+                                            <input type="hidden" name="requestor_position" value="{{ $user['jobPosition'] ?? '' }}">
                                         </div>
                                     </div>
 
-                                    {{-- Entity Selector: hanya entity yang menjadi assignment Manager ini --}}
+                                    {{-- Entity / Perusahaan yang dituju — input MPR form (dari config) --}}
                                     <div class="row g-3 mt-1">
                                         <div class="col-md-12">
                                             <label class="form-label text-muted small fw-semibold mb-1">
-                                                Entitas yang Dituju <span class="text-danger">*</span>
-                                                <span class="ms-1 text-muted fw-normal" style="font-size:10px;">(pilih dari
-                                                    daftar entitas Anda)</span>
+                                                Entitas / Perusahaan yang dituju <span class="text-danger">*</span>
                                             </label>
-                                            @if (count($allowedEntities) === 0)
-                                                <div class="alert alert-warning py-2 px-3 mb-0 small">
-                                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                                                    Akun Anda belum memiliki entitas yang di-assign. Hubungi administrator
-                                                    untuk menambahkan entitas.
-                                                </div>
-                                                {{-- Hidden fallback agar form tidak kosong --}}
-                                                <input type="hidden" name="entity" value="">
-                                            @elseif(count($allowedEntities) === 1)
-                                                {{-- Jika hanya satu entity, langsung readonly (auto-select) --}}
-                                                @php
-                                                    $singleEntityCode = array_key_first($allowedEntities);
-                                                    $singleEntityLabel = $allowedEntities[$singleEntityCode];
-                                                @endphp
-                                                <div class="input-group input-group-sm">
-                                                    <span class="input-group-text bg-white border-end-0 text-muted"><i
-                                                            class="bi bi-building-fill"></i></span>
-                                                    <input type="text"
-                                                        class="form-control bg-white border-start-0 text-dark fw-semibold"
-                                                        value="{{ $singleEntityCode }} — {{ $singleEntityLabel }}" readonly
-                                                        disabled style="cursor: not-allowed;">
-                                                </div>
-                                                <input type="hidden" name="entity" value="{{ $singleEntityCode }}">
-                                            @else
-                                                <select name="entity" class="form-select form-select-sm" required>
-                                                    <option value="">-- Pilih Entitas --</option>
-                                                    @foreach ($allowedEntities as $code => $label)
-                                                        <option value="{{ $code }}">{{ $code }} —
-                                                            {{ $label }}</option>
-                                                    @endforeach
-                                                </select>
-                                            @endif
+                                            <select name="entity" class="form-select form-select-sm" required>
+                                                <option value="">-- Pilih Entitas --</option>
+                                                @foreach ($entityOptions as $code => $label)
+                                                    <option value="{{ $code }}">{{ $code }} - {{ $label }}</option>
+                                                @endforeach
+                                            </select>
                                         </div>
-                                        {{-- <div class="col-md-12 d-inline-flex align-items-end">
-                                            <div class="text-mute border py-2 px-3 rounded small">
-                                                <i class="bi bi-info-circle-fill text-primary me-1"></i>
-                                                <strong>Entity</strong> = perusahaan yang menjadi tanggung jawab Anda.<br>
-                                                <strong>Branch</strong> = lokasi Anda bertugas, otomatis dari profil akun.
-                                            </div>
-                                        </div> --}}
                                     </div>
 
                                     <div class="mt-2 text-muted" style="font-size: 11px;">
                                         <i class="bi bi-shield-check-fill text-success me-1"></i>
-                                        Identitas, branch, dan daftar entitas diambil dari sesi akun login Anda. Pilih
-                                        entitas yang sesuai untuk pengajuan ini.
+                                        Identitas dan jabatan pemohon diambil dari sesi akun login Anda. Pilih entitas yang sesuai untuk pengajuan ini.
                                     </div>
                                 </div>
 
@@ -783,7 +729,7 @@
                                                     <span class="fw-semibold text-dark">{{ $mpr->position }}</span><br>
                                                     <small class="text-muted">{{ $mpr->department }}</small><br>
                                                     <small class="badge bg-light text-secondary border"
-                                                        style="font-size:10px;">{{ $mpr->entity ?: $mpr->company }}</small>
+                                                        style="font-size:10px;">{{ $mpr->entity ?: '-' }}</small>
                                                 </td>
                                                 <td>
                                                     <span class="badge bg-light text-dark border">{{ $mpr->quantity }}
@@ -965,12 +911,7 @@
                                         </td>
                                         <td>
                                             <div class="fw-medium text-dark">{{ $mpr->department }}</div>
-                                            <small class="text-muted">{{ $mpr->entity ?: $mpr->company }}</small>
-                                            @if (!empty($mpr->branch))
-                                                <div><small class="text-muted" style="font-size:10px;"><i
-                                                            class="bi bi-geo-alt me-1"></i>{{ $mpr->branch }}</small>
-                                                </div>
-                                            @endif
+                                            <small class="text-muted">{{ $mpr->entity ?: '-' }}</small>
                                         </td>
                                         <td>
                                             <div class="fw-semibold text-dark">{{ $mpr->position }}</div>
@@ -1101,7 +1042,7 @@
                                                         {{ $label }}</option>
                                                 @endforeach
                                             </select>
-                                            <div class="form-text text-muted" style="font-size:11px;">Pilih entitas (company)
+                                            <div class="form-text text-muted" style="font-size:11px;">Pilih entitas / perusahaan
                                                 yang akan tercantum di dokumen MPR ini.</div>
                                         </div>
                                         <input type="hidden" name="manager_email" value="{{ $user['email'] ?? '' }}">
@@ -1371,8 +1312,7 @@
                                     <div class="col-md-6">
                                         <div class="small text-uppercase text-muted fw-semibold mb-2">Entitas / Perusahaan
                                         </div>
-                                        <div class="fw-semibold text-dark" id="detCompany">-</div>
-                                        <div class="small text-muted" id="detBranch">-</div>
+                                        <div class="fw-semibold text-dark" id="detEntity">-</div>
                                         <div class="small text-muted" id="detCreatedBy">Diajukan: -</div>
                                     </div>
                                 </div>
@@ -1843,14 +1783,10 @@
                             const m = data.mpr;
                             currentMprId = m.mpr_number || id;
                             document.getElementById('detManagerName').innerText = m
-                                .requestor_name || m.manager_name || '-';
+                                .requestor_name || '-';
                             document.getElementById('detManagerEmail').innerText = m
-                                .requestor_email || m.manager_email || '-';
-                            document.getElementById('detCompany').innerText = m.entity || m
-                                .company || '-';
-                            const detBranch = document.getElementById('detBranch');
-                            if (detBranch) detBranch.innerText = m.branch ?
-                                `Branch: ${m.branch}` : '';
+                                .requestor_email || '-';
+                            document.getElementById('detEntity').innerText = m.entity || '-';
                             document.getElementById('detCreatedBy').innerText =
                                 `Diajukan: ${m.created_at || m.request_date || '-'}`;
                             document.getElementById('detPosition').innerText = m.position ||
@@ -1917,7 +1853,7 @@
 
                             // Tanda tangan (match PDF: 3 + 2 centered)
                             const signName = document.getElementById('detSignRequestorName');
-                            if (signName) signName.innerText = m.requestor_name || m.manager_name || '-';
+                            if (signName) signName.innerText = m.requestor_name || '-';
                             const signPos = document.getElementById('detSignRequestorPosition');
                             if (signPos) signPos.innerText = m.requestor_position || 'Manager / User Dept';
                             const approvalDivision = document.getElementById('detApprovalDivision');

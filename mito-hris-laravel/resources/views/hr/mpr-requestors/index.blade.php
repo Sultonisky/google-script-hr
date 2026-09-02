@@ -94,8 +94,6 @@
                             <th>Username</th>
                             <th>Job Position</th>
                             <th>Role</th>
-                            <th>Entity</th>
-                            <th>Branch</th>
                             <th>Status</th>
                             <th>Login Terakhir</th>
                             <th>Dibuat</th>
@@ -119,8 +117,6 @@
                                 <td><span
                                         class="fw-semibold text-navy requestor-role">{{ $requestor['Role'] ?? '-' }}</span>
                                 </td>
-                                <td class="requestor-entity">{{ $requestor['Entity'] ?? '-' }}</td>
-                                <td class="requestor-branch">{{ $requestor['Branch'] ?? '-' }}</td>
                                 <td><span class="badge {{ $statusClass }} requestor-status">{{ $status }}</span>
                                 </td>
                                 <td class="id-mono">{{ $requestor['Last Login'] ?? '-' }}</td>
@@ -134,9 +130,7 @@
                                             data-name="{{ $requestor['Full Name'] ?? '' }}"
                                             data-username="{{ $requestor['Username'] ?? '' }}"
                                             data-job-position="{{ $requestor['Job Position'] ?? '' }}"
-                                            data-role="{{ $requestor['Role'] ?? '' }}" data-status="{{ $status }}"
-                                            data-entity="{{ $requestor['Entity'] ?? '' }}"
-                                            data-branch="{{ $requestor['Branch'] ?? '' }}">
+                                            data-role="{{ $requestor['Role'] ?? '' }}" data-status="{{ $status }}">
                                             <i class="bi bi-pencil-fill" aria-hidden="true"></i>
                                         </button>
                                     @endcan
@@ -144,7 +138,7 @@
                             </tr>
                         @empty
                             <tr id="mprRequestorEmptyRow">
-                                <td colspan="11">
+                                <td colspan="9">
                                     <div class="table-empty">
                                         <i class="bi bi-person-x"></i>
                                         <p class="mb-0">Belum ada MPR requestor.</p>
@@ -153,7 +147,7 @@
                             </tr>
                         @endforelse
                         <tr id="mprRequestorSearchEmptyRow" class="d-none">
-                            <td colspan="11">
+                            <td colspan="9">
                                 <div class="table-empty">
                                     <i class="bi bi-search"></i>
                                     <p class="mb-0">Tidak ada requestor yang sesuai filter.</p>
