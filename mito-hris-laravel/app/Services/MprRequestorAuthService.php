@@ -28,20 +28,8 @@ class MprRequestorAuthService
      * Returns an array with:
      *   success: bool
      *   error:   string  (only when success = false)
-     *   user:    array   (only when success = true) — this is put into session('hr_user')
+     *   user:    array   (only when success = true) — this is put into session
      */
-    protected function normalizeJobPosition(array $requestor): string
-    {
-        foreach (['Job Position', 'jobPosition', 'job_position'] as $key) {
-            $value = trim((string) ($requestor[$key] ?? ''));
-            if ($value !== '') {
-                return $value;
-            }
-        }
-
-        return '';
-    }
-
     public function attemptLogin(string $identifier, string $password): array
     {
         $requestor = $this->requestorRepo->findByIdentifier($identifier);
@@ -49,12 +37,11 @@ class MprRequestorAuthService
         if ($requestor === null) {
             return [
                 'success' => false,
-                'error'   => null, // null = not found in this domain (caller will try next domain)
+                'error'   => 'Akun tidak ditemukan di portal MPR.',
             ];
         }
 
-        // Domain confirmed: this identifier belongs to an MPR Requestor.
-        // All further errors are hard rejections (not "try next domain").
+        // Identifier belongs to an MPR Requestor — all further errors are hard rejections.
 
         if (strtolower(trim($requestor['Status'] ?? '')) !== 'active') {
             return [
@@ -111,15 +98,13 @@ class MprRequestorAuthService
 
         $this->requestorRepo->updateLastLogin($requestor['Email']);
 
-        $jobPosition = $this->normalizeJobPosition($requestor);
-
         return [
             'success' => true,
             'message' => 'Login berhasil.',
             'user'    => [
                 'email'       => $requestor['Email'],
                 'fullName'    => $requestor['Full Name'] ?? $requestor['Email'],
-                'jobPosition' => $jobPosition,
+                'jobPosition' => trim((string) ($requestor['Job Position'] ?? '')),
                 'role'        => $role ?: 'Manager',
                 'permissions' => ['view_mpr', 'create_mpr', 'export_mpr'],
                 'portal'      => 'mpr',
