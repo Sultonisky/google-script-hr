@@ -123,6 +123,10 @@
   </p>
 
   {{-- ── TANDA TANGAN (1:1 GAS: kanan, city+todayStr, Hormat Kami, companyName, Hisar Hesti, jabatan) --}}
+  {{-- Override hr-sign img agar rata kanan sesuai sign-table td text-align:right --}}
+  <style>
+    .hr-sign-img { margin-left: auto; margin-right: 0; }
+  </style>
   <table class="sign-table">
     <tr>
       <td>
