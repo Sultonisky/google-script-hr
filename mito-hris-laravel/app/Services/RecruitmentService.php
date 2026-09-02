@@ -77,6 +77,23 @@ class RecruitmentService
             $alamatDomisili = $kecamatan . ', ' . $alamatDomisili;
         }
 
+        // BUG FIX #1 — Canonical phone: prepend +62 if the field only contains the local portion.
+        // The form renders "+62" as a visual-only prefix span; the actual input field (nomor_telepon)
+        // only contains the subscriber number (e.g. "89696969").  Stored value must be "+6289696969".
+        $rawPhone = $validatedData['nomor_telepon'] ?? ($validatedData['no_telp'] ?? ($validatedData['phone'] ?? null));
+        $canonicalPhone = self::normalizePhone($rawPhone);
+
+        // BUG FIX #2 — City name: the <select name="kota"> uses numeric region codes as option
+        // values (e.g. "3327" for "KAB. PEMALANG").  kota_nama is a hidden input populated by JS
+        // with the human-readable city name before form submission.  Use kota_nama when present;
+        // fall back to kota only when it already looks like a name (non-numeric).
+        $cityRaw  = $validatedData['kota_nama'] ?? ($validatedData['kota'] ?? ($validatedData['city'] ?? null));
+        $cityName = (is_string($cityRaw) && !ctype_digit(trim($cityRaw))) ? $cityRaw : null;
+        // Last resort: if still numeric / empty, treat as unknown rather than store the code.
+        if (empty($cityName)) {
+            $cityName = null;
+        }
+
         $candidate = new CandidateData(
             fullName: $validatedData['nama_lengkap'] ?? ($validatedData['full_name'] ?? null),
             nik: $validatedData['nik'] ?? null,
@@ -85,9 +102,9 @@ class RecruitmentService
             gender: $validatedData['jenis_kelamin'] ?? ($validatedData['gender'] ?? null),
             maritalStatus: $validatedData['marital_status'] ?? null,
             email: $validatedData['email'] ?? null,
-            phone: $validatedData['nomor_telepon'] ?? ($validatedData['no_telp'] ?? ($validatedData['phone'] ?? null)),
+            phone: $canonicalPhone,
             address: $alamatDomisili,
-            city: $validatedData['kota'] ?? ($validatedData['city'] ?? null),
+            city: $cityName,
             positionApplied: $validatedData['posisi_dilamar'] ?? ($validatedData['posisi'] ?? ($validatedData['position_applied'] ?? null)),
             education: $validatedData['pendidikan_terakhir'] ?? ($validatedData['pendidikan'] ?? ($validatedData['education'] ?? null)),
             workExperience: $validatedData['pengalaman_kerja'] ?? ($validatedData['work_experience'] ?? null),
@@ -438,5 +455,49 @@ class RecruitmentService
         }
 
         return $this->candidateRepo->findByNik($query);
+    }
+
+    /**
+     * Normalize an Indonesian phone number to the canonical +62xxxxxxxxxx format.
+     *
+     * Accepted inputs   → output
+     *   89696969        → +6289696969
+     *   089696969       → +6289696969
+     *   6289696969      → +6289696969
+     *   +6289696969     → +6289696969   (already canonical — no double prefix)
+     *   +62089696969    → +6289696969   (strips the redundant leading 0)
+     */
+    public static function normalizePhone(?string $phone): ?string
+    {
+        if ($phone === null) return null;
+        $phone = trim($phone);
+        if ($phone === '') return null;
+
+        // Already canonical
+        if (str_starts_with($phone, '+62')) {
+            // Guard against +62 0xxxxxxx (with a redundant leading 0 after prefix)
+            $subscriber = substr($phone, 3);
+            if (str_starts_with($subscriber, '0')) {
+                $subscriber = ltrim($subscriber, '0');
+            }
+            return '+62' . $subscriber;
+        }
+
+        // Has country code without +
+        if (str_starts_with($phone, '62')) {
+            $subscriber = substr($phone, 2);
+            if (str_starts_with($subscriber, '0')) {
+                $subscriber = ltrim($subscriber, '0');
+            }
+            return '+62' . $subscriber;
+        }
+
+        // Local format with leading 0 (e.g. 089696969)
+        if (str_starts_with($phone, '0')) {
+            return '+62' . ltrim($phone, '0');
+        }
+
+        // Bare subscriber number (e.g. 89696969) — the most common form from the UI
+        return '+62' . $phone;
     }
 }

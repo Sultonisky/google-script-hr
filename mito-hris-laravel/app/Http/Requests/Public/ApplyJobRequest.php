@@ -38,6 +38,7 @@ class ApplyJobRequest extends FormRequest
             'alamat_domisili'       => ['nullable', 'string'],
             'provinsi'              => ['nullable', 'string'],
             'kota'                  => ['nullable', 'string'],
+            'kota_nama'             => ['nullable', 'string', 'max:120'],
             'kecamatan'             => ['nullable', 'string'],
             'kecamatan_manual'      => ['nullable', 'string'],
             'pendidikan_terakhir'   => ['nullable', 'string'],

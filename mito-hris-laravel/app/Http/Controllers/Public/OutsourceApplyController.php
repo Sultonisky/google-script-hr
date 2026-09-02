@@ -6,6 +6,7 @@ use App\DTOs\EmployeeData;
 use App\Http\Controllers\Controller;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
+use App\Services\RecruitmentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -48,6 +49,7 @@ class OutsourceApplyController extends Controller
             'kota'                      => 'required|string',
             'kecamatan'                 => 'nullable|string',
             'kecamatan_manual'          => 'nullable|string',
+            'kota_nama'                 => 'nullable|string|max:120',
             'alamat_ktp'                => 'required|string',
             'alamat_domisili'           => 'required|string',
             'cabang_penempatan'         => 'required|string',
@@ -103,13 +105,22 @@ class OutsourceApplyController extends Controller
             $alamatKtp = $kecamatan . ', ' . $alamatKtp;
         }
 
+        // BUG FIX #1 — Canonical phone: prepend +62 (visual prefix was display-only).
+        $canonicalPhone = RecruitmentService::normalizePhone($validated['nomor_telepon'] ?? null);
+
+        // BUG FIX #2 — City name: kota_nama is a hidden input populated by JS with the
+        // human-readable city name (e.g. "KAB. PEMALANG") before submit.  The kota field
+        // itself carries only the numeric region code (e.g. "3327").
+        $cityRaw  = $validated['kota_nama'] ?? ($validated['kota'] ?? null);
+        $cityName = (is_string($cityRaw) && !ctype_digit(trim((string) $cityRaw))) ? $cityRaw : null;
+
         $employee = new EmployeeData(
             employeeId: $employeeId,
             fullName: $validated['nama_lengkap'],
             nikNpwp: $validated['nik'],
             personalEmail: $validated['email_pribadi'],
             workingEmail: $validated['email_kantor'],
-            mobilePhone: $validated['nomor_telepon'],
+            mobilePhone: $canonicalPhone,
             branchName: $validated['cabang_penempatan'],
             division: $validated['divisi'],
             department: $validated['departemen'],
