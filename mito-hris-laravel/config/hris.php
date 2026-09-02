@@ -281,18 +281,10 @@ return [
             'Available to Join',
             'Expected Salary',
             'Recruitment Source',
-            'CV Link',
             'Status',
             'HR Notes',
             'Created By',
             'Updated At',
-            // Extra columns appended by GAS (EXTRA_HEADERS in Config.gs)
-            'Hold Reason',
-            'Hold Follow Up Date',
-            'Blacklist Reason',
-            'Blacklist Date',
-            'Blacklist Updated By',
-            'Employee ID',
         ],
         'Audit_Log' => [
             'Audit ID',
@@ -404,7 +396,6 @@ return [
             'Available to Join',
             'Expected Salary',
             'Recruitment Source',
-            'CV Link',
             'Status',
             'HR Notes',
             'Created By',
@@ -414,9 +405,8 @@ return [
             'Blacklist Reason',
             'Blacklist Date',
             'Blacklist Updated By',
-            'Employee ID',
             'Processed Date',
-            'Processed By'
+            'Processed By',
         ],
         'kandidat_accepted' => [
             'Recruitment ID',
@@ -439,7 +429,6 @@ return [
             'Available to Join',
             'Expected Salary',
             'Recruitment Source',
-            'CV Link',
             'Status',
             'HR Notes',
             'Created By',
@@ -476,7 +465,7 @@ return [
             'Offering Allow Transport',
             'Offering Employment Status',
             'Offering Contract Duration',
-            'Offering Working Hours'
+            'Offering Working Hours',
         ],
         'kandidat_blacklist' => [
             'Recruitment ID',
@@ -499,7 +488,6 @@ return [
             'Available to Join',
             'Expected Salary',
             'Recruitment Source',
-            'CV Link',
             'Status',
             'HR Notes',
             'Created By',
@@ -509,9 +497,8 @@ return [
             'Blacklist Reason',
             'Blacklist Date',
             'Blacklist Updated By',
-            'Employee ID',
             'Processed Date',
-            'Processed By'
+            'Processed By',
         ],
         'MPR' => [
             'MPR Number',
