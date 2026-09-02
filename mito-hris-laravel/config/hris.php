@@ -33,6 +33,37 @@ return [
             'Nadia Witaningtyas',
             'Trian Nugroho',
         ],
+        // Profil perusahaan untuk header/alamat PDF — di-resolve dari kode entity.
+        'companies' => [
+            'MSI' => [
+                'name'    => 'PT MAHAKARYA SUKSES INDONESIA',
+                'address' => 'Jl. Gajah Tunggal, Kp. Gembor, RT.004/RW.001, Kel. Pasir Jaya, Kec. Jatiuwung, Kota Tangerang, Banten 15135',
+                'city'    => 'Tangerang',
+                'brand'   => 'MITO',
+                'code'    => 'MSI',
+            ],
+            'SPI' => [
+                'name'    => 'PT STEIN PERKASA INTERNASIONAL',
+                'address' => 'Rukan Mangga Dua Square Blok H No. 18-21, Jl. Gunung Sahari Raya Nomor 1, Kel. Ancol, Kec. Pademangan, Kota Jakarta Utara, DKI Jakarta - 14430',
+                'city'    => 'Jakarta',
+                'brand'   => 'STEIN',
+                'code'    => 'SPI',
+            ],
+            'PII' => [
+                'name'    => 'PT PERKASA INJEKSI INDONESIA',
+                'address' => 'Jl. Gajah Tunggal, Kp. Gembor, RT.004/RW.001, Kel. Pasir Jaya, Kec. Jatiuwung, Kota Tangerang, Banten 15135',
+                'city'    => 'Tangerang',
+                'brand'   => 'PERKASA INJEKSI',
+                'code'    => 'PII',
+            ],
+            'MEP' => [
+                'name'    => 'PT MITRA ELEKTRO PERKASA',
+                'address' => 'Rukan Mangga Dua Square Blok H No. 18-21, Jln. Gunung Sahari Raya Nomor 1, Kel. Ancol/Kec. Pademangan, Kota Jakarta Utara, DKI Jakarta',
+                'city'    => 'Jakarta',
+                'brand'   => 'MITRA ELEKTRO',
+                'code'    => 'MEP',
+            ],
+        ],
     ],
     'mpr_department_divisions' => [
         'Human Resources' => [
@@ -97,6 +128,33 @@ return [
             '1_tahun'        => '1 Tahun',
             '2_3_tahun'      => '2-3 Tahun',
             'lebih_3_tahun'  => '> 3 Tahun',
+        ],
+        // Level jabatan (statis)
+        'job_levels' => [
+            'Associate',
+            'Staff',
+            'Senior Staff',
+            'Supervisor',
+            'Team Lead',
+            'Manager',
+            'General Manager',
+            'Director',
+        ],
+        // Lokasi kerja penempatan (statis)
+        'work_locations' => [
+            'Head Office (HO)',
+            'Depo Jakarta',
+            'Depo Bandung',
+            'Depo Surabaya',
+            'Pabrik',
+        ],
+        // Status kepegawaian (statis)
+        'employment_types' => [
+            'Permanent (PKWTT)',
+            'Contract (PKWT)',
+            'Outsource',
+            'Intern',
+            'Freelance / Project',
         ],
         // Alasan permintaan MPR
         'reasons' => [
