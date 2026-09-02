@@ -12,8 +12,6 @@ class MprData
         public ?string $requestorEmail = null,
         // Entitas yang dituju / target company untuk kebutuhan posisi.
         public ?string $entity = null,
-        // Branch = lokasi/cabang milik authenticated requestor (fixed, tidak bisa diubah user)
-        public ?string $branch = null,
         // -- Detail posisi --
         public ?string $department = null,
         public ?string $division = null,
@@ -49,41 +47,16 @@ class MprData
     ) {}
 
     // -------------------------------------------------------------------------
-    // Backward-compat aliases so existing code using ->managerName etc. still works
-    // -------------------------------------------------------------------------
-    public function __get(string $name): mixed
-    {
-        return match ($name) {
-            'managerName'  => $this->requestorName, // legacy alias
-            'managerEmail' => $this->requestorEmail, // legacy alias
-            'company'      => $this->entity, // legacy alias
-            default        => null,
-        };
-    }
-
-    public function __isset(string $name): bool
-    {
-        return in_array($name, ['managerName', 'managerEmail', 'company'], true);
-    }
-
-    // -------------------------------------------------------------------------
     // Hydrate from Google Sheet row
     // -------------------------------------------------------------------------
     public static function fromSheetRow(array $row): self
     {
-        // Support both old column names (Manager Name / Company) and new ones (Requestor Name / Entity)
-        $requestorName  = $row['Requestor Name']  ?? $row['Manager Name']  ?? null; // 'Manager Name' is legacy
-        $requestorEmail = $row['Requestor Email'] ?? $row['Manager Email'] ?? null; // 'Manager Email' is legacy
-        $entity         = $row['Entitas yang Dituju'] ?? $row['Entity'] ?? $row['Company'] ?? null; // 'Company' is legacy
-        $branch         = $row['Branch']           ?? null;
-
         return new self(
             mprNumber:       $row['MPR Number']         ?? null,
             requestDate:     $row['Request Date']       ?? null,
-            requestorName:   $requestorName,
-            requestorEmail:  $requestorEmail,
-            entity:          $entity,
-            branch:          $branch,
+            requestorName:   $row['Requestor Name']     ?? null,
+            requestorEmail:  $row['Requestor Email']    ?? null,
+            entity:          $row['Entitas yang Dituju'] ?? null,
             department:      $row['Department']         ?? null,
             division:        $row['Division']           ?? null,
             approvalDivision: $row['Approval Division']  ?? null,
@@ -160,8 +133,8 @@ class MprData
             'Created By'         => (string) ($this->createdBy        ?? ''),
             'Created At'         => (string) ($this->createdAt        ?? ''),
             'Updated At'         => (string) ($this->updatedAt        ?? ''),
-            // Note: Legacy 'Entity' and 'Company' columns dropped to align with final 12-col mpr_requestor schema.
-            // Canonical source is 'Entitas yang Dituju' (read by fromSheetRow). Backward compat via aliases.
+            // Note: kolom 'Entity'/'Branch'/'Company' legacy sudah dihapus dari schema MPR.
+            // Canonical source: 'Entitas yang Dituju' (baca & tulis di fromSheetRow/toSheetRow).
         ];
     }
 
@@ -175,13 +148,7 @@ class MprData
             'request_date'       => $this->requestDate,
             'requestor_name'     => $this->requestorName,
             'requestor_email'    => $this->requestorEmail,
-            // Keep legacy keys so existing frontend JS still works
-            'manager_name'       => $this->requestorName,
-            'manager_email'      => $this->requestorEmail,
             'entity'             => $this->entity,
-            'branch'             => $this->branch,
-            // Keep legacy key so existing templates still work
-            'company'            => $this->entity,
             'department'         => $this->department,
             'division'           => $this->division,
             'approval_division'  => $this->approvalDivision,
@@ -201,7 +168,6 @@ class MprData
             'created_at'         => $this->createdAt,
             'updated_at'         => $this->updatedAt,
             'requestor_position'    => $this->requestorPosition,
-            'target_entity'         => $this->entity,
             'working_days'          => $this->workingDays,
             'working_hours'         => $this->workingHours,
             'shift_detail'          => $this->shiftDetail,
