@@ -2,21 +2,14 @@
 
 namespace Tests\Feature;
 
-use App\Repositories\Contracts\MprRequestorRepositoryInterface;
 use App\Repositories\Contracts\UserRepositoryInterface;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Hash;
 use Mockery;
 use Tests\TestCase;
 
 class LoginSecurityTest extends TestCase
 {
-    private function mockMprDomain(): void
-    {
-        $repository = Mockery::mock(MprRequestorRepositoryInterface::class);
-        $repository->shouldReceive('findByIdentifier')->andReturn(null);
-        $this->app->instance(MprRequestorRepositoryInterface::class, $repository);
-    }
-
     private function mockUserDomain(?array $user, bool $expectLastLogin = false): void
     {
         $repository = Mockery::mock(UserRepositoryInterface::class);
@@ -41,7 +34,6 @@ class LoginSecurityTest extends TestCase
 
     public function test_successful_login_creates_session_without_returning_password(): void
     {
-        $this->mockMprDomain();
         $this->mockUserDomain($this->activeUser(), true);
 
         $response = $this->postJson('/login', [
@@ -60,7 +52,6 @@ class LoginSecurityTest extends TestCase
 
     public function test_failed_login_uses_generic_error_without_echoing_password(): void
     {
-        $this->mockMprDomain();
         $this->mockUserDomain($this->activeUser());
 
         $response = $this->postJson('/login', [
@@ -77,7 +68,6 @@ class LoginSecurityTest extends TestCase
 
     public function test_unknown_identifier_has_same_generic_error(): void
     {
-        $this->mockMprDomain();
         $this->mockUserDomain(null);
 
         $response = $this->postJson('/login', [
@@ -91,7 +81,6 @@ class LoginSecurityTest extends TestCase
 
     public function test_login_is_rate_limited_per_identifier_and_ip(): void
     {
-        $this->mockMprDomain();
         $this->mockUserDomain(null);
         $identifier = 'limited-' . uniqid() . '@example.test';
 

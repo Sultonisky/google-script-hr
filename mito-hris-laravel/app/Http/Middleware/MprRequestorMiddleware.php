@@ -9,16 +9,15 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * Middleware: mpr.auth
  *
- * Protects routes that a Manpower requestor (from mpr_requestor) is trying to access.
+ * Guards HRIS-domain routes for users authenticated via hr_user session.
  *
  * Rules:
- *   1. Must be authenticated (session hr_user exists).
- *   2. If identity is an MPR Requestor (auth_domain = mpr_requestor):
- *      - role MUST be Manpower
- *      - status is already verified at login time
- *      - ONLY MPR routes are allowed; all other /hr/* routes return 403
- *   3. If identity is an internal HR user (auth_domain = users):
- *      - passes through without restriction (existing hr.auth handles them)
+ *   1. Must be authenticated via hr_user session (HRIS authentication).
+ *   2. If auth_domain is 'mpr_requestor': restrict to ALLOWED_PREFIXES only.
+ *   3. If auth_domain is 'users': pass through (hr.auth middleware handles RBAC).
+ *
+ * This middleware does NOT accept mpr_requestor_auth sessions.
+ * MPR domain routes are protected by EnsureMprAuthenticated instead.
  */
 class MprRequestorMiddleware
 {
@@ -31,12 +30,10 @@ class MprRequestorMiddleware
 
     public function handle(Request $request, Closure $next): Response
     {
-        $legacyUser = session('hr_user');
-        $dedicatedUser = session(config('mpr.session_key', 'mpr_requestor_auth'));
-        $user = $legacyUser ?: $dedicatedUser;
+        $hrUser = session('hr_user');
 
         // Not authenticated at all — redirect to login
-        if (!$user) {
+        if (!$hrUser) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
@@ -48,16 +45,14 @@ class MprRequestorMiddleware
         }
 
         // If the session belongs to an MPR Requestor, enforce strict route restriction
-        $authDomain = $user['auth_domain'] ?? 'users';
-        $role       = $user['role']        ?? 'Viewer';
+        $authDomain = $hrUser['auth_domain'] ?? 'users';
+        $role       = $hrUser['role']        ?? 'Viewer';
 
-        // Restrict MPR requestor sessions (Manager or Manpower) to MPR routes only.
-        // This covers both legitimate MPR Requestors and anomalous cross-domain data.
-        if ($authDomain === 'mpr_requestor' || in_array(strtolower($role), ['manpower', 'manager'], true)) {
-            // For mpr_requestor domain: additional role sanity check
-            if ($authDomain === 'mpr_requestor' && !in_array(strtolower($role), ['manpower', 'manager'], true)) {
+        // Restrict MPR requestor sessions to MPR routes only
+        if ($authDomain === 'mpr_requestor') {
+            // For mpr_requestor domain: verify role is valid
+            if (!in_array(strtolower($role), ['manpower', 'manager'], true)) {
                 session()->forget('hr_user');
-                session()->forget(config('mpr.session_key', 'mpr_requestor_auth'));
                 if ($request->expectsJson()) {
                     return response()->json([
                         'success' => false,
@@ -68,7 +63,7 @@ class MprRequestorMiddleware
                     ->with('error', 'Akun ini tidak memiliki akses yang valid.');
             }
 
-            // Route restriction: Manpower can ONLY access /hr/mpr* and /logout
+            // Route restriction: MPR Requestors can ONLY access /hr/mpr* and /logout
             $path    = '/' . ltrim($request->path(), '/');
             $allowed = false;
             foreach (self::ALLOWED_PREFIXES as $prefix) {

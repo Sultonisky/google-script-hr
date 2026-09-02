@@ -10,6 +10,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Session;
 use Mockery;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class MprFlowTest extends TestCase
@@ -27,8 +28,6 @@ class MprFlowTest extends TestCase
         string $role,
         ?string $email = null,
         ?string $name = null,
-        array $entities = ['MSI'],
-        string $branch = 'Head Office (HO)'
     ): array {
         $permissions = config('hris.auth.role_permissions')[$role] ?? [];
         $isManpower = ($role === 'Manpower');
@@ -40,8 +39,6 @@ class MprFlowTest extends TestCase
             'permissions'  => $permissions,
             // Manpower sessions come from mpr_requestor; all others from Users
             'auth_domain'  => $isManpower ? 'mpr_requestor' : 'users',
-            'entities'     => $isManpower ? $entities : [],
-            'branch'       => $isManpower ? $branch : '',
             'requestor_id' => $isManpower ? 'MPR-REQ-TEST' : '',
         ];
     }
@@ -50,10 +47,10 @@ class MprFlowTest extends TestCase
         string $role,
         ?string $email = null,
         ?string $name = null,
-        array $entities = ['MSI'],
-        string $branch = 'Head Office (HO)'
+        array $entities = [],
+        string $branch = ''
     ): static {
-        Session::put('hr_user', $this->makeSessionUser($role, $email, $name, $entities, $branch));
+        Session::put('hr_user', $this->makeSessionUser($role, $email, $name));
         return $this;
     }
 
@@ -82,7 +79,7 @@ class MprFlowTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function unauthenticated_user_is_redirected_from_mpr_routes(): void
     {
         Session::forget('hr_user');
@@ -94,7 +91,7 @@ class MprFlowTest extends TestCase
         $postResponse->assertRedirect('/login');
     }
 
-    /** @test */
+    #[Test]
     public function manpower_role_has_correct_permissions_and_restrictions(): void
     {
         $this->actingAsRole('Manpower');
@@ -109,7 +106,7 @@ class MprFlowTest extends TestCase
         $this->assertFalse(Gate::allows('manage_probation'), 'Manpower should not have manage_probation');
     }
 
-    /** @test */
+    #[Test]
     public function approval_division_is_validated_from_config_on_create(): void
     {
         $this->actingAsRole('Admin', 'admin.approval@mito.id', 'HR Admin');
@@ -211,7 +208,7 @@ class MprFlowTest extends TestCase
         $this->get('/hr/users')->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function manpower_default_landing_redirects_to_create_form(): void
     {
         $this->actingAsRole('Manpower', 'manager1@mito.id', 'Budi Manpower', ['MSI', 'SPI'], 'Bandung');
@@ -220,7 +217,7 @@ class MprFlowTest extends TestCase
         $response->assertRedirect(route('mpr.auth.request'));
     }
 
-    /** @test */
+    #[Test]
     public function manpower_can_access_refresh_endpoint_for_data_reload(): void
     {
         $this->actingAsRole('Manpower', 'manager.refresh@mito.id', 'Rina Manpower', ['MSI'], 'Bandung');
@@ -251,7 +248,7 @@ class MprFlowTest extends TestCase
         $response->assertJsonPath('status', 'healthy');
     }
 
-    /** @test */
+    #[Test]
     public function manpower_has_dedicated_create_and_history_routes(): void
     {
         $manpowerEmail = 'manager2@mito.id';
@@ -274,19 +271,21 @@ class MprFlowTest extends TestCase
 
         $this->app->instance(MprRepositoryInterface::class, $mockRepo);
 
-        $createResponse = $this->get(route('mpr.auth.request'));
-        $createResponse->assertStatus(200);
-        $createResponse->assertViewIs('hr.mpr.create');
-        $createResponse->assertSee('Formulir Pengajuan Manpower Request');
+        // Manpower with hr_user session is on the HRIS domain.
+        // GET /hr/mpr → MprController::index() which redirects Manpower to mpr.auth.request
+        // (the MPR domain create form for dedicated MPR session holders).
+        $createResponse = $this->get('/hr/mpr');
+        $createResponse->assertRedirect(route('mpr.auth.request'));
 
-        $historyResponse = $this->get(route('mpr.auth.request.history'));
+        // History is accessible on the HRIS domain via hr.mpr.history.
+        $historyResponse = $this->get(route('hr.mpr.history'));
         $historyResponse->assertStatus(200);
         $historyResponse->assertViewIs('hr.mpr.history');
         $historyResponse->assertSee('Riwayat Pengajuan MPR');
         $historyResponse->assertSee('MPR-20260824-0002');
     }
 
-    /** @test */
+    #[Test]
     public function manpower_history_page_shows_clear_stats_for_requestors(): void
     {
         $manpowerEmail = 'manager.stats@mito.id';
@@ -313,7 +312,7 @@ class MprFlowTest extends TestCase
         $response->assertSee('Total Kebutuhan');
     }
 
-    /** @test */
+    #[Test]
     public function manpower_history_page_supports_sort_order_filter(): void
     {
         $manpowerEmail = 'manager.sort@mito.id';
@@ -351,7 +350,7 @@ class MprFlowTest extends TestCase
         $response->assertSee('value="oldest"', false);
     }
 
-    /** @test */
+    #[Test]
     public function manpower_history_page_provides_reset_filter_button(): void
     {
         $manpowerEmail = 'manager.reset@mito.id';
@@ -379,7 +378,7 @@ class MprFlowTest extends TestCase
         $response->assertSee('href="' . route('hr.mpr.history') . '"', false);
     }
 
-    /** @test */
+    #[Test]
     public function manpower_can_submit_mpr_and_identity_is_resolved_server_side(): void
     {
         $manpowerEmail   = 'manager.it@mito.id';
@@ -441,7 +440,7 @@ class MprFlowTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function manpower_cannot_submit_mpr_with_entity_not_in_assignment(): void
     {
         // NOTE: Entity auth check removed — mpr_requestor schema is final 12-col, no Entity/Branch cols.
@@ -473,7 +472,7 @@ class MprFlowTest extends TestCase
         $response->assertJson(['success' => true]);
     }
 
-    /** @test */
+    #[Test]
     public function manpower_without_entity_assignment_cannot_submit_mpr(): void
     {
         // NOTE: Empty entity assignment no longer blocks submission — auth check removed.
@@ -503,7 +502,7 @@ class MprFlowTest extends TestCase
         $response->assertJson(['success' => true]);
     }
 
-    /** @test */
+    #[Test]
     public function idor_protection_manpower_cannot_view_or_export_other_manpower_mpr(): void
     {
         $managerA = 'manager.a@mito.id';
@@ -539,7 +538,7 @@ class MprFlowTest extends TestCase
         $responsePdf->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function admin_can_view_all_mprs_and_create_mpr(): void
     {
         // Admin tidak punya entity assignment (bukan Manpower role), tapi bisa buat MPR atas nama siapapun
@@ -602,7 +601,7 @@ class MprFlowTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function admin_can_update_mpr_without_changing_immutable_metadata(): void
     {
         $this->actingAsRole('Admin', 'admin@mito.id', 'Admin User', [], '');
@@ -645,14 +644,14 @@ class MprFlowTest extends TestCase
         $this->assertNotSame($existing->updatedAt, $updatedData->updatedAt);
     }
 
-    /** @test */
+    #[Test]
     public function privileged_user_cannot_update_mpr(): void
     {
         $this->actingAsRole('Privileged User');
         $this->putJson('/hr/mpr/MPR-20260824-0001', [])->assertForbidden();
     }
 
-    /** @test */
+    #[Test]
     public function user_can_view_mpr_but_cannot_create_or_update_mpr(): void
     {
         $this->actingAsRole('User', 'hrstaff@mito.id', 'User User', [], '');
@@ -692,7 +691,7 @@ class MprFlowTest extends TestCase
         $this->putJson('/hr/mpr/MPR-20260824-0001', [])->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function super_admin_has_full_wildcard_access_to_mpr(): void
     {
         $this->actingAsRole('Super Admin', 'admin@mito.id', 'Super Admin', [], '');
@@ -731,7 +730,7 @@ class MprFlowTest extends TestCase
         $this->get('/hr/mpr/MPR-20260824-7777/pdf')->assertStatus(200);
     }
 
-    /** @test */
+    #[Test]
     public function validation_rejects_missing_required_fields(): void
     {
         $this->actingAsRole('Manpower', null, null, ['MSI'], 'Jakarta');
@@ -757,7 +756,7 @@ class MprFlowTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function create_rejects_division_from_another_department(): void
     {
         $this->actingAsRole('Manpower', null, null, ['MSI'], 'Jakarta');
@@ -778,7 +777,7 @@ class MprFlowTest extends TestCase
         $response->assertStatus(422)->assertJsonValidationErrors('division');
     }
 
-    /** @test */
+    #[Test]
     public function update_rejects_division_from_another_department(): void
     {
         $this->actingAsRole('Admin');
@@ -798,7 +797,7 @@ class MprFlowTest extends TestCase
         $response->assertStatus(422)->assertJsonValidationErrors('division');
     }
 
-    /** @test */
+    #[Test]
     public function mpr_pdf_service_generates_valid_dompdf_document(): void
     {
         $mpr = $this->makeMprData([

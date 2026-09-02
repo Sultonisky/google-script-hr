@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Services\AuthService;
-use App\Services\MprRequestorAuthService;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -17,7 +16,6 @@ class LoginController extends Controller
 {
     public function __construct(
         protected AuthService $authService,
-        protected MprRequestorAuthService $mprRequestorAuthService,
         protected AuditLogRepositoryInterface $auditRepo,
     ) {}
 
@@ -30,16 +28,12 @@ class LoginController extends Controller
     }
 
     /**
-     * Show the HR / MPR login form.
-     * If already authenticated, redirect to the appropriate area.
+     * Show the HR login form.
+     * If already authenticated, redirect to HRIS dashboard.
      */
     public function showLoginForm(): View|RedirectResponse
     {
         if (session()->has('hr_user')) {
-            $user = session('hr_user');
-            if (($user['role'] ?? '') === 'Manpower') {
-                return redirect()->route('mpr.auth.request');
-            }
             return redirect()->route('hr.dashboard');
         }
 
@@ -47,15 +41,11 @@ class LoginController extends Controller
     }
 
     /**
-     * Handle authentication — dual-domain login flow:
+     * Handle HRIS authentication — internal Users sheet only.
      *
-     *   1. Try mpr_requestor sheet first (Manager domain).
-     *      - If identifier found → authenticate against mpr_requestor.
-     *      - If not found (null error) → proceed to step 2.
-     *   2. Try internal Users sheet (HR domain).
-     *
-     * This guarantees Manager accounts in mpr_requestor are never confused
-     * with internal HRIS Users, and vice versa.
+     * Authenticates against the internal Users sheet via AuthService.
+     * No fallback to MPR Requestors sheet.
+     * No cross-domain authentication.
      */
     public function login(LoginRequest $request): RedirectResponse|JsonResponse
     {
@@ -63,35 +53,25 @@ class LoginController extends Controller
         $identifier = strtolower(trim((string) ($data['identifier'] ?? '')));
         $password   = (string) ($data['password'] ?? '');
 
-        // ------------------------------------------------------------------
-        // STEP 1: MPR Requestor domain (Manager)
-        // ------------------------------------------------------------------
-        $mprResult = $this->mprRequestorAuthService->attemptLogin($identifier, $password);
+        // HRIS authentication only — Users Sheet
+        $result = $this->authService->attemptLogin($identifier, $password);
 
-        if ($mprResult['success'] ?? false) {
-            return $this->loginSuccess($request, $mprResult['user'], $data['rememberMe'] ?? false);
+        if (!($result['success'] ?? false)) {
+            return $this->loginFailure(
+                $request,
+                $result['error'] ?? 'Login gagal.'
+            );
         }
 
-        // null error = identifier not found in mpr_requestor → fall through to Users
-        // non-null error = identifier found but auth failed → hard rejection
-        if (($mprResult['error'] ?? null) !== null) {
-            return $this->loginFailure($request, $mprResult['error']);
-        }
-
-        // ------------------------------------------------------------------
-        // STEP 2: Internal HRIS domain (Users sheet)
-        // ------------------------------------------------------------------
-        $hrResult = $this->authService->attemptLogin($identifier, $password);
-
-        if (!($hrResult['success'] ?? false)) {
-            return $this->loginFailure($request, $hrResult['error'] ?? 'Login gagal.');
-        }
-
-        return $this->loginSuccess($request, $hrResult['user'], $data['rememberMe'] ?? false);
+        return $this->loginSuccess(
+            $request,
+            $result['user'],
+            $data['rememberMe'] ?? false
+        );
     }
 
     /**
-     * Log out the authenticated user (works for both domains).
+     * Log out the authenticated HRIS user.
      */
     public function logout(Request $request): RedirectResponse
     {
@@ -160,10 +140,8 @@ class LoginController extends Controller
             $request->session()->put('hris_remember', true);
         }
 
-        $role = strtolower(trim((string) ($user['role'] ?? '')));
-        $redirect = ($user['auth_domain'] ?? '') === 'mpr_requestor' || in_array($role, ['manpower', 'manager'], true)
-            ? route('mpr.auth.request')
-            : route('hr.dashboard');
+        // HRIS login always redirects to HRIS dashboard
+        $redirect = route('hr.dashboard');
 
         if ($request->expectsJson()) {
             return response()->json([
