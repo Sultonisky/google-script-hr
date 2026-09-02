@@ -317,6 +317,8 @@
                             if (signName) signName.innerText = m.requestor_name || '-';
                             const signPos = document.getElementById('detSignRequestorPosition');
                             if (signPos) signPos.innerText = m.requestor_position || 'Manager / User Dept';
+                            const approvalDivision = document.getElementById('detApprovalDivision');
+                            if (approvalDivision) approvalDivision.innerText = m.approval_division || '( ........................................ )';
 
                             if (btnPdf) {
                                 btnPdf.href = `${basePath}/${encodeURIComponent(m.mpr_number)}/pdf`;

@@ -107,6 +107,31 @@
             color: #0f172a;
         }
 
+        /* Di dalam grid-2 (50% lebar halaman), label-col perlu lebih lebar
+           agar tidak overflow dan ':' tetap sejajar antar baris */
+        .grid-2 td .data-table .label-col {
+            width: 44%;
+            white-space: normal;
+        }
+
+        .grid-2 td .data-table .colon-col {
+            width: 4%;
+        }
+
+        .grid-2 td .data-table .value-col {
+            width: 52%;
+        }
+
+        /* Class eksplisit untuk data-table di dalam grid-2 — DomPDF safe */
+        .label-col-half {
+            width: 44% !important;
+            white-space: normal !important;
+        }
+
+        .value-col-half {
+            width: 49% !important;
+        }
+
         .value-col p,
         .value-col ul,
         .value-col ol,
@@ -270,19 +295,20 @@
                     @php
                         $entityCode = strtoupper(trim($mpr->entity ?? ''));
                         $isMito = $entityCode === 'MSI';
-                        $logoPath = $isMito
-                            ? public_path('assets/mito.png')
-                            : public_path('assets/stein.jpg');
+                        $logoPath = $isMito ? public_path('assets/mito-pdf.png') : public_path('assets/stein.jpg');
                         $logoBase64 = file_exists($logoPath)
-                            ? 'data:image/' . ($isMito ? 'png' : 'jpeg') . ';base64,' . base64_encode(file_get_contents($logoPath))
+                            ? 'data:image/' .
+                                ($isMito ? 'png' : 'jpeg') .
+                                ';base64,' .
+                                base64_encode(file_get_contents($logoPath))
                             : null;
                     @endphp
                     @if ($logoBase64)
-                        <img src="{{ $logoBase64 }}"
-                             style="max-height: 38px; max-width: 90px; object-fit: contain;"
-                             alt="{{ $company['brand'] ?? 'LOGO' }}">
+                        <img src="{{ $logoBase64 }}" style="max-height: 38px; max-width: 90px; object-fit: contain;"
+                            alt="{{ $company['brand'] ?? 'LOGO' }}">
                     @else
-                        <span style="font-size: 16pt; font-weight: bold; color: #000;">{{ $company['brand'] ?? 'MITO' }}</span>
+                        <span
+                            style="font-size: 16pt; font-weight: bold; color: #000;">{{ $company['brand'] ?? 'MITO' }}</span>
                     @endif
                 </td>
             </tr>
@@ -320,67 +346,67 @@
     <table class="grid-2">
         <tr>
             <td>
-                <table class="data-table">
+                <table class="data-table data-table-half">
                     <tr>
-                        <td class="label-col">Entitas / Perusahaan</td>
+                        <td class="label-col label-col-half">Entitas / Perusahaan</td>
                         <td class="colon-col">:</td>
-                        <td class="value-col">{{ $company['name'] ?? ($mpr->entity ?: '-') }}</td>
+                        <td class="value-col value-col-half">{{ $company['name'] ?? ($mpr->entity ?: '-') }}</td>
                     </tr>
                     <tr>
-                        <td class="label-col">Posisi / Nama Jabatan</td>
+                        <td class="label-col label-col-half">Posisi / Nama Jabatan</td>
                         <td class="colon-col">:</td>
-                        <td class="value-col"><strong>{{ $mpr->position ?: '-' }}</strong></td>
+                        <td class="value-col value-col-half"><strong>{{ $mpr->position ?: '-' }}</strong></td>
                     </tr>
                     <tr>
-                        <td class="label-col">Departemen</td>
+                        <td class="label-col label-col-half">Departemen</td>
                         <td class="colon-col">:</td>
-                        <td class="value-col">{{ $mpr->department ?: '-' }}</td>
+                        <td class="value-col value-col-half">{{ $mpr->department ?: '-' }}</td>
                     </tr>
                     <tr>
-                        <td class="label-col">Divisi</td>
+                        <td class="label-col label-col-half">Divisi</td>
                         <td class="colon-col">:</td>
-                        <td class="value-col">{{ $mpr->division ?: '-' }}</td>
+                        <td class="value-col value-col-half">{{ $mpr->division ?: '-' }}</td>
                     </tr>
                     <tr>
-                        <td class="label-col">Level Jabatan</td>
+                        <td class="label-col label-col-half">Level Jabatan</td>
                         <td class="colon-col">:</td>
-                        <td class="value-col">{{ $mpr->jobLevel ?: '-' }}</td>
+                        <td class="value-col value-col-half">{{ $mpr->jobLevel ?: '-' }}</td>
                     </tr>
                     <tr>
-                        <td class="label-col">Lokasi Penempatan</td>
+                        <td class="label-col label-col-half">Lokasi Penempatan</td>
                         <td class="colon-col">:</td>
-                        <td class="value-col">{{ $mpr->workLocation ?: '-' }}</td>
+                        <td class="value-col value-col-half">{{ $mpr->workLocation ?: '-' }}</td>
                     </tr>
                 </table>
             </td>
             <td>
-                <table class="data-table">
+                <table class="data-table data-table-half">
                     <tr>
-                        <td class="label-col">Status Kepegawaian</td>
+                        <td class="label-col label-col-half">Status Kepegawaian</td>
                         <td class="colon-col">:</td>
-                        <td class="value-col">{{ $mpr->employmentType ?: '-' }}</td>
+                        <td class="value-col value-col-half">{{ $mpr->employmentType ?: '-' }}</td>
                     </tr>
                     <tr>
-                        <td class="label-col">Jumlah Kebutuhan</td>
+                        <td class="label-col label-col-half">Jumlah Kebutuhan</td>
                         <td class="colon-col">:</td>
-                        <td class="value-col"><strong>{{ $mpr->quantity ?: 1 }} Orang</strong></td>
+                        <td class="value-col value-col-half"><strong>{{ $mpr->quantity ?: 1 }} Orang</strong></td>
                     </tr>
                     <tr>
-                        <td class="label-col">Target Join Date</td>
+                        <td class="label-col label-col-half">Target Join Date</td>
                         <td class="colon-col">:</td>
-                        <td class="value-col">
+                        <td class="value-col value-col-half">
                             {{ $mpr->expectedJoinDate ? date('d F Y', strtotime($mpr->expectedJoinDate)) : '-' }}
                         </td>
                     </tr>
                     <tr>
-                        <td class="label-col">Hari Kerja</td>
+                        <td class="label-col label-col-half">Hari Kerja</td>
                         <td class="colon-col">:</td>
-                        <td class="value-col">{{ $mpr->workingDays ?: '-' }}</td>
+                        <td class="value-col value-col-half">{{ $mpr->workingDays ?: '-' }}</td>
                     </tr>
                     <tr>
-                        <td class="label-col">Jam Kerja</td>
+                        <td class="label-col label-col-half">Jam Kerja</td>
                         <td class="colon-col">:</td>
-                        <td class="value-col">{{ $mpr->workingHours ?: '-' }}</td>
+                        <td class="value-col value-col-half">{{ $mpr->workingHours ?: '-' }}</td>
                     </tr>
                 </table>
             </td>
@@ -390,11 +416,11 @@
     <!-- Detail Shift & Benefits — full width agar tidak overflow -->
     <table class="data-table" style="margin-top:2px;">
         @if (!empty($mpr->shiftDetail))
-        <tr>
-            <td class="label-col">Detail Shift</td>
-            <td class="colon-col">:</td>
-            <td class="value-col">{{ $mpr->shiftDetail }}</td>
-        </tr>
+            <tr>
+                <td class="label-col">Detail Shift</td>
+                <td class="colon-col">:</td>
+                <td class="value-col">{{ $mpr->shiftDetail }}</td>
+            </tr>
         @endif
         <tr>
             <td class="label-col">Benefits / Tunjangan</td>
@@ -524,7 +550,8 @@
             </td>
             <td>
                 <div class="sign-title">Disetujui oleh (Divisi)</div>
-                <div class="sign-name">( {{ $mpr->approvalDivision ?: '........................................' }} )</div>
+                <div class="sign-name">( {{ $mpr->approvalDivision ?: '........................................' }} )
+                </div>
                 <div class="sign-role">Pimpinan Divisi</div>
             </td>
             <td>
