@@ -432,8 +432,11 @@ class MprController extends Controller
             $isManager ? 'Public' : 'Dashboard'
         );
 
-        // Prepare PDF URL
-        $pdfUrl = route('hr.mpr.pdf', ['id' => $savedMpr->mprNumber]);
+        // Prepare PDF URL — gunakan route yang sesuai dengan domain request
+        $isMprDomain = $request->routeIs('mpr.auth.*');
+        $pdfUrl = $isMprDomain
+            ? route('mpr.auth.pdf', ['id' => $savedMpr->mprNumber])
+            : route('hr.mpr.pdf', ['id' => $savedMpr->mprNumber]);
 
         if ($request->expectsJson() || $request->ajax()) {
             return response()->json([
@@ -446,7 +449,8 @@ class MprController extends Controller
             ], 201);
         }
 
-        return redirect()->route('hr.mpr.index')
+        $redirectRoute = $isMprDomain ? 'mpr.auth.request.history' : 'hr.mpr.index';
+        return redirect()->route($redirectRoute)
             ->with('success', "Pengajuan MPR ({$savedMpr->mprNumber}) berhasil disimpan.")
             ->with('mpr_pdf_url', $pdfUrl);
     }
