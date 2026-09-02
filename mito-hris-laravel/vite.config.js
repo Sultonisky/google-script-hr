@@ -9,6 +9,7 @@ export default defineConfig({
                 'resources/scss/public.scss',
                 'resources/scss/hr.scss',
                 'resources/js/app.js',
+                'resources/js/page-loader.js',
                 'resources/js/csp-hardening.js',
                 'resources/js/utils/nik-autofill.js',
             ],

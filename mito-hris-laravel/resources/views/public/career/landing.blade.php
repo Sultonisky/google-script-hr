@@ -152,7 +152,7 @@
                             </div>
                         </div>
 
-                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                        <div class="d-flex justify-content-end align-items-center flex-wrap gap-3">
 
                             <button type="submit" class="btn btn-submit" id="btnProceedApply" disabled>
                                 <i class="bi bi-arrow-right-circle me-1"></i> Lanjutkan ke Formulir Pendaftaran
