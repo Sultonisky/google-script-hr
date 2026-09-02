@@ -42,6 +42,12 @@ class MprController extends Controller
         $sessionKey = config('mpr.session_key', 'mpr_requestor_auth');
         $dedicatedUser = session($sessionKey, []);
 
+        // Jika config key berbeda dari default, cek juga 'mpr_requestor_auth' langsung
+        // sebagai fallback agar konsisten dengan hr-topbar yang hardcode key ini.
+        if (empty($dedicatedUser) && $sessionKey !== 'mpr_requestor_auth') {
+            $dedicatedUser = session('mpr_requestor_auth', []);
+        }
+
         if (!empty($dedicatedUser) && (($dedicatedUser['auth_domain'] ?? '') === 'mpr_requestor' || strtolower(trim((string) ($dedicatedUser['role'] ?? ''))) === 'manpower')) {
             return $dedicatedUser;
         }

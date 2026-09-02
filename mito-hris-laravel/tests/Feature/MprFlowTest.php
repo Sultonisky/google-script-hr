@@ -30,16 +30,18 @@ class MprFlowTest extends TestCase
         ?string $name = null,
     ): array {
         $permissions = config('hris.auth.role_permissions')[$role] ?? [];
-        $isManpower = ($role === 'Manpower');
 
         return [
             'email'        => $email ?? (strtolower(str_replace(' ', '.', $role)) . '@mito.id'),
             'fullName'     => $name  ?? ($role . ' User'),
             'role'         => $role,
             'permissions'  => $permissions,
-            // Manpower sessions come from mpr_requestor; all others from Users
-            'auth_domain'  => $isManpower ? 'mpr_requestor' : 'users',
-            'requestor_id' => $isManpower ? 'MPR-REQ-TEST' : '',
+            // All hr_user sessions are internal HRIS users — auth_domain is always 'users'.
+            // Manpower users who access HRIS-domain MPR routes do so via hr_user with
+            // auth_domain='users'. The MPR Requestor portal uses a separate mpr_requestor_auth
+            // session with auth_domain='mpr_requestor' — that is a different account store.
+            'auth_domain'  => 'users',
+            'requestor_id' => ($role === 'Manpower') ? 'MPR-REQ-TEST' : '',
         ];
     }
 

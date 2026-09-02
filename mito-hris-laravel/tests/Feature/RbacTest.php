@@ -53,21 +53,27 @@ class RbacTest extends TestCase
     }
 
     /**
-     * Simulate a logged-in MPR Requestor (Manager from mpr_requestor sheet).
-     * This is a different auth domain from internal HR users.
+     * Simulate a logged-in MPR Requestor via the dedicated mpr_requestor_auth session.
+     *
+     * Under the current architecture, MPR Requestors authenticate exclusively through
+     * the MPR portal and their session lives in mpr_requestor_auth (NOT in hr_user).
+     * These tests verify that an MPR session grants NO access to HRIS-domain routes.
      */
     private function actingAsMprRequestor(
         string $email = 'manager@mito.id',
         string $name = 'Manager Test'
     ): static {
-        Session::put('hr_user', [
+        Session::put(config('mpr.session_key', 'mpr_requestor_auth'), [
             'email'        => $email,
             'fullName'     => $name,
             'role'         => 'Manpower',
             'permissions'  => config('hris.auth.role_permissions.Manpower', ['view_mpr', 'create_mpr', 'export_mpr']),
-            'auth_domain'  => 'mpr_requestor', // MPR domain — NOT internal HRIS
+            'auth_domain'  => 'mpr_requestor',
+            'portal'       => 'mpr',
             'requestor_id' => 'MPR-REQ-001',
         ]);
+        // Ensure hr_user is absent — MPR Requestor has no HRIS session.
+        Session::forget('hr_user');
         return $this;
     }
 
@@ -452,9 +458,12 @@ class RbacTest extends TestCase
     #[Test]
     public function mpr_requestor_can_access_mpr_index(): void
     {
+        // An MPR Requestor (mpr_requestor_auth session, no hr_user) accessing the
+        // HRIS-domain /hr/mpr route must be redirected to HRIS login — they have no
+        // hr_user session. MPR Requestors use the MPR portal exclusively.
         $this->actingAsMprRequestor();
         $this->get('/hr/mpr')
-            ->assertRedirect(route('mpr.auth.request'));
+            ->assertRedirect(route('login'));
     }
 
     #[Test]
@@ -546,15 +555,17 @@ class RbacTest extends TestCase
     #[Test]
     public function mpr_requestor_gate_has_correct_permissions(): void
     {
+        // Under strict isolation, MPR Requestors authenticate via mpr_requestor_auth,
+        // NOT hr_user. Gate resolves from hr_user — so an MPR Requestor with no hr_user
+        // has no Gate user and all Gate checks return false (fail-closed).
+        // This is correct behaviour: MPR Requestors must not pass Gate on HRIS routes.
         $this->actingAsMprRequestor();
 
-        $this->assertTrue(Gate::allows('view_mpr'),    'Manpower should have view_mpr');
-        $this->assertTrue(Gate::allows('create_mpr'),  'Manpower should have create_mpr');
-        $this->assertTrue(Gate::allows('export_mpr'),  'Manpower should have export_mpr');
-
-        $this->assertFalse(Gate::allows('view_recruitment'), 'Manpower must not have view_recruitment');
-        $this->assertFalse(Gate::allows('view_employees'),   'Manpower must not have view_employees');
-        $this->assertFalse(Gate::allows('manage_settings'),  'Manpower must not have manage_settings');
+        // With no hr_user, Gate has no authenticated user → all checks fail-closed.
+        $this->assertFalse(Gate::allows('view_mpr'),         'No hr_user → Gate must deny');
+        $this->assertFalse(Gate::allows('view_recruitment'),  'No hr_user → Gate must deny');
+        $this->assertFalse(Gate::allows('view_employees'),    'No hr_user → Gate must deny');
+        $this->assertFalse(Gate::allows('manage_settings'),   'No hr_user → Gate must deny');
     }
 
     // =========================================================================
@@ -565,27 +576,39 @@ class RbacTest extends TestCase
     #[Test]
     public function internal_hr_user_with_manager_role_in_users_sheet_is_rejected(): void
     {
-        // This simulates a legacy scenario where someone accidentally puts a Manager
-        // account in the Users sheet. The auth_domain marker distinguishes the two.
-        // An internal user claiming Manager role (auth_domain = users) should be
-        // treated as a misconfiguration — they have Manager permissions but are NOT
-        // an MPR Requestor and should not get special MPR Requestor treatment.
+        // A user in the Users sheet with role='Manpower' is an AuthService misconfiguration
+        // (AuthService rejects 'manager' role, but 'Manpower' in users is unexpected).
+        // Under the current architecture, MprRequestorMiddleware no longer checks
+        // auth_domain inside hr_user — that was removed to prevent crossover paths.
+        //
+        // Such a session passes PortalAccessMiddleware (auth_domain='users' is valid)
+        // and MprRequestorMiddleware (just checks hr_user exists).
+        // Gate then enforces RBAC: Manpower role has only view_mpr/create_mpr/export_mpr.
+        // Dashboard requires no explicit gate (any authenticated hr_user can see it),
+        // but individual modules that require 'manage_settings', 'view_employees', etc.
+        // will deny access via Gate.
+        //
+        // Critical contract: they must NOT gain Super Admin or Admin privileges.
         Session::put('hr_user', [
             'email'       => 'bad.manager@mito.id',
             'fullName'    => 'Bad Manager',
             'role'        => 'Manpower',
             'permissions' => config('hris.auth.role_permissions.Manpower', []),
-            'auth_domain' => 'users', // Wrong domain for Manager
+            'auth_domain' => 'users',
             'entities'    => [],
             'branch'      => '',
         ]);
 
-        // With auth_domain = users, MprRequestorMiddleware still blocks non-MPR routes
-        // The session role = Manager triggers the Manager-only sidebar check
-        // but the route restriction still applies via MprRequestorMiddleware
-        $response = $this->get('/hr/dashboard');
-        // Should be blocked (not 200) — Manager with auth_domain=users is still
-        // restricted to MPR routes by MprRequestorMiddleware
-        $this->assertNotSame(200, $response->getStatusCode());
+        // Gate enforces RBAC — Manpower must not access settings, employees, etc.
+        $this->assertFalse(Gate::allows('manage_settings'), 'Manpower must not have manage_settings');
+        $this->assertFalse(Gate::allows('view_employees'),  'Manpower must not have view_employees');
+        $this->assertFalse(Gate::allows('view_recruitment'), 'Manpower must not have view_recruitment');
+        $this->assertTrue(Gate::allows('view_mpr'),         'Manpower should have view_mpr');
+
+        // Protected HRIS routes enforce Gate checks.
+        $this->get('/hr/settings')->assertStatus(403);
+        $this->get('/hr/employees')->assertStatus(403);
+        $this->get('/hr/recruitment')->assertStatus(403);
+        $this->get('/hr/users')->assertStatus(403);
     }
 }

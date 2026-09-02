@@ -280,7 +280,7 @@
             <strong>No. Request:</strong> {{ $mpr->mprNumber }} &nbsp;|&nbsp;
             <strong>Tanggal:</strong>
             {{ $mpr->requestDate ? date('d F Y', strtotime($mpr->requestDate)) : date('d F Y') }} &nbsp;|&nbsp;
-            <strong>Status: {{ strtoupper($mpr->status ?? 'SUBMITTED') }}</strong>
+            <strong>Status:</strong> {{ strtoupper($mpr->status ?? 'SUBMITTED') }}
         </div>
     </div>
 
@@ -304,6 +304,22 @@
                         <td class="label-col">Entitas / Perusahaan</td>
                         <td class="colon-col">:</td>
                         <td class="value-col">{{ $company['name'] ?? ($mpr->entity ?: '-') }}</td>
+                    </tr>
+                </table>
+            </td>
+            <td>
+                <table class="data-table">
+                    <tr>
+                        <td class="label-col">Disetujui oleh (Divisi)</td>
+                        <td class="colon-col">:</td>
+                        <td class="value-col">{{ $mpr->approvalDivision ?: '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label-col">Tanggal Pengajuan</td>
+                        <td class="colon-col">:</td>
+                        <td class="value-col">
+                            {{ $mpr->requestDate ? date('d F Y', strtotime($mpr->requestDate)) : date('d F Y') }}
+                        </td>
                     </tr>
                 </table>
             </td>
@@ -353,41 +369,41 @@
                     <tr>
                         <td class="label-col">Jumlah Kebutuhan</td>
                         <td class="colon-col">:</td>
-                        <td class="value-col"><strong style="color:#000; font-size:10pt;">{{ $mpr->quantity ?: 1 }}
-                                Orang</strong></td>
+                        <td class="value-col"><strong>{{ $mpr->quantity ?: 1 }} Orang</strong></td>
                     </tr>
                     <tr>
                         <td class="label-col">Target Join Date</td>
                         <td class="colon-col">:</td>
                         <td class="value-col">
-                            {{ $mpr->expectedJoinDate ? date('d F Y', strtotime($mpr->expectedJoinDate)) : '-' }}</td>
+                            {{ $mpr->expectedJoinDate ? date('d F Y', strtotime($mpr->expectedJoinDate)) : '-' }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label-col">Hari Kerja</td>
+                        <td class="colon-col">:</td>
+                        <td class="value-col">{{ $mpr->workingDays ?: '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label-col">Jam Kerja</td>
+                        <td class="colon-col">:</td>
+                        <td class="value-col">{{ $mpr->workingHours ?: '-' }}</td>
                     </tr>
                 </table>
             </td>
         </tr>
     </table>
 
-    <!-- JADWAL KERJA & FASILITAS -->
+    <!-- JADWAL LANJUTAN: Detail Shift & Benefits -->
     <table class="data-table" style="margin-top:2px;">
-        <tr>
-            <td class="label-col" style="width:20%;">Hari Kerja</td>
-            <td class="colon-col">:</td>
-            <td class="value-col">{{ $mpr->workingDays ?: '-' }}</td>
-        </tr>
-        <tr>
-            <td class="label-col" style="width:20%;">Jam Kerja</td>
-            <td class="colon-col">:</td>
-            <td class="value-col">{{ $mpr->workingHours ?: '-' }}</td>
-        </tr>
         @if (!empty($mpr->shiftDetail))
-            <tr>
-                <td class="label-col" style="width:20%;">Detail Shift</td>
-                <td class="colon-col">:</td>
-                <td class="value-col">{{ $mpr->shiftDetail }}</td>
-            </tr>
+        <tr>
+            <td class="label-col" style="width:22%;">Detail Shift</td>
+            <td class="colon-col">:</td>
+            <td class="value-col">{{ $mpr->shiftDetail }}</td>
+        </tr>
         @endif
         <tr>
-            <td class="label-col" style="width:20%;">Benefits / Tunjangan</td>
+            <td class="label-col" style="width:22%;">Benefits / Tunjangan</td>
             <td class="colon-col">:</td>
             <td class="value-col">{{ $mpr->benefits ?: '-' }}</td>
         </tr>
@@ -504,7 +520,7 @@
     @endif
 
     <!-- SECTION 7: TANDA TANGAN -->
-    <!-- Baris 1: 3 signature box -->
+    <!-- Baris 1: Pemohon | HRD | Management -->
     <table class="sign-table">
         <tr>
             <td>
@@ -525,7 +541,7 @@
         </tr>
     </table>
 
-    <!-- Baris 2: 2 signature box (COO & CEO) horizontal-center terhadap baris 1 -->
+    <!-- Baris 2: COO & CEO — center di bawah baris 1 -->
     <table class="sign-table-second">
         <tr>
             <td>

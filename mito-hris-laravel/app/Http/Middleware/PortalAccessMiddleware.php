@@ -6,110 +6,108 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * PortalAccessMiddleware
+ *
+ * Enforces strict per-portal session isolation:
+ *
+ *   HRIS portal  → reads ONLY hr_user session   (auth_domain = 'users')
+ *   MPR portal   → reads ONLY mpr_requestor_auth (auth_domain = 'mpr_requestor')
+ *
+ * A session from the other portal is NEVER used as a fallback, NEVER read for
+ * role inference, and NEVER used to determine the redirect destination.
+ * This ensures that identical username/email across both account stores cannot
+ * cause any authentication crossover.
+ */
 class PortalAccessMiddleware
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $portal = $request->attributes->get('portal', 'public');
+        $portal       = $request->attributes->get('portal', 'public');
         $portalAccess = $request->attributes->get('portal_access', 'public');
 
-        if ($portalAccess === 'private') {
-            $legacyMprUser = session(config('mpr.session_key', 'mpr_requestor_auth'), []);
-            $legacyHrisUser = session('hr_user', []);
+        if ($portalAccess !== 'private') {
+            return $next($request);
+        }
 
-            $portalUser = $portal === 'mpr'
-                ? ($legacyMprUser ?: $legacyHrisUser)
-                : ($legacyHrisUser ?: $legacyMprUser);
-            $user = $portalUser ?: ($portal === 'hris' ? $legacyHrisUser : $legacyMprUser);
-
-            $otherPortalSession = $portal === 'mpr'
-                ? $legacyHrisUser
-                : $legacyMprUser;
-
-            $authDomain = strtolower(trim((string) ($user['auth_domain'] ?? '')));
-            $portalFromSession = $user['portal'] ?? null;
-            $role = strtolower(trim((string) ($user['role'] ?? '')));
-
-            if ($portalFromSession === null && $authDomain === 'mpr_requestor' && $portal === 'mpr') {
-                $portalFromSession = 'mpr';
-            }
-
-            if ($portalFromSession === null && $authDomain === 'users' && $portal === 'hris') {
-                $portalFromSession = 'hris';
-            }
-
-            if ($portalFromSession === null && !empty($user) && $portal === 'hris' && !in_array($role, ['manpower', 'manager'], true)) {
-                $portalFromSession = 'hris';
-                $authDomain = 'users';
-            }
-
-            if ($portalFromSession === null && !empty($user) && $portal === 'mpr' && in_array($role, ['manpower', 'manager'], true)) {
-                $portalFromSession = 'mpr';
-                $authDomain = 'mpr_requestor';
-            }
-
-            if (!empty($otherPortalSession) && empty($user) && (($otherPortalSession['portal'] ?? null) === ($portal === 'mpr' ? 'hris' : 'mpr'))) {
-                if ($request->expectsJson()) {
-                    return response()->json(['success' => false, 'error' => 'Portal session tidak valid untuk akses ini.'], 403);
-                }
-
-                $redirectRoute = $portal === 'mpr' ? 'hr.dashboard' : 'mpr.auth.request';
-                return redirect()->route($redirectRoute)->with('error', 'Anda tidak memiliki akses ke portal ini.');
-            }
+        // ── HRIS portal: ONLY hr_user ─────────────────────────────────────────
+        if ($portal === 'hris') {
+            $user = session('hr_user', []);
 
             if (empty($user)) {
                 if ($request->expectsJson()) {
-                    return response()->json(['success' => false, 'error' => 'Akses ditolak. Silakan login terlebih dahulu.'], 401);
+                    return response()->json([
+                        'success' => false,
+                        'error'   => 'Akses ditolak. Silakan login terlebih dahulu.',
+                    ], 401);
                 }
 
-                $redirectRoute = $portal === 'mpr' ? 'mpr.auth.login' : 'login';
-                return redirect()->route($redirectRoute)->with('error', 'Silakan login terlebih dahulu untuk mengakses portal ini.');
+                return redirect()->route('login')
+                    ->with('error', 'Silakan login terlebih dahulu untuk mengakses sistem HR.');
             }
 
-            if ($portalFromSession !== null && $portalFromSession !== $portal) {
+            // Verify the session actually belongs to the HRIS domain.
+            // AuthService always sets auth_domain = 'users'; any other value is invalid.
+            $authDomain = $user['auth_domain'] ?? 'users';
+            if ($authDomain !== 'users') {
+                session()->forget('hr_user');
+
                 if ($request->expectsJson()) {
-                    return response()->json(['success' => false, 'error' => 'Portal session tidak valid untuk akses ini.'], 403);
+                    return response()->json([
+                        'success' => false,
+                        'error'   => 'Autentikasi portal tidak valid.',
+                    ], 403);
                 }
 
-                $redirectRoute = $portalFromSession === 'mpr' ? 'mpr.auth.request' : 'hr.dashboard';
-                return redirect()->route($redirectRoute)->with('error', 'Anda tidak memiliki akses ke portal ini.');
+                return redirect()->route('login')
+                    ->with('error', 'Autentikasi portal tidak valid. Silakan login ulang.');
             }
 
-            $path = '/' . ltrim((string) $request->path(), '/');
-            $isMprLegacyRoute = $portal === 'hris' && (
-                str_starts_with($path, '/hr/mpr') ||
-                $path === '/hr/refresh-data'
-            );
-            $expectedAuthSource = config("hris.portal_access.{$portal}.auth_source", 'none');
-
-            if ($portal === 'hris' && ($authDomain === 'mpr_requestor' || in_array($role, ['manpower', 'manager'], true))) {
-                if ($path === '/hr/dashboard') {
-                    if ($request->expectsJson()) {
-                        return response()->json(['success' => false, 'error' => 'Anda hanya dapat mengakses halaman Manpower Request (MPR).'], 403);
-                    }
-
-                    return redirect()->route('mpr.auth.request')->with('error', 'Anda hanya dapat mengakses halaman Manpower Request (MPR).');
-                }
-
-                if (!$isMprLegacyRoute) {
-                    if ($request->expectsJson()) {
-                        return response()->json(['success' => false, 'error' => 'Anda tidak memiliki akses ke portal HRIS.'], 403);
-                    }
-
-                    abort(403, 'Anda tidak memiliki akses ke halaman ini.');
-                }
-            }
-
-            if ($expectedAuthSource !== 'none' && $authDomain !== $expectedAuthSource && !$isMprLegacyRoute) {
-                if ($request->expectsJson()) {
-                    return response()->json(['success' => false, 'error' => 'Autentikasi portal tidak valid.'], 403);
-                }
-
-                $redirectRoute = $portal === 'mpr' ? 'mpr.auth.login' : 'login';
-                return redirect()->route($redirectRoute)->with('error', 'Autentikasi portal tidak valid.');
-            }
+            return $next($request);
         }
 
-        return $next($request);
+        // ── MPR portal: ONLY mpr_requestor_auth ──────────────────────────────
+        if ($portal === 'mpr') {
+            $sessionKey = config('mpr.session_key', 'mpr_requestor_auth');
+            $user       = session($sessionKey, []);
+
+            if (empty($user)) {
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'error'   => 'Akses ditolak. Silakan login terlebih dahulu.',
+                    ], 401);
+                }
+
+                return redirect()->route('mpr.auth.login')
+                    ->with('error', 'Silakan login terlebih dahulu untuk mengakses portal MPR.');
+            }
+
+            // Verify the session belongs to the MPR domain.
+            // MprAuthController always sets auth_domain = 'mpr_requestor'.
+            $authDomain = $user['auth_domain'] ?? '';
+            if ($authDomain !== 'mpr_requestor') {
+                session()->forget($sessionKey);
+
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'error'   => 'Autentikasi portal tidak valid.',
+                    ], 403);
+                }
+
+                return redirect()->route('mpr.auth.login')
+                    ->with('error', 'Autentikasi portal tidak valid. Silakan login ulang.');
+            }
+
+            return $next($request);
+        }
+
+        // Unknown portal type — deny access.
+        if ($request->expectsJson()) {
+            return response()->json(['success' => false, 'error' => 'Portal tidak dikenal.'], 403);
+        }
+
+        abort(403, 'Portal tidak dikenal.');
     }
 }

@@ -114,7 +114,7 @@ class MprSheetsRepository implements MprRepositoryInterface
         $data->createdAt = $now->format('Y-m-d H:i:s');
         $data->updatedAt = $now->format('Y-m-d H:i:s');
 
-        // Ensure headers exist in the sheet
+        // Ensure headers exist in the sheet — urutan HARUS identik dengan toSheetRow() & config/hris.php schemas.MPR
         $expectedHeaders = config('hris.schemas.MPR', [
             'MPR Number',
             'Request Date',
@@ -134,10 +134,6 @@ class MprSheetsRepository implements MprRepositoryInterface
             'Replacement For',
             'Job Description',
             'Requirements',
-            'Status',
-            'Created By',
-            'Created At',
-            'Updated At',
             'Requestor Position',
             'Working Days',
             'Working Hours',
@@ -150,11 +146,23 @@ class MprSheetsRepository implements MprRepositoryInterface
             'Industry Reference',
             'Special Notes',
             'Key Results / Targets',
+            'Status',
+            'Created By',
+            'Created At',
+            'Updated At',
         ]);
         $this->sheets->ensureSheetHeaders($this->sheetName, $expectedHeaders);
 
-        // Append the row
-        $rowValues = $data->toSheetRow();
+        // Build row values sesuai urutan header aktual di sheet,
+        // identik dengan pendekatan update() — agar tidak geser jika urutan kolom sheet berbeda.
+        $serialized   = $data->toSheetRow(); // associative array: header → value
+        $sheetHeaders = $expectedHeaders;    // gunakan urutan dari config/hris.php sebagai canonical order
+
+        $rowValues = [];
+        foreach ($sheetHeaders as $header) {
+            $rowValues[] = array_key_exists($header, $serialized) ? $serialized[$header] : '';
+        }
+
         $this->sheets->appendRow($this->sheetName, $rowValues);
 
         return $data;
