@@ -134,6 +134,29 @@ class CandidateData
         );
     }
 
+    /**
+     * Build a positional row for data_kandidat (24 columns).
+     *
+     * Final schema (index → header):
+     *   0  Recruitment ID           12 Position Applied
+     *   1  Created Date             13 Education
+     *   2  Full Name                14 Work Experience
+     *   3  NIK                      15 Last Company
+     *   4  Birth Date               16 Current Employment Status
+     *   5  Age                      17 Available to Join
+     *   6  Gender                   18 Expected Salary
+     *   7  Marital Status           19 Recruitment Source
+     *   8  Email                    20 Status
+     *   9  Phone                    21 HR Notes
+     *  10  Address                  22 Created By
+     *  11  City                     23 Updated At
+     *
+     * NOTE: CV Link has been removed from this sheet.
+     * Pipeline columns (Hold Reason, Blacklist Reason, Employee ID, etc.)
+     * are NOT written to data_kandidat; they live only in their
+     * respective destination sheets (kandidat_hold / kandidat_blacklist /
+     * kandidat_accepted).
+     */
     public function toSheetRow(): array
     {
         return [
@@ -157,17 +180,10 @@ class CandidateData
             $this->availableToJoin ?? '',
             $this->expectedSalary ?? '',
             $this->recruitmentSource ?? '',
-            $this->cvLink ?? '',
             $this->status ?? 'Pending',
             $this->hrNotes ?? '',
             $this->createdBy ?? 'Candidate',
             $this->updatedAt ?? now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
-            $this->holdReason ?? '',
-            $this->holdFollowUpDate ?? '',
-            $this->blacklistReason ?? '',
-            $this->blacklistDate ?? '',
-            $this->blacklistUpdatedBy ?? '',
-            $this->employeeId ?? '',
         ];
     }
 }
