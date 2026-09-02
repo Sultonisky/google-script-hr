@@ -594,7 +594,7 @@
                             'X-CSRF-TOKEN': getCsrfToken(),
                             'Accept': 'application/json',
                         },
-                        body: new FormData(form),
+                        body: new FormData(formMpr),
                     })
                     .then(async response => {
                         const data = await response.json();

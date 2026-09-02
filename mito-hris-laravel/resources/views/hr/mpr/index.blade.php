@@ -1426,8 +1426,8 @@
                                     id="editMprNumber"></small></h5>
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                         </div>
-                        <form id="formEditMpr">
-                            <div class="modal-body p-4">
+                        <div class="modal-body p-4">
+                            <form id="formEditMpr">
                                 <div id="editMprErrors" class="alert alert-danger d-none"></div>
 
                                 <!-- 1. Detail Posisi & Organisasi -->
@@ -1545,16 +1545,16 @@
                                             placeholder="Ringkasan tanggung jawab posisi..."></textarea>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-outline-secondary btn-sm"
-                                    data-bs-dismiss="modal">Batal</button>
-                                <button type="button" id="btnPreviewMpr" class="btn btn-outline-primary btn-sm"><i
-                                        class="bi bi-eye me-1"></i> Preview</button>
-                                <button type="submit" id="btnSaveMpr" class="btn btn-primary btn-sm"><i
-                                        class="bi bi-check-circle me-1"></i> Save Changes</button>
-                            </div>
-                        </form>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                data-bs-dismiss="modal">Batal</button>
+                            <button type="button" id="btnPreviewMpr" class="btn btn-outline-primary btn-sm"><i
+                                    class="bi bi-eye me-1"></i> Preview</button>
+                            <button type="submit" form="formEditMpr" id="btnSaveMpr" class="btn btn-primary btn-sm"><i
+                                    class="bi bi-check-circle me-1"></i> Save Changes</button>
+                        </div>
                     </div>
                 </div>
             </div>
