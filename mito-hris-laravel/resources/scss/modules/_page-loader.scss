@@ -1,0 +1,44 @@
+// ============================================================
+// modules/_page-loader.scss — GLOBAL PAGE NAVIGATION LOADER
+// Thin topbar progress bar for full-page navigation feedback.
+// This is a NAVIGATION indicator only — it does not affect any
+// existing fetch/AJAX/table/modal/form loading indicators.
+// ============================================================
+
+#mito-page-loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 3px;
+    z-index: 2300;
+    background: var(--color-primary);
+    box-shadow: 0 0 8px 0 rgba(235, 28, 36, 0.55);
+    opacity: 0;
+    pointer-events: none;
+    transition:
+        width 0.25s ease-out,
+        opacity 0.2s ease-out;
+    will-change: width, opacity;
+}
+
+#mito-page-loader.is-active {
+    opacity: 1;
+}
+
+#mito-page-loader.is-finishing {
+    transition:
+        width 0.2s ease-out,
+        opacity 0.35s ease-in 0.1s;
+    opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #mito-page-loader {
+        transition: opacity 0.15s linear;
+    }
+
+    #mito-page-loader.is-finishing {
+        transition: opacity 0.15s linear;
+    }
+}

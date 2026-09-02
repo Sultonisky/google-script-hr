@@ -21,11 +21,14 @@
         })();
     </script>
 
-    @vite(['resources/scss/app.scss', 'resources/scss/hr.scss', 'resources/js/app.js', 'resources/js/csp-hardening.js'])
+    @vite(['resources/scss/app.scss', 'resources/scss/hr.scss', 'resources/js/app.js', 'resources/js/page-loader.js', 'resources/js/csp-hardening.js'])
     @yield('styles')
 </head>
 
 <body>
+    <!-- Global page navigation loading bar (topbar). Not an AJAX/data loader. -->
+    <div id="mito-page-loader" aria-hidden="true"></div>
+
     <!-- Sidebar Overlay for Mobile -->
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
