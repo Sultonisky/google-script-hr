@@ -296,7 +296,6 @@ class CandidateSheetsRepository implements CandidateRepositoryInterface
             'Available to Join'           => $c->availableToJoin ?? '',
             'Expected Salary'             => $c->expectedSalary ?? '',
             'Recruitment Source'          => $c->recruitmentSource ?? '',
-            'CV Link'                     => $c->cvLink ?? '',
             'Status'                      => $c->status ?? 'Pending',
             'HR Notes'                    => $c->hrNotes ?? '',
             'Created By'                  => $c->createdBy ?? 'Candidate',

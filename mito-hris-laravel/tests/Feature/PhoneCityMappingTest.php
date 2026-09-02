@@ -453,23 +453,22 @@ class PhoneCityMappingTest extends TestCase
      * PC15 — toSheetRow() positional alignment: verify every element of the
      * final Sheets row maps to the correct data_kandidat header position.
      *
-     * Header order from config/hris.php:
-     *   0  Recruitment ID       9  Phone
-     *   1  Created Date         10 Address
-     *   2  Full Name            11 City
-     *   3  NIK                  12 Position Applied
-     *   4  Birth Date           13 Education
-     *   5  Age                  14 Work Experience
-     *   6  Gender               15 Last Company
-     *   7  Marital Status       16 Current Employment Status
-     *   8  Email                17 Available to Join
-     *                           18 Expected Salary
-     *                           19 Recruitment Source
-     *                           20 CV Link
-     *                           21 Status
-     *                           22 HR Notes
-     *                           23 Created By
-     *                           24 Updated At
+     * Final schema (24 columns, 0-indexed):
+     *   0  Recruitment ID       12 Position Applied
+     *   1  Created Date         13 Education
+     *   2  Full Name            14 Work Experience
+     *   3  NIK                  15 Last Company
+     *   4  Birth Date           16 Current Employment Status
+     *   5  Age                  17 Available to Join
+     *   6  Gender               18 Expected Salary
+     *   7  Marital Status       19 Recruitment Source
+     *   8  Email                20 Status
+     *   9  Phone                21 HR Notes
+     *  10  Address              22 Created By
+     *  11  City                 23 Updated At
+     *
+     * CV Link removed. Pipeline cols (Hold Reason, Blacklist Reason, Employee ID, etc.)
+     * removed — they live only in their respective destination sheets.
      */
     public function test_pc15_toSheetRow_positional_alignment(): void
     {
@@ -494,7 +493,6 @@ class PhoneCityMappingTest extends TestCase
             availableToJoin:         'Segera',
             expectedSalary:          '500.000.000',
             recruitmentSource:       'JobStreet',
-            cvLink:                  null,
             status:                  'Pending',
             hrNotes:                 null,
             createdBy:               'Candidate',
@@ -503,42 +501,34 @@ class PhoneCityMappingTest extends TestCase
 
         $row = $candidate->toSheetRow();
 
-        // Verify array length matches the canonical 31-column schema
-        $this->assertCount(31, $row, 'toSheetRow() must produce exactly 31 elements');
+        // Verify array length matches the canonical 24-column schema
+        $this->assertCount(24, $row, 'toSheetRow() must produce exactly 24 elements');
 
         // Verify each position against the data_kandidat header order
-        $this->assertSame('REC-TEST-ROW-001',             $row[0],  'Col 0 = Recruitment ID');
-        $this->assertSame('2026-09-02 16:14:09',          $row[1],  'Col 1 = Created Date');
-        $this->assertSame('Shohibul Anwar',                $row[2],  'Col 2 = Full Name');
-        $this->assertSame("'3305210807980001",             $row[3],  'Col 3 = NIK (text-prefixed)');
-        $this->assertSame('08/07/1998',                   $row[4],  'Col 4 = Birth Date');
-        $this->assertSame('28',                            $row[5],  'Col 5 = Age');
-        $this->assertSame('Laki-laki',                    $row[6],  'Col 6 = Gender');
-        $this->assertSame('Menikah',                      $row[7],  'Col 7 = Marital Status');
-        $this->assertSame('anwarshohibul@example.com',    $row[8],  'Col 8 = Email');
-        $this->assertSame("'+6282336534192",               $row[9],  'Col 9 = Phone (text-prefixed)');
-        $this->assertSame('Cengkareng, Jl. Merdeka No. 1', $row[10], 'Col 10 = Address');
-        $this->assertSame('KOTA JAKARTA BARAT',           $row[11], 'Col 11 = City');
-        $this->assertSame('Sales Director',               $row[12], 'Col 12 = Position Applied');
-        $this->assertSame('S3',                           $row[13], 'Col 13 = Education');
-        $this->assertSame('Fresh Graduate',               $row[14], 'Col 14 = Work Experience');
-        $this->assertSame('',                             $row[15], 'Col 15 = Last Company (blank)');
-        $this->assertSame('Unemployed',                   $row[16], 'Col 16 = Current Employment Status');
-        $this->assertSame('Segera',                       $row[17], 'Col 17 = Available to Join');
-        $this->assertSame('500.000.000',                  $row[18], 'Col 18 = Expected Salary');
-        $this->assertSame('JobStreet',                    $row[19], 'Col 19 = Recruitment Source');
-        $this->assertSame('',                             $row[20], 'Col 20 = CV Link (blank)');
-        $this->assertSame('Pending',                      $row[21], 'Col 21 = Status');
-        $this->assertSame('',                             $row[22], 'Col 22 = HR Notes (blank)');
-        $this->assertSame('Candidate',                    $row[23], 'Col 23 = Created By');
-        $this->assertSame('2026-09-02 16:14:09',          $row[24], 'Col 24 = Updated At');
-        // Cols 25-30 are pipeline columns (hold/blacklist/employee) — all blank on initial create
-        $this->assertSame('',  $row[25], 'Col 25 = Hold Reason');
-        $this->assertSame('',  $row[26], 'Col 26 = Hold Follow Up Date');
-        $this->assertSame('',  $row[27], 'Col 27 = Blacklist Reason');
-        $this->assertSame('',  $row[28], 'Col 28 = Blacklist Date');
-        $this->assertSame('',  $row[29], 'Col 29 = Blacklist Updated By');
-        $this->assertSame('',  $row[30], 'Col 30 = Employee ID');
+        $this->assertSame('REC-TEST-ROW-001',               $row[0],  'Col 0 = Recruitment ID');
+        $this->assertSame('2026-09-02 16:14:09',            $row[1],  'Col 1 = Created Date');
+        $this->assertSame('Shohibul Anwar',                  $row[2],  'Col 2 = Full Name');
+        $this->assertSame("'3305210807980001",               $row[3],  'Col 3 = NIK (text-prefixed)');
+        $this->assertSame('08/07/1998',                     $row[4],  'Col 4 = Birth Date');
+        $this->assertSame('28',                              $row[5],  'Col 5 = Age');
+        $this->assertSame('Laki-laki',                      $row[6],  'Col 6 = Gender');
+        $this->assertSame('Menikah',                        $row[7],  'Col 7 = Marital Status');
+        $this->assertSame('anwarshohibul@example.com',      $row[8],  'Col 8 = Email');
+        $this->assertSame("'+6282336534192",                 $row[9],  'Col 9 = Phone (text-prefixed)');
+        $this->assertSame('Cengkareng, Jl. Merdeka No. 1',  $row[10], 'Col 10 = Address');
+        $this->assertSame('KOTA JAKARTA BARAT',             $row[11], 'Col 11 = City');
+        $this->assertSame('Sales Director',                 $row[12], 'Col 12 = Position Applied');
+        $this->assertSame('S3',                             $row[13], 'Col 13 = Education');
+        $this->assertSame('Fresh Graduate',                 $row[14], 'Col 14 = Work Experience');
+        $this->assertSame('',                               $row[15], 'Col 15 = Last Company (blank)');
+        $this->assertSame('Unemployed',                     $row[16], 'Col 16 = Current Employment Status');
+        $this->assertSame('Segera',                         $row[17], 'Col 17 = Available to Join');
+        $this->assertSame('500.000.000',                    $row[18], 'Col 18 = Expected Salary');
+        $this->assertSame('JobStreet',                      $row[19], 'Col 19 = Recruitment Source');
+        $this->assertSame('Pending',                        $row[20], 'Col 20 = Status');
+        $this->assertSame('',                               $row[21], 'Col 21 = HR Notes (blank)');
+        $this->assertSame('Candidate',                      $row[22], 'Col 22 = Created By');
+        $this->assertSame('2026-09-02 16:14:09',            $row[23], 'Col 23 = Updated At');
     }
 
     /**

@@ -276,12 +276,6 @@ class DummyDataService
             'hrNotes'                  => $this->pick($this->hrNotes),
             'createdBy'                => 'Demo Generator',
             'updatedAt'                => $updatedAt->format('Y-m-d H:i:s'),
-            'holdReason'               => '',
-            'holdFollowUpDate'         => '',
-            'blacklistReason'          => '',
-            'blacklistDate'            => '',
-            'blacklistUpdatedBy'       => '',
-            'employeeId'               => '',
             // internal use
             '_department'              => $dept,
             '_isMale'                  => $isMale,
@@ -297,9 +291,14 @@ class DummyDataService
     // ==============================================================
     // ROW BUILDERS
     // ==============================================================
-    private function candidateRow(array $c, bool $withProcessed = false): array
+
+    /**
+     * Build a row for data_kandidat (24 columns — final schema).
+     * No CV Link. No pipeline cols (Hold/Blacklist/Employee ID).
+     */
+    private function pendingRow(array $c): array
     {
-        $row = [
+        return [
             $c['recruitmentId'],
             $c['createdDate'],
             $c['fullName'],
@@ -320,26 +319,123 @@ class DummyDataService
             $c['availableToJoin'],
             $c['expectedSalary'],
             $c['recruitmentSource'],
-            $c['cvLink'],
+            // [20] Status
             $c['status'],
+            // [21] HR Notes
             $c['hrNotes'],
+            // [22] Created By
             $c['createdBy'],
+            // [23] Updated At
             $c['updatedAt'],
-            // Extra headers
-            $c['holdReason'],
-            $c['holdFollowUpDate'],
-            $c['blacklistReason'],
-            $c['blacklistDate'],
-            $c['blacklistUpdatedBy'],
-            $c['employeeId'],
         ];
+    }
 
-        if ($withProcessed) {
-            $row[] = $c['processedDate'] ?? '';
-            $row[] = $c['processedBy'] ?? '';
-        }
+    /**
+     * Build a row for kandidat_hold or kandidat_blacklist (31 columns — final schema).
+     * No CV Link. No Employee ID.
+     * Includes: Hold/Blacklist cols + Processed Date/By.
+     */
+    private function holdBlacklistRow(array $c): array
+    {
+        return [
+            $c['recruitmentId'],
+            $c['createdDate'],
+            $c['fullName'],
+            "'" . $c['nik'],
+            $c['birthDate'],
+            $c['age'],
+            $c['gender'],
+            $c['maritalStatus'],
+            $c['email'],
+            "'" . $c['phone'],
+            $c['address'],
+            $c['city'],
+            $c['positionApplied'],
+            $c['education'],
+            $c['workExperience'],
+            $c['lastCompany'],
+            $c['currentEmploymentStatus'],
+            $c['availableToJoin'],
+            $c['expectedSalary'],
+            $c['recruitmentSource'],
+            // [20] Status
+            $c['status'],
+            // [21] HR Notes
+            $c['hrNotes'],
+            // [22] Created By
+            $c['createdBy'],
+            // [23] Updated At
+            $c['updatedAt'],
+            // [24] Hold Reason
+            $c['holdReason'] ?? '',
+            // [25] Hold Follow Up Date
+            $c['holdFollowUpDate'] ?? '',
+            // [26] Blacklist Reason
+            $c['blacklistReason'] ?? '',
+            // [27] Blacklist Date
+            $c['blacklistDate'] ?? '',
+            // [28] Blacklist Updated By
+            $c['blacklistUpdatedBy'] ?? '',
+            // [29] Processed Date
+            $c['processedDate'] ?? '',
+            // [30] Processed By
+            $c['processedBy'] ?? '',
+        ];
+    }
 
-        return $row;
+    /**
+     * Build the base row for kandidat_accepted (32 columns — final schema).
+     * No CV Link. Keeps Employee ID + Hold/Blacklist cols.
+     * Offering/Onboarding columns are appended separately by writeAcceptedSheet().
+     */
+    private function acceptedBaseRow(array $c): array
+    {
+        return [
+            $c['recruitmentId'],
+            $c['createdDate'],
+            $c['fullName'],
+            "'" . $c['nik'],
+            $c['birthDate'],
+            $c['age'],
+            $c['gender'],
+            $c['maritalStatus'],
+            $c['email'],
+            "'" . $c['phone'],
+            $c['address'],
+            $c['city'],
+            $c['positionApplied'],
+            $c['education'],
+            $c['workExperience'],
+            $c['lastCompany'],
+            $c['currentEmploymentStatus'],
+            $c['availableToJoin'],
+            $c['expectedSalary'],
+            $c['recruitmentSource'],
+            // [20] Status
+            $c['status'],
+            // [21] HR Notes
+            $c['hrNotes'],
+            // [22] Created By
+            $c['createdBy'],
+            // [23] Updated At
+            $c['updatedAt'],
+            // [24] Hold Reason
+            $c['holdReason'] ?? '',
+            // [25] Hold Follow Up Date
+            $c['holdFollowUpDate'] ?? '',
+            // [26] Blacklist Reason
+            $c['blacklistReason'] ?? '',
+            // [27] Blacklist Date
+            $c['blacklistDate'] ?? '',
+            // [28] Blacklist Updated By
+            $c['blacklistUpdatedBy'] ?? '',
+            // [29] Employee ID  ← KEPT in kandidat_accepted
+            $c['employeeId'] ?? '',
+            // [30] Processed Date
+            $c['processedDate'] ?? '',
+            // [31] Processed By
+            $c['processedBy'] ?? '',
+        ];
     }
 
     // ==============================================================
@@ -348,7 +444,7 @@ class DummyDataService
     private function writePendingSheet(array $candidates): void
     {
         if (empty($candidates)) return;
-        $rows = array_map(fn($c) => $this->candidateRow($c, false), $candidates);
+        $rows = array_map(fn($c) => $this->pendingRow($c), $candidates);
         $this->batchAppend('data_kandidat', $rows);
     }
 
@@ -359,7 +455,12 @@ class DummyDataService
         $rows = array_map(function ($c) use ($nowStr) {
             $c['processedDate'] = $nowStr;
             $c['processedBy']   = 'Demo Generator';
-            return $this->candidateRow($c, true);
+            $c['holdReason']    = $c['holdReason'] ?? 'Budget belum tersedia';
+            $c['holdFollowUpDate'] = $c['holdFollowUpDate'] ?? '';
+            $c['blacklistReason'] = '';
+            $c['blacklistDate']   = '';
+            $c['blacklistUpdatedBy'] = '';
+            return $this->holdBlacklistRow($c);
         }, $candidates);
         $this->batchAppend('kandidat_hold', $rows);
     }
@@ -373,7 +474,7 @@ class DummyDataService
         foreach ($candidates as $idx => $c) {
             $c['processedDate'] = $nowStr;
             $c['processedBy']   = 'Demo Generator';
-            $base = $this->candidateRow($c, true);
+            $base = $this->acceptedBaseRow($c);
 
             // Distribute offering states (0=none, 1=waiting, 2=accepted+onboarded)
             $segment = $idx % 3;
@@ -456,9 +557,14 @@ class DummyDataService
         if (empty($candidates)) return;
         $nowStr = $now->format('Y-m-d H:i:s');
         $rows = array_map(function ($c) use ($nowStr) {
-            $c['processedDate'] = $nowStr;
-            $c['processedBy']   = 'Demo Generator';
-            return $this->candidateRow($c, true);
+            $c['processedDate']      = $nowStr;
+            $c['processedBy']        = 'Demo Generator';
+            $c['blacklistReason']    = $c['blacklistReason'] ?? 'Data tidak valid';
+            $c['blacklistDate']      = $nowStr;
+            $c['blacklistUpdatedBy'] = 'Demo Generator';
+            $c['holdReason']         = '';
+            $c['holdFollowUpDate']   = '';
+            return $this->holdBlacklistRow($c);
         }, $candidates);
         $this->batchAppend('kandidat_blacklist', $rows);
     }
