@@ -75,21 +75,21 @@
                                             class="bi bi-lock-fill me-1"></i> Terkunci Permanen</span>
                                 </div>
                                 @php
-                                    // Ambil data requestor langsung dari session sebagai sumber canonical,
-                                    // identik dengan cara hr-topbar membacanya.
-                                    // Ini menghindari ketergantungan pada $user dari controller yang
-                                    // mungkin ter-resolve ke session yang salah jika config key berbeda.
-                                    $mprSessionKey = config('mpr.session_key', 'mpr_requestor_auth');
-                                    $mprSession = session($mprSessionKey, []);
-                                    $identityName = $mprSession['fullName']
-                                        ?? $user['fullName']
-                                        ?? $user['name']
-                                        ?? session('mpr_requestor_auth.fullName')
-                                        ?? 'Manpower';
-                                    $identityPosition = $mprSession['jobPosition']
-                                        ?? $user['jobPosition']
-                                        ?? session('mpr_requestor_auth.jobPosition')
-                                        ?? '';
+                                    // Identity resolution — strict portal isolation.
+                                    // DomainMiddleware sets request attribute 'portal' = 'hris' | 'mpr'.
+                                    // On the MPR portal (/mpr/*): identity comes from mpr_requestor_auth ONLY.
+                                    // On the HRIS portal (/hr/*): identity comes from $user (hr_user via View
+                                    // composer) ONLY. We never read one portal's session for the other.
+                                    if (request()->attributes->get('portal') === 'mpr') {
+                                        $mprIdentKey      = config('mpr.session_key', 'mpr_requestor_auth');
+                                        $mprIdentSess     = session($mprIdentKey, []);
+                                        $identityName     = $mprIdentSess['fullName'] ?? 'Manpower';
+                                        $identityPosition = $mprIdentSess['jobPosition'] ?? '';
+                                    } else {
+                                        // HRIS portal — $user is set by the View composer from hr_user.
+                                        $identityName     = $user['fullName'] ?? $user['name'] ?? 'Manpower';
+                                        $identityPosition = $user['jobPosition'] ?? '';
+                                    }
                                 @endphp
                                 <div class="row g-3">
                                     <div class="col-md-6">
