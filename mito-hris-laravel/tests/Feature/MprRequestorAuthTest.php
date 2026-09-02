@@ -6,6 +6,7 @@ use App\Repositories\Contracts\MprRequestorRepositoryInterface;
 use App\Services\MprRequestorAuthService;
 use Illuminate\Support\Facades\Hash;
 use Mockery;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
@@ -15,7 +16,7 @@ use Tests\TestCase;
  * 1. MprRequestorAuthService authenticates against mpr_requestor sheet (NOT Users).
  * 2. Inactive requestors are rejected.
  * 3. Wrong role (non-Manager) in mpr_requestor is rejected.
- * 4. Unknown identifier returns null error (fall-through to Users domain).
+ * 4. Unknown identifier returns a hard-rejection error — no fallthrough to Users domain.
  * 5. Session built by MprRequestorAuthService has correct auth_domain marker.
  * 6. Entity and branch are correctly placed in the session.
  */
@@ -32,11 +33,10 @@ class MprRequestorAuthTest extends TestCase
             'Email'        => 'manager@mito.co.id',
             'Username'     => 'manager.test',
             'Full Name'    => 'John Manager',
-            'Role'         => 'Manager',
+            'Job Position' => 'Regional Manager',
+            'Role'         => 'Manpower',
             'Status'       => 'Active',
             'Password Hash' => Hash::make('password123'),
-            'Entity'       => 'MSI',
-            'Branch'       => 'Bandung',
             'Last Login'   => '',
             'Created At'   => '2026-08-01 09:00:00',
             'Updated At'   => '2026-08-01 09:00:00',
@@ -48,7 +48,7 @@ class MprRequestorAuthTest extends TestCase
     // Test 1: Successful login → session has correct structure
     // =========================================================================
 
-    /** @test */
+    #[Test]
     public function successful_login_returns_correct_session_structure(): void
     {
         $row = $this->makeRequestorRow();
@@ -72,7 +72,7 @@ class MprRequestorAuthTest extends TestCase
         // Identity from requestor row
         $this->assertSame('manager@mito.co.id', $user['email']);
         $this->assertSame('John Manager', $user['fullName']);
-        $this->assertSame('Manager', $user['role']);
+        $this->assertSame('Manpower', $user['role']);
 
         // requestor_id must be present
         $this->assertSame('MPR-REQ-001', $user['requestor_id']);
@@ -87,7 +87,7 @@ class MprRequestorAuthTest extends TestCase
     // Test 2: Job position is resolved into session
     // =========================================================================
 
-    /** @test */
+    #[Test]
     public function job_position_is_resolved_into_session(): void
     {
         $row = $this->makeRequestorRow(['Job Position' => 'Branch Manager']);
@@ -104,11 +104,11 @@ class MprRequestorAuthTest extends TestCase
     }
 
     // =========================================================================
-    // Test 3: Unknown identifier → null error (fall-through signal)
+    // Test 3: Unknown identifier → hard rejection (no fallthrough)
     // =========================================================================
 
-    /** @test */
-    public function unknown_identifier_returns_null_error_for_fallthrough(): void
+    #[Test]
+    public function unknown_identifier_returns_error_for_hard_rejection(): void
     {
         $mockRepo = Mockery::mock(MprRequestorRepositoryInterface::class);
         $mockRepo->shouldReceive('findByIdentifier')->andReturn(null);
@@ -117,15 +117,15 @@ class MprRequestorAuthTest extends TestCase
         $result  = $service->attemptLogin('unknown@example.com', 'anypassword');
 
         $this->assertFalse($result['success']);
-        $this->assertNull($result['error'],
-            'null error signals caller to try the next auth domain (Users sheet)');
+        $this->assertNotNull($result['error'],
+            'Unknown identifier must return a non-null error — no fallthrough to another domain');
     }
 
     // =========================================================================
     // Test 4: Inactive requestor is rejected
     // =========================================================================
 
-    /** @test */
+    #[Test]
     public function inactive_requestor_is_rejected_with_error_message(): void
     {
         $row = $this->makeRequestorRow(['Status' => 'Inactive']);
@@ -146,7 +146,7 @@ class MprRequestorAuthTest extends TestCase
     // Test 5: Non-Manager role in mpr_requestor is rejected
     // =========================================================================
 
-    /** @test */
+    #[Test]
     public function non_manager_role_in_mpr_requestor_is_rejected(): void
     {
         $row = $this->makeRequestorRow(['Role' => 'HR Staff']);
@@ -165,7 +165,7 @@ class MprRequestorAuthTest extends TestCase
     // Test 6: Wrong password is rejected
     // =========================================================================
 
-    /** @test */
+    #[Test]
     public function wrong_password_is_rejected(): void
     {
         $row = $this->makeRequestorRow();
@@ -185,7 +185,7 @@ class MprRequestorAuthTest extends TestCase
     // Test 7: Empty password hash is rejected
     // =========================================================================
 
-    /** @test */
+    #[Test]
     public function empty_password_hash_is_rejected(): void
     {
         $row = $this->makeRequestorRow(['Password Hash' => '']);
@@ -204,7 +204,7 @@ class MprRequestorAuthTest extends TestCase
     // Test 8: Username-based login also works
     // =========================================================================
 
-    /** @test */
+    #[Test]
     public function login_via_username_works(): void
     {
         $row = $this->makeRequestorRow();

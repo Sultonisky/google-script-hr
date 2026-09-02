@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Session;
@@ -57,9 +58,7 @@ class RbacTest extends TestCase
      */
     private function actingAsMprRequestor(
         string $email = 'manager@mito.id',
-        string $name = 'Manager Test',
-        array $entities = ['MSI'],
-        string $branch = 'Jakarta'
+        string $name = 'Manager Test'
     ): static {
         Session::put('hr_user', [
             'email'        => $email,
@@ -67,8 +66,6 @@ class RbacTest extends TestCase
             'role'         => 'Manpower',
             'permissions'  => config('hris.auth.role_permissions.Manpower', ['view_mpr', 'create_mpr', 'export_mpr']),
             'auth_domain'  => 'mpr_requestor', // MPR domain — NOT internal HRIS
-            'entities'     => $entities,
-            'branch'       => $branch,
             'requestor_id' => 'MPR-REQ-001',
         ]);
         return $this;
@@ -86,7 +83,7 @@ class RbacTest extends TestCase
     // 1. Gate resolver — unit-level Gate checks
     // =========================================================================
 
-    /** @test */
+    #[Test]
     public function gate_user_resolver_reads_session_hr_user(): void
     {
         $this->actingAsRole('User');
@@ -109,7 +106,7 @@ class RbacTest extends TestCase
     // 2. Super Admin wildcard
     // =========================================================================
 
-    /** @test */
+    #[Test]
     public function super_admin_wildcard_grants_all_permissions_via_gate(): void
     {
         $this->actingAsRole('Super Admin');
@@ -122,7 +119,7 @@ class RbacTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function super_admin_wildcard_regression(): void
     {
         // Explicit regression: the wildcard must continue to work even if someone
@@ -144,63 +141,63 @@ class RbacTest extends TestCase
     // 3. Super Admin route access — all protected HR routes return 200 (not 403)
     // =========================================================================
 
-    /** @test */
+    #[Test]
     public function super_admin_can_access_dashboard(): void
     {
         $this->actingAsRole('Super Admin');
         $this->get('/hr/dashboard')->assertStatus(200);
     }
 
-    /** @test */
+    #[Test]
     public function super_admin_can_access_recruitment(): void
     {
         $this->actingAsRole('Super Admin');
         $this->get('/hr/recruitment')->assertOk();
     }
 
-    /** @test */
+    #[Test]
     public function super_admin_can_access_employees(): void
     {
         $this->actingAsRole('Super Admin');
         $this->get('/hr/employees')->assertOk();
     }
 
-    /** @test */
+    #[Test]
     public function super_admin_can_access_probation(): void
     {
         $this->actingAsRole('Super Admin');
         $this->get('/hr/probation')->assertOk();
     }
 
-    /** @test */
+    #[Test]
     public function super_admin_can_access_outsource(): void
     {
         $this->actingAsRole('Super Admin');
         $this->get('/hr/outsource')->assertOk();
     }
 
-    /** @test */
+    #[Test]
     public function super_admin_can_access_audit_logs(): void
     {
         $this->actingAsRole('Super Admin');
         $this->get('/hr/audit-logs')->assertOk();
     }
 
-    /** @test */
+    #[Test]
     public function super_admin_can_access_master_data(): void
     {
         $this->actingAsRole('Super Admin');
         $this->get('/hr/master-data')->assertOk();
     }
 
-    /** @test */
+    #[Test]
     public function super_admin_can_access_settings(): void
     {
         $this->actingAsRole('Super Admin');
         $this->get('/hr/settings')->assertOk();
     }
 
-    /** @test */
+    #[Test]
     public function super_admin_can_access_users(): void
     {
         $this->actingAsRole('Super Admin');
@@ -211,7 +208,7 @@ class RbacTest extends TestCase
     // 4. Admin — only configured permissions
     // =========================================================================
 
-    /** @test */
+    #[Test]
     public function hr_manager_gate_permissions_match_config(): void
     {
         $this->actingAsRole('Admin');
@@ -237,7 +234,7 @@ class RbacTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function hr_manager_cannot_access_recruitment_index(): void
     {
         // Admin now has view_recruitment, so this should PASS (200), not 403
@@ -245,14 +242,14 @@ class RbacTest extends TestCase
         $this->get('/hr/recruitment')->assertOk();
     }
 
-    /** @test */
+    #[Test]
     public function hr_manager_can_access_employees(): void
     {
         $this->actingAsRole('Admin');
         $this->get('/hr/employees')->assertOk();
     }
 
-    /** @test */
+    #[Test]
     public function admin_cannot_access_system_settings(): void
     {
         $this->actingAsRole('Admin');
@@ -261,7 +258,7 @@ class RbacTest extends TestCase
         $this->get('/hr/audit-logs')->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function admin_sidebar_hides_system_navigation(): void
     {
         $this->actingAsRole('Admin');
@@ -277,7 +274,7 @@ class RbacTest extends TestCase
     // 5. User role — renamed from Privileged User, same permission logic
     // =========================================================================
 
-    /** @test */
+    #[Test]
     public function hr_recruitment_gate_permissions_match_config(): void
     {
         $this->actingAsRole('User');
@@ -293,56 +290,56 @@ class RbacTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function hr_recruitment_can_access_recruitment(): void
     {
         $this->actingAsRole('User');
         $this->get('/hr/recruitment')->assertOk();
     }
 
-    /** @test */
+    #[Test]
     public function hr_recruitment_cannot_access_employees(): void
     {
         $this->actingAsRole('User');
         $this->get('/hr/employees')->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function hr_recruitment_cannot_access_settings(): void
     {
         $this->actingAsRole('User');
         $this->get('/hr/settings')->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function hr_staff_cannot_access_settings(): void
     {
         $this->actingAsRole('User');
         $this->get('/hr/settings')->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function hr_staff_cannot_access_users(): void
     {
         $this->actingAsRole('User');
         $this->get('/hr/users')->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function hr_staff_cannot_access_probation(): void
     {
         $this->actingAsRole('User');
         $this->get('/hr/probation')->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function hr_staff_cannot_access_master_data(): void
     {
         $this->actingAsRole('User');
         $this->get('/hr/master-data')->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function hr_staff_cannot_access_outsource_or_employee_actions(): void
     {
         $this->actingAsRole('User');
@@ -357,7 +354,7 @@ class RbacTest extends TestCase
         $this->post('/hr/recruitment/REC-001/save-offering-response', ['response' => 'Ya'])->assertStatus(422);
     }
 
-    /** @test */
+    #[Test]
     public function hr_staff_sidebar_shows_recruitment_and_mpr_navigation(): void
     {
         $this->actingAsRole('User');
@@ -378,14 +375,14 @@ class RbacTest extends TestCase
     // 7. Unauthenticated user is redirected to login
     // =========================================================================
 
-    /** @test */
+    #[Test]
     public function unauthenticated_user_is_redirected_from_hr_routes(): void
     {
         Session::forget('hr_user');
         $this->get('/hr/dashboard')->assertRedirect(route('login'));
     }
 
-    /** @test */
+    #[Test]
     public function unauthenticated_user_cannot_access_recruitment(): void
     {
         Session::forget('hr_user');
@@ -396,7 +393,7 @@ class RbacTest extends TestCase
     // 8. $permissions view variable — wildcard expansion for Super Admin
     // =========================================================================
 
-    /** @test */
+    #[Test]
     public function super_admin_permissions_view_variable_contains_all_permissions(): void
     {
         $this->actingAsRole('Super Admin');
@@ -409,7 +406,7 @@ class RbacTest extends TestCase
         $this->assertTrue(Gate::allows('manage_settings'));
     }
 
-    /** @test */
+    #[Test]
     public function super_admin_sidebar_shows_mpr_navigation(): void
     {
         $this->actingAsRole('Super Admin');
@@ -419,7 +416,7 @@ class RbacTest extends TestCase
             ->assertSeeText('Manpower Request');
     }
 
-    /** @test */
+    #[Test]
     public function role_resolution_is_case_and_whitespace_tolerant_but_unknown_roles_fail_closed(): void
     {
         $this->actingAsRole(' Super Admin ');
@@ -436,7 +433,7 @@ class RbacTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function user_can_mutate_recruitment_endpoints_allowed_by_legacy_privileged_permissions(): void
     {
         $this->actingAsRole('User');
@@ -452,7 +449,7 @@ class RbacTest extends TestCase
     //    These tests verify auth domain separation from internal HRIS Users.
     // =========================================================================
 
-    /** @test */
+    #[Test]
     public function mpr_requestor_can_access_mpr_index(): void
     {
         $this->actingAsMprRequestor();
@@ -460,7 +457,7 @@ class RbacTest extends TestCase
             ->assertRedirect(route('mpr.auth.request'));
     }
 
-    /** @test */
+    #[Test]
     public function mpr_requestor_is_blocked_from_hr_dashboard(): void
     {
         $this->actingAsMprRequestor();
@@ -474,7 +471,7 @@ class RbacTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function mpr_requestor_is_blocked_from_recruitment(): void
     {
         $this->actingAsMprRequestor();
@@ -486,7 +483,7 @@ class RbacTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function mpr_requestor_is_blocked_from_employees(): void
     {
         $this->actingAsMprRequestor();
@@ -498,7 +495,7 @@ class RbacTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function mpr_requestor_is_blocked_from_settings(): void
     {
         $this->actingAsMprRequestor();
@@ -510,7 +507,7 @@ class RbacTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function mpr_requestor_is_blocked_from_users_management(): void
     {
         $this->actingAsMprRequestor();
@@ -522,7 +519,7 @@ class RbacTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function mpr_requestor_is_blocked_from_probation(): void
     {
         $this->actingAsMprRequestor();
@@ -534,7 +531,7 @@ class RbacTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function mpr_requestor_is_blocked_from_audit_logs(): void
     {
         $this->actingAsMprRequestor();
@@ -546,7 +543,7 @@ class RbacTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function mpr_requestor_gate_has_correct_permissions(): void
     {
         $this->actingAsMprRequestor();
@@ -565,7 +562,7 @@ class RbacTest extends TestCase
     //     Ensures Users sheet does not contain Manager role anymore.
     // =========================================================================
 
-    /** @test */
+    #[Test]
     public function internal_hr_user_with_manager_role_in_users_sheet_is_rejected(): void
     {
         // This simulates a legacy scenario where someone accidentally puts a Manager

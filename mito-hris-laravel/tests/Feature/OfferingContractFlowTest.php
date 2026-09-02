@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 use App\DTOs\CandidateData;
 use App\Repositories\Contracts\CandidateRepositoryInterface;
@@ -77,7 +78,7 @@ class OfferingContractFlowTest extends TestCase
     // T01: Offering submission persists correct fields
     // =========================================================================
 
-    /** @test */
+    #[Test]
     public function t01_save_offering_persists_correct_fields_to_sheet(): void
     {
         $this->loginAsHrAdmin();
@@ -153,7 +154,7 @@ class OfferingContractFlowTest extends TestCase
     // T02: Existing offering → sets Updated, not new Created
     // =========================================================================
 
-    /** @test */
+    #[Test]
     public function t02_save_offering_on_existing_sets_updated_not_created(): void
     {
         $this->loginAsHrAdmin();
@@ -200,7 +201,7 @@ class OfferingContractFlowTest extends TestCase
     // T03: getJson returns all offering fields
     // =========================================================================
 
-    /** @test */
+    #[Test]
     public function t03_get_json_returns_offering_fields(): void
     {
         $this->loginAsHrAdmin();
@@ -239,7 +240,7 @@ class OfferingContractFlowTest extends TestCase
     // T04: Accepted page loads candidates from kandidat_accepted sheet only
     // =========================================================================
 
-    /** @test */
+    #[Test]
     public function t04_accepted_page_loads_from_kandidat_accepted_sheet(): void
     {
         $this->loginAsHrAdmin();
@@ -266,7 +267,7 @@ class OfferingContractFlowTest extends TestCase
     // T05: Offering response "Diterima" is saved correctly
     // =========================================================================
 
-    /** @test */
+    #[Test]
     public function t05_save_offering_response_diterima_persists_correctly(): void
     {
         $this->loginAsHrAdmin();
@@ -308,7 +309,7 @@ class OfferingContractFlowTest extends TestCase
     // T06: Contract search — candidate with Diterima is eligible
     // =========================================================================
 
-    /** @test */
+    #[Test]
     public function t06_contract_search_finds_candidate_with_offering_diterima(): void
     {
         $this->loginAsHrAdmin();
@@ -340,7 +341,7 @@ class OfferingContractFlowTest extends TestCase
     // T07: Contract eligibility negative — candidate without Diterima is blocked
     // =========================================================================
 
-    /** @test */
+    #[Test]
     public function t07_save_contract_rejects_candidate_without_offering_diterima(): void
     {
         $this->loginAsHrAdmin();
@@ -377,7 +378,7 @@ class OfferingContractFlowTest extends TestCase
     // T08: saveContract guard is trim-safe (whitespace in stored value)
     // =========================================================================
 
-    /** @test */
+    #[Test]
     public function t08_save_contract_guard_is_trim_safe(): void
     {
         $this->loginAsHrAdmin();
@@ -423,7 +424,7 @@ class OfferingContractFlowTest extends TestCase
     // T09: Cache invalidation clears kandidat_accepted after saveOffering
     // =========================================================================
 
-    /** @test */
+    #[Test]
     public function t09_cache_is_invalidated_for_kandidat_accepted_after_save_offering(): void
     {
         $spreadsheetId = config('google.spreadsheet_id', 'test-spreadsheet');
@@ -445,7 +446,7 @@ class OfferingContractFlowTest extends TestCase
     // T10: Duplicate header check — Candidate Accepted page has no duplicate columns
     // =========================================================================
 
-    /** @test */
+    #[Test]
     public function t10_candidate_accepted_page_has_no_duplicate_table_headers(): void
     {
         $this->loginAsHrAdmin();
@@ -481,7 +482,7 @@ class OfferingContractFlowTest extends TestCase
     // T11: update() pads short rows to full header width
     // =========================================================================
 
-    /** @test */
+    #[Test]
     public function t11_update_pads_short_row_to_header_width(): void
     {
         // Build a mock GoogleSheetsService that returns a 5-column header
@@ -537,7 +538,7 @@ class OfferingContractFlowTest extends TestCase
     // T12: Offering submit → 404 if candidate not found
     // =========================================================================
 
-    /** @test */
+    #[Test]
     public function t12_save_offering_returns_404_if_candidate_not_found(): void
     {
         $this->loginAsHrAdmin();

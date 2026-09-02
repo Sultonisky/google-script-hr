@@ -16,11 +16,10 @@ class MprDedicatedLoginTest extends TestCase
             'Email' => 'manager@mito.co.id',
             'Username' => 'manager.test',
             'Full Name' => 'John Manager',
+            'Job Position' => 'Regional Manager',
             'Role' => 'Manpower',
             'Status' => 'Active',
             'Password Hash' => Hash::make('password123'),
-            'Entity' => 'MSI',
-            'Branch' => 'Bandung',
             'Last Login' => '',
             'Created At' => '2026-08-01 09:00:00',
             'Updated At' => '2026-08-01 09:00:00',
@@ -98,9 +97,10 @@ class MprDedicatedLoginTest extends TestCase
 
         $this->app->instance(MprRequestorRepositoryInterface::class, $repo);
 
-        $response = $this->from(route('mpr.auth.login'))->post(route('mpr.auth.login.post'), [
+        $response = $this->onDomain('mpr')->post('/mpr/login', [
             'identifier' => 'manager@mito.co.id',
             'password' => 'wrong-password',
+            '_token' => csrf_token(),
         ]);
 
         $response->assertRedirect(route('mpr.auth.login'));
@@ -116,15 +116,15 @@ class MprDedicatedLoginTest extends TestCase
             ->andReturn($this->makeRequestorRow([
                 'Email' => 'inactive@mito.co.id',
                 'Status' => 'Inactive',
-                'Role' => 'Manager',
                 'Role' => 'Manpower',
             ]));
 
         $this->app->instance(MprRequestorRepositoryInterface::class, $repo);
 
-        $response = $this->from(route('mpr.auth.login'))->post(route('mpr.auth.login.post'), [
+        $response = $this->onDomain('mpr')->post('/mpr/login', [
             'identifier' => 'inactive@mito.co.id',
             'password' => 'password123',
+            '_token' => csrf_token(),
         ]);
 
         $response->assertRedirect(route('mpr.auth.login'));
@@ -146,8 +146,8 @@ class MprDedicatedLoginTest extends TestCase
                 'fullName' => 'John Manager',
                 'role' => 'Manpower',
                 'auth_domain' => 'mpr_requestor',
-                'entities' => ['MSI'],
-                'branch' => 'Bandung',
+                'portal' => 'mpr',
+                'requestor_id' => 'MPR-REQ-001',
             ],
         ])->get(route('mpr.auth.request'))->assertOk()->assertViewIs('hr.mpr.create');
     }
@@ -160,8 +160,8 @@ class MprDedicatedLoginTest extends TestCase
                 'fullName' => 'John Manager',
                 'role' => 'Manpower',
                 'auth_domain' => 'mpr_requestor',
-                'entities' => ['MSI'],
-                'branch' => 'Bandung',
+                'portal' => 'mpr',
+                'requestor_id' => 'MPR-REQ-001',
             ],
         ])->get(route('mpr.auth.request'))
             ->assertOk()
