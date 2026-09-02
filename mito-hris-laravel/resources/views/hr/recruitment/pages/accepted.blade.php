@@ -212,8 +212,11 @@
     <script>
         document.querySelectorAll('#accTableBody tr[data-drawer-type="candidate"]').forEach(function(row) {
             row.addEventListener('click', function(e) {
-                e.stopPropagation();
+                // Guard first: let button clicks (Change Status, Preview Offering, etc.)
+                // bubble up to the document-level delegation in csp-hardening.js.
                 if (e.target.closest('button')) return;
+                // Only stop propagation when opening the drawer (non-button row click).
+                e.stopPropagation();
                 var id = this.getAttribute('data-drawer-id');
                 if (id && typeof openCandidateDrawer === 'function') openCandidateDrawer(id);
             });
