@@ -130,9 +130,9 @@ class MprController extends Controller
 
         $departmentDivisionMap = config('hris.mpr_department_divisions', []);
         $departments = array_keys($departmentDivisionMap);
-        $jobLevels = ['Associate', 'Staff', 'Senior Staff', 'Supervisor', 'Team Lead', 'Manager', 'General Manager', 'Director'];
-        $workLocations = ['Head Office (HO)', 'Depo Jakarta', 'Depo Bandung', 'Depo Surabaya', 'Pabrik'];
-        $employmentTypes = ['Permanent (PKWTT)', 'Contract (PKWT)', 'Outsource', 'Intern', 'Freelance / Project'];
+        $jobLevels = config('hris.mpr_form_options.job_levels', ['Associate', 'Staff', 'Senior Staff', 'Supervisor', 'Team Lead', 'Manager', 'General Manager', 'Director']);
+        $workLocations = config('hris.mpr_form_options.work_locations', ['Head Office (HO)', 'Depo Jakarta', 'Depo Bandung', 'Depo Surabaya', 'Pabrik']);
+        $employmentTypes = config('hris.mpr_form_options.employment_types', ['Permanent (PKWTT)', 'Contract (PKWT)', 'Outsource', 'Intern', 'Freelance / Project']);
 
         $entityOptions = config('hris.mpr_form_options.target_entities', [
             'MSI' => 'PT Mahakarya Sukses Indonesia (MSI)',
@@ -141,11 +141,8 @@ class MprController extends Controller
             'MEP' => 'PT Mitra Elektro Perkasa (MEP)',
         ]);
 
-        $userEntities = $user['entities'] ?? [];
-        $allowedEntities = $isManpower
-            ? array_filter($entityOptions, fn($label, $code) => in_array($code, $userEntities, true), ARRAY_FILTER_USE_BOTH)
-            : $entityOptions;
-
+        // Target entity adalah input MPR form — requestor bebas memilih entity dari config,
+        // tidak lagi dibatasi assignment entity akun mpr_requestor (schema 12 kolom).
         $reasons = array_values(config('hris.mpr_form_options.reasons', [
             'Penambahan Karyawan Baru',
             'Restrukturisasi',
@@ -170,7 +167,6 @@ class MprController extends Controller
             'workLocations',
             'employmentTypes',
             'entityOptions',
-            'allowedEntities',
             'reasons',
             'search',
             'dept',
@@ -239,16 +235,15 @@ class MprController extends Controller
 
         $departmentDivisionMap = config('hris.mpr_department_divisions', []);
         $departments = array_keys($departmentDivisionMap);
-        $jobLevels = ['Associate', 'Staff', 'Senior Staff', 'Supervisor', 'Team Lead', 'Manager', 'General Manager', 'Director'];
-        $workLocations = ['Head Office (HO)', 'Depo Jakarta', 'Depo Bandung', 'Depo Surabaya', 'Pabrik'];
-        $employmentTypes = ['Permanent (PKWTT)', 'Contract (PKWT)', 'Outsource', 'Intern', 'Freelance / Project'];
+        $jobLevels = config('hris.mpr_form_options.job_levels', ['Associate', 'Staff', 'Senior Staff', 'Supervisor', 'Team Lead', 'Manager', 'General Manager', 'Director']);
+        $workLocations = config('hris.mpr_form_options.work_locations', ['Head Office (HO)', 'Depo Jakarta', 'Depo Bandung', 'Depo Surabaya', 'Pabrik']);
+        $employmentTypes = config('hris.mpr_form_options.employment_types', ['Permanent (PKWTT)', 'Contract (PKWT)', 'Outsource', 'Intern', 'Freelance / Project']);
         $entityOptions = config('hris.mpr_form_options.target_entities', [
             'MSI' => 'PT Mahakarya Sukses Indonesia (MSI)',
             'SPI' => 'PT Stein Perkasa Internasional (SPI)',
             'PII' => 'PT Perkasa Injeksi Indonesia (PII)',
             'MEP' => 'PT Mitra Elektro Perkasa (MEP)',
         ]);
-        $allowedEntities = $entityOptions;
         $reasons = array_values(config('hris.mpr_form_options.reasons', [
             'Penambahan Karyawan Baru',
             'Restrukturisasi',
@@ -272,7 +267,6 @@ class MprController extends Controller
             'workLocations',
             'employmentTypes',
             'entityOptions',
-            'allowedEntities',
             'reasons',
             'search',
             'dept',
@@ -310,6 +304,15 @@ class MprController extends Controller
      * - Branch selalu diambil dari session authenticated requestor, TIDAK dari request body.
      * - Identitas requestor (nama, email) selalu dari session untuk role Manpower.
      */
+    /**
+     * Store new MPR request and auto-generate PDF.
+     *
+     * Security:
+     * - Entity adalah input MPR form; divalidasi server-side terhadap config
+     *   hris.mpr_form_options.target_entities (bukan assignment akun requestor).
+     * - Identitas requestor (nama, email, jabatan) selalu dari session untuk role Manpower
+     *   (sumber canonical: mpr_requestors.Full Name & mpr_requestors.Job Position).
+     */
     public function store(StoreMprRequest $request): JsonResponse|RedirectResponse
     {
         $user    = $this->currentRequestorUser();
@@ -319,51 +322,23 @@ class MprController extends Controller
         $validated = $request->validated();
 
         // ==============================================================
-        // ENTITY MAP: kode entitas → nama perusahaan lengkap
+        // RESOLVE REQUESTOR IDENTITY & TARGET ENTITY
         // ==============================================================
-        $entityNameMap = [
-            'MSI' => 'PT MAHAKARYA SUKSES INDONESIA',
-            'SPI' => 'PT STEIN PERKASA INTERNASIONAL',
-            'PII' => 'PT PERKASA INJEKSI INDONESIA',
-            'MEP' => 'PT MITRA ELEKTRO PERKASA',
-        ];
+        $selectedEntity = trim($validated['entity'] ?? '');
 
-        // ==============================================================
-        // RESOLVE REQUESTOR IDENTITY & ENTITY/BRANCH
-        // ==============================================================
         if ($isManager) {
-            // Identitas requestor SELALU dari session — tidak boleh dari request body
-            $requestorName  = $user['fullName'] ?? $user['name'] ?? 'Manpower';
-            $requestorEmail = $user['email'] ?? '';
-            $createdBy      = $user['email'] ?? 'Manpower';
-
-            // Selected entity dari request body (input user)
-            $selectedEntity = trim($validated['entity'] ?? '');
-
-            // Branch SELALU dari authenticated requestor — tidak bisa dimanipulasi
-            $branch = trim($user['branch'] ?? '');
-
-            // Resolve nama perusahaan dari kode entitas
-            $entityFullName = $entityNameMap[$selectedEntity] ?? $selectedEntity;
+            // Identitas & jabatan requestor SELALU dari session mpr_requestor,
+            // tidak boleh dimanipulasi melalui request body.
+            $requestorName     = $user['fullName'] ?? $user['name'] ?? 'Manpower';
+            $requestorEmail    = $user['email'] ?? '';
+            $requestorPosition = trim((string) ($user['jobPosition'] ?? '') );
+            $createdBy         = $user['email'] ?? 'Manpower';
         } else {
-            // Admin / Super Admin: bisa mengisi atas nama Manpower lain
-            $requestorName  = !empty($validated['manager_name'])  ? $validated['manager_name']  : ($user['fullName'] ?? 'Admin');
-            $requestorEmail = !empty($validated['manager_email']) ? $validated['manager_email'] : ($user['email'] ?? '');
-            $createdBy      = $user['email'] ?? 'HR Team';
-
-            // Untuk HR: entity bisa dari field 'entity' atau fallback ke 'company' (form lama)
-            $rawEntity = !empty($validated['entity']) ? $validated['entity'] : ($validated['company'] ?? '');
-            $selectedEntity = trim($rawEntity);
-
-            // Resolve ke nama penuh jika kode entitas digunakan
-            $entityFullName = $entityNameMap[$selectedEntity] ?? $selectedEntity;
-            if (empty($entityFullName)) {
-                $entityFullName = 'PT MAHAKARYA SUKSES INDONESIA';
-                $selectedEntity = 'MSI';
-            }
-
-            // Branch: HR tidak punya branch sendiri — kosong atau dari requestor bila mengisi nama manager
-            $branch = trim($user['branch'] ?? '');
+            // Admin / Super Admin: bisa mengisi atas nama Manpower lain (on-behalf).
+            $requestorName     = !empty($validated['manager_name'])  ? $validated['manager_name']  : ($user['fullName'] ?? 'Admin');
+            $requestorEmail    = !empty($validated['manager_email']) ? $validated['manager_email'] : ($user['email'] ?? '');
+            $requestorPosition = trim((string) ($validated['requestor_position'] ?? $user['jobPosition'] ?? '') );
+            $createdBy         = $user['email'] ?? 'HR Team';
         }
 
         // ==============================================================
@@ -397,7 +372,6 @@ class MprController extends Controller
             requestorName: $requestorName,
             requestorEmail: $requestorEmail,
             entity: $selectedEntity,
-            branch: $branch,
             department: $validated['department'],
             division: $validated['division'],
             approvalDivision: $approvalDivision,
@@ -414,7 +388,7 @@ class MprController extends Controller
             status: 'Submitted',
             createdBy: $createdBy,
             // -- Field baru (Refactor Create MPR) --
-            requestorPosition: $validated['requestor_position'] ?? null,
+            requestorPosition: $requestorPosition ?: null,
             workingDays: $workingDaysLabels !== '' ? $workingDaysLabels : null,
             workingHours: $workingHoursLabels !== '' ? $workingHoursLabels : null,
             shiftDetail: $validated['shift_detail'] ?? null,
@@ -542,7 +516,6 @@ class MprController extends Controller
             requestorName: $existing->requestorName,
             requestorEmail: $existing->requestorEmail,
             entity: $existing->entity,
-            branch: $existing->branch,
             department: $validated['department'],
             division: $validated['division'],
             approvalDivision: $validated['approval_division'] ?? $existing->approvalDivision,
