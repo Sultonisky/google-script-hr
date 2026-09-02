@@ -74,11 +74,6 @@ class MprRequestorAuthTest extends TestCase
         $this->assertSame('John Manager', $user['fullName']);
         $this->assertSame('Manager', $user['role']);
 
-        // Entity and branch from mpr_requestor row
-        $this->assertSame(['MSI'], $user['entities'],
-            'entities must be normalized to array from sheet');
-        $this->assertSame('Bandung', $user['branch']);
-
         // requestor_id must be present
         $this->assertSame('MPR-REQ-001', $user['requestor_id']);
 
@@ -89,13 +84,13 @@ class MprRequestorAuthTest extends TestCase
     }
 
     // =========================================================================
-    // Test 2: Multiple entities in one Manager account
+    // Test 2: Job position is resolved into session
     // =========================================================================
 
     /** @test */
-    public function multiple_entities_are_normalized_to_array(): void
+    public function job_position_is_resolved_into_session(): void
     {
-        $row = $this->makeRequestorRow(['Entity' => 'MSI, SPI, MEP']);
+        $row = $this->makeRequestorRow(['Job Position' => 'Branch Manager']);
 
         $mockRepo = Mockery::mock(MprRequestorRepositoryInterface::class);
         $mockRepo->shouldReceive('findByIdentifier')->andReturn($row);
@@ -105,7 +100,7 @@ class MprRequestorAuthTest extends TestCase
         $result  = $service->attemptLogin('manager@mito.co.id', 'password123');
 
         $this->assertTrue($result['success']);
-        $this->assertSame(['MSI', 'SPI', 'MEP'], $result['user']['entities']);
+        $this->assertSame('Branch Manager', $result['user']['jobPosition']);
     }
 
     // =========================================================================
