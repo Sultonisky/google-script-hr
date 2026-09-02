@@ -347,7 +347,14 @@
 
         // ── Decision ────────────────────────────────────────────────────
         $decision = $evalData['decision'] ?? '-';
-        $extDuration = $evalData['extensionDuration'] ?? ($evalData['extension_duration'] ?? '');
+        $extDurationRaw = $evalData['extensionDuration'] ?? ($evalData['extension_duration'] ?? '');
+        // Normalize durasi: handle "3", "6", "12" (angka saja) → "X Bulan"
+        $extDuration = match(trim((string)$extDurationRaw)) {
+            '3', '3 Bulan', '3 bulan'   => '3 Bulan',
+            '6', '6 Bulan', '6 bulan'   => '6 Bulan',
+            '12', '12 Bulan', '12 bulan' => '12 Bulan',
+            default                      => trim((string)$extDurationRaw),
+        };
         $evalDate = $evalData['evalDate'] ?? $todayStr;
         $evaluator = $evalData['evaluator'] ?? ($extraData['evaluator'] ?? '-');
 
@@ -664,23 +671,16 @@
         <div style="margin-bottom:4px">
             <span class="chk-inline {{ $isPerp ? 'checked' : '' }}">{!! $isPerp ? '<span style="font-family:DejaVu Sans;">✓</span>' : '' !!}</span>
             <strong>Perpanjang Kontrak</strong>
-            @if ($isPerp && $extDuration)
-                &nbsp;&nbsp;
-                <span
-                    class="chk-inline {{ $extDuration === '3 Bulan' ? 'checked' : '' }}">{!! $extDuration === '3 Bulan' ? '<span style="font-family:DejaVu Sans;">✓</span>' : '' !!}</span>
-                3 Bulan &nbsp;
-                <span
-                    class="chk-inline {{ $extDuration === '6 Bulan' ? 'checked' : '' }}">{!! $extDuration === '6 Bulan' ? '<span style="font-family:DejaVu Sans;">✓</span>' : '' !!}</span>
-                6 Bulan &nbsp;
-                <span
-                    class="chk-inline {{ $extDuration === '12 Bulan' ? 'checked' : '' }}">{!! $extDuration === '12 Bulan' ? '<span style="font-family:DejaVu Sans;">✓</span>' : '' !!}</span>
-                12 Bulan
-            @else
-                &nbsp;&nbsp;
-                <span class="chk-inline"></span> 3 Bulan &nbsp;
-                <span class="chk-inline"></span> 6 Bulan &nbsp;
-                <span class="chk-inline"></span> 12 Bulan
-            @endif
+            &nbsp;&nbsp;
+            <span
+                class="chk-inline {{ $extDuration === '3 Bulan' ? 'checked' : '' }}">{!! $extDuration === '3 Bulan' ? '<span style="font-family:DejaVu Sans;">✓</span>' : '' !!}</span>
+            3 Bulan &nbsp;
+            <span
+                class="chk-inline {{ $extDuration === '6 Bulan' ? 'checked' : '' }}">{!! $extDuration === '6 Bulan' ? '<span style="font-family:DejaVu Sans;">✓</span>' : '' !!}</span>
+            6 Bulan &nbsp;
+            <span
+                class="chk-inline {{ $extDuration === '12 Bulan' ? 'checked' : '' }}">{!! $extDuration === '12 Bulan' ? '<span style="font-family:DejaVu Sans;">✓</span>' : '' !!}</span>
+            12 Bulan
         </div>
     </div>
 

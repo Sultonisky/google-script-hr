@@ -24,6 +24,8 @@
     .sign-table { width: 100%; margin-top: 24px; page-break-inside: avoid; }
     .sign-table td { text-align: right; padding-right: 0; vertical-align: top; font-size: 8.5pt; }
     .sign-space { height: 50px; display: block; }
+    .sign-image-area { height: 58px; margin: 2px 0 2px auto; }
+    .sign-image-area .hr-sign-img { height: 48px !important; width: auto; max-width: 125px; margin: 0 0 4px auto; }
   </style>
 </head>
 <body>
@@ -123,17 +125,15 @@
   </p>
 
   {{-- ── TANDA TANGAN (1:1 GAS: kanan, city+todayStr, Hormat Kami, companyName, Hisar Hesti, jabatan) --}}
-  {{-- Override hr-sign img agar rata kanan sesuai sign-table td text-align:right --}}
-  <style>
-    .hr-sign-img { margin-left: auto; margin-right: 0; }
-  </style>
   <table class="sign-table">
     <tr>
       <td>
         {{ $city }}, {{ $todayStr }}<br>
         Hormat Kami,<br>
         <strong>{{ $companyName }}</strong><br>
-        @include('pdf.components.hr-sign')
+        <div class="sign-image-area">
+          @include('pdf.components.hr-sign')
+        </div>
         <strong><u>Hisar Hesti</u></strong><br>
         Human Resources (HR) &amp; Legal Manager
       </td>
