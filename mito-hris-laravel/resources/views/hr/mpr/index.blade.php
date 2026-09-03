@@ -10,6 +10,7 @@
 
 @section('styles')
     <style>
+        /* MPR-specific styles only for Manager form section */
         .mpr-card-header {
             background: var(--color-primary);
             color: #ffffff;
@@ -17,23 +18,32 @@
             padding: 16px 20px;
         }
 
-        .stat-card-mpr {
-            /* legacy class retained only for compatibility; layout now follows global stat-card */
+        .mpr-applicant-identity {
+            background: var(--color-bg) !important;
+            border-color: var(--color-border) !important;
         }
 
-        .stat-icon-mpr {
-            /* legacy class retained only for compatibility; layout now follows global stat-icon */
+        .mpr-history-header {
+            background: var(--color-surface) !important;
+            border-color: var(--color-border) !important;
         }
 
-        .bg-blue-light,
-        .bg-green-light,
-        .bg-purple-light,
-        .bg-amber-light {
-            /* legacy custom colors intentionally unused; use shared stat-icon palette */
+        .mpr-history-header h6 {
+            color: var(--color-text) !important;
         }
 
-        /* Shared Bootstrap/HR table and badge styles are used instead of duplicate MPR-specific overrides. */
+        .mpr-applicant-identity .input-group-text,
+        .mpr-applicant-identity .form-control {
+            background: var(--color-surface) !important;
+            border-color: var(--color-border) !important;
+            color: var(--color-text) !important;
+        }
 
+        .mpr-applicant-identity .text-muted {
+            color: var(--color-text-soft) !important;
+        }
+
+        /* Modal MPR Detail styles */
         #modalMprDetail .modal-content {
             background: var(--color-surface);
             border-radius: 16px;
@@ -87,324 +97,6 @@
             padding: 12px !important;
         }
 
-        .mpr-applicant-identity {
-            background: var(--color-bg) !important;
-            border-color: var(--color-border) !important;
-        }
-
-        .mpr-history-header {
-            background: var(--color-surface) !important;
-            border-color: var(--color-border) !important;
-        }
-
-        .mpr-history-header h6 {
-            color: var(--color-text) !important;
-        }
-
-        .mpr-applicant-identity .input-group-text,
-        .mpr-applicant-identity .form-control {
-            background: var(--color-surface) !important;
-            border-color: var(--color-border) !important;
-            color: var(--color-text) !important;
-        }
-
-        .mpr-applicant-identity .text-muted {
-            color: var(--color-text-soft) !important;
-        }
-
-        .mpr-internal-dashboard .stat-card-mpr,
-        .mpr-internal-dashboard .mpr-list-panel {
-            background: var(--color-surface) !important;
-            border-color: var(--color-border) !important;
-            color: var(--color-text);
-        }
-
-        .mpr-internal-dashboard .stat-card-mpr {
-            border-radius: 16px;
-        }
-
-        .mpr-internal-dashboard .mpr-list-panel {
-            border-radius: 16px !important;
-            overflow: visible;
-        }
-
-        .mpr-internal-dashboard .mpr-table-wrap {
-            border-radius: 0 0 16px 16px;
-            overflow-x: auto;
-            overflow-y: hidden;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .mpr-internal-dashboard .mpr-list-header {
-            padding: 20px 22px !important;
-        }
-
-        .mpr-internal-dashboard .mpr-filter-bar {
-            padding: 18px 22px !important;
-        }
-
-        .mpr-internal-dashboard .mpr-list-footer {
-            padding: 16px 22px !important;
-        }
-
-        .mpr-internal-dashboard .text-dark {
-            color: var(--color-text) !important;
-        }
-
-        .mpr-internal-dashboard .text-muted {
-            color: var(--color-text-soft) !important;
-        }
-
-        .mpr-internal-dashboard .mpr-list-header,
-        .mpr-internal-dashboard .mpr-filter-bar,
-        .mpr-internal-dashboard .mpr-list-footer {
-            background: var(--color-surface) !important;
-            border-color: var(--color-border) !important;
-        }
-
-        .mpr-internal-dashboard .mpr-filter-bar {
-            background: var(--color-bg) !important;
-        }
-
-        .mpr-internal-dashboard .mpr-filter-bar form {
-            --bs-gutter-x: 10px;
-            --bs-gutter-y: 10px;
-        }
-
-        .mpr-internal-dashboard .mpr-filter-bar .input-group,
-        .mpr-internal-dashboard .mpr-filter-bar .input-group-text,
-        .mpr-internal-dashboard .mpr-filter-bar .form-control,
-        .mpr-internal-dashboard .mpr-filter-bar .form-select {
-            min-height: 40px;
-        }
-
-        .mpr-internal-dashboard .mpr-filter-bar .input-group-text,
-        .mpr-internal-dashboard .mpr-filter-bar .form-control,
-        .mpr-internal-dashboard .mpr-filter-bar .form-select {
-            border-radius: 10px;
-            border-width: 1.5px;
-        }
-
-        .mpr-internal-dashboard .mpr-filter-bar .input-group-text {
-            border-right: 0;
-            border-radius: 10px 0 0 10px;
-        }
-
-        .mpr-internal-dashboard .mpr-filter-bar .input-group .form-control {
-            border-left: 0;
-            border-radius: 0 10px 10px 0;
-        }
-
-        .mpr-internal-dashboard .mpr-filter-bar .btn-dark,
-        .mpr-internal-dashboard .mpr-filter-bar .btn-outline-secondary {
-            min-height: 40px;
-            border-radius: 10px;
-        }
-
-        .mpr-internal-dashboard .mpr-filter-actions {
-            display: flex;
-            gap: 10px;
-        }
-
-        .mpr-internal-dashboard .mpr-filter-submit {
-            flex: 1 1 auto;
-            min-width: 0;
-            padding: 0 18px;
-            font-weight: 600;
-        }
-
-        .mpr-internal-dashboard .mpr-filter-reset {
-            flex: 0 0 auto;
-            min-width: 82px;
-            padding: 0 14px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            text-decoration: none;
-        }
-
-        .mpr-internal-dashboard .mpr-header-actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex: 0 0 auto;
-        }
-
-        .mpr-internal-dashboard .mpr-create-btn,
-        .mpr-internal-dashboard .mpr-refresh-btn {
-            height: 40px;
-            white-space: nowrap;
-        }
-
-        .mpr-internal-dashboard .mpr-create-btn {
-            min-width: 136px;
-            padding: 0 14px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .mpr-internal-dashboard .mpr-refresh-btn {
-            width: 40px;
-            min-width: 40px;
-            padding: 0;
-            flex: 0 0 40px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .mpr-internal-dashboard .input-group-text,
-        .mpr-internal-dashboard .form-control,
-        .mpr-internal-dashboard .form-select {
-            background-color: var(--color-surface) !important;
-            border-color: var(--color-border) !important;
-            color: var(--color-text) !important;
-        }
-
-        /* MPR uses the shared hr-table styling instead of custom table classes. */
-
-        .mpr-internal-dashboard .badge.bg-light {
-            background: var(--color-bg) !important;
-            color: var(--color-text-soft) !important;
-            border-color: var(--color-border) !important;
-        }
-
-        .mpr-internal-dashboard .stat-card-mpr {
-            min-height: 110px;
-        }
-
-        .mpr-internal-dashboard .stat-card-mpr .text-muted {
-            font-size: 11.5px;
-            font-weight: 600;
-            letter-spacing: 0.03em;
-            text-transform: uppercase;
-            color: var(--color-text-soft) !important;
-        }
-
-        .mpr-internal-dashboard .stat-card-mpr .fs-4 {
-            line-height: 1.1;
-            font-size: 22px !important;
-            font-weight: 800 !important;
-            color: var(--color-text) !important;
-        }
-
-        .mpr-internal-dashboard .mpr-list-panel .table-responsive,
-        .mpr-internal-dashboard .mpr-table-wrap {
-            display: block;
-            width: 100%;
-            max-width: 100%;
-            overflow-x: auto;
-            overflow-y: hidden;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .mpr-internal-dashboard .mpr-list-panel table {
-            min-width: 980px;
-            width: 100%;
-            margin-bottom: 0;
-            table-layout: auto;
-        }
-
-        .mpr-internal-dashboard .mpr-list-panel .btn-group {
-            white-space: nowrap;
-        }
-
-        @media (max-width: 767.98px) {
-            .mpr-card-header {
-                padding: 14px 16px;
-            }
-
-            .mpr-internal-dashboard .stat-card-mpr {
-                padding: 14px;
-                gap: 12px;
-                min-height: 92px;
-            }
-
-            .mpr-internal-dashboard .stat-icon-mpr {
-                width: 42px;
-                height: 42px;
-                font-size: 18px;
-                flex-shrink: 0;
-            }
-
-            .mpr-internal-dashboard .mpr-list-header,
-            .mpr-internal-dashboard .mpr-filter-bar,
-            .mpr-internal-dashboard .mpr-list-footer {
-                padding-left: 14px !important;
-                padding-right: 14px !important;
-            }
-
-            .mpr-internal-dashboard .mpr-list-header {
-                align-items: flex-start !important;
-            }
-
-            .mpr-internal-dashboard .mpr-header-actions {
-                width: 100%;
-                justify-content: flex-end;
-            }
-
-            .mpr-internal-dashboard .mpr-header-actions .btn {
-                width: auto;
-            }
-
-            .mpr-internal-dashboard .mpr-create-btn {
-                min-width: 0;
-                flex: 1 1 auto;
-            }
-
-            .mpr-internal-dashboard .mpr-refresh-btn {
-                width: 40px;
-                min-width: 40px;
-                flex: 0 0 40px;
-            }
-
-            .mpr-internal-dashboard .mpr-filter-actions {
-                flex-direction: column;
-                width: 100%;
-            }
-
-            .mpr-internal-dashboard .mpr-filter-submit,
-            .mpr-internal-dashboard .mpr-filter-reset {
-                width: 100%;
-                flex: 1 1 auto;
-            }
-
-            .mpr-internal-dashboard .mpr-list-footer {
-                flex-direction: column;
-                align-items: flex-start !important;
-                gap: 12px;
-            }
-
-            .mpr-internal-dashboard .mpr-list-footer .pagination {
-                width: 100%;
-                justify-content: flex-start;
-                flex-wrap: wrap;
-            }
-        }
-
-        @media (max-width: 575.98px) {
-            .mpr-internal-dashboard .mpr-filter-bar form>[class*='col-'] {
-                width: 100%;
-                flex: 0 0 100%;
-                max-width: 100%;
-            }
-
-            .mpr-internal-dashboard .mpr-filter-bar form {
-                --bs-gutter-x: 8px;
-                --bs-gutter-y: 8px;
-            }
-
-            .mpr-internal-dashboard .stat-card-mpr .text-muted {
-                font-size: 11px;
-            }
-
-            .mpr-internal-dashboard .stat-card-mpr .fw-bold {
-                font-size: 1.15rem !important;
-            }
-        }
-
         /* Markdown-rendered content in MPR detail modal */
         .mpr-markdown-content p {
             margin: 0 0 8px;
@@ -444,6 +136,7 @@
             font-style: italic;
         }
 
+        /* Manager form card responsive height */
         @media (min-width: 1200px) {
             .mpr-form-card {
                 height: calc(100vh - 132px);
@@ -452,6 +145,12 @@
             .mpr-form-card .mpr-form-body {
                 min-height: 0;
                 overflow-y: auto;
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            .mpr-card-header {
+                padding: 14px 16px;
             }
         }
     </style>
@@ -889,112 +588,108 @@
             {{-- ========================================================================= --}}
 
             <!-- METRICS CARDS -->
-            <div class="row g-3 mb-4 mpr-internal-dashboard">
-                <div class="col-12 col-sm-6 col-xl-3">
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-3">
                     <div class="stat-card">
                         <div class="stat-icon bg-blue"><i class="bi bi-file-earmark-text-fill"></i></div>
-                        <div class="flex-grow-1">
+                        <div>
                             <div class="stat-label">Total Pengajuan MPR</div>
-                            <div class="stat-value">{{ $stats['total'] ?? 0 }}</div>
+                            <div class="stat-value text-navy">{{ $stats['total'] ?? 0 }}</div>
                         </div>
                     </div>
                 </div>
-                <div class="col-12 col-sm-6 col-xl-3">
+                <div class="col-6 col-md-3">
                     <div class="stat-card">
                         <div class="stat-icon bg-green"><i class="bi bi-calendar-check-fill"></i></div>
-                        <div class="flex-grow-1">
+                        <div>
                             <div class="stat-label">Pengajuan Bulan Ini</div>
-                            <div class="stat-value">{{ $stats['this_month'] ?? 0 }}</div>
+                            <div class="stat-value text-navy">{{ $stats['this_month'] ?? 0 }}</div>
                         </div>
                     </div>
                 </div>
-                <div class="col-12 col-sm-6 col-xl-3">
+                <div class="col-6 col-md-3">
                     <div class="stat-card">
                         <div class="stat-icon bg-purple"><i class="bi bi-people-fill"></i></div>
-                        <div class="flex-grow-1">
+                        <div>
                             <div class="stat-label">Total Kebutuhan Manpower</div>
-                            <div class="stat-value">{{ $stats['total_quantity'] ?? 0 }} <span
-                                    class="fs-6 fw-normal text-muted">Orang</span></div>
+                            <div class="stat-value text-navy">{{ $stats['total_quantity'] ?? 0 }} <span
+                                    class="fs-6 fw-normal text-muted">Org</span></div>
                         </div>
                     </div>
                 </div>
-                <div class="col-12 col-sm-6 col-xl-3">
+                <div class="col-6 col-md-3">
                     <div class="stat-card">
                         <div class="stat-icon bg-gold"><i class="bi bi-send-check-fill"></i></div>
-                        <div class="flex-grow-1">
+                        <div>
                             <div class="stat-label">Status Submitted</div>
-                            <div class="stat-value">{{ $stats['submitted'] ?? 0 }}</div>
+                            <div class="stat-value text-navy">{{ $stats['submitted'] ?? 0 }}</div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- MAIN TABLE PANEL -->
-            <div class="panel mb-4 mpr-internal-dashboard mpr-list-panel">
-                <div
-                    class="card-header bg-white mpr-list-header py-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 border-bottom">
+            <div class="panel mb-4">
+                <div class="panel-header">
                     <div>
-                        <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-list-task me-2 text-primary"></i>Daftar
-                            Manpower Request (MPR)</h5>
-                        <small class="text-muted">Menampilkan {{ $total }} pengajuan kebutuhan tenaga kerja</small>
+                        <h6>Daftar Manpower Request (MPR)</h6>
+                        <div class="panel-subtitle">Menampilkan {{ $total }} pengajuan kebutuhan tenaga kerja</div>
                     </div>
-                    <div class="mpr-header-actions">
+                    <div class="d-flex gap-2">
                         @can('create_mpr')
-                            <button type="button" class="btn btn-primary btn-sm fw-semibold shadow-sm mpr-create-btn"
-                                data-bs-toggle="modal" data-bs-target="#modalCreateMpr"><i
-                                    class="bi bi-plus-circle-fill me-1"></i>Buat MPR Baru</button>
+                            <button type="button" class="btn btn-sm text-white fw-semibold"
+                                style="background:#166534;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
+                                data-bs-toggle="modal" data-bs-target="#modalCreateMpr">
+                                <i class="bi bi-plus-circle-fill me-1"></i>Buat MPR Baru
+                            </button>
                         @endcan
-                        <button type="button" class="btn btn-outline-secondary mpr-refresh-btn" title="Muat ulang data"
-                            aria-label="Muat ulang data" data-refresh="page">
-                            <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+                        <button class="btn-refresh" type="button" title="Muat ulang data" aria-label="Muat ulang data" data-refresh="page">
+                            <i class="bi bi-arrow-repeat"></i>
                         </button>
                     </div>
                 </div>
 
                 <!-- FILTER BAR -->
-                <div class="card-body bg-light mpr-filter-bar border-bottom py-3">
-                    <form action="{{ route('hr.mpr.index') }}" method="GET" class="row g-2 align-items-center">
-                        <div class="col-12 col-md-3">
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text bg-white border-end-0"><i
-                                        class="bi bi-search text-muted"></i></span>
-                                <input type="text" name="search" class="form-control border-start-0"
-                                    placeholder="Cari No MPR, pemohon, posisi, divisi..." value="{{ $search }}">
-                            </div>
+                <form action="{{ route('hr.mpr.index') }}" method="GET" id="mprFilterForm">
+                    <input type="hidden" name="page" value="1">
+                    <div class="filter-bar">
+                        <div class="table-search">
+                            <i class="bi bi-search"></i>
+                            <input type="text" name="search" id="mprSearchInput"
+                                placeholder="Cari No MPR, pemohon, posisi, divisi..." value="{{ $search }}" />
                         </div>
-                        <div class="col-12 col-sm-6 col-md-3">
-                            <select name="department" class="form-select form-select-sm" data-auto-submit="true">
-                                <option value="">Semua Departemen</option>
-                                @foreach ($departments as $d)
-                                    <option value="{{ $d }}" {{ $dept === $d ? 'selected' : '' }}>
-                                        {{ $d }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-12 col-sm-6 col-md-3">
-                            <select name="status" class="form-select form-select-sm" data-auto-submit="true">
-                                <option value="">Semua Status</option>
-                                <option value="Submitted" {{ $status === 'Submitted' ? 'selected' : '' }}>Submitted
+                        <select class="filter-select" name="department" id="mprDeptFilter" data-auto-submit="true">
+                            <option value="">Semua Departemen</option>
+                            @foreach ($departments as $d)
+                                <option value="{{ $d }}" {{ $dept === $d ? 'selected' : '' }}>
+                                    {{ $d }}</option>
+                            @endforeach
+                        </select>
+                        <select class="filter-select" name="status" id="mprStatusFilter" data-auto-submit="true">
+                            <option value="">Semua Status</option>
+                            <option value="Submitted" {{ $status === 'Submitted' ? 'selected' : '' }}>Submitted
+                            </option>
+                        </select>
+                        <select class="filter-select" name="submit_by" id="mprSubmitByFilter" data-auto-submit="true">
+                            <option value="">Submit By</option>
+                            @foreach ($submitByOptions as $requestor)
+                                <option value="{{ $requestor }}" {{ $submitBy === $requestor ? 'selected' : '' }}>
+                                    {{ $requestor }}
                                 </option>
-                            </select>
+                            @endforeach
+                        </select>
+                        <div class="d-flex gap-2">
+                            <a href="{{ route('hr.mpr.index') }}" class="btn-reset-filter text-decoration-none"
+                                title="Reset filter">
+                                <i class="bi bi-arrow-counterclockwise"></i> Reset
+                            </a>
                         </div>
-                        <div class="col-12 col-sm-6 col-md-3">
-                            <select name="submit_by" class="form-select form-select-sm" data-auto-submit="true">
-                                <option value="">Submit By</option>
-                                @foreach ($submitByOptions as $requestor)
-                                    <option value="{{ $requestor }}" {{ $submitBy === $requestor ? 'selected' : '' }}>
-                                        {{ $requestor }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </form>
-                </div>
+                    </div>
+                </form>
 
                 <!-- TABLE -->
-                <div class="card-body p-0">
-                    <div class="table-responsive mpr-table-wrap">
-                        <table class="table hr-table mb-0">
+                <div class="table-responsive">
+                    <table class="table hr-table">
                             <thead>
                                 <tr>
                                     <th>No. MPR & Tanggal</th>
@@ -1078,32 +773,24 @@
                     </div>
                 </div>
 
-                <!-- PAGINATION -->
-                @if ($lastPage > 1)
-                    <div
-                        class="card-footer bg-white mpr-list-footer py-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 border-top">
-                        <div class="small text-muted">
-                            Menampilkan halaman <strong>{{ $currentPage }}</strong> dari
-                            <strong>{{ $lastPage }}</strong>
-                        </div>
-                        <ul class="pagination pagination-sm mb-0">
-                            <li class="page-item {{ $currentPage <= 1 ? 'disabled' : '' }}">
-                                <a class="page-link"
-                                    href="{{ request()->fullUrlWithQuery(['page' => $currentPage - 1]) }}">Sebelumnya</a>
-                            </li>
-                            @for ($p = 1; $p <= $lastPage; $p++)
-                                <li class="page-item {{ $p === $currentPage ? 'active' : '' }}">
-                                    <a class="page-link"
-                                        href="{{ request()->fullUrlWithQuery(['page' => $p]) }}">{{ $p }}</a>
-                                </li>
-                            @endfor
-                            <li class="page-item {{ $currentPage >= $lastPage ? 'disabled' : '' }}">
-                                <a class="page-link"
-                                    href="{{ request()->fullUrlWithQuery(['page' => $currentPage + 1]) }}">Berikutnya</a>
-                            </li>
-                        </ul>
-                    </div>
-                @endif
+                <div class="panel-footer">
+                    <span>
+                        @if ($total > 0)
+                            Menampilkan {{ ($currentPage - 1) * 10 + 1 }}–{{ min($currentPage * 10, $total) }} dari {{ $total }} data
+                        @else
+                            Tidak ada data
+                        @endif
+                    </span>
+                    @if ($lastPage > 1)
+                        <x-pagination :currentPage="$currentPage" :total="$total" :perPage="10" :route="'hr.mpr.index'"
+                            :queryParams="[
+                                'search' => $search,
+                                'department' => $dept,
+                                'status' => $status,
+                                'submit_by' => $submitBy,
+                            ]" />
+                    @endif
+                </div>
 
             </div>
 
@@ -2098,5 +1785,24 @@
             });
 
         });
+
+        // Auto-submit for all filter selects with data-auto-submit="true"
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('select[data-auto-submit="true"]').forEach(function(select) {
+                select.addEventListener('change', function() {
+                    document.getElementById('mprFilterForm').submit();
+                });
+            });
+        });
+
+        // Search submit on Enter
+        const mprSearchInput = document.getElementById('mprSearchInput');
+        if (mprSearchInput) {
+            mprSearchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    document.getElementById('mprFilterForm').submit();
+                }
+            });
+        }
     </script>
 @endsection
