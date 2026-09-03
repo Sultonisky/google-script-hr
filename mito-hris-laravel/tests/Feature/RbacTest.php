@@ -573,6 +573,75 @@ class RbacTest extends TestCase
     //     Ensures Users sheet does not contain Manager role anymore.
     // =========================================================================
 
+    // =========================================================================
+    // 11. Employee CSV Export — authorization tests
+    // =========================================================================
+
+    #[Test]
+    public function super_admin_can_access_employee_export_csv(): void
+    {
+        $this->actingAsRole('Super Admin');
+        // StreamedResponse returns 200 even without Google Sheets data
+        $response = $this->get('/hr/export/employees-csv');
+        // Accept 200 (success) or 500 (Google Sheets unavailable in test env)
+        // but must NOT be 403 or redirect to login
+        $this->assertNotSame(403, $response->getStatusCode(), 'Super Admin must not be denied employee export');
+        $this->assertNotSame(302, $response->getStatusCode(), 'Super Admin must not be redirected from employee export');
+    }
+
+    #[Test]
+    public function admin_can_access_employee_export_csv(): void
+    {
+        $this->actingAsRole('Admin');
+        $response = $this->get('/hr/export/employees-csv');
+        $this->assertNotSame(403, $response->getStatusCode(), 'Admin must not be denied employee export');
+        $this->assertNotSame(302, $response->getStatusCode(), 'Admin must not be redirected from employee export');
+    }
+
+    #[Test]
+    public function user_role_cannot_access_employee_export_csv(): void
+    {
+        // User (HR Recruitment / HR Staff) has NO view_employees → must be denied
+        $this->actingAsRole('User');
+        $this->get('/hr/export/employees-csv')->assertStatus(403);
+    }
+
+    #[Test]
+    public function manpower_role_cannot_access_employee_export_csv(): void
+    {
+        // Manpower has view_mpr but not view_employees
+        Session::put('hr_user', [
+            'email'       => 'manpower@mito.id',
+            'fullName'    => 'Manpower User',
+            'role'        => 'Manpower',
+            'permissions' => config('hris.auth.role_permissions.Manpower', []),
+            'auth_domain' => 'users',
+            'entities'    => [],
+            'branch'      => '',
+        ]);
+        $this->get('/hr/export/employees-csv')->assertStatus(403);
+    }
+
+    #[Test]
+    public function unauthenticated_cannot_access_employee_export_csv(): void
+    {
+        Session::forget('hr_user');
+        $this->get('/hr/export/employees-csv')->assertRedirect(route('login'));
+    }
+
+    #[Test]
+    public function mpr_requestor_cannot_access_employee_export_csv(): void
+    {
+        // MPR Requestor: mpr_requestor_auth session, no hr_user → redirected to login
+        $this->actingAsMprRequestor();
+        $response = $this->get('/hr/export/employees-csv');
+        $this->assertNotSame(200, $response->getStatusCode(), 'MPR Requestor must not access employee export');
+    }
+
+    // =========================================================================
+    // 12. Internal_hr_user_with_manager_role_in_users_sheet_is_rejected
+    // =========================================================================
+
     #[Test]
     public function internal_hr_user_with_manager_role_in_users_sheet_is_rejected(): void
     {
