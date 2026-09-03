@@ -1970,12 +1970,16 @@
                                         .mpr_number || id;
                                     editForm.reset();
                                     
+                                    // Debug: Log API data structure
+                                    console.log('MPR Data from API:', m);
+                                    
                                     // Populate text inputs and selects
                                     Object.keys(m).forEach(key => {
                                         const field = editForm.elements[key];
                                         if (field && !key.endsWith('_html') &&
                                             key !== 'department' && key !== 'division' &&
-                                            key !== 'working_days' && key !== 'working_hours' && key !== 'benefits') {
+                                            key !== 'working_days' && key !== 'working_hours' && key !== 'benefits' &&
+                                            key !== 'education_background' && key !== 'work_experience') {
                                             field.value = m[key] ?? '';
                                         }
                                     });
@@ -1987,22 +1991,123 @@
                                     }
                                     setupDepartmentDivision(editForm, m.division || '');
                                     
+                                    // Populate education_background select
+                                    const eduBgField = editForm.elements.education_background;
+                                    if (eduBgField && m.education_background) {
+                                        // Try direct key match first
+                                        eduBgField.value = m.education_background;
+                                        
+                                        // If not set, try to find by label match
+                                        if (!eduBgField.value || eduBgField.value === '') {
+                                            const options = Array.from(eduBgField.options);
+                                            const matchedOption = options.find(opt => 
+                                                opt.text.toLowerCase() === m.education_background.toLowerCase()
+                                            );
+                                            if (matchedOption) {
+                                                eduBgField.value = matchedOption.value;
+                                            }
+                                        }
+                                        console.log('Set education_background:', m.education_background, '→', eduBgField.value);
+                                    }
+                                    
+                                    // Populate work_experience select
+                                    const workExpField = editForm.elements.work_experience;
+                                    if (workExpField && m.work_experience) {
+                                        // Try direct key match first
+                                        workExpField.value = m.work_experience;
+                                        
+                                        // If not set, try to find by label match
+                                        if (!workExpField.value || workExpField.value === '') {
+                                            const options = Array.from(workExpField.options);
+                                            const matchedOption = options.find(opt => 
+                                                opt.text.toLowerCase() === m.work_experience.toLowerCase()
+                                            );
+                                            if (matchedOption) {
+                                                workExpField.value = matchedOption.value;
+                                            }
+                                        }
+                                        console.log('Set work_experience:', m.work_experience, '→', workExpField.value);
+                                    }
+                                    
+                                    // Helper function: Build label-to-key mapping from checkboxes
+                                    function buildLabelToKeyMap(checkboxes) {
+                                        const map = {};
+                                        checkboxes.forEach(cb => {
+                                            const label = cb.nextElementSibling?.textContent?.trim();
+                                            if (label) {
+                                                map[label.toLowerCase()] = cb.value;
+                                            }
+                                        });
+                                        return map;
+                                    }
+                                    
                                     // Populate checkboxes for working_days
-                                    const workingDays = (m.working_days || '').split(',').map(s => s.trim()).filter(Boolean);
-                                    editForm.querySelectorAll('input[name="working_days[]"]').forEach(cb => {
-                                        cb.checked = workingDays.includes(cb.value);
+                                    const workingDaysCbs = Array.from(editForm.querySelectorAll('input[name="working_days[]"]'));
+                                    const workingDaysMap = buildLabelToKeyMap(workingDaysCbs);
+                                    const workingDaysLabels = (m.working_days || '').split(',').map(s => s.trim()).filter(Boolean);
+                                    
+                                    console.log('Working Days Labels from API:', workingDaysLabels);
+                                    console.log('Working Days Label→Key Map:', workingDaysMap);
+                                    
+                                    workingDaysCbs.forEach(cb => {
+                                        // Try direct key match first
+                                        let shouldCheck = workingDaysLabels.includes(cb.value);
+                                        
+                                        // If no match, try label match
+                                        if (!shouldCheck) {
+                                            shouldCheck = workingDaysLabels.some(label => 
+                                                workingDaysMap[label.toLowerCase()] === cb.value
+                                            );
+                                        }
+                                        
+                                        cb.checked = shouldCheck;
+                                        if (shouldCheck) console.log('✓ Checked working_day:', cb.value);
                                     });
                                     
                                     // Populate checkboxes for working_hours
-                                    const workingHours = (m.working_hours || '').split(',').map(s => s.trim()).filter(Boolean);
-                                    editForm.querySelectorAll('input[name="working_hours[]"]').forEach(cb => {
-                                        cb.checked = workingHours.includes(cb.value);
+                                    const workingHoursCbs = Array.from(editForm.querySelectorAll('input[name="working_hours[]"]'));
+                                    const workingHoursMap = buildLabelToKeyMap(workingHoursCbs);
+                                    const workingHoursLabels = (m.working_hours || '').split(',').map(s => s.trim()).filter(Boolean);
+                                    
+                                    console.log('Working Hours Labels from API:', workingHoursLabels);
+                                    console.log('Working Hours Label→Key Map:', workingHoursMap);
+                                    
+                                    workingHoursCbs.forEach(cb => {
+                                        // Try direct key match first
+                                        let shouldCheck = workingHoursLabels.includes(cb.value);
+                                        
+                                        // If no match, try label match
+                                        if (!shouldCheck) {
+                                            shouldCheck = workingHoursLabels.some(label => 
+                                                workingHoursMap[label.toLowerCase()] === cb.value
+                                            );
+                                        }
+                                        
+                                        cb.checked = shouldCheck;
+                                        if (shouldCheck) console.log('✓ Checked working_hour:', cb.value);
                                     });
                                     
                                     // Populate checkboxes for benefits
-                                    const benefits = (m.benefits || '').split(',').map(s => s.trim()).filter(Boolean);
-                                    editForm.querySelectorAll('input[name="benefits[]"]').forEach(cb => {
-                                        cb.checked = benefits.includes(cb.value);
+                                    const benefitsCbs = Array.from(editForm.querySelectorAll('input[name="benefits[]"]'));
+                                    const benefitsMap = buildLabelToKeyMap(benefitsCbs);
+                                    const benefitsLabels = (m.benefits || '').split(',').map(s => s.trim()).filter(Boolean);
+                                    
+                                    console.log('Benefits Labels from API:', benefitsLabels);
+                                    console.log('Benefits Label→Key Map:', benefitsMap);
+                                    
+                                    benefitsCbs.forEach(cb => {
+                                        // Try direct key match first
+                                        let shouldCheck = benefitsLabels.includes(cb.value);
+                                        
+                                        // If no match, try label match
+                                        if (!shouldCheck) {
+                                            shouldCheck = benefitsLabels.some(label => 
+                                                benefitsMap[label.toLowerCase()] === cb.value
+                                            );
+                                        }
+                                        
+                                        cb.checked = shouldCheck;
+                                        if (shouldCheck) console.log('✓ Checked benefit:', cb.value);
                                     });
                                     
                                     document.getElementById('editMprErrors').classList.add('d-none');
