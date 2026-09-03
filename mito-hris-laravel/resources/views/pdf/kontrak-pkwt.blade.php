@@ -365,11 +365,8 @@
             }
         }
 
-        // Klausul jangka waktu (Pasal 2)
-        $tenorText =
-            $extraData['tenor_text'] ??
-            ($extraData['tenorText'] ??
-                "PIHAK PERTAMA dengan ini menyatakan persetujuannya untuk mempekerjakan PIHAK KEDUA sebagai Karyawan PIHAK PERTAMA dengan jangka waktu {$durationNum} ({$durationWords}) bulan terhitung sejak tanggal {$joinFmt} sampai dengan {$endFmt}.");
+        // Klausul jangka waktu (Pasal 2) - Auto-generated, tidak bisa di-custom
+        $tenorText = "PIHAK PERTAMA dengan ini menyatakan persetujuannya untuk mempekerjakan PIHAK KEDUA sebagai Karyawan PIHAK PERTAMA dengan jangka waktu {$durationNum} ({$durationWords}) bulan terhitung sejak tanggal {$joinFmt} sampai dengan {$endFmt}.";
 
         // Pasal 5 — ruang lingkup
         $position = $extraData['position'] ?? ($subject?->jobPosition ?? ($subject?->positionApplied ?? '-'));
