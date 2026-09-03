@@ -435,7 +435,7 @@
             </tr>
         @endif
         <tr>
-            <td class="label-col">Benefits / Tunjangan</td>
+            <td class="label-col" style="white-space: normal;">Benefits / Tunjangan</td>
             <td class="colon-col">:</td>
             <td class="value-col" style="white-space: normal; word-wrap: break-word;">{{ $mpr->benefits ?: '-' }}</td>
         </tr>
@@ -445,13 +445,13 @@
     <div class="section-title">III. Alasan Permintaan Karyawan</div>
     <table class="data-table">
         <tr>
-            <td class="label-col">Alasan Kebutuhan</td>
+            <td class="label-col" style="white-space: normal;">Alasan Kebutuhan</td>
             <td class="colon-col">:</td>
             <td class="value-col"><strong>{{ $mpr->reason ?: '-' }}</strong></td>
         </tr>
         @if (!empty($mpr->replacementFor))
             <tr>
-                <td class="label-col">Menggantikan Karyawan</td>
+                <td class="label-col" style="white-space: normal;">Menggantikan Karyawan</td>
                 <td class="colon-col">:</td>
                 <td class="value-col">{{ $mpr->replacementFor }}</td>
             </tr>
