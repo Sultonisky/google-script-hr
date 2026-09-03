@@ -111,6 +111,8 @@ Route::domain(config('hris.domains.hris'))->middleware('web')->group(function ()
         });
         Route::prefix('export')->name('export.')->middleware('role:Super Admin,Admin,User')->group(function () {
             Route::get('/candidates-csv', [ExportController::class, 'exportCandidatesCsv'])->name('candidates-csv');
+        });
+        Route::prefix('export')->name('export.')->middleware('can:view_employees')->group(function () {
             Route::get('/employees-csv', [ExportController::class, 'exportEmployeesCsv'])->name('employees-csv');
         });
         Route::prefix('mpr')->name('mpr.')->middleware('can:view_mpr')->group(function () {
@@ -262,6 +264,8 @@ if (app()->environment('local')) {
 
             Route::prefix('export')->name('export.')->middleware('role:Super Admin,Admin,User')->group(function () {
                 Route::get('/candidates-csv', [ExportController::class, 'exportCandidatesCsv'])->name('candidates-csv');
+            });
+            Route::prefix('export')->name('export.')->middleware('can:view_employees')->group(function () {
                 Route::get('/employees-csv', [ExportController::class, 'exportEmployeesCsv'])->name('employees-csv');
             });
 

@@ -389,6 +389,18 @@
                         <td class="colon-col">:</td>
                         <td class="value-col value-col-half">{{ $mpr->workLocation ?: '-' }}</td>
                     </tr>
+                    @if (!empty($mpr->shiftDetail))
+                     <tr>
+                        <td class="label-col label-col-half">Detail Shift</td>
+                        <td class="colon-col">:</td>
+                        <td class="value-col value-col-half">{{ $mpr->shiftDetail }}</td>
+                    </tr>
+                    @endif
+                    <tr>
+                        <td class="label-col label-col-half">Benefits / Tunjangan</td>
+                        <td class="colon-col">:</td>
+                        <td class="value-col value-col-half">{{ $mpr->benefits ?: '-' }}</td>
+                    </tr>
                 </table>
             </td>
             <td>
@@ -426,20 +438,9 @@
     </table>
 
     <!-- Detail Shift & Benefits — full width agar tidak overflow -->
-    <table class="data-table" style="margin-top:2px;">
-        @if (!empty($mpr->shiftDetail))
-            <tr>
-                <td class="label-col">Detail Shift</td>
-                <td class="colon-col">:</td>
-                <td class="value-col">{{ $mpr->shiftDetail }}</td>
-            </tr>
-        @endif
-        <tr>
-            <td class="label-col" style="white-space: normal;">Benefits / Tunjangan</td>
-            <td class="colon-col">:</td>
-            <td class="value-col" style="white-space: normal; word-wrap: break-word;">{{ $mpr->benefits ?: '-' }}</td>
-        </tr>
-    </table>
+    <!-- <table class="data-table" style="margin-top:2px;">
+       
+    </table> -->
 
     <!-- SECTION 3: ALASAN PERMINTAAN -->
     <div class="section-title">III. Alasan Permintaan Karyawan</div>
