@@ -31,7 +31,7 @@
                 <div class="export-btns">
                     <button class="btn-refresh" id="btnBlRefresh" type="button" title="Muat ulang"
                         aria-label="Muat ulang data" data-refresh="page">
-                        <i class="bi bi-arrow-clockwise"></i>
+                        <i class="bi bi-arrow-repeat"></i>
                     </button>
                 </div>
             </div>

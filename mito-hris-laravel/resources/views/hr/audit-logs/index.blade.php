@@ -283,7 +283,7 @@
                 </div>
 
                 <button class="btn btn-primary btn-sm" id="btnAuditRefresh" type="button" data-refresh="page" aria-label="Refresh data" title="Muat ulang data">
-                    <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Refresh
+                    <i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Refresh
                 </button>
             </div>
             <form action="{{ route('hr.audit-logs.index') }}" method="GET">

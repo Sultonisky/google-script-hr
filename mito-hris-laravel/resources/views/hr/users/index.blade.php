@@ -60,7 +60,7 @@
                     </div>
                     <button class="btn-refresh" type="button" title="Muat ulang data pengguna"
                         aria-label="Muat ulang data pengguna" data-refresh="page">
-                        <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                        <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
                     </button>
                 @endcan
             </div>

@@ -946,7 +946,7 @@
                         @endcan
                         <button type="button" class="btn btn-outline-secondary mpr-refresh-btn" title="Muat ulang data"
                             aria-label="Muat ulang data" data-refresh="page">
-                            <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                            <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
                         </button>
                     </div>
                 </div>
