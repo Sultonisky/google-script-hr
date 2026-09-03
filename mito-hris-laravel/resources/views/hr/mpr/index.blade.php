@@ -13,9 +13,224 @@
         /* MPR-specific styles only for Manager form section */
         .mpr-card-header {
             background: var(--color-primary);
-            color: #ffffff;
+            color: var(--color-surface);
             border-radius: 8px 8px 0 0;
             padding: 16px 20px;
+        }
+
+        .mpr-form-card {
+            background: var(--color-surface);
+            border-color: var(--color-border);
+        }
+
+        .mpr-form-card .card-body {
+            background: var(--color-surface);
+        }
+
+        /* Manager form section */
+        .mpr-form-section-title {
+            color: var(--color-primary);
+        }
+
+        .mpr-form-card .form-label {
+            color: var(--color-text);
+        }
+
+        .mpr-form-card .form-control,
+        .mpr-form-card .form-select {
+            background: var(--color-surface);
+            border-color: var(--color-border);
+            color: var(--color-text);
+        }
+
+        .mpr-form-card .form-control:focus,
+        .mpr-form-card .form-select:focus {
+            background: var(--color-surface);
+            border-color: var(--color-primary);
+            color: var(--color-text);
+        }
+
+        .mpr-form-card .form-control:disabled,
+        .mpr-form-card .form-select:disabled {
+            background: var(--color-bg);
+            color: var(--color-text-soft);
+        }
+
+        .mpr-form-card .border {
+            border-color: var(--color-border) !important;
+        }
+
+        .mpr-form-card .rounded-3 {
+            background: var(--color-bg);
+        }
+
+        .mpr-form-card .badge.bg-white {
+            background: var(--color-surface) !important;
+            border: 1px solid var(--color-border);
+        }
+
+        /* Manager history card */
+        .mpr-history-card {
+            background: var(--color-surface);
+            border-color: var(--color-border);
+        }
+
+        /* Modal Create MPR (HR) styles */
+        #modalCreateMpr .modal-content {
+            background: var(--color-surface);
+        }
+
+        #modalCreateMpr .modal-header {
+            background: var(--color-primary) !important;
+        }
+
+        #modalCreateMpr .modal-body {
+            background: var(--color-surface);
+        }
+
+        #modalCreateMpr .form-label {
+            color: var(--color-text);
+        }
+
+        #modalCreateMpr .form-control,
+        #modalCreateMpr .form-select {
+            background: var(--color-surface);
+            border-color: var(--color-border);
+            color: var(--color-text);
+        }
+
+        #modalCreateMpr .form-control:focus,
+        #modalCreateMpr .form-select:focus {
+            background: var(--color-surface);
+            border-color: var(--color-primary);
+            color: var(--color-text);
+        }
+
+        #modalCreateMpr .border {
+            border-color: var(--color-border) !important;
+        }
+
+        #modalCreateMpr .form-check-input {
+            background-color: var(--color-surface);
+            border-color: var(--color-border);
+        }
+
+        #modalCreateMpr .form-check-input:checked {
+            background-color: var(--color-primary);
+            border-color: var(--color-primary);
+        }
+
+        #modalCreateMpr .form-check-label {
+            color: var(--color-text);
+        }
+
+        #modalCreateMpr .form-text {
+            color: var(--color-text-soft);
+        }
+
+        /* Modal Edit MPR styles */
+        #modalEditMpr .modal-content {
+            background: var(--color-surface);
+        }
+
+        #modalEditMpr .modal-header {
+            background: var(--color-primary) !important;
+        }
+
+        #modalEditMpr .modal-body {
+            background: var(--color-surface);
+        }
+
+        #modalEditMpr .form-label {
+            color: var(--color-text);
+        }
+
+        #modalEditMpr .form-control,
+        #modalEditMpr .form-select {
+            background: var(--color-surface);
+            border-color: var(--color-border);
+            color: var(--color-text);
+        }
+
+        #modalEditMpr .form-control:focus,
+        #modalEditMpr .form-select:focus {
+            background: var(--color-surface);
+            border-color: var(--color-primary);
+            color: var(--color-text);
+        }
+
+        #modalEditMpr .border {
+            border-color: var(--color-border) !important;
+        }
+
+        #modalEditMpr .form-check-input {
+            background-color: var(--color-surface);
+            border-color: var(--color-border);
+        }
+
+        #modalEditMpr .form-check-input:checked {
+            background-color: var(--color-primary);
+            border-color: var(--color-primary);
+        }
+
+        #modalEditMpr .form-check-label {
+            color: var(--color-text);
+        }
+
+        /* Modal Preview MPR styles */
+        #modalPreviewMpr .modal-content {
+            background: var(--color-surface);
+        }
+
+        #modalPreviewMpr .modal-header {
+            background: var(--color-primary) !important;
+        }
+
+        #modalPreviewMpr .modal-body {
+            background: var(--color-surface);
+        }
+
+        #modalPreviewMpr .text-muted {
+            color: var(--color-text-soft) !important;
+        }
+
+        #modalPreviewMpr .border {
+            border-color: var(--color-border) !important;
+        }
+
+        #modalPreviewMpr .p-2 {
+            background: var(--color-bg);
+        }
+
+        /* Alert styles */
+        .alert {
+            background: var(--color-surface);
+            border-color: var(--color-border);
+            color: var(--color-text);
+        }
+
+        .alert-success {
+            background: rgba(22, 101, 52, 0.1);
+            border-color: rgba(22, 101, 52, 0.2);
+            color: var(--color-text);
+        }
+
+        .alert-success .text-success {
+            color: #166534 !important;
+        }
+
+        :root[data-theme="dark"] .alert-success {
+            background: rgba(22, 101, 52, 0.15);
+            border-color: rgba(22, 101, 52, 0.25);
+        }
+
+        :root[data-theme="dark"] .alert-success .text-success {
+            color: #4ade80 !important;
+        }
+
+        /* Table empty state */
+        .table-empty {
+            color: var(--color-text-soft);
         }
 
         .mpr-applicant-identity {
@@ -213,7 +428,7 @@
                                 <small class="text-white">Isi data kebutuhan tenaga kerja untuk diproses oleh Tim
                                     HR</small>
                             </div>
-                            <span class="badge bg-white text-primary fw-bold px-3 py-2">Role: Manpower</span>
+                            <span class="badge text-primary fw-bold px-3 py-2" style="background: var(--color-surface); border: 1px solid var(--color-border);">Role: Manpower</span>
                         </div>
                         <div class="card-body p-4 mpr-form-body">
 
@@ -233,8 +448,8 @@
                                         <div class="col-md-6">
                                             <label class="form-label text-muted small fw-semibold mb-1">Nama Pemohon</label>
                                             <div class="input-group input-group-sm">
-                                                <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-person-fill"></i></span>
-                                                <input type="text" class="form-control bg-white border-start-0 text-dark fw-semibold"
+                                                <span class="input-group-text border-end-0"><i class="bi bi-person-fill"></i></span>
+                                                <input type="text" class="form-control border-start-0 fw-semibold"
                                                     value="{{ $user['fullName'] ?? ($user['name'] ?? 'Manager') }}" readonly
                                                     disabled style="cursor: not-allowed;">
                                             </div>
@@ -242,8 +457,8 @@
                                         <div class="col-md-6">
                                             <label class="form-label text-muted small fw-semibold mb-1">Jabatan Pemohon</label>
                                             <div class="input-group input-group-sm">
-                                                <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-briefcase-fill"></i></span>
-                                                <input type="text" class="form-control bg-white border-start-0 text-dark fw-semibold"
+                                                <span class="input-group-text border-end-0"><i class="bi bi-briefcase-fill"></i></span>
+                                                <input type="text" class="form-control border-start-0 fw-semibold"
                                                     value="{{ $user['jobPosition'] ?? '-' }}" readonly
                                                     disabled style="cursor: not-allowed;">
                                             </div>
@@ -510,9 +725,9 @@
 
                 <!-- SIDE SUMMARY: Ringkasan Pengajuan Saya -->
                 <div class="col-12 col-xl-5">
-                    <div class="card border-0 shadow-sm rounded-3 h-100">
+                    <div class="card border-0 shadow-sm rounded-3 h-100 mpr-history-card">
                         <div class="card-header mpr-history-header py-3 border-bottom">
-                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-clock-history me-2 text-primary"></i>
+                            <h6 class="mb-0 fw-bold"><i class="bi bi-clock-history me-2 text-primary"></i>
                                 Riwayat Pengajuan MPR Saya</h6>
                         </div>
                         <div class="card-body p-0">
@@ -531,18 +746,16 @@
                                             <tr>
                                                 <td>
                                                     <strong class="text-primary">{{ $mpr->mprNumber }}</strong><br>
-                                                    <small
-                                                        class="text-muted">{{ $mpr->requestDate ? date('d/m/Y', strtotime($mpr->requestDate)) : '-' }}</small>
+                                                    <small class="text-muted">{{ $mpr->requestDate ? \Carbon\Carbon::parse($mpr->requestDate)->format('d M Y') : '-' }}</small>
                                                 </td>
                                                 <td>
-                                                    <span class="fw-semibold text-dark">{{ $mpr->position }}</span><br>
+                                                    <span class="fw-semibold">{{ $mpr->position }}</span><br>
                                                     <small class="text-muted">{{ $mpr->department }}</small><br>
                                                     <small class="badge bg-light text-secondary border"
                                                         style="font-size:10px;">{{ $mpr->entity ?: '-' }}</small>
                                                 </td>
                                                 <td>
-                                                    <span class="badge bg-light text-dark border">{{ $mpr->quantity }}
-                                                        Org</span>
+                                                    <span class="fw-bold text-navy">{{ $mpr->quantity }}</span>
                                                 </td>
                                                 <td>
                                                     <div class="btn-group btn-group-sm">
@@ -635,10 +848,10 @@
                         <h6>Daftar Manpower Request (MPR)</h6>
                         <div class="panel-subtitle">Menampilkan {{ $total }} pengajuan kebutuhan tenaga kerja</div>
                     </div>
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 ms-auto">
                         @can('create_mpr')
                             <button type="button" class="btn btn-sm text-white fw-semibold"
-                                style="background:#166534;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
+                                style="background:#eb1c24;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
                                 data-bs-toggle="modal" data-bs-target="#modalCreateMpr">
                                 <i class="bi bi-plus-circle-fill me-1"></i>Buat MPR Baru
                             </button>
@@ -707,51 +920,47 @@
                                     <tr>
                                         <td>
                                             <strong class="text-primary font-monospace">{{ $mpr->mprNumber }}</strong><br>
-                                            <small class="text-muted"><i
-                                                    class="bi bi-calendar3 me-1"></i>{{ $mpr->requestDate ? date('d M Y', strtotime($mpr->requestDate)) : '-' }}</small>
+                                            <small class="text-muted">{{ $mpr->requestDate ? \Carbon\Carbon::parse($mpr->requestDate)->format('d M Y') : '-' }}</small>
                                         </td>
                                         <td>
-                                            <div class="fw-semibold text-dark">{{ $mpr->requestorName }}</div>
+                                            <div class="fw-semibold">{{ $mpr->requestorName }}</div>
                                             <small class="text-muted">{{ $mpr->requestorEmail }}</small>
                                         </td>
                                         <td>
-                                            <div class="fw-medium text-dark">{{ $mpr->department }}</div>
+                                            <div class="fw-medium">{{ $mpr->department }}</div>
                                             <small class="text-muted">{{ $mpr->entity ?: '-' }}</small>
                                         </td>
                                         <td>
-                                            <div class="fw-semibold text-dark">{{ $mpr->position }}</div>
+                                            <div class="fw-semibold">{{ $mpr->position }}</div>
                                             <small
                                                 class="badge bg-light text-secondary border">{{ $mpr->jobLevel ?? '-' }}</small>
                                             <small
                                                 class="badge bg-light text-secondary border">{{ $mpr->employmentType ?? '-' }}</small>
                                         </td>
                                         <td class="text-center">
-                                            <span class="badge bg-primary px-2 py-1 fs-6">{{ $mpr->quantity }}</span>
-                                            <div class="small text-muted" style="font-size:10px;">Orang</div>
+                                            <span class="fw-bold text-navy">{{ $mpr->quantity }}</span>
                                         </td>
                                         <td>
-                                            <span
-                                                class="text-dark">{{ $mpr->expectedJoinDate ? date('d M Y', strtotime($mpr->expectedJoinDate)) : '-' }}</span>
+                                            <span>{{ $mpr->expectedJoinDate ? \Carbon\Carbon::parse($mpr->expectedJoinDate)->format('d M Y') : '-' }}</span>
                                         </td>
                                         <td>
-                                            <span
-                                                class="badge bg-success-subtle text-success border border-success-subtle">{{ strtoupper($mpr->status ?? 'SUBMITTED') }}</span>
+                                            <span class="badge-status accepted">SUBMITTED</span>
                                         </td>
                                         <td class="text-center">
                                             <div class="btn-group btn-group-sm">
-                                                <button type="button" class="btn btn-outline-primary btn-mpr-detail"
+                                                <button type="button" class="btn btn-sm btn-outline-primary btn-mpr-detail"
                                                     data-id="{{ $mpr->mprNumber }}" title="Lihat Detail">
                                                     <i class="bi bi-eye-fill"></i>
                                                 </button>
                                                 @can('export_mpr')
                                                     @if (filled($mpr->mprNumber))
                                                         <a href="{{ route('hr.mpr.pdf', ['id' => $mpr->mprNumber]) }}"
-                                                            target="_blank" class="btn btn-outline-danger"
+                                                            target="_blank" class="btn btn-sm btn-outline-danger"
                                                             title="Unduh PDF Resmi">
                                                             <i class="bi bi-file-earmark-pdf-fill"></i>
                                                         </a>
                                                     @else
-                                                        <button type="button" class="btn btn-outline-secondary" disabled
+                                                        <button type="button" class="btn btn-sm btn-outline-secondary" disabled
                                                             title="Nomor MPR tidak tersedia">
                                                             <i class="bi bi-file-earmark-pdf-fill"></i>
                                                         </button>
@@ -815,7 +1024,7 @@
 
                                     <!-- 1. INFORMASI PEMOHON -->
                                     <h6 class="fw-bold text-primary mb-3">1. Informasi Pemohon / Requester</h6>
-                                    <div class="row g-3 mb-4 p-3 rounded-3 border bg-light">
+                                    <div class="row g-3 mb-4 p-3 rounded-3 border" style="background: var(--color-bg);">
                                         <div class="col-md-6">
                                             <label class="form-label fw-semibold small">Nama Pemohon <span
                                                     class="text-danger">*</span></label>
@@ -1115,6 +1324,9 @@
                         </div>
                         <div class="modal-body p-4">
                             <form id="formEditMpr">
+                                @php
+                                    $mprOptions = config('hris.mpr_form_options', []);
+                                @endphp
                                 <div id="editMprErrors" class="alert alert-danger d-none"></div>
 
                                 <!-- 1. Detail Posisi & Organisasi -->
@@ -1195,8 +1407,65 @@
                                     </div>
                                 </div>
 
-                                <!-- 2. Alasan & Kualifikasi -->
-                                <h6 class="fw-bold text-primary mb-3">2. Alasan &amp; Kualifikasi</h6>
+                                <!-- 2. Waktu Kerja & Benefits -->
+                                <h6 class="fw-bold text-primary mb-3">2. Waktu Kerja &amp; Benefits</h6>
+                                <div class="row g-3 mb-4">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Hari Kerja <span class="text-danger">*</span></label>
+                                        <div class="border rounded p-2 d-flex flex-column gap-1">
+                                            @foreach ($mprOptions['working_days'] ?? [] as $dayKey => $dayLabel)
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="working_days[]"
+                                                        value="{{ $dayKey }}" id="editwd_{{ $dayKey }}">
+                                                    <label class="form-check-label small" for="editwd_{{ $dayKey }}">{{ $dayLabel }}</label>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Jam Kerja <span class="text-danger">*</span></label>
+                                        <div class="border rounded p-2 d-flex flex-column gap-1">
+                                            @foreach ($mprOptions['working_hours'] ?? [] as $hourKey => $hourLabel)
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="working_hours[]"
+                                                        value="{{ $hourKey }}" id="editwh_{{ $hourKey }}">
+                                                    <label class="form-check-label small" for="editwh_{{ $hourKey }}">{{ $hourLabel }}</label>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small fw-semibold">
+                                            Detail Shift
+                                            <span class="text-danger d-none" id="editShiftDetailRequiredMark">*</span>
+                                            <span class="text-muted fw-normal small" id="editShiftDetailHint">(aktif &amp; wajib jika "Shifting" dipilih)</span>
+                                        </label>
+                                        <textarea name="shift_detail" class="form-control form-control-sm" rows="2"
+                                            id="editShiftDetailField"
+                                            placeholder="Contoh: Shift pagi 07:00-15:00, shift siang 15:00-23:00, rotasi mingguan..."
+                                            disabled></textarea>
+                                        <div class="form-text text-muted small mt-1" id="editShiftDetailNote">
+                                            <i class="bi bi-info-circle me-1"></i>Centang "Shifting" pada Hari Kerja untuk mengisi detail shift.
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small fw-semibold">Benefits / Tunjangan <span class="text-danger">*</span></label>
+                                        <div class="border rounded p-2 row g-1">
+                                            @foreach ($mprOptions['benefits'] ?? [] as $benefitKey => $benefitLabel)
+                                                <div class="col-md-4 col-6">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="benefits[]"
+                                                            value="{{ $benefitKey }}" id="editbn_{{ $benefitKey }}">
+                                                        <label class="form-check-label small" for="editbn_{{ $benefitKey }}">{{ $benefitLabel }}</label>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 3. Alasan & Kualifikasi -->
+                                <h6 class="fw-bold text-primary mb-3">3. Alasan &amp; Kualifikasi</h6>
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <label class="form-label small fw-semibold">Alasan Permintaan <span class="text-danger">*</span></label>
@@ -1221,15 +1490,58 @@
                                             <i class="bi bi-info-circle me-1"></i>Pilih alasan "Penggantian Karyawan" untuk mengisi field ini.
                                         </div>
                                     </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Latar Belakang Pendidikan <span class="text-danger">*</span></label>
+                                        <select name="education_background" class="form-select form-select-sm" required>
+                                            <option value="">-- Pilih Pendidikan --</option>
+                                            @foreach ($mprOptions['education_background'] ?? [] as $eduKey => $eduLabel)
+                                                <option value="{{ $eduKey }}">{{ $eduLabel }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Pengalaman Kerja <span class="text-danger">*</span></label>
+                                        <select name="work_experience" class="form-select form-select-sm" required>
+                                            <option value="">-- Pilih Pengalaman --</option>
+                                            @foreach ($mprOptions['work_experience'] ?? [] as $expKey => $expLabel)
+                                                <option value="{{ $expKey }}">{{ $expLabel }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Skills &amp; Kompetensi</label>
+                                        <textarea name="skills_competencies" class="form-control form-control-sm" rows="2"
+                                            placeholder="Contoh: Laravel, Excel lanjutan, leadership..."></textarea>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Bahasa yang Dikuasai</label>
+                                        <textarea name="languages" class="form-control form-control-sm" rows="2"
+                                            placeholder="Contoh: Bahasa Indonesia (aktif), Bahasa Inggris (pasif)..."></textarea>
+                                    </div>
                                     <div class="col-12">
-                                        <label class="form-label small fw-semibold">Kualifikasi &amp; Persyaratan</label>
-                                        <textarea name="requirements" rows="4" class="form-control form-control-sm"
+                                        <label class="form-label small fw-semibold">Referensi Industri Sejenis</label>
+                                        <textarea name="industry_reference" class="form-control form-control-sm" rows="2"
+                                            placeholder="Contoh: Pengalaman dari industri mining, logistik, atau FMCG..."></textarea>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small fw-semibold">Kualifikasi &amp; Persyaratan Khusus</label>
+                                        <textarea name="requirements" rows="3" class="form-control form-control-sm"
                                             placeholder="Pendidikan, pengalaman, keahlian teknis..."></textarea>
                                     </div>
                                     <div class="col-12">
-                                        <label class="form-label small fw-semibold">Uraian Tugas</label>
+                                        <label class="form-label small fw-semibold">Uraian Tugas &amp; Tanggung Jawab Utama</label>
                                         <textarea name="job_description" rows="4" class="form-control form-control-sm"
                                             placeholder="Ringkasan tanggung jawab posisi..."></textarea>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small fw-semibold">Key Results / Target Posisi</label>
+                                        <textarea name="key_results_targets" class="form-control form-control-sm" rows="2"
+                                            placeholder="Contoh: Mencapai target penjualan 100 unit/bulan..."></textarea>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small fw-semibold">Catatan Khusus MPR</label>
+                                        <textarea name="special_notes" class="form-control form-control-sm" rows="2"
+                                            placeholder="Catatan khusus terkait kebutuhan ini..."></textarea>
                                     </div>
                                 </div>
                             </form>
@@ -1657,26 +1969,58 @@
                                     document.getElementById('editMprNumber').innerText = m
                                         .mpr_number || id;
                                     editForm.reset();
+                                    
+                                    // Populate text inputs and selects
                                     Object.keys(m).forEach(key => {
                                         const field = editForm.elements[key];
                                         if (field && !key.endsWith('_html') &&
-                                            key !== 'department' && key !==
-                                            'division') field.value = m[key] ?? '';
+                                            key !== 'department' && key !== 'division' &&
+                                            key !== 'working_days' && key !== 'working_hours' && key !== 'benefits') {
+                                            field.value = m[key] ?? '';
+                                        }
                                     });
+                                    
                                     editForm.elements.department.value = m.department || '';
                                     const approvalSelect = editForm.elements.approval_division;
                                     if (approvalSelect) {
                                         approvalSelect.value = m.approval_division || '';
                                     }
                                     setupDepartmentDivision(editForm, m.division || '');
-                                    document.getElementById('editMprErrors').classList.add(
-                                        'd-none');
-                                    // Inisialisasi replacement state setelah data di-populate
+                                    
+                                    // Populate checkboxes for working_days
+                                    const workingDays = (m.working_days || '').split(',').map(s => s.trim()).filter(Boolean);
+                                    editForm.querySelectorAll('input[name="working_days[]"]').forEach(cb => {
+                                        cb.checked = workingDays.includes(cb.value);
+                                    });
+                                    
+                                    // Populate checkboxes for working_hours
+                                    const workingHours = (m.working_hours || '').split(',').map(s => s.trim()).filter(Boolean);
+                                    editForm.querySelectorAll('input[name="working_hours[]"]').forEach(cb => {
+                                        cb.checked = workingHours.includes(cb.value);
+                                    });
+                                    
+                                    // Populate checkboxes for benefits
+                                    const benefits = (m.benefits || '').split(',').map(s => s.trim()).filter(Boolean);
+                                    editForm.querySelectorAll('input[name="benefits[]"]').forEach(cb => {
+                                        cb.checked = benefits.includes(cb.value);
+                                    });
+                                    
+                                    document.getElementById('editMprErrors').classList.add('d-none');
+                                    
+                                    // Setup Shifting logic
+                                    const editShiftingCb = editForm.querySelector('input[name="working_days[]"][value="shifting"]');
+                                    if (editShiftingCb) {
+                                        editShiftingCb.addEventListener('change', () => applyShiftingState(editForm));
+                                        applyShiftingState(editForm);
+                                    }
+                                    
+                                    // Setup Replacement logic
                                     const editReasonSelect = editForm.querySelector('[name="reason"]');
                                     if (editReasonSelect) {
                                         editReasonSelect.addEventListener('change', () => applyReplacementState(editForm));
                                     }
                                     applyReplacementState(editForm);
+                                    
                                     bootstrap.Modal.getOrCreateInstance(document
                                         .getElementById('modalMprDetail')).hide();
                                     bootstrap.Modal.getOrCreateInstance(document
