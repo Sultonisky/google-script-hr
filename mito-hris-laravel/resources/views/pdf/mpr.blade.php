@@ -389,13 +389,6 @@
                         <td class="colon-col">:</td>
                         <td class="value-col value-col-half">{{ $mpr->workLocation ?: '-' }}</td>
                     </tr>
-                    @if (!empty($mpr->shiftDetail))
-                     <tr>
-                        <td class="label-col label-col-half">Detail Shift</td>
-                        <td class="colon-col">:</td>
-                        <td class="value-col value-col-half">{{ $mpr->shiftDetail }}</td>
-                    </tr>
-                    @endif
                     <tr>
                         <td class="label-col label-col-half">Benefits / Tunjangan</td>
                         <td class="colon-col">:</td>
@@ -432,6 +425,13 @@
                         <td class="colon-col">:</td>
                         <td class="value-col value-col-half">{{ $mpr->workingHours ?: '-' }}</td>
                     </tr>
+                     @if (!empty($mpr->shiftDetail))
+                     <tr>
+                        <td class="label-col label-col-half">Detail Shift</td>
+                        <td class="colon-col">:</td>
+                        <td class="value-col value-col-half">{{ $mpr->shiftDetail }}</td>
+                    </tr>
+                    @endif
                 </table>
             </td>
         </tr>
