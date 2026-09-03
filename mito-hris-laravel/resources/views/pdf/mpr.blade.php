@@ -294,11 +294,13 @@
                 <td style="text-align:right; vertical-align:middle;">
                     @php
                         $entityCode = strtoupper(trim($mpr->entity ?? ''));
-                        $isMito = $entityCode === 'MSI';
-                        $logoPath = $isMito ? public_path('assets/mito-pdf.png') : public_path('assets/stein.jpg');
+                        // MITO Group: MSI, MEP, PII → logo mito-pdf.png
+                        // Stein Group: SPI atau lainnya → logo stein.jpg
+                        $isMitoGroup = in_array($entityCode, ['MSI', 'MEP', 'PII']);
+                        $logoPath = $isMitoGroup ? public_path('assets/mito-pdf.png') : public_path('assets/stein.jpg');
                         $logoBase64 = file_exists($logoPath)
                             ? 'data:image/' .
-                                ($isMito ? 'png' : 'jpeg') .
+                                ($isMitoGroup ? 'png' : 'jpeg') .
                                 ';base64,' .
                                 base64_encode(file_get_contents($logoPath))
                             : null;
