@@ -58,7 +58,7 @@
                     </button>
                     <button class="btn-refresh" type="button" title="Muat ulang data requestor"
                         aria-label="Muat ulang data requestor" data-refresh="page">
-                        <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                        <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
                     </button>
                 </div>
             </div>

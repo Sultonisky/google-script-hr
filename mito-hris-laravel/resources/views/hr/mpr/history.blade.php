@@ -53,7 +53,7 @@
                 <div class="d-flex align-items-center gap-2 flex-wrap">
                     <button type="button" class="btn-refresh" title="Muat ulang data" aria-label="Muat ulang data"
                         data-refresh="page">
-                        <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                        <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
                     </button>
                     <a href="{{ request()->routeIs('mpr.auth.*') ? route('mpr.auth.request') : route('mpr.auth.request') }}" class="btn btn-primary fw-semibold">
                         <i class="bi bi-plus-circle-fill me-1"></i> Buat Pengajuan MPR

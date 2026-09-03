@@ -7,7 +7,7 @@
     </a>
     <button class="fab-action" id="fabRefresh" type="button" data-refresh="page" aria-label="Refresh data" title="Muat ulang data">
       Refresh Data
-      <i class="bi bi-arrow-clockwise"></i>
+      <i class="bi bi-arrow-repeat"></i>
     </button>
   </div>
   <button class="fab-main" id="fabMain" type="button" aria-label="Buka menu aksi cepat" aria-expanded="false">

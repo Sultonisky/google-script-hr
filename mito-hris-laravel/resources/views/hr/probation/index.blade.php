@@ -60,7 +60,7 @@
                 <div class="export-btns">
                     <button class="btn-refresh" id="btnProbRefresh" type="button" title="Muat ulang"
                         aria-label="Muat ulang data" data-refresh="page">
-                        <i class="bi bi-arrow-clockwise"></i>
+                        <i class="bi bi-arrow-repeat"></i>
                     </button>
                     <button class="btn btn-sm text-white ms-2 fw-semibold"
                         style="background:#eb1c24;border:none;border-radius:8px;padding:6px 14px;font-size:13px"

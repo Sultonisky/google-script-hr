@@ -63,7 +63,7 @@
                             </button>
                             <button class="btn-refresh accepted-refresh-btn accepted-refresh-header" type="button"
                                 title="Muat ulang" aria-label="Muat ulang data" data-refresh="page">
-                                <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                                <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
                             </button>
                         </div>
                     @endcan
@@ -108,7 +108,7 @@
                         </a>
                         <button class="btn-refresh accepted-refresh-btn accepted-refresh-filter" id="btnAccRefresh"
                             type="button" title="Muat ulang" aria-label="Muat ulang data" data-refresh="page">
-                            <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                            <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
                         </button>
                     </div>
                 </div>
