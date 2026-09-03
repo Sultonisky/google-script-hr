@@ -446,15 +446,15 @@
     <div class="section-title">III. Alasan Permintaan Karyawan</div>
     <table class="data-table">
         <tr>
-            <td class="label-col" style="white-space: normal;">Alasan Kebutuhan</td>
-            <td class="colon-col">:</td>
-            <td class="value-col"><strong>{{ $mpr->reason ?: '-' }}</strong></td>
+            <td class="label-col">Alasan Kebutuhan</td>
+            <td class="colon-col label-col-half">:</td>
+            <td class="value-col value-col-half"><strong>{{ $mpr->reason ?: '-' }}</strong></td>
         </tr>
         @if (!empty($mpr->replacementFor))
             <tr>
-                <td class="label-col" style="white-space: normal;">Menggantikan Karyawan</td>
+                <td class="label-col label-col-half">Menggantikan Karyawan</td>
                 <td class="colon-col">:</td>
-                <td class="value-col">{{ $mpr->replacementFor }}</td>
+                <td class="value-col value-col-half">{{ $mpr->replacementFor }}</td>
             </tr>
         @endif
     </table>
