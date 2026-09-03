@@ -1086,22 +1086,13 @@
                             Menampilkan halaman <strong>{{ $currentPage }}</strong> dari
                             <strong>{{ $lastPage }}</strong>
                         </div>
-                        <ul class="pagination pagination-sm mb-0">
-                            <li class="page-item {{ $currentPage <= 1 ? 'disabled' : '' }}">
-                                <a class="page-link"
-                                    href="{{ request()->fullUrlWithQuery(['page' => $currentPage - 1]) }}">Sebelumnya</a>
-                            </li>
-                            @for ($p = 1; $p <= $lastPage; $p++)
-                                <li class="page-item {{ $p === $currentPage ? 'active' : '' }}">
-                                    <a class="page-link"
-                                        href="{{ request()->fullUrlWithQuery(['page' => $p]) }}">{{ $p }}</a>
-                                </li>
-                            @endfor
-                            <li class="page-item {{ $currentPage >= $lastPage ? 'disabled' : '' }}">
-                                <a class="page-link"
-                                    href="{{ request()->fullUrlWithQuery(['page' => $currentPage + 1]) }}">Berikutnya</a>
-                            </li>
-                        </ul>
+                        <x-pagination :currentPage="$currentPage" :total="$total" :perPage="10" :route="'hr.mpr.index'"
+                            :queryParams="[
+                                'search' => $search,
+                                'department' => $dept,
+                                'status' => $status,
+                                'submit_by' => $submitBy,
+                            ]" />
                     </div>
                 @endif
 
