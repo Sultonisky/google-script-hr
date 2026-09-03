@@ -86,8 +86,26 @@ class EmployeeController extends Controller
             );
         }
 
-        $sortFilter = 'name_asc';
-        $filtered = $filtered->sortBy(fn($e) => strtolower(trim($e->fullName ?? '')));
+        $sortFilter = $request->query('sort', 'name_asc');
+        
+        // Apply sorting based on sort filter
+        $filtered = match($sortFilter) {
+            'name_desc' => $filtered->sortByDesc(fn($e) => strtolower(trim($e->fullName ?? ''))),
+            'emp_id_asc' => $filtered->sortBy(fn($e) => strtolower(trim($e->employeeId ?? ''))),
+            'emp_id_desc' => $filtered->sortByDesc(fn($e) => strtolower(trim($e->employeeId ?? ''))),
+            'nik_asc' => $filtered->sortBy(fn($e) => strtolower(trim($e->nikNpwp ?? ''))),
+            'nik_desc' => $filtered->sortByDesc(fn($e) => strtolower(trim($e->nikNpwp ?? ''))),
+            'dept_asc' => $filtered->sortBy(fn($e) => strtolower(trim($e->department ?? ''))),
+            'dept_desc' => $filtered->sortByDesc(fn($e) => strtolower(trim($e->department ?? ''))),
+            'division_asc' => $filtered->sortBy(fn($e) => strtolower(trim($e->division ?? ''))),
+            'division_desc' => $filtered->sortByDesc(fn($e) => strtolower(trim($e->division ?? ''))),
+            'position_asc' => $filtered->sortBy(fn($e) => strtolower(trim($e->jobPosition ?? ''))),
+            'position_desc' => $filtered->sortByDesc(fn($e) => strtolower(trim($e->jobPosition ?? ''))),
+            'join_date_asc' => $filtered->sortBy(fn($e) => $e->joinDate ?? '9999-99-99'),
+            'join_date_desc' => $filtered->sortByDesc(fn($e) => $e->joinDate ?? '0000-00-00'),
+            // DEFAULT: Sort by join_date_asc (oldest to newest) instead of name_asc
+            default => $filtered->sortBy(fn($e) => $e->joinDate ?? '9999-99-99'),
+        };
 
         $filtered = $filtered->values();
         $total = $filtered->count();
