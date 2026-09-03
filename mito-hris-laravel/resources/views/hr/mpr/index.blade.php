@@ -177,31 +177,6 @@
             color: var(--color-text);
         }
 
-        /* Modal Preview MPR styles */
-        #modalPreviewMpr .modal-content {
-            background: var(--color-surface);
-        }
-
-        #modalPreviewMpr .modal-header {
-            background: var(--color-primary) !important;
-        }
-
-        #modalPreviewMpr .modal-body {
-            background: var(--color-surface);
-        }
-
-        #modalPreviewMpr .text-muted {
-            color: var(--color-text-soft) !important;
-        }
-
-        #modalPreviewMpr .border {
-            border-color: var(--color-border) !important;
-        }
-
-        #modalPreviewMpr .p-2 {
-            background: var(--color-bg);
-        }
-
         /* Alert styles */
         .alert {
             background: var(--color-surface);
@@ -261,55 +236,63 @@
         /* Modal MPR Detail styles */
         #modalMprDetail .modal-content {
             background: var(--color-surface);
-            border-radius: 16px;
+            border-radius: 12px;
             overflow: hidden;
         }
 
         #modalMprDetail .modal-header {
-            padding: 18px 24px;
+            padding: 20px 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         #modalMprDetail .modal-body {
             background: var(--color-bg);
-            padding: 24px !important;
+            max-height: calc(100vh - 200px);
+        }
+
+        #modalMprDetail .modal-body .border-bottom {
+            border-color: var(--color-border) !important;
         }
 
         #modalMprDetail .modal-footer {
-            background: var(--color-surface) !important;
-            border-color: var(--color-border) !important;
+            background: var(--color-surface);
+            border-top: 1px solid var(--color-border);
             padding: 14px 24px;
         }
 
-        #modalMprDetail #detailContent>.card,
-        #modalMprDetail #detailContent>.bg-light {
-            background: var(--color-surface) !important;
-            border: 1px solid var(--color-border) !important;
-            border-radius: 12px !important;
-            padding: 16px !important;
+        #modalMprDetail label {
+            color: var(--color-text-soft);
+            font-size: 11px;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
         }
 
-        #modalMprDetail #detailContent>.row {
-            row-gap: 12px;
+        #modalMprDetail .fw-semibold,
+        #modalMprDetail .fw-bold {
+            color: var(--color-text);
         }
 
-        #modalMprDetail #detailContent>.row>[class*="col-"] {
-            padding: 14px;
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-radius: 12px;
+        #modalMprDetail .text-primary {
+            color: var(--color-primary) !important;
         }
 
-        #modalMprDetail .text-dark {
-            color: var(--color-text) !important;
+        #modalMprDetail h6.text-primary {
+            font-size: 15px;
+            letter-spacing: 0.3px;
         }
 
         #modalMprDetail .mpr-markdown-content {
-            background: var(--color-surface) !important;
-            border-color: var(--color-border) !important;
-            border-radius: 10px !important;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
             color: var(--color-text);
-            line-height: 1.6;
-            padding: 12px !important;
+        }
+
+        #modalMprDetail .badge {
+            font-weight: 600;
+        }
+
+        #modalMprDetail .border-top.border-dark {
+            border-color: var(--color-text) !important;
         }
 
         /* Markdown-rendered content in MPR detail modal */
@@ -737,7 +720,7 @@
                                         <tr>
                                             <th>No. MPR</th>
                                             <th>Posisi & Dept</th>
-                                            <th>Qty</th>
+                                            <th>Kebutuhan</th>
                                             <th>Aksi</th>
                                         </tr>
                                     </thead>
@@ -938,7 +921,7 @@
                                                 class="badge bg-light text-secondary border">{{ $mpr->employmentType ?? '-' }}</small>
                                         </td>
                                         <td class="text-center">
-                                            <span class="fw-bold text-navy">{{ $mpr->quantity }}</span>
+                                            <span class="fw-bold text-navy">{{ $mpr->quantity }} Orang</span>
                                         </td>
                                         <td>
                                             <span>{{ $mpr->expectedJoinDate ? \Carbon\Carbon::parse($mpr->expectedJoinDate)->format('d M Y') : '-' }}</span>
@@ -1549,26 +1532,9 @@
                         <div class="modal-footer">
                             <button type="button" class="btn btn-outline-secondary btn-sm"
                                 data-bs-dismiss="modal">Batal</button>
-                            <button type="button" id="btnPreviewMpr" class="btn btn-outline-primary btn-sm"><i
-                                    class="bi bi-eye me-1"></i> Preview</button>
                             <button type="submit" form="formEditMpr" id="btnSaveMpr" class="btn btn-primary btn-sm"><i
                                     class="bi bi-check-circle me-1"></i> Save Changes</button>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="modal fade" id="modalPreviewMpr" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog modal-lg modal-dialog-scrollable">
-                    <div class="modal-content border-0 shadow">
-                        <div class="modal-header bg-primary text-white">
-                            <h5 class="modal-title">Preview Perubahan MPR</h5><button type="button"
-                                class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body" id="mprPreviewContent"></div>
-                        <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm"
-                                data-bs-dismiss="modal">Kembali ke Edit</button><button type="button"
-                                class="btn btn-primary btn-sm" id="btnPreviewSaveMpr">Save Changes</button></div>
                     </div>
                 </div>
             </div>
@@ -1970,12 +1936,16 @@
                                         .mpr_number || id;
                                     editForm.reset();
                                     
+                                    // Debug: Log API data structure
+                                    console.log('MPR Data from API:', m);
+                                    
                                     // Populate text inputs and selects
                                     Object.keys(m).forEach(key => {
                                         const field = editForm.elements[key];
                                         if (field && !key.endsWith('_html') &&
                                             key !== 'department' && key !== 'division' &&
-                                            key !== 'working_days' && key !== 'working_hours' && key !== 'benefits') {
+                                            key !== 'working_days' && key !== 'working_hours' && key !== 'benefits' &&
+                                            key !== 'education_background' && key !== 'work_experience') {
                                             field.value = m[key] ?? '';
                                         }
                                     });
@@ -1987,22 +1957,123 @@
                                     }
                                     setupDepartmentDivision(editForm, m.division || '');
                                     
+                                    // Populate education_background select
+                                    const eduBgField = editForm.elements.education_background;
+                                    if (eduBgField && m.education_background) {
+                                        // Try direct key match first
+                                        eduBgField.value = m.education_background;
+                                        
+                                        // If not set, try to find by label match
+                                        if (!eduBgField.value || eduBgField.value === '') {
+                                            const options = Array.from(eduBgField.options);
+                                            const matchedOption = options.find(opt => 
+                                                opt.text.toLowerCase() === m.education_background.toLowerCase()
+                                            );
+                                            if (matchedOption) {
+                                                eduBgField.value = matchedOption.value;
+                                            }
+                                        }
+                                        console.log('Set education_background:', m.education_background, '→', eduBgField.value);
+                                    }
+                                    
+                                    // Populate work_experience select
+                                    const workExpField = editForm.elements.work_experience;
+                                    if (workExpField && m.work_experience) {
+                                        // Try direct key match first
+                                        workExpField.value = m.work_experience;
+                                        
+                                        // If not set, try to find by label match
+                                        if (!workExpField.value || workExpField.value === '') {
+                                            const options = Array.from(workExpField.options);
+                                            const matchedOption = options.find(opt => 
+                                                opt.text.toLowerCase() === m.work_experience.toLowerCase()
+                                            );
+                                            if (matchedOption) {
+                                                workExpField.value = matchedOption.value;
+                                            }
+                                        }
+                                        console.log('Set work_experience:', m.work_experience, '→', workExpField.value);
+                                    }
+                                    
+                                    // Helper function: Build label-to-key mapping from checkboxes
+                                    function buildLabelToKeyMap(checkboxes) {
+                                        const map = {};
+                                        checkboxes.forEach(cb => {
+                                            const label = cb.nextElementSibling?.textContent?.trim();
+                                            if (label) {
+                                                map[label.toLowerCase()] = cb.value;
+                                            }
+                                        });
+                                        return map;
+                                    }
+                                    
                                     // Populate checkboxes for working_days
-                                    const workingDays = (m.working_days || '').split(',').map(s => s.trim()).filter(Boolean);
-                                    editForm.querySelectorAll('input[name="working_days[]"]').forEach(cb => {
-                                        cb.checked = workingDays.includes(cb.value);
+                                    const workingDaysCbs = Array.from(editForm.querySelectorAll('input[name="working_days[]"]'));
+                                    const workingDaysMap = buildLabelToKeyMap(workingDaysCbs);
+                                    const workingDaysLabels = (m.working_days || '').split(',').map(s => s.trim()).filter(Boolean);
+                                    
+                                    console.log('Working Days Labels from API:', workingDaysLabels);
+                                    console.log('Working Days Label→Key Map:', workingDaysMap);
+                                    
+                                    workingDaysCbs.forEach(cb => {
+                                        // Try direct key match first
+                                        let shouldCheck = workingDaysLabels.includes(cb.value);
+                                        
+                                        // If no match, try label match
+                                        if (!shouldCheck) {
+                                            shouldCheck = workingDaysLabels.some(label => 
+                                                workingDaysMap[label.toLowerCase()] === cb.value
+                                            );
+                                        }
+                                        
+                                        cb.checked = shouldCheck;
+                                        if (shouldCheck) console.log('✓ Checked working_day:', cb.value);
                                     });
                                     
                                     // Populate checkboxes for working_hours
-                                    const workingHours = (m.working_hours || '').split(',').map(s => s.trim()).filter(Boolean);
-                                    editForm.querySelectorAll('input[name="working_hours[]"]').forEach(cb => {
-                                        cb.checked = workingHours.includes(cb.value);
+                                    const workingHoursCbs = Array.from(editForm.querySelectorAll('input[name="working_hours[]"]'));
+                                    const workingHoursMap = buildLabelToKeyMap(workingHoursCbs);
+                                    const workingHoursLabels = (m.working_hours || '').split(',').map(s => s.trim()).filter(Boolean);
+                                    
+                                    console.log('Working Hours Labels from API:', workingHoursLabels);
+                                    console.log('Working Hours Label→Key Map:', workingHoursMap);
+                                    
+                                    workingHoursCbs.forEach(cb => {
+                                        // Try direct key match first
+                                        let shouldCheck = workingHoursLabels.includes(cb.value);
+                                        
+                                        // If no match, try label match
+                                        if (!shouldCheck) {
+                                            shouldCheck = workingHoursLabels.some(label => 
+                                                workingHoursMap[label.toLowerCase()] === cb.value
+                                            );
+                                        }
+                                        
+                                        cb.checked = shouldCheck;
+                                        if (shouldCheck) console.log('✓ Checked working_hour:', cb.value);
                                     });
                                     
                                     // Populate checkboxes for benefits
-                                    const benefits = (m.benefits || '').split(',').map(s => s.trim()).filter(Boolean);
-                                    editForm.querySelectorAll('input[name="benefits[]"]').forEach(cb => {
-                                        cb.checked = benefits.includes(cb.value);
+                                    const benefitsCbs = Array.from(editForm.querySelectorAll('input[name="benefits[]"]'));
+                                    const benefitsMap = buildLabelToKeyMap(benefitsCbs);
+                                    const benefitsLabels = (m.benefits || '').split(',').map(s => s.trim()).filter(Boolean);
+                                    
+                                    console.log('Benefits Labels from API:', benefitsLabels);
+                                    console.log('Benefits Label→Key Map:', benefitsMap);
+                                    
+                                    benefitsCbs.forEach(cb => {
+                                        // Try direct key match first
+                                        let shouldCheck = benefitsLabels.includes(cb.value);
+                                        
+                                        // If no match, try label match
+                                        if (!shouldCheck) {
+                                            shouldCheck = benefitsLabels.some(label => 
+                                                benefitsMap[label.toLowerCase()] === cb.value
+                                            );
+                                        }
+                                        
+                                        cb.checked = shouldCheck;
+                                        if (shouldCheck) console.log('✓ Checked benefit:', cb.value);
                                     });
                                     
                                     document.getElementById('editMprErrors').classList.add('d-none');
@@ -2036,56 +2107,6 @@
                                 `<div class="text-danger py-4"><i class="bi bi-exclamation-triangle-fill fs-2 d-block mb-2"></i>${error.message}</div>`;
                         });
                 });
-            });
-
-            function escapeHtml(value) {
-                return String(value || '').replace(/[&<>'"]/g, char => ({
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    "'": '&#039;',
-                    '"': '&quot;'
-                } [char]));
-            }
-
-            function renderMprMarkdown(value) {
-                let html = escapeHtml(value);
-                html = html.replace(/^### (.+)$/gm, '<h5>$1</h5>')
-                    .replace(/^## (.+)$/gm, '<h4>$1</h4>')
-                    .replace(/^# (.+)$/gm, '<h3>$1</h3>')
-                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-                    .replace(/^(?:- )(.+)$/gm, '<li>$1</li>')
-                    .replace(/(?:<li>.*<\/li>\n?)+/g, match => `<ul>${match}</ul>`)
-                    .replace(/\n/g, '<br>');
-                return html || '<span class="text-muted">-</span>';
-            }
-
-            function showMprPreview() {
-                const form = document.getElementById('formEditMpr');
-                const value = name => form.elements[name]?.value || '-';
-                const section = (label, content, markdown = false) =>
-                    `<div class="mb-3"><div class="small text-uppercase text-muted fw-semibold mb-2">${label}</div><div class="p-2 border rounded ${markdown ? 'mpr-markdown-content' : ''}">${markdown ? renderMprMarkdown(content) : escapeHtml(content)}</div></div>`;
-                document.getElementById('mprPreviewContent').innerHTML =
-                    `<h6 class="text-primary fw-bold mb-3">MPR ${escapeHtml(currentMprId)}</h6>` +
-                    section('Posisi', value('position')) + section('Departemen / Divisi',
-                        `${value('department')} / ${value('division')}`) +
-                    section('Level / Status / Lokasi',
-                        `${value('job_level')} / ${value('employment_type')} / ${value('work_location')}`) +
-                    section('Jumlah / Target Bergabung',
-                        `${value('quantity')} Orang / ${value('expected_join_date')}`) + section('Alasan', value(
-                        'reason')) +
-                    section('Kualifikasi & Persyaratan', value('requirements'), true) + section('Uraian Tugas',
-                        value('job_description'), true);
-                bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPreviewMpr')).show();
-            }
-
-            const previewButton = document.getElementById('btnPreviewMpr');
-            if (previewButton) previewButton.addEventListener('click', showMprPreview);
-            const previewSaveButton = document.getElementById('btnPreviewSaveMpr');
-            if (previewSaveButton) previewSaveButton.addEventListener('click', () => {
-                bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPreviewMpr')).hide();
-                document.getElementById('formEditMpr').requestSubmit();
             });
 
             const editForm = document.getElementById('formEditMpr');
