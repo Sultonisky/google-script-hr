@@ -113,7 +113,7 @@ Route::domain(config('hris.domains.hris'))->middleware('web')->group(function ()
             Route::get('/candidates-csv', [ExportController::class, 'exportCandidatesCsv'])->name('candidates-csv');
         });
         Route::prefix('export')->name('export.')->middleware('can:view_employees')->group(function () {
-            Route::get('/employees-csv', [ExportController::class, 'exportEmployeesCsv'])->name('employees-csv');
+            Route::get('/employees-xlsx', [ExportController::class, 'exportEmployeesXlsx'])->name('employees-xlsx');
         });
         Route::prefix('mpr')->name('mpr.')->middleware('can:view_mpr')->group(function () {
             Route::get('/', [MprController::class, 'index'])->name('index');
@@ -266,7 +266,7 @@ if (app()->environment('local')) {
                 Route::get('/candidates-csv', [ExportController::class, 'exportCandidatesCsv'])->name('candidates-csv');
             });
             Route::prefix('export')->name('export.')->middleware('can:view_employees')->group(function () {
-                Route::get('/employees-csv', [ExportController::class, 'exportEmployeesCsv'])->name('employees-csv');
+                Route::get('/employees-xlsx', [ExportController::class, 'exportEmployeesXlsx'])->name('employees-xlsx');
             });
 
             Route::prefix('mpr')->name('mpr.')->middleware('can:view_mpr')->group(function () {

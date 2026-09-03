@@ -9,6 +9,13 @@ use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Services\PdfGeneratorService;
 use App\Services\ProbationService;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx as XlsxWriter;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Font;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ExportController extends Controller
@@ -388,122 +395,192 @@ class ExportController extends Controller
     }
 
     /**
-     * Export all Employees to CSV — full canonical schema dari EmployeeData DTO.
+     * Export all Employees to XLSX — full canonical schema dari EmployeeData DTO.
      * Authorization: can:view_employees (Admin + Super Admin).
      * MPR Requestor tidak dapat mengakses — dilindungi portal.access + hr.auth di route group.
      */
-    public function exportEmployeesCsv(): StreamedResponse
+    public function exportEmployeesXlsx(): StreamedResponse
     {
         $employees = $this->employeeRepo->getAll();
+
         $this->auditRepo->log(
             'Employee',
             null,
             'exported',
             'format',
             null,
-            ['format' => 'CSV', 'total_records' => $employees->count()],
+            ['format' => 'XLSX', 'total_records' => $employees->count()],
             session('hr_user.email', 'HR Administrator'),
             'Export'
         );
 
-        $filename = 'Data_Karyawan_MITO_' . now()->timezone('Asia/Jakarta')->format('Ymd_His') . '.csv';
+        $filename = 'Data_Karyawan_MITO_' . now()->timezone('Asia/Jakarta')->format('Ymd_His') . '.xlsx';
 
+        // ---------------------------------------------------------------
+        // Headers canonical — 36 kolom sesuai EmployeeData DTO
+        // ---------------------------------------------------------------
         $headers = [
-            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Employee ID',
+            'Full Name',
+            'Branch Name',
+            'Division',
+            'Department',
+            'Job Position (Location)',
+            'Job Position',
+            'Area Kerja',
+            'Lokasi Kerja',
+            'Job Level',
+            'Grade',
+            'Join Date',
+            'Status Employee',
+            'Direct Superior',
+            'Indirect Superior',
+            'Personal Email',
+            'Working Email',
+            'End Date (Contract)',
+            'Birth Place',
+            'Birth Date',
+            'Citizen ID Address',
+            'Residential Address',
+            'NIK - NPWP 16 digit',
+            'NPWP',
+            'PTKP Status',
+            'Bank Name',
+            'Bank Account',
+            'Bank Account Holder',
+            'BPJS Ketenagakerjaan',
+            'BPJS Kesehatan',
+            'Mobile Phone',
+            'Religion',
+            'Gender',
+            'Marital Status',
+            'Blood Type',
+            'Cost Center',
+        ];
+
+        // Kolom yang harus diperlakukan sebagai string (leading zeros / identifier)
+        // Index 0-based dari array $headers di atas
+        $stringColumns = [22, 23, 26, 28, 29, 30]; // NIK, NPWP, Bank Account, BPJS TK, BPJS KES, Mobile
+
+        // ---------------------------------------------------------------
+        // Build Spreadsheet
+        // ---------------------------------------------------------------
+        $spreadsheet = new Spreadsheet();
+        $sheet       = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Data Karyawan');
+
+        // --- Header row (row 1) ---
+        foreach ($headers as $colIndex => $headerText) {
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex + 1);
+            $cell = $sheet->getCell($colLetter . '1');
+            $cell->setValue($headerText);
+
+            // Style: bold, background #005BAC, white text
+            $sheet->getStyle($colLetter . '1')->applyFromArray([
+                'font' => [
+                    'bold'  => true,
+                    'color' => ['argb' => 'FFFFFFFF'],
+                    'size'  => 11,
+                ],
+                'fill' => [
+                    'fillType'   => Fill::FILL_SOLID,
+                    'startColor' => ['argb' => 'FF005BAC'],
+                ],
+                'alignment' => [
+                    'horizontal' => Alignment::HORIZONTAL_CENTER,
+                    'vertical'   => Alignment::VERTICAL_CENTER,
+                ],
+            ]);
+        }
+
+        // Freeze header row
+        $sheet->freezePane('A2');
+
+        // --- Data rows ---
+        $rowIndex = 2;
+        foreach ($employees as $e) {
+            $rowData = [
+                $e->employeeId          ?? '',
+                $e->fullName            ?? '',
+                $e->branchName          ?? '',
+                $e->division            ?? '',
+                $e->department          ?? '',
+                $e->jobPositionLocation ?? '',
+                $e->jobPosition         ?? '',
+                $e->areaKerja           ?? '',
+                $e->lokasiKerja         ?? '',
+                $e->jobLevel            ?? '',
+                $e->grade               ?? '',
+                $e->joinDate            ?? '',
+                $e->statusEmployee      ?? '',
+                $e->directSuperior      ?? '',
+                $e->indirectSuperior    ?? '',
+                $e->personalEmail       ?? '',
+                $e->workingEmail        ?? '',
+                $e->endDateContract     ?? '',
+                $e->birthPlace          ?? '',
+                $e->birthDate           ?? '',
+                $e->citizenIdAddress    ?? '',
+                $e->residentialAddress  ?? '',
+                $e->nikNpwp             ?? '',  // string — index 22
+                $e->npwp                ?? '',  // string — index 23
+                $e->ptkpStatus          ?? '',
+                $e->bankName            ?? '',
+                $e->bankAccount         ?? '',  // string — index 26
+                $e->bankAccountHolder   ?? '',
+                $e->bpjsKetenagakerjaan ?? '',  // string — index 28
+                $e->bpjsKesehatan       ?? '',  // string — index 29
+                $e->mobilePhone         ?? '',  // string — index 30
+                $e->religion            ?? '',
+                $e->gender              ?? '',
+                $e->maritalStatus       ?? '',
+                $e->bloodType           ?? '',
+                $e->costCenter          ?? '',
+            ];
+
+            foreach ($rowData as $colIndex => $value) {
+                $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex + 1);
+                $cellRef   = $colLetter . $rowIndex;
+
+                if (in_array($colIndex, $stringColumns, true) && $value !== '') {
+                    // Paksa DataType::TYPE_STRING agar NIK/NPWP/dll tidak dikonversi ke number/scientific notation
+                    $sheet->getCell($cellRef)->setValueExplicit($value, DataType::TYPE_STRING);
+                } else {
+                    $sheet->getCell($cellRef)->setValue($value);
+                }
+            }
+
+            $rowIndex++;
+        }
+
+        // Auto-size columns agar header tidak terpotong
+        foreach (range(1, count($headers)) as $colIndex) {
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex);
+            $sheet->getColumnDimension($colLetter)->setAutoSize(true);
+        }
+
+        // Set document properties
+        $spreadsheet->getProperties()
+            ->setCreator('MITO HRIS')
+            ->setTitle('Data Karyawan MITO')
+            ->setDescription('Export data karyawan dari MITO HRIS — ' . now()->timezone('Asia/Jakarta')->format('d/m/Y H:i'));
+
+        // ---------------------------------------------------------------
+        // Stream response
+        // ---------------------------------------------------------------
+        $responseHeaders = [
+            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
             'Cache-Control'       => 'no-cache, no-store, must-revalidate',
             'Pragma'              => 'no-cache',
             'Expires'             => '0',
         ];
 
-        return response()->stream(function () use ($employees) {
-            $handle = fopen('php://output', 'w');
-
-            // UTF-8 BOM agar Excel membaca encoding dengan benar
-            fwrite($handle, "\xEF\xBB\xBF");
-
-            fputcsv($handle, [
-                'Employee ID',
-                'Full Name',
-                'Branch Name',
-                'Division',
-                'Department',
-                'Job Position (Location)',
-                'Job Position',
-                'Area Kerja',
-                'Lokasi Kerja',
-                'Job Level',
-                'Grade',
-                'Join Date',
-                'Status Employee',
-                'Direct Superior',
-                'Indirect Superior',
-                'Personal Email',
-                'Working Email',
-                'End Date (Contract)',
-                'Birth Place',
-                'Birth Date',
-                'Citizen ID Address',
-                'Residential Address',
-                'NIK - NPWP 16 digit',
-                'NPWP',
-                'PTKP Status',
-                'Bank Name',
-                'Bank Account',
-                'Bank Account Holder',
-                'BPJS Ketenagakerjaan',
-                'BPJS Kesehatan',
-                'Mobile Phone',
-                'Religion',
-                'Gender',
-                'Marital Status',
-                'Blood Type',
-                'Cost Center',
-            ]);
-
-            foreach ($employees as $e) {
-                fputcsv($handle, [
-                    $e->employeeId ?? '',
-                    $e->fullName ?? '',
-                    $e->branchName ?? '',
-                    $e->division ?? '',
-                    $e->department ?? '',
-                    $e->jobPositionLocation ?? '',
-                    $e->jobPosition ?? '',
-                    $e->areaKerja ?? '',
-                    $e->lokasiKerja ?? '',
-                    $e->jobLevel ?? '',
-                    $e->grade ?? '',
-                    $e->joinDate ?? '',
-                    $e->statusEmployee ?? '',
-                    $e->directSuperior ?? '',
-                    $e->indirectSuperior ?? '',
-                    $e->personalEmail ?? '',
-                    $e->workingEmail ?? '',
-                    $e->endDateContract ?? '',
-                    $e->birthPlace ?? '',
-                    $e->birthDate ?? '',
-                    $e->citizenIdAddress ?? '',
-                    $e->residentialAddress ?? '',
-                    // Prefix tab agar Excel tidak convert ke scientific notation
-                    "\t" . ($e->nikNpwp ?? ''),
-                    "\t" . ($e->npwp ?? ''),
-                    $e->ptkpStatus ?? '',
-                    $e->bankName ?? '',
-                    "\t" . ($e->bankAccount ?? ''),
-                    $e->bankAccountHolder ?? '',
-                    "\t" . ($e->bpjsKetenagakerjaan ?? ''),
-                    "\t" . ($e->bpjsKesehatan ?? ''),
-                    "\t" . ($e->mobilePhone ?? ''),
-                    $e->religion ?? '',
-                    $e->gender ?? '',
-                    $e->maritalStatus ?? '',
-                    $e->bloodType ?? '',
-                    $e->costCenter ?? '',
-                ]);
-            }
-
-            fclose($handle);
-        }, 200, $headers);
+        return response()->stream(function () use ($spreadsheet) {
+            $writer = new XlsxWriter($spreadsheet);
+            $writer->save('php://output');
+            $spreadsheet->disconnectWorksheets();
+            unset($spreadsheet);
+        }, 200, $responseHeaders);
     }
 }

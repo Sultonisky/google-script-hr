@@ -63,7 +63,7 @@
                     <h6>Daftar Karyawan</h6>
                     <div class="panel-subtitle">Klik baris atau nama untuk melihat detail lengkap dari spreadsheet.</div>
                 </div>
-                {{-- Export CSV — server-side dilindungi can:view_employees di route --}}
+                {{-- Export XLSX — server-side dilindungi can:view_employees di route --}}
                 @can('view_employees')
                     <div class="export-btns d-flex flex-wrap gap-2">
                         @can('manage_employees')
@@ -88,11 +88,11 @@
                                 <i class="bi bi-box-arrow-right me-1"></i>Offboarding
                             </button>
                         @endcan
-                        <a href="{{ route('hr.export.employees-csv') }}"
+                        <a href="{{ route('hr.export.employees-xlsx') }}"
                             class="btn btn-sm fw-semibold text-white"
                             style="background:#005BAC;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
-                            id="btnExportEmployeeCsv"
-                            title="Export seluruh data karyawan ke CSV">
+                            id="btnExportEmployeeXlsx"
+                            title="Export seluruh data karyawan ke Excel (XLSX)">
                             <i class="bi bi-download me-1"></i>Export
                         </a>
                     </div>
