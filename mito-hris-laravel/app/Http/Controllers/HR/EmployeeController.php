@@ -86,10 +86,22 @@ class EmployeeController extends Controller
             );
         }
 
-        $sortFilter = $request->query('sort', 'name_asc');
+        // Sort logic: check date_sort first (Terbaru/Terlama dropdown), then sort (A-Z/Z-A dropdown)
+        $dateSortParam = $request->query('date_sort');
+        $nameSortParam = $request->query('sort');
+        
+        // Priority: date_sort > sort > default (join_date_asc)
+        if ($dateSortParam) {
+            $sortFilter = $dateSortParam;
+        } elseif ($nameSortParam) {
+            $sortFilter = $nameSortParam;
+        } else {
+            $sortFilter = 'join_date_asc'; // Default ke terlama
+        }
         
         // Apply sorting based on sort filter
         $filtered = match($sortFilter) {
+            'name_asc' => $filtered->sortBy(fn($e) => strtolower(trim($e->fullName ?? ''))),
             'name_desc' => $filtered->sortByDesc(fn($e) => strtolower(trim($e->fullName ?? ''))),
             'emp_id_asc' => $filtered->sortBy(fn($e) => strtolower(trim($e->employeeId ?? ''))),
             'emp_id_desc' => $filtered->sortByDesc(fn($e) => strtolower(trim($e->employeeId ?? ''))),
@@ -103,7 +115,7 @@ class EmployeeController extends Controller
             'position_desc' => $filtered->sortByDesc(fn($e) => strtolower(trim($e->jobPosition ?? ''))),
             'join_date_asc' => $filtered->sortBy(fn($e) => $e->joinDate ?? '9999-99-99'),
             'join_date_desc' => $filtered->sortByDesc(fn($e) => $e->joinDate ?? '0000-00-00'),
-            // DEFAULT: Sort by join_date_asc (oldest to newest) instead of name_asc
+            // DEFAULT: Sort by join_date_asc (oldest to newest)
             default => $filtered->sortBy(fn($e) => $e->joinDate ?? '9999-99-99'),
         };
 
