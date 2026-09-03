@@ -458,6 +458,113 @@
             <!-- Access Information Notice -->
 
         </div>
+
+        <!-- SECTION: ASSET MANAGEMENT -->
+        <div class="container mt-4">
+            <h2 class="section-title">Asset Management</h2>
+            <p class="section-desc">Pengelolaan aset perusahaan untuk mendukung operasional dan inventarisasi aset tetap.</p>
+
+            <div class="row g-3">
+                <!-- Asset 1: Building -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="module-card">
+                        <div class="module-icon">
+                            <i class="bi bi-building"></i>
+                        </div>
+                        <h3 class="module-title">Building & Property</h3>
+                        <p class="module-desc">
+                            Pencatatan gedung, properti, dan fasilitas kantor beserta status kepemilikan dan lokasi penempatan.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Asset 2: Vehicle -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="module-card">
+                        <div class="module-icon">
+                            <i class="bi bi-truck"></i>
+                        </div>
+                        <h3 class="module-title">Vehicle & Transport</h3>
+                        <p class="module-desc">
+                            Administrasi kendaraan operasional, jadwal maintenance, dan dokumentasi STNK/BPKB armada perusahaan.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Asset 3: Office Equipment -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="module-card">
+                        <div class="module-icon">
+                            <i class="bi bi-briefcase-fill"></i>
+                        </div>
+                        <h3 class="module-title">Office Equipment</h3>
+                        <p class="module-desc">
+                            Inventarisasi peralatan kantor seperti meja, kursi, filing cabinet, dan perlengkapan kerja lainnya.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Asset 4: Electronics -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="module-card">
+                        <div class="module-icon">
+                            <i class="bi bi-laptop"></i>
+                        </div>
+                        <h3 class="module-title">Electronics & IT</h3>
+                        <p class="module-desc">
+                            Manajemen aset elektronik seperti komputer, printer, server, dan perangkat IT operasional lainnya.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION: SERTIFIKASI & COMPLIANCE -->
+        <div class="container mt-4">
+            <h2 class="section-title">Sertifikasi & Compliance</h2>
+            <p class="section-desc">Dokumentasi standar mutu, sertifikasi operasional, dan kepatuhan regulasi perusahaan.</p>
+
+            <div class="row g-3">
+                <!-- Cert 1: SNI -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="module-card">
+                        <div class="module-icon">
+                            <i class="bi bi-patch-check-fill"></i>
+                        </div>
+                        <h3 class="module-title">SNI (Standar Nasional Indonesia)</h3>
+                        <p class="module-desc">
+                            Dokumentasi sertifikasi SNI untuk produk dan layanan yang memenuhi standar mutu nasional Indonesia.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Cert 2: ISO -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="module-card">
+                        <div class="module-icon">
+                            <i class="bi bi-award-fill"></i>
+                        </div>
+                        <h3 class="module-title">ISO Certification</h3>
+                        <p class="module-desc">
+                            Sertifikasi ISO 9001 (Quality), ISO 14001 (Environmental), dan standar internasional lainnya.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Cert 3: K3 -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="module-card">
+                        <div class="module-icon">
+                            <i class="bi bi-shield-fill-check"></i>
+                        </div>
+                        <h3 class="module-title">K3 (Kesehatan & Keselamatan Kerja)</h3>
+                        <p class="module-desc">
+                            Dokumentasi program K3, audit keselamatan kerja, dan sertifikasi SMK3 untuk kepatuhan regulasi.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </main>
 
     <!-- Footer -->
