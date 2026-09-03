@@ -957,12 +957,12 @@
                                                         <a href="{{ route('hr.mpr.pdf', ['id' => $mpr->mprNumber]) }}"
                                                             target="_blank" class="btn btn-sm btn-outline-danger"
                                                             title="Unduh PDF Resmi">
-                                                            <i class="bi bi-file-earmark-pdf-fill"></i>
+                                                            <i class="bi bi-download"></i>
                                                         </a>
                                                     @else
                                                         <button type="button" class="btn btn-sm btn-outline-secondary" disabled
                                                             title="Nomor MPR tidak tersedia">
-                                                            <i class="bi bi-file-earmark-pdf-fill"></i>
+                                                            <i class="bi bi-download"></i>
                                                         </button>
                                                     @endif
                                                 @endcan
