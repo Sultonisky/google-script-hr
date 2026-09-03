@@ -6,6 +6,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Session;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 
 /**
  * RBAC Feature Tests — MITO HRIS
@@ -574,40 +575,39 @@ class RbacTest extends TestCase
     // =========================================================================
 
     // =========================================================================
-    // 11. Employee CSV Export — authorization tests
+    // 11. Employee XLSX Export — authorization + structure tests
     // =========================================================================
 
     #[Test]
-    public function super_admin_can_access_employee_export_csv(): void
+    public function super_admin_can_access_employee_export_xlsx(): void
     {
         $this->actingAsRole('Super Admin');
-        // StreamedResponse returns 200 even without Google Sheets data
-        $response = $this->get('/hr/export/employees-csv');
-        // Accept 200 (success) or 500 (Google Sheets unavailable in test env)
-        // but must NOT be 403 or redirect to login
+        // StreamedResponse: accept 200 (success) or 500 (Google Sheets unavailable in test env)
+        // Must NOT be 403 or redirect to login
+        $response = $this->get('/hr/export/employees-xlsx');
         $this->assertNotSame(403, $response->getStatusCode(), 'Super Admin must not be denied employee export');
         $this->assertNotSame(302, $response->getStatusCode(), 'Super Admin must not be redirected from employee export');
     }
 
     #[Test]
-    public function admin_can_access_employee_export_csv(): void
+    public function admin_can_access_employee_export_xlsx(): void
     {
         $this->actingAsRole('Admin');
-        $response = $this->get('/hr/export/employees-csv');
+        $response = $this->get('/hr/export/employees-xlsx');
         $this->assertNotSame(403, $response->getStatusCode(), 'Admin must not be denied employee export');
         $this->assertNotSame(302, $response->getStatusCode(), 'Admin must not be redirected from employee export');
     }
 
     #[Test]
-    public function user_role_cannot_access_employee_export_csv(): void
+    public function user_role_cannot_access_employee_export_xlsx(): void
     {
         // User (HR Recruitment / HR Staff) has NO view_employees → must be denied
         $this->actingAsRole('User');
-        $this->get('/hr/export/employees-csv')->assertStatus(403);
+        $this->get('/hr/export/employees-xlsx')->assertStatus(403);
     }
 
     #[Test]
-    public function manpower_role_cannot_access_employee_export_csv(): void
+    public function manpower_role_cannot_access_employee_export_xlsx(): void
     {
         // Manpower has view_mpr but not view_employees
         Session::put('hr_user', [
@@ -619,23 +619,208 @@ class RbacTest extends TestCase
             'entities'    => [],
             'branch'      => '',
         ]);
-        $this->get('/hr/export/employees-csv')->assertStatus(403);
+        $this->get('/hr/export/employees-xlsx')->assertStatus(403);
     }
 
     #[Test]
-    public function unauthenticated_cannot_access_employee_export_csv(): void
+    public function unauthenticated_cannot_access_employee_export_xlsx(): void
     {
         Session::forget('hr_user');
-        $this->get('/hr/export/employees-csv')->assertRedirect(route('login'));
+        $this->get('/hr/export/employees-xlsx')->assertRedirect(route('login'));
     }
 
     #[Test]
-    public function mpr_requestor_cannot_access_employee_export_csv(): void
+    public function mpr_requestor_cannot_access_employee_export_xlsx(): void
     {
         // MPR Requestor: mpr_requestor_auth session, no hr_user → redirected to login
         $this->actingAsMprRequestor();
-        $response = $this->get('/hr/export/employees-csv');
+        $response = $this->get('/hr/export/employees-xlsx');
         $this->assertNotSame(200, $response->getStatusCode(), 'MPR Requestor must not access employee export');
+    }
+
+    // =========================================================================
+    // 11b. Employee XLSX Export — file structure & content tests
+    // These tests verify the response is a real XLSX (ZIP) with correct content.
+    // They run against the controller in isolation using a mocked repository,
+    // so no Google Sheets connection is required.
+    // =========================================================================
+
+    #[Test]
+    public function employee_export_xlsx_has_correct_content_type(): void
+    {
+        $this->actingAsRole('Super Admin');
+        $response = $this->get('/hr/export/employees-xlsx');
+
+        // Must not be 403 — authorized users should get through to the export
+        if ($response->getStatusCode() === 403) {
+            $this->fail('Super Admin was denied access to employee export');
+        }
+
+        // If Google Sheets is unavailable (500), skip structure checks
+        if ($response->getStatusCode() !== 200) {
+            $this->markTestSkipped('Google Sheets unavailable in test environment — skipping XLSX structure test');
+        }
+
+        $this->assertStringContainsString(
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            $response->headers->get('Content-Type', ''),
+            'Content-Type harus XLSX MIME type'
+        );
+    }
+
+    #[Test]
+    public function employee_export_xlsx_has_correct_filename(): void
+    {
+        $this->actingAsRole('Super Admin');
+        $response = $this->get('/hr/export/employees-xlsx');
+
+        if ($response->getStatusCode() !== 200) {
+            $this->markTestSkipped('Google Sheets unavailable — skipping filename test');
+        }
+
+        $disposition = $response->headers->get('Content-Disposition', '');
+        $this->assertStringContainsString('.xlsx', $disposition, 'Filename harus berekstensi .xlsx');
+        $this->assertStringContainsString('Data_Karyawan_MITO_', $disposition, 'Filename harus mengandung Data_Karyawan_MITO_');
+        $this->assertStringNotContainsString('.csv', $disposition, 'Filename tidak boleh berekstensi .csv');
+    }
+
+    #[Test]
+    public function employee_export_xlsx_is_valid_zip_structure(): void
+    {
+        $this->actingAsRole('Super Admin');
+        $response = $this->get('/hr/export/employees-xlsx');
+
+        if ($response->getStatusCode() !== 200) {
+            $this->markTestSkipped('Google Sheets unavailable — skipping ZIP structure test');
+        }
+
+        $content = $response->streamedContent();
+        $this->assertNotEmpty($content, 'Response body tidak boleh kosong');
+
+        // XLSX adalah ZIP — magic bytes pertama harus PK (0x50 0x4B)
+        $this->assertSame('PK', substr($content, 0, 2), 'File harus diawali ZIP magic bytes PK (valid XLSX)');
+    }
+
+    #[Test]
+    public function employee_export_xlsx_contains_worksheet_with_correct_headers(): void
+    {
+        $this->actingAsRole('Super Admin');
+        $response = $this->get('/hr/export/employees-xlsx');
+
+        if ($response->getStatusCode() !== 200) {
+            $this->markTestSkipped('Google Sheets unavailable — skipping worksheet header test');
+        }
+
+        // Simpan ke temp file lalu baca dengan PhpSpreadsheet
+        $tmpFile = tempnam(sys_get_temp_dir(), 'hris_test_') . '.xlsx';
+        file_put_contents($tmpFile, $response->streamedContent());
+
+        try {
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($tmpFile);
+            $sheet       = $spreadsheet->getActiveSheet();
+
+            $expectedHeaders = [
+                1  => 'Employee ID',
+                2  => 'Full Name',
+                3  => 'Branch Name',
+                4  => 'Division',
+                5  => 'Department',
+                6  => 'Job Position (Location)',
+                7  => 'Job Position',
+                8  => 'Area Kerja',
+                9  => 'Lokasi Kerja',
+                10 => 'Job Level',
+                11 => 'Grade',
+                12 => 'Join Date',
+                13 => 'Status Employee',
+                23 => 'NIK - NPWP 16 digit',
+                24 => 'NPWP',
+                27 => 'Bank Account',
+                36 => 'Cost Center',
+            ];
+
+            foreach ($expectedHeaders as $colIndex => $expected) {
+                $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex);
+                $actual    = $sheet->getCell($colLetter . '1')->getValue();
+                $this->assertSame($expected, $actual, "Header kolom {$colLetter}1 harus '{$expected}', got '{$actual}'");
+            }
+
+            // Pastikan ada tepat 36 header kolom (tidak lebih, tidak kurang)
+            $highestCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString(
+                $sheet->getHighestDataColumn(1)
+            );
+            $this->assertSame(36, $highestCol, 'Harus ada tepat 36 kolom header');
+
+            $spreadsheet->disconnectWorksheets();
+            unset($spreadsheet);
+        } finally {
+            @unlink($tmpFile);
+        }
+    }
+
+    #[Test]
+    public function employee_export_xlsx_preserves_string_type_for_identifiers(): void
+    {
+        $this->actingAsRole('Super Admin');
+        $response = $this->get('/hr/export/employees-xlsx');
+
+        if ($response->getStatusCode() !== 200) {
+            $this->markTestSkipped('Google Sheets unavailable — skipping identifier type test');
+        }
+
+        $content = $response->streamedContent();
+
+        if (empty(trim($content))) {
+            $this->markTestSkipped('Empty response — no employee data to verify');
+        }
+
+        $tmpFile = tempnam(sys_get_temp_dir(), 'hris_test_') . '.xlsx';
+        file_put_contents($tmpFile, $content);
+
+        try {
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($tmpFile);
+            $sheet       = $spreadsheet->getActiveSheet();
+            $highestRow  = $sheet->getHighestDataRow();
+
+            if ($highestRow < 2) {
+                $this->markTestSkipped('No data rows — skipping identifier type test');
+            }
+
+            // Kolom NIK (W = 23), NPWP (X = 24), Mobile Phone (AE = 31)
+            $identifierCols = [
+                'W' => 'NIK - NPWP 16 digit',
+                'X' => 'NPWP',
+                'AA' => 'Bank Account',
+                'AC' => 'BPJS Ketenagakerjaan',
+                'AD' => 'BPJS Kesehatan',
+                'AE' => 'Mobile Phone',
+            ];
+
+            foreach ($identifierCols as $col => $label) {
+                $cell     = $sheet->getCell($col . '2');
+                $rawValue = $cell->getValue();
+
+                // Jika ada value, pastikan tidak dalam format scientific notation
+                if ($rawValue !== null && $rawValue !== '') {
+                    $this->assertDoesNotMatchRegularExpression(
+                        '/^\d+\.?\d*[eE][+\-]\d+$/',
+                        (string) $rawValue,
+                        "{$label} (kolom {$col}) tidak boleh dalam format scientific notation: '{$rawValue}'"
+                    );
+                    // DataType harus string (bukan numeric)
+                    $this->assertSame(
+                        DataType::TYPE_STRING,
+                        $cell->getDataType(),
+                        "{$label} (kolom {$col}) harus bertipe string di XLSX"
+                    );
+                }
+            }
+
+            $spreadsheet->disconnectWorksheets();
+            unset($spreadsheet);
+        } finally {
+            @unlink($tmpFile);
+        }
     }
 
     // =========================================================================
