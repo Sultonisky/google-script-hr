@@ -388,45 +388,121 @@ class ExportController extends Controller
     }
 
     /**
-     * Export all Employees to CSV (1:1 with backend/Export.gs).
+     * Export all Employees to CSV — full canonical schema dari EmployeeData DTO.
+     * Authorization: can:view_employees (Admin + Super Admin).
+     * MPR Requestor tidak dapat mengakses — dilindungi portal.access + hr.auth di route group.
      */
     public function exportEmployeesCsv(): StreamedResponse
     {
         $employees = $this->employeeRepo->getAll();
-        $this->auditRepo->log('Employee', null, 'exported', 'format', null, ['format' => 'CSV', 'total_records' => $employees->count()], session('hr_user.email', 'HR Administrator'), 'Export');
+        $this->auditRepo->log(
+            'Employee',
+            null,
+            'exported',
+            'format',
+            null,
+            ['format' => 'CSV', 'total_records' => $employees->count()],
+            session('hr_user.email', 'HR Administrator'),
+            'Export'
+        );
+
+        $filename = 'Data_Karyawan_MITO_' . now()->timezone('Asia/Jakarta')->format('Ymd_His') . '.csv';
 
         $headers = [
-            'Content-Type'        => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="Data_Karyawan_MITO_' . date('Ymd_His') . '.csv"',
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Cache-Control'       => 'no-cache, no-store, must-revalidate',
+            'Pragma'              => 'no-cache',
+            'Expires'             => '0',
         ];
 
         return response()->stream(function () use ($employees) {
             $handle = fopen('php://output', 'w');
+
+            // UTF-8 BOM agar Excel membaca encoding dengan benar
+            fwrite($handle, "\xEF\xBB\xBF");
+
             fputcsv($handle, [
                 'Employee ID',
-                'Nama Lengkap',
-                'NIK',
-                'Email',
-                'No Telepon',
-                'Departemen',
-                'Posisi',
+                'Full Name',
+                'Branch Name',
+                'Division',
+                'Department',
+                'Job Position (Location)',
+                'Job Position',
+                'Area Kerja',
+                'Lokasi Kerja',
+                'Job Level',
+                'Grade',
+                'Join Date',
                 'Status Employee',
-                'Tanggal Masuk'
+                'Direct Superior',
+                'Indirect Superior',
+                'Personal Email',
+                'Working Email',
+                'End Date (Contract)',
+                'Birth Place',
+                'Birth Date',
+                'Citizen ID Address',
+                'Residential Address',
+                'NIK - NPWP 16 digit',
+                'NPWP',
+                'PTKP Status',
+                'Bank Name',
+                'Bank Account',
+                'Bank Account Holder',
+                'BPJS Ketenagakerjaan',
+                'BPJS Kesehatan',
+                'Mobile Phone',
+                'Religion',
+                'Gender',
+                'Marital Status',
+                'Blood Type',
+                'Cost Center',
             ]);
 
             foreach ($employees as $e) {
                 fputcsv($handle, [
-                    $e->employeeId,
-                    $e->fullName,
-                    "'" . $e->nikNpwp,
-                    $e->personalEmail,
-                    "'" . $e->mobilePhone,
-                    $e->department,
-                    $e->jobPosition,
-                    $e->statusEmployee,
-                    $e->joinDate
+                    $e->employeeId ?? '',
+                    $e->fullName ?? '',
+                    $e->branchName ?? '',
+                    $e->division ?? '',
+                    $e->department ?? '',
+                    $e->jobPositionLocation ?? '',
+                    $e->jobPosition ?? '',
+                    $e->areaKerja ?? '',
+                    $e->lokasiKerja ?? '',
+                    $e->jobLevel ?? '',
+                    $e->grade ?? '',
+                    $e->joinDate ?? '',
+                    $e->statusEmployee ?? '',
+                    $e->directSuperior ?? '',
+                    $e->indirectSuperior ?? '',
+                    $e->personalEmail ?? '',
+                    $e->workingEmail ?? '',
+                    $e->endDateContract ?? '',
+                    $e->birthPlace ?? '',
+                    $e->birthDate ?? '',
+                    $e->citizenIdAddress ?? '',
+                    $e->residentialAddress ?? '',
+                    // Prefix tab agar Excel tidak convert ke scientific notation
+                    "\t" . ($e->nikNpwp ?? ''),
+                    "\t" . ($e->npwp ?? ''),
+                    $e->ptkpStatus ?? '',
+                    $e->bankName ?? '',
+                    "\t" . ($e->bankAccount ?? ''),
+                    $e->bankAccountHolder ?? '',
+                    "\t" . ($e->bpjsKetenagakerjaan ?? ''),
+                    "\t" . ($e->bpjsKesehatan ?? ''),
+                    "\t" . ($e->mobilePhone ?? ''),
+                    $e->religion ?? '',
+                    $e->gender ?? '',
+                    $e->maritalStatus ?? '',
+                    $e->bloodType ?? '',
+                    $e->costCenter ?? '',
                 ]);
             }
+
             fclose($handle);
         }, 200, $headers);
     }
