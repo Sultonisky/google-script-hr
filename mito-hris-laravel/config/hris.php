@@ -29,8 +29,7 @@ return [
         'approval_divisions' => [
             'Aditya Adipradhana',
             'Destyani Wijaya',
-            'Irenceva',
-            'Nadia Witaningtyas',
+            'Hisar Hesti',
             'Trian Nugroho',
         ],
         // Profil perusahaan untuk header/alamat PDF — di-resolve dari kode entity.
