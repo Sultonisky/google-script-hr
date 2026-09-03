@@ -234,7 +234,8 @@ class GoogleSheetsService
                 'values' => [$this->sanitizeRow($rowValues)]
             ]);
 
-            $params = ['valueInputOption' => 'USER_ENTERED'];
+            // RAW: preserve leading apostrophes and prevent scientific notation for long numbers
+            $params = ['valueInputOption' => 'RAW'];
             $service->spreadsheets_values->append($this->spreadsheetId, "{$sheetName}!A:A", $body, $params);
 
             $this->clearCache($sheetName);
@@ -262,7 +263,8 @@ class GoogleSheetsService
                 }, $rows)
             ]);
 
-            $params = ['valueInputOption' => 'USER_ENTERED'];
+            // RAW: preserve leading apostrophes and prevent scientific notation for long numbers
+            $params = ['valueInputOption' => 'RAW'];
             $service->spreadsheets_values->append($this->spreadsheetId, "{$sheetName}!A:A", $body, $params);
 
             $this->clearCache($sheetName);
@@ -285,7 +287,8 @@ class GoogleSheetsService
                 'values' => [$this->sanitizeRow($rowValues)]
             ]);
 
-            $params = ['valueInputOption' => 'USER_ENTERED'];
+            // RAW: preserve leading apostrophes and prevent scientific notation for long numbers
+            $params = ['valueInputOption' => 'RAW'];
             $service->spreadsheets_values->update($this->spreadsheetId, $range, $body, $params);
 
             $this->clearCache($sheetName);
@@ -308,7 +311,8 @@ class GoogleSheetsService
                 'values' => $this->sanitizeValues($values)
             ]);
 
-            $params = ['valueInputOption' => 'USER_ENTERED'];
+            // RAW: preserve leading apostrophes and prevent scientific notation for long numbers
+            $params = ['valueInputOption' => 'RAW'];
             $service->spreadsheets_values->update($this->spreadsheetId, $fullRange, $body, $params);
 
             $this->clearCache($sheetName);
@@ -457,6 +461,7 @@ class GoogleSheetsService
             $service   = $this->factory->getSheetsService();
             $range     = "{$sheetName}!A1";
             $body      = new ValueRange(['values' => [$this->sanitizeRow($headers)]]);
+            // USER_ENTERED untuk header agar formula parsing tetap jalan (kalau ada rumus di header)
             $params    = ['valueInputOption' => 'USER_ENTERED'];
             $service->spreadsheets_values->update($this->spreadsheetId, $range, $body, $params);
             $this->clearCache($sheetName);

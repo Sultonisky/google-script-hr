@@ -72,13 +72,13 @@ class CandidateData
             recruitmentId: $row['Recruitment ID'] ?? null,
             createdDate: $row['Created Date'] ?? null,
             fullName: $row['Full Name'] ?? null,
-            nik: ltrim($row['NIK'] ?? '', "'"),
+            nik: self::sanitizeNik($row['NIK'] ?? ''),
             birthDate: $row['Birth Date'] ?? null,
             age: $row['Age'] ?? null,
             gender: $row['Gender'] ?? null,
             maritalStatus: $row['Marital Status'] ?? null,
             email: $row['Email'] ?? null,
-            phone: ltrim($row['Phone'] ?? '', "'"),
+            phone: self::sanitizePhone($row['Phone'] ?? ''),
             address: $row['Address'] ?? null,
             city: $row['City'] ?? null,
             positionApplied: $row['Position Applied'] ?? null,
@@ -185,5 +185,45 @@ class CandidateData
             $this->createdBy ?? 'Candidate',
             $this->updatedAt ?? now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
         ];
+    }
+
+    /**
+     * Sanitize NIK yang mungkin dalam format scientific notation atau dengan prefix apostrophe.
+     * Input: "3.33E+15" atau "'3330000000000000" atau "3330000000000000"
+     * Output: "3330000000000000"
+     */
+    private static function sanitizeNik(?string $value): ?string
+    {
+        if ($value === null || trim($value) === '') {
+            return null;
+        }
+
+        $cleaned = ltrim(trim($value), "'");
+
+        // Deteksi scientific notation (mengandung E+ atau e+)
+        if (stripos($cleaned, 'E') !== false) {
+            // Konversi dari scientific notation ke integer string
+            $number = floatval($cleaned);
+            if (!is_nan($number) && $number > 0) {
+                // sprintf dengan %.0f untuk menghindari scientific notation
+                $cleaned = sprintf('%.0f', $number);
+            }
+        }
+
+        return $cleaned;
+    }
+
+    /**
+     * Sanitize Phone yang mungkin dengan prefix apostrophe.
+     * Input: "'081234567890" atau "081234567890"
+     * Output: "081234567890"
+     */
+    private static function sanitizePhone(?string $value): ?string
+    {
+        if ($value === null || trim($value) === '') {
+            return null;
+        }
+
+        return ltrim(trim($value), "'");
     }
 }

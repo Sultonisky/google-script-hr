@@ -93,15 +93,15 @@ class EmployeeData
             birthDate: $row['Birth Date'] ?? null,
             citizenIdAddress: $row['Citizen ID Address'] ?? null,
             residentialAddress: $row['Residential Address'] ?? null,
-            nikNpwp: ltrim($row['NIK - NPWP 16 digit'] ?? '', "'"),
-            npwp: ltrim($row['NPWP'] ?? '', "'"),
+            nikNpwp: self::sanitizeNumberText($row['NIK - NPWP 16 digit'] ?? ''),
+            npwp: self::sanitizeNumberText($row['NPWP'] ?? ''),
             ptkpStatus: $row['PTKP Status'] ?? null,
             bankName: $row['Bank Name'] ?? null,
-            bankAccount: ltrim($row['Bank Account'] ?? '', "'"),
+            bankAccount: self::sanitizeNumberText($row['Bank Account'] ?? ''),
             bankAccountHolder: $row['Bank Account Holder'] ?? null,
-            bpjsKetenagakerjaan: ltrim($row['BPJS Ketenagakerjaan'] ?? '', "'"),
-            bpjsKesehatan: ltrim($row['BPJS Kesehatan'] ?? '', "'"),
-            mobilePhone: ltrim($row['Mobile Phone'] ?? '', "'"),
+            bpjsKetenagakerjaan: self::sanitizeNumberText($row['BPJS Ketenagakerjaan'] ?? ''),
+            bpjsKesehatan: self::sanitizeNumberText($row['BPJS Kesehatan'] ?? ''),
+            mobilePhone: self::sanitizeNumberText($row['Mobile Phone'] ?? ''),
             religion: $row['Religion'] ?? null,
             gender: $row['Gender'] ?? null,
             maritalStatus: $row['Marital Status'] ?? null,
@@ -181,5 +181,33 @@ class EmployeeData
             $this->createdAt ?? now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
             $this->updatedAt ?? now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
         ];
+    }
+
+    /**
+     * Sanitize number-as-text fields (NIK, Phone, NPWP, BPJS, Bank Account) yang 
+     * mungkin dalam format scientific notation atau dengan prefix apostrophe.
+     * 
+     * Input:  "3.33E+15" atau "'3330000000000000" atau "3330000000000000"
+     * Output: "3330000000000000"
+     */
+    private static function sanitizeNumberText(?string $value): ?string
+    {
+        if ($value === null || trim($value) === '') {
+            return null;
+        }
+
+        $cleaned = ltrim(trim($value), "'");
+
+        // Deteksi scientific notation (mengandung E+ atau e+)
+        if (stripos($cleaned, 'E') !== false) {
+            // Konversi dari scientific notation ke integer string
+            $number = floatval($cleaned);
+            if (!is_nan($number) && $number > 0) {
+                // sprintf dengan %.0f untuk menghindari scientific notation
+                $cleaned = sprintf('%.0f', $number);
+            }
+        }
+
+        return $cleaned;
     }
 }
