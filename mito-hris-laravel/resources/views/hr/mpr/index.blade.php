@@ -177,31 +177,6 @@
             color: var(--color-text);
         }
 
-        /* Modal Preview MPR styles */
-        #modalPreviewMpr .modal-content {
-            background: var(--color-surface);
-        }
-
-        #modalPreviewMpr .modal-header {
-            background: var(--color-primary) !important;
-        }
-
-        #modalPreviewMpr .modal-body {
-            background: var(--color-surface);
-        }
-
-        #modalPreviewMpr .text-muted {
-            color: var(--color-text-soft) !important;
-        }
-
-        #modalPreviewMpr .border {
-            border-color: var(--color-border) !important;
-        }
-
-        #modalPreviewMpr .p-2 {
-            background: var(--color-bg);
-        }
-
         /* Alert styles */
         .alert {
             background: var(--color-surface);
@@ -261,55 +236,63 @@
         /* Modal MPR Detail styles */
         #modalMprDetail .modal-content {
             background: var(--color-surface);
-            border-radius: 16px;
+            border-radius: 12px;
             overflow: hidden;
         }
 
         #modalMprDetail .modal-header {
-            padding: 18px 24px;
+            padding: 20px 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         #modalMprDetail .modal-body {
             background: var(--color-bg);
-            padding: 24px !important;
+            max-height: calc(100vh - 200px);
+        }
+
+        #modalMprDetail .modal-body .border-bottom {
+            border-color: var(--color-border) !important;
         }
 
         #modalMprDetail .modal-footer {
-            background: var(--color-surface) !important;
-            border-color: var(--color-border) !important;
+            background: var(--color-surface);
+            border-top: 1px solid var(--color-border);
             padding: 14px 24px;
         }
 
-        #modalMprDetail #detailContent>.card,
-        #modalMprDetail #detailContent>.bg-light {
-            background: var(--color-surface) !important;
-            border: 1px solid var(--color-border) !important;
-            border-radius: 12px !important;
-            padding: 16px !important;
+        #modalMprDetail label {
+            color: var(--color-text-soft);
+            font-size: 11px;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
         }
 
-        #modalMprDetail #detailContent>.row {
-            row-gap: 12px;
+        #modalMprDetail .fw-semibold,
+        #modalMprDetail .fw-bold {
+            color: var(--color-text);
         }
 
-        #modalMprDetail #detailContent>.row>[class*="col-"] {
-            padding: 14px;
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-radius: 12px;
+        #modalMprDetail .text-primary {
+            color: var(--color-primary) !important;
         }
 
-        #modalMprDetail .text-dark {
-            color: var(--color-text) !important;
+        #modalMprDetail h6.text-primary {
+            font-size: 15px;
+            letter-spacing: 0.3px;
         }
 
         #modalMprDetail .mpr-markdown-content {
-            background: var(--color-surface) !important;
-            border-color: var(--color-border) !important;
-            border-radius: 10px !important;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
             color: var(--color-text);
-            line-height: 1.6;
-            padding: 12px !important;
+        }
+
+        #modalMprDetail .badge {
+            font-weight: 600;
+        }
+
+        #modalMprDetail .border-top.border-dark {
+            border-color: var(--color-text) !important;
         }
 
         /* Markdown-rendered content in MPR detail modal */
@@ -737,7 +720,7 @@
                                         <tr>
                                             <th>No. MPR</th>
                                             <th>Posisi & Dept</th>
-                                            <th>Qty</th>
+                                            <th>Kebutuhan</th>
                                             <th>Aksi</th>
                                         </tr>
                                     </thead>
@@ -938,7 +921,7 @@
                                                 class="badge bg-light text-secondary border">{{ $mpr->employmentType ?? '-' }}</small>
                                         </td>
                                         <td class="text-center">
-                                            <span class="fw-bold text-navy">{{ $mpr->quantity }}</span>
+                                            <span class="fw-bold text-navy">{{ $mpr->quantity }} Orang</span>
                                         </td>
                                         <td>
                                             <span>{{ $mpr->expectedJoinDate ? \Carbon\Carbon::parse($mpr->expectedJoinDate)->format('d M Y') : '-' }}</span>
@@ -1549,26 +1532,9 @@
                         <div class="modal-footer">
                             <button type="button" class="btn btn-outline-secondary btn-sm"
                                 data-bs-dismiss="modal">Batal</button>
-                            <button type="button" id="btnPreviewMpr" class="btn btn-outline-primary btn-sm"><i
-                                    class="bi bi-eye me-1"></i> Preview</button>
                             <button type="submit" form="formEditMpr" id="btnSaveMpr" class="btn btn-primary btn-sm"><i
                                     class="bi bi-check-circle me-1"></i> Save Changes</button>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="modal fade" id="modalPreviewMpr" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog modal-lg modal-dialog-scrollable">
-                    <div class="modal-content border-0 shadow">
-                        <div class="modal-header bg-primary text-white">
-                            <h5 class="modal-title">Preview Perubahan MPR</h5><button type="button"
-                                class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body" id="mprPreviewContent"></div>
-                        <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm"
-                                data-bs-dismiss="modal">Kembali ke Edit</button><button type="button"
-                                class="btn btn-primary btn-sm" id="btnPreviewSaveMpr">Save Changes</button></div>
                     </div>
                 </div>
             </div>
@@ -2141,56 +2107,6 @@
                                 `<div class="text-danger py-4"><i class="bi bi-exclamation-triangle-fill fs-2 d-block mb-2"></i>${error.message}</div>`;
                         });
                 });
-            });
-
-            function escapeHtml(value) {
-                return String(value || '').replace(/[&<>'"]/g, char => ({
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    "'": '&#039;',
-                    '"': '&quot;'
-                } [char]));
-            }
-
-            function renderMprMarkdown(value) {
-                let html = escapeHtml(value);
-                html = html.replace(/^### (.+)$/gm, '<h5>$1</h5>')
-                    .replace(/^## (.+)$/gm, '<h4>$1</h4>')
-                    .replace(/^# (.+)$/gm, '<h3>$1</h3>')
-                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-                    .replace(/^(?:- )(.+)$/gm, '<li>$1</li>')
-                    .replace(/(?:<li>.*<\/li>\n?)+/g, match => `<ul>${match}</ul>`)
-                    .replace(/\n/g, '<br>');
-                return html || '<span class="text-muted">-</span>';
-            }
-
-            function showMprPreview() {
-                const form = document.getElementById('formEditMpr');
-                const value = name => form.elements[name]?.value || '-';
-                const section = (label, content, markdown = false) =>
-                    `<div class="mb-3"><div class="small text-uppercase text-muted fw-semibold mb-2">${label}</div><div class="p-2 border rounded ${markdown ? 'mpr-markdown-content' : ''}">${markdown ? renderMprMarkdown(content) : escapeHtml(content)}</div></div>`;
-                document.getElementById('mprPreviewContent').innerHTML =
-                    `<h6 class="text-primary fw-bold mb-3">MPR ${escapeHtml(currentMprId)}</h6>` +
-                    section('Posisi', value('position')) + section('Departemen / Divisi',
-                        `${value('department')} / ${value('division')}`) +
-                    section('Level / Status / Lokasi',
-                        `${value('job_level')} / ${value('employment_type')} / ${value('work_location')}`) +
-                    section('Jumlah / Target Bergabung',
-                        `${value('quantity')} Orang / ${value('expected_join_date')}`) + section('Alasan', value(
-                        'reason')) +
-                    section('Kualifikasi & Persyaratan', value('requirements'), true) + section('Uraian Tugas',
-                        value('job_description'), true);
-                bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPreviewMpr')).show();
-            }
-
-            const previewButton = document.getElementById('btnPreviewMpr');
-            if (previewButton) previewButton.addEventListener('click', showMprPreview);
-            const previewSaveButton = document.getElementById('btnPreviewSaveMpr');
-            if (previewSaveButton) previewSaveButton.addEventListener('click', () => {
-                bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPreviewMpr')).hide();
-                document.getElementById('formEditMpr').requestSubmit();
             });
 
             const editForm = document.getElementById('formEditMpr');
