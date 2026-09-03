@@ -134,13 +134,12 @@
                             Terminated</option>
                     </select>
                     <select class="filter-select" name="sort" id="empSortSelect" data-auto-submit="true">
-                        <option value="name_asc" selected>Nama A-Z</option>
+                        <option value="name_asc" {{ ($sortFilter ?? 'name_asc') === 'name_asc' ? 'selected' : '' }}>A-Z</option>
+                        <option value="name_desc" {{ ($sortFilter ?? '') === 'name_desc' ? 'selected' : '' }}>Z-A</option>
                     </select>
-                    <select class="filter-select employee-per-page" name="per_page" id="empPerPage"
-                        data-auto-submit="true">
-                        <option value="10" {{ ($perPage ?? 10) == 10 ? 'selected' : '' }}>10 / hal</option>
-                        <option value="20" {{ ($perPage ?? 10) == 20 ? 'selected' : '' }}>20 / hal</option>
-                        <option value="50" {{ ($perPage ?? 10) == 50 ? 'selected' : '' }}>50 / hal</option>
+                    <select class="filter-select" name="date_sort" id="empDateSort" data-auto-submit="true">
+                        <option value="join_date_desc" {{ ($sortFilter ?? '') === 'join_date_desc' ? 'selected' : '' }}>Terbaru</option>
+                        <option value="join_date_asc" {{ ($sortFilter ?? '') === 'join_date_asc' ? 'selected' : '' }}>Terlama</option>
                     </select>
                     <div class="employee-filter-actions">
                         <a href="{{ route('hr.employees.index') }}" class="btn-reset-filter text-decoration-none"
@@ -148,7 +147,7 @@
                             <i class="bi bi-arrow-counterclockwise"></i> Reset
                         </a>
                         <button class="btn-refresh" type="button" title="Muat ulang data" aria-label="Muat ulang data" data-refresh="page">
-                            <i class="bi bi-arrow-clockwise"></i>
+                            <i class="bi bi-arrow-repeat"></i>
                         </button>
                     </div>
                 </div>
@@ -160,13 +159,77 @@
                     <thead>
                         <tr>
                             <th>Avatar</th>
-                            <th>Employee ID</th>
-                            <th>Karyawan</th>
-                            <th>NIK</th>
-                            <th>Departemen</th>
-                            <th>Posisi</th>
+                            <th class="sortable" data-sort="emp_id">
+                                Employee ID
+                                @if(($sortFilter ?? '') === 'emp_id_asc')
+                                    <i class="bi bi-arrow-up"></i>
+                                @elseif(($sortFilter ?? '') === 'emp_id_desc')
+                                    <i class="bi bi-arrow-down"></i>
+                                @else
+                                    <i class="bi bi-arrow-down-up text-muted"></i>
+                                @endif
+                            </th>
+                            <th class="sortable" data-sort="name">
+                                Karyawan
+                                @if(($sortFilter ?? 'name_asc') === 'name_asc')
+                                    <i class="bi bi-arrow-up"></i>
+                                @elseif(($sortFilter ?? '') === 'name_desc')
+                                    <i class="bi bi-arrow-down"></i>
+                                @else
+                                    <i class="bi bi-arrow-down-up text-muted"></i>
+                                @endif
+                            </th>
+                            <th class="sortable" data-sort="nik">
+                                NIK
+                                @if(($sortFilter ?? '') === 'nik_asc')
+                                    <i class="bi bi-arrow-up"></i>
+                                @elseif(($sortFilter ?? '') === 'nik_desc')
+                                    <i class="bi bi-arrow-down"></i>
+                                @else
+                                    <i class="bi bi-arrow-down-up text-muted"></i>
+                                @endif
+                            </th>
+                            <th class="sortable" data-sort="dept">
+                                Departemen
+                                @if(($sortFilter ?? '') === 'dept_asc')
+                                    <i class="bi bi-arrow-up"></i>
+                                @elseif(($sortFilter ?? '') === 'dept_desc')
+                                    <i class="bi bi-arrow-down"></i>
+                                @else
+                                    <i class="bi bi-arrow-down-up text-muted"></i>
+                                @endif
+                            </th>
+                            <th class="sortable" data-sort="division">
+                                Divisi
+                                @if(($sortFilter ?? '') === 'division_asc')
+                                    <i class="bi bi-arrow-up"></i>
+                                @elseif(($sortFilter ?? '') === 'division_desc')
+                                    <i class="bi bi-arrow-down"></i>
+                                @else
+                                    <i class="bi bi-arrow-down-up text-muted"></i>
+                                @endif
+                            </th>
+                            <th class="sortable" data-sort="position">
+                                Posisi
+                                @if(($sortFilter ?? '') === 'position_asc')
+                                    <i class="bi bi-arrow-up"></i>
+                                @elseif(($sortFilter ?? '') === 'position_desc')
+                                    <i class="bi bi-arrow-down"></i>
+                                @else
+                                    <i class="bi bi-arrow-down-up text-muted"></i>
+                                @endif
+                            </th>
                             <th>Status</th>
-                            <th>Tanggal Masuk</th>
+                            <th class="sortable" data-sort="join_date">
+                                Tanggal Masuk
+                                @if(($sortFilter ?? '') === 'join_date_asc')
+                                    <i class="bi bi-arrow-up"></i>
+                                @elseif(($sortFilter ?? '') === 'join_date_desc')
+                                    <i class="bi bi-arrow-down"></i>
+                                @else
+                                    <i class="bi bi-arrow-down-up text-muted"></i>
+                                @endif
+                            </th>
                         </tr>
                     </thead>
                     <tbody id="empTableBody">
@@ -186,6 +249,7 @@
                                 </td>
                                 <td class="id-mono">{{ $emp->nikNpwp ?? '-' }}</td>
                                 <td>{{ $emp->department ?? '-' }}</td>
+                                <td>{{ $emp->division ?? '-' }}</td>
                                 <td class="fw-semibold text-navy">{{ $emp->jobPosition ?? '-' }}</td>
                                 <td>
                                     <x-badge-status :status="$emp->statusEmployee" />
@@ -258,5 +322,98 @@
                 }
             });
         }
+
+        // Auto-submit for all filter selects with data-auto-submit="true"
+        document.addEventListener('DOMContentLoaded', function() {
+            const sortSelect = document.getElementById('empSortSelect');
+            const dateSort = document.getElementById('empDateSort');
+            
+            // When A-Z / Z-A dropdown changes, clear date sort
+            if (sortSelect) {
+                sortSelect.addEventListener('change', function() {
+                    if (dateSort) dateSort.selectedIndex = -1; // Clear date sort selection
+                    document.getElementById('empFilterForm').submit();
+                });
+            }
+            
+            // When Terbaru / Terlama dropdown changes, clear name sort
+            if (dateSort) {
+                dateSort.addEventListener('change', function() {
+                    if (sortSelect) sortSelect.selectedIndex = 0; // Reset to A-Z
+                    document.getElementById('empFilterForm').submit();
+                });
+            }
+            
+            // Other filters (dept, status) auto-submit
+            document.querySelectorAll('select[data-auto-submit="true"]').forEach(function(select) {
+                if (select.id !== 'empSortSelect' && select.id !== 'empDateSort') {
+                    select.addEventListener('change', function() {
+                        document.getElementById('empFilterForm').submit();
+                    });
+                }
+            });
+        });
+
+        // Table header sort handler
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentSort = '{{ $sortFilter ?? "name_asc" }}';
+            
+            document.querySelectorAll('.sortable').forEach(function(header) {
+                header.style.cursor = 'pointer';
+                header.style.userSelect = 'none';
+                
+                header.addEventListener('click', function(e) {
+                    // Prevent click if clicking on row
+                    if (e.target.closest('tbody')) return;
+                    
+                    const sortField = this.getAttribute('data-sort');
+                    let newSort = sortField + '_asc';
+                    
+                    // Toggle direction if clicking same column
+                    if (currentSort === sortField + '_asc') {
+                        newSort = sortField + '_desc';
+                    } else if (currentSort === sortField + '_desc') {
+                        newSort = sortField + '_asc';
+                    }
+                    
+                    const form = document.getElementById('empFilterForm');
+                    const sortSelect = document.getElementById('empSortSelect');
+                    const dateSort = document.getElementById('empDateSort');
+                    
+                    // If clicking join_date column, update date_sort dropdown
+                    if (sortField === 'join_date') {
+                        if (dateSort) {
+                            dateSort.value = newSort;
+                            if (sortSelect) sortSelect.selectedIndex = 0; // Reset name sort
+                        }
+                    } 
+                    // If clicking name column, update sort dropdown
+                    else if (sortField === 'name') {
+                        if (sortSelect) {
+                            sortSelect.value = newSort;
+                            if (dateSort) dateSort.selectedIndex = -1; // Clear date sort
+                        }
+                    }
+                    // For other columns, just submit with sort parameter
+                    else {
+                        // Create hidden input for the sort
+                        const existingInput = form.querySelector('input[name="sort"]');
+                        if (existingInput && existingInput.type === 'hidden' && existingInput !== form.querySelector('input[name="page"]')) {
+                            existingInput.value = newSort;
+                        } else {
+                            const input = document.createElement('input');
+                            input.type = 'hidden';
+                            input.name = 'sort';
+                            input.value = newSort;
+                            form.appendChild(input);
+                        }
+                        if (sortSelect) sortSelect.selectedIndex = 0;
+                        if (dateSort) dateSort.selectedIndex = -1;
+                    }
+                    
+                    form.submit();
+                });
+            });
+        });
     </script>
 @endsection

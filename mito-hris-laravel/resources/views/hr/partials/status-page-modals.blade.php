@@ -197,12 +197,6 @@
                                             Divisi)</option>
                                     </select>
                                 </div>
-                                <div class="col-12">
-                                    <label class="form-label fw-semibold" style="font-size: 13px">Klausul Jangka Waktu
-                                        <span class="text-muted fw-normal">(free text)</span></label>
-                                    <textarea class="form-control form-control-sm" id="onbTenorText" rows="2"
-                                        placeholder="PIHAK PERTAMA dengan ini menyatakan persetujuannya untuk mempekerjakan PIHAK KEDUA sebagai Karyawan PIHAK PERTAMA..."></textarea>
-                                </div>
                             </div>
                         </div>
                         <!-- /#onboardingFormSection -->
@@ -1060,24 +1054,6 @@
         if (allowInput) allowInput.value = offer.allowTransport || offer.allowPulsa || '';
 
         _calcOnboardingEndDate();
-
-        // Klausul jangka waktu — di-generate setelah end date terhitung
-        var tenorEl = document.getElementById('onbTenorText');
-        if (tenorEl && !tenorEl.value) {
-            var joinV = (document.getElementById('onbJoinDate') || {}).value || '';
-            var durV = (durSel && durSel.value) || '12 Bulan';
-            var endV = (document.getElementById('onbContractEnd') || {}).value || '';
-            var monthsNum = 12;
-            var mm = String(durV).match(/^(\d+)\s*bulan/i);
-            var yy = String(durV).match(/^(\d+)\s*tahun/i);
-            if (mm) monthsNum = parseInt(mm[1], 10);
-            else if (yy) monthsNum = parseInt(yy[1], 10) * 12;
-            tenorEl.value =
-                'PIHAK PERTAMA dengan ini menyatakan persetujuannya untuk mempekerjakan PIHAK KEDUA sebagai Karyawan PIHAK PERTAMA dengan jangka waktu ' +
-                monthsNum + ' (' + _onbNumToWords(monthsNum) + ') bulan terhitung sejak tanggal ' + _onbFmtDateLong(
-                    joinV) +
-                ' sampai dengan tanggal ' + _onbFmtDateLong(endV) + '.';
-        }
 
         setTimeout(_updateOnboardingConfirmBtn, 0);
     }
@@ -2304,7 +2280,7 @@
                 ['onbBranchName', 'onbDivision', 'onbDepartment', 'onbPosition', 'onbDirectSuperior',
                     'onbJoinDate', 'onbContractNumber', 'onbContractDuration', 'onbContractEnd',
                     'onbSalaryBasic', 'onbSalaryAllowance', 'onbDocDate', 'onbJamMasuk',
-                    'onbWorkSchedule', 'onbTenorText'
+                    'onbWorkSchedule'
                 ].forEach(function(fid) {
                     var el = document.getElementById(fid);
                     if (el) el.value = '';
@@ -2347,8 +2323,7 @@
                 salary_allowance: (document.getElementById('onbSalaryAllowance') || {}).value || '',
                 doc_date: (document.getElementById('onbDocDate') || {}).value || '',
                 jam_masuk: (document.getElementById('onbJamMasuk') || {}).value || '',
-                work_schedule: (document.getElementById('onbWorkSchedule') || {}).value || '',
-                tenor_text: (document.getElementById('onbTenorText') || {}).value || '',
+                work_schedule: (document.getElementById('onbWorkSchedule') || {}).value || ''
             };
 
             var textEl = document.getElementById('btnOnboardingText');
@@ -2398,7 +2373,6 @@
                             contract_duration: payload.contract_duration,
                             join_date: payload.join_date,
                             contract_end: payload.contract_end,
-                            tenor_text: payload.tenor_text,
                             jam_masuk: payload.jam_masuk,
                             work_schedule: payload.work_schedule,
                             // recruitmentId sebagai fallback lookup di ExportController
