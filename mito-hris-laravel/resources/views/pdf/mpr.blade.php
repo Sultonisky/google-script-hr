@@ -444,6 +444,7 @@
 
     <!-- SECTION 3: ALASAN PERMINTAAN -->
     <div class="section-title">III. Alasan Permintaan Karyawan</div>
+    <table class="grid-2">
     <table class="data-table">
         <tr>
             <td class="label-col">Alasan Kebutuhan</td>
@@ -457,6 +458,7 @@
                 <td class="value-col value-col-half">{{ $mpr->replacementFor }}</td>
             </tr>
         @endif
+    </table>
     </table>
 
     <!-- SECTION 4: KUALIFIKASI KANDIDAT -->
