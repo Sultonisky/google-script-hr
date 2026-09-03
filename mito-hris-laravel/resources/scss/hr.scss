@@ -174,3 +174,26 @@ textarea.form-control:focus {
         animation: none;
     }
 }
+
+// Sortable table headers (like DataTables)
+.hr-table thead th.sortable {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    transition: background-color 0.15s ease;
+
+    &:hover {
+        background-color: rgba(0, 91, 172, 0.08);
+    }
+
+    i {
+        margin-left: 0.35rem;
+        font-size: 0.75rem;
+        vertical-align: middle;
+        transition: color 0.15s ease;
+    }
+
+    &:active {
+        background-color: rgba(0, 91, 172, 0.12);
+    }
+}
