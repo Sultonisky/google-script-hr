@@ -389,13 +389,6 @@
                         <td class="colon-col">:</td>
                         <td class="value-col value-col-half">{{ $mpr->workLocation ?: '-' }}</td>
                     </tr>
-                    @if (!empty($mpr->shiftDetail))
-                     <tr>
-                        <td class="label-col label-col-half">Detail Shift</td>
-                        <td class="colon-col">:</td>
-                        <td class="value-col value-col-half">{{ $mpr->shiftDetail }}</td>
-                    </tr>
-                    @endif
                     <tr>
                         <td class="label-col label-col-half">Benefits / Tunjangan</td>
                         <td class="colon-col">:</td>
@@ -432,6 +425,13 @@
                         <td class="colon-col">:</td>
                         <td class="value-col value-col-half">{{ $mpr->workingHours ?: '-' }}</td>
                     </tr>
+                     @if (!empty($mpr->shiftDetail))
+                     <tr>
+                        <td class="label-col label-col-half">Detail Shift</td>
+                        <td class="colon-col">:</td>
+                        <td class="value-col value-col-half">{{ $mpr->shiftDetail }}</td>
+                    </tr>
+                    @endif
                 </table>
             </td>
         </tr>
@@ -445,20 +445,30 @@
     <!-- SECTION 3: ALASAN PERMINTAAN -->
     <div class="section-title">III. Alasan Permintaan Karyawan</div>
     <table class="grid-2">
-    <table class="data-table">
         <tr>
-            <td class="label-col">Alasan Kebutuhan</td>
-            <td class="colon-col label-col-half">:</td>
-            <td class="value-col value-col-half"><strong>{{ $mpr->reason ?: '-' }}</strong></td>
+            <td>
+                <table class="data-table">
+                    <tr>
+                        <td class="label-col label-col-half">Alasan Kebutuhan</td>
+                        <td class="colon-col">:</td>
+                        <td class="value-col value-col-half"><strong>{{ $mpr->reason ?: '-' }}</strong></td>
+                    </tr>
+                </table>
+            </td>
+            @if (!empty($mpr->replacementFor))
+                <td>
+                    <table class="data-table">
+                        <tr>
+                            <td class="label-col label-col-half">Menggantikan Karyawan</td>
+                            <td class="colon-col">:</td>
+                            <td class="value-col value-col-half">{{ $mpr->replacementFor }}</td>
+                        </tr>
+                    </table>
+                </td>
+            @else
+                <td></td>
+            @endif
         </tr>
-        @if (!empty($mpr->replacementFor))
-            <tr>
-                <td class="label-col label-col-half">Menggantikan Karyawan</td>
-                <td class="colon-col">:</td>
-                <td class="value-col value-col-half">{{ $mpr->replacementFor }}</td>
-            </tr>
-        @endif
-    </table>
     </table>
 
     <!-- SECTION 4: KUALIFIKASI KANDIDAT -->
