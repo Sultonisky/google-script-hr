@@ -6,21 +6,21 @@
     <title>Manpower Request — {{ $mpr->mprNumber }}</title>
     <style>
         @page {
-            margin: 25px 35px 30px 35px;
+            margin: 20px 30px 25px 30px;
         }
 
         body {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 9.5pt;
+            font-size: 9pt;
             color: #000;
-            line-height: 1.45;
+            line-height: 1.35;
         }
 
         /* HEADER */
         .company-header {
             border-bottom: 2px solid #eb1c24;
-            padding-bottom: 8px;
-            margin-bottom: 12px;
+            padding-bottom: 6px;
+            margin-bottom: 8px;
         }
 
         .company-name {
@@ -43,13 +43,13 @@
             text-align: center;
             background: #f1f5f9;
             border: 1px solid #cbd5e1;
-            padding: 6px 10px;
-            margin-bottom: 14px;
+            padding: 4px 10px;
+            margin-bottom: 8px;
             border-radius: 4px;
         }
 
         .doc-title {
-            font-size: 11.5pt;
+            font-size: 10.5pt;
             font-weight: bold;
             color: #000;
             text-transform: uppercase;
@@ -58,20 +58,20 @@
         }
 
         .doc-meta {
-            font-size: 8.5pt;
+            font-size: 8pt;
             color: #000;
-            margin-top: 3px;
+            margin-top: 2px;
         }
 
         /* SECTION */
         .section-title {
-            font-size: 9.5pt;
+            font-size: 9pt;
             font-weight: bold;
             color: #000;
             background: #e6f0fa;
-            padding: 4px 8px;
-            margin-top: 10px;
-            margin-bottom: 6px;
+            padding: 3px 8px;
+            margin-top: 7px;
+            margin-bottom: 4px;
             border-left: 3px solid #000;
             text-transform: uppercase;
         }
@@ -80,14 +80,14 @@
         table.data-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
         table.data-table td {
-            padding: 2px 5px;
+            padding: 1.5px 5px;
             vertical-align: top;
-            font-size: 9pt;
-            line-height: 1.28;
+            font-size: 8.5pt;
+            line-height: 1.25;
         }
 
         .label-col {
@@ -161,11 +161,11 @@
         .content-box {
             border: 1px solid #cbd5e1;
             background: #ffffff;
-            padding: 6px 8px;
-            font-size: 8.5pt;
-            min-height: 40px;
+            padding: 5px 7px;
+            font-size: 8pt;
+            min-height: 30px;
             border-radius: 3px;
-            line-height: 1.4;
+            line-height: 1.35;
         }
 
         /* Markdown-rendered HTML inside content-box (DomPDF compatible) */
@@ -229,7 +229,7 @@
         .sign-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 18px;
+            margin-top: 12px;
             page-break-inside: avoid;
         }
 
@@ -237,14 +237,14 @@
             width: 33.33%;
             text-align: center;
             vertical-align: top;
-            padding: 4px 6px;
+            padding: 3px 6px;
         }
 
         /* Baris kedua: 2 box (COO & CEO) center terhadap 3 box baris pertama */
         .sign-table-second {
             width: 66.66%;
             border-collapse: collapse;
-            margin: 18px auto 0 auto;
+            margin: 12px auto 0 auto;
             page-break-inside: avoid;
         }
 
@@ -252,27 +252,27 @@
             width: 50%;
             text-align: center;
             vertical-align: top;
-            padding: 4px 6px;
+            padding: 3px 6px;
         }
 
         .sign-title {
-            font-size: 8.5pt;
+            font-size: 8pt;
             font-weight: bold;
             color: #000;
-            margin-bottom: 45px;
+            margin-bottom: 38px;
         }
 
         .sign-name {
-            font-size: 9pt;
+            font-size: 8.5pt;
             font-weight: bold;
             border-top: 1px solid #000;
-            padding-top: 4px;
+            padding-top: 3px;
             display: inline-block;
-            min-width: 140px;
+            min-width: 120px;
         }
 
         .sign-role {
-            font-size: 8pt;
+            font-size: 7.5pt;
             color: #000;
             margin-top: 2px;
         }
@@ -330,16 +330,26 @@
 
     <!-- SECTION 1: INFORMASI PEMOHON -->
     <div class="section-title">I. Informasi Pemohon & Organisasi</div>
-    <table class="data-table">
+    <table class="grid-2">
         <tr>
-            <td class="label-col">Nama Pemohon</td>
-            <td class="colon-col">:</td>
-            <td class="value-col"><strong>{{ $mpr->requestorName ?: '-' }}</strong></td>
-        </tr>
-        <tr>
-            <td class="label-col">Jabatan Pemohon</td>
-            <td class="colon-col">:</td>
-            <td class="value-col">{{ $mpr->requestorPosition ?: '-' }}</td>
+            <td>
+                <table class="data-table">
+                    <tr>
+                        <td class="label-col label-col-half">Nama Pemohon</td>
+                        <td class="colon-col">:</td>
+                        <td class="value-col value-col-half"><strong>{{ $mpr->requestorName ?: '-' }}</strong></td>
+                    </tr>
+                </table>
+            </td>
+            <td>
+                <table class="data-table">
+                    <tr>
+                        <td class="label-col label-col-half">Jabatan Pemohon</td>
+                        <td class="colon-col">:</td>
+                        <td class="value-col value-col-half">{{ $mpr->requestorPosition ?: '-' }}</td>
+                    </tr>
+                </table>
+            </td>
         </tr>
     </table>
 
@@ -450,48 +460,58 @@
 
     <!-- SECTION 4: KUALIFIKASI KANDIDAT -->
     <div class="section-title">IV. Kualifikasi Kandidat</div>
-    <table class="data-table" style="margin-top:0;">
+    <table class="grid-2" style="margin-top:0;">
         <tr>
-            <td class="label-col">Latar Belakang Pendidikan</td>
-            <td class="colon-col">:</td>
-            <td class="value-col">{{ $mpr->educationBackground ?: '-' }}</td>
-        </tr>
-        <tr>
-            <td class="label-col">Pengalaman Kerja</td>
-            <td class="colon-col">:</td>
-            <td class="value-col">{{ $mpr->workExperience ?: '-' }}</td>
-        </tr>
-        <tr>
-            <td class="label-col">Skills &amp; Kompetensi</td>
-            <td class="colon-col">:</td>
-            <td class="value-col">
-                @if (!empty($skillsHtml))
-                    {!! $skillsHtml !!}
-                @else
-                    -
-                @endif
+            <td>
+                <table class="data-table">
+                    <tr>
+                        <td class="label-col label-col-half">Latar Belakang Pendidikan</td>
+                        <td class="colon-col">:</td>
+                        <td class="value-col value-col-half">{{ $mpr->educationBackground ?: '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label-col label-col-half">Pengalaman Kerja</td>
+                        <td class="colon-col">:</td>
+                        <td class="value-col value-col-half">{{ $mpr->workExperience ?: '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label-col label-col-half">Skills &amp; Kompetensi</td>
+                        <td class="colon-col">:</td>
+                        <td class="value-col value-col-half">
+                            @if (!empty($skillsHtml))
+                                {!! $skillsHtml !!}
+                            @else
+                                -
+                            @endif
+                        </td>
+                    </tr>
+                </table>
             </td>
-        </tr>
-        <tr>
-            <td class="label-col">Bahasa yang Dikuasai</td>
-            <td class="colon-col">:</td>
-            <td class="value-col">
-                @if (!empty($languagesHtml))
-                    {!! $languagesHtml !!}
-                @else
-                    -
-                @endif
-            </td>
-        </tr>
-        <tr>
-            <td class="label-col">Referensi Industri Sejenis</td>
-            <td class="colon-col">:</td>
-            <td class="value-col">
-                @if (!empty($industryHtml))
-                    {!! $industryHtml !!}
-                @else
-                    -
-                @endif
+            <td>
+                <table class="data-table">
+                    <tr>
+                        <td class="label-col label-col-half">Bahasa yang Dikuasai</td>
+                        <td class="colon-col">:</td>
+                        <td class="value-col value-col-half">
+                            @if (!empty($languagesHtml))
+                                {!! $languagesHtml !!}
+                            @else
+                                -
+                            @endif
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label-col label-col-half">Referensi Industri Sejenis</td>
+                        <td class="colon-col">:</td>
+                        <td class="value-col value-col-half">
+                            @if (!empty($industryHtml))
+                                {!! $industryHtml !!}
+                            @else
+                                -
+                            @endif
+                        </td>
+                    </tr>
+                </table>
             </td>
         </tr>
     </table>
@@ -500,9 +520,9 @@
     <div class="section-title">V. Kualifikasi & Uraian Pekerjaan</div>
     <table class="grid-2">
         <tr>
-            <td>
-                <strong>Kualifikasi & Persyaratan:</strong>
-                <div class="content-box">
+            <td style="width:33.33%; vertical-align:top; padding: 0 3px;">
+                <strong style="font-size:8pt;">Kualifikasi &amp; Persyaratan:</strong>
+                <div class="content-box" style="margin-top:2px;">
                     @if (!empty($requirementsHtml))
                         {!! $requirementsHtml !!}
                     @else
@@ -510,9 +530,9 @@
                     @endif
                 </div>
             </td>
-            <td>
-                <strong>Uraian Tugas / Tanggung Jawab Utama:</strong>
-                <div class="content-box">
+            <td style="width:33.33%; vertical-align:top; padding: 0 3px;">
+                <strong style="font-size:8pt;">Uraian Tugas / Tanggung Jawab:</strong>
+                <div class="content-box" style="margin-top:2px;">
                     @if (!empty($jobDescriptionHtml))
                         {!! $jobDescriptionHtml !!}
                     @else
@@ -520,18 +540,18 @@
                     @endif
                 </div>
             </td>
+            <td style="width:33.33%; vertical-align:top; padding: 0 3px;">
+                <strong style="font-size:8pt;">Key Results / Target Posisi:</strong>
+                <div class="content-box" style="margin-top:2px;">
+                    @if (!empty($keyResultsHtml))
+                        {!! $keyResultsHtml !!}
+                    @else
+                        Tidak ada target khusus yang dilampirkan.
+                    @endif
+                </div>
+            </td>
         </tr>
     </table>
-    <div style="margin-top:6px;">
-        <strong>Key Results / Target Posisi Ini:</strong>
-        <div class="content-box" style="margin-top:3px;">
-            @if (!empty($keyResultsHtml))
-                {!! $keyResultsHtml !!}
-            @else
-                Tidak ada target khusus yang dilampirkan.
-            @endif
-        </div>
-    </div>
 
     <!-- SECTION 6: CATATAN -->
     @if (!empty($mpr->specialNotes))
