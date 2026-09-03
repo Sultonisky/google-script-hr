@@ -144,12 +144,14 @@
                             Terminated</option>
                     </select>
                     <select class="filter-select" name="sort" id="empSortSelect" data-auto-submit="true">
-                        <option value="name_asc" {{ ($sortFilter ?? 'name_asc') === 'name_asc' ? 'selected' : '' }}>A-Z</option>
+                        <option value="">Sortir Nama</option>
+                        <option value="name_asc" {{ ($sortFilter ?? '') === 'name_asc' ? 'selected' : '' }}>A-Z</option>
                         <option value="name_desc" {{ ($sortFilter ?? '') === 'name_desc' ? 'selected' : '' }}>Z-A</option>
                     </select>
                     <select class="filter-select" name="date_sort" id="empDateSort" data-auto-submit="true">
+                        <option value="">Sortir Tanggal</option>
                         <option value="join_date_desc" {{ ($sortFilter ?? '') === 'join_date_desc' ? 'selected' : '' }}>Terbaru</option>
-                        <option value="join_date_asc" {{ ($sortFilter ?? '') === 'join_date_asc' ? 'selected' : '' }}>Terlama</option>
+                        <option value="join_date_asc" {{ ($sortFilter ?? 'join_date_asc') === 'join_date_asc' ? 'selected' : '' }}>Terlama</option>
                     </select>
                     <div class="employee-filter-actions">
                         <a href="{{ route('hr.employees.index') }}" class="btn-reset-filter text-decoration-none"
@@ -338,18 +340,22 @@
             const sortSelect = document.getElementById('empSortSelect');
             const dateSort = document.getElementById('empDateSort');
             
-            // When A-Z / Z-A dropdown changes, clear date sort
+            // When A-Z / Z-A dropdown changes, clear date sort to empty
             if (sortSelect) {
                 sortSelect.addEventListener('change', function() {
-                    if (dateSort) dateSort.selectedIndex = -1; // Clear date sort selection
+                    if (this.value && dateSort) {
+                        dateSort.value = ''; // Clear date sort selection
+                    }
                     document.getElementById('empFilterForm').submit();
                 });
             }
             
-            // When Terbaru / Terlama dropdown changes, clear name sort
+            // When Terbaru / Terlama dropdown changes, clear name sort to empty
             if (dateSort) {
                 dateSort.addEventListener('change', function() {
-                    if (sortSelect) sortSelect.selectedIndex = 0; // Reset to A-Z
+                    if (this.value && sortSelect) {
+                        sortSelect.value = ''; // Clear name sort
+                    }
                     document.getElementById('empFilterForm').submit();
                 });
             }
@@ -366,7 +372,7 @@
 
         // Table header sort handler
         document.addEventListener('DOMContentLoaded', function() {
-            const currentSort = '{{ $sortFilter ?? "name_asc" }}';
+            const currentSort = '{{ $sortFilter ?? "join_date_asc" }}';
             
             document.querySelectorAll('.sortable').forEach(function(header) {
                 header.style.cursor = 'pointer';
@@ -394,31 +400,35 @@
                     if (sortField === 'join_date') {
                         if (dateSort) {
                             dateSort.value = newSort;
-                            if (sortSelect) sortSelect.selectedIndex = 0; // Reset name sort
+                        }
+                        if (sortSelect) {
+                            sortSelect.value = ''; // Clear name sort
                         }
                     } 
                     // If clicking name column, update sort dropdown
                     else if (sortField === 'name') {
                         if (sortSelect) {
                             sortSelect.value = newSort;
-                            if (dateSort) dateSort.selectedIndex = -1; // Clear date sort
+                        }
+                        if (dateSort) {
+                            dateSort.value = ''; // Clear date sort
                         }
                     }
-                    // For other columns, just submit with sort parameter
+                    // For other columns, create temporary sort parameter
                     else {
-                        // Create hidden input for the sort
-                        const existingInput = form.querySelector('input[name="sort"]');
-                        if (existingInput && existingInput.type === 'hidden' && existingInput !== form.querySelector('input[name="page"]')) {
-                            existingInput.value = newSort;
-                        } else {
-                            const input = document.createElement('input');
-                            input.type = 'hidden';
-                            input.name = 'sort';
-                            input.value = newSort;
-                            form.appendChild(input);
+                        // Clear both dropdowns
+                        if (sortSelect) sortSelect.value = '';
+                        if (dateSort) dateSort.value = '';
+                        
+                        // Add hidden input for this sort
+                        let hiddenSort = form.querySelector('input[name="temp_sort"]');
+                        if (!hiddenSort) {
+                            hiddenSort = document.createElement('input');
+                            hiddenSort.type = 'hidden';
+                            hiddenSort.name = 'sort';
+                            form.appendChild(hiddenSort);
                         }
-                        if (sortSelect) sortSelect.selectedIndex = 0;
-                        if (dateSort) dateSort.selectedIndex = -1;
+                        hiddenSort.value = newSort;
                     }
                     
                     form.submit();
