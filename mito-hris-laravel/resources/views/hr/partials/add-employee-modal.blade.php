@@ -51,12 +51,6 @@
                         <label class="form-label fw-semibold" style="font-size:12.5px">NIK (16 Digit)</label>
                         <input type="text" class="form-control form-control-sm" id="aeNik"
                             maxlength="16" placeholder="16 digit NIK" inputmode="numeric" />
-                        <div class="d-flex align-items-center gap-1 mt-1"
-                            style="font-size:11px;color:#eb1c24;background:#fff5f5;border:1px solid #fecaca;border-radius:6px;padding:4px 8px">
-                            <i class="bi bi-magic flex-shrink-0"></i>
-                            <span>NIK akan otomatis mengisi Tanggal Lahir &amp; Jenis Kelamin</span>
-                        </div>
-                        <div id="aeNikFeedback" class="mt-1"></div>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-semibold" style="font-size:12.5px">NPWP (16 Digit)</label>
@@ -260,19 +254,18 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold" style="font-size:12.5px">
-                            Employee ID <span class="text-muted fw-normal" style="font-size:11px">(auto-generate)</span>
+                            Employee ID <span class="text-muted fw-normal" style="font-size:11px">(auto-generate, dapat diubah)</span>
                         </label>
                         <div class="input-group input-group-sm">
                             <input type="text" class="form-control form-control-sm font-monospace" id="aeEmployeeIdPreview"
-                                readonly tabindex="-1"
                                 placeholder="Pilih tanggal masuk..."
-                                style="background:#f0f4f8;color:#374151;font-weight:600;cursor:default;border-color:#d1d5db;letter-spacing:0.04em" />
+                                style="background:#f0f4f8;color:#374151;font-weight:600;letter-spacing:0.04em" />
                             <span class="input-group-text" style="background:#e9ecef;border-color:#d1d5db;font-size:11px;color:#6b7280">
                                 <i class="bi bi-hash me-1"></i>Preview
                             </span>
                         </div>
                         <div class="form-text" style="font-size:11px;color:#6b7280">
-                            <i class="bi bi-info-circle me-1"></i>Format: <code>YYYYMMDD</code> + urutan harian. ID final di-generate server saat simpan.
+                            <i class="bi bi-info-circle me-1"></i>Auto-terugat saat pilih tanggal masuk, urutan ditentukan server. ID final di-generate server saat simpan.
                         </div>
                     </div>
                     <div class="col-md-4">
@@ -735,6 +728,8 @@ var AE_REGIONS = {
             idPreviewEl.placeholder = 'Pilih tanggal masuk...';
             return;
         }
+        // Auto-uruti hanya jika user belum edit manual
+        if (idPreviewEl.dataset.manualChanged === '1') return;
         // Format: YYYYMMDD (hapus tanda hubung dari value "YYYY-MM-DD")
         var datePart = dateVal.replace(/-/g, '');
         // Sequence preview selalu 01 — server yang tentukan urutan final
@@ -742,147 +737,19 @@ var AE_REGIONS = {
         idPreviewEl.placeholder = '';
     }
 
+    if (idPreviewEl) {
+        idPreviewEl.addEventListener('input', function () {
+            this.dataset.manualChanged = '1';
+        });
+    }
+
     if (joinDateEl) {
         joinDateEl.addEventListener('change', updateIdPreview);
         joinDateEl.addEventListener('input', updateIdPreview);
     }
 
-    // ── NIK Parser + Autofill (1:1 dari GAS / public career apply.blade.php) ──────
-    //
-    // Format NIK 16 digit:
-    //   [0-1]  Kode Provinsi
-    //   [2-3]  Kode Kabupaten/Kota
-    //   [4-5]  Kode Kecamatan
-    //   [6-7]  Tanggal lahir (perempuan +40)
-    //   [8-9]  Bulan lahir
-    //   [10-11] Tahun lahir (2 digit)
-    //   [12-15] Nomor urut
-    //
-    // Autofill target: #aeBirthDate (type="date" → YYYY-MM-DD), #aeGender (select)
-
-    var nikEl       = document.getElementById('aeNik');
-    var nikFeedback = document.getElementById('aeNikFeedback');
-
-    function parseNIK_ae(nik) {
-        if (!nik || nik.length !== 16 || !/^[0-9]{16}$/.test(nik)) return null;
-        var day    = parseInt(nik.substring(6, 8), 10);
-        var gender = (day > 40) ? 'Perempuan' : 'Laki-laki';
-        if (day > 40) day -= 40;
-        var month    = parseInt(nik.substring(8, 10), 10);
-        var year     = parseInt(nik.substring(10, 12), 10);
-        var fullYear = (year <= 24) ? 2000 + year : 1900 + year;
-        if (month < 1 || month > 12 || day < 1 || day > 31) return null;
-        var provinceCode = nik.substring(0, 2);
-        var cityCode     = nik.substring(0, 4);
-        return {
-            birthDateIso: fullYear + '-' + ('0' + month).slice(-2) + '-' + ('0' + day).slice(-2),
-            birthDateFormatted: ('0' + day).slice(-2) + '/' + ('0' + month).slice(-2) + '/' + fullYear,
-            gender:       gender,
-            provinceCode: provinceCode,
-            cityCode:     cityCode,
-            provinceName: (typeof AE_REGIONS !== 'undefined' && AE_REGIONS.provinces[provinceCode]) || null,
-            cityName:     (typeof AE_REGIONS !== 'undefined' && AE_REGIONS.cities[cityCode])     || null,
-        };
-    }
-
-    function processNIK_ae(nik) {
-        if (!nikFeedback) return;
-        var r = parseNIK_ae(nik);
-
-        if (!r) {
-            nikFeedback.innerHTML = nik.length > 0
-                ? '<div class="alert alert-warning p-2 mb-0" style="font-size:11.5px"><i class="bi bi-exclamation-triangle-fill me-1"></i><strong>NIK tidak valid.</strong> Pastikan 16 digit angka yang benar.</div>'
-                : '';
-            return;
-        }
-
-        // Autofill Tanggal Lahir (hanya jika belum diisi manual)
-        var bdEl = document.getElementById('aeBirthDate');
-        if (bdEl && !bdEl.dataset.manualChanged) {
-            bdEl.value = r.birthDateIso;
-        }
-
-        // Autofill Jenis Kelamin
-        var genEl = document.getElementById('aeGender');
-        if (genEl) genEl.value = r.gender;
-
-        // Autofill Tempat Lahir dari kota NIK (hanya jika belum diisi manual)
-        var bpEl = document.getElementById('aeBirthPlace');
-        if (bpEl && r.cityName && !bpEl.dataset.manualChanged) {
-            // Sederhanakan nama: hapus prefix "KAB." / "KOTA" → "KABUPATEN BOGOR" → "BOGOR"
-            var cityDisplay = r.cityName
-                .replace(/^KAB\.\s*/i, '')
-                .replace(/^KABUPATEN\s*/i, '')
-                .replace(/^KOTA\s*/i, '');
-            bpEl.value = cityDisplay
-                .split(' ')
-                .map(function (w) { return w.charAt(0) + w.slice(1).toLowerCase(); })
-                .join(' ');
-        }
-
-        // Autofill Provinsi + Kota/Kab + muat Kecamatan dari kode NIK
-        if (r.provinceCode && aeProvinceEl && !aeProvinceEl.dataset.manualChanged) {
-            aeProvinceEl.value = r.provinceCode;
-            ae_populateCities(r.provinceCode);
-            if (r.cityCode && aeCityEl) {
-                // Tunggu DOM update cities selesai (synchronous) lalu set nilai
-                aeCityEl.value = r.cityCode;
-                ae_loadDistricts(r.cityCode);
-            }
-        }
-
-        // Bangun detail feedback
-        var details = [
-            '<li>Tanggal Lahir: ' + r.birthDateFormatted + '</li>',
-            '<li>Jenis Kelamin: ' + r.gender + '</li>',
-        ];
-        if (r.provinceName) details.push('<li>Provinsi: ' + r.provinceName + '</li>');
-        if (r.cityName)     details.push('<li>Kabupaten/Kota: ' + r.cityName + '</li>');
-
-        nikFeedback.innerHTML =
-            '<div class="alert alert-success p-2 mb-0" style="font-size:11.5px">' +
-            '<i class="bi bi-check-circle-fill me-1"></i><strong>Data NIK terdeteksi</strong>' +
-            '<ul class="mb-0 mt-1 ps-3">' + details.join('') + '</ul></div>';
-    }
-
-    // Tandai jika user mengisi birth date / birth place manual — supaya NIK tidak menimpa
-    var birthDateEl = document.getElementById('aeBirthDate');
-    if (birthDateEl) {
-        birthDateEl.addEventListener('change', function () {
-            this.dataset.manualChanged = '1';
-        });
-    }
-    var birthPlaceEl = document.getElementById('aeBirthPlace');
-    if (birthPlaceEl) {
-        birthPlaceEl.addEventListener('input', function () {
-            this.dataset.manualChanged = '1';
-        });
-    }
-    // Tandai jika user pilih provinsi/kota manual — NIK tidak akan overwrite
-    if (aeProvinceEl) {
-        aeProvinceEl.addEventListener('change', function () {
-            this.dataset.manualChanged = '1';
-        });
-    }
-
-    if (nikEl) {
-        nikEl.addEventListener('input', function () {
-            // Sanitize: hanya angka, max 16
-            var nik = this.value.replace(/[^0-9]/g, '').substring(0, 16);
-            this.value = nik;
-
-            if (nik.length === 16) {
-                processNIK_ae(nik);
-            } else if (nikFeedback) {
-                nikFeedback.innerHTML = nik.length > 0
-                    ? '<span class="text-muted" style="font-size:11.5px"><i class="bi bi-keyboard me-1"></i>Ketik 16 digit NIK... (' + nik.length + '/16)</span>'
-                    : '';
-            }
-        });
-    }
-
-    // Clear NIK feedback dan reset manual birth date flag saat modal ditutup
-    // (disisipkan ke handler hidden.bs.modal yang sudah ada di bawah)
+    // NIK autofill dinonaktifkan — input NIK murni sebagai teks 16 digit biasa.
+    // Tidak ada parse, tidak ada auto-fill tanggal lahir / jenis kelamin / wilayah.
 
     var contractSection = document.getElementById('aeContractSection');
 
@@ -944,7 +811,6 @@ var AE_REGIONS = {
         // Clear Employee ID preview
         updateIdPreview();
         // Clear NIK feedback dan reset manual birth date flag
-        if (nikFeedback) nikFeedback.innerHTML = '';
         var bdReset = document.getElementById('aeBirthDate');
         if (bdReset) delete bdReset.dataset.manualChanged;
         var bpReset = document.getElementById('aeBirthPlace');
@@ -956,6 +822,9 @@ var AE_REGIONS = {
         // Reset nama validation state
         if (nameEl) nameEl.classList.remove('is-valid', 'is-invalid');
         nameHasError = false;
+        // Reset Employee ID manual flag
+        var idPreviewReset = document.getElementById('aeEmployeeIdPreview');
+        if (idPreviewReset) delete idPreviewReset.dataset.manualChanged;
         // Reset mode → employee (data-mode tetap di element, tapi title/status di-restore)
         // applyMode dipanggil lagi saat show.bs.modal berikutnya, tidak perlu reset di sini
         saveBtn.disabled = true;
