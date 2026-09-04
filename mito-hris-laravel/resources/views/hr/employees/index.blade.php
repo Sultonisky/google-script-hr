@@ -68,6 +68,11 @@
                     <div class="export-btns d-flex flex-wrap gap-2">
                         @can('manage_employees')
                             <button class="btn btn-sm text-white fw-semibold"
+                                style="background:#005BAC;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
+                                type="button" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
+                                <i class="bi bi-person-plus-fill me-1"></i>Tambah Karyawan
+                            </button>
+                            <button class="btn btn-sm text-white fw-semibold"
                                 style="background:#166534;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
                                 type="button" data-bs-toggle="modal" data-bs-target="#empImportModal">
                                 <i class="bi bi-upload me-1"></i>Import
@@ -313,6 +318,14 @@
 
 @section('scripts')
     <script>
+        // Wire add-employee modal store URL (domain-agnostic)
+        document.addEventListener('DOMContentLoaded', function () {
+            var aeModal = document.getElementById('addEmployeeModal');
+            if (aeModal) {
+                aeModal.setAttribute('data-store-url', '{{ route("hr.employees.store") }}');
+            }
+        });
+
         // Drawer click handler
         document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('#empTableBody tr[data-drawer-type="employee"]').forEach(function(row) {

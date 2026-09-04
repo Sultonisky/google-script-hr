@@ -33,6 +33,129 @@ class EmployeeService
     }
 
     /**
+     * Create a single new employee manually (1:1 dengan GAS acceptCandidateToEmployee flow,
+     * tapi dipanggil langsung dari form manual — bukan dari rekrutmen).
+     *
+     * @param  array       $data  Field input dari form (camelCase atau flat array)
+     * @param  string|null $user  Nama user yang membuat (default: 'HR Administrator')
+     * @return array{success:bool, message:string, employeeId:string|null}
+     */
+    public function createEmployee(array $data, ?string $user = null): array
+    {
+        $user = $user ?: 'HR Administrator';
+        $now  = now()->timezone('Asia/Jakarta');
+        $nowStr = $now->format('Y-m-d H:i:s');
+
+        // --- Validasi wajib ---
+        $fullName = trim($data['fullName'] ?? '');
+        if (empty($fullName)) {
+            return ['success' => false, 'message' => 'Nama lengkap wajib diisi.', 'employeeId' => null];
+        }
+
+        // --- Generate Employee ID unik ---
+        $existingIds = $this->employeeRepo->getAll()
+            ->pluck('employeeId')
+            ->filter()
+            ->map(fn($id) => strtoupper(trim($id)))
+            ->toArray();
+
+        $empId   = $this->idGenerator->generate();
+        $attempts = 0;
+        while (in_array(strtoupper($empId), $existingIds, true) && $attempts < 10) {
+            $empId = $this->idGenerator->generate();
+            $attempts++;
+        }
+        if (in_array(strtoupper($empId), $existingIds, true)) {
+            return ['success' => false, 'message' => 'Gagal menghasilkan Employee ID unik. Silakan coba kembali.', 'employeeId' => null];
+        }
+
+        // --- Bangun EmployeeData DTO ---
+        $employee = new EmployeeData(
+            employeeId:           $empId,
+            fullName:             $fullName,
+            branchName:           trim($data['branchName'] ?? ''),
+            division:             trim($data['division'] ?? ''),
+            department:           trim($data['department'] ?? ''),
+            jobPositionLocation:  trim($data['jobPositionLocation'] ?? $data['jobPosition'] ?? ''),
+            jobPosition:          trim($data['jobPosition'] ?? $data['jobPositionLocation'] ?? ''),
+            areaKerja:            trim($data['areaKerja'] ?? ''),
+            lokasiKerja:          trim($data['lokasiKerja'] ?? ''),
+            jobLevel:             trim($data['jobLevel'] ?? ''),
+            grade:                trim($data['grade'] ?? ''),
+            joinDate:             trim($data['joinDate'] ?? ''),
+            statusEmployee:       trim($data['statusEmployee'] ?? 'Contract'),
+            directSuperior:       trim($data['directSuperior'] ?? ''),
+            indirectSuperior:     trim($data['indirectSuperior'] ?? ''),
+            personalEmail:        trim($data['personalEmail'] ?? ''),
+            workingEmail:         trim($data['workingEmail'] ?? ''),
+            endDateContract:      trim($data['endDateContract'] ?? ''),
+            birthPlace:           trim($data['birthPlace'] ?? ''),
+            birthDate:            trim($data['birthDate'] ?? ''),
+            citizenIdAddress:     trim($data['citizenIdAddress'] ?? ''),
+            residentialAddress:   trim($data['residentialAddress'] ?? ''),
+            nikNpwp:              ltrim(trim($data['nikNpwp'] ?? $data['nik'] ?? ''), "'"),
+            npwp:                 ltrim(trim($data['npwp'] ?? ''), "'"),
+            ptkpStatus:           trim($data['ptkpStatus'] ?? ''),
+            bankName:             trim($data['bankName'] ?? 'BCA'),
+            bankAccount:          ltrim(trim($data['bankAccount'] ?? ''), "'"),
+            bankAccountHolder:    trim($data['bankAccountHolder'] ?? $fullName),
+            bpjsKetenagakerjaan:  ltrim(trim($data['bpjsKetenagakerjaan'] ?? ''), "'"),
+            bpjsKesehatan:        ltrim(trim($data['bpjsKesehatan'] ?? ''), "'"),
+            mobilePhone:          ltrim(trim($data['mobilePhone'] ?? ''), "'"),
+            religion:             trim($data['religion'] ?? ''),
+            gender:               trim($data['gender'] ?? ''),
+            maritalStatus:        trim($data['maritalStatus'] ?? ''),
+            bloodType:            trim($data['bloodType'] ?? ''),
+            costCenter:           trim($data['costCenter'] ?? ''),
+            jobPositionFormer:    '',
+            typeOfRotation:       '',
+            rotationDate:         '',
+            nomorSk:              '',
+            resignDate:           '',
+            hrNotes:              trim($data['hrNotes'] ?? ''),
+            offboardingType:      '',
+            offboardingReason:    '',
+            offboardingApprovedBy: '',
+            offboardingDocsFolder: '',
+            offboardingDocLinks:  '',
+            outsourceVendor:      trim($data['outsourceVendor'] ?? ''),
+            createdBy:            $user,
+            createdAt:            $nowStr,
+            updatedAt:            $nowStr,
+        );
+
+        // --- Tulis ke Google Sheets ---
+        $sheetName = config('google.sheets.employees', 'Employee');
+        $wrote = $this->sheets->appendRow($sheetName, $employee->toSheetRow());
+
+        if (!$wrote) {
+            return [
+                'success'    => false,
+                'message'    => 'Gagal menyimpan data karyawan ke Google Sheets. Silakan coba kembali.',
+                'employeeId' => null,
+            ];
+        }
+
+        // --- Audit log ---
+        $this->auditRepo->log(
+            entityType: 'Employee',
+            entityId:   $empId,
+            action:     'CREATE',
+            field:      'Status Employee',
+            oldValue:   '-',
+            newValue:   ($employee->statusEmployee ?? 'Contract') . ' — dibuat manual oleh HR',
+            user:       $user,
+            source:     'Dashboard'
+        );
+
+        return [
+            'success'    => true,
+            'message'    => "Karyawan {$fullName} berhasil ditambahkan dengan Employee ID {$empId}.",
+            'employeeId' => $empId,
+        ];
+    }
+
+    /**
      * Preview import — validate rows and check duplicates WITHOUT writing to Google Sheets.
      * 1:1 with GAS importEmployees() validation logic, minus the batch write.
      *

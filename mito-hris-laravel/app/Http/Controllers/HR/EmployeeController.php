@@ -146,6 +146,39 @@ class EmployeeController extends Controller
     }
 
     /**
+     * Create a single new employee manually via modal form.
+     * Called by Fetch API from the "Tambah Karyawan" modal.
+     *
+     * POST /hr/employees
+     * Requires: can:manage_employees
+     */
+    public function store(Request $request): JsonResponse
+    {
+        $request->validate([
+            'fullName'       => 'required|string|max:255',
+            'statusEmployee' => 'required|string|max:100',
+            'joinDate'       => 'nullable|date',
+            'personalEmail'  => 'nullable|email|max:255',
+            'workingEmail'   => 'nullable|email|max:255',
+            'birthDate'      => 'nullable|date',
+            'endDateContract' => 'nullable|date',
+            'nikNpwp'        => 'nullable|string|max:20',
+            'npwp'           => 'nullable|string|max:20',
+            'mobilePhone'    => 'nullable|string|max:20',
+            'bankAccount'    => 'nullable|string|max:30',
+            'bpjsKetenagakerjaan' => 'nullable|string|max:30',
+            'bpjsKesehatan'  => 'nullable|string|max:30',
+        ]);
+
+        $result = $this->employeeService->createEmployee(
+            $request->all(),
+            Auth::user()?->name ?? 'HR Administrator'
+        );
+
+        return response()->json($result, $result['success'] ? 201 : 422);
+    }
+
+    /**
      * Preview import — validate rows and check duplicates WITHOUT writing to Google Sheets.
      * Mirrors GAS importEmployees() validation logic but skips the batch write.
      * Called by Fetch API from the import modal Step 2 button.
