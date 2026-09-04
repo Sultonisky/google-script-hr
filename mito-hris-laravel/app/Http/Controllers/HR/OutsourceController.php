@@ -4,16 +4,23 @@ namespace App\Http\Controllers\HR;
 
 use App\Http\Controllers\Controller;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
+use App\Services\EmployeeService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 class OutsourceController extends Controller
 {
     protected EmployeeRepositoryInterface $employeeRepo;
+    protected EmployeeService $employeeService;
 
-    public function __construct(EmployeeRepositoryInterface $employeeRepo)
-    {
-        $this->employeeRepo = $employeeRepo;
+    public function __construct(
+        EmployeeRepositoryInterface $employeeRepo,
+        EmployeeService $employeeService
+    ) {
+        $this->employeeRepo    = $employeeRepo;
+        $this->employeeService = $employeeService;
     }
 
     public function index(Request $request): View
@@ -80,5 +87,42 @@ class OutsourceController extends Controller
             'sortFilter',
             'orderFilter'
         ));
+    }
+
+    /**
+     * Tambah karyawan outsource baru secara manual dari dashboard HR.
+     * Status Employee di-force ke 'Outsource' — tidak bisa diubah dari request.
+     *
+     * POST /hr/outsource
+     * Requires: can:manage_employees
+     */
+    public function store(Request $request): JsonResponse
+    {
+        $request->validate([
+            'fullName'            => 'required|string|max:255',
+            'outsourceVendor'     => 'required|string|max:255',
+            'joinDate'            => 'nullable|date',
+            'endDateContract'     => 'nullable|date',
+            'personalEmail'       => 'nullable|email|max:255',
+            'workingEmail'        => 'nullable|email|max:255',
+            'birthDate'           => 'nullable|date',
+            'nikNpwp'             => 'nullable|string|max:20',
+            'npwp'                => 'nullable|string|max:20',
+            'mobilePhone'         => 'nullable|string|max:20',
+            'bankAccount'         => 'nullable|string|max:30',
+            'bpjsKetenagakerjaan' => 'nullable|string|max:30',
+            'bpjsKesehatan'       => 'nullable|string|max:30',
+        ]);
+
+        // Force statusEmployee = Outsource — tidak boleh dioverride dari frontend
+        $data                  = $request->all();
+        $data['statusEmployee'] = 'Outsource';
+
+        $result = $this->employeeService->createEmployee(
+            $data,
+            Auth::user()?->name ?? 'HR Administrator'
+        );
+
+        return response()->json($result, $result['success'] ? 201 : 422);
     }
 }

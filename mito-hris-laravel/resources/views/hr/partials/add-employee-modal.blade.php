@@ -16,10 +16,10 @@
         <div class="modal-content" style="border-radius:16px">
 
             {{-- HEADER --}}
-            <div class="modal-header" style="background:#005BAC;border-radius:16px 16px 0 0">
+            <div class="modal-header" style="background:#eb1c24;border-radius:16px 16px 0 0">
                 <div class="d-flex align-items-center gap-2 text-white">
-                    <i class="bi bi-person-plus-fill fs-5"></i>
-                    <h6 class="modal-title mb-0 fw-bold">Tambah Karyawan Baru</h6>
+                    <i class="bi bi-person-plus-fill fs-5" id="aeModalIcon"></i>
+                    <h6 class="modal-title mb-0 fw-bold" id="aeModalTitle">Tambah Karyawan Baru</h6>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                     aria-label="Tutup"></button>
@@ -32,7 +32,7 @@
                      SEKSI 1: IDENTITAS & DATA PRIBADI
                      ============================================================ --}}
                 <p class="fw-bold mb-3"
-                    style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#005BAC">
+                    style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#eb1c24">
                     <i class="bi bi-person-badge-fill me-1"></i>Identitas &amp; Data Pribadi
                 </p>
                 <div class="row g-2 mb-3">
@@ -41,14 +41,18 @@
                             Nama Lengkap <span class="text-danger">*</span>
                         </label>
                         <input type="text" class="form-control form-control-sm" id="aeFullName"
-                            placeholder="Nama lengkap sesuai KTP" required autocomplete="off" />
+                            placeholder="Nama lengkap sesuai KTP" required autocomplete="off"
+                            maxlength="255" />
+                        <div class="invalid-feedback" id="aeFullNameFeedback" style="font-size:11.5px">
+                            Nama hanya boleh berisi huruf dan spasi.
+                        </div>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-semibold" style="font-size:12.5px">NIK (16 Digit)</label>
                         <input type="text" class="form-control form-control-sm" id="aeNik"
                             maxlength="16" placeholder="16 digit NIK" inputmode="numeric" />
                         <div class="d-flex align-items-center gap-1 mt-1"
-                            style="font-size:11px;color:#005BAC;background:#f0f7ff;border:1px solid #c7dff7;border-radius:6px;padding:4px 8px">
+                            style="font-size:11px;color:#eb1c24;background:#fff5f5;border:1px solid #fecaca;border-radius:6px;padding:4px 8px">
                             <i class="bi bi-magic flex-shrink-0"></i>
                             <span>NIK akan otomatis mengisi Tanggal Lahir &amp; Jenis Kelamin</span>
                         </div>
@@ -154,7 +158,7 @@
                      SEKSI 2: BANK & BPJS
                      ============================================================ --}}
                 <p class="fw-bold mb-3"
-                    style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#005BAC">
+                    style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#eb1c24">
                     <i class="bi bi-wallet2 me-1"></i>Bank &amp; BPJS
                 </p>
                 <div class="row g-2 mb-3">
@@ -205,7 +209,7 @@
                      SEKSI 3: STRUKTUR ORGANISASI & PEKERJAAN
                      ============================================================ --}}
                 <p class="fw-bold mb-3"
-                    style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#005BAC">
+                    style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#eb1c24">
                     <i class="bi bi-briefcase-fill me-1"></i>Struktur Organisasi &amp; Pekerjaan
                 </p>
                 <div class="row g-2 mb-3">
@@ -346,7 +350,7 @@
                 <div id="aeContractSection" style="display:none">
                     <hr class="my-3" />
                     <p class="fw-bold mb-3"
-                        style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#005BAC">
+                        style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#eb1c24">
                         <i class="bi bi-file-earmark-text-fill me-1"></i>Kontrak
                     </p>
                     <div class="row g-2 mb-3">
@@ -366,7 +370,7 @@
                      SEKSI 5: CATATAN HR
                      ============================================================ --}}
                 <p class="fw-bold mb-3"
-                    style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#005BAC">
+                    style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#eb1c24">
                     <i class="bi bi-chat-square-text-fill me-1"></i>Catatan HR
                 </p>
                 <div class="row g-2">
@@ -383,16 +387,40 @@
                 <button type="button" class="btn btn-outline-secondary btn-sm"
                     data-bs-dismiss="modal">Batal</button>
                 <button type="button" class="btn btn-sm text-white fw-semibold" id="btnAddEmployeeSave"
-                    style="background:#005BAC;border:none" disabled>
+                    style="background:#eb1c24;border:none" disabled>
                     <span id="aeSpinner" class="spinner-border spinner-border-sm me-1 d-none"
                         role="status" aria-hidden="true"></span>
-                    <i class="bi bi-person-plus-fill me-1" id="aeIcon"></i>Simpan Karyawan
+                    <i class="bi bi-person-plus-fill me-1" id="aeIcon"></i><span id="aeSaveLabel">Simpan Karyawan</span>
                 </button>
             </div>
 
         </div>
     </div>
 </div>
+
+<script>
+{{-- ── Data Wilayah untuk NIK autofill (provinces + cities flat map) ──────────
+     Di-generate dari data/master_wilayah.json saat render, disimpan sebagai
+     variabel JS AE_REGIONS agar tidak konflik dengan REGIONS di halaman lain. --}}
+@php
+    $wilayahPath = base_path('data/master_wilayah.json');
+    $wilayahRaw  = file_exists($wilayahPath) ? json_decode(file_get_contents($wilayahPath), true) : [];
+
+    // Provinces: { "11": "ACEH", "12": "SUMATERA UTARA", ... }
+    $aeProvinces = $wilayahRaw['provinces'] ?? [];
+
+    // Cities: master_wilayah.json stores { "3201": { "name": "KAB. BOGOR", "province": "32" } }
+    // Flatten ke { "3201": "KAB. BOGOR" } agar konsisten dengan format REGIONS di apply.blade.php
+    $aeCities = [];
+    foreach ($wilayahRaw['cities'] ?? [] as $code => $val) {
+        $aeCities[(string)$code] = is_array($val) ? ($val['name'] ?? '') : (string)$val;
+    }
+@endphp
+var AE_REGIONS = {
+    provinces: @json($aeProvinces),
+    cities: @json($aeCities)
+};
+</script>
 
 <script>
 (function () {
@@ -429,14 +457,120 @@
 
     if (!modalEl || !saveBtn) return;
 
+    // ── Mode: 'employee' (default) atau 'outsource' ────────────────────────
+    // Di-set lewat modalEl.setAttribute('data-mode', 'outsource') dari halaman outsource.
+    // Saat show.bs.modal, mode dibaca dan UI disesuaikan.
+
+    var modalTitle  = document.getElementById('aeModalTitle');
+    var modalIcon   = document.getElementById('aeModalIcon');
+    var saveLabel   = document.getElementById('aeSaveLabel');
+
+    function applyMode(mode) {
+        var isOutsource = (mode === 'outsource');
+
+        // Header title + icon
+        if (modalTitle) modalTitle.textContent = isOutsource ? 'Tambah Karyawan Outsource' : 'Tambah Karyawan Baru';
+        if (modalIcon)  {
+            modalIcon.className = isOutsource
+                ? 'bi bi-building-fill-gear fs-5'
+                : 'bi bi-person-plus-fill fs-5';
+        }
+        if (saveLabel) saveLabel.textContent = isOutsource ? 'Simpan Outsource' : 'Simpan Karyawan';
+
+        // Status dropdown: force Outsource + readonly
+        if (statusEl) {
+            if (isOutsource) {
+                statusEl.value    = 'Outsource';
+                statusEl.disabled = true;
+                statusEl.style.background    = '#f0f4f8';
+                statusEl.style.cursor        = 'not-allowed';
+                statusEl.style.pointerEvents = 'none';
+            } else {
+                statusEl.value    = 'Contract';
+                statusEl.disabled = false;
+                statusEl.style.background    = '';
+                statusEl.style.cursor        = '';
+                statusEl.style.pointerEvents = '';
+            }
+        }
+
+        // Sync dependent fields after mode change
+        syncStatusDependentFields();
+        checkForm();
+    }
+
+    modalEl.addEventListener('show.bs.modal', function () {
+        applyMode(this.getAttribute('data-mode') || 'employee');
+    });
+
     // ── Enable/Disable simpan button ─────────────────────────────────────────
 
     function checkForm() {
-        var ok = val('aeFullName') !== '' && val('aeStatusEmployee') !== '';
+        var isOutsource = (modalEl.getAttribute('data-mode') === 'outsource');
+        var vendorOk    = !isOutsource || val('aeOutsourceVendor') !== '';
+        var ok = val('aeFullName') !== '' && val('aeStatusEmployee') !== '' && !nameHasError && vendorOk;
         saveBtn.disabled = !ok;
     }
 
-    ['aeFullName', 'aeStatusEmployee'].forEach(function (id) {
+    // Vendor input juga trigger checkForm
+    var vendorInputEl = document.getElementById('aeOutsourceVendor');
+    if (vendorInputEl) vendorInputEl.addEventListener('input', checkForm);
+
+    // ── Validasi Nama Lengkap (1:1 dari GAS / public career apply.blade.php) ─
+    // Hanya huruf (termasuk huruf berdiakritik/aksara) dan spasi tunggal antar kata.
+    // Regex: Unicode letter categories \p{L} — di-emulasi dengan rentang karakter
+    // yang mencakup Latin + Latin Extended (nama Indonesia, Arab, dll.).
+
+    var nameHasError = false;
+    var nameEl       = document.getElementById('aeFullName');
+    var nameFeedback = document.getElementById('aeFullNameFeedback');
+
+    // Regex huruf + spasi: melarang angka, tanda baca, simbol
+    // Menggunakan rentang Unicode Latin dasar & extended agar nama dengan
+    // aksen (é, ñ, ü, dll.) tetap diterima — konsisten dengan pattern di apply.blade.php
+    var NAME_VALID_CHARS = /^[A-Za-zÀ-ÖØ-öø-ÿ\u0100-\u024F '.\-]+$/;
+    var NAME_MIN_LENGTH  = 3;
+
+    function validateFullName() {
+        if (!nameEl) return;
+        var v = nameEl.value;
+
+        if (v === '') {
+            // Kosong — reset ke netral (belum disentuh)
+            nameEl.classList.remove('is-valid', 'is-invalid');
+            nameHasError = false;
+            checkForm();
+            return;
+        }
+
+        // Sanitize otomatis: buang karakter yang jelas tidak valid (angka, simbol)
+        // tapi biarkan huruf, spasi, apostrof, titik, dan tanda hubung (nama seperti
+        // "d'Silva", "van der Waals", "Tri-Wahyu") — konsisten dengan GAS validateName_()
+        var sanitized = v.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\u0100-\u024F '.\-]/g, '');
+        if (sanitized !== v) {
+            nameEl.value = sanitized;
+            v = sanitized;
+        }
+
+        // Minimal 3 karakter & hanya karakter yang diizinkan
+        if (v.length < NAME_MIN_LENGTH || !NAME_VALID_CHARS.test(v)) {
+            nameEl.classList.add('is-invalid');
+            nameEl.classList.remove('is-valid');
+            nameHasError = true;
+        } else {
+            nameEl.classList.remove('is-invalid');
+            nameEl.classList.add('is-valid');
+            nameHasError = false;
+        }
+        checkForm();
+    }
+
+    if (nameEl) {
+        nameEl.addEventListener('input', validateFullName);
+        nameEl.addEventListener('blur',  validateFullName);
+    }
+
+    ['aeStatusEmployee'].forEach(function (id) {
         var el = document.getElementById(id);
         if (el) el.addEventListener('input', checkForm);
     });
@@ -487,19 +621,20 @@
         var day    = parseInt(nik.substring(6, 8), 10);
         var gender = (day > 40) ? 'Perempuan' : 'Laki-laki';
         if (day > 40) day -= 40;
-        var month   = parseInt(nik.substring(8, 10), 10);
-        var year    = parseInt(nik.substring(10, 12), 10);
+        var month    = parseInt(nik.substring(8, 10), 10);
+        var year     = parseInt(nik.substring(10, 12), 10);
         var fullYear = (year <= 24) ? 2000 + year : 1900 + year;
         if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+        var provinceCode = nik.substring(0, 2);
+        var cityCode     = nik.substring(0, 4);
         return {
-            // YYYY-MM-DD untuk <input type="date">
-            birthDateIso: fullYear + '-' +
-                ('0' + month).slice(-2) + '-' +
-                ('0' + day).slice(-2),
-            // DD/MM/YYYY untuk display di feedback
-            birthDateFormatted: ('0' + day).slice(-2) + '/' +
-                ('0' + month).slice(-2) + '/' + fullYear,
-            gender: gender,
+            birthDateIso: fullYear + '-' + ('0' + month).slice(-2) + '-' + ('0' + day).slice(-2),
+            birthDateFormatted: ('0' + day).slice(-2) + '/' + ('0' + month).slice(-2) + '/' + fullYear,
+            gender:       gender,
+            provinceCode: provinceCode,
+            cityCode:     cityCode,
+            provinceName: (typeof AE_REGIONS !== 'undefined' && AE_REGIONS.provinces[provinceCode]) || null,
+            cityName:     (typeof AE_REGIONS !== 'undefined' && AE_REGIONS.cities[cityCode])     || null,
         };
     }
 
@@ -524,20 +659,44 @@
         var genEl = document.getElementById('aeGender');
         if (genEl) genEl.value = r.gender;
 
-        // Feedback sukses
+        // Autofill Tempat Lahir dari kota NIK (hanya jika belum diisi manual)
+        var bpEl = document.getElementById('aeBirthPlace');
+        if (bpEl && r.cityName && !bpEl.dataset.manualChanged) {
+            // Sederhanakan nama: hapus prefix "KAB." / "KOTA" → "KABUPATEN BOGOR" → "BOGOR"
+            var cityDisplay = r.cityName
+                .replace(/^KAB\.\s*/i, '')
+                .replace(/^KABUPATEN\s*/i, '')
+                .replace(/^KOTA\s*/i, '');
+            bpEl.value = cityDisplay
+                .split(' ')
+                .map(function (w) { return w.charAt(0) + w.slice(1).toLowerCase(); })
+                .join(' ');
+        }
+
+        // Bangun detail feedback
+        var details = [
+            '<li>Tanggal Lahir: ' + r.birthDateFormatted + '</li>',
+            '<li>Jenis Kelamin: ' + r.gender + '</li>',
+        ];
+        if (r.provinceName) details.push('<li>Provinsi: ' + r.provinceName + '</li>');
+        if (r.cityName)     details.push('<li>Kabupaten/Kota: ' + r.cityName + '</li>');
+
         nikFeedback.innerHTML =
             '<div class="alert alert-success p-2 mb-0" style="font-size:11.5px">' +
-            '<i class="bi bi-check-circle-fill me-1"></i><strong>Data dikenali</strong>' +
-            '<ul class="mb-0 mt-1 ps-3">' +
-            '<li>Tanggal Lahir: ' + r.birthDateFormatted + '</li>' +
-            '<li>Jenis Kelamin: ' + r.gender + '</li>' +
-            '</ul></div>';
+            '<i class="bi bi-check-circle-fill me-1"></i><strong>Data NIK terdeteksi</strong>' +
+            '<ul class="mb-0 mt-1 ps-3">' + details.join('') + '</ul></div>';
     }
 
-    // Tandai jika user mengisi birth date manual — supaya NIK tidak menimpa
+    // Tandai jika user mengisi birth date / birth place manual — supaya NIK tidak menimpa
     var birthDateEl = document.getElementById('aeBirthDate');
     if (birthDateEl) {
         birthDateEl.addEventListener('change', function () {
+            this.dataset.manualChanged = '1';
+        });
+    }
+    var birthPlaceEl = document.getElementById('aeBirthPlace');
+    if (birthPlaceEl) {
+        birthPlaceEl.addEventListener('input', function () {
             this.dataset.manualChanged = '1';
         });
     }
@@ -624,17 +783,30 @@
         if (nikFeedback) nikFeedback.innerHTML = '';
         var bdReset = document.getElementById('aeBirthDate');
         if (bdReset) delete bdReset.dataset.manualChanged;
+        var bpReset = document.getElementById('aeBirthPlace');
+        if (bpReset) delete bpReset.dataset.manualChanged;
+        // Reset nama validation state
+        if (nameEl) nameEl.classList.remove('is-valid', 'is-invalid');
+        nameHasError = false;
+        // Reset mode → employee (data-mode tetap di element, tapi title/status di-restore)
+        // applyMode dipanggil lagi saat show.bs.modal berikutnya, tidak perlu reset di sini
         saveBtn.disabled = true;
     });
 
     // ── Submit via Fetch ──────────────────────────────────────────────────────
 
     saveBtn.addEventListener('click', function () {
-        var fullName = val('aeFullName');
-        var status   = val('aeStatusEmployee');
+        var fullName    = val('aeFullName');
+        var status      = val('aeStatusEmployee');
+        var isOutsource = (modalEl.getAttribute('data-mode') === 'outsource');
 
         if (!fullName || !status) {
             toast('Nama lengkap dan Status Karyawan wajib diisi.', 'danger');
+            return;
+        }
+
+        if (isOutsource && !val('aeOutsourceVendor')) {
+            toast('Vendor Outsource wajib diisi untuk status Outsource.', 'danger');
             return;
         }
 

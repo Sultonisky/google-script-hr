@@ -72,6 +72,7 @@ Route::domain(config('hris.domains.hris'))->middleware('web')->group(function ()
         });
         Route::prefix('outsource')->name('outsource.')->middleware('can:view_employees')->group(function () {
             Route::get('/', [OutsourceController::class, 'index'])->name('index');
+            Route::post('/', [OutsourceController::class, 'store'])->name('store')->middleware('can:manage_employees');
         });
         Route::prefix('audit-logs')->name('audit-logs.')->middleware('can:view_reports')->group(function () {
             Route::get('/', [AuditLogController::class, 'index'])->name('index');
@@ -217,6 +218,7 @@ if (app()->environment('local')) {
 
             Route::prefix('outsource')->name('outsource.')->middleware('can:view_employees')->group(function () {
                 Route::get('/', [OutsourceController::class, 'index'])->name('index');
+                Route::post('/', [OutsourceController::class, 'store'])->name('store')->middleware('can:manage_employees');
             });
 
             Route::prefix('audit-logs')->name('audit-logs.')->middleware('can:view_reports')->group(function () {
