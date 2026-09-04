@@ -399,6 +399,30 @@
 </div>
 
 <script>
+{{-- ── Data Wilayah untuk NIK autofill (provinces + cities flat map) ──────────
+     Di-generate dari data/master_wilayah.json saat render, disimpan sebagai
+     variabel JS AE_REGIONS agar tidak konflik dengan REGIONS di halaman lain. --}}
+@php
+    $wilayahPath = base_path('data/master_wilayah.json');
+    $wilayahRaw  = file_exists($wilayahPath) ? json_decode(file_get_contents($wilayahPath), true) : [];
+
+    // Provinces: { "11": "ACEH", "12": "SUMATERA UTARA", ... }
+    $aeProvinces = $wilayahRaw['provinces'] ?? [];
+
+    // Cities: master_wilayah.json stores { "3201": { "name": "KAB. BOGOR", "province": "32" } }
+    // Flatten ke { "3201": "KAB. BOGOR" } agar konsisten dengan format REGIONS di apply.blade.php
+    $aeCities = [];
+    foreach ($wilayahRaw['cities'] ?? [] as $code => $val) {
+        $aeCities[(string)$code] = is_array($val) ? ($val['name'] ?? '') : (string)$val;
+    }
+@endphp
+var AE_REGIONS = {
+    provinces: @json($aeProvinces),
+    cities: @json($aeCities)
+};
+</script>
+
+<script>
 (function () {
     'use strict';
 
@@ -545,19 +569,20 @@
         var day    = parseInt(nik.substring(6, 8), 10);
         var gender = (day > 40) ? 'Perempuan' : 'Laki-laki';
         if (day > 40) day -= 40;
-        var month   = parseInt(nik.substring(8, 10), 10);
-        var year    = parseInt(nik.substring(10, 12), 10);
+        var month    = parseInt(nik.substring(8, 10), 10);
+        var year     = parseInt(nik.substring(10, 12), 10);
         var fullYear = (year <= 24) ? 2000 + year : 1900 + year;
         if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+        var provinceCode = nik.substring(0, 2);
+        var cityCode     = nik.substring(0, 4);
         return {
-            // YYYY-MM-DD untuk <input type="date">
-            birthDateIso: fullYear + '-' +
-                ('0' + month).slice(-2) + '-' +
-                ('0' + day).slice(-2),
-            // DD/MM/YYYY untuk display di feedback
-            birthDateFormatted: ('0' + day).slice(-2) + '/' +
-                ('0' + month).slice(-2) + '/' + fullYear,
-            gender: gender,
+            birthDateIso: fullYear + '-' + ('0' + month).slice(-2) + '-' + ('0' + day).slice(-2),
+            birthDateFormatted: ('0' + day).slice(-2) + '/' + ('0' + month).slice(-2) + '/' + fullYear,
+            gender:       gender,
+            provinceCode: provinceCode,
+            cityCode:     cityCode,
+            provinceName: (typeof AE_REGIONS !== 'undefined' && AE_REGIONS.provinces[provinceCode]) || null,
+            cityName:     (typeof AE_REGIONS !== 'undefined' && AE_REGIONS.cities[cityCode])     || null,
         };
     }
 
@@ -582,20 +607,44 @@
         var genEl = document.getElementById('aeGender');
         if (genEl) genEl.value = r.gender;
 
-        // Feedback sukses
+        // Autofill Tempat Lahir dari kota NIK (hanya jika belum diisi manual)
+        var bpEl = document.getElementById('aeBirthPlace');
+        if (bpEl && r.cityName && !bpEl.dataset.manualChanged) {
+            // Sederhanakan nama: hapus prefix "KAB." / "KOTA" → "KABUPATEN BOGOR" → "BOGOR"
+            var cityDisplay = r.cityName
+                .replace(/^KAB\.\s*/i, '')
+                .replace(/^KABUPATEN\s*/i, '')
+                .replace(/^KOTA\s*/i, '');
+            bpEl.value = cityDisplay
+                .split(' ')
+                .map(function (w) { return w.charAt(0) + w.slice(1).toLowerCase(); })
+                .join(' ');
+        }
+
+        // Bangun detail feedback
+        var details = [
+            '<li>Tanggal Lahir: ' + r.birthDateFormatted + '</li>',
+            '<li>Jenis Kelamin: ' + r.gender + '</li>',
+        ];
+        if (r.provinceName) details.push('<li>Provinsi: ' + r.provinceName + '</li>');
+        if (r.cityName)     details.push('<li>Kabupaten/Kota: ' + r.cityName + '</li>');
+
         nikFeedback.innerHTML =
             '<div class="alert alert-success p-2 mb-0" style="font-size:11.5px">' +
-            '<i class="bi bi-check-circle-fill me-1"></i><strong>Data dikenali</strong>' +
-            '<ul class="mb-0 mt-1 ps-3">' +
-            '<li>Tanggal Lahir: ' + r.birthDateFormatted + '</li>' +
-            '<li>Jenis Kelamin: ' + r.gender + '</li>' +
-            '</ul></div>';
+            '<i class="bi bi-check-circle-fill me-1"></i><strong>Data NIK terdeteksi</strong>' +
+            '<ul class="mb-0 mt-1 ps-3">' + details.join('') + '</ul></div>';
     }
 
-    // Tandai jika user mengisi birth date manual — supaya NIK tidak menimpa
+    // Tandai jika user mengisi birth date / birth place manual — supaya NIK tidak menimpa
     var birthDateEl = document.getElementById('aeBirthDate');
     if (birthDateEl) {
         birthDateEl.addEventListener('change', function () {
+            this.dataset.manualChanged = '1';
+        });
+    }
+    var birthPlaceEl = document.getElementById('aeBirthPlace');
+    if (birthPlaceEl) {
+        birthPlaceEl.addEventListener('input', function () {
             this.dataset.manualChanged = '1';
         });
     }
@@ -682,6 +731,8 @@
         if (nikFeedback) nikFeedback.innerHTML = '';
         var bdReset = document.getElementById('aeBirthDate');
         if (bdReset) delete bdReset.dataset.manualChanged;
+        var bpReset = document.getElementById('aeBirthPlace');
+        if (bpReset) delete bpReset.dataset.manualChanged;
         // Reset nama validation state
         if (nameEl) nameEl.classList.remove('is-valid', 'is-invalid');
         nameHasError = false;
