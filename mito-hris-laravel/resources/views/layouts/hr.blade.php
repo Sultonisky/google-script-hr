@@ -57,6 +57,7 @@
     @include('hr.partials.status-page-modals')
     @include('hr.recruitment.modals.action-modals')
     @include('hr.partials.employee-form-modal')
+    @include('hr.partials.add-employee-modal')
 
     <!-- 1:1 Drawer (Candidate/Employee/Outsource Profile) -->
     @include('components.hr-drawer')

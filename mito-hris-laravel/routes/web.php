@@ -56,6 +56,7 @@ Route::domain(config('hris.domains.hris'))->middleware('web')->group(function ()
             Route::post('/import/preview', [EmployeeController::class, 'importPreview'])->name('import.preview')->middleware('can:manage_employees');
             Route::get('/import/template', [EmployeeController::class, 'importTemplate'])->name('import.template')->middleware('can:manage_employees');
             Route::post('/import', [EmployeeController::class, 'import'])->name('import')->middleware('can:manage_employees');
+            Route::post('/', [EmployeeController::class, 'store'])->name('store')->middleware('can:manage_employees');
             Route::put('/{id}', [EmployeeController::class, 'update'])->name('update')->middleware('can:manage_employees');
             Route::post('/{id}/rotate', [EmployeeController::class, 'rotate'])->name('rotate')->middleware('can:manage_employees');
             Route::post('/{id}/offboard', [EmployeeController::class, 'offboard'])->name('offboard')->middleware('can:manage_employees');
@@ -198,6 +199,7 @@ if (app()->environment('local')) {
                 Route::post('/import/preview', [EmployeeController::class, 'importPreview'])->name('import.preview')->middleware('can:manage_employees');
                 Route::get('/import/template', [EmployeeController::class, 'importTemplate'])->name('import.template')->middleware('can:manage_employees');
                 Route::post('/import', [EmployeeController::class, 'import'])->name('import')->middleware('can:manage_employees');
+                Route::post('/', [EmployeeController::class, 'store'])->name('store')->middleware('can:manage_employees');
                 Route::put('/{id}', [EmployeeController::class, 'update'])->name('update')->middleware('can:manage_employees');
                 Route::post('/{id}/rotate', [EmployeeController::class, 'rotate'])->name('rotate')->middleware('can:manage_employees');
                 Route::post('/{id}/offboard', [EmployeeController::class, 'offboard'])->name('offboard')->middleware('can:manage_employees');
