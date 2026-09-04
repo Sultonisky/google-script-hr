@@ -16,7 +16,7 @@
         <div class="modal-content" style="border-radius:16px">
 
             {{-- HEADER --}}
-            <div class="modal-header" style="background:#005BAC;border-radius:16px 16px 0 0">
+            <div class="modal-header" style="background:#eb1c24;border-radius:16px 16px 0 0">
                 <div class="d-flex align-items-center gap-2 text-white">
                     <i class="bi bi-person-plus-fill fs-5"></i>
                     <h6 class="modal-title mb-0 fw-bold">Tambah Karyawan Baru</h6>
@@ -32,7 +32,7 @@
                      SEKSI 1: IDENTITAS & DATA PRIBADI
                      ============================================================ --}}
                 <p class="fw-bold mb-3"
-                    style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#005BAC">
+                    style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#eb1c24">
                     <i class="bi bi-person-badge-fill me-1"></i>Identitas &amp; Data Pribadi
                 </p>
                 <div class="row g-2 mb-3">
@@ -41,14 +41,18 @@
                             Nama Lengkap <span class="text-danger">*</span>
                         </label>
                         <input type="text" class="form-control form-control-sm" id="aeFullName"
-                            placeholder="Nama lengkap sesuai KTP" required autocomplete="off" />
+                            placeholder="Nama lengkap sesuai KTP" required autocomplete="off"
+                            maxlength="255" />
+                        <div class="invalid-feedback" id="aeFullNameFeedback" style="font-size:11.5px">
+                            Nama hanya boleh berisi huruf dan spasi.
+                        </div>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-semibold" style="font-size:12.5px">NIK (16 Digit)</label>
                         <input type="text" class="form-control form-control-sm" id="aeNik"
                             maxlength="16" placeholder="16 digit NIK" inputmode="numeric" />
                         <div class="d-flex align-items-center gap-1 mt-1"
-                            style="font-size:11px;color:#005BAC;background:#f0f7ff;border:1px solid #c7dff7;border-radius:6px;padding:4px 8px">
+                            style="font-size:11px;color:#eb1c24;background:#fff5f5;border:1px solid #fecaca;border-radius:6px;padding:4px 8px">
                             <i class="bi bi-magic flex-shrink-0"></i>
                             <span>NIK akan otomatis mengisi Tanggal Lahir &amp; Jenis Kelamin</span>
                         </div>
@@ -154,7 +158,7 @@
                      SEKSI 2: BANK & BPJS
                      ============================================================ --}}
                 <p class="fw-bold mb-3"
-                    style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#005BAC">
+                    style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#eb1c24">
                     <i class="bi bi-wallet2 me-1"></i>Bank &amp; BPJS
                 </p>
                 <div class="row g-2 mb-3">
@@ -205,7 +209,7 @@
                      SEKSI 3: STRUKTUR ORGANISASI & PEKERJAAN
                      ============================================================ --}}
                 <p class="fw-bold mb-3"
-                    style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#005BAC">
+                    style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#eb1c24">
                     <i class="bi bi-briefcase-fill me-1"></i>Struktur Organisasi &amp; Pekerjaan
                 </p>
                 <div class="row g-2 mb-3">
@@ -346,7 +350,7 @@
                 <div id="aeContractSection" style="display:none">
                     <hr class="my-3" />
                     <p class="fw-bold mb-3"
-                        style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#005BAC">
+                        style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#eb1c24">
                         <i class="bi bi-file-earmark-text-fill me-1"></i>Kontrak
                     </p>
                     <div class="row g-2 mb-3">
@@ -366,7 +370,7 @@
                      SEKSI 5: CATATAN HR
                      ============================================================ --}}
                 <p class="fw-bold mb-3"
-                    style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#005BAC">
+                    style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#eb1c24">
                     <i class="bi bi-chat-square-text-fill me-1"></i>Catatan HR
                 </p>
                 <div class="row g-2">
@@ -383,7 +387,7 @@
                 <button type="button" class="btn btn-outline-secondary btn-sm"
                     data-bs-dismiss="modal">Batal</button>
                 <button type="button" class="btn btn-sm text-white fw-semibold" id="btnAddEmployeeSave"
-                    style="background:#005BAC;border:none" disabled>
+                    style="background:#eb1c24;border:none" disabled>
                     <span id="aeSpinner" class="spinner-border spinner-border-sm me-1 d-none"
                         role="status" aria-hidden="true"></span>
                     <i class="bi bi-person-plus-fill me-1" id="aeIcon"></i>Simpan Karyawan
@@ -432,11 +436,65 @@
     // ── Enable/Disable simpan button ─────────────────────────────────────────
 
     function checkForm() {
-        var ok = val('aeFullName') !== '' && val('aeStatusEmployee') !== '';
+        var ok = val('aeFullName') !== '' && val('aeStatusEmployee') !== '' && !nameHasError;
         saveBtn.disabled = !ok;
     }
 
-    ['aeFullName', 'aeStatusEmployee'].forEach(function (id) {
+    // ── Validasi Nama Lengkap (1:1 dari GAS / public career apply.blade.php) ─
+    // Hanya huruf (termasuk huruf berdiakritik/aksara) dan spasi tunggal antar kata.
+    // Regex: Unicode letter categories \p{L} — di-emulasi dengan rentang karakter
+    // yang mencakup Latin + Latin Extended (nama Indonesia, Arab, dll.).
+
+    var nameHasError = false;
+    var nameEl       = document.getElementById('aeFullName');
+    var nameFeedback = document.getElementById('aeFullNameFeedback');
+
+    // Regex huruf + spasi: melarang angka, tanda baca, simbol
+    // Menggunakan rentang Unicode Latin dasar & extended agar nama dengan
+    // aksen (é, ñ, ü, dll.) tetap diterima — konsisten dengan pattern di apply.blade.php
+    var NAME_VALID_CHARS = /^[A-Za-zÀ-ÖØ-öø-ÿ\u0100-\u024F '.\-]+$/;
+    var NAME_MIN_LENGTH  = 3;
+
+    function validateFullName() {
+        if (!nameEl) return;
+        var v = nameEl.value;
+
+        if (v === '') {
+            // Kosong — reset ke netral (belum disentuh)
+            nameEl.classList.remove('is-valid', 'is-invalid');
+            nameHasError = false;
+            checkForm();
+            return;
+        }
+
+        // Sanitize otomatis: buang karakter yang jelas tidak valid (angka, simbol)
+        // tapi biarkan huruf, spasi, apostrof, titik, dan tanda hubung (nama seperti
+        // "d'Silva", "van der Waals", "Tri-Wahyu") — konsisten dengan GAS validateName_()
+        var sanitized = v.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\u0100-\u024F '.\-]/g, '');
+        if (sanitized !== v) {
+            nameEl.value = sanitized;
+            v = sanitized;
+        }
+
+        // Minimal 3 karakter & hanya karakter yang diizinkan
+        if (v.length < NAME_MIN_LENGTH || !NAME_VALID_CHARS.test(v)) {
+            nameEl.classList.add('is-invalid');
+            nameEl.classList.remove('is-valid');
+            nameHasError = true;
+        } else {
+            nameEl.classList.remove('is-invalid');
+            nameEl.classList.add('is-valid');
+            nameHasError = false;
+        }
+        checkForm();
+    }
+
+    if (nameEl) {
+        nameEl.addEventListener('input', validateFullName);
+        nameEl.addEventListener('blur',  validateFullName);
+    }
+
+    ['aeStatusEmployee'].forEach(function (id) {
         var el = document.getElementById(id);
         if (el) el.addEventListener('input', checkForm);
     });
@@ -624,6 +682,9 @@
         if (nikFeedback) nikFeedback.innerHTML = '';
         var bdReset = document.getElementById('aeBirthDate');
         if (bdReset) delete bdReset.dataset.manualChanged;
+        // Reset nama validation state
+        if (nameEl) nameEl.classList.remove('is-valid', 'is-invalid');
+        nameHasError = false;
         saveBtn.disabled = true;
     });
 
