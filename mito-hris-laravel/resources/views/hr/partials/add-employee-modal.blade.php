@@ -18,8 +18,8 @@
             {{-- HEADER --}}
             <div class="modal-header" style="background:#eb1c24;border-radius:16px 16px 0 0">
                 <div class="d-flex align-items-center gap-2 text-white">
-                    <i class="bi bi-person-plus-fill fs-5"></i>
-                    <h6 class="modal-title mb-0 fw-bold">Tambah Karyawan Baru</h6>
+                    <i class="bi bi-person-plus-fill fs-5" id="aeModalIcon"></i>
+                    <h6 class="modal-title mb-0 fw-bold" id="aeModalTitle">Tambah Karyawan Baru</h6>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                     aria-label="Tutup"></button>
@@ -390,7 +390,7 @@
                     style="background:#eb1c24;border:none" disabled>
                     <span id="aeSpinner" class="spinner-border spinner-border-sm me-1 d-none"
                         role="status" aria-hidden="true"></span>
-                    <i class="bi bi-person-plus-fill me-1" id="aeIcon"></i>Simpan Karyawan
+                    <i class="bi bi-person-plus-fill me-1" id="aeIcon"></i><span id="aeSaveLabel">Simpan Karyawan</span>
                 </button>
             </div>
 
@@ -457,12 +457,64 @@ var AE_REGIONS = {
 
     if (!modalEl || !saveBtn) return;
 
+    // ── Mode: 'employee' (default) atau 'outsource' ────────────────────────
+    // Di-set lewat modalEl.setAttribute('data-mode', 'outsource') dari halaman outsource.
+    // Saat show.bs.modal, mode dibaca dan UI disesuaikan.
+
+    var modalTitle  = document.getElementById('aeModalTitle');
+    var modalIcon   = document.getElementById('aeModalIcon');
+    var saveLabel   = document.getElementById('aeSaveLabel');
+
+    function applyMode(mode) {
+        var isOutsource = (mode === 'outsource');
+
+        // Header title + icon
+        if (modalTitle) modalTitle.textContent = isOutsource ? 'Tambah Karyawan Outsource' : 'Tambah Karyawan Baru';
+        if (modalIcon)  {
+            modalIcon.className = isOutsource
+                ? 'bi bi-building-fill-gear fs-5'
+                : 'bi bi-person-plus-fill fs-5';
+        }
+        if (saveLabel) saveLabel.textContent = isOutsource ? 'Simpan Outsource' : 'Simpan Karyawan';
+
+        // Status dropdown: force Outsource + readonly
+        if (statusEl) {
+            if (isOutsource) {
+                statusEl.value    = 'Outsource';
+                statusEl.disabled = true;
+                statusEl.style.background    = '#f0f4f8';
+                statusEl.style.cursor        = 'not-allowed';
+                statusEl.style.pointerEvents = 'none';
+            } else {
+                statusEl.value    = 'Contract';
+                statusEl.disabled = false;
+                statusEl.style.background    = '';
+                statusEl.style.cursor        = '';
+                statusEl.style.pointerEvents = '';
+            }
+        }
+
+        // Sync dependent fields after mode change
+        syncStatusDependentFields();
+        checkForm();
+    }
+
+    modalEl.addEventListener('show.bs.modal', function () {
+        applyMode(this.getAttribute('data-mode') || 'employee');
+    });
+
     // ── Enable/Disable simpan button ─────────────────────────────────────────
 
     function checkForm() {
-        var ok = val('aeFullName') !== '' && val('aeStatusEmployee') !== '' && !nameHasError;
+        var isOutsource = (modalEl.getAttribute('data-mode') === 'outsource');
+        var vendorOk    = !isOutsource || val('aeOutsourceVendor') !== '';
+        var ok = val('aeFullName') !== '' && val('aeStatusEmployee') !== '' && !nameHasError && vendorOk;
         saveBtn.disabled = !ok;
     }
+
+    // Vendor input juga trigger checkForm
+    var vendorInputEl = document.getElementById('aeOutsourceVendor');
+    if (vendorInputEl) vendorInputEl.addEventListener('input', checkForm);
 
     // ── Validasi Nama Lengkap (1:1 dari GAS / public career apply.blade.php) ─
     // Hanya huruf (termasuk huruf berdiakritik/aksara) dan spasi tunggal antar kata.
@@ -736,17 +788,25 @@ var AE_REGIONS = {
         // Reset nama validation state
         if (nameEl) nameEl.classList.remove('is-valid', 'is-invalid');
         nameHasError = false;
+        // Reset mode → employee (data-mode tetap di element, tapi title/status di-restore)
+        // applyMode dipanggil lagi saat show.bs.modal berikutnya, tidak perlu reset di sini
         saveBtn.disabled = true;
     });
 
     // ── Submit via Fetch ──────────────────────────────────────────────────────
 
     saveBtn.addEventListener('click', function () {
-        var fullName = val('aeFullName');
-        var status   = val('aeStatusEmployee');
+        var fullName    = val('aeFullName');
+        var status      = val('aeStatusEmployee');
+        var isOutsource = (modalEl.getAttribute('data-mode') === 'outsource');
 
         if (!fullName || !status) {
             toast('Nama lengkap dan Status Karyawan wajib diisi.', 'danger');
+            return;
+        }
+
+        if (isOutsource && !val('aeOutsourceVendor')) {
+            toast('Vendor Outsource wajib diisi untuk status Outsource.', 'danger');
             return;
         }
 

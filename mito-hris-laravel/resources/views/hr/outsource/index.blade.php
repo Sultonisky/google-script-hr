@@ -21,7 +21,6 @@
             </div>
         </div>
 
-        <!-- Outsource Table Panel -->
         <div class="panel mt-2" id="outsourcePanel">
             <div class="panel-header">
                 <div>
@@ -35,6 +34,18 @@
                         @endif
                     </div>
                 </div>
+                @can('manage_employees')
+                    <div class="export-btns d-flex flex-wrap gap-2">
+                        <button class="btn btn-sm fw-semibold text-white"
+                            style="background:#eb1c24;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
+                            type="button"
+                            data-bs-toggle="modal"
+                            data-bs-target="#addEmployeeModal"
+                            id="btnAddOutsource">
+                            <i class="bi bi-building-fill-gear me-1"></i>Tambah Outsource
+                        </button>
+                    </div>
+                @endcan
             </div>
 
             <!-- Filter bar -->
@@ -133,6 +144,15 @@
 
 @section('scripts')
     <script>
+        // Wire add-employee modal untuk mode outsource
+        document.addEventListener('DOMContentLoaded', function () {
+            var aeModal = document.getElementById('addEmployeeModal');
+            if (aeModal) {
+                aeModal.setAttribute('data-mode', 'outsource');
+                aeModal.setAttribute('data-store-url', '{{ route("hr.outsource.store") }}');
+            }
+        });
+
         // Drawer click handler for outsource
         document.querySelectorAll('#osTableBody tr[data-drawer-type="outsource"]').forEach(function(row) {
             row.addEventListener('click', function(e) {
