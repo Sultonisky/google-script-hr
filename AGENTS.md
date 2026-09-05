@@ -1,166 +1,115 @@
-﻿# AGENTS.md — AI Agent Instructions for HRIS Project
+﻿# AGENTS.md - AI Agent Instructions for MITO HRIS
 
 ## Project Overview
 
-**Project Name**: MITO HRIS — Applicant Tracking System (ATS)  
-**Type**: Google Apps Script + HTML/Bootstrap 5  
-**Database**: Google Spreadsheet  
-**Purpose**: Recruitment management and HR dashboard for tracking candidates from application to employee onboarding
+MITO HRIS is a Laravel application in `mito-hris-laravel/`. The repository is
+the original shared Git repository, but the legacy Google Apps Script source has
+been removed. Do not recreate the GAS application or introduce a second
+repository.
 
----
+- **Backend:** Laravel 12, PHP 8.2+
+- **Frontend:** Blade, JavaScript, SCSS, Bootstrap 5, Vite
+- **Data services:** Google Sheets API and Google Drive API through Laravel services
+- **Authentication:** Session-based HR and MPR authentication with domain isolation
+- **Deployment:** GitHub Actions, SSH, Composer, NPM/Vite, and Laravel Artisan
+- **User-facing language:** Indonesian unless existing product copy requires otherwise
+
+## Repository Boundaries
+
+- `mito-hris-laravel/` is the active application and must be preserved.
+- `.github/workflows/` contains the active Laravel CI/CD and must not be changed
+  unless a concrete deployment defect is demonstrated.
+- `app/`, `bootstrap/`, `config/`, `database/`, `public/`, `resources/`,
+  `routes/`, `tests/`, `composer.json`, `composer.lock`, `package.json`, and
+  `vite.config.js` are protected application surfaces.
+- Root historical/reference files may be reviewed separately, but do not assume
+  that a document, spreadsheet, image, or template is disposable.
+- Do not recreate deleted GAS files such as `Kode.gs`, `backend/`, `views/`,
+  `partials/`, `css/`, or `js/`.
 
 ## Development Rules
 
-### 1. Google Apps Script Rules
+### Laravel and PHP
 
-- **Single File Backend**: All Apps Script code MUST be in ONE `.gs` file (currently `Kode.gs`)
-- **No Multiple doGet()**: Only ONE `doGet(e)` function allowed in the entire project
-- **No Multiple doPost()**: Only ONE `doPost(e)` function allowed if needed
-- **Function Naming**: Use camelCase for public functions, snake_case for private functions (trailing underscore)
-- **Lock Service**: Always use `LockService.getScriptLock()` for concurrent operations (candidate updates, ID generation)
-- **Properties Service**: Use `PropertiesService.getScriptProperties()` for counters and settings
-- **Spreadsheet Operations**: Use `getOrCreateSheet_()` pattern for safe sheet creation
-- **Error Handling**: Wrap all public functions in try-catch, return error messages as strings or objects
-- **Audit Logging**: All status changes MUST call `writeAuditLog_()` with action, old value, new value
+- Follow existing Laravel controllers, services, repositories, DTOs, requests,
+  middleware, policies, and Blade conventions before adding abstractions.
+- Keep authentication, authorization, RBAC, domain middleware, and session
+  isolation intact.
+- Keep public URLs, route names, request contracts, sheet schemas, and business
+  workflows backward compatible unless the task explicitly changes them.
+- Use strict validation at request boundaries and preserve existing Indonesian
+  error messages and response shapes.
+- Keep PHP formatting consistent with the surrounding file. Do not perform
+  broad formatting or unrelated refactors.
 
-### 2. Bootstrap 5 Rules
+### Google Sheets and Drive Integration
 
-- **Version**: Bootstrap 5.3.0 (CDN: `https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css`)
-- **Icons**: Bootstrap Icons 1.11.3 (CDN: `https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css`)
-- **No Custom CSS Frameworks**: Do not add Tailwind, Bulma, or other CSS frameworks
-- **Component Classes**: Use standard Bootstrap classes (btn, card, modal, dropdown, etc.)
-- **Grid System**: Use Bootstrap grid (container, row, col-*) for layouts
-- **Responsive**: All pages MUST be mobile-responsive using Bootstrap breakpoints
+- Google Sheets and Google Drive are valid Laravel integrations, not Apps Script.
+- Preserve `google/apiclient`, `config/google.php`, Google client factories,
+  Sheets repositories/services, Drive services, and credential configuration.
+- Do not rename existing spreadsheet tabs or headers without explicit approval.
+- Preserve canonical sheet column order and identifier handling, especially NIK,
+  phone numbers, employee IDs, and recruitment IDs.
+- Store timestamps using the existing `Asia/Jakarta` convention.
+- Never expose service-account credentials, `.env` values, or uploaded secrets.
 
-### 3. Spreadsheet Rules
+### Frontend
 
-- **Sheet Names**: Use constants for sheet names (SHEET_NAME, DASHBOARD_SHEET_NAME, etc.)
-- **Column Headers**: NEVER rename existing headers without explicit instruction
-- **Column Order**: Core columns have fixed order (SHEET_HEADERS array), extra columns append at end
-- **Data Types**: 
-  - NIK and Phone: Store as text with leading apostrophe (`'` + value)
-  - Dates: Store as strings in "yyyy-MM-dd HH:mm:ss" format (GMT+7)
-  - Numbers: Store as numbers, not strings
-- **Header Styling**: Bold, #005BAC background, white text, frozen first row
-- **Auto-Resize**: Call `autoResizeColumns()` after creating sheets
-- **Safe Operations**: Use `ensureExtraHeaders_()` to add columns without breaking existing data
+- Use the existing Blade and Vite entrypoints in `resources/`.
+- Preserve Bootstrap 5, Bootstrap Icons, existing SCSS variables, responsive
+  behavior, CSP hardening, and domain-specific layouts.
+- Do not reintroduce the removed GAS HTML include pattern or `google.script.run`.
+- Keep public career/outsource portals and HR/MPR dashboards isolated as the
+  current middleware and view structure requires.
 
-### 4. File Modification Rules
+### File Modification and Git Safety
 
-- **Preserve Structure**: Never rewrite the project from scratch
-- **Extend, Don't Replace**: Always add to existing implementation
-- **Minimal Changes**: Only modify files necessary for the requested feature
-- **No Renaming**: Never rename files, functions, or spreadsheet headers without instruction
-- **Backward Compatibility**: All changes must maintain compatibility with existing data
-- **Testing**: Verify changes don't break existing functionality
+- Make the smallest change that solves the request.
+- Never rewrite Git history, change remotes, create repositories, force-push, or
+  change branches unless explicitly requested.
+- Do not run destructive commands such as `git reset --hard`, `git clean -fd`,
+  history filters, or broad deletion commands.
+- Before editing, inspect `git status` and preserve unrelated user changes.
+- Do not commit changes unless explicitly requested.
 
-### 5. Response Format
+## Validation
 
-Every response MUST include:
-1. **Brief explanation** of what was changed
-2. **List of modified files**
-3. **Dependencies** (if any were added/modified)
-4. **Breaking Changes**: Explicitly state "Breaking Changes: None" if applicable
+Use the narrowest relevant checks, then broaden when the change warrants it.
+Typical Laravel checks are:
 
-### 6. Version Control Policy
-
-- **NO Git Operations**: Do NOT initialize repositories, create commits, push, or pull
-- **Local Development Only**: Treat workspace as local folder only
-- **No GitHub**: Do not suggest Git operations unless explicitly requested
-
-### 7. Coding Standards
-
-- **Language**: JavaScript (Apps Script), HTML, CSS
-- **Indentation**: 2 spaces (no tabs)
-- **Quotes**: Single quotes for JavaScript, double quotes for HTML attributes
-- **Naming**:
-  - Public functions: camelCase (`simpanDataKandidat`)
-  - Private functions: snake_case with trailing underscore (`getOrCreateSheet_`)
-  - Constants: UPPER_SNAKE_CASE (`SHEET_NAME`)
-  - Variables: camelCase
-- **Comments**: Use `// ==============` section dividers, document complex logic
-- **Error Messages**: Return user-friendly Indonesian messages
-- **Date Format**: Always use "GMT+7" timezone, format "yyyy-MM-dd HH:mm:ss"
-
-### 8. Architecture Preservation Rules
-
-- **Single Source of Truth**: Existing codebase is the reference
-- **No Rewrites**: Never rewrite existing modules
-- **Function Signatures**: Maintain existing function signatures for public APIs
-- **Data Flow**: Preserve existing data flow patterns
-- **UI/UX**: Maintain existing design system (colors, spacing, components)
-
-### 9. Dependency Analysis Requirements
-
-Before any modification:
-1. Read ALL files in workspace
-2. Identify all function calls and dependencies
-3. Map data flow between backend and frontend
-4. Check for side effects on other modules
-5. Verify spreadsheet column dependencies
-
-### 10. Output Requirements
-
-- **Production-Ready Code**: All code must be complete, no placeholders
-- **No Pseudo Code**: Write actual working code
-- **Complete Files**: Provide full file content when using `write_to_file`
-- **Tested Logic**: Ensure all code paths are handled
-- **Indonesian Language**: All user-facing text must be in Indonesian
-
----
-
-## Quick Reference
-
-### Current File Structure
-```
-e:/Project/HRIS/
-├── Kode.gs              # Backend (655 lines) - ALL Apps Script code
-├── Dashboard.html       # HR Dashboard (1890 lines) - Main interface
-└── FormPendaftaran.html # Registration Portal (978 lines) - Candidate form
+```powershell
+php artisan test --without-tty
+php artisan view:cache
+php artisan route:list
+npm run build
 ```
 
-### Key Backend Functions
-- `doGet(e)` - Router (dashboard vs registration)
-- `simpanDataKandidat(formObject)` - Save candidate
-- `getRecruitmentList()` - Fetch all candidates
-- `updateCandidateStatus(id, status, notes)` - Generic status update
-- `holdCandidate(id, reason, followUpDate, notes)` - Hold with reason
-- `blacklistCandidate(id, reason, notes)` - Blacklist with reason
-- `acceptCandidateToEmployee(id, notes)` - Accept and create employee
-- `saveHrNotes(id, notes)` - Auto-save HR notes
-- `getAuditLogForCandidate(id)` - Get activity timeline
+For PHP-only changes, run PHP syntax checks on the touched slice. For changes
+to Google integration, use targeted tests and avoid live destructive operations
+against production Sheets or Drive.
 
-### Key Frontend Pages
-- **Dashboard**: `?page=dashboard` - Full HR dashboard with charts, filters, drawer
-- **Registration**: `?type=kandidat` (default) - Candidate registration form
+## Important Commands
 
-### Spreadsheet Sheets
-1. `data_kandidat` - Candidate data (25 core + 6 extra columns)
-2. `Employee` - Master employee data (10 columns)
-3. `Audit_Log` - Activity tracking (6 columns)
+CI runs from `mito-hris-laravel/` and installs Composer/NPM dependencies, checks
+PHP syntax, builds Vite assets, and runs Laravel tests. Deployment runs from the
+same application directory over SSH and executes Laravel Artisan diagnostics,
+Google Sheets health/schema checks, sync, caching, and PHP-FPM reload.
 
-### Color Palette
-- Primary: `#005BAC`
-- Primary Dark: `#00437e`
-- Navy: `#0B2540`
-- Accent: `#FDB913`
-- Success: `#166534`
-- Danger: `#991b1b`
-- Warning: `#8a6100`
+Do not add `clasp`, Apps Script deployment, or GAS-specific CI tasks.
 
----
+## Response Requirements
 
-## Critical Warnings
+When completing a coding task, report:
 
-⚠️ **NEVER** create a second `.gs` file — Apps Script will conflict  
-⚠️ **NEVER** rename `Recruitment ID` column — breaks all lookups  
-⚠️ **NEVER** change column order in SHEET_HEADERS — breaks existing data  
-⚠️ **NEVER** remove `LockService` from concurrent operations  
-⚠️ **NEVER** store NIK/Phone as numbers — leading zeros will be lost  
-⚠️ **ALWAYS** test with existing spreadsheet data before deploying  
-⚠️ **ALWAYS** preserve Indonesian language in user-facing text  
+1. What changed and why.
+2. Modified files.
+3. Dependencies added or changed, or state that none were added.
+4. Validation actually run and its result.
+5. Breaking changes, explicitly stating `Breaking Changes: None` when applicable.
 
----
+Do not claim tests, deployment, or external service checks passed unless they
+were actually executed.
 
 ## Last Updated
-2026-07-30 - Initial documentation based on codebase analysis
+
+2026-09-05 - Updated for the Laravel application after legacy GAS cleanup.

@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased] - 2026-09-05
+
+### Changed
+- Documented `mito-hris-laravel/` as the active Laravel 12 application.
+- Updated `AGENTS.md`, `ARCHITECTURE.md`, and `PROJECT.md` for the current Laravel, Blade, Vite, Google API, and CI/CD architecture.
+
+### Removed
+- Removed confirmed legacy Google Apps Script source, HTML templates, backend/frontend include folders, Apps Script manifests, and local `clasp` tasks.
+- Preserved the existing repository, Git history, remote, branches, Laravel application, Google API integration, and CI/CD workflows.
+
+### Documentation
+- Retained older GAS release entries below as historical project history.
+
+### Validation
+- PHP syntax checks passed.
+- Laravel route listing passed.
+- Blade view cache passed.
+- Vite production build passed.
+- PHPUnit suite passed.
+
+---
+
 ## [0.6.0] - 2026-08-03
 
 ### Added
@@ -251,7 +273,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [Legacy Unreleased]
 
 ### Added
 - Features in development (see ROADMAP.md Phase 2)
@@ -328,4 +350,4 @@ When making changes, add a new section at the top following this format:
 ---
 
 ## Last Updated
-2026-08-03 - Updated for v0.6.0 stabilization phase
+2026-09-05 - Updated for Laravel migration and legacy GAS cleanup

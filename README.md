@@ -1,271 +1,229 @@
-﻿# MITO HRIS — Applicant Tracking System (ATS)
+# MITO HRIS
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Google Apps Script](https://img.shields.io/badge/Google%20Apps%20Script-000000?style=flat&logo=googleappsscript)](https://script.google.com/)
-[![Bootstrap 5](https://img.shields.io/badge/Bootstrap%205-7952B3?style=flat&logo=bootstrap&logoColor=white)](https://getbootstrap.com/)
+MITO HRIS is a proprietary internal Human Resource Information System for MITO
+Group. The active application is a Laravel 12 monolith in
+`mito-hris-laravel/`.
 
-A comprehensive **Human Resource Information System (HRIS)** with a full-featured **Applicant Tracking System (ATS)** built using **Google Apps Script**, **Google Sheets**, and **Bootstrap 5**.
+This repository remains the original shared Git repository. The legacy Google
+Apps Script runtime has been removed. Google Sheets and Google Drive remain
+integrated through Laravel's Google API services.
 
-This system is designed for recruitment management, employee tracking, and HR operations, providing a modern, responsive, and secure web interface directly from Google Workspace.
+## Project Status
 
-## 🌟 Features
+- Active application: Laravel 12
+- PHP: 8.2+
+- Frontend: Blade, JavaScript, SCSS, Bootstrap 5, Vite
+- Data services: Google Sheets API and Google Drive API
+- Authentication: Session-based HR and MPR portals with domain isolation
+- Deployment: GitHub Actions, SSH, Composer, NPM/Vite, and Laravel Artisan
+- License: Proprietary and internal; not open source and not distributed under
+  the MIT License
 
-### Core Modules
-- **Recruitment Portal**: Public-facing form for candidates to apply directly
-- **Public Registration**: Open application portal for external candidates
-- **Recruitment Dashboard**: Comprehensive view of all applicants and their status
-- **Employee Management**: Track employee data, contracts, and status
-- **Master Data**: Manage organizational data and settings
-- **Portal Settings**: Customize portal appearance and behavior
+See [SECURITY.md](SECURITY.md) for access, security, and vulnerability reporting
+policy.
 
-### ATS Features
-- **Candidate Pipeline**: Visual representation of the recruitment funnel
-- **Contract Tracking**: Monitor contract durations and renewals
-- **Dashboard Analytics**: Real-time insights and data visualization
-- **Advanced Search**: Full-text search across all candidate fields
-- **Smart Filters**: Multi-criteria filtering (status, position, location, salary, etc.)
-- **Bulk Actions**: Perform mass updates or deletions on selected candidates
-- **Export Options**: Export data to CSV, Excel, and PDF formats
-- **Responsive UI**: Seamless experience across desktop, tablet, and mobile devices
-- **Dark Mode**: Eye-friendly dark theme for extended use
-- **Audit Log**: Complete history of all changes and actions performed
+## Application Areas
 
-## 🛠️ Tech Stack
+### Public Career Portal
 
-| Technology | Usage |
-|------------|-------|
-| **Google Apps Script** | Backend logic, API, and server-side processing |
-| **Google Sheets** | Primary database for all application data |
-| **HTML5 / CSS3** | Frontend structure and styling |
-| **JavaScript (ES6+)** | Client-side interactivity and logic |
-| **Bootstrap 5.3** | Responsive UI framework |
-| **Bootstrap Icons** | Icon library |
-| **GitHub** | Version control and collaboration |
+- Career landing page and candidate application
+- Application status checking
+- Candidate self-update flow
+- Region and NIK lookup endpoints
 
-## 📁 Folder Structure
+### Public Outsource Portal
 
-```plaintext
-e:/Project/HRIS/
-├── Kode.gs                     # Main entry point & Router (doGet)
-├── GenerateDummyData.gs        # Data generation for testing
-├── OutsourceForm.html          # Outsource registration form (standalone)
-├── FormPendaftaran.html        # Candidate registration form (standalone)
-│
-├── views/                      # Main HTML templates
-│   ├── Dashboard.html          # HR Dashboard (Main interface)
-│   ├── DashboardRecruitment.html # Recruitment Dashboard
-│   ├── AccessDenied.html       # Access denied page (unauthorized)
-│   └── UserManagement.html     # User management (Super Admin only)
-│
-├── partials/                   # Reusable HTML components
-│   ├── Sidebar.html
-│   ├── Topbar.html
-│   ├── Charts.html
-│   ├── Drawer.html
-│   ├── Statistics.html
-│   ├── CandidateTable.html
-│   ├── Modals.html
-│   ├── SettingsPanel.html
-│   ├── OutsourceTable.html
-│   ├── OutsourceFormBody.html
-│   ├── FormBody.html
-│   └── FloatingActionButton.html
-│
-├── css/                        # Stylesheets
-│   ├── theme.html
-│   ├── dashboard.html
-│   ├── table.html
-│   ├── form.html
-│   ├── sidebar.html
-│   ├── topbar.html
-│   ├── drawer.html
-│   ├── modal.html
-│   ├── responsive.html
-│   └── table.html
-│
-├── js/                         # Client-side JavaScript
-│   ├── app.html                # Main application logic
-│   ├── api.html                # API communication layer
-│   ├── charts.html             # Data visualization
-│   ├── dashboard.html          # Dashboard specific logic
-│   ├── filters.html            # Advanced filtering system
-│   ├── table.html              # Table interactions
-│   ├── export.html             # Data export functionality
-│   ├── import.html             # Data import functionality
-│   ├── settings.html           # Settings management
-│   ├── helpers.html            # Utility functions
-│   ├── regions.html            # Region/Address data handling
-│   ├── drawer.html             # Side drawer logic
-│   ├── formApp.html            # Form submission logic
-│   ├── modals.html             # Modal dialogs
-│   ├── outsourceApp.html       # Outsource module logic
-│   └── outsourceDashboard.html # Outsource dashboard logic
-│
-├── backend/                    # Server-side Google Apps Script modules
-│   ├── Config.gs               # Global constants and configuration
-│   ├── Utilities.gs            # Helper functions (findCandidateRow_, etc)
-│   ├── Sheets.gs               # Spreadsheet management
-│   ├── Validation.gs           # Server-side form validation
-│   ├── Audit.gs                # Audit logging
-│   ├── Recruitment.gs          # CRUD operations for candidates
-│   ├── BulkActions.gs          # Bulk update & delete
-│   ├── IdGenerator.gs          # ID generation for recruitment & employees
-│   ├── Export.gs               # Server-side export logic
-│   ├── Import.gs               # CSV/Excel import logic
-│   ├── Settings.gs             # Application settings
-│   ├── PortalSettings.gs       # Portal configuration
-│   ├── Outsource.gs            # Outsource employee management
-│   └── Auth.gs                 # Authentication & authorization
-│
-└── data/                       # Static data files
-    ├── master_wilayah.json     # Master region data
-    └── kecamatan_all.json      # District data
+- Outsource registration
+- Validation and document upload flow
+- Laravel service and Google Sheets persistence
+
+### HR Portal
+
+- Recruitment dashboard and candidate status management
+- Employee master data and spreadsheet imports
+- Contracts, rotations, offboarding, and probation
+- Master data, portal settings, users, and audit logs
+- CSV, XLSX, and PDF exports
+- HR document generation
+
+### MPR Portal
+
+- Requestor authentication
+- Manpower request creation and history
+- MPR PDF generation
+- Isolated MPR session and authorization context
+
+## Technology Stack
+
+| Technology        | Role                         |
+| ----------------- | ---------------------------- |
+| Laravel 12        | Application framework        |
+| PHP 8.2+          | Backend runtime              |
+| Blade             | Server-rendered views        |
+| Vite 6            | Frontend asset build         |
+| SCSS              | Application styling          |
+| Bootstrap 5       | UI framework                 |
+| Google API Client | Sheets and Drive integration |
+| Dompdf            | PDF generation               |
+| PhpSpreadsheet    | Spreadsheet import/export    |
+| PHPUnit           | Automated tests              |
+
+## Repository Structure
+
+```text
+google-script-hr/
+├── .github/workflows/
+│   ├── ci.yml                    # Laravel test and frontend build workflow
+│   └── deploy.yml                # SSH production deployment workflow
+├── mito-hris-laravel/
+│   ├── app/                      # Controllers, services, repositories, DTOs, and rules
+│   ├── bootstrap/                # Laravel bootstrap and providers
+│   ├── config/                   # Application and Google integration configuration
+│   ├── database/data/            # Laravel-local region data
+│   ├── public/                   # Web entrypoint, assets, data, and build output
+│   ├── resources/                # Blade views, JavaScript, and SCSS
+│   ├── routes/                   # Web, API, and console routes
+│   ├── storage/                  # Runtime files and protected credentials
+│   └── tests/                    # Feature and unit tests
+├── AGENTS.md                    # Agent and development rules
+├── ARCHITECTURE.md              # Runtime architecture
+├── CHANGELOG.md                 # Project history
+├── LICENSE                      # Proprietary license terms
+├── PROJECT.md                   # Technical project documentation
+└── SECURITY.md                  # Proprietary access and security policy
 ```
 
-## 📸 Screenshots
+Root-level reference artifacts such as `data/`, `images/`, `templates/`, and
+historical documents are separate from the Laravel runtime. Do not assume they
+are application dependencies without tracing their actual use.
 
-> *Note: Screenshots will be added here.*
+## Requirements
 
-### Dashboard
-![Dashboard Preview](docs/images/dashboard.png)
+- PHP 8.2 or newer
+- Composer
+- Node.js 20 or compatible current Node.js release
+- NPM
+- Access to the configured Google Sheets and Google Drive resources for live
+  integration checks
+- A service-account credential file for Google API operations
 
-### Recruitment
-![Recruitment Preview](docs/images/recruitment.png)
+## Local Setup
 
-### Registration Form
-![Form Preview](docs/images/form.png)
+From the repository root:
 
-## 🚀 Installation
-
-### Prerequisites
-- A Google Account with access to Google Drive
-- Basic knowledge of Google Apps Script
-
-### Steps
-
-1. **Clone the Repository**
-   ```bash
-   git clone https://github.com/your-username/HRIS.git
-   cd HRIS
-   ```
-
-2. **Open Google Apps Script**
-   - Go to [script.google.com](https://script.google.com/)
-   - Click **New Project**
-   - Click **File** > **Project Properties** > Get the **Script ID**
-
-3. **Copy Files**
-   - Create new files in the Apps Script editor matching the folder structure above
-   - Copy the content of each file into the corresponding Apps Script file
-   - **Important**: Place all `.gs` files in the root or ensure they are properly included
-
-4. **Configure Spreadsheet**
-   - Create a new Google Spreadsheet
-   - Copy the Spreadsheet ID from the URL
-   - Update `backend/Config.gs` if you need custom sheet names (defaults are set)
-
-5. **Deploy as Web App**
-   - Click **Deploy** > **New Deployment**
-   - Select type: **Web app**
-   - Execute as: **Me**
-   - Who has access: **Anyone** (for public forms) or **Anyone within [your org]** (for internal dashboards)
-   - Click **Deploy**
-   - Copy the Web App URL
-
-6. **Initial Setup**
-   - Access the Web App URL
-   - The system will automatically create necessary sheets in your spreadsheet
-
-## 🏗️ Project Architecture
-
-```mermaid
-graph TD
-    User[User/Browser] -->|HTTP Request| GAS[Google Apps Script]
-    
-    subgraph Google Apps Script
-        Router[doGet Router]
-        Router -->|?page=dashboard| Dashboard[Dashboard View]
-        Router -->|?page=recruitment| Recruitment[Recruitment View]
-        Router -->|?type=kandidat| Form[Registration Form]
-    end
-
-    subgraph Backend Modules
-        GAS --> Config[Config.gs]
-        GAS --> RecruitmentBE[Recruitment.gs]
-        GAS --> Audit[Audit.gs]
-        GAS --> Auth[Auth.gs]:::future
-    end
-
-    subgraph Database
-        RecruitmentBE -->|Read/Write| Sheets[(Google Sheets)]
-        Audit -->|Log| Sheets
-        Config -->|Config| Sheets
-    end
-
-    subgraph Frontend
-        Dashboard -->|Google Apps Script API| RecruitmentBE
-        Recruitment -->|Google Apps Script API| RecruitmentBE
-        Form -->|google.script.run| RecruitmentBE
-    end
-
-    classDef future fill:#f9f,stroke:#333,stroke-width:2px;
+```powershell
+Set-Location mito-hris-laravel
+composer install
+npm install
+Copy-Item .env.example .env
+php artisan key:generate
 ```
 
-**Flow:**
-1. **User** accesses the web app URL via browser
-2. **Router** (`doGet` in `Kode.gs`) determines which page to serve based on URL parameters
-3. **Views** (HTML templates) are rendered with embedded CSS and JS
-4. **Frontend JS** communicates with **Backend Modules** via `google.script.run`
-5. **Backend Modules** interact with **Google Sheets** for data persistence
-6. **Audit Log** tracks all modifications for compliance and history
+Configure `.env` before using Google integrations:
 
-## 🗺️ Roadmap
+```dotenv
+APP_ENV=local
+APP_DEBUG=true
+APP_URL=http://localhost
+APP_TIMEZONE=Asia/Jakarta
+APP_LOCALE=id
 
-### ✅ Completed
-- [x] Core Recruitment Module (CRUD)
-- [x] Public Candidate Registration Form
-- [x] HR Dashboard with Analytics
-- [x] Employee Management (Basic)
-- [x] Recruitment Pipeline Visualization
-- [x] Advanced Filtering & Search
-- [x] Bulk Actions (Update/Delete)
-- [x] Data Export (CSV, Excel, PDF)
-- [x] Data Import (CSV)
-- [x] Dark Mode Support
-- [x] Mobile Responsive UI
-- [x] Audit Logging System
-- [x] Portal Settings & Configuration
+GOOGLE_APPLICATION_CREDENTIALS="${APP_BASE_PATH}/storage/app/google/service-account.json"
+GOOGLE_SPREADSHEET_ID=your-spreadsheet-id
+GOOGLE_DRIVE_DOCS_FOLDER_ID=your-docs-folder-id
+GOOGLE_DRIVE_OFFBOARDING_FOLDER_ID=your-offboarding-folder-id
+GOOGLE_SHEETS_TIMEZONE=Asia/Jakarta
+```
 
-### 🚧 In Progress
-- [ ] Google SSO Authentication — using Google's built-in session (no OAuth library needed)
+Place credentials only in the protected local storage path. Never commit
+`.env`, service-account JSON, tokens, or production data.
 
-### ✅ Completed (Recent)
-- [x] Role-Based Access Control (RBAC) — 5 roles: Super Admin, HR Admin, Recruiter, Manager, Viewer
-- [x] User Management Module — CRUD users, role assignment (Super Admin only)
-- [x] Authorization Guards — Server-side permission checks + client-side auth flow
+## Development
 
-### 🔮 Planned
-- [ ] Attendance Management
-- [ ] Leave Management System
-- [ ] Payroll Integration
-- [ ] Performance Review Module
-- [ ] Asset Management
-- [ ] Training & Development Tracker
-- [ ] Advanced Reporting & BI
-- [ ] Email Notification System
-- [ ] API Integrations (LinkedIn, JobStreet, etc.)
+Run the application using the Laravel and Vite development processes as needed:
 
-## 📄 License
+```powershell
+php artisan serve
+npm run dev
+```
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+For the full local development process defined by Composer:
 
-## 👨‍💻 Author
+```powershell
+composer run dev
+```
 
-**Muhammad Sultotni Powered by NOTO**
+## Validation
+
+Run from `mito-hris-laravel/`:
+
+```powershell
+php artisan test --without-tty
+php artisan view:cache
+php artisan route:list
+npm run build
+```
+
+For PHP-only changes, run `php -l` on touched files. For Google integration
+changes, use targeted tests and mocks where possible; avoid destructive live
+operations against production Sheets or Drive resources.
+
+## CI/CD
+
+The CI workflow in `.github/workflows/ci.yml` runs from
+`mito-hris-laravel/` and performs:
+
+1. PHP 8.3 and Node.js 20 setup
+2. Composer and NPM dependency installation
+3. Laravel test environment preparation
+4. PHP syntax validation
+5. Vite production build
+6. PHPUnit test suite
+
+The deployment workflow in `.github/workflows/deploy.yml` deploys over SSH to
+`/home/ubuntu/hris/mito-hris-laravel`. It installs production dependencies,
+builds assets, runs Laravel and Google Sheets diagnostics, caches Laravel, and
+reloads PHP-FPM.
+
+There is no active Apps Script or `clasp` deployment.
+
+## Compatibility Rules
+
+- Preserve public URLs and route names.
+- Preserve HR/MPR authentication, authorization, RBAC, and domain isolation.
+- Preserve Google Sheets sheet names, headers, column order, and identifier
+  handling.
+- Preserve Google Drive integration and credential configuration.
+- Preserve `Asia/Jakarta` timestamp behavior.
+- Keep user-facing product copy in Indonesian unless a product requirement says
+  otherwise.
+
+## Documentation
+
+- [AGENTS.md](AGENTS.md) - Agent and development rules
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Runtime architecture and deployment design
+- [PROJECT.md](PROJECT.md) - Technical project documentation
+- [CHANGELOG.md](CHANGELOG.md) - Project history and cleanup record
+- [LICENSE](LICENSE) - Proprietary license terms
+- [SECURITY.md](SECURITY.md) - Proprietary access and security policy
+- [mito-hris-laravel/docs/](mito-hris-laravel/docs/) - Application-specific notes
+
+## License and Access
+
+MITO HRIS is proprietary internal software. It is not open source and is not
+licensed under the MIT License. Third-party packages may use their own open
+source licenses, but those licenses do not grant rights to the MITO HRIS source,
+business data, credentials, deployment configuration, or documentation.
+
+See [LICENSE](LICENSE) for the full proprietary license terms.
+
+## Author
+
+**Mohammad Sultoni Powered by MITO Group**
+
 - GitHub: (https://github.com/Sultonisky)
 - Email: (muhsultonipml111@gmail.com)
 
 ---
 
-*Built with ❤️ using Google Apps Script and Bootstrap 5*
-
+_MITO HRIS - Proprietary Laravel application for MITO Group_

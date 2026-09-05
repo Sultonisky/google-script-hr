@@ -1,0 +1,27 @@
+MITO HRIS PROPRIETARY LICENSE
+
+Copyright (c) 2026 Mohammad Siltoni and MITO Group.
+All rights reserved.
+
+MITO HRIS (the "Software") is proprietary internal software. It is not open
+source and is not distributed under the MIT License or any other open-source
+license.
+
+Permission to access, use, copy, modify, reproduce, publish, sublicense, sell,
+distribute, or deploy the Software is not granted except under a separate
+written authorization from Mohammad Siltoni or an authorized representative of
+MITO Group.
+
+The Software, source code, documentation, configuration, deployment details,
+business logic, credentials, and related data are confidential and restricted
+to authorized personnel. Unauthorized use, disclosure, copying, distribution,
+or deployment is prohibited.
+
+Third-party dependencies included or used by the Software may be distributed
+under their own licenses. Those licenses apply only to the relevant third-party
+components and do not grant rights to the MITO HRIS application, its business
+data, credentials, configuration, or documentation.
+
+THE SOFTWARE IS PROVIDED FOR AUTHORIZED INTERNAL USE ONLY. TO THE MAXIMUM
+EXTENT PERMITTED BY LAW, THE SOFTWARE IS PROVIDED WITHOUT WARRANTY OF ANY KIND,
+AND THE COPYRIGHT HOLDERS ARE NOT LIABLE FOR UNAUTHORIZED USE OR DISCLOSURE.
