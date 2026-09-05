@@ -9,7 +9,10 @@ use App\Services\EmployeeIdGenerator;
 use App\Services\Google\GoogleDriveService;
 use App\Services\Google\GoogleSheetsService;
 use App\Services\PdfGeneratorService;
+use App\Services\ProbationService;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cache;
 use RuntimeException;
 
@@ -28,8 +31,19 @@ class EmployeeService
         private GoogleSheetsService $sheets
     ) {
         $this->employeeRepo = $employeeRepo;
-        $this->auditRepo = $auditRepo;
-        $this->idGenerator = $idGenerator;
+        $this->auditRepo    = $auditRepo;
+        $this->idGenerator  = $idGenerator;
+    }
+
+    /**
+     * Resolve the canonical ProbationService from the container.
+     * Resolved lazily (not constructor-injected) to avoid a hard coupling
+     * and to preserve the EmployeeService constructor signature for
+     * existing callers / tests that instantiate it directly.
+     */
+    protected function probationService(): ProbationService
+    {
+        return App::make(ProbationService::class);
     }
 
     /**
@@ -473,6 +487,10 @@ class EmployeeService
             throw new RuntimeException("Karyawan dengan ID {$employeeId} tidak ditemukan.");
         }
 
+        // STEP 16/17/22: active-probation employees are excluded from Rotation.
+        // Canonical active-probation determination — see ProbationService.
+        $this->throwIfOnProbation($employeeId, 'Rotasi/Mutasi');
+
         $user = $user ?: 'HR Administrator';
         $now = now()->timezone('Asia/Jakarta');
         $nowStr = $now->format('Y-m-d H:i:s');
@@ -761,6 +779,10 @@ class EmployeeService
             throw new RuntimeException("Karyawan dengan ID {$employeeId} tidak ditemukan.");
         }
 
+        // STEP 16/18/22: active-probation employees are excluded from Off Contract.
+        // Canonical active-probation determination — see ProbationService.
+        $this->throwIfOnProbation($employeeId, 'Off Contract');
+
         $user = $user ?: 'HR Administrator';
         $now = now()->timezone('Asia/Jakarta');
         $nowStr = $now->format('Y-m-d H:i:s');
@@ -822,7 +844,9 @@ class EmployeeService
             throw new RuntimeException("Karyawan dengan ID {$employeeId} tidak ditemukan.");
         }
 
-        // Verify current status is Contract (1:1 GAS — hanya Contract yang bisa diajukan Probation)
+        // Verify current status is Contract / PKWT — probation is only for
+        // active Contract employees (Employee Status is restricted to
+        // Permanent / Contract / Outsource — see task rules).
         $currentStatus = strtolower(trim($employee->statusEmployee ?? ''));
         if ($currentStatus !== 'contract' && $currentStatus !== 'pkwt') {
             return [
@@ -833,23 +857,44 @@ class EmployeeService
             ];
         }
 
-        $user        = $user ?: 'HR Administrator';
-        $now         = now()->timezone('Asia/Jakarta');
-        $nowStr      = $now->format('Y-m-d H:i:s');
-        $probStart   = $data['probation_start']    ?? $now->format('Y-m-d');
-        $probDuration = $data['probation_duration'] ?? '3 Bulan';
-        $probEnd     = $data['probation_end']       ?? '';
-        $probNotes   = $data['notes']               ?? '';
-        $contractNo  = $data['contract_number']     ?? '';
+        // One active probation per employee — reject if a canonical active
+        // probation already exists (latest kandidat_probation row with
+        // Status='Probation' and non-terminal Decision).
+        if ($this->probationService()->isActiveProbation($employeeId)) {
+            return [
+                'success'     => false,
+                'message'     => 'Karyawan ini sudah memiliki proses probation yang sedang aktif. Selesaikan evaluasi terlebih dahulu sebelum mengajukan probation baru.',
+                'employeeId'  => $employeeId,
+                'probationId' => '',
+            ];
+        }
 
-        // --- 1. Update Employee status → Probation (1:1 GAS promoteEmployeeToProbation) ---
-        $this->employeeRepo->update($employeeId, [
-            'Status Employee' => 'Probation',
-            'Updated At'      => $nowStr,
-        ]);
+        $user       = $user ?: 'HR Administrator';
+        $now        = now()->timezone('Asia/Jakarta');
+        $nowStr     = $now->format('Y-m-d H:i:s');
+        $probStart  = $data['probation_start'] ?? $now->format('Y-m-d');
+        $probNotes  = $data['notes']           ?? '';
+        $contractNo = $data['contract_number'] ?? '';
 
-        // --- 2. Buat probation record di sheet kandidat_probation ---
-        // 1:1 GAS promoteEmployeeToProbation → createProbationRecord(employeeId, {...}, {skipLock:true})
+        // === Automatic Probation Duration ===================================
+        // Probation duration is derived from the employee's actual contract:
+        //   Join Date  →  End Date (Contract)
+        // The server-side value is authoritative. Any client-supplied
+        // probation_duration is ignored (do NOT trust the browser).
+        $contractDurationMonths = $this->deriveContractDurationMonths(
+            $employee->joinDate ?? null,
+            $employee->endDateContract ?? null
+        );
+        $probDuration = $this->durationToLabel($contractDurationMonths);
+        $probEnd      = $this->addMonthsDate($probStart, $contractDurationMonths);
+
+        // Employee.Status is intentionally NOT changed here. The Employee
+        // sheet is restricted to Permanent / Contract / Outsource. The
+        // probation process state lives in kandidat_probation (Status +
+        // Decision), and Employee.Status stays as 'Contract' for an employee
+        // who is currently in active probation.
+
+        // --- Buat probation record di sheet kandidat_probation ---
         $probationId = '';
         $sheetName   = config('google.sheets.candidates_probation', 'kandidat_probation');
 
@@ -867,12 +912,11 @@ class EmployeeService
             }
             $probationId = 'PROB-' . $dateStr . '-' . str_pad((string) $seq, 4, '0', STR_PAD_LEFT);
 
-            // Kontrak nomor default jika belum ada (1:1 GAS fallback)
             if (!$contractNo) {
                 $contractNo = 'PRB/HRD/' . $now->year . '/' . $employeeId;
             }
 
-            // Header sheet kandidat_probation (harus sesuai PROBATION_HEADERS di GAS Config.gs)
+            // Header sheet kandidat_probation
             $headers = [
                 'Probation ID',
                 'Employee ID',
@@ -918,16 +962,9 @@ class EmployeeService
             $row[$idx['Created At']]         = $nowStr;
             $row[$idx['Updated At']]         = $nowStr;
 
-            // Pastikan sheet kandidat_probation memiliki header, lalu append row
             $this->sheets->ensureSheetHeaders($sheetName, $headers);
             $this->sheets->appendRow($sheetName, $row);
         } catch (\Throwable $e) {
-            // Jika gagal tulis ke sheet probation, rollback status employee
-            // dan kembalikan error agar user tahu
-            $this->employeeRepo->update($employeeId, [
-                'Status Employee' => 'Contract',
-                'Updated At'      => $nowStr,
-            ]);
             return [
                 'success'     => false,
                 'message'     => 'Gagal membuat record probation: ' . $e->getMessage(),
@@ -936,14 +973,14 @@ class EmployeeService
             ];
         }
 
-        // --- 3. Audit log (1:1 GAS writeAuditLog_) ---
+        // --- Audit log ---
         $this->auditRepo->log(
             entityType: 'Employee',
             entityId: $employeeId,
             action: 'Ajukan Probation',
-            field: 'Status Employee',
-            oldValue: 'Contract',
-            newValue: 'Probation — Diajukan oleh ' . $user . ($probNotes ? ' (' . $probNotes . ')' : ''),
+            field: 'kandidat_probation',
+            oldValue: 'Tidak ada',
+            newValue: 'Probation (duration ' . $probDuration . ') — Diajukan oleh ' . $user . ($probNotes ? ' (' . $probNotes . ')' : ''),
             user: $user,
             source: 'Dashboard'
         );
@@ -954,5 +991,121 @@ class EmployeeService
             'employeeId'  => $employeeId,
             'probationId' => $probationId,
         ];
+    }
+
+    // ==========================================================
+    // Probation status helpers + restrictions
+    //
+    // Canonical source of truth for "is this employee currently in an
+    // active probation process" lives in ProbationService::isActiveProbation()
+    // — it inspects the kandidat_probation sheet (Status + Decision of the
+    // latest row) instead of Employee.Status (which is now restricted to
+    // Permanent / Contract / Outsource).
+    // ==========================================================
+
+    /**
+     * Server-side source of truth: whether the employee is in an ACTIVE
+     * probation process. Delegates to ProbationService so all callers
+     * (EmployeeController, EmployeeService, Blade sidebar, frontend
+     * filters) share one canonical rule based on kandidat_probation
+     * (Status + Decision), not on Employee.Status.
+     */
+    public function isOnProbation(string $employeeId): bool
+    {
+        return $this->probationService()->isActiveProbation($employeeId);
+    }
+
+    /**
+     * Reject with a RuntimeException when the employee is on active
+     * probation. Central helper used by processRotation / processOffContract.
+     */
+    private function throwIfOnProbation(string $employeeId, string $action): void
+    {
+        if ($this->probationService()->isActiveProbation($employeeId)) {
+            throw new \RuntimeException(
+                "Employee ini sedang dalam proses probation. Selesaikan evaluasi probation terlebih dahulu sebelum melakukan {$action}."
+            );
+        }
+    }
+
+    // ── Contract-duration derivation (STEP 5 / STEP 13) ──────────────────
+
+    /**
+     * Derive the contract duration in whole calendar months from
+     * Join Date → End Date (Contract). This is employee-specific — it must
+     * NOT be a hardcoded universal value.
+     *
+     * Canonical PKWT end-date convention (matches the contract PDF
+     * `kontrak-pkwt.blade.php` line 354):
+     *
+     *     End = JoinDate + N months − 1 day
+     *
+     * So End stored as the last day of the N-th calendar month. Examples:
+     *     01 Jan 2026  →  30 Jun 2026   =  6 Bulan
+     *     01 Feb 2026  →  31 Jul 2026   =  6 Bulan
+     *     01 May 2026  →  31 Oct 2026   =  6 Bulan
+     *     01 May 2026  →  01 Nov 2026   =  6 Bulan  (first day of next month)
+     *
+     * Algorithm: round-trip count. Find the largest N such that
+     *     start.addMonthsNoOverflow(N) <= end + 1 day
+     * i.e. the contract is N full calendar months long.
+     */
+    private function deriveContractDurationMonths(?string $joinDate, ?string $endContract): int
+    {
+        if (!$joinDate || !$endContract) {
+            return 0;
+        }
+        try {
+            $start = Carbon::parse($joinDate)->startOfDay();
+            $end   = Carbon::parse($endContract)->startOfDay();
+        } catch (\Throwable) {
+            return 0;
+        }
+        if ($end->lessThan($start)) {
+            return 0;
+        }
+
+        // Per the PKWT convention, End = Start + N months − 1 day, which is
+        // equivalent to "End + 1 day = Start + N months".
+        $anchor = $end->copy()->addDay();
+        $n = ($anchor->year - $start->year) * 12 + ($anchor->month - $start->month);
+        // Adjust for any day-of-month drift (start.day != 1) so we round-trip
+        // through addMonthsNoOverflow and find the largest N that does not
+        // overshoot the anchor.
+        while ($n > 0 && $start->copy()->addMonthsNoOverflow($n)->greaterThan($anchor)) {
+            $n--;
+        }
+        return $n > 0 ? $n : 0;
+    }
+
+    /**
+     * Convert a whole-month count into the human label stored in the sheet,
+     * matching the existing 1:1 GAS label conventions (3 Bulan / 6 Bulan /
+     * 12 Bulan, plus any other value).
+     */
+    private function durationToLabel(int $months): string
+    {
+        return match ($months) {
+            1  => '1 Bulan',
+            3  => '3 Bulan',
+            6  => '6 Bulan',
+            12 => '12 Bulan',
+            default => $months . ' Bulan',
+        };
+    }
+
+    /**
+     * Add a whole-month duration to a start date (GMT+7) and return YYYY-MM-DD.
+     * Mirrors the JS calcExtendEnd() used in the evaluation modal so server
+     * and client agree on the resulting end date.
+     */
+    private function addMonthsDate(string $startDate, int $months): string
+    {
+        try {
+            return Carbon::parse($startDate)->addMonthsNoOverflow($months)
+                ->timezone('Asia/Jakarta')->format('Y-m-d');
+        } catch (\Throwable) {
+            return '';
+        }
     }
 }

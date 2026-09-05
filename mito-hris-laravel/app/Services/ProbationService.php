@@ -182,13 +182,28 @@ class ProbationService
         $extEnd      = $evalData['extension_end']      ?? '';
         $notes       = $evalData['notes']              ?? '';
 
-        if ($isPerpanjang && (empty($extDuration) || empty($extStart))) {
-            throw new RuntimeException('Perpanjangan probation memerlukan durasi dan tanggal mulai kontrak baru.');
+        // === STEP 13 — Extend: derive duration from the employee's actual ===
+        // contract, not from the browser. We use the Contract Duration
+        // captured at promotion time and stored on the kandidat_probation
+        // record (the source of truth for probation employees). If missing
+        // we fall back to the End Date delta, mirroring the promotion flow.
+        if ($isPerpanjang && empty($extStart)) {
+            throw new RuntimeException('Perpanjangan probation memerlukan tanggal mulai kontrak baru.');
         }
-
-        // Validate extension duration — only 3 / 6 / 12 Bulan (per template)
-        if ($isPerpanjang && !in_array($extDuration, ['3 Bulan', '6 Bulan', '12 Bulan'], true)) {
-            throw new RuntimeException("Durasi perpanjangan tidak valid. Pilih 3, 6, atau 12 Bulan.");
+        if ($isPerpanjang) {
+            $resolvedDuration = $this->resolveExtensionDuration(
+                $employeeId,
+                $extDuration,
+                $employee->joinDate ?? null,
+                $employee->endDateContract ?? null
+            );
+            if ($resolvedDuration === null || $resolvedDuration <= 0) {
+                throw new RuntimeException(
+                    'Durasi perpanjangan tidak dapat ditentukan dari data kontrak karyawan. Pastikan karyawan memiliki Contract Start dan End Date yang valid.'
+                );
+            }
+            $extDuration = $this->monthsToLabel($resolvedDuration);
+            $extEnd      = $this->addMonthsDate($extStart, $resolvedDuration);
         }
 
         $branchName = $employee->branchName ?? '';
@@ -206,7 +221,8 @@ class ProbationService
                 ),
                 'Updated At'      => $nowStr,
             ]);
-            $probStatus = 'Completed - Passed';
+            // Status remains the probation process label; Decision stores the outcome.
+            $probStatus = 'Probation';
             $skStatus   = 'SK Diterbitkan';
 
         } elseif ($isPutusKontrak) {
@@ -223,7 +239,7 @@ class ProbationService
                 ),
                 'Updated At'          => $nowStr,
             ]);
-            $probStatus = 'Terminated';
+            $probStatus = 'Probation';
             $skStatus   = 'Paklaring Diterbitkan';
 
         } else {
@@ -243,7 +259,7 @@ class ProbationService
                 $updates['Contract Duration'] = $extDuration;
             }
             $this->employeeRepo->update($employeeId, $updates);
-            $probStatus = 'Extended';
+            $probStatus = 'Probation';
             $skStatus   = 'Diperpanjang';
         }
 
@@ -471,6 +487,109 @@ class ProbationService
         return true;
     }
 
+    /**
+     * Canonical active-probation determination (single source of truth).
+     *
+     * Reads the latest kandidat_probation row for the employee and decides
+     * based on the combination:
+     *
+     *     (Status = 'Probation') + (Decision)
+     *
+     * Semantics:
+     *   - No row                                  → INACTIVE (no process)
+     *   - Latest row Decision = Lulus             → INACTIVE (completed)
+     *   - Latest row Decision = Tidak Lulus       → INACTIVE (completed)
+     *   - Latest row Decision = empty             → ACTIVE   (initial state)
+     *   - Latest row Decision = Extend/Perpanjang → ACTIVE   (continuation)
+     *
+     * Implementation deliberately ignores Employee.Status (which is now
+     * restricted to Permanent / Contract / Outsource — see task rules).
+     * Employee.Status is NOT a probation signal.
+     *
+     * Historical completed rows are filtered out automatically because we
+     * look at the LATEST row only, ordered by Updated At desc.
+     */
+    public function isActiveProbation(string $employeeId): bool
+    {
+        $latest = $this->latestProbationRow($employeeId);
+        if ($latest === null) {
+            return false;
+        }
+
+        $decision = (string) ($latest['Decision'] ?? '');
+        $type = ProbationDecisionType::fromDecisionString($decision);
+        if ($type === null) {
+            // Empty / unrecognized decision on the latest Probation row.
+            // Treat as ACTIVE — process has been started but no terminal
+            // outcome yet (same semantic as canEvaluate's empty-decision
+            // branch).
+            return true;
+        }
+        if ($type->isPass() || $type->isFail()) {
+            return false;
+        }
+        // Extend / Perpanjang → ACTIVE (continuation).
+        return true;
+    }
+
+    /**
+     * Return the canonical active-probation decision string of the latest
+     * row for diagnostics ("empty", "Lulus", "Tidak Lulus", "Extend",
+     * etc.) — empty string when no active process exists.
+     */
+    public function activeProbationDecision(string $employeeId): string
+    {
+        $latest = $this->latestProbationRow($employeeId);
+        return $latest === null ? '' : (string) ($latest['Decision'] ?? '');
+    }
+
+    /**
+     * Find the latest kandidat_probation row for a given employee whose
+     * Status = 'Probation' (process label), ordered by Updated At desc.
+     *
+     * Matching: exact Employee-ID string match; numeric-only comparison is
+     * only used when both IDs contain digits (prevents false matches like
+     * 'EMP-C' ↔ 'EMP-P' where both have no digits).
+     */
+    private function latestProbationRow(string $employeeId): ?array
+    {
+        if (!$employeeId) {
+            return null;
+        }
+        $normalizedId        = ltrim(trim($employeeId), "'");
+        $normalizedNumeric   = preg_replace('/[^0-9]/', '', $normalizedId);
+        $numericMatchAllowed = $normalizedNumeric !== '';
+
+        $this->sheets->clearCache($this->probationSheet());
+        $rows = $this->sheets->getRowsAsAssoc($this->probationSheet());
+
+        $latest = null;
+        $latestDate = '';
+        foreach ($rows as $row) {
+            $rowId = ltrim(trim((string) ($row['Employee ID'] ?? '')), "'");
+            $rowNum = preg_replace('/[^0-9]/', '', $rowId);
+
+            $idMatch  = ($rowId === $normalizedId);
+            $numMatch = $numericMatchAllowed
+                && $rowNum !== ''
+                && $rowNum === $normalizedNumeric;
+            if (!$idMatch && !$numMatch) {
+                continue;
+            }
+
+            $rowStatus = strtolower(trim((string) ($row['Status'] ?? '')));
+            if ($rowStatus !== 'probation') {
+                continue;
+            }
+            $dateKey = (string) ($row['Updated At'] ?? '');
+            if ($latest === null || strcmp($dateKey, $latestDate) > 0) {
+                $latest = $row;
+                $latestDate = $dateKey;
+            }
+        }
+        return $latest;
+    }
+
     public function latestEvalByEmployee(): Collection
     {
         $this->sheets->clearCache($this->probationSheet());
@@ -514,6 +633,133 @@ class ProbationService
             $total >= 6  => 'Cukup',
             default      => 'Kurang',
         };
+    }
+
+    // ── Extend: resolve duration + end-date from contract data (STEP 13) ──
+
+    /**
+     * Return the Extend duration in whole months, derived from the employee's
+     * actual contract. Priority:
+     *   1. Client-provided extDuration — only accepted when it matches the
+     *      employee-specific contract duration (prevents manual hardcoding
+     *      that contradicts the contract).
+     *   2. kandidat_probation.Contract Duration captured at promotion time.
+     *   3. Employee's current End Date (Contract) − Join Date.
+     *
+     * Returns null when no source is available so the caller can fail loudly.
+     */
+    private function resolveExtensionDuration(
+        string $employeeId,
+        ?string $clientDuration,
+        ?string $joinDate,
+        ?string $endContract
+    ): ?int {
+        $contractMonths = $this->readStoredContractDurationMonths($employeeId);
+        if ($contractMonths === null || $contractMonths <= 0) {
+            $contractMonths = $this->monthsBetweenDates($joinDate, $endContract);
+        }
+        if ($contractMonths === null || $contractMonths <= 0) {
+            return null;
+        }
+        if (!empty($clientDuration)) {
+            $clientMonths = $this->labelToMonths($clientDuration);
+            if ($clientMonths !== null && $clientMonths !== $contractMonths) {
+                throw new RuntimeException(
+                    "Durasi perpanjangan ({$clientDuration}) harus mengikuti durasi kontrak karyawan ({$this->monthsToLabel($contractMonths)}). Durasi kontrak bersifat tetap per karyawan."
+                );
+            }
+        }
+        return $contractMonths;
+    }
+
+    /**
+     * Read Contract Duration from the latest kandidat_probation row for the
+     * given employee. Returns null when no row exists.
+     */
+    private function readStoredContractDurationMonths(string $employeeId): ?int
+    {
+        try {
+            $rows = $this->sheets->getRowsAsAssoc($this->probationSheet());
+            $empKey = ltrim(trim($employeeId), "'");
+            $empNum = preg_replace('/[^0-9]/', '', $empKey);
+            foreach ($rows as $row) {
+                $rowKey = ltrim(trim($row['Employee ID'] ?? ''), "'");
+                $rowNum = preg_replace('/[^0-9]/', '', $rowKey);
+                if ($rowKey !== $empKey && $rowNum !== $empNum) {
+                    continue;
+                }
+                $stored = trim((string) ($row['Contract Duration'] ?? ''));
+                if ($stored !== '') {
+                    $months = $this->labelToMonths($stored);
+                    if ($months !== null && $months > 0) {
+                        return $months;
+                    }
+                }
+            }
+        } catch (\Throwable) {
+            return null;
+        }
+        return null;
+    }
+
+    /** Convert "N Bulan" / "NBulan" → whole months. */
+    private function labelToMonths(string $label): ?int
+    {
+        if (preg_match('/(\d+)\s*Bulan/i', $label, $m)) {
+            $n = (int) $m[1];
+            return $n > 0 ? $n : null;
+        }
+        return null;
+    }
+
+    /** Whole-month count → "N Bulan" label. */
+    private function monthsToLabel(int $months): string
+    {
+        return $months . ' Bulan';
+    }
+
+    /**
+     * Calendar-month delta between two YYYY-MM-DD dates, following the
+     * canonical PKWT convention used elsewhere in the application
+     * (see kontrak-pkwt.blade.php and EmployeeService::deriveContractDurationMonths):
+     *
+     *     End = Start + N months − 1 day  ⇒  N = monthsBetween(Start, End)
+     *
+     * Returns null when either date is missing or invalid.
+     */
+    private function monthsBetweenDates(?string $start, ?string $end): ?int
+    {
+        if (!$start || !$end) {
+            return null;
+        }
+        try {
+            $s = \Illuminate\Support\Carbon::parse($start)->startOfDay();
+            $e = \Illuminate\Support\Carbon::parse($end)->startOfDay();
+        } catch (\Throwable) {
+            return null;
+        }
+        if ($e->lessThan($s)) {
+            return null;
+        }
+        // End + 1 day = Start + N months
+        $anchor = $e->copy()->addDay();
+        $n = ($anchor->year - $s->year) * 12 + ($anchor->month - $s->month);
+        while ($n > 0 && $s->copy()->addMonthsNoOverflow($n)->greaterThan($anchor)) {
+            $n--;
+        }
+        return $n > 0 ? $n : null;
+    }
+
+    /** Add N months to a YYYY-MM-DD start, GMT+7. */
+    private function addMonthsDate(string $startDate, int $months): string
+    {
+        try {
+            return \Illuminate\Support\Carbon::parse($startDate)
+                ->addMonthsNoOverflow($months)
+                ->timezone('Asia/Jakarta')->format('Y-m-d');
+        } catch (\Throwable) {
+            return '';
+        }
     }
 
     /**
