@@ -1,5 +1,10 @@
-# README changes require approval from the repository owner.
-/README.md @Sultonisky
+# Project governance and documentation require approval from the repository owner.
 
-# Keep ownership rules protected as well.
+/README.md @Sultonisky
 /.github/CODEOWNERS @Sultonisky
+/LICENSE @Sultonisky
+/SECURITY.md @Sultonisky
+/AGENTS.md @Sultonisky
+/ARCHITECTURE.md @Sultonisky
+/PROJECT.md @Sultonisky
+/CHANGELOG.md @Sultonisky
