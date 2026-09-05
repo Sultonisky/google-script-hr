@@ -188,6 +188,8 @@ return [
             'Super Admin',
             'Admin',
             'User',
+            'GA_IT',
+            'LEGAL',
         ],
         'valid_roles_requestor' => [
             'Manpower',
@@ -200,9 +202,11 @@ return [
         ],
         'role_permissions' => [
             'Super Admin' => ['*'],
-            'Admin' => ['manage_recruitment', 'manage_employees', 'manage_probation', 'view_employees', 'view_recruitment', 'update_candidates', 'create_offering', 'manage_hold_blacklist', 'view_mpr', 'create_mpr', 'update_mpr', 'export_mpr'],
-            'User' => ['view_recruitment', 'update_candidates', 'create_offering', 'manage_hold_blacklist', 'view_mpr', 'export_mpr'],
+            'Admin' => ['manage_recruitment', 'manage_employees', 'manage_probation', 'view_employees', 'view_recruitment', 'update_candidates', 'create_offering', 'manage_hold_blacklist', 'view_mpr', 'create_mpr', 'update_mpr', 'export_mpr', 'view_asset', 'edit_asset', 'view_certification', 'manage_certification'],
+            'User' => ['view_recruitment', 'update_candidates', 'create_offering', 'manage_hold_blacklist', 'view_mpr', 'export_mpr', 'view_asset', 'view_certification'],
             'Manpower' => ['view_mpr', 'create_mpr', 'export_mpr'],
+            'GA_IT' => ['view_asset', 'edit_asset'],
+            'LEGAL' => ['view_certification', 'manage_certification'],
         ],
     ],
     'schemas' => [

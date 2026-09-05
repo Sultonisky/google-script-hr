@@ -20,6 +20,8 @@ use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\MprRepositoryInterface;
 use App\Repositories\Contracts\MprRequestorRepositoryInterface;
 use App\Repositories\GoogleSheets\UserSheetsRepository;
+use App\Repositories\Database\UserDatabaseRepository;
+use App\Repositories\Local\LocalEmployeeRepository;
 use App\Repositories\Sheets\AuditLogSheetsRepository;
 use App\Repositories\Sheets\CandidateSheetsRepository;
 use App\Repositories\Sheets\EmployeeSheetsRepository;
@@ -31,9 +33,20 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->bind(UserRepositoryInterface::class, UserSheetsRepository::class);
+        // ponytail: env-aware binding; remove when Sheets repo works without Google credentials locally.
+        if (app()->environment('local', 'testing')) {
+            $this->app->bind(UserRepositoryInterface::class, UserDatabaseRepository::class);
+        } else {
+            $this->app->bind(UserRepositoryInterface::class, UserSheetsRepository::class);
+        }
         $this->app->bind(CandidateRepositoryInterface::class, CandidateSheetsRepository::class);
-        $this->app->bind(EmployeeRepositoryInterface::class, EmployeeSheetsRepository::class);
+        // ponytail: dummy employee source only for local dev; remove when
+        // EmployeeSheetsRepository works without Google credentials locally.
+        if (app()->environment('local')) {
+            $this->app->bind(EmployeeRepositoryInterface::class, LocalEmployeeRepository::class);
+        } else {
+            $this->app->bind(EmployeeRepositoryInterface::class, EmployeeSheetsRepository::class);
+        }
         $this->app->bind(AuditLogRepositoryInterface::class, AuditLogSheetsRepository::class);
         $this->app->bind(MprRepositoryInterface::class, MprSheetsRepository::class);
         $this->app->bind(MprRequestorRepositoryInterface::class, MprRequestorSheetsRepository::class);

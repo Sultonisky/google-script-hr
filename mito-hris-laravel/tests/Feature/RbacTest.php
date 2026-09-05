@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Session;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
@@ -26,6 +27,8 @@ use PhpOffice\PhpSpreadsheet\Cell\DataType;
  */
 class RbacTest extends TestCase
 {
+    use RefreshDatabase;
+
     // =========================================================================
     // Helpers
     // =========================================================================
