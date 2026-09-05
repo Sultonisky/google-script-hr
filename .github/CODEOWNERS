@@ -1,0 +1,5 @@
+# README changes require approval from the repository owner.
+/README.md @Sultonisky
+
+# Keep ownership rules protected as well.
+/.github/CODEOWNERS @Sultonisky
