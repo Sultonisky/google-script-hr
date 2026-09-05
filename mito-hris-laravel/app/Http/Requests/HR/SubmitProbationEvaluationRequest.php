@@ -55,6 +55,11 @@ class SubmitProbationEvaluationRequest extends FormRequest
             'indicators.tw_3'        => 'required|in:1,0',
 
             // Extension fields — mandatory ONLY for "Perpanjang Kontrak"
+            //
+            // STEP 13: extend duration is now derived server-side from the
+            // employee's actual contract (see ProbationService::resolveExtensionDuration).
+            // The frontend value is only checked when present so we can reject
+            // mismatches against the contract; no hardcoded 3/6/12 allow-list.
             'extension_duration' => [
                 'nullable',
                 'string',
@@ -63,8 +68,8 @@ class SubmitProbationEvaluationRequest extends FormRequest
                         (string) $this->input('decision')
                     )?->isExtend();
 
-                    if ($isExtend && !in_array($value, ['3 Bulan', '6 Bulan', '12 Bulan'], true)) {
-                        $fail('Durasi perpanjangan wajib dipilih untuk keputusan Perpanjang Kontrak (3, 6, atau 12 Bulan).');
+                    if ($isExtend && $value !== null && $value !== '' && !preg_match('/^\d+\s*Bulan$/i', $value)) {
+                        $fail('Durasi perpanjangan harus berformat "N Bulan" (contoh: 6 Bulan).');
                     }
                 },
             ],

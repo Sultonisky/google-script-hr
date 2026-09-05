@@ -338,6 +338,65 @@ class ProbationController extends Controller
         return response()->json(['history' => $history]);
     }
 
+    // ==========================================================
+    // AJUKAN PROBATION — contract employee search (STEP 4/15)
+    // ==========================================================
+
+    /**
+     * List Contract/PKWT employees available for probation promotion.
+     * The Probation menu now serves as the single entry point for
+     * "Ajukan Probation" — the button was removed from the Employee
+     * Drawer (STEP 15).
+     *
+     * Returns employees whose Status Employee is Contract/PKWT and
+     * who are NOT already on active probation.
+     */
+    public function contractEmployees(Request $request): JsonResponse
+    {
+        $q      = trim($request->query('q', ''));
+        $limit  = min((int) $request->query('limit', 15), 50);
+
+        $all = $this->employeeRepo->getAll();
+
+        // Contract / PKWT only — and exclude employees already in active
+        // probation (canonical helper — see ProbationService::isActiveProbation).
+        $contractEmployees = $all->filter(function ($e) {
+            $status = strtolower(trim($e->statusEmployee ?? ''));
+            if (!in_array($status, ['contract', 'pkwt'], true)) {
+                return false;
+            }
+            return !$this->probationService->isActiveProbation((string) ($e->employeeId ?? ''));
+        });
+
+        if (strlen($q) >= 1) {
+            $qLower = strtolower($q);
+            $contractEmployees = $contractEmployees->filter(
+                fn($e) =>
+                    str_contains(strtolower($e->fullName ?? ''), $qLower)
+                    || str_contains(strtolower($e->employeeId ?? ''), $qLower)
+                    || str_contains(strtolower($e->jobPosition ?? ''), $qLower)
+                    || str_contains(strtolower($e->department ?? ''), $qLower)
+            );
+        }
+
+        $data = $contractEmployees->take($limit)->values()->map(fn($e) => [
+            'employeeId'          => $e->employeeId,
+            'fullName'            => $e->fullName,
+            'statusEmployee'      => $e->statusEmployee,
+            'jobPosition'         => $e->jobPosition,
+            'jobPositionLocation' => $e->jobPositionLocation,
+            'department'          => $e->department,
+            'branchName'          => $e->branchName,
+            'joinDate'            => $e->joinDate,
+            'endDateContract'     => $e->endDateContract,
+        ]);
+
+        return response()->json([
+            'data'  => $data,
+            'total' => $data->count(),
+        ]);
+    }
+
 
     /** Build query params array for Performance Review PDF URL. */
     private function buildEvalPdfParams(string $evalId, array $evalData): array
