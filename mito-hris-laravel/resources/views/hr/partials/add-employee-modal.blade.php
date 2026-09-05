@@ -135,35 +135,6 @@
                             placeholder="email@domain.com" />
                     </div>
 
-                    {{-- Wilayah: Provinsi → Kota/Kab → Kecamatan (1:1 pola apply.blade.php) --}}
-                    <div class="col-md-4">
-                        <label class="form-label fw-semibold" style="font-size:12.5px">Provinsi</label>
-                        <select class="form-select form-select-sm" id="aeProvince">
-                            <option value="">— Pilih Provinsi —</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-semibold" style="font-size:12.5px">Kota / Kabupaten</label>
-                        <select class="form-select form-select-sm" id="aeCity" disabled>
-                            <option value="">— Pilih Provinsi dahulu —</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-semibold" style="font-size:12.5px">Kecamatan</label>
-                        <select class="form-select form-select-sm" id="aeDistrict" disabled>
-                            <option value="">— Pilih Kota dahulu —</option>
-                        </select>
-                        <div id="aeDistrictLoading"
-                            style="display:none;font-size:11.5px;color:#6b7280;margin-top:4px">
-                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>Memuat kecamatan...
-                        </div>
-                        <div id="aeDistrictManualWrap" style="display:none;margin-top:6px">
-                            <input type="text" class="form-control form-control-sm" id="aeDistrictManual"
-                                placeholder="Ketik nama kecamatan manual" />
-                            <div class="form-text" style="font-size:11px">Data kecamatan tidak tersedia, isi manual.</div>
-                        </div>
-                    </div>
-
                     <div class="col-12">
                         <label class="form-label fw-semibold" style="font-size:12.5px">Alamat KTP</label>
                         <textarea class="form-control form-control-sm" id="aeCitizenAddress" rows="2"
@@ -422,30 +393,6 @@
 </div>
 
 <script>
-{{-- ── Data Wilayah untuk NIK autofill (provinces + cities flat map) ──────────
-     Di-generate dari data/master_wilayah.json saat render, disimpan sebagai
-     variabel JS AE_REGIONS agar tidak konflik dengan REGIONS di halaman lain. --}}
-@php
-    $wilayahPath = base_path('data/master_wilayah.json');
-    $wilayahRaw  = file_exists($wilayahPath) ? json_decode(file_get_contents($wilayahPath), true) : [];
-
-    // Provinces: { "11": "ACEH", "12": "SUMATERA UTARA", ... }
-    $aeProvinces = $wilayahRaw['provinces'] ?? [];
-
-    // Cities: master_wilayah.json stores { "3201": { "name": "KAB. BOGOR", "province": "32" } }
-    // Flatten ke { "3201": "KAB. BOGOR" } agar konsisten dengan format REGIONS di apply.blade.php
-    $aeCities = [];
-    foreach ($wilayahRaw['cities'] ?? [] as $code => $val) {
-        $aeCities[(string)$code] = is_array($val) ? ($val['name'] ?? '') : (string)$val;
-    }
-@endphp
-var AE_REGIONS = {
-    provinces: @json($aeProvinces),
-    cities: @json($aeCities)
-};
-</script>
-
-<script>
 (function () {
     'use strict';
 
@@ -538,123 +485,6 @@ var AE_REGIONS = {
     // Vendor input juga trigger checkForm
     var vendorInputEl = document.getElementById('aeOutsourceVendor');
     if (vendorInputEl) vendorInputEl.addEventListener('input', checkForm);
-
-    // ── Wilayah: Provinsi → Kota/Kab → Kecamatan ─────────────────────────────
-    // Data AE_REGIONS sudah di-embed di luar IIFE (provinces + cities flat map).
-    // Kecamatan di-fetch lazy dari /data/kecamatan_all.json (1:1 pola apply.blade.php).
-
-    var aeProvinceEl      = document.getElementById('aeProvince');
-    var aeCityEl          = document.getElementById('aeCity');
-    var aeDistrictEl      = document.getElementById('aeDistrict');
-    var aeDistrictLoading = document.getElementById('aeDistrictLoading');
-    var aeDistrictManualWrap  = document.getElementById('aeDistrictManualWrap');
-    var aeDistrictManualInput = document.getElementById('aeDistrictManual');
-
-    // Populate provinces dari AE_REGIONS
-    function ae_populateProvinces() {
-        if (!aeProvinceEl || typeof AE_REGIONS === 'undefined') return;
-        var html = '<option value="">— Pilih Provinsi —</option>';
-        Object.keys(AE_REGIONS.provinces).sort().forEach(function (code) {
-            html += '<option value="' + code + '">' + AE_REGIONS.provinces[code] + '</option>';
-        });
-        aeProvinceEl.innerHTML = html;
-    }
-
-    // Populate kota berdasarkan kode provinsi
-    function ae_populateCities(provinceCode) {
-        if (!aeCityEl) return;
-        aeCityEl.innerHTML = '<option value="">— Pilih Kota/Kabupaten —</option>';
-        aeCityEl.disabled  = true;
-        ae_resetDistrict();
-        if (!provinceCode || typeof AE_REGIONS === 'undefined') return;
-        Object.keys(AE_REGIONS.cities)
-            .filter(function (c) { return c.substring(0, 2) === provinceCode; })
-            .sort()
-            .forEach(function (code) {
-                aeCityEl.innerHTML += '<option value="' + code + '">' + AE_REGIONS.cities[code] + '</option>';
-            });
-        aeCityEl.disabled = false;
-    }
-
-    // Reset district dropdown ke state awal
-    function ae_resetDistrict() {
-        if (!aeDistrictEl) return;
-        aeDistrictEl.innerHTML = '<option value="">— Pilih Kota dahulu —</option>';
-        aeDistrictEl.disabled  = true;
-        if (aeDistrictLoading)       aeDistrictLoading.style.display = 'none';
-        if (aeDistrictManualWrap)    aeDistrictManualWrap.style.display = 'none';
-        if (aeDistrictManualInput)   aeDistrictManualInput.value = '';
-    }
-
-    // Load kecamatan lazy via fetch (1:1 pola apply.blade.php loadDistricts)
-    function ae_loadDistricts(cityCode) {
-        if (!cityCode) { ae_resetDistrict(); return; }
-        if (!window._aeKecamatanData) {
-            // Belum di-cache — fetch sekali
-            aeDistrictEl.innerHTML = '<option value="">Memuat kecamatan...</option>';
-            aeDistrictEl.disabled  = true;
-            if (aeDistrictLoading) aeDistrictLoading.style.display = 'block';
-            fetch('/data/kecamatan_all.json')
-                .then(function (res) {
-                    if (!res.ok) throw new Error('Gagal memuat data kecamatan');
-                    return res.json();
-                })
-                .then(function (data) {
-                    window._aeKecamatanData = data;
-                    if (aeDistrictLoading) aeDistrictLoading.style.display = 'none';
-                    ae_populateDistrictsForCity(cityCode);
-                })
-                .catch(function () {
-                    if (aeDistrictLoading) aeDistrictLoading.style.display = 'none';
-                    ae_showDistrictManualFallback();
-                });
-            return;
-        }
-        ae_populateDistrictsForCity(cityCode);
-    }
-
-    function ae_populateDistrictsForCity(cityCode) {
-        var data = window._aeKecamatanData;
-        if (!data || !aeDistrictEl) { ae_resetDistrict(); return; }
-        var districts = data[cityCode];
-        if (districts && districts.length) {
-            var html = '<option value="">— Pilih Kecamatan —</option>';
-            districts.forEach(function (name) {
-                html += '<option value="' + name + '">' + name + '</option>';
-            });
-            aeDistrictEl.innerHTML = html;
-            aeDistrictEl.disabled  = false;
-            if (aeDistrictManualWrap)  aeDistrictManualWrap.style.display = 'none';
-        } else {
-            ae_showDistrictManualFallback();
-        }
-        if (aeDistrictLoading) aeDistrictLoading.style.display = 'none';
-    }
-
-    function ae_showDistrictManualFallback() {
-        if (!aeDistrictEl) return;
-        aeDistrictEl.innerHTML = '<option value="">-</option>';
-        aeDistrictEl.disabled  = true;
-        if (aeDistrictManualWrap) {
-            aeDistrictManualWrap.style.display = 'block';
-            if (aeDistrictManualInput) aeDistrictManualInput.focus();
-        }
-    }
-
-    // Event listeners wilayah
-    if (aeProvinceEl) {
-        aeProvinceEl.addEventListener('change', function () {
-            ae_populateCities(this.value);
-        });
-    }
-    if (aeCityEl) {
-        aeCityEl.addEventListener('change', function () {
-            ae_loadDistricts(this.value);
-        });
-    }
-
-    // Initialise province dropdown
-    ae_populateProvinces();
 
     // ── Validasi Nama Lengkap (1:1 dari GAS / public career apply.blade.php) ─
     // Hanya huruf (termasuk huruf berdiakritik/aksara) dan spasi tunggal antar kata.
@@ -815,10 +645,6 @@ var AE_REGIONS = {
         if (bdReset) delete bdReset.dataset.manualChanged;
         var bpReset = document.getElementById('aeBirthPlace');
         if (bpReset) delete bpReset.dataset.manualChanged;
-        // Reset wilayah dropdowns
-        if (aeProvinceEl) { aeProvinceEl.value = ''; delete aeProvinceEl.dataset.manualChanged; }
-        if (aeCityEl)     { aeCityEl.innerHTML = '<option value="">— Pilih Provinsi dahulu —</option>'; aeCityEl.disabled = true; }
-        ae_resetDistrict();
         // Reset nama validation state
         if (nameEl) nameEl.classList.remove('is-valid', 'is-invalid');
         nameHasError = false;
@@ -881,12 +707,6 @@ var AE_REGIONS = {
             workingEmail:         val('aeWorkingEmail'),
             citizenIdAddress:     val('aeCitizenAddress'),
             residentialAddress:   val('aeResidentialAddress'),
-            // Wilayah (disimpan sebagai nama teks di sheet)
-            province:             (aeProvinceEl && AE_REGIONS && aeProvinceEl.value) ? (AE_REGIONS.provinces[aeProvinceEl.value] || aeProvinceEl.value) : '',
-            city:                 (aeCityEl && AE_REGIONS && aeCityEl.value) ? (AE_REGIONS.cities[aeCityEl.value] || aeCityEl.value) : '',
-            district:             (aeDistrictEl && !aeDistrictEl.disabled && aeDistrictEl.value)
-                                    ? aeDistrictEl.value
-                                    : (aeDistrictManualInput ? aeDistrictManualInput.value.trim() : ''),
             // Bank & BPJS
             bankName:             val('aeBankName'),
             bankAccount:          val('aeBankAccount'),
