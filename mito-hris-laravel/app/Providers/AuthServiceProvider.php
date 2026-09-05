@@ -54,5 +54,20 @@ class AuthServiceProvider extends ServiceProvider
                 return Rbac::allows($user['role'] ?? null, $permission);
             });
         }
+
+        // ==============================================================
+        // Composite ability used by the Asset / Certification employee
+        // pickers: the picker only returns id/name/division/department, so
+        // any role that can open those modules (or the full employee
+        // directory) is allowed. GA_IT and LEGAL must NOT need the whole
+        // view_employees permission just to pick an assignee.
+        // ==============================================================
+        Gate::define('lookup_employee', function ($user) {
+            $role = $user['role'] ?? null;
+
+            return Rbac::allows($role, 'view_employees')
+                || Rbac::allows($role, 'view_asset')
+                || Rbac::allows($role, 'view_certification');
+        });
     }
 }

@@ -381,12 +381,12 @@ class PortalDomainIsolationTest extends TestCase
         $routes = json_decode($process->getOutput(), true, 512, JSON_THROW_ON_ERROR);
         $routeNames = array_filter(array_map(static fn (array $route) => $route['name'] ?? null, $routes));
 
-        $this->assertContains('local.hris.domain.root', $routeNames);
-        $this->assertContains('local.auth.portal', $routeNames);
-        $this->assertContains('local.mpr.domain.root', $routeNames);
-        $this->assertContains('local.public.career.index', $routeNames);
-        $this->assertContains('local.public.outsource.index', $routeNames);
-        $this->assertContains('local.login', $routeNames);
-        $this->assertContains('local.mpr.login', $routeNames);
+        $this->assertContains('hris.domain.root', $routeNames);
+        $this->assertContains('auth.portal', $routeNames);
+        $this->assertContains('mpr.auth.domain.root', $routeNames);
+        $this->assertContains('public.career.index', $routeNames);
+        $this->assertContains('public.outsource.index', $routeNames);
+        $this->assertContains('login', $routeNames);
+        $this->assertContains('mpr.auth.login', $routeNames);
     }
 }

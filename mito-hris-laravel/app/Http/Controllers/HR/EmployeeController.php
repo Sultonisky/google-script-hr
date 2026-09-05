@@ -525,6 +525,47 @@ class EmployeeController extends Controller
     }
 
     /**
+     * Minimal employee reference lookup for the Asset Assignment and
+     * Certification employee pickers.
+     *
+     * Returns ONLY picker-relevant fields (id / name / division /
+     * department / job position). Access is gated by the composite
+     * `lookup_employee` ability so GA_IT and LEGAL can pick assignees
+     * without full view_employees directory access.
+     */
+    public function lookup(Request $request): JsonResponse
+    {
+        $q     = trim($request->query('q', ''));
+        $limit = min((int) $request->query('limit', 10), 20);
+
+        if ($q === '') {
+            return response()->json(['data' => [], 'total' => 0]);
+        }
+
+        $qLower = strtolower($q);
+        $results = $this->employeeRepo->getAll()
+            ->filter(function ($e) use ($qLower) {
+                return str_contains(strtolower($e->fullName ?? ''), $qLower)
+                    || str_contains(strtolower($e->employeeId ?? ''), $qLower)
+                    || str_contains(strtolower($e->division ?? ''), $qLower)
+                    || str_contains(strtolower($e->department ?? ''), $qLower)
+                    || str_contains(strtolower($e->jobPosition ?? ''), $qLower);
+            })
+            ->take($limit);
+
+        $data = $results->map(fn ($e) => [
+            'employeeId'   => $e->employeeId,
+            'fullName'     => $e->fullName,
+            'division'     => $e->division,
+            'department'   => $e->department,
+            'jobPosition'  => $e->jobPosition,
+            'statusEmployee' => $e->statusEmployee,
+        ])->values();
+
+        return response()->json(['data' => $data, 'total' => $data->count()]);
+    }
+
+    /**
      * Process Employee Offboarding.
      * Supports multipart/form-data with optional file attachments.
      * Returns pdf_urls for auto-download on the frontend (1:1 pattern with offContract).

@@ -81,6 +81,24 @@
                 </a>
             @endcanany
 
+            <!-- Asset Management Section -->
+            @can('view_asset')
+                <div class="nav-section-label">Asset</div>
+                <a href="{{ route('hr.assets.index') }}"
+                    class="nav-item {{ request()->routeIs('hr.assets.*') ? 'active' : '' }}">
+                    <i class="bi bi-box-seam-fill"></i> Asset Management
+                </a>
+            @endcan
+
+            <!-- Certification Management Section -->
+            @can('view_certification')
+                <div class="nav-section-label">Certification</div>
+                <a href="{{ route('hr.certifications.index') }}"
+                    class="nav-item {{ request()->routeIs('hr.certifications.*') ? 'active' : '' }}">
+                    <i class="bi bi-award-fill"></i> Certification Management
+                </a>
+            @endcan
+
             <!-- Candidate Status Section -->
             @can('view_recruitment')
                 <div class="nav-section-label">Candidate Status</div>

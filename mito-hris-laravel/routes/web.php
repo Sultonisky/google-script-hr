@@ -18,9 +18,13 @@ use App\Http\Controllers\HR\UserController;
 use App\Http\Controllers\HR\MprRequestorController;
 use App\Http\Controllers\HR\ExportController;
 use App\Http\Controllers\HR\MprController;
+use App\Http\Controllers\HR\AssetController;
+use App\Http\Controllers\HR\CertificationController;
 
 Route::get('/robots.txt', [SeoController::class, 'robots'])->name('public.seo.robots');
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('public.seo.sitemap');
+
+if (!app()->environment('local')) {
 
 Route::domain(config('hris.domains.hris'))->middleware('web')->group(function () {
     Route::get('/', [LoginController::class, 'portal'])->name('hris.domain.root');
@@ -64,6 +68,33 @@ Route::domain(config('hris.domains.hris'))->middleware('web')->group(function ()
             Route::post('/{id}/promote-probation', [EmployeeController::class, 'promoteToProbation'])->name('promote-probation')->middleware('can:manage_employees');
             Route::get('/{id}/json', [EmployeeController::class, 'getJson'])->name('json');
         });
+        Route::get('/employees/lookup', [EmployeeController::class, 'lookup'])->middleware('can:lookup_employee')->name('employees.lookup');
+        Route::prefix('assets')->name('assets.')->middleware('can:view_asset')->group(function () {
+            Route::get('/', [\App\Http\Controllers\HR\AssetController::class, 'index'])->name('index');
+            Route::get('/missing-code-summary', [\App\Http\Controllers\HR\AssetController::class, 'missingCodeSummary'])->name('missing-code-summary')->middleware('can:edit_asset');
+            Route::get('/preview-next-code/{prefix}', [\App\Http\Controllers\HR\AssetController::class, 'previewNextCode'])->name('preview-next-code')->middleware('can:edit_asset');
+            Route::post('/', [\App\Http\Controllers\HR\AssetController::class, 'store'])->name('store')->middleware('can:edit_asset');
+            Route::post('/generate-bulk-codes', [\App\Http\Controllers\HR\AssetController::class, 'generateBulkCodes'])->name('generate-bulk-codes')->middleware('can:edit_asset');
+            Route::put('/{asset}', [\App\Http\Controllers\HR\AssetController::class, 'update'])->name('update')->middleware('can:edit_asset');
+            Route::delete('/{asset}', [\App\Http\Controllers\HR\AssetController::class, 'destroy'])->name('destroy')->middleware('can:edit_asset');
+            Route::post('/{asset}/assign', [\App\Http\Controllers\HR\AssetController::class, 'assign'])->name('assign')->middleware('can:edit_asset');
+            Route::post('/{asset}/return', [\App\Http\Controllers\HR\AssetController::class, 'returnAsset'])->name('return')->middleware('can:edit_asset');
+            Route::post('/{asset}/generate-code', [\App\Http\Controllers\HR\AssetController::class, 'generateCode'])->name('generate-code')->middleware('can:edit_asset');
+            Route::get('/{asset}/json', [\App\Http\Controllers\HR\AssetController::class, 'getJson'])->name('json');
+        });
+
+        Route::prefix('certifications')->name('certifications.')->middleware('can:view_certification')->group(function () {
+            Route::get('/', [\App\Http\Controllers\HR\CertificationController::class, 'index'])->name('index');
+            Route::get('/preview-next-code', [\App\Http\Controllers\HR\CertificationController::class, 'previewNextCode'])->name('preview-next-code')->middleware('can:manage_certification');
+            Route::post('/', [\App\Http\Controllers\HR\CertificationController::class, 'store'])->name('store')->middleware('can:manage_certification');
+            Route::put('/{certification}', [\App\Http\Controllers\HR\CertificationController::class, 'update'])->name('update')->middleware('can:manage_certification');
+            Route::delete('/{certification}', [\App\Http\Controllers\HR\CertificationController::class, 'destroy'])->name('destroy')->middleware('can:manage_certification');
+            Route::post('/{certification}/generate-code', [\App\Http\Controllers\HR\CertificationController::class, 'generateCode'])->name('generate-code')->middleware('can:manage_certification');
+            Route::get('/{certification}/attachment', [\App\Http\Controllers\HR\CertificationController::class, 'attachment'])->name('attachment');
+            Route::get('/{certification}/json', [\App\Http\Controllers\HR\CertificationController::class, 'getJson'])->name('json');
+        });
+
+
         Route::prefix('probation')->name('probation.')->middleware('can:manage_probation')->group(function () {
             Route::get('/', [ProbationController::class, 'index'])->name('index');
             Route::post('/{id}/evaluate', [ProbationController::class, 'evaluate'])->name('evaluate');
@@ -167,15 +198,17 @@ Route::domain(config('hris.domains.outsource'))->middleware('web')->group(functi
     Route::post('/apply', [OutsourceApplyController::class, 'store'])->name('public.outsource.store');
 });
 
+} // end !local
+
 if (app()->environment('local')) {
     Route::middleware('web')->group(function () {
-        Route::get('/', [LoginController::class, 'portal'])->name('local.hris.domain.root');
-        Route::get('/portal', [LoginController::class, 'portal'])->name('local.auth.portal');
-        Route::get('/login', [LoginController::class, 'showLoginForm'])->name('local.login');
-        Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:login')->name('local.login.post');
-        Route::post('/logout', [LoginController::class, 'logout'])->name('local.logout');
+        Route::get('/', [LoginController::class, 'portal'])->name('hris.domain.root');
+        Route::get('/portal', [LoginController::class, 'portal'])->name('auth.portal');
+        Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+        Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:login')->name('login.post');
+        Route::any('/logout', [LoginController::class, 'logout'])->name('logout');
 
-        Route::prefix('hr')->name('local.hr.')->middleware(['portal.access', 'hr.auth', 'mpr.auth'])->group(function () {
+        Route::prefix('hr')->name('hr.')->middleware(['portal.access', 'hr.auth', 'mpr.auth'])->group(function () {
             Route::post('/refresh-data', [\App\Http\Controllers\HR\RefreshController::class, 'refreshData'])->name('refresh-data');
             Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -210,6 +243,33 @@ if (app()->environment('local')) {
                 Route::post('/{id}/promote-probation', [EmployeeController::class, 'promoteToProbation'])->name('promote-probation')->middleware('can:manage_employees');
                 Route::get('/{id}/json', [EmployeeController::class, 'getJson'])->name('json');
             });
+            Route::get('/employees/lookup', [EmployeeController::class, 'lookup'])->middleware('can:lookup_employee')->name('employees.lookup');
+
+            Route::prefix('assets')->name('assets.')->middleware('can:view_asset')->group(function () {
+                Route::get('/', [AssetController::class, 'index'])->name('index');
+                Route::get('/missing-code-summary', [AssetController::class, 'missingCodeSummary'])->name('missing-code-summary')->middleware('can:edit_asset');
+                Route::get('/preview-next-code/{prefix}', [\App\Http\Controllers\HR\AssetController::class, 'previewNextCode'])->name('preview-next-code')->middleware('can:edit_asset');
+                Route::post('/', [AssetController::class, 'store'])->name('store')->middleware('can:edit_asset');
+                Route::post('/generate-bulk-codes', [AssetController::class, 'generateBulkCodes'])->name('generate-bulk-codes')->middleware('can:edit_asset');
+                Route::put('/{asset}', [AssetController::class, 'update'])->name('update')->middleware('can:edit_asset');
+                Route::delete('/{asset}', [AssetController::class, 'destroy'])->name('destroy')->middleware('can:edit_asset');
+                Route::post('/{asset}/assign', [AssetController::class, 'assign'])->name('assign')->middleware('can:edit_asset');
+                Route::post('/{asset}/return', [AssetController::class, 'returnAsset'])->name('return')->middleware('can:edit_asset');
+                Route::post('/{asset}/generate-code', [AssetController::class, 'generateCode'])->name('generate-code')->middleware('can:edit_asset');
+                Route::get('/{asset}/json', [AssetController::class, 'getJson'])->name('json');
+            });
+
+            Route::prefix('certifications')->name('certifications.')->middleware('can:view_certification')->group(function () {
+                Route::get('/', [CertificationController::class, 'index'])->name('index');
+                Route::get('/preview-next-code', [CertificationController::class, 'previewNextCode'])->name('preview-next-code')->middleware('can:manage_certification');
+                Route::post('/', [CertificationController::class, 'store'])->name('store')->middleware('can:manage_certification');
+                Route::put('/{certification}', [CertificationController::class, 'update'])->name('update')->middleware('can:manage_certification');
+                Route::delete('/{certification}', [CertificationController::class, 'destroy'])->name('destroy')->middleware('can:manage_certification');
+                Route::post('/{certification}/generate-code', [CertificationController::class, 'generateCode'])->name('generate-code')->middleware('can:manage_certification');
+                Route::get('/{certification}/attachment', [CertificationController::class, 'attachment'])->name('attachment');
+                Route::get('/{certification}/json', [CertificationController::class, 'getJson'])->name('json');
+            });
+
 
             Route::prefix('probation')->name('probation.')->middleware('can:manage_probation')->group(function () {
                 Route::get('/', [ProbationController::class, 'index'])->name('index');
@@ -279,7 +339,7 @@ if (app()->environment('local')) {
             Route::prefix('mpr')->name('mpr.')->middleware('can:view_mpr')->group(function () {
                 Route::get('/', [MprController::class, 'index'])->name('index');
                 Route::get('/create', function () {
-                    return redirect()->route('local.mpr.request');
+                    return redirect()->route('mpr.auth.request');
                 })->name('create')->middleware('can:create_mpr');
                 Route::get('/history', [MprController::class, 'history'])->name('history');
                 Route::post('/', [MprController::class, 'store'])->name('store')->middleware('can:create_mpr');
@@ -291,8 +351,8 @@ if (app()->environment('local')) {
             });
         });
 
-        Route::get('/mpr', [MprAuthController::class, 'portal'])->name('local.mpr.portal');
-        Route::prefix('mpr')->name('local.mpr.')->group(function () {
+        Route::get('/mpr', [MprAuthController::class, 'portal'])->name('mpr.auth.portal');
+        Route::prefix('mpr')->name('mpr.auth.')->group(function () {
             Route::get('/', [MprAuthController::class, 'portal'])->name('domain.root');
             Route::get('/login', [MprAuthController::class, 'showLoginForm'])->name('login');
             Route::post('/login', [MprAuthController::class, 'login'])->middleware('throttle:mpr-login')->name('login.post');
@@ -303,20 +363,21 @@ if (app()->environment('local')) {
                 Route::get('/request/history', [MprController::class, 'history'])->name('request.history');
                 Route::post('/request', [MprController::class, 'store'])->name('request.store');
                 Route::get('/request/{id}/pdf', [MprController::class, 'exportPdf'])->name('pdf');
+                Route::get('/request/{id}/json', [MprController::class, 'getJson'])->name('json');
             });
         });
 
-        Route::get('/career', [CareerController::class, 'index'])->name('local.public.career.index');
-        Route::post('/career/consent', [CareerController::class, 'consent'])->name('local.public.career.consent');
-        Route::get('/career/apply', [CareerController::class, 'form'])->name('local.public.career.form');
-        Route::post('/career/apply', [CareerController::class, 'store'])->name('local.public.career.store');
-        Route::get('/career/success', [CareerController::class, 'success'])->name('local.public.career.success');
-        Route::get('/career/check-status', [CareerController::class, 'checkStatus'])->name('local.public.career.check-status');
-        Route::get('/career/self-update/{id}', [CareerController::class, 'selfUpdate'])->name('local.public.career.self-update');
-        Route::post('/career/self-update/{id}', [CareerController::class, 'storeSelfUpdate'])->name('local.public.career.self-update.store');
+        Route::get('/career', [CareerController::class, 'index'])->name('public.career.index');
+        Route::post('/career/consent', [CareerController::class, 'consent'])->name('public.career.consent');
+        Route::get('/career/apply', [CareerController::class, 'form'])->name('public.career.form');
+        Route::post('/career/apply', [CareerController::class, 'store'])->name('public.career.store');
+        Route::get('/career/success', [CareerController::class, 'success'])->name('public.career.success');
+        Route::get('/career/check-status', [CareerController::class, 'checkStatus'])->name('public.career.check-status');
+        Route::get('/career/self-update/{id}', [CareerController::class, 'selfUpdate'])->name('public.career.self-update');
+        Route::post('/career/self-update/{id}', [CareerController::class, 'storeSelfUpdate'])->name('public.career.self-update.store');
 
-        Route::get('/outsource', [OutsourceApplyController::class, 'index'])->name('local.public.outsource.index');
-        Route::get('/outsource/apply', [OutsourceApplyController::class, 'index'])->name('local.public.outsource.apply');
-        Route::post('/outsource/apply', [OutsourceApplyController::class, 'store'])->name('local.public.outsource.store');
+        Route::get('/outsource', [OutsourceApplyController::class, 'index'])->name('public.outsource.index');
+        Route::get('/outsource/apply', [OutsourceApplyController::class, 'index'])->name('public.outsource.apply');
+        Route::post('/outsource/apply', [OutsourceApplyController::class, 'store'])->name('public.outsource.store');
     });
 }

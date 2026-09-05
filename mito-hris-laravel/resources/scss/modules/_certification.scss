@@ -1,0 +1,64 @@
+// Certification Management Module Styles
+// Reuses asset/global component styling.
+
+#certificationFilterForm .filter-bar {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+// Modal scroll containment — tall Add/Edit certification forms keep the
+// header + footer pinned and scroll inside .modal-body on short viewports
+// (Bootstrap modal-dialog-scrollable + viewport cap).
+//
+// The Add/Edit form wraps .modal-body + .modal-footer inside
+// <form id="certificationForm">, so the body is NOT a direct flex child of
+// .modal-content and Bootstrap's scrollable flex chain breaks (nothing
+// scrolls, bottom clipped). Making the form a flex column restores the chain;
+// see _asset.scss for the identical pattern.
+#addCertificationModal .modal-content,
+#viewCertificationModal .modal-content {
+    max-height: calc(100vh - 3.5rem);
+    overflow: hidden;
+}
+
+#addCertificationModal .modal-content > form {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+#addCertificationModal .modal-content .modal-body,
+#viewCertificationModal .modal-content .modal-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    min-height: 0;
+}
+
+#addCertificationModal .modal-content .modal-header,
+#addCertificationModal .modal-content .modal-footer,
+#viewCertificationModal .modal-content .modal-header,
+#viewCertificationModal .modal-content .modal-footer {
+    flex-shrink: 0;
+}
+
+// Employee typeahead results dropdown
+#certificationEmployeeResults {
+    .list-group-item {
+        font-size: 0.82rem;
+        border-left: 0;
+        border-right: 0;
+        cursor: pointer;
+
+        &:hover {
+            background: rgba(0, 91, 172, 0.06);
+        }
+    }
+}
+
+@media (max-width: 767.98px) {
+    #certificationEmployeeResults {
+        position: static !important;
+        width: 100% !important;
+    }
+}

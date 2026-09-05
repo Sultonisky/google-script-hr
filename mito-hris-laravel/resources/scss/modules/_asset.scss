@@ -1,0 +1,118 @@
+// Asset Management Module Styles
+
+.asset-section-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid #e5e7eb;
+
+    i {
+        margin-right: 0.35rem;
+        font-size: 0.85rem;
+    }
+}
+
+.category-fields .form-label {
+    font-size: 0.82rem;
+}
+
+// View detail modal
+.asset-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem 1.5rem;
+
+    .asset-detail-item {
+        .asset-detail-label {
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #6b7280;
+            margin-bottom: 0.15rem;
+        }
+
+        .asset-detail-value {
+            font-size: 0.9rem;
+            color: #1f2937;
+        }
+    }
+}
+
+// Modal scroll containment — tall Add/Edit forms (and long View/Assign/Return
+// content) scroll inside .modal-body only; header + footer stay pinned even on
+// short viewports. Bootstrap's modal-dialog-scrollable is the mechanism.
+//
+// Add/Edit wraps .modal-body + .modal-footer inside <form id="assetForm">, so
+// the body is NOT a direct flex child of .modal-content and Bootstrap's
+// scrollable flex chain breaks (nothing scrolls, the bottom gets clipped).
+// Turning the form itself into a flex column restores the chain:
+// .modal-content caps the height, the form shrinks to fill it, and .modal-body
+// becomes the internal scroll region while header/footer stay pinned.
+#addAssetModal .modal-content,
+#viewAssetModal .modal-content {
+    max-height: calc(100vh - 3.5rem);
+    overflow: hidden;
+}
+
+#addAssetModal .modal-content > form {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+#addAssetModal .modal-content .modal-body,
+#viewAssetModal .modal-content .modal-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    min-height: 0;
+}
+
+#addAssetModal .modal-content .modal-header,
+#addAssetModal .modal-content .modal-footer,
+#viewAssetModal .modal-content .modal-header,
+#viewAssetModal .modal-content .modal-footer {
+    flex-shrink: 0;
+}
+
+.asset-detail-section-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #0b2540;
+    margin: 1rem 0 0.5rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 2px solid #eb1c24;
+    grid-column: 1 / -1;
+}
+
+// Assignment history in detail
+.asset-history-table {
+    font-size: 0.82rem;
+
+    th {
+        font-weight: 600;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: #6b7280;
+    }
+}
+
+// Filter bar alignment tweaks
+#assetFilterForm .filter-bar {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+@media (max-width: 767.98px) {
+    .asset-detail-grid {
+        grid-template-columns: 1fr;
+    }
+}
