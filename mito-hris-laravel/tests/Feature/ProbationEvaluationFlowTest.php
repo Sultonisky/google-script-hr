@@ -105,7 +105,12 @@ class ProbationEvaluationFlowTest extends TestCase
             jobPositionLocation: 'Staff IT - Jakarta',
             jobLevel: 'Staff',
             joinDate: '2026-05-01',
-            statusEmployee: 'Probation',
+            // 6-month contract — used by ProbationService::resolveExtensionDuration
+            // to derive the Extend duration server-side from the contract.
+            endDateContract: '2026-11-01',
+            // Employee.Status is restricted to Permanent / Contract /
+            // Outsource; the probation process lives in kandidat_probation.
+            statusEmployee: 'Contract',
             personalEmail: 'budi@example.com',
         );
     }
@@ -113,6 +118,10 @@ class ProbationEvaluationFlowTest extends TestCase
     /**
      * Bind mocks for the evaluate flow. $capturedRows receives every appended
      * kandidat_probation row as a header-mapped assoc array.
+     *
+     * If $existingRows is empty, a default active-probation row (Decision='')
+     * is injected so the canonical `isActiveProbation` returns true and
+     * evaluations can proceed.
      */
     private function bindEvaluateFlowMocks(array &$capturedRows, array $existingRows = []): GoogleSheetsService
     {
@@ -138,6 +147,38 @@ class ProbationEvaluationFlowTest extends TestCase
             })->andReturn(true)->byDefault();
         $sheets->shouldReceive('clearCache')->andReturn(null)->byDefault();
         $sheets->shouldReceive('updateRange')->andReturn(true)->byDefault();
+        // Default existingRows: an active-probation base row (Decision='')
+        // so ProbationService::isActiveProbation returns true via the
+        // canonical helper, and the evaluation flow can proceed.
+        if (empty($existingRows)) {
+            $existingRows = [
+                array_combine($headers, array_pad([
+                    'PROB-EMP001',
+                    'EMP001',
+                    '',
+                    '',
+                    '6 Bulan',
+                    '2026-05-01',
+                    '2026-11-01',
+                    '2026-05-01',
+                    'Probation',
+                    '2026-05-01 09:00:00',
+                    'HR Admin',
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    'Pending',
+                    '',
+                    '2026-05-01 09:00:00',
+                    '2026-05-01 09:00:00',
+                ], count($headers), '')),
+            ];
+        }
         $sheets->shouldReceive('getRowsAsAssoc')->andReturn($existingRows)->byDefault();
 
         $this->app->instance(EmployeeRepositoryInterface::class, $employeeRepo);
@@ -207,6 +248,7 @@ class ProbationEvaluationFlowTest extends TestCase
             ->assertJsonPath('decisionType', 'pass');
 
         $row = end($rows);
+        $this->assertSame('Probation', self::ref($row, 'Status'));
         $this->assertSame('Lulus', self::ref($row, 'Decision'));
         $this->assertSame('13', self::ref($row, 'Overall Total'));
         $this->assertSame('Sangat Baik', self::ref($row, 'Category'));
@@ -229,6 +271,7 @@ class ProbationEvaluationFlowTest extends TestCase
             ->assertJsonPath('decisionType', 'fail');
 
         $row = end($rows);
+        $this->assertSame('Probation', self::ref($row, 'Status'));
         $this->assertSame('Tidak Lulus', self::ref($row, 'Decision'));
         $this->assertNotSame('', self::ref($row, 'Eval ID'));
 
@@ -238,21 +281,16 @@ class ProbationEvaluationFlowTest extends TestCase
     }
 
     // =========================================================================
-    // T03/T04/T05 — EXTEND 3/6/12 Bulan: duration saved, NO PDF generated at all
+    // T03 — EXTEND: server resolves duration from contract (6 months)
+    //       and rejects mismatched client-supplied duration.
     // =========================================================================
 
-    public static function extensionDurationProvider(): array
-    {
-        return [['3 Bulan'], ['6 Bulan'], ['12 Bulan']];
-    }
-
-    #[\PHPUnit\Framework\Attributes\DataProvider('extensionDurationProvider')]
-    public function test_t03_to_t05_extend_saves_duration_and_generates_no_pdf(string $duration): void
+    public function test_t03_extend_resolves_duration_from_contract(): void
     {
         [$response, $rows] = $this->postEvaluation('Perpanjang Kontrak', [
-            'extension_duration' => $duration,
-            'extension_start'    => '2026-09-01',
-            'extension_end'      => '2026-12-01',
+            'extension_duration' => '6 Bulan',
+            'extension_start'    => '2026-12-01',
+            'extension_end'      => '2027-06-01',
         ]);
 
         $response->assertOk()->assertJsonPath('success', true)
@@ -261,10 +299,48 @@ class ProbationEvaluationFlowTest extends TestCase
             ->assertJsonPath('evalPdfUrl', null);
 
         $row = end($rows);
-        $this->assertSame($duration, self::ref($row, 'Extension Duration'));
-        $this->assertSame('2026-09-01', self::ref($row, 'New Contract Start'));
-        $this->assertSame('2026-12-01', self::ref($row, 'New Contract End'));
+        $this->assertSame('Probation', self::ref($row, 'Status'));
+        $this->assertSame('6 Bulan', self::ref($row, 'Extension Duration'));
+        $this->assertSame('2026-12-01', self::ref($row, 'New Contract Start'));
+        // Server derives end date = start + 6 months = 2027-06-01
+        $this->assertSame('2027-06-01', self::ref($row, 'New Contract End'));
         $this->assertNotSame('', self::ref($row, 'Eval ID'));
+    }
+
+    // =========================================================================
+    // T04 — EXTEND: mismatched client duration is rejected (contract=6 Bulan)
+    // =========================================================================
+
+    public function test_t04_extend_rejects_mismatched_duration(): void
+    {
+        [$response, $rows] = $this->postEvaluation('Perpanjang Kontrak', [
+            'extension_duration' => '3 Bulan',
+            'extension_start'    => '2026-12-01',
+            'extension_end'      => '2027-03-01',
+        ]);
+
+        $response->assertStatus(422);
+        $this->assertCount(0, $rows, 'No row should be written when duration mismatches.');
+    }
+
+    // =========================================================================
+    // T05 — EXTEND: client sends no duration → server still resolves from contract
+    // =========================================================================
+
+    public function test_t05_extend_resolves_duration_when_client_sends_none(): void
+    {
+        [$response, $rows] = $this->postEvaluation('Perpanjang Kontrak', [
+            'extension_start' => '2026-12-01',
+        ]);
+
+        $response->assertOk()->assertJsonPath('success', true)
+            ->assertJsonPath('decisionType', 'extend')
+            ->assertJsonPath('pdfUrl', null);
+
+        $row = end($rows);
+        $this->assertSame('6 Bulan', self::ref($row, 'Extension Duration'));
+        $this->assertSame('2026-12-01', self::ref($row, 'New Contract Start'));
+        $this->assertSame('2027-06-01', self::ref($row, 'New Contract End'));
     }
 
     // =========================================================================

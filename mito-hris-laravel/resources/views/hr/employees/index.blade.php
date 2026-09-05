@@ -140,6 +140,13 @@
                         <option value="Probation" {{ ($statusFilter ?? '') === 'Probation' ? 'selected' : '' }}>
                             Probation ({{ $stats['probation'] ?? 0 }})
                         </option>
+                        {{-- The 'Probation' option above is intentionally retained:
+                             Employee.Status no longer carries a 'Probation'
+                             value, but the dropdown label is kept as a UX cue.
+                             The count shown is the canonical active-probation
+                             count (see EmployeeController::index stats).
+                             Selecting 'Probation' here filters by
+                             active-probation state via the index filter. --}}
                         <option value="Outsource" {{ ($statusFilter ?? '') === 'Outsource' ? 'selected' : '' }}>
                             Outsource ({{ $stats['outsource'] ?? 0 }})
                         </option>

@@ -1708,15 +1708,19 @@
                             <input type="date" class="form-control form-control-sm" name="probation_start"
                                 id="promoteProbStart" value="{{ date('Y-m-d') }}" required />
                         </div>
-                        <div class="col-6">
-                            <label class="form-label fw-semibold" style="font-size:12.5px">Durasi Probation <span
-                                    class="text-primary">*</span></label>
-                            <select class="form-select form-select-sm" name="probation_duration"
-                                id="promoteProbDuration" required>
-                                <option value="1 Bulan">1 Bulan</option>
-                                <option value="3 Bulan" selected>3 Bulan</option>
-                                <option value="6 Bulan">6 Bulan</option>
-                            </select>
+                        <div class="col-6 d-flex align-items-end">
+                            <div class="form-control form-control-sm bg-light border-0 text-muted"
+                                style="font-size:12.5px" readonly id="promoteProbDurationDisplay" readonly>
+                                Durasi otomatis dari kontrak
+                            </div>
+                        </div>
+                        <input type="hidden" name="probation_duration" id="promoteProbDuration" value="" />
+                        <div class="col-12">
+                            <div class="form-text" style="font-size:11px">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Durasi probation dihitung otomatis dari durasi kontrak karyawan
+                                (Tanggal Masuk → End Date Contract).
+                            </div>
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-semibold" style="font-size:12.5px">Catatan Rekomendasi HR /

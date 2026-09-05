@@ -476,18 +476,20 @@
                         empOpenEdit(e);
                     };
 
-                    // Contract actions — tampilkan tombol "Ajukan Onboarding Probation" hanya untuk Contract
-                    var contractWrap = document.getElementById('drawerContractActionsWrap');
-                    var statusLower = (e.statusEmployee || '').toLowerCase();
-                    var isContract = statusLower === 'contract' || statusLower === 'pkwt' || statusLower.indexOf(
-                        'contract') !== -1;
-                    if (contractWrap) {
-                        contractWrap.style.display = isContract ? 'block' : 'none';
-                        var btnPromote = document.getElementById('btnDrawerPromoteProbation');
-                        if (btnPromote) {
-                            btnPromote.onclick = function() {
-                                openPromoteToProbationModal(e);
-                            };
+                    // STEP 16/20 — Probation alert in employee drawer.
+                    // The "Ajukan Probation" entry point was moved out of the
+                    // drawer (see Probation menu). When the employee is
+                    // currently in active probation (canonical flag from
+                    // /hr/employees/{id}/json → isActiveProbation), show a
+                    // clear alert so the operator does not attempt
+                    // restricted actions. Employee.Status is intentionally
+                    // ignored — only the canonical flag is authoritative.
+                    var probationAlert = document.getElementById('drawerProbationAlert');
+                    if (probationAlert) {
+                        if (data.isActiveProbation === true) {
+                            probationAlert.classList.remove('d-none');
+                        } else {
+                            probationAlert.classList.add('d-none');
                         }
                     }
                 })

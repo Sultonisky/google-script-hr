@@ -539,10 +539,10 @@
     </div>
 
     <div class="drawer-footer" id="drawerFooterEntity" style="display:none;flex-direction:column;gap:8px">
-        <div id="drawerContractActionsWrap" style="display:none;width:100%">
-            <button class="btn btn-sm w-100 fw-semibold text-white" id="btnDrawerPromoteProbation" type="button"
-                style="background:#eb1c24;border:none;border-radius:8px;padding:8px 12px;font-size:12.5px"><i
-                    class="bi bi-person-up me-1"></i>Ajukan Onboarding Probation</button>
+        <div id="drawerProbationAlert" class="alert alert-warning d-none" role="alert"
+            style="font-size:12.5px;border-radius:8px;margin-bottom:0;padding:8px 12px;background:#fff7ed;border:1px solid #fdba74;color:#92400e">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+            <span id="drawerProbationAlertMsg">Employee sedang dalam proses probation. Selesaikan evaluasi probation terlebih dahulu sebelum melakukan perubahan pada data contract.</span>
         </div>
         <div class="status-action-group">
             <button class="btn-status accept" id="btnDrawerEntityEdit" type="button"><i
