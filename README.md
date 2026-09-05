@@ -1,4 +1,8 @@
-# MITO HRIS
+<p align="center">
+  <img src="mito-hris-laravel/public/assets/mito-white.png" alt="MITO Group" width="280">
+</p>
+
+# MITO Group HRIS
 
 MITO HRIS is a proprietary internal Human Resource Information System for MITO
 Group. The active application is a Laravel 12 monolith in
