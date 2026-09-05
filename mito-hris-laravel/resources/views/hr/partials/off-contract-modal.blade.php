@@ -128,9 +128,24 @@
 </div>
 
 @php
-    // Serialize contract employees untuk modal search
-    // Pakai $all dari view (semua karyawan), filter contract di JS
+    // Serialize contract employees untuk modal search.
+    // STEP 16/18/22: exclude ACTIVE-PROBATION employees from Off Contract
+    // search. Active probation is determined canonically via
+    // ProbationService::isActiveProbation (kandidat_probation Status +
+    // Decision of the latest row), NOT via Employee.Status, which no
+    // longer carries the 'probation' label.
+    $__probationSvc = app(\App\Services\ProbationService::class);
     $contractEmpSerialized = collect($all ?? ($employees ?? []))
+        ->filter(function ($e) use ($__probationSvc) {
+            if (!is_object($e)) {
+                return true;
+            }
+            try {
+                return !$__probationSvc->isActiveProbation((string) ($e->employeeId ?? ''));
+            } catch (\Throwable) {
+                return true;
+            }
+        })
         ->map(function ($e) {
             if (!is_object($e)) {
                 return $e;

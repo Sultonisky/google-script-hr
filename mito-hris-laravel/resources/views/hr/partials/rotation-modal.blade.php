@@ -140,9 +140,22 @@
 
 <script>
     @php
+        $__probationSvc = app(\App\Services\ProbationService::class);
         $allEmpForRotation = collect($all ?? ($employees ?? []))
-            ->filter(function ($e) {
-                return in_array(strtolower(trim($e->statusEmployee ?? '')), ['permanent', 'pkwtt'], true);
+            ->filter(function ($e) use ($__probationSvc) {
+                // STEP 16/17/22: exclude employees currently on active
+                // probation from rotation search. Active probation is
+                // determined canonically via ProbationService (NOT via
+                // Employee.Status, which is no longer 'probation').
+                $status = strtolower(trim($e->statusEmployee ?? ''));
+                if (!in_array($status, ['permanent', 'pkwtt'], true)) {
+                    return false;
+                }
+                try {
+                    return !$__probationSvc->isActiveProbation((string) ($e->employeeId ?? ''));
+                } catch (\Throwable) {
+                    return true;
+                }
             })
             ->map(function ($e) {
                 if (!is_object($e)) {
