@@ -62,6 +62,13 @@
                         aria-label="Muat ulang data" data-refresh="page">
                         <i class="bi bi-arrow-repeat"></i>
                     </button>
+                    {{-- STEP 4/15: Ajukan Probation — entry point moved from Employee Drawer. --}}
+                    <button class="btn btn-sm text-white ms-2 fw-semibold"
+                        style="background:#166534;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
+                        id="btnOpenAjukanProbation" type="button" data-bs-toggle="modal"
+                        data-bs-target="#ajukanProbationModal">
+                        <i class="bi bi-person-up me-1"></i>Ajukan Probation
+                    </button>
                     <button class="btn btn-sm text-white ms-2 fw-semibold"
                         style="background:#eb1c24;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
                         id="btnOpenEvalModal" type="button" data-bs-toggle="modal" data-bs-target="#probationEvalModal">
@@ -289,6 +296,88 @@
         </div>
 
     </section>
+
+    {{-- ============================================================
+         STEP 4/15 — Ajukan Probation modal (entry point moved from
+         Employee Drawer into the Probation menu). Searches the
+         Contract/PKWT employee pool via /hr/probation/contract-employees.
+         ============================================================ --}}
+    <div class="modal fade" id="ajukanProbationModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content" style="border-radius:16px">
+                <div class="modal-header" style="background:#166534;border-radius:16px 16px 0 0">
+                    <div class="d-flex align-items-center gap-2 text-white">
+                        <i class="bi bi-person-up fs-5"></i>
+                        <h6 class="modal-title mb-0 fw-bold">Ajukan Probation Karyawan Kontrak</h6>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="alert alert-info py-2 px-3 mb-3" role="alert"
+                        style="font-size:12.5px;border-radius:8px;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Pilih karyawan Contract/PKWT yang akan didaftarkan ke proses probation.
+                        Durasi probation dihitung otomatis dari durasi kontrak karyawan.
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" style="font-size:13px">
+                            <i class="bi bi-search me-1"></i>Cari Karyawan Contract <span
+                                class="text-primary">*</span>
+                        </label>
+                        <div class="position-relative">
+                            <input type="text" class="form-control" id="apEmpSearch"
+                                placeholder="Ketik nama atau Employee ID..."
+                                autocomplete="off" style="font-size:13px;padding-right:36px" />
+                            <i class="bi bi-x-circle-fill position-absolute" id="apEmpSearchClear"
+                                style="right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;display:none"></i>
+                        </div>
+                        <div id="apEmpDropdown" class="border rounded-3 mt-1 shadow-sm"
+                            style="display:none;max-height:240px;overflow-y:auto;z-index:9999;position:relative">
+                        </div>
+                    </div>
+
+                    <div id="apEmpPreview" style="display:none">
+                        <div class="p-3 rounded-3 mb-3" style="background:#f0fdf4;border:1px solid #166534">
+                            <div class="d-flex align-items-center gap-3">
+                                <div id="apEmpAvatar"
+                                    style="width:44px;height:44px;font-size:16px;flex-shrink:0;background:#166534;color:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800">
+                                    ?</div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold" style="font-size:14px;color:#166534" id="apEmpName">-</div>
+                                    <div class="text-muted" style="font-size:12px">
+                                        <span id="apEmpPosition">-</span>
+                                        <span class="mx-1">•</span>
+                                        <span id="apEmpDept">-</span>
+                                    </div>
+                                </div>
+                                <div class="text-end" style="font-size:11.5px">
+                                    <div class="text-muted">Employee ID</div>
+                                    <div class="fw-bold" style="color:#166534" id="apEmpIdDisp">-</div>
+                                    <div class="text-muted mt-1">Kontrak s/d</div>
+                                    <div class="fw-semibold" id="apEmpContractEnd">-</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="alert alert-warning d-none" id="apContractAlert" role="alert"
+                            style="font-size:12px;border-radius:8px">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                            Durasi kontrak tidak dapat dideteksi (Join Date / End Date kosong).
+                            Mohon lengkapi data kontrak karyawan terlebih dahulu.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary btn-sm"
+                        data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-sm text-white fw-semibold"
+                        style="background:#166514;border:none" id="apContinueBtn" disabled>
+                        <i class="bi bi-arrow-right-circle me-1"></i>Lanjutkan ke Form Probation
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     {{-- Eval History Modal (1:1 GAS evalHistoryModal) --}}
     <div class="modal fade" id="evalHistoryModal" tabindex="-1" aria-hidden="true">
@@ -548,6 +637,188 @@
                     if (typeof resetProbationEvalModal === 'function') resetProbationEvalModal();
                 });
             }
+        });
+
+        // ============================================================
+        // STEP 4/15 — Ajukan Probation: contract-employee search
+        // Uses the same backend submit endpoint as the (removed)
+        // drawer button — POST /hr/employees/{id}/promote-probation.
+        // ============================================================
+        let __apSelectedEmployee = null;
+        let __apContractEmployees = [];
+
+        function resetAjukanProbationModal() {
+            const ids = ['apEmpSearch', 'apEmployeeId'];
+            ids.forEach(function(id) {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            ['apEmpSearchClear', 'apEmpDropdown', 'apEmpPreview', 'apContractAlert'].forEach(function(id) {
+                const el = document.getElementById(id);
+                if (el) el.style.display = (id === 'apContractAlert') ? '' : 'none';
+            });
+            const cb = document.getElementById('apContinueBtn');
+            if (cb) cb.disabled = true;
+            __apSelectedEmployee = null;
+        }
+
+        function apHasContractDuration(emp) {
+            return !!(emp && emp.joinDate && emp.endDateContract);
+        }
+
+        function apRenderDropdown(items) {
+            const dd = document.getElementById('apEmpDropdown');
+            if (!dd) return;
+            if (!items.length) {
+                dd.innerHTML =
+                    '<div class="px-3 py-2 text-muted" style="font-size:13px">Tidak ada karyawan kontrak ditemukan.</div>';
+                dd.style.display = 'block';
+                return;
+            }
+            dd.innerHTML = items.map(function(e) {
+                const initl = (e.fullName || 'E').replace(/\s+/g, ' ').trim().split(' ').map(function(w) {
+                    return w[0];
+                }).join('').substring(0, 2).toUpperCase();
+                const json = JSON.stringify(e).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+                return '<div class="d-flex align-items-center gap-2 px-3 py-2 ap-search-row"' +
+                    ' style="cursor:pointer;border-bottom:1px solid #f3f4f6;font-size:13px"' +
+                    ' data-emp=\'' + json + '\'>' +
+                    '<div style="width:32px;height:32px;border-radius:8px;background:#166534;color:#fff;font-size:11px;font-weight:700;flex-shrink:0;display:flex;align-items:center;justify-content:center">' +
+                    initl + '</div>' +
+                    '<div><div class="fw-semibold">' + (e.fullName || '—') + '</div>' +
+                    '<div class="text-muted" style="font-size:11px">' +
+                    (e.jobPositionLocation || e.jobPosition || '—') + ' · ' + (e.employeeId || '') +
+                    '</div></div></div>';
+            }).join('');
+            dd.style.display = 'block';
+            dd.querySelectorAll('.ap-search-row').forEach(function(row) {
+                row.addEventListener('click', function() {
+                    try {
+                        const emp = JSON.parse(this.getAttribute('data-emp').replace(/&quot;/g, '"').replace(/&#39;/g,
+                            '\''));
+                        apSelectEmployee(emp);
+                    } catch (err) {
+                        console.error('[AjukanProbation] parse error', err);
+                    }
+                });
+            });
+        }
+
+        function apSelectEmployee(emp) {
+            __apSelectedEmployee = emp;
+            const dd = document.getElementById('apEmpDropdown');
+            const search = document.getElementById('apEmpSearch');
+            const clear = document.getElementById('apEmpSearchClear');
+            if (dd) dd.style.display = 'none';
+            if (search) search.value = emp.fullName || '';
+            if (clear) clear.style.display = 'block';
+
+            const tn = function(id, val) {
+                const el = document.getElementById(id);
+                if (el) el.textContent = val || '—';
+            };
+            tn('apEmpName', emp.fullName);
+            tn('apEmpPosition', emp.jobPositionLocation || emp.jobPosition);
+            tn('apEmpDept', emp.department);
+            tn('apEmpIdDisp', emp.employeeId);
+            tn('apEmpContractEnd', emp.endDateContract);
+
+            const av = document.getElementById('apEmpAvatar');
+            if (av) av.textContent = (emp.fullName || 'E').replace(/\s+/g, ' ').trim().split(' ').map(function(w) {
+                return w[0];
+            }).join('').substring(0, 2).toUpperCase();
+
+            const preview = document.getElementById('apEmpPreview');
+            if (preview) preview.style.display = 'block';
+
+            const contractAlert = document.getElementById('apContractAlert');
+            const cb = document.getElementById('apContinueBtn');
+            if (apHasContractDuration(emp)) {
+                if (contractAlert) contractAlert.classList.add('d-none');
+                if (cb) cb.disabled = false;
+            } else {
+                if (contractAlert) contractAlert.classList.remove('d-none');
+                if (cb) cb.disabled = true;
+            }
+        }
+
+        function apHandleSearch(query) {
+            const q = (query || '').toLowerCase().trim();
+            const dd = document.getElementById('apEmpDropdown');
+            const clear = document.getElementById('apEmpSearchClear');
+            if (clear) clear.style.display = q ? 'block' : 'none';
+            if (!q) {
+                if (dd) dd.style.display = 'none';
+                return;
+            }
+            const matched = (__apContractEmployees || []).filter(function(e) {
+                return (e.fullName || '').toLowerCase().indexOf(q) !== -1 ||
+                    (e.employeeId || '').toLowerCase().indexOf(q) !== -1 ||
+                    (e.jobPosition || '').toLowerCase().indexOf(q) !== -1;
+            }).slice(0, 10);
+            apRenderDropdown(matched);
+        }
+
+        function apLoadContractEmployees() {
+            fetch('/hr/probation/contract-employees', {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') || {}).content || ''
+                }
+            }).then(function(r) {
+                return r.json();
+            }).then(function(data) {
+                __apContractEmployees = data.data || [];
+            }).catch(function() {
+                __apContractEmployees = [];
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const apModal = document.getElementById('ajukanProbationModal');
+            if (!apModal) return;
+
+            const searchEl = document.getElementById('apEmpSearch');
+            const clearEl = document.getElementById('apEmpSearchClear');
+            const continueBtn = document.getElementById('apContinueBtn');
+
+            if (searchEl) {
+                searchEl.addEventListener('input', function() {
+                    apHandleSearch(this.value);
+                });
+            }
+            if (clearEl) {
+                clearEl.addEventListener('click', function() {
+                    if (searchEl) searchEl.value = '';
+                    clearEl.style.display = 'none';
+                    const dd = document.getElementById('apEmpDropdown');
+                    if (dd) dd.style.display = 'none';
+                    const preview = document.getElementById('apEmpPreview');
+                    if (preview) preview.style.display = 'none';
+                    if (continueBtn) continueBtn.disabled = true;
+                    __apSelectedEmployee = null;
+                });
+            }
+            if (continueBtn) {
+                continueBtn.addEventListener('click', function() {
+                    if (!__apSelectedEmployee) return;
+                    const emp = __apSelectedEmployee;
+                    if (typeof window.openPromoteToProbationModal === 'function') {
+                        // Hide Ajukan Probation modal first so the nested
+                        // promoteToProbationModal shows clearly.
+                        const apInst = bootstrap.Modal.getInstance(apModal);
+                        if (apInst) apInst.hide();
+                        window.openPromoteToProbationModal(emp);
+                    }
+                });
+            }
+            apModal.addEventListener('hidden.bs.modal', function() {
+                resetAjukanProbationModal();
+            });
+            apModal.addEventListener('show.bs.modal', function() {
+                apLoadContractEmployees();
+            });
         });
     </script>
 @endsection
