@@ -69,6 +69,8 @@ Route::domain(config('hris.domains.hris'))->middleware('web')->group(function ()
             Route::post('/{id}/evaluate', [ProbationController::class, 'evaluate'])->name('evaluate');
             Route::get('/{id}/eval-history', [ProbationController::class, 'evalHistory'])->name('eval-history');
             Route::get('/{id}/preview', [ProbationController::class, 'previewPerformanceReview'])->name('preview');
+            // STEP 4/15 — Ajukan Probation entry point moved from drawer.
+            Route::get('/contract-employees', [ProbationController::class, 'contractEmployees'])->name('contract-employees');
         });
         Route::prefix('outsource')->name('outsource.')->middleware('can:view_employees')->group(function () {
             Route::get('/', [OutsourceController::class, 'index'])->name('index');
@@ -214,6 +216,7 @@ if (app()->environment('local')) {
                 Route::post('/{id}/evaluate', [ProbationController::class, 'evaluate'])->name('evaluate');
                 Route::get('/{id}/eval-history', [ProbationController::class, 'evalHistory'])->name('eval-history');
                 Route::get('/{id}/preview', [ProbationController::class, 'previewPerformanceReview'])->name('preview');
+                Route::get('/contract-employees', [ProbationController::class, 'contractEmployees'])->name('contract-employees');
             });
 
             Route::prefix('outsource')->name('outsource.')->middleware('can:view_employees')->group(function () {
