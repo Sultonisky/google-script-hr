@@ -643,8 +643,7 @@ class ProbationService
         $normalizedNumeric   = preg_replace('/[^0-9]/', '', $normalizedId);
         $numericMatchAllowed = $normalizedNumeric !== '';
 
-        $this->sheets->clearCache($this->probationSheet());
-        $rows = $this->sheets->getRowsAsAssoc($this->probationSheet());
+        $rows = $this->getProbationRows();
 
         $latest = null;
         $latestDate = '';
@@ -761,7 +760,7 @@ class ProbationService
     private function readStoredContractDurationMonths(string $employeeId): ?int
     {
         try {
-            $rows = $this->sheets->getRowsAsAssoc($this->probationSheet());
+            $rows = $this->getProbationRows();
             $empKey = ltrim(trim($employeeId), "'");
             $empNum = preg_replace('/[^0-9]/', '', $empKey);
             foreach ($rows as $row) {
