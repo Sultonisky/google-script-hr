@@ -120,7 +120,7 @@
         @endif
     </span>
     @if ($total > $perPage)
-        <x-pagination :currentPage="$currentPage" :total="$total" :perPage="$perPage" :route="'hr.assets.index'"
+        <x-pagination :currentPage="$currentPage" :total="$total" :perPage="$perPage" :route="'assets.portal.index'"
             :queryParams="[
                 'search' => request('search'),
                 'category' => request('category'),
