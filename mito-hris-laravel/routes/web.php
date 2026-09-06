@@ -96,13 +96,6 @@ if (!app()->environment('local')) {
                 Route::get('/{certification}/json', [CertificationController::class, 'getJson'])->name('json');
             });
 
-            Route::get('/assets/{path?}', function () {
-                return redirect()->route('assets.portal.index');
-            })->where('path', '.*')->name('assets.index');
-            Route::get('/certifications/{path?}', function () {
-                return redirect()->route('certificates.portal.index');
-            })->where('path', '.*')->name('certifications.index');
-
             Route::prefix('probation')->name('probation.')->middleware('can:manage_probation')->group(function () {
                 Route::get('/', [ProbationController::class, 'index'])->name('index');
                 Route::post('/{id}/evaluate', [ProbationController::class, 'evaluate'])->name('evaluate');
