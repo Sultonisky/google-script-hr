@@ -62,7 +62,6 @@ class PortalAccessMiddleware
             'mpr.auth.login',
             'mpr.auth.login.post',
             'mpr.auth.logout',
-            'assets.domain.root',
             'assets.login',
             'assets.login.post',
             'assets.logout',

@@ -172,7 +172,7 @@ class AssetCertificateDedicatedPortalTest extends TestCase
         Session::forget('asset_auth');
         Session::forget('hr_user');
 
-        $response = $this->get('http://assets.hrismitogroup.web.id/assets');
+            $response = $this->get('http://assets.hrismitogroup.web.id/');
 
         $response->assertRedirect(route('assets.login'));
         $this->assertFalse(session()->has('asset_auth'));
@@ -188,7 +188,7 @@ class AssetCertificateDedicatedPortalTest extends TestCase
         ]);
         Session::forget('asset_auth');
 
-        $response = $this->get('http://assets.hrismitogroup.web.id/assets');
+            $response = $this->get('http://assets.hrismitogroup.web.id/');
 
         $response->assertRedirect(route('assets.login'));
         $this->assertFalse(session()->has('asset_auth'));
@@ -203,7 +203,7 @@ class AssetCertificateDedicatedPortalTest extends TestCase
             'auth_domain' => 'assets',
         ]);
 
-        $response = $this->get('http://assets.hrismitogroup.web.id/assets/1/json');
+            $response = $this->get('http://assets.hrismitogroup.web.id/1/json');
 
         $response->assertForbidden();
     }

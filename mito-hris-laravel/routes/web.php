@@ -199,13 +199,12 @@ if (!app()->environment('local')) {
     });
 
     Route::domain(config('hris.domains.assets'))->middleware(['web', 'domain'])->group(function () {
-        Route::get('/', [AssetAuthController::class, 'portal'])->name('assets.domain.root');
+        Route::get('/', [AssetController::class, 'index'])->name('assets.portal.index');
         Route::get('/login', [AssetAuthController::class, 'showLoginForm'])->name('assets.login');
         Route::post('/login', [AssetAuthController::class, 'login'])->middleware('throttle:login')->name('assets.login.post');
         Route::post('/logout', [AssetAuthController::class, 'logout'])->name('assets.logout');
 
-        Route::prefix('assets')->name('assets.portal.')->group(function () {
-            Route::get('/', [AssetController::class, 'index'])->name('index');
+        Route::name('assets.portal.')->group(function () {
             Route::get('/missing-code-summary', [AssetController::class, 'missingCodeSummary'])->name('missing-code-summary')->middleware('can:edit_asset');
             Route::get('/preview-next-code/{prefix}', [AssetController::class, 'previewNextCode'])->name('preview-next-code')->middleware('can:edit_asset');
             Route::post('/', [AssetController::class, 'store'])->name('store')->middleware('can:edit_asset');
@@ -453,8 +452,7 @@ if (app()->environment('local')) {
             });
         });
 
-        // Asset & Certificate CRUD are reached via the HR-internal /hr/assets and /hr/certifications
-        // routes above. Portal domain-root routes (assets.domain.root, login) are domain-scoped
-        // and registered only in non-local environments to avoid clobbering hris.domain.root.
+        // Asset & Certificate CRUD are also available through the HR-internal compatibility routes
+        // above. Dedicated domain routes remain canonical for their respective portals.
     });
 }
