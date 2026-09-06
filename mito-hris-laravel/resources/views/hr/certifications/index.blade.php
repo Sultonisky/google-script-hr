@@ -27,7 +27,7 @@
         </div>
 
         {{-- FILTER BAR --}}
-        <form action="{{ route('hr.certifications.index') }}" method="GET" id="certificationFilterForm">
+        <form action="{{ $certIndexPath ?? route('hr.certifications.index') }}" method="GET" id="certificationFilterForm">
             <input type="hidden" name="page" value="1">
             <div class="filter-bar employee-filter-bar">
                 <div class="table-search">
@@ -53,7 +53,7 @@
                     @endforeach
                 </select>
                 <div class="employee-filter-actions">
-                    <a href="{{ route('hr.certifications.index') }}" class="btn-reset-filter text-decoration-none" title="Reset filter">
+                    <a href="{{ $certIndexPath ?? route('hr.certifications.index') }}" class="btn-reset-filter text-decoration-none" title="Reset filter">
                         <i class="bi bi-arrow-counterclockwise"></i> Reset
                     </a>
                     <button class="btn-refresh" type="button" title="Muat ulang" data-refresh="page">
@@ -75,5 +75,6 @@
 @endsection
 
 @section('scripts')
+<script>window.MITO_CERT_BASE = '{{ $certBasePath ?? '/hr/certifications' }}';</script>
 @vite(['resources/js/certification.js'])
 @endsection

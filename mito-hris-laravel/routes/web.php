@@ -20,6 +20,54 @@ use App\Http\Controllers\HR\ExportController;
 use App\Http\Controllers\HR\MprController;
 use App\Http\Controllers\HR\AssetController;
 use App\Http\Controllers\HR\CertificationController;
+use App\Http\Controllers\Auth\AssetAuthController;
+use App\Http\Controllers\Auth\CertificateAuthController;
+
+// ── Asset Portal routes (named function: callable from any closure scope) ──
+if (!function_exists('assetPortalRoutes')) {
+    function assetPortalRoutes(): void {
+    Route::get('/', [AssetAuthController::class, 'portal'])->name('assets.domain.root');
+    Route::get('/login', [AssetAuthController::class, 'showLoginForm'])->name('assets.login');
+    Route::post('/login', [AssetAuthController::class, 'login'])->middleware('throttle:login')->name('assets.login.post');
+    Route::post('/logout', [AssetAuthController::class, 'logout'])->name('assets.logout');
+
+    Route::prefix('assets')->name('assets.portal.')->middleware(['portal.access'])->group(static function (): void {
+        Route::get('/', [AssetController::class, 'index'])->name('index');
+        Route::get('/missing-code-summary', [AssetController::class, 'missingCodeSummary'])->name('missing-code-summary')->middleware('can:edit_asset');
+        Route::get('/preview-next-code/{prefix}', [AssetController::class, 'previewNextCode'])->name('preview-next-code')->middleware('can:edit_asset');
+        Route::post('/', [AssetController::class, 'store'])->name('store')->middleware('can:edit_asset');
+        Route::post('/generate-bulk-codes', [AssetController::class, 'generateBulkCodes'])->name('generate-bulk-codes')->middleware('can:edit_asset');
+        Route::put('/{asset}', [AssetController::class, 'update'])->name('update')->middleware('can:edit_asset');
+        Route::delete('/{asset}', [AssetController::class, 'destroy'])->name('destroy')->middleware('can:edit_asset');
+        Route::post('/{asset}/assign', [AssetController::class, 'assign'])->name('assign')->middleware('can:edit_asset');
+        Route::post('/{asset}/return', [AssetController::class, 'returnAsset'])->name('return')->middleware('can:edit_asset');
+        Route::post('/{asset}/generate-code', [AssetController::class, 'generateCode'])->name('generate-code')->middleware('can:edit_asset');
+        Route::get('/{asset}/json', [AssetController::class, 'getJson'])->name('json');
+    });
+    }
+}
+
+// ── Certificate Portal routes (named function: callable from any closure scope) ──
+if (!function_exists('certificatePortalRoutes')) {
+    function certificatePortalRoutes(): void {
+    Route::get('/', [CertificateAuthController::class, 'portal'])->name('certificates.domain.root');
+    Route::get('/login', [CertificateAuthController::class, 'showLoginForm'])->name('certificates.login');
+    Route::post('/login', [CertificateAuthController::class, 'login'])->middleware('throttle:login')->name('certificates.login.post');
+    Route::post('/logout', [CertificateAuthController::class, 'logout'])->name('certificates.logout');
+
+    Route::prefix('certifications')->name('certificates.portal.')->middleware(['portal.access'])->group(static function (): void {
+        Route::get('/', [CertificationController::class, 'index'])->name('index');
+        Route::get('/preview-next-code', [CertificationController::class, 'previewNextCode'])->name('preview-next-code')->middleware('can:manage_certification');
+        Route::post('/', [CertificationController::class, 'store'])->name('store')->middleware('can:manage_certification');
+        Route::put('/{certification}', [CertificationController::class, 'update'])->name('update')->middleware('can:manage_certification');
+        Route::delete('/{certification}', [CertificationController::class, 'destroy'])->name('destroy')->middleware('can:manage_certification');
+        Route::post('/{certification}/generate-code', [CertificationController::class, 'generateCode'])->name('generate-code')->middleware('can:manage_certification');
+        Route::get('/{certification}/attachment', [CertificationController::class, 'attachment'])->name('attachment');
+        Route::get('/{certification}/json', [CertificationController::class, 'getJson'])->name('json');
+    });
+    }
+}
+
 
 Route::get('/robots.txt', [SeoController::class, 'robots'])->name('public.seo.robots');
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('public.seo.sitemap');
@@ -193,6 +241,9 @@ Route::domain(config('hris.domains.outsource'))->middleware('web')->group(functi
     Route::get('/apply', [OutsourceApplyController::class, 'index'])->name('public.outsource.apply');
     Route::post('/apply', [OutsourceApplyController::class, 'store'])->name('public.outsource.store');
 });
+
+Route::domain(config('hris.domains.assets'))->middleware('web')->group(function () { assetPortalRoutes(); });
+Route::domain(config('hris.domains.certificates'))->middleware('web')->group(function () { certificatePortalRoutes(); });
 
 } // end !local
 
@@ -372,5 +423,9 @@ if (app()->environment('local')) {
         Route::get('/outsource', [OutsourceApplyController::class, 'index'])->name('public.outsource.index');
         Route::get('/outsource/apply', [OutsourceApplyController::class, 'index'])->name('public.outsource.apply');
         Route::post('/outsource/apply', [OutsourceApplyController::class, 'store'])->name('public.outsource.store');
+
+        // Asset & Certificate CRUD are reached via the HR-internal /hr/assets and /hr/certifications
+        // routes above. Portal domain-root routes (assets.domain.root, login) are domain-scoped
+        // and registered only in non-local environments to avoid clobbering hris.domain.root.
     });
 }

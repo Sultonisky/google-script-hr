@@ -59,6 +59,18 @@
             <a href="{{ route('mpr.auth.request.history') }}" class="nav-item {{ request()->routeIs('mpr.auth.request.history') ? 'active' : '' }}">
                 <i class="bi bi-clock-history"></i> Riwayat Pengajuan
             </a>
+        @elseif ($currentPortal === 'assets')
+            <div class="nav-section-label">Asset</div>
+            <a href="{{ route('assets.portal.index') }}"
+                class="nav-item {{ request()->routeIs('assets.portal.*') ? 'active' : '' }}">
+                <i class="bi bi-box-seam-fill"></i> Asset Management
+            </a>
+        @elseif ($currentPortal === 'certificates')
+            <div class="nav-section-label">Certification</div>
+            <a href="{{ route('certificates.portal.index') }}"
+                class="nav-item {{ request()->routeIs('certificates.portal.*') ? 'active' : '' }}">
+                <i class="bi bi-award-fill"></i> Certification Management
+            </a>
         @else
             <!-- Main Section -->
             @if ($showDashboard)

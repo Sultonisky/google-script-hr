@@ -27,6 +27,10 @@ class DomainMiddleware
         if ($portal === null && in_array($host, ['localhost', '127.0.0.1', '[::1]', '::1'], true)) {
             if (str_starts_with($path, 'mpr')) {
                 $portal = 'mpr';
+            } elseif (str_starts_with($path, 'assets')) {
+                $portal = 'assets';
+            } elseif (str_starts_with($path, 'certifications') || str_starts_with($path, 'cert')) {
+                $portal = 'certificates';
             } elseif (str_starts_with($path, 'hr')) {
                 $portal = 'hris';
             } elseif (str_starts_with($path, 'outsource')) {

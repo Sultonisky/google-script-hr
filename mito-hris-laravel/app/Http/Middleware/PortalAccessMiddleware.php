@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -98,6 +99,58 @@ class PortalAccessMiddleware
 
                 return redirect()->route('mpr.auth.login')
                     ->with('error', 'Autentikasi portal tidak valid. Silakan login ulang.');
+            }
+
+            return $next($request);
+        }
+
+        // ── Asset portal: ONLY hr_user (auth_domain = 'users') WITH view_asset ──
+        if ($portal === 'assets' || $portal === 'certificates') {
+            $requiredGate = $portal === 'assets' ? 'view_asset' : 'view_certification';
+            $loginRoute   = $portal === 'assets' ? 'assets.login' : 'certificates.login';
+
+            $user = session('hr_user', []);
+
+            if (empty($user)) {
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'error'   => 'Akses ditolak. Silakan login terlebih dahulu.',
+                    ], 401);
+                }
+
+                return redirect()->route($loginRoute)
+                    ->with('error', 'Silakan login terlebih dahulu untuk mengakses portal ini.');
+            }
+
+            // Verify the session actually belongs to the HRIS domain.
+            $authDomain = $user['auth_domain'] ?? 'users';
+            if ($authDomain !== 'users') {
+                session()->forget('hr_user');
+
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'error'   => 'Autentikasi portal tidak valid.',
+                    ], 403);
+                }
+
+                return redirect()->route($loginRoute)
+                    ->with('error', 'Autentikasi portal tidak valid. Silakan login ulang.');
+            }
+
+            // Portal-scoped authorization: HRIS identity alone is not enough — the
+            // user must hold the module permission for THIS portal. Without it the
+            // request is denied (never redirected to the HRIS dashboard).
+            if (!Gate::allows($requiredGate)) {
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'error'   => 'Anda tidak memiliki akses ke portal ini.',
+                    ], 403);
+                }
+
+                abort(403, 'Anda tidak memiliki akses ke portal ini.');
             }
 
             return $next($request);

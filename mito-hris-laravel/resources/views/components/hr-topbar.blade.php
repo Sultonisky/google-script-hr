@@ -66,6 +66,20 @@
                 <i class="bi bi-box-arrow-right me-2"></i> Keluar
               </button>
             </form>
+          @elseif ($currentPortal === 'assets')
+            <form method="POST" action="{{ route('assets.logout') }}" class="d-inline w-100">
+              @csrf
+              <button type="submit" class="dropdown-item py-2 text-danger w-100 text-start border-0 bg-transparent">
+                <i class="bi bi-box-arrow-right me-2"></i> Keluar
+              </button>
+            </form>
+          @elseif ($currentPortal === 'certificates')
+            <form method="POST" action="{{ route('certificates.logout') }}" class="d-inline w-100">
+              @csrf
+              <button type="submit" class="dropdown-item py-2 text-danger w-100 text-start border-0 bg-transparent">
+                <i class="bi bi-box-arrow-right me-2"></i> Keluar
+              </button>
+            </form>
           @else
             {{-- HRIS user: use HRIS logout. --}}
             <a class="dropdown-item py-2 text-danger" href="{{ route('logout') }}"><i class="bi bi-box-arrow-right me-2"></i> Keluar</a>
