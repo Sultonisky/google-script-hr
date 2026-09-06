@@ -45,6 +45,10 @@
             // HRIS identity variables (only used when $isMprRequestorUi = false).
             $currentAuthDomain = session('hr_user.auth_domain', 'users');
             $currentRole       = session('hr_user.role', 'Viewer');
+
+            // Dashboard is only for roles that are not GA_IT / LEGAL. Those two
+            // land directly on their module and must not see the Dashboard entry.
+            $showDashboard = !in_array(\App\Support\Rbac::normalizeRole($currentRole), ['GA_IT', 'LEGAL'], true);
         @endphp
         @if ($isMprRequestorUi)
             <!-- MPR Requestor Navigation (source: mpr_requestor sheet) -->
@@ -57,11 +61,13 @@
             </a>
         @else
             <!-- Main Section -->
-            <div class="nav-section-label">Main</div>
-            <a href="{{ route('hr.dashboard') }}"
-                class="nav-item {{ request()->routeIs('hr.dashboard') ? 'active' : '' }}">
-                <i class="bi bi-grid-1x2-fill"></i> Dashboard
-            </a>
+            @if ($showDashboard)
+                <div class="nav-section-label">Main</div>
+                <a href="{{ route('hr.dashboard') }}"
+                    class="nav-item {{ request()->routeIs('hr.dashboard') ? 'active' : '' }}">
+                    <i class="bi bi-grid-1x2-fill"></i> Dashboard
+                </a>
+            @endif
             @can('view_mpr')
                 <a href="{{ route('hr.mpr.index') }}" class="nav-item {{ request()->routeIs('hr.mpr.*') ? 'active' : '' }}">
                     <i class="bi bi-file-earmark-text-fill"></i> Manpower Request

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Services\AuthService;
+use App\Support\Rbac;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -34,7 +35,7 @@ class LoginController extends Controller
     public function showLoginForm(): View|RedirectResponse
     {
         if (session()->has('hr_user')) {
-            return redirect()->route('hr.dashboard');
+            return redirect($this->postLoginRedirect(session('hr_user')));
         }
 
         return view('auth.login');
@@ -147,8 +148,9 @@ class LoginController extends Controller
             $request->session()->put('hris_remember', true);
         }
 
-        // HRIS login always redirects to HRIS dashboard
-        $redirect = route('hr.dashboard');
+        // HRIS login redirects by role: GA_IT → assets, LEGAL → certifications,
+        // everyone else keeps the existing dashboard landing.
+        $redirect = $this->postLoginRedirect($user);
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -159,6 +161,25 @@ class LoginController extends Controller
         }
 
         return redirect($redirect);
+    }
+
+
+    /**
+     * Decide the post-login landing route from the authenticated user's role.
+     *
+     * GA_IT  → Asset Management
+     * LEGAL → Certification Management
+     * Everyone else (Admin, Super Admin, User) keeps the existing dashboard.
+     */
+    private function postLoginRedirect(array $user): string
+    {
+        $role = Rbac::normalizeRole($user['role'] ?? null);
+
+        return match ($role) {
+            'GA_IT' => route('hr.assets.index'),
+            'LEGAL' => route('hr.certifications.index'),
+            default => route('hr.dashboard'),
+        };
     }
 
     private function loginFailure(
