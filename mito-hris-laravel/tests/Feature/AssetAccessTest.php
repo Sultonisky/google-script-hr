@@ -68,8 +68,9 @@ class AssetAccessTest extends TestCase
     #[Test]
     public function user_without_edit_asset_cannot_create_asset(): void
     {
-        $this->actingAsRole('User')
-            ->post('/hr/assets', ['category' => 'Elektronik', 'name' => 'Laptop'])
+        $this->withSession(['_token' => 'test-token'])
+            ->actingAsRole('User')
+            ->postJson('/hr/assets', ['category' => 'Elektronik', 'name' => 'Laptop'], ['X-CSRF-TOKEN' => 'test-token', 'X-XSRF-TOKEN' => 'test-token'])
             ->assertForbidden();
 
         $this->assertDatabaseCount('assets', 0);

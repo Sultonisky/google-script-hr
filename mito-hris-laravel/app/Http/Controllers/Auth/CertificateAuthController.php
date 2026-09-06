@@ -15,8 +15,8 @@ use Illuminate\View\View;
 /**
  * Dedicated Certificate Portal authentication.
  *
- * Mirrors AssetAuthController: reuses AuthService and the shared `auth.login`
- * view, with portal-scoped authorization via the `view_certification` gate.
+ * Mirrors AssetAuthController: reuses AuthService with a dedicated portal
+ * view and session, plus portal-scoped authorization via the `view_certification` gate.
  */
 class CertificateAuthController extends Controller
 {
@@ -32,16 +32,11 @@ class CertificateAuthController extends Controller
 
     public function showLoginForm(): View|RedirectResponse
     {
-        if (session()->has('hr_user')) {
+        if (session()->has('certificate_auth')) {
             return redirect()->route('certificates.portal.index');
         }
 
-        return view('auth.login', [
-            'loginPostUrl'         => route('certificates.login.post'),
-            'loginRedirectDefault' => route('certificates.portal.index'),
-            'loginTitle'           => 'Portal Sertifikasi',
-            'loginSubtitle'        => 'Masuk untuk mengelola sertifikasi karyawan',
-        ]);
+        return view('certificates.auth.login');
     }
 
     public function login(LoginRequest $request): RedirectResponse|JsonResponse
@@ -56,8 +51,8 @@ class CertificateAuthController extends Controller
             return $this->loginFailure($request, $result['error'] ?? 'Login gagal.');
         }
 
-        if (!Gate::forUser($result['user'])->allows('view_certification')) {
-            return $this->loginFailure($request, 'Akun Anda tidak memiliki akses ke Portal Sertifikasi.');
+        if (!Gate::forUser($result['user'])->allows('access_certificates_portal')) {
+            return $this->authorizationDenied($request);
         }
 
         return $this->loginSuccess($request, $result['user'], $data['rememberMe'] ?? false);
@@ -65,10 +60,9 @@ class CertificateAuthController extends Controller
 
     public function logout(Request $request): RedirectResponse
     {
-        $user = session('hr_user', []);
+        $user = session('certificate_auth', []);
         $this->auditRepo->log('Authentication', $user['email'] ?? 'UNKNOWN', 'logged_out', null, null, null, $user['email'] ?? 'UNKNOWN', 'Authentication');
-        session()->forget('hr_user');
-        $request->session()->invalidate();
+        $request->session()->forget(['certificate_auth', 'certificates_remember']);
         $request->session()->regenerateToken();
 
         return redirect()->route('certificates.login')->with('info', 'Anda telah berhasil keluar dari Portal Sertifikasi.');
@@ -78,15 +72,13 @@ class CertificateAuthController extends Controller
     {
         $request->session()->regenerate();
 
-        $request->session()->forget(config('mpr.session_key', 'mpr_requestor_auth'));
-        $request->session()->forget('hris_remember');
-
         $user['portal'] = 'certificates';
-        $request->session()->put('hr_user', $user);
+        $user['auth_domain'] = 'certificates';
+        $request->session()->put('certificate_auth', $user);
         $this->auditRepo->log('Authentication', $user['email'] ?? $user['username'] ?? 'UNKNOWN', 'logged_in', null, null, null, $user['email'] ?? 'UNKNOWN', 'Authentication');
 
         if ($remember) {
-            $request->session()->put('hris_remember', true);
+            $request->session()->put('certificates_remember', true);
         }
 
         $redirect = route('certificates.portal.index');
@@ -104,6 +96,8 @@ class CertificateAuthController extends Controller
 
     private function loginFailure(Request $request, string $errorMessage): RedirectResponse|JsonResponse
     {
+        $errorMessage = 'Email/username atau password salah.';
+
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => false,
@@ -112,5 +106,14 @@ class CertificateAuthController extends Controller
         }
 
         return back()->withErrors(['identifier' => $errorMessage]);
+    }
+
+    private function authorizationDenied(Request $request): RedirectResponse|JsonResponse
+    {
+        if ($request->expectsJson()) {
+            return response()->json(['success' => false, 'error' => 'Anda tidak memiliki akses ke Portal Sertifikasi.'], 403);
+        }
+
+        abort(403, 'Anda tidak memiliki akses ke Portal Sertifikasi.');
     }
 }

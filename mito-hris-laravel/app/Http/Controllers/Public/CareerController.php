@@ -12,6 +12,8 @@ use Illuminate\View\View;
 
 class CareerController extends Controller
 {
+    private const RECRUITMENT_SUBMISSION_COMPLETED = 'public_recruitment_submission_completed';
+
     protected RecruitmentService $recruitmentService;
 
     public function __construct(RecruitmentService $recruitmentService)
@@ -51,6 +53,10 @@ class CareerController extends Controller
      */
     public function form(): View|RedirectResponse
     {
+        if (session(self::RECRUITMENT_SUBMISSION_COMPLETED)) {
+            return redirect()->route('public.career.submission-success');
+        }
+
         if (!session('candidate_consent')) {
             return redirect()->route('public.career.index')
                 ->with('error', 'Harap membaca dan menyetujui syarat & ketentuan pendaftaran terlebih dahulu.');
@@ -65,6 +71,10 @@ class CareerController extends Controller
      */
     public function store(ApplyJobRequest $request): RedirectResponse
     {
+        if (session(self::RECRUITMENT_SUBMISSION_COMPLETED)) {
+            return redirect()->route('public.career.submission-success');
+        }
+
         // Re-flash consent so the form page stays accessible if we redirect back
         session(['candidate_consent' => true]);
 
@@ -79,24 +89,25 @@ class CareerController extends Controller
                 cvFile: $request->file('cv_file')
             );
 
-            session()->forget('candidate_consent');
+            session()->forget(['candidate_consent', 'candidate_consent_evidence']);
+            session([self::RECRUITMENT_SUBMISSION_COMPLETED => true]);
 
-            return redirect()->route('public.career.success', ['id' => $candidate->recruitmentId])
-                ->with('success', "Lamaran Anda berhasil dikirim! Nomor Pendaftaran Anda adalah: {$candidate->recruitmentId}");
+            return redirect()->route('public.career.submission-success');
         } catch (\Throwable $e) {
             return back()->withInput()->with('error', $e->getMessage());
         }
     }
 
     /**
-     * Show success page after application.
+     * Show the server-controlled success page for a completed candidate submission.
      */
-    public function success(Request $request): View
+    public function submissionSuccess(): View|RedirectResponse
     {
-        $id = $request->query('id', '');
-        $candidate = $id ? $this->recruitmentService->checkApplicationStatus($id) : null;
+        if (!session(self::RECRUITMENT_SUBMISSION_COMPLETED)) {
+            return redirect()->route('public.career.form');
+        }
 
-        return view('public.career.success', compact('candidate', 'id'));
+        return view('public.career.success', ['candidate' => null, 'id' => null]);
     }
 
     /**

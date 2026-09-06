@@ -947,40 +947,6 @@
         };
 
         // ============================================================
-        // SESSION GUARD (1:1 from GAS js/formApp.html)
-        // ============================================================
-        var SESSION_KEY = 'msi_form_submitted';
-
-        function markSubmitted(nik) {
-            try {
-                sessionStorage.setItem(SESSION_KEY, nik || '1');
-            } catch (e) {}
-        }
-
-        function isAlreadySubmitted() {
-            try {
-                return !!sessionStorage.getItem(SESSION_KEY);
-            } catch (e) {
-                return false;
-            }
-        }
-
-        function showAlreadySubmittedPage() {
-            var rf = document.getElementById('registrationForm');
-            var sp = document.getElementById('successPage');
-            if (rf) rf.style.display = 'none';
-            if (sp) {
-                sp.style.display = 'block';
-                var msg = sp.querySelector('.success-message');
-                if (msg) msg.innerHTML =
-                    'Anda telah mengirimkan lamaran pada sesi ini.<br><br>Apabila Anda merasa ini adalah kesalahan, silakan hubungi tim Human Resources MITO Group.';
-            }
-        }
-        if (isAlreadySubmitted()) {
-            document.addEventListener('DOMContentLoaded', showAlreadySubmittedPage);
-        }
-
-        // ============================================================
         // ELEMENT REFERENCES
         // ============================================================
         var form = null;
@@ -1822,6 +1788,13 @@
         }
 
         document.addEventListener('DOMContentLoaded', initForm);
+
+        // Ask the server to resolve a form restored from BFCache.
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                window.location.replace('{{ route('public.career.submission-success') }}');
+            }
+        });
     </script>
 @endsection
 @endsection

@@ -46,9 +46,7 @@
             $currentAuthDomain = session('hr_user.auth_domain', 'users');
             $currentRole       = session('hr_user.role', 'Viewer');
 
-            // Dashboard is only for roles that are not GA_IT / LEGAL. Those two
-            // land directly on their module and must not see the Dashboard entry.
-            $showDashboard = !in_array(\App\Support\Rbac::normalizeRole($currentRole), ['GA_IT', 'LEGAL'], true);
+            $showDashboard = true;
         @endphp
         @if ($isMprRequestorUi)
             <!-- MPR Requestor Navigation (source: mpr_requestor sheet) -->
@@ -98,24 +96,6 @@
                     <i class="bi bi-person-badge-fill"></i> Master Data
                 </a>
             @endcanany
-
-            <!-- Asset Management Section -->
-            @can('view_asset')
-                <div class="nav-section-label">Asset</div>
-                <a href="{{ route('hr.assets.index') }}"
-                    class="nav-item {{ request()->routeIs('hr.assets.*') ? 'active' : '' }}">
-                    <i class="bi bi-box-seam-fill"></i> Asset Management
-                </a>
-            @endcan
-
-            <!-- Certification Management Section -->
-            @can('view_certification')
-                <div class="nav-section-label">Certification</div>
-                <a href="{{ route('hr.certifications.index') }}"
-                    class="nav-item {{ request()->routeIs('hr.certifications.*') ? 'active' : '' }}">
-                    <i class="bi bi-award-fill"></i> Certification Management
-                </a>
-            @endcan
 
             <!-- Candidate Status Section -->
             @can('view_recruitment')

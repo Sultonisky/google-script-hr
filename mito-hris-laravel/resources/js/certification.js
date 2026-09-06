@@ -3,9 +3,7 @@
     const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
     const HEADERS = { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' };
 
-    // Domain-aware base path: MITO_CERT_BASE on HRIS, '/certifications' on the cert portal.
-    // The view injects window.MITO_CERT_BASE per active domain; default keeps HRIS behaviour.
-    const MITO_CERT_BASE = window.MITO_CERT_BASE || '/hr/certifications';
+    const MITO_CERT_BASE = window.MITO_CERT_BASE || '/certifications';
 
 
     function showToast(msg, type) { if (window.showToast) showToast(msg, type); }
@@ -126,7 +124,7 @@
         }
         searchTimeout = setTimeout(async function () {
             try {
-                const res = await fetch('/hr/employees/lookup?q=' + encodeURIComponent(q) + '&limit=8', { headers: HEADERS });
+                const res = await fetch(MITO_CERT_BASE + '/employees/lookup?q=' + encodeURIComponent(q) + '&limit=8', { headers: HEADERS });
                 if (res.status === 403) {
                     hideEmpResults();
                     showEmpError('Anda tidak memiliki izin untuk mencari karyawan.');

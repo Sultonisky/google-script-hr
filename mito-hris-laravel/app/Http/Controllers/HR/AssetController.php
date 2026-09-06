@@ -50,9 +50,8 @@ class AssetController extends Controller
             ->orderBy('location')
             ->pluck('location');
 
-        $portal = $request->attributes->get('portal');
-        $assetIndexPath = $portal === 'assets' ? route('assets.portal.index') : route('hr.assets.index');
-        $assetBasePath  = $portal === 'assets' ? '/assets' : '/hr/assets';
+        $assetIndexPath = route('assets.portal.index');
+        $assetBasePath  = '/assets';
 
         return view('hr.assets.index', compact(
             'assets', 'stats', 'total', 'currentPage', 'perPage', 'locations',
@@ -65,7 +64,7 @@ class AssetController extends Controller
     public function store(StoreAssetRequest $request): JsonResponse
     {
         $data = $request->validated();
-        $data['created_by'] = session('hr_user.email', 'HR Administrator');
+        $data['created_by'] = $this->actorEmail();
         if (empty($data['status']))  $data['status'] = AssetStatus::AVAILABLE->value;
         if (empty($data['condition_status'])) $data['condition_status'] = AssetCondition::GOOD->value;
 
@@ -100,7 +99,7 @@ class AssetController extends Controller
         $asset->fill($request->validated());
         $asset->save();
 
-        $actor = session('hr_user.email', 'HR Administrator');
+        $actor = $this->actorEmail();
         foreach ($request->validated() as $field => $newVal) {
             if (isset($old[$field])) {
                 $oldVal = $old[$field];
@@ -123,7 +122,7 @@ class AssetController extends Controller
 
     public function destroy(Asset $asset): JsonResponse
     {
-        $actor = session('hr_user.email', 'HR Administrator');
+        $actor = $this->actorEmail();
         $asset->update(['status' => AssetStatus::DISPOSED]);
 
         $this->auditRepo->log('Asset', (string) $asset->id, 'disposed', 'status',
@@ -146,7 +145,7 @@ class AssetController extends Controller
         $code = $this->assetService->generateCode($asset->category);
         $asset->update(['asset_code' => $code]);
 
-        $actor = session('hr_user.email', 'HR Administrator');
+        $actor = $this->actorEmail();
         $this->auditRepo->log('Asset', (string) $asset->id, 'code_generated', 'asset_code',
             null, $code, $actor, 'Asset Management');
 
@@ -161,7 +160,7 @@ class AssetController extends Controller
     {
         $summary = $this->assetService->generateCodesForMissingAssets();
 
-        $actor = session('hr_user.email', 'HR Administrator');
+        $actor = $this->actorEmail();
         $this->auditRepo->log('Asset', null, 'bulk_codes_generated', null, null,
             json_encode($summary), $actor, 'Asset Management');
 
@@ -182,7 +181,7 @@ class AssetController extends Controller
                 $request->validated('employee_id'),
                 $request->validated('assigned_date'),
                 $request->validated('notes'),
-                session('hr_user.email', 'HR Administrator'),
+                $this->actorEmail(),
             );
 
             return response()->json([
@@ -207,7 +206,7 @@ class AssetController extends Controller
                 $asset,
                 $data['return_date'],
                 $data['return_notes'] ?? null,
-                session('hr_user.email', 'HR Administrator'),
+                $this->actorEmail(),
             );
 
             return response()->json([
@@ -229,6 +228,19 @@ class AssetController extends Controller
         }]);
 
         return response()->json(['success' => true, 'asset' => $asset]);
+    }
+
+    private function actorEmail(): string
+    {
+        $portal = request()->attributes->get('portal');
+        $sessionKey = match ($portal) {
+            'assets' => 'asset_auth',
+            'certificates' => 'certificate_auth',
+            'mpr' => config('mpr.session_key', 'mpr_requestor_auth'),
+            default => 'hr_user',
+        };
+
+        return (string) session($sessionKey . '.email', 'HR Administrator');
     }
 
     public function missingCodeSummary(): JsonResponse

@@ -95,7 +95,7 @@
         @endif
     </span>
     @if ($total > $perPage)
-        <x-pagination :currentPage="$currentPage" :total="$total" :perPage="$perPage" :route="'hr.certifications.index'"
+        <x-pagination :currentPage="$currentPage" :total="$total" :perPage="$perPage" :route="'certificates.portal.index'"
             :queryParams="[
                 'search' => request('search'),
                 'type' => request('type'),

@@ -6,6 +6,7 @@ use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Repositories\Contracts\UserRepositoryInterface;
 use App\Repositories\Local\LocalEmployeeRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
 use Mockery;
@@ -15,9 +16,7 @@ use Tests\TestCase;
 /**
  * Role-based post-login landing + sidebar visibility.
  *
- *   Admin  → /hr/dashboard; sidebar shows Dashboard + Asset + Certification.
- *   GA_IT  → /hr/assets; sidebar hides Dashboard; can access Asset, not Certification.
- *   LEGAL → /hr/certifications; sidebar hides Dashboard; can access Certification, not Asset.
+ *   All HRIS users → /hr/dashboard; the HRIS sidebar never exposes dedicated portals.
  *
  * Authorization (RBAC) is unchanged — only the landing decision and the
  * sidebar visibility for the Dashboard entry are exercised here.
@@ -85,7 +84,7 @@ private function actingAsRole(string $role): static
     {
         $this->mockUserDomain('Admin', 'admin@mito.id', 'admin-secret');
 
-        $response = $this->postJson('/login', [
+        $response = $this->withoutMiddleware(ValidateCsrfToken::class)->postJson('/login', [
             'identifier' => 'admin@mito.id',
             'password'   => 'admin-secret',
         ]);
@@ -97,11 +96,11 @@ private function actingAsRole(string $role): static
     }
 
     #[Test]
-    public function ga_it_login_lands_on_asset_management(): void
+    public function ga_it_login_stays_in_hris(): void
     {
         $this->mockUserDomain('GA_IT', 'ga.it@mitogroup.local', 'ga_it_secret');
 
-        $response = $this->postJson('/login', [
+        $response = $this->withoutMiddleware(ValidateCsrfToken::class)->postJson('/login', [
             'identifier' => 'ga.it@mitogroup.local',
             'password'   => 'ga_it_secret',
         ]);
@@ -109,15 +108,15 @@ private function actingAsRole(string $role): static
         $response->assertOk()
             ->assertJsonPath('success', true);
 
-        $this->assertSame(parse_url(route('hr.assets.index', [], false), PHP_URL_PATH), $this->redirectPath($response->json()));
+        $this->assertSame(parse_url(route('hr.dashboard', [], false), PHP_URL_PATH), $this->redirectPath($response->json()));
     }
 
     #[Test]
-    public function legal_login_lands_on_certification_management(): void
+    public function legal_login_stays_in_hris(): void
     {
         $this->mockUserDomain('LEGAL', 'legal@mitogroup.local', 'legal_secret');
 
-        $response = $this->postJson('/login', [
+        $response = $this->withoutMiddleware(ValidateCsrfToken::class)->postJson('/login', [
             'identifier' => 'legal@mitogroup.local',
             'password'   => 'legal_secret',
         ]);
@@ -125,7 +124,7 @@ private function actingAsRole(string $role): static
         $response->assertOk()
             ->assertJsonPath('success', true);
 
-        $this->assertSame(parse_url(route('hr.certifications.index', [], false), PHP_URL_PATH), $this->redirectPath($response->json()));
+        $this->assertSame(parse_url(route('hr.dashboard', [], false), PHP_URL_PATH), $this->redirectPath($response->json()));
     }
 
     // ── Sidebar visibility ────────────────────────────────────────────────
@@ -133,7 +132,7 @@ private function actingAsRole(string $role): static
     // its dependencies (DB / external repos / Vite), isolating the blade change.
 
     #[Test]
-    public function admin_sidebar_shows_dashboard_asset_and_certification(): void
+    public function admin_sidebar_shows_dashboard_without_dedicated_portals(): void
     {
         $this->actingAsRole('Admin');
 
@@ -141,72 +140,48 @@ private function actingAsRole(string $role): static
 
         $this->assertStringContainsString('/hr/dashboard', $rendered);          // Dashboard link present
         $this->assertStringContainsString('bi-grid-1x2-fill', $rendered);      // Dashboard icon present
-        $this->assertStringContainsString('Asset Management', $rendered);
-        $this->assertStringContainsString('Certification Management', $rendered);
+        $this->assertStringNotContainsString('Asset Management', $rendered);
+        $this->assertStringNotContainsString('Certification Management', $rendered);
     }
 
     #[Test]
-    public function ga_it_sidebar_hides_dashboard_and_shows_asset_only(): void
+    public function ga_it_sidebar_stays_hris_only(): void
     {
         $this->actingAsRole('GA_IT');
 
         $rendered = (string) $this->view('components.hr-sidebar');
 
-        $this->assertStringContainsString('Asset Management', $rendered);
-        $this->assertStringContainsString('/hr/assets', $rendered);
-        $this->assertStringNotContainsString('bi-grid-1x2-fill', $rendered);   // Dashboard icon absent
-        $this->assertStringNotContainsString('/hr/dashboard', $rendered);      // Dashboard link absent
-        $this->assertStringNotContainsString('/hr/certifications', $rendered); // RBAC: no Certification nav link
+        $this->assertStringContainsString('bi-grid-1x2-fill', $rendered);
+        $this->assertStringContainsString('/hr/dashboard', $rendered);
+        $this->assertStringNotContainsString('Asset Management', $rendered);
+        $this->assertStringNotContainsString('Certification Management', $rendered);
     }
 
     #[Test]
-    public function legal_sidebar_hides_dashboard_and_shows_certification_only(): void
+    public function legal_sidebar_stays_hris_only(): void
     {
         $this->actingAsRole('LEGAL');
 
         $rendered = (string) $this->view('components.hr-sidebar');
 
-        $this->assertStringContainsString('Certification Management', $rendered);
-        $this->assertStringContainsString('/hr/certifications', $rendered);
-        $this->assertStringNotContainsString('bi-grid-1x2-fill', $rendered);
-        $this->assertStringNotContainsString('/hr/dashboard', $rendered);
-        $this->assertStringNotContainsString('/hr/assets', $rendered);          // RBAC: no Asset nav link
-    }
-
-    // ── Existing authorization still works (cross-module access) ─────────
-    // The positive "can access" case is established by the post-login redirect
-    // landing on the role's module plus the gate permissions (covered in
-    // LocalAccessTest / RbacTest). Here we lock down the denial path via the
-    // route-level `can:` middleware so it can never silently regress.
-
-    #[Test]
-    public function ga_it_is_forbidden_from_certification_index(): void
-    {
-        $this->actingAsRole('GA_IT');
-
-        $this->get('/hr/certifications')->assertForbidden();
-    }
-
-    #[Test]
-    public function legal_is_forbidden_from_asset_index(): void
-    {
-        $this->actingAsRole('LEGAL');
-
-        $this->get('/hr/assets')->assertForbidden();
+        $this->assertStringContainsString('bi-grid-1x2-fill', $rendered);
+        $this->assertStringContainsString('/hr/dashboard', $rendered);
+        $this->assertStringNotContainsString('Asset Management', $rendered);
+        $this->assertStringNotContainsString('Certification Management', $rendered);
     }
 
     // ── Admin regression guard ────────────────────────────────────────────
 
     #[Test]
-    public function admin_retains_dashboard_asset_and_certification_sidebar_entries(): void
+    public function admin_retains_dashboard_without_dedicated_portal_entries(): void
     {
         $this->actingAsRole('Admin');
 
         $rendered = (string) $this->view('components.hr-sidebar');
 
         $this->assertStringContainsString('/hr/dashboard', $rendered);
-        $this->assertStringContainsString('/hr/assets', $rendered);
-        $this->assertStringContainsString('/hr/certifications', $rendered);
+        $this->assertStringNotContainsString('/hr/assets', $rendered);
+        $this->assertStringNotContainsString('/hr/certifications', $rendered);
     }
 
     // ── Local dummy users used by LocalDevUsersSeeder still resolve ────────

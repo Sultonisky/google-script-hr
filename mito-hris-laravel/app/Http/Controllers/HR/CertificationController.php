@@ -40,9 +40,8 @@ class CertificationController extends Controller
 
         $stats = $this->certService->getStats();
 
-        $portal = $request->attributes->get('portal');
-        $certIndexPath = $portal === 'certificates' ? route('certificates.portal.index') : route('hr.certifications.index');
-        $certBasePath  = $portal === 'certificates' ? '/certifications' : '/hr/certifications';
+        $certIndexPath = route('certificates.portal.index');
+        $certBasePath  = '/certifications';
 
         return view('hr.certifications.index', compact(
             'certifications', 'stats', 'total', 'currentPage', 'perPage',
@@ -53,7 +52,7 @@ class CertificationController extends Controller
     public function store(StoreCertificationRequest $request): JsonResponse
     {
         $data = $request->validated();
-        $data['created_by'] = session('hr_user.email', 'HR Administrator');
+        $data['created_by'] = $this->actorEmail();
 
         if (empty($data['status'])) {
             $data['status'] = $this->certService->computeStatus($data['expiry_date'] ?? null)->value;
@@ -97,7 +96,7 @@ class CertificationController extends Controller
         $old = $certification->only(array_keys($data));
         $certification->fill($data)->save();
 
-        $actor = session('hr_user.email', 'HR Administrator');
+        $actor = $this->actorEmail();
         foreach ($data as $field => $newValue) {
             $oldValue = $old[$field] ?? null;
 
@@ -123,7 +122,7 @@ class CertificationController extends Controller
 
     public function destroy(Certification $certification): JsonResponse
     {
-        $actor = session('hr_user.email', 'HR Administrator');
+        $actor = $this->actorEmail();
         $name = $certification->name;
         $id = (string) $certification->id;
 
@@ -149,7 +148,7 @@ class CertificationController extends Controller
 
         try {
             $certification->update(['cert_code' => $this->certService->generateCode()]);
-            $actor = session('hr_user.email', 'HR Administrator');
+            $actor = $this->actorEmail();
             $this->auditRepo->log('Certification', (string) $certification->id, 'code_generated', null, null,
                 $certification->cert_code, $actor, 'Certification Management');
 
@@ -174,6 +173,19 @@ class CertificationController extends Controller
     public function getJson(Certification $certification): JsonResponse
     {
         return response()->json(['success' => true, 'certification' => $certification]);
+    }
+
+    private function actorEmail(): string
+    {
+        $portal = request()->attributes->get('portal');
+        $sessionKey = match ($portal) {
+            'assets' => 'asset_auth',
+            'certificates' => 'certificate_auth',
+            'mpr' => config('mpr.session_key', 'mpr_requestor_auth'),
+            default => 'hr_user',
+        };
+
+        return (string) session($sessionKey . '.email', 'HR Administrator');
     }
 
     /**

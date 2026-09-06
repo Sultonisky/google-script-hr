@@ -4,9 +4,7 @@
     const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
     const HEADERS = { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' };
 
-    // Domain-aware base path: MITO_ASSET_BASE on HRIS, '/assets' on the asset portal.
-    // The view injects window.MITO_ASSET_BASE per active domain; default keeps HRIS behaviour.
-    const MITO_ASSET_BASE = window.MITO_ASSET_BASE || '/hr/assets';
+    const MITO_ASSET_BASE = window.MITO_ASSET_BASE || '/assets';
 
 
     const CATEGORY_META = {
@@ -475,7 +473,7 @@
         }
         aEmpTimer = setTimeout(async function () {
             try {
-                const res = await fetch('/hr/employees/lookup?q=' + encodeURIComponent(q) + '&limit=8', { headers: HEADERS });
+                const res = await fetch(MITO_ASSET_BASE + '/employees/lookup?q=' + encodeURIComponent(q) + '&limit=8', { headers: HEADERS });
                 if (res.status === 403) {
                     if (aEmpResults) aEmpResults.classList.add('d-none');
                     showAssignEmpError('Anda tidak memiliki izin untuk mencari karyawan.');
