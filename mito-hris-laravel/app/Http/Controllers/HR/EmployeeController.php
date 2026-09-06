@@ -104,7 +104,7 @@ class EmployeeController extends Controller
         // Sort logic: check date_sort first (Terbaru/Terlama dropdown), then sort (A-Z/Z-A dropdown)
         $dateSortParam = $request->query('date_sort');
         $nameSortParam = $request->query('sort');
-        
+
         // Priority: date_sort > sort > default (join_date_asc)
         if ($dateSortParam) {
             $sortFilter = $dateSortParam;
@@ -113,9 +113,9 @@ class EmployeeController extends Controller
         } else {
             $sortFilter = 'join_date_asc'; // Default ke terlama
         }
-        
+
         // Apply sorting based on sort filter
-        $filtered = match($sortFilter) {
+        $filtered = match ($sortFilter) {
             'name_asc' => $filtered->sortBy(fn($e) => strtolower(trim($e->fullName ?? ''))),
             'name_desc' => $filtered->sortByDesc(fn($e) => strtolower(trim($e->fullName ?? ''))),
             'emp_id_asc' => $filtered->sortBy(fn($e) => strtolower(trim($e->employeeId ?? ''))),
@@ -553,7 +553,7 @@ class EmployeeController extends Controller
             })
             ->take($limit);
 
-        $data = $results->map(fn ($e) => [
+        $data = $results->map(fn($e) => [
             'employeeId'   => $e->employeeId,
             'fullName'     => $e->fullName,
             'division'     => $e->division,
@@ -710,34 +710,6 @@ class EmployeeController extends Controller
     }
 
     /**
-     * Promote Contract employee to Probation (1:1 with GAS promoteEmployeeToProbation).
-     */
-    public function promoteToProbation(Request $request, string $id): JsonResponse|RedirectResponse
-    {
-        $request->validate([
-            'probation_start'    => 'required|date',
-            'probation_duration' => 'nullable|string',
-            'probation_end'      => 'nullable|date',
-            'contract_number'    => 'nullable|string',
-            'notes'              => 'nullable|string',
-        ]);
-
-        $result = $this->employeeService->promoteToProbation(
-            $id,
-            $request->all(),
-            Auth::user()?->name ?? 'HR Team'
-        );
-
-        if ($request->wantsJson() || $request->ajax()) {
-            return response()->json($result, $result['success'] ? 200 : 422);
-        }
-
-        return redirect()
-            ->back()
-            ->with($result['success'] ? 'success' : 'error', $result['message']);
-    }
-
-    /**
      * Update Employee data — 1:1 with GAS updateEmployee().
      * Dipanggil via Fetch API dari modal Edit Employee di drawer.
      * PUT /hr/employees/{id}
@@ -764,7 +736,10 @@ class EmployeeController extends Controller
         // (kandidat_probation Status + Decision), NOT by Employee.Status.
         $isOnActiveProbation = $this->probationService->isActiveProbation($id);
         $contractRequestKeys = [
-            'endDateContract', 'contractStart', 'contractDuration', 'contractNumber',
+            'endDateContract',
+            'contractStart',
+            'contractDuration',
+            'contractNumber',
         ];
         foreach ($contractRequestKeys as $key) {
             if ($isOnActiveProbation && $request->has($key)) {

@@ -476,14 +476,7 @@
                         empOpenEdit(e);
                     };
 
-                    // STEP 16/20 — Probation alert in employee drawer.
-                    // The "Ajukan Probation" entry point was moved out of the
-                    // drawer (see Probation menu). When the employee is
-                    // currently in active probation (canonical flag from
-                    // /hr/employees/{id}/json → isActiveProbation), show a
-                    // clear alert so the operator does not attempt
-                    // restricted actions. Employee.Status is intentionally
-                    // ignored — only the canonical flag is authoritative.
+                    // Show the canonical active-probation state in the drawer.
                     var probationAlert = document.getElementById('drawerProbationAlert');
                     if (probationAlert) {
                         if (data.isActiveProbation === true) {
@@ -730,131 +723,6 @@
                     }
                     var msg = (err && err.message) ? err.message : 'Terjadi kesalahan. Coba lagi.';
                     showToast(msg, 'error');
-                });
-        }
-
-        // ===========================================================
-        // PROMOTE TO PROBATION — submit via Fetch API
-        // POST /hr/employees/{id}/promote-probation
-        // 1:1 dengan GAS promoteEmployeeToProbation()
-        // ===========================================================
-        function openPromoteToProbationModal(emp) {
-            if (!emp) return;
-            window._promoteProbTargetEmp = emp;
-
-            var empIdEl = document.getElementById('promoteProbEmpId');
-            var nameEl = document.getElementById('promoteProbEmpName');
-            var posEl = document.getElementById('promoteProbPosition');
-            var avEl = document.getElementById('promoteProbAvatar');
-            var badgeEl = document.getElementById('promoteProbBadge');
-            var startEl = document.getElementById('promoteProbStart');
-            var durEl = document.getElementById('promoteProbDuration');
-            var notesEl = document.getElementById('promoteProbNotes');
-
-            if (empIdEl) empIdEl.value = emp.employeeId || '';
-            if (nameEl) nameEl.innerText = emp.fullName || '-';
-            if (posEl) posEl.innerText = (emp.jobPositionLocation || emp.jobPosition || '-') + (emp.department ? ' · ' + emp
-                .department : '');
-            if (avEl) avEl.innerText = initials(emp.fullName || 'K');
-            if (badgeEl) badgeEl.innerText = emp.statusEmployee || 'Contract';
-            if (startEl) startEl.value = new Date().toISOString().substring(0, 10);
-            if (durEl) durEl.value = '3 Bulan';
-            if (notesEl) notesEl.value = '';
-
-            // Override form action agar submit tidak trigger default POST
-            var formEl = document.getElementById('formPromoteProbation');
-            if (formEl) {
-                formEl.onsubmit = function(e) {
-                    e.preventDefault();
-                    submitPromoteProbation();
-                    return false;
-                };
-            }
-
-            var modalEl = document.getElementById('promoteToProbationModal');
-            if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).show();
-        }
-
-        function submitPromoteProbation() {
-            var emp = window._promoteProbTargetEmp;
-            var empId = (document.getElementById('promoteProbEmpId') || {}).value || '';
-            if (!empId) return;
-
-            var probStart = (document.getElementById('promoteProbStart') || {}).value || '';
-            var probDur = (document.getElementById('promoteProbDuration') || {}).value || '3 Bulan';
-            var notes = (document.getElementById('promoteProbNotes') || {}).value || '';
-
-            if (!probStart) {
-                showToast('Tanggal mulai probation wajib diisi.', 'warning');
-                return;
-            }
-
-            // Hitung probation end dari start + durasi
-            var probEnd = '';
-            try {
-                var months = parseInt((probDur.match(/^(\d+)/) || [0, 3])[1], 10) || 3;
-                var d = new Date(probStart);
-                d.setMonth(d.getMonth() + months);
-                d.setDate(d.getDate() - 1);
-                probEnd = d.toISOString().substring(0, 10);
-            } catch (e) {}
-
-            var payload = {
-                probation_start: probStart,
-                probation_duration: probDur,
-                probation_end: probEnd,
-                notes: notes,
-            };
-
-            var submitBtn = document.querySelector('#promoteToProbationModal button[type="submit"]');
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Memproses...';
-            }
-
-            fetch('/hr/employees/' + empId + '/promote-probation', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': getCsrfToken(),
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                })
-                .then(function(res) {
-                    if (!res.ok) return res.json().then(function(d) {
-                        throw d;
-                    });
-                    return res.json();
-                })
-                .then(function(result) {
-                    if (submitBtn) {
-                        submitBtn.disabled = false;
-                        submitBtn.innerHTML = '<i class="bi bi-person-check-fill me-1"></i>Daftarkan ke Probation';
-                    }
-
-                    var modalEl = document.getElementById('promoteToProbationModal');
-                    if (modalEl) {
-                        var m = bootstrap.Modal.getInstance(modalEl);
-                        if (m) m.hide();
-                    }
-
-                    if (result.success) {
-                        showToast(result.message || 'Karyawan berhasil didaftarkan ke Onboarding Probation!', 'success',
-                            5000);
-                        closeDrawer();
-                        // Reload halaman agar tabel ter-refresh
-                        window.location.reload();
-                    } else {
-                        showToast('Gagal: ' + (result.message || 'Error tidak diketahui'), 'error');
-                    }
-                })
-                .catch(function(err) {
-                    if (submitBtn) {
-                        submitBtn.disabled = false;
-                        submitBtn.innerHTML = '<i class="bi bi-person-check-fill me-1"></i>Daftarkan ke Probation';
-                    }
-                    showToast((err && err.message) ? err.message : 'Terjadi kesalahan. Coba lagi.', 'error');
                 });
         }
 

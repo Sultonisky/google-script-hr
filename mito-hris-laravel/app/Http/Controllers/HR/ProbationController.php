@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\HR;
 
-use App\DTOs\EmployeeData;
 use App\Enums\ProbationDecisionType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\HR\SubmitProbationEvaluationRequest;
@@ -36,24 +35,50 @@ class ProbationController extends Controller
     {
         // Source of truth: kandidat_probation sheet — all historical records
         $probationRecords = $this->probationService->getAllProbationRecords();
+        $employeeRows = $this->employeeRepo->getAll();
+        $knownProbationIds = $probationRecords
+            ->pluck('Employee ID')
+            ->filter(fn($value) => !empty($value))
+            ->map(fn($value) => ltrim(trim((string) $value), "'"))
+            ->values()
+            ->all();
+
+        $contractWithoutHistory = $employeeRows
+            ->filter(function ($employee) use ($knownProbationIds) {
+                $status = strtolower(trim((string) ($employee->statusEmployee ?? '')));
+                $employeeId = ltrim(trim((string) ($employee->employeeId ?? '')), "'");
+                return in_array($status, ['contract', 'pkwt'], true)
+                    && !in_array($employeeId, $knownProbationIds, true);
+            })
+            ->map(function ($employee) {
+                return [
+                    'Employee ID' => $employee->employeeId ?? '',
+                    'fullName' => $employee->fullName ?? '',
+                    'employeeId' => $employee->employeeId ?? '',
+                    'department' => $employee->department ?? '',
+                    'jobPosition' => $employee->jobPosition ?? '',
+                    'jobPositionLocation' => $employee->jobPositionLocation ?? '',
+                    'joinDate' => $employee->joinDate ?? '',
+                    'endDateContract' => $employee->endDateContract ?? '',
+                    ...get_object_vars($employee),
+                ];
+            })
+            ->values();
+
         // Enrich with employee details from Employee sheet
-        $allProbations = $probationRecords->map(function ($record) {
-            $emp = $this->employeeRepo->findById($record['Employee ID'] ?? '');
+        $allProbations = $probationRecords->merge($contractWithoutHistory)->map(function ($record) {
+            $emp = $this->employeeRepo->findById($record['Employee ID'] ?? $record['employeeId'] ?? '');
             if ($emp) {
-                // Merge employee data into record
                 foreach (get_object_vars($emp) as $key => $value) {
                     $record[$key] = $value;
                 }
             } else {
-                // Fallback: use data from probation record
-                $record['fullName'] = $record['Employee ID'] ?? '-';
-                $record['employeeId'] = $record['Employee ID'] ?? '';
-                $record['department'] = $record['Department'] ?? '';
-                $record['jobPosition'] = $record['Job Position'] ?? '';
+                $record['fullName'] = $record['fullName'] ?? ($record['Employee ID'] ?? '-');
+                $record['employeeId'] = $record['Employee ID'] ?? ($record['employeeId'] ?? '');
+                $record['department'] = $record['Department'] ?? ($record['department'] ?? '');
+                $record['jobPosition'] = $record['Job Position'] ?? ($record['jobPosition'] ?? '');
             }
-            // Ensure employeeId is set
-            $record['employeeId'] = $record['Employee ID'] ?? '';
-            // Probation dates: fallback from probation record if employee doesn't have them
+            $record['employeeId'] = $record['Employee ID'] ?? ($record['employeeId'] ?? '');
             if (empty($record['joinDate']) && !empty($record['Join Date'])) {
                 $record['joinDate'] = $record['Join Date'];
             }
@@ -62,10 +87,8 @@ class ProbationController extends Controller
             }
             return $record;
         })->filter(function ($record) {
-            // Keep only those with valid employeeId
             return !empty($record['employeeId']);
         })->values()->map(function ($record) {
-            // Convert arrays to objects for consistent access later
             return (object) $record;
         });
 
@@ -337,66 +360,6 @@ class ProbationController extends Controller
         $history = $this->probationService->getEvalHistory($id);
         return response()->json(['history' => $history]);
     }
-
-    // ==========================================================
-    // AJUKAN PROBATION — contract employee search (STEP 4/15)
-    // ==========================================================
-
-    /**
-     * List Contract/PKWT employees available for probation promotion.
-     * The Probation menu now serves as the single entry point for
-     * "Ajukan Probation" — the button was removed from the Employee
-     * Drawer (STEP 15).
-     *
-     * Returns employees whose Status Employee is Contract/PKWT and
-     * who are NOT already on active probation.
-     */
-    public function contractEmployees(Request $request): JsonResponse
-    {
-        $q      = trim($request->query('q', ''));
-        $limit  = min((int) $request->query('limit', 15), 50);
-
-        $all = $this->employeeRepo->getAll();
-
-        // Contract / PKWT only — and exclude employees already in active
-        // probation (canonical helper — see ProbationService::isActiveProbation).
-        $contractEmployees = $all->filter(function ($e) {
-            $status = strtolower(trim($e->statusEmployee ?? ''));
-            if (!in_array($status, ['contract', 'pkwt'], true)) {
-                return false;
-            }
-            return !$this->probationService->isActiveProbation((string) ($e->employeeId ?? ''));
-        });
-
-        if (strlen($q) >= 1) {
-            $qLower = strtolower($q);
-            $contractEmployees = $contractEmployees->filter(
-                fn($e) =>
-                    str_contains(strtolower($e->fullName ?? ''), $qLower)
-                    || str_contains(strtolower($e->employeeId ?? ''), $qLower)
-                    || str_contains(strtolower($e->jobPosition ?? ''), $qLower)
-                    || str_contains(strtolower($e->department ?? ''), $qLower)
-            );
-        }
-
-        $data = $contractEmployees->take($limit)->values()->map(fn($e) => [
-            'employeeId'          => $e->employeeId,
-            'fullName'            => $e->fullName,
-            'statusEmployee'      => $e->statusEmployee,
-            'jobPosition'         => $e->jobPosition,
-            'jobPositionLocation' => $e->jobPositionLocation,
-            'department'          => $e->department,
-            'branchName'          => $e->branchName,
-            'joinDate'            => $e->joinDate,
-            'endDateContract'     => $e->endDateContract,
-        ]);
-
-        return response()->json([
-            'data'  => $data,
-            'total' => $data->count(),
-        ]);
-    }
-
 
     /** Build query params array for Performance Review PDF URL. */
     private function buildEvalPdfParams(string $evalId, array $evalData): array
