@@ -12,6 +12,8 @@ use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
  *   MPR         → config('hris.domains.mpr')          e.g. mpr.hrismitogroup.web.id
  *   Recruitment → config('hris.domains.recruitment')  e.g. recruitment.hrismitogroup.web.id
  *   Outsource   → config('hris.domains.outsource')    e.g. outsource.hrismitogroup.web.id
+ *   Asset       → config('hris.domains.assets')        e.g. assets.hrismitogroup.web.id
+ *   Certificate → config('hris.domains.certificates')  e.g. certificates.hrismitogroup.web.id
  *
  * All routes are domain-bound (Route::domain(...)). Bare-path requests such as
  * $this->get('/hr/dashboard') resolve to 404 by default because there is no
@@ -32,7 +34,7 @@ abstract class TestCase extends BaseTestCase
 {
     /**
      * The domain key currently active for path-only requests.
-     * One of: 'hris' | 'mpr' | 'recruitment' | 'outsource'
+     * One of: 'hris' | 'mpr' | 'recruitment' | 'outsource' | 'assets' | 'certificates'
      */
     protected string $activeDomainKey = 'hris';
 

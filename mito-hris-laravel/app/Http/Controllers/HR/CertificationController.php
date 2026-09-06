@@ -40,8 +40,13 @@ class CertificationController extends Controller
 
         $stats = $this->certService->getStats();
 
+        $portal = $request->attributes->get('portal');
+        $certIndexPath = $portal === 'certificates' ? route('certificates.portal.index') : route('hr.certifications.index');
+        $certBasePath  = $portal === 'certificates' ? '/certifications' : '/hr/certifications';
+
         return view('hr.certifications.index', compact(
             'certifications', 'stats', 'total', 'currentPage', 'perPage',
+            'certIndexPath', 'certBasePath',
         ));
     }
 
