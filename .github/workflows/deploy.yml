@@ -66,6 +66,9 @@ jobs:
             sudo chown -R "$(id -un):$PHP_FPM_USER" storage bootstrap/cache database
             sudo chmod -R ug+rwX storage bootstrap/cache database
 
+            echo "== Applying database migrations =="
+            php artisan migrate --force
+
             echo "== Running Laravel tests =="
             echo "Tests already passed in the verify job. Production deploy skips dev-only PHPUnit dependencies."
 
