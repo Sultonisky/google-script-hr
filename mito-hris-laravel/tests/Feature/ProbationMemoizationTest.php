@@ -2,10 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\DTOs\EmployeeData;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Services\Google\GoogleSheetsService;
 use App\Services\ProbationService;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Session;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
 use ReflectionClass;
@@ -192,7 +195,92 @@ class ProbationMemoizationTest extends TestCase
     }
 
     // =========================================================================
-    // 6. Write path invalidates memo; next read triggers a fresh Sheets read
+    // 6. Active probation reads, including the sidebar loop = 1 read
+    // =========================================================================
+
+    #[Test]
+    public function repeated_active_probation_checks_share_one_load(): void
+    {
+        $row = $this->makeRow('EMP001', 'EVAL-1', 'Perpanjang Kontrak', '2026-08-01 10:00:00');
+        $row['Status'] = 'Probation';
+
+        $sheets = Mockery::mock(GoogleSheetsService::class);
+        $sheets->shouldReceive('getRowsAsAssoc')
+            ->with(self::SHEET)
+            ->once()
+            ->andReturn([$row]);
+
+        $employees = Mockery::mock(EmployeeRepositoryInterface::class);
+        $employees->shouldReceive('findById')
+            ->with('EMP001')
+            ->twice()
+            ->andReturn(new EmployeeData(employeeId: 'EMP001', statusEmployee: 'Contract'));
+
+        $this->app->instance(GoogleSheetsService::class, $sheets);
+        $this->app->instance(EmployeeRepositoryInterface::class, $employees);
+        $this->app->instance(AuditLogRepositoryInterface::class, Mockery::mock(AuditLogRepositoryInterface::class));
+
+        $svc = $this->app->make(ProbationService::class);
+
+        $this->assertTrue($svc->isActiveProbation('EMP001'));
+        $this->assertTrue($svc->isActiveProbation('EMP001'));
+    }
+
+    // =========================================================================
+    // 7. Actual HR sidebar/dashboard render path = 1 read
+    // =========================================================================
+
+    #[Test]
+    public function hr_sidebar_probation_count_reuses_probation_load(): void
+    {
+        cache()->forget('hr_sidebar_probation_count');
+        Session::put('hr_user', [
+            'email' => 'admin@mito.id',
+            'role' => 'Admin',
+            'permissions' => config('hris.auth.role_permissions.Admin', []),
+            'auth_domain' => 'users',
+        ]);
+
+        $rows = [];
+        foreach (['EMP001', 'EMP002'] as $employeeId) {
+            $row = $this->makeRow($employeeId, 'EVAL-' . $employeeId, 'Perpanjang Kontrak', '2026-08-01 10:00:00');
+            $row['Status'] = 'Probation';
+            $rows[] = $row;
+        }
+
+        $sheets = Mockery::mock(GoogleSheetsService::class);
+        $sheets->shouldReceive('getRowsAsAssoc')
+            ->with(self::SHEET)
+            ->once()
+            ->andReturn($rows);
+
+        $employees = Mockery::mock(EmployeeRepositoryInterface::class);
+        $employees->shouldReceive('getAll')
+            ->once()
+            ->andReturn(new Collection([
+                (object) ['employeeId' => 'EMP001'],
+                (object) ['employeeId' => 'EMP002'],
+            ]));
+        $employees->shouldReceive('findById')
+            ->withArgs(fn (string $employeeId) => in_array($employeeId, ['EMP001', 'EMP002'], true))
+            ->twice()
+            ->andReturnUsing(fn (string $employeeId) => new EmployeeData(
+                employeeId: $employeeId,
+                statusEmployee: 'Contract'
+            ));
+
+        $this->app->instance(GoogleSheetsService::class, $sheets);
+        $this->app->instance(EmployeeRepositoryInterface::class, $employees);
+        $this->app->instance(AuditLogRepositoryInterface::class, Mockery::mock(AuditLogRepositoryInterface::class));
+
+        $rendered = (string) $this->view('components.hr-sidebar');
+
+        $this->assertStringContainsString('Probation', $rendered);
+        $this->assertStringContainsString('2', $rendered);
+    }
+
+    // =========================================================================
+    // 8. Write path invalidates memo; next read triggers a fresh Sheets read
     // =========================================================================
 
     #[Test]
