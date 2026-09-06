@@ -12,10 +12,7 @@ class AuthServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // ==============================================================
-        // FIX: Override the Auth user resolver so that Laravel's Gate
-        // (and can: middleware) reads session('hr_user') instead of
-        // Auth::user() — which returns null in this session-based,
-        // non-Eloquent architecture.
+        // Resolve Gate's user from the session belonging to the current portal.
         //
         // Gate internally calls: call_user_func($app['auth']->userResolver())
         // AuthManager::resolveUsersUsing() replaces that callable globally.
@@ -23,7 +20,12 @@ class AuthServiceProvider extends ServiceProvider
         // This is the single correct fix for all 403s on protected routes.
         // ==============================================================
         Auth::resolveUsersUsing(function () {
-            return session('hr_user');
+            return match (request()->attributes->get('portal', 'hris')) {
+                'assets' => session('asset_auth'),
+                'certificates' => session('certificate_auth'),
+                'mpr' => session(config('mpr.session_key', 'mpr_requestor_auth')),
+                default => session('hr_user'),
+            };
         });
 
         // ==============================================================
@@ -31,6 +33,12 @@ class AuthServiceProvider extends ServiceProvider
         // $user is now the session array resolved above.
         // ==============================================================
         Gate::before(function ($user, $ability) {
+            if (in_array($ability, ['access_assets_portal', 'access_certificates_portal'], true)) {
+                $portal = $ability === 'access_assets_portal' ? 'assets' : 'certificates';
+
+                return Rbac::allowsDedicatedPortal($user, $portal);
+            }
+
             if (Rbac::normalizeRole($user['role'] ?? null) === 'Super Admin') {
                 return true;
             }
@@ -69,5 +77,8 @@ class AuthServiceProvider extends ServiceProvider
                 || Rbac::allows($role, 'view_asset')
                 || Rbac::allows($role, 'view_certification');
         });
+
+        Gate::define('access_assets_portal', fn ($user) => Rbac::allowsDedicatedPortal($user, 'assets'));
+        Gate::define('access_certificates_portal', fn ($user) => Rbac::allowsDedicatedPortal($user, 'certificates'));
     }
 }

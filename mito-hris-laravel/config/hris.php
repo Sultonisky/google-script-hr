@@ -218,6 +218,10 @@ return [
             'GA_IT' => ['view_asset', 'edit_asset'],
             'LEGAL' => ['view_certification', 'manage_certification'],
         ],
+        'dedicated_portal_roles' => [
+            'assets' => ['Super Admin', 'Admin'],
+            'certificates' => ['Super Admin', 'Admin'],
+        ],
     ],
     'schemas' => [
         'Employee' => [

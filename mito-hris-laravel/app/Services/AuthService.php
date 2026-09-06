@@ -82,6 +82,7 @@ class AuthService
                 'email'       => $user['Email'],
                 'fullName'    => $user['Full Name'] ?? $user['Email'],
                 'role'        => $role,
+                'source_role' => trim((string) ($user['Role'] ?? '')),
                 'permissions' => $this->getPermissionsForRole($role),
                 // Internal HRIS users do NOT use entity/branch for auth
                 'entities'    => [],

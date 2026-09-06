@@ -25,7 +25,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToGroup('web', [
             \App\Http\Middleware\SecurityHeaders::class,
             \App\Http\Middleware\DomainMiddleware::class,
+            \App\Http\Middleware\PortalAccessMiddleware::class,
         ]);
+
+        $middleware->prependToPriorityList(
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            \App\Http\Middleware\PortalAccessMiddleware::class,
+        );
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
