@@ -245,4 +245,136 @@ class ProbationMemoizationTest extends TestCase
         $this->assertCount(2, $after, 'Write must invalidate memo so next read fetches fresh.');
         $this->assertSame('EVAL-2', $after[0]['evalId'], 'Newest eval must appear first.');
     }
+
+    // =========================================================================
+    // 7–11. Main-branch read paths: latestProbationRow, isActiveProbation,
+    //       activeProbationDecision, readStoredContractDurationMonths
+    // =========================================================================
+
+    /**
+     * Build a row with Status='Probation' (required by latestProbationRow filter)
+     * and Contract Duration (for readStoredContractDurationMonths).
+     */
+    private function makeProbationActiveRow(string $empId): array
+    {
+        $row = $this->makeRow($empId, 'EVAL-1', 'Perpanjang Kontrak', '2026-08-01 10:00:00');
+        $row['Status']            = 'Probation';
+        $row['Updated At']        = '2026-08-05 10:00:00';
+        $row['Contract Duration'] = '6 Bulan';
+        return $row;
+    }
+
+    /**
+     * Like bindServiceWithRows but also mocks employeeRepo->findById for
+     * isActiveProbation() which needs an employee object with statusEmployee.
+     */
+    private function bindServiceWithRowsAndEmployee(array $rows, string $empStatus = 'Contract'): ProbationService
+    {
+        $sheets = Mockery::mock(GoogleSheetsService::class);
+        $sheets->shouldReceive('clearCache')->andReturn(null)->byDefault();
+        $sheets->shouldReceive('getRowsAsAssoc')
+            ->with(self::SHEET)
+            ->once()
+            ->andReturn($rows);
+        $this->app->instance(GoogleSheetsService::class, $sheets);
+
+        $emp = Mockery::mock(EmployeeRepositoryInterface::class);
+        $emp->shouldReceive('findById')
+            ->andReturn(new \App\DTOs\EmployeeData(statusEmployee: $empStatus));
+        $this->app->instance(EmployeeRepositoryInterface::class, $emp);
+        $this->app->instance(AuditLogRepositoryInterface::class, Mockery::mock(AuditLogRepositoryInterface::class));
+
+        return $this->app->make(ProbationService::class);
+    }
+
+    // ---- A. repeated latestProbationRow() => one sheet read ----
+
+    #[Test]
+    public function repeated_latestProbationRow_uses_single_sheet_read(): void
+    {
+        $row = $this->makeProbationActiveRow('EMP001');
+        $svc = $this->bindServiceWithRows([$row]);
+
+        $ref = new ReflectionClass($svc);
+        $method = $ref->getMethod('latestProbationRow');
+        $method->setAccessible(true);
+
+        $first  = $method->invoke($svc, 'EMP001');
+        $second = $method->invoke($svc, 'EMP001');
+
+        $this->assertNotNull($first);
+        $this->assertSame($first, $second);
+        // getRowsAsAssoc bound ->once() — second call reuses memo.
+    }
+
+    // ---- B. repeated isActiveProbation() => one sheet read ----
+
+    #[Test]
+    public function repeated_isActiveProbation_uses_single_sheet_read(): void
+    {
+        $row = $this->makeProbationActiveRow('EMP001');
+        $svc = $this->bindServiceWithRowsAndEmployee([$row], 'Contract');
+
+        $first  = $svc->isActiveProbation('EMP001');
+        $second = $svc->isActiveProbation('EMP001');
+
+        $this->assertTrue($first);
+        $this->assertTrue($second);
+        // getRowsAsAssoc bound ->once() — second call reuses memo.
+    }
+
+    // ---- C. repeated activeProbationDecision() => one sheet read ----
+
+    #[Test]
+    public function repeated_activeProbationDecision_uses_single_sheet_read(): void
+    {
+        $row = $this->makeProbationActiveRow('EMP001');
+        $svc = $this->bindServiceWithRows([$row]);
+
+        $first  = $svc->activeProbationDecision('EMP001');
+        $second = $svc->activeProbationDecision('EMP001');
+
+        $this->assertSame('Perpanjang Kontrak', $first);
+        $this->assertSame('Perpanjang Kontrak', $second);
+        // getRowsAsAssoc bound ->once() — second call reuses memo.
+    }
+
+    // ---- D. repeated readStoredContractDurationMonths() => one sheet read ----
+
+    #[Test]
+    public function repeated_readStoredContractDurationMonths_uses_single_sheet_read(): void
+    {
+        $row = $this->makeProbationActiveRow('EMP001');
+        $svc = $this->bindServiceWithRows([$row]);
+
+        $ref = new ReflectionClass($svc);
+        $method = $ref->getMethod('readStoredContractDurationMonths');
+        $method->setAccessible(true);
+
+        $first  = $method->invoke($svc, 'EMP001');
+        $second = $method->invoke($svc, 'EMP001');
+
+        $this->assertSame(6, $first);
+        $this->assertSame(6, $second);
+        // getRowsAsAssoc bound ->once() — second call reuses memo.
+    }
+
+    // ---- E. mixed calls share memoized rows ----
+
+    #[Test]
+    public function mixed_probation_methods_share_single_sheet_read(): void
+    {
+        $row = $this->makeProbationActiveRow('EMP001');
+        $svc = $this->bindServiceWithRowsAndEmployee([$row], 'Contract');
+
+        // All of these must share the same memoized sheet read:
+        $svc->activeProbationDecision('EMP001');
+        $svc->isActiveProbation('EMP001');
+        $svc->getEvalHistory('EMP001');
+        $svc->latestEvalByEmployee();
+
+        // getRowsAsAssoc bound ->once() — if any method issues a second
+        // physical read Mockery will flag the unexpected call in tearDown.
+        $this->assertTrue(true);
+    }
 }
