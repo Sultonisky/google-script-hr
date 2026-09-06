@@ -28,7 +28,7 @@ class SchemaValidationService
             return ['valid' => false, 'error' => "Sheet {$sheetName} has no headers or is empty"];
         }
 
-        $actualHeaders = array_map('trim', $data[0]);
+        $actualHeaders = $this->normalizeHeaders($data[0]);
         $missing = array_values(array_diff($expectedHeaders, $actualHeaders));
         $extra = array_values(array_diff($actualHeaders, $expectedHeaders));
         $orderedHeadersMatch = array_slice($actualHeaders, 0, count($expectedHeaders)) === $expectedHeaders;
@@ -44,9 +44,39 @@ class SchemaValidationService
 
     public function validateAllSheets(): array
     {
+        $sheetNames = array_keys($this->schemas);
+        try {
+            $headersBySheet = $this->sheets->getSheetHeaders($sheetNames);
+        } catch (\Throwable $e) {
+            $message = 'Google Sheets tidak dapat dibaca: ' . $e->getMessage();
+            return array_fill_keys($sheetNames, [
+                'valid' => false,
+                'error' => $message,
+            ]);
+        }
         $results = [];
-        foreach (array_keys($this->schemas) as $sheetName) {
-            $results[$sheetName] = $this->validateSheet($sheetName);
+        foreach ($sheetNames as $sheetName) {
+            $expectedHeaders = $this->schemas[$sheetName];
+            $data = $headersBySheet[$sheetName] ?? [];
+            if (empty($data) || empty($data[0])) {
+                $results[$sheetName] = [
+                    'valid' => false,
+                    'error' => "Sheet {$sheetName} has no headers or is empty",
+                ];
+                continue;
+            }
+
+            $actualHeaders = $this->normalizeHeaders($data[0]);
+            $missing = array_values(array_diff($expectedHeaders, $actualHeaders));
+            $extra = array_values(array_diff($actualHeaders, $expectedHeaders));
+            $orderedHeadersMatch = array_slice($actualHeaders, 0, count($expectedHeaders)) === $expectedHeaders;
+            $results[$sheetName] = [
+                'valid' => empty($missing) && empty($extra) && $orderedHeadersMatch,
+                'missing' => $missing,
+                'extra' => $extra,
+                'actual' => $actualHeaders,
+                'expected' => $expectedHeaders,
+            ];
         }
         return $results;
     }
@@ -71,14 +101,15 @@ class SchemaValidationService
 
             // Read current headers to determine what exists
             $currentData = $this->sheets->getRange($sheetName, 'A1:ZZ1', false);
-            $currentHeaders = !empty($currentData[0]) ? array_map('trim', $currentData[0]) : [];
+            $currentHeaders = !empty($currentData[0]) ? $this->normalizeHeaders($currentData[0]) : [];
 
             $missing = array_values(array_diff($expectedHeaders, $currentHeaders));
 
-            // Users has a strict schema. Remove legacy trailing columns such as Entity/Branch
-            // after the canonical ten columns have been established.
+            // Remove legacy trailing columns after the canonical schema has
+            // been established. This keeps validation strict without moving
+            // existing canonical columns or their data.
             if (
-                $sheetName === 'Users' && count($currentHeaders) > count($expectedHeaders)
+                count($currentHeaders) > count($expectedHeaders)
                 && array_slice($currentHeaders, 0, count($expectedHeaders)) === $expectedHeaders
             ) {
                 $sheetId = $this->getSheetIdByName($spreadsheetId, $sheetName, $service);
@@ -168,7 +199,7 @@ class SchemaValidationService
                 return false;
             }
 
-            $currentHeaders = !empty($data[0]) ? array_map(static fn($header) => trim((string) $header), $data[0]) : [];
+            $currentHeaders = !empty($data[0]) ? $this->normalizeHeaders($data[0]) : [];
             $headerLookup = [];
             foreach ($currentHeaders as $index => $header) {
                 if ($header === '') {
@@ -227,6 +258,26 @@ class SchemaValidationService
                 ['valueInputOption' => 'USER_ENTERED']
             );
 
+            if (count($currentHeaders) > count($expectedHeaders)) {
+                $sheetId = $this->getSheetIdByName($spreadsheetId, 'MPR', $service);
+                if ($sheetId !== null) {
+                    $deleteRequest = new \Google\Service\Sheets\Request([
+                        'deleteDimension' => [
+                            'range' => [
+                                'sheetId' => $sheetId,
+                                'dimension' => 'COLUMNS',
+                                'startIndex' => count($expectedHeaders),
+                                'endIndex' => count($currentHeaders),
+                            ],
+                        ],
+                    ]);
+                    $service->spreadsheets->batchUpdate(
+                        $spreadsheetId,
+                        new \Google\Service\Sheets\BatchUpdateSpreadsheetRequest(['requests' => [$deleteRequest]])
+                    );
+                }
+            }
+
             $this->sheets->clearCache('MPR');
             return true;
         } catch (\Throwable $e) {
@@ -278,5 +329,14 @@ class SchemaValidationService
             Log::warning("getSheetIdByName({$sheetName}): " . $e->getMessage());
         }
         return null;
+    }
+
+    private function normalizeHeaders(array $headers): array
+    {
+        $headers = array_map(static fn($header): string => trim((string) $header), $headers);
+        while (!empty($headers) && end($headers) === '') {
+            array_pop($headers);
+        }
+        return array_values($headers);
     }
 }

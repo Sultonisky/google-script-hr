@@ -3,8 +3,6 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Config;
 
 class SetupCommand extends Command
 {
@@ -25,18 +23,25 @@ class SetupCommand extends Command
 
         if (!$this->option('skip-sheets')) {
             $this->line("\n2. Setting up Google Sheets schema...");
-            $this->call('mito:setup-sheets', ['--fix' => true]);
+            $schemaExit = $this->call('mito:setup-sheets', ['--fix' => true]);
+            if ($schemaExit !== Command::SUCCESS) {
+                $this->error('Google Sheets schema validation failed. Setup stopped before seeding.');
+                return Command::FAILURE;
+            }
         }
 
-        $this->line("\n3. Seeding users...");
+        $this->line("\n3. Applying local database migrations...");
+        $this->call('migrate', ['--force' => true]);
+
+        $this->line("\n4. Seeding users...");
         $this->call('mito:seed-users', ['--force' => $this->option('force')]);
 
-        $this->line("\n4. Seeding MPR Requestors (Manpower accounts)...");
+        $this->line("\n5. Seeding MPR Requestors (Manpower accounts)...");
         $this->call('mito:seed-mpr-requestors', ['--force' => $this->option('force')]);
 
         if (!$this->option('skip-dummy')) {
             if ($env === 'local' || $this->option('force')) {
-                $this->line("\n4. Seeding dummy data...");
+                $this->line("\n6. Seeding dummy data...");
                 $this->call('mito:seed-dummy', ['--count' => 50, '--force' => $this->option('force')]);
             } else {
                 $this->warn("Skipping dummy data (not in local environment). Use --force to override.");

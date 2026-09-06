@@ -6,7 +6,6 @@ use Google\Service\Sheets;
 use Google\Service\Sheets\ValueRange;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use RuntimeException;
 
 class GoogleSheetsService
 {
@@ -56,6 +55,81 @@ class GoogleSheetsService
         } catch (\Throwable $e) {
             Log::error("GoogleSheetsService::getRange error on {$sheetName}: " . $e->getMessage());
             return [];
+        }
+    }
+
+    /**
+     * Read multiple ranges in one Sheets API request.
+     * Used by schema checks to avoid one quota-consuming request per sheet.
+     */
+    public function getRanges(array $ranges): array
+    {
+        if (empty($ranges)) {
+            return [];
+        }
+
+        try {
+            $service = $this->factory->getSheetsService();
+            $response = $service->spreadsheets_values->batchGet(
+                $this->spreadsheetId,
+                ['ranges' => array_values($ranges)]
+            );
+
+            $values = [];
+            foreach ($response->getValueRanges() as $index => $valueRange) {
+                $values[$index] = $valueRange->getValues() ?? [];
+            }
+
+            return $values;
+        } catch (\Throwable $e) {
+            Log::error('GoogleSheetsService::getRanges error: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Read the first row from multiple sheets using one spreadsheets.get call.
+     * Unlike values.batchGet, this avoids one quota read per requested range.
+     */
+    public function getSheetHeaders(array $sheetNames): array
+    {
+        if (empty($sheetNames)) {
+            return [];
+        }
+
+        try {
+            $service = $this->factory->getSheetsService();
+            $ranges = array_map(
+                static fn(string $sheetName): string => "{$sheetName}!A1:ZZ1",
+                array_values($sheetNames)
+            );
+            $spreadsheet = $service->spreadsheets->get($this->spreadsheetId, [
+                'includeGridData' => true,
+                'ranges' => $ranges,
+            ]);
+
+            $headers = [];
+            foreach ($spreadsheet->getSheets() as $sheet) {
+                $title = $sheet->getProperties()->getTitle();
+                if (!in_array($title, $sheetNames, true)) {
+                    continue;
+                }
+
+                $row = [];
+                $grid = $sheet->getData() ?? [];
+                $gridData = $grid[0] ?? null;
+                $rows = $gridData?->getRowData() ?? [];
+                $rowData = $rows[0] ?? null;
+                foreach ($rowData?->getValues() ?? [] as $cell) {
+                    $row[] = $cell->getFormattedValue() ?? '';
+                }
+                $headers[$title] = [$row];
+            }
+
+            return $headers;
+        } catch (\Throwable $e) {
+            Log::error('GoogleSheetsService::getSheetHeaders error: ' . $e->getMessage());
+            throw $e;
         }
     }
 
