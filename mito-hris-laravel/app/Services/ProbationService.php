@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\DTOs\EmployeeData;
 use App\Enums\ProbationDecisionType;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
@@ -26,42 +25,83 @@ class ProbationService
      */
     private const PROBATION_HEADERS = [
         // -- Identitas
-        'Probation ID', 'Employee ID', 'Recruitment ID',
+        'Probation ID',
+        'Employee ID',
+        'Recruitment ID',
         // -- Kontrak Probation
-        'Contract Number', 'Contract Duration', 'Contract Start', 'Contract End', 'Join Date',
+        'Contract Number',
+        'Contract Duration',
+        'Contract Start',
+        'Contract End',
+        'Join Date',
         // -- Status & Onboarding
-        'Status', 'Onboarding Date', 'Onboarding By',
+        'Status',
+        'Onboarding Date',
+        'Onboarding By',
         // -- Evaluasi
-        'Eval ID', 'Eval Date',
+        'Eval ID',
+        'Eval Date',
         // Decision
         'Decision',
         // -- Perpanjangan
-        'Extension Duration', 'New Contract Start', 'New Contract End',
+        'Extension Duration',
+        'New Contract Start',
+        'New Contract End',
         // -- Catatan & SK
-        'Evaluator Notes', 'Evaluator', 'SK Status', 'Notes',
+        'Evaluator Notes',
+        'Evaluator',
+        'SK Status',
+        'Notes',
         // -- Audit
-        'Created At', 'Updated At',
+        'Created At',
+        'Updated At',
         // ── NEW columns (Performance Review 2026) ────────────────
         // Competency totals
-        'Integrity Total', 'CI Total', 'EE Total', 'Teamwork Total',
-        'Overall Total', 'Category',
+        'Integrity Total',
+        'CI Total',
+        'EE Total',
+        'Teamwork Total',
+        'Overall Total',
+        'Category',
         // Individual indicators (13)
-        'ind_integrity_1', 'ind_integrity_2', 'ind_integrity_3', 'ind_integrity_4',
-        'ind_ci_1', 'ind_ci_2', 'ind_ci_3', 'ind_ci_4',
-        'ind_ee_1', 'ind_ee_2',
-        'ind_tw_1', 'ind_tw_2', 'ind_tw_3',
+        'ind_integrity_1',
+        'ind_integrity_2',
+        'ind_integrity_3',
+        'ind_integrity_4',
+        'ind_ci_1',
+        'ind_ci_2',
+        'ind_ci_3',
+        'ind_ci_4',
+        'ind_ee_1',
+        'ind_ee_2',
+        'ind_tw_1',
+        'ind_tw_2',
+        'ind_tw_3',
         // Approval sign-off (Performance Review Section F)
-        'Reviewer Name', 'Approval Dept', 'Approval Dept Name',
-        'Approval Dept Date', 'Approval HRBP', 'Approval HRBP Name',
+        'Reviewer Name',
+        'Approval Dept',
+        'Approval Dept Name',
+        'Approval Dept Date',
+        'Approval HRBP',
+        'Approval HRBP Name',
         'Approval HRBP Date',
     ];
 
     /** 13 indicator keys in canonical order (Performance Review 2026). */
     private const INDICATOR_KEYS = [
-        'integrity_1', 'integrity_2', 'integrity_3', 'integrity_4',
-        'ci_1', 'ci_2', 'ci_3', 'ci_4',
-        'ee_1', 'ee_2',
-        'tw_1', 'tw_2', 'tw_3',
+        'integrity_1',
+        'integrity_2',
+        'integrity_3',
+        'integrity_4',
+        'ci_1',
+        'ci_2',
+        'ci_3',
+        'ci_4',
+        'ee_1',
+        'ee_2',
+        'tw_1',
+        'tw_2',
+        'tw_3',
     ];
 
     public function __construct(
@@ -137,6 +177,10 @@ class ProbationService
 
         // Normalize Employee ID — strip leading apostrophe that GAS sometimes prepends
         $employeeId = ltrim(trim($employeeId), "'");
+
+        if (!$this->isActiveProbation($employeeId)) {
+            throw new RuntimeException('Hanya karyawan dengan probation aktif yang dapat dievaluasi.');
+        }
 
         // Re-read the latest evaluation from the source of truth before any mutation.
         // PASS/FAIL are terminal; after EXTEND only PASS/FAIL are valid next decisions.
@@ -224,7 +268,6 @@ class ProbationService
             // Status remains the probation process label; Decision stores the outcome.
             $probStatus = 'Probation';
             $skStatus   = 'SK Diterbitkan';
-
         } elseif ($isPutusKontrak) {
             $skNumber = $this->generatePaklaringNumber($branchName, $evalId, $now);
             $this->employeeRepo->update($employeeId, [
@@ -241,7 +284,6 @@ class ProbationService
             ]);
             $probStatus = 'Probation';
             $skStatus   = 'Paklaring Diterbitkan';
-
         } else {
             // Perpanjang (1:1 GAS isPerpanjang branch)
             $updates = [
@@ -469,7 +511,7 @@ class ProbationService
         $history = $this->getEvalHistory($employeeId);
         $count = count($history);
         if ($count === 0) {
-            return true;
+            return $this->isActiveProbation($employeeId);
         }
         $latest = $history[0]; // newest first
         $decision = $latest['decision'] ?? '';
@@ -511,9 +553,12 @@ class ProbationService
      */
     public function isActiveProbation(string $employeeId): bool
     {
+        $employee = $this->employeeRepo->findById($employeeId);
+        $employeeStatus = strtolower(trim((string) ($employee->statusEmployee ?? '')));
+
         $latest = $this->latestProbationRow($employeeId);
         if ($latest === null) {
-            return false;
+            return in_array($employeeStatus, ['contract', 'pkwt'], true);
         }
 
         $decision = (string) ($latest['Decision'] ?? '');
@@ -877,7 +922,7 @@ class ProbationService
     private function generateSuratNumber(string $code, string $branchName, \Illuminate\Support\Carbon $now): string
     {
         $entity = $this->getEntityCode($branchName);
-        $roman  = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'][$now->month - 1];
+        $roman  = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][$now->month - 1];
         $seq    = $this->nextCounter('SK', $now);
         return sprintf('%03d/%s/%s/%s/%d', $seq, $code, $entity, $roman, $now->year);
     }

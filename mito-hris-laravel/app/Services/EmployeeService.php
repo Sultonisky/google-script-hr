@@ -11,9 +11,7 @@ use App\Services\Google\GoogleSheetsService;
 use App\Services\PdfGeneratorService;
 use App\Services\ProbationService;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\Cache;
 use RuntimeException;
 
 class EmployeeService
@@ -85,57 +83,57 @@ class EmployeeService
 
         // --- Bangun EmployeeData DTO ---
         $employee = new EmployeeData(
-            employeeId:           $empId,
-            fullName:             $fullName,
-            branchName:           trim($data['branchName'] ?? ''),
-            division:             trim($data['division'] ?? ''),
-            department:           trim($data['department'] ?? ''),
-            jobPositionLocation:  trim($data['jobPositionLocation'] ?? $data['jobPosition'] ?? ''),
-            jobPosition:          trim($data['jobPosition'] ?? $data['jobPositionLocation'] ?? ''),
-            areaKerja:            trim($data['areaKerja'] ?? ''),
-            lokasiKerja:          trim($data['lokasiKerja'] ?? ''),
-            jobLevel:             trim($data['jobLevel'] ?? ''),
-            grade:                trim($data['grade'] ?? ''),
-            joinDate:             trim($data['joinDate'] ?? ''),
-            statusEmployee:       trim($data['statusEmployee'] ?? 'Contract'),
-            directSuperior:       trim($data['directSuperior'] ?? ''),
-            indirectSuperior:     trim($data['indirectSuperior'] ?? ''),
-            personalEmail:        trim($data['personalEmail'] ?? ''),
-            workingEmail:         trim($data['workingEmail'] ?? ''),
-            endDateContract:      trim($data['endDateContract'] ?? ''),
-            birthPlace:           trim($data['birthPlace'] ?? ''),
-            birthDate:            trim($data['birthDate'] ?? ''),
-            citizenIdAddress:     trim($data['citizenIdAddress'] ?? ''),
-            residentialAddress:   trim($data['residentialAddress'] ?? ''),
-            nikNpwp:              ltrim(trim($data['nikNpwp'] ?? $data['nik'] ?? ''), "'"),
-            npwp:                 ltrim(trim($data['npwp'] ?? ''), "'"),
-            ptkpStatus:           trim($data['ptkpStatus'] ?? ''),
-            bankName:             trim($data['bankName'] ?? 'BCA'),
-            bankAccount:          ltrim(trim($data['bankAccount'] ?? ''), "'"),
-            bankAccountHolder:    trim($data['bankAccountHolder'] ?? $fullName),
-            bpjsKetenagakerjaan:  ltrim(trim($data['bpjsKetenagakerjaan'] ?? ''), "'"),
-            bpjsKesehatan:        ltrim(trim($data['bpjsKesehatan'] ?? ''), "'"),
-            mobilePhone:          ltrim(trim($data['mobilePhone'] ?? ''), "'"),
-            religion:             trim($data['religion'] ?? ''),
-            gender:               trim($data['gender'] ?? ''),
-            maritalStatus:        trim($data['maritalStatus'] ?? ''),
-            bloodType:            trim($data['bloodType'] ?? ''),
-            costCenter:           trim($data['costCenter'] ?? ''),
-            jobPositionFormer:    '',
-            typeOfRotation:       '',
-            rotationDate:         '',
-            nomorSk:              '',
-            resignDate:           '',
-            hrNotes:              trim($data['hrNotes'] ?? ''),
-            offboardingType:      '',
-            offboardingReason:    '',
+            employeeId: $empId,
+            fullName: $fullName,
+            branchName: trim($data['branchName'] ?? ''),
+            division: trim($data['division'] ?? ''),
+            department: trim($data['department'] ?? ''),
+            jobPositionLocation: trim($data['jobPositionLocation'] ?? $data['jobPosition'] ?? ''),
+            jobPosition: trim($data['jobPosition'] ?? $data['jobPositionLocation'] ?? ''),
+            areaKerja: trim($data['areaKerja'] ?? ''),
+            lokasiKerja: trim($data['lokasiKerja'] ?? ''),
+            jobLevel: trim($data['jobLevel'] ?? ''),
+            grade: trim($data['grade'] ?? ''),
+            joinDate: trim($data['joinDate'] ?? ''),
+            statusEmployee: trim($data['statusEmployee'] ?? 'Contract'),
+            directSuperior: trim($data['directSuperior'] ?? ''),
+            indirectSuperior: trim($data['indirectSuperior'] ?? ''),
+            personalEmail: trim($data['personalEmail'] ?? ''),
+            workingEmail: trim($data['workingEmail'] ?? ''),
+            endDateContract: trim($data['endDateContract'] ?? ''),
+            birthPlace: trim($data['birthPlace'] ?? ''),
+            birthDate: trim($data['birthDate'] ?? ''),
+            citizenIdAddress: trim($data['citizenIdAddress'] ?? ''),
+            residentialAddress: trim($data['residentialAddress'] ?? ''),
+            nikNpwp: ltrim(trim($data['nikNpwp'] ?? $data['nik'] ?? ''), "'"),
+            npwp: ltrim(trim($data['npwp'] ?? ''), "'"),
+            ptkpStatus: trim($data['ptkpStatus'] ?? ''),
+            bankName: trim($data['bankName'] ?? 'BCA'),
+            bankAccount: ltrim(trim($data['bankAccount'] ?? ''), "'"),
+            bankAccountHolder: trim($data['bankAccountHolder'] ?? $fullName),
+            bpjsKetenagakerjaan: ltrim(trim($data['bpjsKetenagakerjaan'] ?? ''), "'"),
+            bpjsKesehatan: ltrim(trim($data['bpjsKesehatan'] ?? ''), "'"),
+            mobilePhone: ltrim(trim($data['mobilePhone'] ?? ''), "'"),
+            religion: trim($data['religion'] ?? ''),
+            gender: trim($data['gender'] ?? ''),
+            maritalStatus: trim($data['maritalStatus'] ?? ''),
+            bloodType: trim($data['bloodType'] ?? ''),
+            costCenter: trim($data['costCenter'] ?? ''),
+            jobPositionFormer: '',
+            typeOfRotation: '',
+            rotationDate: '',
+            nomorSk: '',
+            resignDate: '',
+            hrNotes: trim($data['hrNotes'] ?? ''),
+            offboardingType: '',
+            offboardingReason: '',
             offboardingApprovedBy: '',
             offboardingDocsFolder: '',
-            offboardingDocLinks:  '',
-            outsourceVendor:      trim($data['outsourceVendor'] ?? ''),
-            createdBy:            $user,
-            createdAt:            $nowStr,
-            updatedAt:            $nowStr,
+            offboardingDocLinks: '',
+            outsourceVendor: trim($data['outsourceVendor'] ?? ''),
+            createdBy: $user,
+            createdAt: $nowStr,
+            updatedAt: $nowStr,
         );
 
         // --- Tulis ke Google Sheets ---
@@ -153,13 +151,13 @@ class EmployeeService
         // --- Audit log ---
         $this->auditRepo->log(
             entityType: 'Employee',
-            entityId:   $empId,
-            action:     'CREATE',
-            field:      'Status Employee',
-            oldValue:   '-',
-            newValue:   ($employee->statusEmployee ?? 'Contract') . ' — dibuat manual oleh HR',
-            user:       $user,
-            source:     'Dashboard'
+            entityId: $empId,
+            action: 'CREATE',
+            field: 'Status Employee',
+            oldValue: '-',
+            newValue: ($employee->statusEmployee ?? 'Contract') . ' — dibuat manual oleh HR',
+            user: $user,
+            source: 'Dashboard'
         );
 
         return [
@@ -826,170 +824,6 @@ class EmployeeService
             'success' => $success,
             'message' => $success ? "Off Contract karyawan {$employeeId} berhasil diproses." : "Gagal memproses Off Contract.",
             'employeeId' => $employeeId,
-        ];
-    }
-
-    /**
-     * Promote Contract employee to Probation (1:1 with GAS promoteEmployeeToProbation).
-     * FIXED: Sekarang benar-benar membuat probation record di sheet kandidat_probation
-     * (sebelumnya hanya update status, TODO comment tidak dieksekusi).
-     *
-     * @return array{success:bool, message:string, employeeId:string, probationId:string}
-     * @throws RuntimeException
-     */
-    public function promoteToProbation(string $employeeId, array $data, ?string $user = null): array
-    {
-        $employee = $this->employeeRepo->findById($employeeId);
-        if (!$employee) {
-            throw new RuntimeException("Karyawan dengan ID {$employeeId} tidak ditemukan.");
-        }
-
-        // Verify current status is Contract / PKWT — probation is only for
-        // active Contract employees (Employee Status is restricted to
-        // Permanent / Contract / Outsource — see task rules).
-        $currentStatus = strtolower(trim($employee->statusEmployee ?? ''));
-        if ($currentStatus !== 'contract' && $currentStatus !== 'pkwt') {
-            return [
-                'success'     => false,
-                'message'     => 'Hanya karyawan dengan status Contract yang dapat diajukan Probation.',
-                'employeeId'  => $employeeId,
-                'probationId' => '',
-            ];
-        }
-
-        // One active probation per employee — reject if a canonical active
-        // probation already exists (latest kandidat_probation row with
-        // Status='Probation' and non-terminal Decision).
-        if ($this->probationService()->isActiveProbation($employeeId)) {
-            return [
-                'success'     => false,
-                'message'     => 'Karyawan ini sudah memiliki proses probation yang sedang aktif. Selesaikan evaluasi terlebih dahulu sebelum mengajukan probation baru.',
-                'employeeId'  => $employeeId,
-                'probationId' => '',
-            ];
-        }
-
-        $user       = $user ?: 'HR Administrator';
-        $now        = now()->timezone('Asia/Jakarta');
-        $nowStr     = $now->format('Y-m-d H:i:s');
-        $probStart  = $data['probation_start'] ?? $now->format('Y-m-d');
-        $probNotes  = $data['notes']           ?? '';
-        $contractNo = $data['contract_number'] ?? '';
-
-        // === Automatic Probation Duration ===================================
-        // Probation duration is derived from the employee's actual contract:
-        //   Join Date  →  End Date (Contract)
-        // The server-side value is authoritative. Any client-supplied
-        // probation_duration is ignored (do NOT trust the browser).
-        $contractDurationMonths = $this->deriveContractDurationMonths(
-            $employee->joinDate ?? null,
-            $employee->endDateContract ?? null
-        );
-        $probDuration = $this->durationToLabel($contractDurationMonths);
-        $probEnd      = $this->addMonthsDate($probStart, $contractDurationMonths);
-
-        // Employee.Status is intentionally NOT changed here. The Employee
-        // sheet is restricted to Permanent / Contract / Outsource. The
-        // probation process state lives in kandidat_probation (Status +
-        // Decision), and Employee.Status stays as 'Contract' for an employee
-        // who is currently in active probation.
-
-        // --- Buat probation record di sheet kandidat_probation ---
-        $probationId = '';
-        $sheetName   = config('google.sheets.candidates_probation', 'kandidat_probation');
-
-        try {
-            // Generate Probation ID format: PROB-YYYYMMDD-XXXX
-            $dateStr    = $now->format('Ymd');
-            $cacheKey   = "PROB_COUNTER_{$dateStr}";
-            $lock       = Cache::lock("lock_{$cacheKey}", 10);
-            try {
-                $lock->block(10);
-                $seq = (int) Cache::get($cacheKey, 0) + 1;
-                Cache::put($cacheKey, $seq, $now->endOfDay());
-            } finally {
-                $lock->release();
-            }
-            $probationId = 'PROB-' . $dateStr . '-' . str_pad((string) $seq, 4, '0', STR_PAD_LEFT);
-
-            if (!$contractNo) {
-                $contractNo = 'PRB/HRD/' . $now->year . '/' . $employeeId;
-            }
-
-            // Header sheet kandidat_probation
-            $headers = [
-                'Probation ID',
-                'Employee ID',
-                'Recruitment ID',
-                'Contract Number',
-                'Contract Duration',
-                'Contract Start',
-                'Contract End',
-                'Join Date',
-                'Status',
-                'Onboarding Date',
-                'Onboarding By',
-                'Eval ID',
-                'Eval Date',
-                'Decision',
-                'Extension Duration',
-                'New Contract Start',
-                'New Contract End',
-                'Evaluator Notes',
-                'Evaluator',
-                'SK Status',
-                'Notes',
-                'Created At',
-                'Updated At',
-            ];
-
-            $row = array_fill(0, count($headers), '');
-            $idx = array_flip($headers);
-
-            $row[$idx['Probation ID']]       = $probationId;
-            $row[$idx['Employee ID']]        = $employeeId;
-            $row[$idx['Recruitment ID']]     = $employee->employeeId ?? $employeeId;
-            $row[$idx['Contract Number']]    = $contractNo;
-            $row[$idx['Contract Duration']]  = $probDuration;
-            $row[$idx['Contract Start']]     = $probStart;
-            $row[$idx['Contract End']]       = $probEnd;
-            $row[$idx['Join Date']]          = $employee->joinDate ?? $probStart;
-            $row[$idx['Status']]             = 'Probation';
-            $row[$idx['Onboarding Date']]    = $nowStr;
-            $row[$idx['Onboarding By']]      = $user;
-            $row[$idx['SK Status']]          = 'Pending';
-            $row[$idx['Notes']]              = $probNotes;
-            $row[$idx['Created At']]         = $nowStr;
-            $row[$idx['Updated At']]         = $nowStr;
-
-            $this->sheets->ensureSheetHeaders($sheetName, $headers);
-            $this->sheets->appendRow($sheetName, $row);
-        } catch (\Throwable $e) {
-            return [
-                'success'     => false,
-                'message'     => 'Gagal membuat record probation: ' . $e->getMessage(),
-                'employeeId'  => $employeeId,
-                'probationId' => '',
-            ];
-        }
-
-        // --- Audit log ---
-        $this->auditRepo->log(
-            entityType: 'Employee',
-            entityId: $employeeId,
-            action: 'Ajukan Probation',
-            field: 'kandidat_probation',
-            oldValue: 'Tidak ada',
-            newValue: 'Probation (duration ' . $probDuration . ') — Diajukan oleh ' . $user . ($probNotes ? ' (' . $probNotes . ')' : ''),
-            user: $user,
-            source: 'Dashboard'
-        );
-
-        return [
-            'success'     => true,
-            'message'     => "Karyawan {$employee->fullName} berhasil didaftarkan ke Onboarding Probation.",
-            'employeeId'  => $employeeId,
-            'probationId' => $probationId,
         ];
     }
 
