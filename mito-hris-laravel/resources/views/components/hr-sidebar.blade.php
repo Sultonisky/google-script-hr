@@ -118,39 +118,9 @@
             @canany(['manage_probation', 'view_employees'])
                 <div class="nav-section-label">Employee Lifecycle</div>
                 @can('manage_probation')
-                    @php
-                        // STEP 23: lightweight probation reminder — count of
-                        // employees in ACTIVE probation via the canonical
-                        // helper (kandidat_probation Status + Decision).
-                        // Employee.Status no longer carries the probation
-                        // signal — see task refactor rules.
-                        $__probationCount = cache()->remember('hr_sidebar_probation_count', 60, function () {
-                            try {
-                                $__employees = app(\App\Repositories\Contracts\EmployeeRepositoryInterface::class)->getAll() ?? [];
-                                $__probationSvc = app(\App\Services\ProbationService::class);
-
-                                return collect($__employees)
-                                    ->filter(function ($e) use ($__probationSvc) {
-                                        try {
-                                            return $__probationSvc->isActiveProbation((string) ($e->employeeId ?? ''));
-                                        } catch (\Throwable) {
-                                            return false;
-                                        }
-                                    })
-                                    ->count();
-                            } catch (\Throwable) {
-                                return 0;
-                            }
-                        });
-                    @endphp
                     <a href="{{ route('hr.probation.index') }}"
                         class="nav-item {{ request()->routeIs('hr.probation.*') ? 'active' : '' }}">
                         <i class="bi bi-hourglass-split"></i> Probation
-                        @if ($__probationCount > 0)
-                            <span class="badge bg-warning text-dark ms-2"
-                                style="font-size:10px;border-radius:10px;padding:2px 7px"
-                                title="{{ $__probationCount }} karyawan sedang dalam proses probation">{{ $__probationCount }}</span>
-                        @endif
                     </a>
                 @endcan
                 @can('view_employees')
