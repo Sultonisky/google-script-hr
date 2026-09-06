@@ -65,7 +65,6 @@ Route::domain(config('hris.domains.hris'))->middleware('web')->group(function ()
             Route::post('/{id}/rotate', [EmployeeController::class, 'rotate'])->name('rotate')->middleware('can:manage_employees');
             Route::post('/{id}/offboard', [EmployeeController::class, 'offboard'])->name('offboard')->middleware('can:manage_employees');
             Route::post('/{id}/off-contract', [EmployeeController::class, 'offContract'])->name('off-contract')->middleware('can:manage_employees');
-            Route::post('/{id}/promote-probation', [EmployeeController::class, 'promoteToProbation'])->name('promote-probation')->middleware('can:manage_employees');
             Route::get('/{id}/json', [EmployeeController::class, 'getJson'])->name('json');
         });
         Route::get('/employees/lookup', [EmployeeController::class, 'lookup'])->middleware('can:lookup_employee')->name('employees.lookup');
@@ -100,8 +99,6 @@ Route::domain(config('hris.domains.hris'))->middleware('web')->group(function ()
             Route::post('/{id}/evaluate', [ProbationController::class, 'evaluate'])->name('evaluate');
             Route::get('/{id}/eval-history', [ProbationController::class, 'evalHistory'])->name('eval-history');
             Route::get('/{id}/preview', [ProbationController::class, 'previewPerformanceReview'])->name('preview');
-            // STEP 4/15 — Ajukan Probation entry point moved from drawer.
-            Route::get('/contract-employees', [ProbationController::class, 'contractEmployees'])->name('contract-employees');
         });
         Route::prefix('outsource')->name('outsource.')->middleware('can:view_employees')->group(function () {
             Route::get('/', [OutsourceController::class, 'index'])->name('index');
@@ -240,7 +237,6 @@ if (app()->environment('local')) {
                 Route::post('/{id}/rotate', [EmployeeController::class, 'rotate'])->name('rotate')->middleware('can:manage_employees');
                 Route::post('/{id}/offboard', [EmployeeController::class, 'offboard'])->name('offboard')->middleware('can:manage_employees');
                 Route::post('/{id}/off-contract', [EmployeeController::class, 'offContract'])->name('off-contract')->middleware('can:manage_employees');
-                Route::post('/{id}/promote-probation', [EmployeeController::class, 'promoteToProbation'])->name('promote-probation')->middleware('can:manage_employees');
                 Route::get('/{id}/json', [EmployeeController::class, 'getJson'])->name('json');
             });
             Route::get('/employees/lookup', [EmployeeController::class, 'lookup'])->middleware('can:lookup_employee')->name('employees.lookup');
@@ -276,7 +272,6 @@ if (app()->environment('local')) {
                 Route::post('/{id}/evaluate', [ProbationController::class, 'evaluate'])->name('evaluate');
                 Route::get('/{id}/eval-history', [ProbationController::class, 'evalHistory'])->name('eval-history');
                 Route::get('/{id}/preview', [ProbationController::class, 'previewPerformanceReview'])->name('preview');
-                Route::get('/contract-employees', [ProbationController::class, 'contractEmployees'])->name('contract-employees');
             });
 
             Route::prefix('outsource')->name('outsource.')->middleware('can:view_employees')->group(function () {
