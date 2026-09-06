@@ -13,6 +13,8 @@ use Illuminate\View\View;
 
 class OutsourceApplyController extends Controller
 {
+    private const SUBMISSION_COMPLETED = 'public_outsource_submission_completed';
+
     protected EmployeeRepositoryInterface $employeeRepo;
     protected AuditLogRepositoryInterface $auditRepo;
 
@@ -24,14 +26,35 @@ class OutsourceApplyController extends Controller
         $this->auditRepo = $auditRepo;
     }
 
-    public function index(): View
+    public function index(): View|RedirectResponse
     {
+        if (session(self::SUBMISSION_COMPLETED)) {
+            return redirect()->route('public.outsource.success');
+        }
+
         $positions = app(\App\Services\JobPositionService::class)->getPositionNames();
         return view('public.outsource.apply', compact('positions'));
     }
 
+    public function success(): View|RedirectResponse
+    {
+        if (!session(self::SUBMISSION_COMPLETED)) {
+            return redirect()->route('public.outsource.apply');
+        }
+
+        return view('public.career.success', [
+            'candidate' => null,
+            'id' => null,
+            'isOutsource' => true,
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
+        if (session(self::SUBMISSION_COMPLETED)) {
+            return redirect()->route('public.outsource.success');
+        }
+
         $validated = $request->validate([
             'nama_lengkap'              => ['required', 'string', 'min:3', 'max:255', 'regex:/^[\p{L}]+(?:[ ]+[\p{L}]+)*$/u'],
             'nik'                       => 'required|digits:16',
@@ -170,7 +193,8 @@ class OutsourceApplyController extends Controller
             source: 'Public'
         );
 
-        return redirect()->route('public.career.success', ['id' => $employeeId])
-            ->with('success', "Data tenaga kerja outsource berhasil didaftarkan ke sistem HRIS MITO. Nomor ID Anda: {$employeeId}");
+        session([self::SUBMISSION_COMPLETED => true]);
+
+        return redirect()->route('public.outsource.success');
     }
 }
