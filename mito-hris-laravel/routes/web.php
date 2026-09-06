@@ -183,7 +183,7 @@ Route::domain(config('hris.domains.recruitment'))->middleware('web')->group(func
     Route::post('/career/consent', [CareerController::class, 'consent'])->name('public.career.consent');
     Route::get('/apply', [CareerController::class, 'form'])->name('public.career.form');
     Route::post('/apply', [CareerController::class, 'store'])->name('public.career.store');
-    Route::get('/career/success', [CareerController::class, 'success'])->name('public.career.success');
+    Route::get('/career/submission-success', [CareerController::class, 'submissionSuccess'])->name('public.career.submission-success');
     Route::get('/check-status', [CareerController::class, 'checkStatus'])->name('public.career.check-status');
     Route::get('/self-update/{id}', [CareerController::class, 'selfUpdate'])->name('public.career.self-update');
     Route::post('/self-update/{id}', [CareerController::class, 'storeSelfUpdate'])->name('public.career.self-update.store');
@@ -193,6 +193,7 @@ Route::domain(config('hris.domains.outsource'))->middleware('web')->group(functi
     Route::get('/', [OutsourceApplyController::class, 'index'])->name('public.outsource.index');
     Route::get('/apply', [OutsourceApplyController::class, 'index'])->name('public.outsource.apply');
     Route::post('/apply', [OutsourceApplyController::class, 'store'])->name('public.outsource.store');
+    Route::get('/success', [OutsourceApplyController::class, 'success'])->name('public.outsource.success');
 });
 
 } // end !local
@@ -366,7 +367,7 @@ if (app()->environment('local')) {
         Route::post('/career/consent', [CareerController::class, 'consent'])->name('public.career.consent');
         Route::get('/career/apply', [CareerController::class, 'form'])->name('public.career.form');
         Route::post('/career/apply', [CareerController::class, 'store'])->name('public.career.store');
-        Route::get('/career/success', [CareerController::class, 'success'])->name('public.career.success');
+        Route::get('/career/submission-success', [CareerController::class, 'submissionSuccess'])->name('public.career.submission-success');
         Route::get('/career/check-status', [CareerController::class, 'checkStatus'])->name('public.career.check-status');
         Route::get('/career/self-update/{id}', [CareerController::class, 'selfUpdate'])->name('public.career.self-update');
         Route::post('/career/self-update/{id}', [CareerController::class, 'storeSelfUpdate'])->name('public.career.self-update.store');
@@ -374,5 +375,6 @@ if (app()->environment('local')) {
         Route::get('/outsource', [OutsourceApplyController::class, 'index'])->name('public.outsource.index');
         Route::get('/outsource/apply', [OutsourceApplyController::class, 'index'])->name('public.outsource.apply');
         Route::post('/outsource/apply', [OutsourceApplyController::class, 'store'])->name('public.outsource.store');
+        Route::get('/outsource/success', [OutsourceApplyController::class, 'success'])->name('public.outsource.success');
     });
 }
