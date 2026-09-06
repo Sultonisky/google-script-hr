@@ -27,20 +27,41 @@ class PortalAccessMiddleware
         $portal       = $request->attributes->get('portal', 'public');
         $portalAccess = $request->attributes->get('portal_access', 'public');
 
-        if ($portal === 'public') {
-            $host = strtolower($request->getHost());
+        $host = strtolower($request->getHost());
+        $configuredDomains = config('hris.domains', []);
 
-            foreach (['assets', 'certificates'] as $dedicatedPortal) {
-                if ($host === strtolower((string) config("hris.domains.{$dedicatedPortal}"))) {
-                    $portal = $dedicatedPortal;
-                    $portalAccess = 'private';
-                    break;
-                }
+        foreach (['hris', 'mpr', 'assets', 'certificates'] as $privatePortal) {
+            if ($host === strtolower((string) ($configuredDomains[$privatePortal] ?? ''))) {
+                $portal = $privatePortal;
+                $portalAccess = 'private';
+                break;
+            }
+        }
+
+        if ($portal === 'public' && in_array($host, ['localhost', '127.0.0.1', '[::1]', '::1'], true)) {
+            $path = strtolower(ltrim((string) $request->path(), '/'));
+
+            if (str_starts_with($path, 'hr')) {
+                $portal = 'hris';
+                $portalAccess = 'private';
+            } elseif (str_starts_with($path, 'mpr')) {
+                $portal = 'mpr';
+                $portalAccess = 'private';
             }
         }
 
         $routeName = $request->route()?->getName();
         if (in_array($routeName, [
+            'hris.domain.root',
+            'auth.portal',
+            'login',
+            'login.post',
+            'logout',
+            'mpr.auth.domain.root',
+            'mpr.auth.portal',
+            'mpr.auth.login',
+            'mpr.auth.login.post',
+            'mpr.auth.logout',
             'assets.domain.root',
             'assets.login',
             'assets.login.post',
