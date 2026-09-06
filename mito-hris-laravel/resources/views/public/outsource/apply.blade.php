@@ -873,40 +873,6 @@
         };
 
         // ============================================================
-        // SESSION GUARD (1:1 from GAS js/outsourceApp.html)
-        // ============================================================
-        var SESSION_KEY = 'msi_outsource_submitted';
-
-        function markSubmitted(nik) {
-            try {
-                sessionStorage.setItem(SESSION_KEY, nik || '1');
-            } catch (e) {}
-        }
-
-        function isAlreadySubmitted() {
-            try {
-                return !!sessionStorage.getItem(SESSION_KEY);
-            } catch (e) {
-                return false;
-            }
-        }
-
-        function showAlreadySubmittedPage() {
-            var rf = document.getElementById('registrationForm');
-            var sp = document.getElementById('successPage');
-            if (rf) rf.style.display = 'none';
-            if (sp) {
-                sp.style.display = 'block';
-                var msg = sp.querySelector('.success-message');
-                if (msg) msg.innerHTML =
-                    'Data Anda telah terdaftar pada sesi ini.<br><br>Hubungi HR apabila ada pertanyaan.';
-            }
-        }
-        if (isAlreadySubmitted()) {
-            document.addEventListener('DOMContentLoaded', showAlreadySubmittedPage);
-        }
-
-        // ============================================================
         // FORM SECTIONS CONFIG (1:1 from GAS FORM_SECTIONS outsourceApp)
         // ============================================================
         var FORM_SECTIONS = [{
@@ -1595,6 +1561,13 @@
             });
 
             updateProgress();
+        });
+
+        // Ask the server to resolve a form restored from BFCache.
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                window.location.replace('{{ route('public.outsource.success') }}');
+            }
         });
     </script>
 @endsection

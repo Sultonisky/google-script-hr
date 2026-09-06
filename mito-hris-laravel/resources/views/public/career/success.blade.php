@@ -1,12 +1,6 @@
 @php
-  // Resolve display ID — candidate flow (CandidateData $candidate) or outsource (?id=EMP-OS-...)
-  $displayId = $id ?? request('id', null);
-  if (!$displayId) {
-      $displayId = session('recruitment_id') ?? null;
-  }
-
-  // Detect outsource by ID prefix
-  $isOutsource = $displayId && str_starts_with($displayId, 'EMP-OS');
+  $displayId = null;
+  $isOutsource = $isOutsource ?? false;
 
   // Success message override
   $customMsg = session('message') ?? session('success') ?? null;
@@ -15,8 +9,7 @@
           ? "Data outsource Anda telah berhasil kami terima dan akan diproses oleh tim Human Resources MITO Group untuk keperluan administrasi HRIS.\n\nApabila ada pertanyaan, silakan menghubungi tim HR."
           : "Data Anda telah berhasil kami terima dan akan diproses oleh tim Human Resources MITO Group.\n\nApabila profil Anda sesuai dengan kebutuhan perusahaan, kami akan menghubungi Anda melalui email atau nomor telepon yang telah didaftarkan.";
   }
-  $successTitle = $isOutsource ? 'Registrasi Berhasil' : 'Pendaftaran Berhasil';
-  $recruitIdLabel = $isOutsource ? 'Employee ID Anda' : 'Recruitment ID Anda';
+  $successTitle = $isOutsource ? 'Registrasi Berhasil' : 'Lamaran Berhasil Dikirim';
 @endphp
 <!DOCTYPE html>
 <html lang="id">
@@ -153,11 +146,6 @@
       </div>
       <h2 class="success-title">{{ $successTitle }}</h2>
       <p class="success-message">{{ $customMsg }}</p>
-      @if($displayId)
-        <p id="successRecruitId">{{ $recruitIdLabel }}: {{ $displayId }}</p>
-      @else
-        <p id="successRecruitId"></p>
-      @endif
       <div class="success-actions">
         <a href="{{ route('public.career.index') }}" class="btn-success-secondary">
           <i class="bi bi-arrow-left"></i> Kembali ke Halaman Info
@@ -174,25 +162,5 @@
     </div>
   </div>
 
-  <script>
-    // Set sessionStorage so if user navigates back to the form, session guard shows this page
-    (function() {
-      var displayId = '{{ addslashes($displayId ?? "1") }}';
-      var isOutsource = {{ $isOutsource ? 'true' : 'false' }};
-      try {
-        if (isOutsource) {
-          sessionStorage.setItem('msi_outsource_submitted', displayId);
-        } else {
-          sessionStorage.setItem('msi_form_submitted', displayId);
-        }
-      } catch(e) {}
-
-      // Block browser back button to the form
-      history.pushState(null, '', window.location.href);
-      window.addEventListener('popstate', function() {
-        history.pushState(null, '', window.location.href);
-      });
-    })();
-  </script>
 </body>
 </html>
