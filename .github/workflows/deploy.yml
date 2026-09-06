@@ -66,10 +66,17 @@ jobs:
             sudo chown -R "$(id -un):$PHP_FPM_USER" storage bootstrap/cache database
             sudo chmod -R ug+rwX storage bootstrap/cache database
 
+            echo "== Applying database migrations =="
+            php artisan migrate --force
+
             echo "== Running Laravel tests =="
             echo "Tests already passed in the verify job. Production deploy skips dev-only PHPUnit dependencies."
 
             echo "== Running MITO diagnostics =="
+            # Clear framework caches before the Google Sheets sync so the
+            # freshly synchronized sheet data remains available to the first
+            # production request after deployment.
+            php artisan optimize:clear
             php artisan mito:diagnose
 
             echo "== Checking Google Sheets =="
@@ -79,7 +86,6 @@ jobs:
             php artisan mito:sync
 
             echo "== Laravel optimization =="
-            php artisan optimize:clear
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
