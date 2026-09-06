@@ -4,6 +4,11 @@
     const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
     const HEADERS = { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' };
 
+    // Domain-aware base path: MITO_ASSET_BASE on HRIS, '/assets' on the asset portal.
+    // The view injects window.MITO_ASSET_BASE per active domain; default keeps HRIS behaviour.
+    const MITO_ASSET_BASE = window.MITO_ASSET_BASE || '/hr/assets';
+
+
     const CATEGORY_META = {
         Building:   { label: 'Building',   badge: 'bg-secondary text-white', prefix: 'BLD', icon: 'bi-building' },
         Vehicle:    { label: 'Vehicle',    badge: 'bg-primary text-white',   prefix: 'VHL', icon: 'bi-truck' },
@@ -156,7 +161,7 @@
         if (!meta) return showToast('Pilih kategori aset terlebih dahulu.', 'error');
         setLoading(this, true);
         try {
-            const res = await fetch('/hr/assets/preview-next-code/' + meta.prefix, { headers: HEADERS });
+            const res = await fetch(MITO_ASSET_BASE + '/preview-next-code/' + meta.prefix, { headers: HEADERS });
             const data = await res.json();
             if (res.ok && data.success) {
                 document.getElementById('assetFormCode').value = data.code;
@@ -185,7 +190,7 @@
             if (k !== '_method' && k !== 'asset_id') body[k] = v;
         });
         if (!body.asset_code) delete body.asset_code;
-        const url = isEdit ? '/hr/assets/' + id : '/hr/assets';
+        const url = isEdit ? MITO_ASSET_BASE + '/' + id : MITO_ASSET_BASE;
         const httpMethod = isEdit ? 'PUT' : 'POST';
         setLoading(btn, true);
         try {
@@ -218,7 +223,7 @@
         btn.addEventListener('click', async function () {
             const id = this.dataset.assetId;
             try {
-                const res = await fetch('/hr/assets/' + id + '/json', { headers: HEADERS });
+                const res = await fetch(MITO_ASSET_BASE + '/' + id + '/json', { headers: HEADERS });
                 const data = await res.json();
                 if (!data.success) return showToast('Gagal memuat data.', 'error');
                 const form = document.getElementById('assetForm');
@@ -242,7 +247,7 @@
             body.innerHTML = '<div class="text-center py-4"><i class="bi bi-arrow-repeat"></i> Memuat...</div>';
             new bootstrap.Modal(document.getElementById('viewAssetModal')).show();
             try {
-                const res = await fetch('/hr/assets/' + id + '/json', { headers: HEADERS });
+                const res = await fetch(MITO_ASSET_BASE + '/' + id + '/json', { headers: HEADERS });
                 const data = await res.json();
                 if (!data.success) {
                     body.innerHTML = '<div class="alert alert-danger mb-0">Gagal memuat data.</div>';
@@ -381,7 +386,7 @@
         btn.addEventListener('click', async function () {
             const id = this.dataset.assetId;
             try {
-                const res = await fetch('/hr/assets/' + id + '/json', { headers: HEADERS });
+                const res = await fetch(MITO_ASSET_BASE + '/' + id + '/json', { headers: HEADERS });
                 const data = await res.json();
                 if (!data.success) return showToast('Gagal memuat data.', 'error');
                 const a = data.asset;
@@ -553,7 +558,7 @@
         });
         setLoading(btn, true);
         try {
-            const res = await fetch('/hr/assets/' + assetId + '/assign', { method: 'POST', headers: HEADERS, body: JSON.stringify(body) });
+            const res = await fetch(MITO_ASSET_BASE + '/' + assetId + '/assign', { method: 'POST', headers: HEADERS, body: JSON.stringify(body) });
             const data = await res.json();
             if (res.ok && data.success) {
                 showToast(data.message, 'success');
@@ -581,7 +586,7 @@
         btn.addEventListener('click', async function () {
             const id = this.dataset.assetId;
             try {
-                const res = await fetch('/hr/assets/' + id + '/json', { headers: HEADERS });
+                const res = await fetch(MITO_ASSET_BASE + '/' + id + '/json', { headers: HEADERS });
                 const data = await res.json();
                 if (!data.success) return showToast('Gagal memuat data.', 'error');
                 const a = data.asset;
@@ -609,7 +614,7 @@
         });
         setLoading(btn, true);
         try {
-            const res = await fetch('/hr/assets/' + assetId + '/return', { method: 'POST', headers: HEADERS, body: JSON.stringify(body) });
+            const res = await fetch(MITO_ASSET_BASE + '/' + assetId + '/return', { method: 'POST', headers: HEADERS, body: JSON.stringify(body) });
             const data = await res.json();
             if (res.ok && data.success) {
                 showToast(data.message, 'success');
@@ -651,7 +656,7 @@
         err.style.display = 'none';
         setLoading(btn, true);
         try {
-            const res = await fetch('/hr/assets/' + id, { method: 'DELETE', headers: HEADERS });
+            const res = await fetch(MITO_ASSET_BASE + '/' + id, { method: 'DELETE', headers: HEADERS });
             const data = await res.json().catch(function () { return { success: false, message: 'Respons tidak valid.' }; });
             if (res.ok && data.success) {
                 showToast(data.message || 'Aset berhasil didisposisi.', 'success');
@@ -689,7 +694,7 @@
             const id = this.dataset.assetId;
             this.disabled = true;
             try {
-                const res = await fetch('/hr/assets/' + id + '/generate-code', { method: 'POST', headers: HEADERS });
+                const res = await fetch(MITO_ASSET_BASE + '/' + id + '/generate-code', { method: 'POST', headers: HEADERS });
                 const data = await res.json();
                 if (res.ok && data.success) {
                     showToast(data.message, 'success');
@@ -713,7 +718,7 @@
         summary.style.display = 'none';
         result.style.display = 'none';
         try {
-            const res = await fetch('/hr/assets/missing-code-summary', { headers: HEADERS });
+            const res = await fetch(MITO_ASSET_BASE + '/missing-code-summary', { headers: HEADERS });
             const data = await res.json();
             if (data.success) {
                 const entries = Object.entries(data.summary || {});
@@ -738,7 +743,7 @@
         const result = document.getElementById('bulkGenResult');
         setLoading(btn, true);
         try {
-            const res = await fetch('/hr/assets/generate-bulk-codes', { method: 'POST', headers: HEADERS });
+            const res = await fetch(MITO_ASSET_BASE + '/generate-bulk-codes', { method: 'POST', headers: HEADERS });
             const data = await res.json();
             if (res.ok && data.success) {
                 let html = '<div class="alert alert-success">' + (data.message || 'Selesai.') + '</div>';

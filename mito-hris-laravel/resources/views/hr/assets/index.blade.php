@@ -33,7 +33,7 @@
         </div>
 
         {{-- FILTER BAR --}}
-        <form action="{{ route('hr.assets.index') }}" method="GET" id="assetFilterForm">
+        <form action="{{ $assetIndexPath ?? route('hr.assets.index') }}" method="GET" id="assetFilterForm">
             <input type="hidden" name="page" value="1">
             <div class="filter-bar employee-filter-bar">
                 <div class="table-search">
@@ -79,7 +79,7 @@
                     <option value="unassigned" {{ request('assignment') === 'unassigned' ? 'selected' : '' }}>Unassigned</option>
                 </select>
                 <div class="employee-filter-actions">
-                    <a href="{{ route('hr.assets.index') }}" class="btn-reset-filter text-decoration-none" title="Reset filter">
+                    <a href="{{ $assetIndexPath ?? route('hr.assets.index') }}" class="btn-reset-filter text-decoration-none" title="Reset filter">
                         <i class="bi bi-arrow-counterclockwise"></i> Reset
                     </a>
                     <button class="btn-refresh" type="button" title="Muat ulang" data-refresh="page">
@@ -101,5 +101,6 @@
 @endsection
 
 @section('scripts')
+<script>window.MITO_ASSET_BASE = '{{ $assetBasePath ?? '/hr/assets' }}';</script>
 @vite(['resources/js/asset.js'])
 @endsection

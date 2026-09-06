@@ -50,8 +50,13 @@ class AssetController extends Controller
             ->orderBy('location')
             ->pluck('location');
 
+        $portal = $request->attributes->get('portal');
+        $assetIndexPath = $portal === 'assets' ? route('assets.portal.index') : route('hr.assets.index');
+        $assetBasePath  = $portal === 'assets' ? '/assets' : '/hr/assets';
+
         return view('hr.assets.index', compact(
             'assets', 'stats', 'total', 'currentPage', 'perPage', 'locations',
+            'assetIndexPath', 'assetBasePath',
         ));
     }
 

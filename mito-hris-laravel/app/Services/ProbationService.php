@@ -16,6 +16,9 @@ class ProbationService
     protected AuditLogRepositoryInterface $auditRepo;
     protected GoogleSheetsService $sheets;
 
+    /** @var array<int, array<string,string>>|null Request-scoped memo of kandidat_probation rows. */
+    private ?array $probationRowsCache = null;
+
     /**
      * Header sheet kandidat_probation — backward-compat dengan GAS PROBATION_HEADERS (Config.gs).
      * LEGACY kolom skor lama (Score Performance … Average Score) sudah DIHAPUS dari definisi
@@ -117,6 +120,43 @@ class ProbationService
     private function probationSheet(): string
     {
         return config('google.sheets.candidates_probation', 'kandidat_probation');
+    }
+
+    /**
+     * Request-scoped memoization of the kandidat_probation sheet rows.
+     *
+     * Production issue: EmployeeController/ProbationController loops called
+     * getEvalHistory()/getAllProbationRecords()/latestEvalByEmployee() per
+     * employee. Each call previously did clearCache() + getRowsAsAssoc(),
+     * issuing one full-sheet Google Sheets read PER employee -> HTTP 429
+     * (Read requests per minute per user = 60) -> nginx 504.
+     *
+     * This memo loads the sheet ONCE per request; all read methods reuse it.
+     * Persistent GoogleSheetsService cache semantics are unchanged -- writes
+     * still bump the version stamp via invalidateProbationRowsCache().
+     */
+    private function getProbationRows(): array
+    {
+        if ($this->probationRowsCache !== null) {
+            return $this->probationRowsCache;
+        }
+
+        $this->probationRowsCache = $this->sheets->getRowsAsAssoc($this->probationSheet());
+
+        return $this->probationRowsCache;
+    }
+
+    /**
+     * Invalidate BOTH the request-local memo AND the persistent
+     * GoogleSheetsService cache for kandidat_probation.
+     *
+     * Call ONLY after an actual write/update/delete to the probation sheet
+     * (appendProbationEvalRow). Never call on the read path.
+     */
+    private function invalidateProbationRowsCache(): void
+    {
+        $this->probationRowsCache = null;
+        $this->sheets->clearCache($this->probationSheet());
     }
 
     // ==========================================================
@@ -418,8 +458,7 @@ class ProbationService
      */
     public function getEvalHistory(string $employeeId): array
     {
-        $this->sheets->clearCache($this->probationSheet());
-        $rows    = $this->sheets->getRowsAsAssoc($this->probationSheet());
+        $rows    = $this->getProbationRows();
         $history = [];
 
         // Normalize query ID: trim, strip leading apostrophe, extract numeric part
@@ -491,8 +530,7 @@ class ProbationService
      */
     public function getAllProbationRecords(): Collection
     {
-        $this->sheets->clearCache($this->probationSheet());
-        $rows = $this->sheets->getRowsAsAssoc($this->probationSheet());
+        $rows = $this->getProbationRows();
         // Group by Employee ID, take latest by Eval Date (or Created At if no eval)
         $grouped = [];
         foreach ($rows as $row) {
@@ -637,8 +675,7 @@ class ProbationService
 
     public function latestEvalByEmployee(): Collection
     {
-        $this->sheets->clearCache($this->probationSheet());
-        $rows   = $this->sheets->getRowsAsAssoc($this->probationSheet());
+        $rows   = $this->getProbationRows();
         $latest = [];
 
         foreach ($rows as $row) {
@@ -872,7 +909,7 @@ class ProbationService
             $row[] = $data[$h] ?? '';
         }
         $this->sheets->appendRow($sheetName, $row);
-        $this->sheets->clearCache($sheetName);
+        $this->invalidateProbationRowsCache();
     }
 
     /**

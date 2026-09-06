@@ -6,6 +6,8 @@ return [
         'mpr' => env('MPR_DOMAIN', 'mpr.hrismitogroup.web.id'),
         'recruitment' => env('RECRUITMENT_DOMAIN', 'recruitment.hrismitogroup.web.id'),
         'outsource' => env('OUTSOURCE_DOMAIN', 'outsource.hrismitogroup.web.id'),
+        'assets' => env('ASSETS_DOMAIN', 'assets.hrismitogroup.web.id'),
+        'certificates' => env('CERTIFICATES_DOMAIN', 'certificates.hrismitogroup.web.id'),
     ],
     'portal_access' => [
         'hris' => [
@@ -23,6 +25,14 @@ return [
         'recruitment' => [
             'access' => 'public',
             'auth_source' => 'none',
+        ],
+        'assets' => [
+            'access' => 'private',
+            'auth_source' => 'users',
+        ],
+        'certificates' => [
+            'access' => 'private',
+            'auth_source' => 'users',
         ],
     ],
     'mpr' => [

@@ -527,8 +527,8 @@
 
         <div class="login-card">
 
-            <div class="login-card-title">Masuk ke Sistem</div>
-            <div class="login-card-subtitle">Gunakan email/username dan password Anda</div>
+            <div class="login-card-title">{{ $loginTitle ?? 'Masuk ke Sistem' }}</div>
+            <div class="login-card-subtitle">{{ $loginSubtitle ?? 'Gunakan email/username dan password Anda' }}</div>
 
             <div class="login-error" id="loginError">
                 <i class="bi bi-exclamation-triangle-fill"></i>
@@ -552,7 +552,7 @@
                 <div class="login-success-welcome" id="loginSuccessWelcome"></div>
             </div>
 
-            <form id="loginForm" autocomplete="on" method="POST" action="{{ route('login') }}">
+            <form id="loginForm" autocomplete="on" method="POST" action="{{ $loginPostUrl ?? route('login') }}">
                 @csrf
                 <div class="login-form-group">
                     <label for="loginIdentifier">Email atau Username</label>
@@ -658,7 +658,7 @@
             }
 
             function redirectToTarget(url) {
-                var target = url || '{{ route('hr.dashboard') }}';
+                var target = url || '{{ $loginRedirectDefault ?? route('hr.dashboard') }}';
                 try {
                     window.top.location.replace(target);
                 } catch (e1) {
@@ -684,7 +684,7 @@
                     }
                     if (successState) successState.classList.add('show');
 
-                    var targetUrl = (result && result.redirect) ? result.redirect : '{{ route('hr.dashboard') }}';
+                    var targetUrl = (result && result.redirect) ? result.redirect : '{{ $loginRedirectDefault ?? route('hr.dashboard') }}';
 
                     setTimeout(function() {
                         var overlay = document.getElementById('loginTransitionOverlay');
@@ -742,7 +742,7 @@
                 var rememberMe = document.getElementById('loginRememberMe') ? document.getElementById(
                     'loginRememberMe').checked : false;
 
-                fetch('{{ route('login') }}', {
+                fetch('{{ $loginPostUrl ?? route('login') }}', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',

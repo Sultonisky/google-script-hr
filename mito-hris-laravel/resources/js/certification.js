@@ -3,6 +3,11 @@
     const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
     const HEADERS = { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' };
 
+    // Domain-aware base path: MITO_CERT_BASE on HRIS, '/certifications' on the cert portal.
+    // The view injects window.MITO_CERT_BASE per active domain; default keeps HRIS behaviour.
+    const MITO_CERT_BASE = window.MITO_CERT_BASE || '/hr/certifications';
+
+
     function showToast(msg, type) { if (window.showToast) showToast(msg, type); }
 
     function setLoading(btn, loading) {
@@ -197,7 +202,7 @@
         const input = document.getElementById('certificationFormCode');
         setLoading(this, true);
         try {
-            const res = await fetch('/hr/certifications/preview-next-code', { method: 'GET', headers: HEADERS });
+            const res = await fetch(MITO_CERT_BASE + '/preview-next-code', { method: 'GET', headers: HEADERS });
             const data = await res.json();
             if (res.ok && data.success) {
                 input.value = data.code;
@@ -217,7 +222,7 @@
         new FormData(form).forEach((v, k) => { if (k !== '_method' && k !== 'certification_id') body[k] = v; });
         if (!body.cert_code) delete body.cert_code;
         if (!body.status) delete body.status;
-        const url = isEdit ? '/hr/certifications/' + id : '/hr/certifications';
+        const url = isEdit ? MITO_CERT_BASE + '/' + id : MITO_CERT_BASE;
         setLoading(btn, true);
         clearEmpError();
         try {
@@ -297,7 +302,7 @@
             submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Memuat data...';
             new bootstrap.Modal(modalEl).show();
             try {
-                const res = await fetch('/hr/certifications/' + id + '/json', { headers: HEADERS });
+                const res = await fetch(MITO_CERT_BASE + '/' + id + '/json', { headers: HEADERS });
                 const data = await res.json();
                 if (!data.success) {
                     showToast(data.message || 'Gagal memuat data.', 'error');
@@ -324,7 +329,7 @@
             const modal = new bootstrap.Modal(document.getElementById('viewCertificationModal'));
             modal.show();
             try {
-                const res = await fetch('/hr/certifications/' + this.dataset.certificationId + '/json', { headers: HEADERS });
+                const res = await fetch(MITO_CERT_BASE + '/' + this.dataset.certificationId + '/json', { headers: HEADERS });
                 const data = await res.json();
                 if (!data.success) { body.innerHTML = '<div class="alert alert-danger mb-0">' + (data.message || 'Gagal memuat.') + '</div>'; return; }
                 const c = data.certification;
@@ -342,7 +347,7 @@
                     '<div class="col-md-6"><div class="asset-detail-item"><div class="asset-detail-label">Tanggal Kedaluwarsa</div><div class="asset-detail-value">' + escHtml(toLocalDateValue(c.expiry_date) || '-') + '</div></div></div>' +
                     (c.description ? '<div class="col-12"><div class="asset-detail-item"><div class="asset-detail-label">Deskripsi</div><div class="asset-detail-value">' + escHtml(c.description) + '</div></div></div>' : '') +
                     (c.notes ? '<div class="col-12"><div class="asset-detail-item"><div class="asset-detail-label">Catatan</div><div class="asset-detail-value">' + escHtml(c.notes) + '</div></div></div>' : '') +
-                    (c.attachment_path ? '<div class="col-12 mt-2"><a class="btn btn-sm btn-outline-secondary" target="_blank" rel="noopener" href="/hr/certifications/' + c.id + '/attachment"><i class="bi bi-file-earmark-pdf me-1"></i>Buka Dokumen (PDF)</a></div>' : '') +
+                    (c.attachment_path ? '<div class="col-12 mt-2"><a class="btn btn-sm btn-outline-secondary" target="_blank" rel="noopener" href="' + MITO_CERT_BASE + '/' + c.id + '/attachment"><i class="bi bi-file-earmark-pdf me-1"></i>Buka Dokumen (PDF)</a></div>' : '') +
                     '</div>';
             } catch (_) { body.innerHTML = '<div class="alert alert-danger mb-0">Kesalahan jaringan.</div>'; }
         });
@@ -386,7 +391,7 @@
         err.style.display = 'none';
         setLoading(btn, true);
         try {
-            const res = await fetch('/hr/certifications/' + id, { method: 'DELETE', headers: HEADERS });
+            const res = await fetch(MITO_CERT_BASE + '/' + id, { method: 'DELETE', headers: HEADERS });
             const data = await res.json().catch(function () { return { success: false, message: 'Respons tidak valid.' }; });
             if (res.ok && data.success) {
                 showToast(data.message || 'Berhasil dihapus.', 'success');
@@ -412,7 +417,7 @@
             const id = this.dataset.certificationId;
             this.disabled = true;
             try {
-                const res = await fetch('/hr/certifications/' + id + '/generate-code', { method: 'POST', headers: HEADERS });
+                const res = await fetch(MITO_CERT_BASE + '/' + id + '/generate-code', { method: 'POST', headers: HEADERS });
                 const data = await res.json();
                 if (res.ok && data.success) {
                     showToast(data.message, 'success');
