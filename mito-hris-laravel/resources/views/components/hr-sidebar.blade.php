@@ -124,20 +124,24 @@
                         // helper (kandidat_probation Status + Decision).
                         // Employee.Status no longer carries the probation
                         // signal — see task refactor rules.
-                        $__probationCount = 0;
-                        try {
-                            $__employees = app(\App\Repositories\Contracts\EmployeeRepositoryInterface::class)->getAll() ?? [];
-                            $__probationSvc = app(\App\Services\ProbationService::class);
-                            $__probationCount = collect($__employees)
-                                ->filter(function ($e) use ($__probationSvc) {
-                                    try {
-                                        return $__probationSvc->isActiveProbation((string) ($e->employeeId ?? ''));
-                                    } catch (\Throwable) {
-                                        return false;
-                                    }
-                                })
-                                ->count();
-                        } catch (\Throwable) {}
+                        $__probationCount = cache()->remember('hr_sidebar_probation_count', 60, function () {
+                            try {
+                                $__employees = app(\App\Repositories\Contracts\EmployeeRepositoryInterface::class)->getAll() ?? [];
+                                $__probationSvc = app(\App\Services\ProbationService::class);
+
+                                return collect($__employees)
+                                    ->filter(function ($e) use ($__probationSvc) {
+                                        try {
+                                            return $__probationSvc->isActiveProbation((string) ($e->employeeId ?? ''));
+                                        } catch (\Throwable) {
+                                            return false;
+                                        }
+                                    })
+                                    ->count();
+                            } catch (\Throwable) {
+                                return 0;
+                            }
+                        });
                     @endphp
                     <a href="{{ route('hr.probation.index') }}"
                         class="nav-item {{ request()->routeIs('hr.probation.*') ? 'active' : '' }}">

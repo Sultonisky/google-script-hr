@@ -4,20 +4,16 @@ namespace App\Http\Controllers\HR;
 
 use App\Http\Controllers\Controller;
 use App\Repositories\Contracts\CandidateRepositoryInterface;
-use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
     protected CandidateRepositoryInterface $candidateRepo;
-    protected EmployeeRepositoryInterface $employeeRepo;
 
     public function __construct(
-        CandidateRepositoryInterface $candidateRepo,
-        EmployeeRepositoryInterface $employeeRepo
+        CandidateRepositoryInterface $candidateRepo
     ) {
         $this->candidateRepo = $candidateRepo;
-        $this->employeeRepo = $employeeRepo;
     }
 
     public function index(): View|\Illuminate\Http\RedirectResponse
@@ -28,7 +24,6 @@ class DashboardController extends Controller
         }
 
         $allCandidates = $this->candidateRepo->getAllFromSheets();
-        $allEmployees = $this->employeeRepo->getAll();
 
         $pendingCandidates = $this->candidateRepo->getAllFromSheets(['candidates']);
         $holdCandidates = $this->candidateRepo->getAllFromSheets(['candidates_hold']);
