@@ -241,9 +241,12 @@ class GoogleSheetsService
     }
 
     /**
-     * Prevent spreadsheet formula injection without corrupting legitimate data.
-     * Google Sheets only treats values beginning with '=' as formulas. Numeric and
-     * phone-like values such as +628..., -123, and @username are preserved.
+     * Convert a value to the string representation sent to Google Sheets.
+     *
+     * All write methods in this service use the Sheets API RAW input mode. RAW
+     * stores the supplied string verbatim and does not evaluate formula-like
+     * values, so adding an apostrophe here would corrupt the stored business
+     * value rather than provide additional protection.
      */
     private function sanitizeCellValue(mixed $value): string
     {
@@ -263,10 +266,6 @@ class GoogleSheetsService
 
         if ($string === '') {
             return '';
-        }
-
-        if (str_starts_with($string, '=')) {
-            return "'{$string}";
         }
 
         return $string;
@@ -308,7 +307,7 @@ class GoogleSheetsService
                 'values' => [$this->sanitizeRow($rowValues)]
             ]);
 
-            // RAW: preserve leading apostrophes and prevent scientific notation for long numbers
+            // RAW: preserve exact strings, including leading zeroes and plus signs.
             $params = ['valueInputOption' => 'RAW'];
             $service->spreadsheets_values->append($this->spreadsheetId, "{$sheetName}!A:A", $body, $params);
 
@@ -337,7 +336,7 @@ class GoogleSheetsService
                 }, $rows)
             ]);
 
-            // RAW: preserve leading apostrophes and prevent scientific notation for long numbers
+            // RAW: preserve exact strings, including leading zeroes and plus signs.
             $params = ['valueInputOption' => 'RAW'];
             $service->spreadsheets_values->append($this->spreadsheetId, "{$sheetName}!A:A", $body, $params);
 
@@ -361,7 +360,7 @@ class GoogleSheetsService
                 'values' => [$this->sanitizeRow($rowValues)]
             ]);
 
-            // RAW: preserve leading apostrophes and prevent scientific notation for long numbers
+            // RAW: preserve exact strings, including leading zeroes and plus signs.
             $params = ['valueInputOption' => 'RAW'];
             $service->spreadsheets_values->update($this->spreadsheetId, $range, $body, $params);
 
@@ -385,7 +384,7 @@ class GoogleSheetsService
                 'values' => $this->sanitizeValues($values)
             ]);
 
-            // RAW: preserve leading apostrophes and prevent scientific notation for long numbers
+            // RAW: preserve exact strings, including leading zeroes and plus signs.
             $params = ['valueInputOption' => 'RAW'];
             $service->spreadsheets_values->update($this->spreadsheetId, $fullRange, $body, $params);
 
