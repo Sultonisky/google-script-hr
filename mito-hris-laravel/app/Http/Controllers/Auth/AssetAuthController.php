@@ -15,10 +15,10 @@ use Illuminate\View\View;
 /**
  * Dedicated Asset Portal authentication.
  *
- * Reuses the existing session-based Users authentication (AuthService) and the
- * shared `auth.login` view. Authorization is portal-scoped: only users holding
- * the `view_asset` gate may obtain an hr_user session on the Asset domain, and
- * only Asset routes are reachable there. No second user table, guard, or
+ * Reuses the existing session-based Users authentication (AuthService). The
+ * login view and session context are portal-specific. Authorization is portal-scoped: only users holding
+ * the `view_asset` gate may obtain an asset_auth session on the Asset domain,
+ * and only Asset routes are reachable there. No second user table, guard, or
  * permission system is introduced — RBAC/Gates remain the authority.
  */
 class AssetAuthController extends Controller
@@ -35,16 +35,11 @@ class AssetAuthController extends Controller
 
     public function showLoginForm(): View|RedirectResponse
     {
-        if (session()->has('hr_user')) {
+        if (session()->has('asset_auth')) {
             return redirect()->route('assets.portal.index');
         }
 
-        return view('auth.login', [
-            'loginPostUrl'         => route('assets.login.post'),
-            'loginRedirectDefault' => route('assets.portal.index'),
-            'loginTitle'           => 'Portal Aset',
-            'loginSubtitle'        => 'Masuk untuk mengelola aset perusahaan',
-        ]);
+        return view('assets.auth.login');
     }
 
     public function login(LoginRequest $request): RedirectResponse|JsonResponse
@@ -61,8 +56,8 @@ class AssetAuthController extends Controller
 
         // Portal-scoped gate: the User sheet account must hold view_asset to use
         // the Asset portal. Without it, no session is created on this domain.
-        if (!Gate::forUser($result['user'])->allows('view_asset')) {
-            return $this->loginFailure($request, 'Akun Anda tidak memiliki akses ke Portal Aset.');
+        if (!Gate::forUser($result['user'])->allows('access_assets_portal')) {
+            return $this->authorizationDenied($request);
         }
 
         return $this->loginSuccess($request, $result['user'], $data['rememberMe'] ?? false);
@@ -70,10 +65,9 @@ class AssetAuthController extends Controller
 
     public function logout(Request $request): RedirectResponse
     {
-        $user = session('hr_user', []);
+        $user = session('asset_auth', []);
         $this->auditRepo->log('Authentication', $user['email'] ?? 'UNKNOWN', 'logged_out', null, null, null, $user['email'] ?? 'UNKNOWN', 'Authentication');
-        session()->forget('hr_user');
-        $request->session()->invalidate();
+        $request->session()->forget(['asset_auth', 'assets_remember']);
         $request->session()->regenerateToken();
 
         return redirect()->route('assets.login')->with('info', 'Anda telah berhasil keluar dari Portal Aset.');
@@ -83,16 +77,13 @@ class AssetAuthController extends Controller
     {
         $request->session()->regenerate();
 
-        // Forget any stale MPR session so portals remain isolated.
-        $request->session()->forget(config('mpr.session_key', 'mpr_requestor_auth'));
-        $request->session()->forget('hris_remember');
-
         $user['portal'] = 'assets';
-        $request->session()->put('hr_user', $user);
+        $user['auth_domain'] = 'assets';
+        $request->session()->put('asset_auth', $user);
         $this->auditRepo->log('Authentication', $user['email'] ?? $user['username'] ?? 'UNKNOWN', 'logged_in', null, null, null, $user['email'] ?? 'UNKNOWN', 'Authentication');
 
         if ($remember) {
-            $request->session()->put('hris_remember', true);
+            $request->session()->put('assets_remember', true);
         }
 
         $redirect = route('assets.portal.index');
@@ -110,6 +101,8 @@ class AssetAuthController extends Controller
 
     private function loginFailure(Request $request, string $errorMessage): RedirectResponse|JsonResponse
     {
+        $errorMessage = 'Email/username atau password salah.';
+
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => false,
@@ -118,5 +111,14 @@ class AssetAuthController extends Controller
         }
 
         return back()->withErrors(['identifier' => $errorMessage]);
+    }
+
+    private function authorizationDenied(Request $request): RedirectResponse|JsonResponse
+    {
+        if ($request->expectsJson()) {
+            return response()->json(['success' => false, 'error' => 'Anda tidak memiliki akses ke Portal Aset.'], 403);
+        }
+
+        abort(403, 'Anda tidak memiliki akses ke Portal Aset.');
     }
 }

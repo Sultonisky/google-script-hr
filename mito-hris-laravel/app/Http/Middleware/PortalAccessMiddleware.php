@@ -27,6 +27,32 @@ class PortalAccessMiddleware
         $portal       = $request->attributes->get('portal', 'public');
         $portalAccess = $request->attributes->get('portal_access', 'public');
 
+        if ($portal === 'public') {
+            $host = strtolower($request->getHost());
+
+            foreach (['assets', 'certificates'] as $dedicatedPortal) {
+                if ($host === strtolower((string) config("hris.domains.{$dedicatedPortal}"))) {
+                    $portal = $dedicatedPortal;
+                    $portalAccess = 'private';
+                    break;
+                }
+            }
+        }
+
+        $routeName = $request->route()?->getName();
+        if (in_array($routeName, [
+            'assets.domain.root',
+            'assets.login',
+            'assets.login.post',
+            'assets.logout',
+            'certificates.domain.root',
+            'certificates.login',
+            'certificates.login.post',
+            'certificates.logout',
+        ], true)) {
+            return $next($request);
+        }
+
         if ($portalAccess !== 'private') {
             return $next($request);
         }
@@ -104,12 +130,12 @@ class PortalAccessMiddleware
             return $next($request);
         }
 
-        // ── Asset portal: ONLY hr_user (auth_domain = 'users') WITH view_asset ──
+        // ── Asset / Certificate portal: dedicated portal session only ──
         if ($portal === 'assets' || $portal === 'certificates') {
-            $requiredGate = $portal === 'assets' ? 'view_asset' : 'view_certification';
+            $requiredGate = $portal === 'assets' ? 'access_assets_portal' : 'access_certificates_portal';
             $loginRoute   = $portal === 'assets' ? 'assets.login' : 'certificates.login';
-
-            $user = session('hr_user', []);
+            $sessionKey   = $portal === 'assets' ? 'asset_auth' : 'certificate_auth';
+            $user         = session($sessionKey, []);
 
             if (empty($user)) {
                 if ($request->expectsJson()) {
@@ -123,10 +149,10 @@ class PortalAccessMiddleware
                     ->with('error', 'Silakan login terlebih dahulu untuk mengakses portal ini.');
             }
 
-            // Verify the session actually belongs to the HRIS domain.
-            $authDomain = $user['auth_domain'] ?? 'users';
-            if ($authDomain !== 'users') {
-                session()->forget('hr_user');
+            $authDomain = $user['auth_domain'] ?? '';
+            $expectedDomain = $portal === 'assets' ? 'assets' : 'certificates';
+            if ($authDomain !== $expectedDomain) {
+                session()->forget($sessionKey);
 
                 if ($request->expectsJson()) {
                     return response()->json([
@@ -139,9 +165,6 @@ class PortalAccessMiddleware
                     ->with('error', 'Autentikasi portal tidak valid. Silakan login ulang.');
             }
 
-            // Portal-scoped authorization: HRIS identity alone is not enough — the
-            // user must hold the module permission for THIS portal. Without it the
-            // request is denied (never redirected to the HRIS dashboard).
             if (!Gate::allows($requiredGate)) {
                 if ($request->expectsJson()) {
                     return response()->json([

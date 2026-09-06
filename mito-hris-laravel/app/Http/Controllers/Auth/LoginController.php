@@ -148,8 +148,8 @@ class LoginController extends Controller
             $request->session()->put('hris_remember', true);
         }
 
-        // HRIS login redirects by role: GA_IT → assets, LEGAL → certifications,
-        // everyone else keeps the existing dashboard landing.
+        // HRIS authentication always remains inside the HRIS portal. Dedicated
+        // Asset and Certificate portals have their own login boundaries.
         $redirect = $this->postLoginRedirect($user);
 
         if ($request->expectsJson()) {
@@ -167,19 +167,13 @@ class LoginController extends Controller
     /**
      * Decide the post-login landing route from the authenticated user's role.
      *
-     * GA_IT  → Asset Management
-     * LEGAL → Certification Management
-     * Everyone else (Admin, Super Admin, User) keeps the existing dashboard.
+    * All HRIS users remain in the HRIS dashboard after HRIS authentication.
      */
     private function postLoginRedirect(array $user): string
     {
         $role = Rbac::normalizeRole($user['role'] ?? null);
 
-        return match ($role) {
-            'GA_IT' => route('hr.assets.index'),
-            'LEGAL' => route('hr.certifications.index'),
-            default => route('hr.dashboard'),
-        };
+        return route('hr.dashboard');
     }
 
     private function loginFailure(
