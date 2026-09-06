@@ -97,40 +97,61 @@ class GoogleSheetsService
             return [];
         }
 
-        try {
-            $service = $this->factory->getSheetsService();
-            $ranges = array_map(
-                static fn(string $sheetName): string => "{$sheetName}!A1:ZZ1",
-                array_values($sheetNames)
-            );
-            $spreadsheet = $service->spreadsheets->get($this->spreadsheetId, [
-                'includeGridData' => true,
-                'ranges' => $ranges,
-            ]);
+        $ranges = array_map(
+            static fn(string $sheetName): string => "{$sheetName}!A1:ZZ1",
+            array_values($sheetNames)
+        );
+        $attempts = max(1, (int) config('google.schema_retry_attempts', 3));
+        $backoff = max(0, (int) config('google.schema_retry_backoff_seconds', 5));
 
-            $headers = [];
-            foreach ($spreadsheet->getSheets() as $sheet) {
-                $title = $sheet->getProperties()->getTitle();
-                if (!in_array($title, $sheetNames, true)) {
-                    continue;
+        for ($attempt = 1; $attempt <= $attempts; $attempt++) {
+            try {
+                $service = $this->factory->getSheetsService();
+                $spreadsheet = $service->spreadsheets->get($this->spreadsheetId, [
+                    'includeGridData' => true,
+                    'ranges' => $ranges,
+                ]);
+
+                $headers = [];
+                foreach ($spreadsheet->getSheets() as $sheet) {
+                    $title = $sheet->getProperties()->getTitle();
+                    if (!in_array($title, $sheetNames, true)) {
+                        continue;
+                    }
+
+                    $row = [];
+                    $grid = $sheet->getData() ?? [];
+                    $gridData = $grid[0] ?? null;
+                    $rows = $gridData?->getRowData() ?? [];
+                    $rowData = $rows[0] ?? null;
+                    foreach ($rowData?->getValues() ?? [] as $cell) {
+                        $row[] = $cell->getFormattedValue() ?? '';
+                    }
+                    $headers[$title] = [$row];
                 }
 
-                $row = [];
-                $grid = $sheet->getData() ?? [];
-                $gridData = $grid[0] ?? null;
-                $rows = $gridData?->getRowData() ?? [];
-                $rowData = $rows[0] ?? null;
-                foreach ($rowData?->getValues() ?? [] as $cell) {
-                    $row[] = $cell->getFormattedValue() ?? '';
+                return $headers;
+            } catch (\Throwable $e) {
+                $retryable = in_array((int) $e->getCode(), [408, 429, 500, 502, 503, 504], true);
+                if (!$retryable || $attempt === $attempts) {
+                    Log::error('GoogleSheetsService::getSheetHeaders error: ' . $e->getMessage());
+                    throw $e;
                 }
-                $headers[$title] = [$row];
+
+                $delay = $backoff * (2 ** ($attempt - 1));
+                Log::warning('GoogleSheetsService::getSheetHeaders transient failure; retrying.', [
+                    'attempt' => $attempt,
+                    'next_attempt' => $attempt + 1,
+                    'delay_seconds' => $delay,
+                    'code' => $e->getCode(),
+                ]);
+                if ($delay > 0) {
+                    sleep($delay);
+                }
             }
-
-            return $headers;
-        } catch (\Throwable $e) {
-            Log::error('GoogleSheetsService::getSheetHeaders error: ' . $e->getMessage());
-            throw $e;
         }
+
+        return [];
     }
 
     /**

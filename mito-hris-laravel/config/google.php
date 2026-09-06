@@ -60,4 +60,11 @@ return [
     | TTL in seconds to cache spreadsheet rows and avoid hitting API rate limits.
     */
     'cache_ttl' => env('GOOGLE_SHEETS_CACHE_TTL', 60),
+
+    /*
+    | Retry transient Sheets API failures such as quota rate limiting.
+    | The setup command must still fail for permanent/authentication errors.
+    */
+    'schema_retry_attempts' => (int) env('GOOGLE_SHEETS_SCHEMA_RETRY_ATTEMPTS', 4),
+    'schema_retry_backoff_seconds' => (int) env('GOOGLE_SHEETS_SCHEMA_RETRY_BACKOFF_SECONDS', 15),
 ];
