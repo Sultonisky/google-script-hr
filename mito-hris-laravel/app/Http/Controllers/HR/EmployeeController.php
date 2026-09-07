@@ -42,8 +42,8 @@ class EmployeeController extends Controller
 
         // Stats — Employee.Status is restricted to Permanent / Contract /
         // Outsource. The "probation" stat counts employees currently in
-        // ACTIVE probation via the canonical helper (kandidat_probation
-        // Status + Decision), NOT via Employee.Status.
+        // ACTIVE probation via the canonical helper (Employee.Status plus
+        // kandidat_probation evaluation history).
         $probationActive = $all->filter(
             fn($e) => $this->probationService->isActiveProbation((string) ($e->employeeId ?? ''))
         )->count();
@@ -73,9 +73,8 @@ class EmployeeController extends Controller
             $st = strtolower(trim($statusFilter));
             // Normalize: 'permanent' matches both 'permanent' and 'pkwtt'
             // 'contract' matches 'contract' and 'pkwt'.
-            // 'probation' is now driven by the canonical active-probation
-            // helper (kandidat_probation Status + Decision), NOT by
-            // Employee.Status.
+            // 'probation' is driven by the canonical active-probation helper,
+            // whose primary source is Employee.Status = Contract.
             $filtered = $filtered->filter(function ($e) use ($st) {
                 $es = strtolower(trim($e->statusEmployee ?? ''));
                 return match ($st) {
@@ -471,8 +470,8 @@ class EmployeeController extends Controller
         // STEP 16/22: when caller is looking for eligible rotation/off-contract
         // candidates via `?status=contract` or `?status=active`, drop
         // ACTIVE-PROBATION employees from the response. Active probation is
-        // determined canonically by ProbationService (kandidat_probation
-        // Status + Decision of the latest row), NOT by Employee.Status.
+        // determined canonically by ProbationService from Employee.Status and
+        // the latest evaluation history, not history existence alone.
         // Direct API calls still get a backend reject — see
         // EmployeeService::processRotation / processOffContract.
         $statusLowerFilter = strtolower($status);
@@ -733,7 +732,7 @@ class EmployeeController extends Controller
         // fields (Start Date / End Date / Contract Duration / Contract
         // Number) are immutable until probation evaluation is finished.
         // Active probation is determined canonically by ProbationService
-        // (kandidat_probation Status + Decision), NOT by Employee.Status.
+        // Employee.Status plus the latest kandidat_probation evaluation.
         $isOnActiveProbation = $this->probationService->isActiveProbation($id);
         $contractRequestKeys = [
             'endDateContract',
@@ -872,8 +871,8 @@ class EmployeeController extends Controller
         return response()->json([
             'success' => true,
             'employee' => $employee,
-            // Canonical active-probation flag (kandidat_probation Status +
-            // Decision). Employee.Status no longer carries this signal.
+            // Canonical active-probation flag from Employee.Status plus
+            // kandidat_probation evaluation history.
             'isActiveProbation' => $this->probationService->isActiveProbation($id),
             'auditLogs' => $auditLogs,
         ]);

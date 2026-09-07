@@ -33,79 +33,38 @@ class ProbationController extends Controller
 
     public function index(Request $request): View
     {
-        // Source of truth: kandidat_probation sheet — all historical records
-        $probationRecords = $this->probationService->getAllProbationRecords();
+        $perPage = max(1, (int) $request->query('per_page', 10));
+        $currentPage = max(1, (int) $request->query('page', 1));
+
+        // Employee status is the source of truth for the candidate population.
+        // kandidat_probation contributes evaluation history only.
         $employeeRows = $this->employeeRepo->getAll();
-        $knownProbationIds = $probationRecords
-            ->pluck('Employee ID')
-            ->filter(fn($value) => !empty($value))
-            ->map(fn($value) => ltrim(trim((string) $value), "'"))
-            ->values()
-            ->all();
-
-        $contractWithoutHistory = $employeeRows
-            ->filter(function ($employee) use ($knownProbationIds) {
-                $status = strtolower(trim((string) ($employee->statusEmployee ?? '')));
+        $latestEvals = $this->probationService->latestEvalByEmployee();
+        $allProbations = $employeeRows
+            ->filter(fn($employee) => in_array(
+                strtolower(trim((string) ($employee->statusEmployee ?? ''))),
+                ['contract', 'pkwt'],
+                true
+            ))
+            ->map(function ($employee) use ($latestEvals) {
+                $record = (object) get_object_vars($employee);
                 $employeeId = ltrim(trim((string) ($employee->employeeId ?? '')), "'");
-                return in_array($status, ['contract', 'pkwt'], true)
-                    && !in_array($employeeId, $knownProbationIds, true);
-            })
-            ->map(function ($employee) {
-                return [
-                    'Employee ID' => $employee->employeeId ?? '',
-                    'fullName' => $employee->fullName ?? '',
-                    'employeeId' => $employee->employeeId ?? '',
-                    'department' => $employee->department ?? '',
-                    'jobPosition' => $employee->jobPosition ?? '',
-                    'jobPositionLocation' => $employee->jobPositionLocation ?? '',
-                    'joinDate' => $employee->joinDate ?? '',
-                    'endDateContract' => $employee->endDateContract ?? '',
-                    ...get_object_vars($employee),
-                ];
-            })
-            ->values();
+                $eval = $latestEvals->get($employeeId);
 
-        // Enrich with employee details from Employee sheet
-        $allProbations = $probationRecords->merge($contractWithoutHistory)->map(function ($record) {
-            $emp = $this->employeeRepo->findById($record['Employee ID'] ?? $record['employeeId'] ?? '');
-            if ($emp) {
-                foreach (get_object_vars($emp) as $key => $value) {
-                    $record[$key] = $value;
+                if ($eval) {
+                    $record->lastEvalId = $eval['evalId'] ?? null;
+                    $record->lastOverallTotal = $eval['overallTotal'] ?? null;
+                    $record->lastCategory = $eval['category'] ?? null;
+                    $record->lastDecision = $eval['decision'] ?? null;
+                    $record->lastEvalDate = $eval['evalDate'] ?? null;
+                    $record->lastEvaluator = $eval['evaluator'] ?? null;
                 }
-            } else {
-                $record['fullName'] = $record['fullName'] ?? ($record['Employee ID'] ?? '-');
-                $record['employeeId'] = $record['Employee ID'] ?? ($record['employeeId'] ?? '');
-                $record['department'] = $record['Department'] ?? ($record['department'] ?? '');
-                $record['jobPosition'] = $record['Job Position'] ?? ($record['jobPosition'] ?? '');
-            }
-            $record['employeeId'] = $record['Employee ID'] ?? ($record['employeeId'] ?? '');
-            if (empty($record['joinDate']) && !empty($record['Join Date'])) {
-                $record['joinDate'] = $record['Join Date'];
-            }
-            if (empty($record['endDateContract']) && !empty($record['Contract End'])) {
-                $record['endDateContract'] = $record['Contract End'];
-            }
-            return $record;
-        })->filter(function ($record) {
-            return !empty($record['employeeId']);
-        })->values()->map(function ($record) {
-            return (object) $record;
-        });
 
-        $latestEvals   = $this->probationService->latestEvalByEmployee();
-        $allProbations = $allProbations->map(function ($emp) use ($latestEvals) {
-            if ($latestEvals->has($emp->employeeId)) {
-                $eval = $latestEvals->get($emp->employeeId);
-                $emp->lastEvalId       = $eval['evalId']       ?? null;
-                $emp->lastOverallTotal = $eval['overallTotal'] ?? null;
-                $emp->lastCategory     = $eval['category']     ?? null;
-                $emp->lastDecision     = $eval['decision']     ?? null;
-                $emp->lastEvalDate     = $eval['evalDate']     ?? null;
-                $emp->lastEvaluator    = $eval['evaluator']    ?? null;
-            }
-            $emp->can_evaluate = $this->probationService->canEvaluate($emp->employeeId ?? '');
-            return $emp;
-        });
+                $record->can_evaluate = $this->probationService->canEvaluate($employeeId);
+                return $record;
+            })
+            ->filter(fn($record) => !empty($record->employeeId))
+            ->values();
 
         $probations = $allProbations;
         if ($request->filled('search')) {
@@ -147,6 +106,10 @@ class ProbationController extends Controller
             default     => $probations->sortByDesc('joinDate')->values(),
         };
 
+        $total = $probations->count();
+        $offset = ($currentPage - 1) * $perPage;
+        $probations = $probations->slice($offset, $perPage)->values();
+
         // Stats based on latest evaluation status
         $evaluated = $allProbations->filter(fn($e) => !empty($e->lastEvalDate))->count();
 
@@ -168,7 +131,16 @@ class ProbationController extends Controller
             'extended'   => $extended,
         ];
 
-        return view('hr.probation.index', compact('probations', 'allProbations', 'stats', 'statusFilter', 'scoreFilter'));
+        return view('hr.probation.index', compact(
+            'probations',
+            'allProbations',
+            'stats',
+            'statusFilter',
+            'scoreFilter',
+            'total',
+            'currentPage',
+            'perPage'
+        ));
     }
 
     // ==========================================================
