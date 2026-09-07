@@ -203,8 +203,14 @@ class ProbationService
         if (!$decisionType) {
             throw new RuntimeException('Keputusan evaluasi tidak valid: "' . $decision . '". Pilih salah satu keputusan yang tersedia.');
         }
-        if ($latest && $decisionType->isExtend()) {
-            throw new RuntimeException('Keputusan Extend tidak tersedia pada evaluasi ulang setelah perpanjangan. Pilih Lulus atau Tidak Lulus.');
+        // Only PASS and FAIL are terminal — those block any further evaluation.
+        // EXTEND is a continuation; a second (or subsequent) EXTEND is valid
+        // when the employee's current active contract has valid dates.
+        if ($latest) {
+            $latestDecisionType = ProbationDecisionType::fromDecisionString((string) ($latest['decision'] ?? ''));
+            if ($latestDecisionType && ($latestDecisionType->isPass() || $latestDecisionType->isFail())) {
+                throw new RuntimeException('Kandidat sudah menyelesaikan evaluasi probation dan tidak dapat dievaluasi kembali.');
+            }
         }
         $isLulus = $decisionType->isPass();
         $isPutusKontrak = $decisionType->isFail();
@@ -289,8 +295,15 @@ class ProbationService
                 ),
                 'Updated At'            => $nowStr,
             ];
+            // Update 'Join Date' (the canonical contract-start column in the
+            // Employee sheet) so that the NEXT evaluation's
+            // resolveExtensionDuration(joinDate, endDateContract) measures the
+            // duration of THIS new contract period, not the cumulative span
+            // from the original join date.
+            // 'Start Date (Contract)' does not exist in the Employee sheet schema
+            // and would be silently ignored by EmployeeSheetsRepository::update().
             if (!empty($extStart)) {
-                $updates['Start Date (Contract)'] = $extStart;
+                $updates['Join Date'] = $extStart;
             }
             if (!empty($extDuration)) {
                 $updates['Contract Duration'] = $extDuration;
