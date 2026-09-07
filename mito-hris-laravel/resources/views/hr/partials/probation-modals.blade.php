@@ -1565,7 +1565,18 @@
             }
 
             document.getElementById('evalEmpPreview').style.display = 'block';
+            // Reset form state FIRST, then re-apply employee-specific values.
+            // Previously resetEvalFormState() was called AFTER setting the duration
+            // display, which wiped evalExtDuration and showed "Belum tersedia".
             resetEvalFormState();
+
+            // Re-apply contract duration after reset so Section D shows correctly.
+            if (durationHidden) durationHidden.value = contractDuration;
+            if (durationDisplay) {
+                durationDisplay.textContent = contractDuration || 'Tidak tersedia';
+                durationDisplay.style.color = contractDuration ? '#92400e' : '#991b1b';
+            }
+
             loadPreviousEvaluation(emp.employeeId || '');
         };
 
