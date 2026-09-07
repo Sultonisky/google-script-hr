@@ -185,7 +185,7 @@ class PortalAccessMiddleware
                     ->with('error', 'Autentikasi portal tidak valid. Silakan login ulang.');
             }
 
-            if (!Gate::allows($requiredGate)) {
+            if (!Gate::forUser($user)->allows($requiredGate)) {
                 if ($request->expectsJson()) {
                     return response()->json([
                         'success' => false,
