@@ -22,10 +22,10 @@ enum CertStatus: string
     public function badgeClass(): string
     {
         return match ($this) {
-            self::ACTIVE   => 'bg-success text-white',
-            self::EXPIRED  => 'bg-danger text-white',
-            self::REVOKED  => 'bg-dark text-white',
-            self::SUSPENDED => 'bg-warning text-dark',
+            self::ACTIVE    => 'accepted',
+            self::EXPIRED   => 'pending',
+            self::REVOKED   => 'blacklist',
+            self::SUSPENDED => 'hold',
         };
     }
 }

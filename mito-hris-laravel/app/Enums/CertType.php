@@ -35,11 +35,11 @@ enum CertType: string
     public function badgeClass(): string
     {
         return match ($this) {
-            self::SNI => 'bg-primary text-white',
-            self::ISO => 'bg-success text-white',
-            self::K3  => 'bg-warning text-dark',
-            self::FOOD_SAFETY => 'bg-info text-white',
-            self::PRODUCT_SAFETY => 'bg-secondary text-white',
+            self::SNI => 'cert-sni',
+            self::ISO => 'cert-iso',
+            self::K3  => 'cert-k3',
+            self::FOOD_SAFETY => 'cert-food-safety',
+            self::PRODUCT_SAFETY => 'cert-product-safety',
         };
     }
 

@@ -6,6 +6,7 @@
                 <th>Kode</th>
                 <th>Nama Sertifikasi</th>
                 <th>Klasifikasi</th>
+                <th>Brand</th>
                 <th>Penerbit</th>
                 <th>Terbit</th>
                 <th>Kedaluwarsa</th>
@@ -17,7 +18,7 @@
             @forelse($certifications as $cert)
                 <tr data-certification-id="{{ $cert->id }}" id="certification-row-{{ $cert->id }}">
                     <td class="id-mono">
-                        @if(!empty($cert->cert_code))
+                        @if (!empty($cert->cert_code))
                             <span class="fw-semibold">{{ $cert->cert_code }}</span>
                         @else
                             <span class="text-muted fst-italic">—</span>
@@ -25,21 +26,32 @@
                     </td>
                     <td>
                         <div class="cand-name fw-bold text-navy">{{ $cert->name }}</div>
-                        @if($cert->product_scope || $cert->brand)
-                            <div class="cand-sub">{{ $cert->product_scope ?: '-' }}{{ $cert->brand ? ' · ' . $cert->brand : '' }}</div>
+                        @if ($cert->product_scope || $cert->brand)
+                            <div class="cand-sub">
+                                {{ $cert->product_scope ?: '-' }}{{ $cert->brand ? ' · ' . $cert->brand : '' }}</div>
                         @endif
-                        @if($cert->description)
+                        @if ($cert->description)
                             <div class="cand-sub">{{ Str::limit($cert->description, 40) }}</div>
                         @endif
                     </td>
                     <td>
-                        <span class="badge-status {{ $cert->cert_type->badgeClass() }}">{{ $cert->cert_type->label() }}</span>
+                        <span
+                            class="badge-status {{ $cert->cert_type->badgeClass() }}">{{ $cert->cert_type->label() }}</span>
+                    </td>
+                    <td>
+                        @if ($cert->brand)
+                            <span class="fw-semibold">{{ $cert->brand }}</span>
+                        @else
+                            <span class="text-muted">-</span>
+                        @endif
                     </td>
                     <td>{{ $cert->issuing_organization }}</td>
-                    <td>{{ $cert->issue_date ? $cert->issue_date->format('d M Y') : '-' }}</td>
-                    <td>{{ $cert->expiry_date ? $cert->expiry_date->format('d M Y') : '-' }}</td>
+                    <td>{{ $cert->issue_date ? \Carbon\Carbon::parse($cert->issue_date)->format('d M Y') : '-' }}</td>
+                    <td>{{ $cert->expiry_date ? \Carbon\Carbon::parse($cert->expiry_date)->format('d M Y') : '-' }}
+                    </td>
                     <td>
-                        <span class="badge-status {{ $cert->status->badgeClass() }}">{{ $cert->status->label() }}</span>
+                        <span
+                            class="badge-status {{ $cert->status->badgeClass() }}">{{ $cert->status->label() }}</span>
                     </td>
                     <td>
                         <div class="d-flex gap-1 flex-nowrap">
@@ -52,7 +64,7 @@
                                     data-certification-id="{{ $cert->id }}" title="Edit">
                                     <i class="bi bi-pencil"></i>
                                 </button>
-                                @if(empty(trim($cert->cert_code ?? '')))
+                                @if (empty(trim($cert->cert_code ?? '')))
                                     <button class="btn btn-sm btn-outline-info certification-gencode-btn"
                                         data-certification-id="{{ $cert->id }}" title="Generate Code">
                                         <i class="bi bi-magic"></i>
@@ -61,7 +73,7 @@
                                 <button class="btn btn-sm btn-outline-danger certification-delete-btn"
                                     data-certification-id="{{ $cert->id }}" data-name="{{ $cert->name }}"
                                     data-cert-code="{{ $cert->cert_code ?? '—' }}"
-                                    data-employee="{{ ($cert->employee_name ?? '') ? $cert->employee_name . ' (' . ($cert->employee_id ?? '') . ')' : '—' }}"
+                                    data-employee="{{ $cert->employee_name ?? '' ? $cert->employee_name . ' (' . ($cert->employee_id ?? '') . ')' : '—' }}"
                                     title="Delete">
                                     <i class="bi bi-trash"></i>
                                 </button>
@@ -71,7 +83,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="8">
+                    <td colspan="9">
                         <div class="table-empty">
                             <i class="bi bi-inbox"></i>
                             <p>Belum ada data sertifikasi.</p>
@@ -93,13 +105,12 @@
         @endif
     </span>
     @if ($total > $perPage)
-        <x-pagination :currentPage="$currentPage" :total="$total" :perPage="$perPage" :route="'certificates.portal.index'"
-            :queryParams="[
-                'search' => request('search'),
-                'type' => request('type'),
-                'status' => request('status'),
-                'employee' => request('employee'),
-                'per_page' => $perPage,
-            ]" />
+        <x-pagination :currentPage="$currentPage" :total="$total" :perPage="$perPage" :route="'certificates.portal.index'" :queryParams="[
+            'search' => request('search'),
+            'type' => request('type'),
+            'status' => request('status'),
+            'employee' => request('employee'),
+            'per_page' => $perPage,
+        ]" />
     @endif
 </div>

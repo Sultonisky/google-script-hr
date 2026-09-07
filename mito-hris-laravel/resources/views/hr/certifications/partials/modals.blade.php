@@ -14,6 +14,18 @@
                     <div class="cert-form-section">
                         <div class="asset-section-title"><i class="bi bi-info-circle"></i> Identitas Sertifikasi</div>
                     </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Klasifikasi <span class="text-danger">*</span></label>
+                            <select class="form-select" name="cert_type" id="certificationFormType" required>
+                                <option value="">-- Pilih --</option>
+                                @foreach (\App\Enums\CertType::cases() as $type)
+                                    <option value="{{ $type->value }}">{{ $type->label() }} - {{ $type->description() }}</option>
+                                @endforeach
+                            </select>
+                            <div class="form-text">Pilih sesuai objek sertifikasi: produk, perusahaan, atau keselamatan kerja.</div>
+                        </div>
+                    </div>
                     <div class="row g-3 mb-4">
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Kode Sertifikasi</label>
@@ -24,17 +36,7 @@
                                         class="bi bi-magic"></i></button>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">Klasifikasi <span class="text-danger">*</span></label>
-                            <select class="form-select" name="cert_type" id="certificationFormType" required>
-                                <option value="">-- Pilih --</option>
-                                @foreach (\App\Enums\CertType::cases() as $type)
-                                    <option value="{{ $type->value }}">{{ $type->label() }} - {{ $type->description() }}</option>
-                                @endforeach
-                            </select>
-                            <div class="form-text">Pilih sesuai objek sertifikasi: produk, perusahaan, atau keselamatan kerja.</div>
-                        </div>
-                        <div class="col-md-4">
+                        <div class="col-md-8">
                             <label class="form-label fw-semibold">Nama Sertifikasi <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="name" id="certificationFormName"
                                 required maxlength="255">
