@@ -11,6 +11,8 @@ use App\Repositories\Local\LocalEmployeeRepository;
 use App\Services\CertificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\UploadedFile;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -35,7 +37,7 @@ class CertificationTest extends TestCase
     private function makeCert(array $attrs = []): Certification
     {
         return Certification::create(array_merge([
-            'cert_type'            => CertType::PROFESSIONAL,
+            'cert_type'            => CertType::ISO,
             'name'                 => 'Sertifikasi Engineer',
             'issuing_organization' => 'BNSP',
             'issue_date'           => '2026-01-01',
@@ -75,6 +77,20 @@ class CertificationTest extends TestCase
         $cert = $this->makeCert(['cert_code' => null]);
         $this->assertNull($cert->cert_code);
         $this->assertDatabaseHas('certifications', ['id' => $cert->id]);
+    }
+
+    #[Test]
+    public function certification_types_have_the_expected_business_classification(): void
+    {
+        $this->assertSame('Standar produk atau barang', CertType::SNI->description());
+        $this->assertSame('Sistem manajemen perusahaan', CertType::ISO->description());
+        $this->assertSame('Keselamatan dan kesehatan kerja', CertType::K3->description());
+        $this->assertSame('Keamanan pangan dan material kontak makanan', CertType::FOOD_SAFETY->description());
+        $this->assertSame('Keselamatan dan kepatuhan produk konsumen', CertType::PRODUCT_SAFETY->description());
+        $this->assertSame(['SNI', 'ISO', 'K3', 'Food Safety', 'Product Safety'], array_map(
+            static fn (CertType $type): string => $type->value,
+            CertType::cases(),
+        ));
     }
 
     #[Test]
@@ -188,7 +204,7 @@ class CertificationTest extends TestCase
         $this->fakeAuditLogRepo();
 
         $payload = [
-            'cert_type'            => CertType::LICENSE->value,
+            'cert_type'            => CertType::SNI->value,
             'name'                 => 'SIM A Kendaraan Dinas',
             'issuing_organization' => 'Korlantas Polri',
             'certificate_number'   => 'SIM-88776655',
@@ -209,7 +225,7 @@ class CertificationTest extends TestCase
         $id = $response->json('certification.id');
         $this->assertDatabaseHas('certifications', [
             'id'        => $id,
-            'cert_type' => CertType::LICENSE->value,
+            'cert_type' => CertType::SNI->value,
             'name'      => 'SIM A Kendaraan Dinas',
             'cert_code' => null,
             'status'    => CertStatus::ACTIVE->value, // auto-derived (no status in payload)
@@ -225,6 +241,24 @@ class CertificationTest extends TestCase
     }
 
     #[Test]
+    public function legacy_certification_type_is_rejected(): void
+    {
+        $this->authAs('LEGAL');
+        $this->fakeAuditLogRepo();
+
+        $this->postJson('/hr/certifications', [
+            'cert_type'            => 'Professional',
+            'name'                 => 'Legacy Type Must Fail',
+            'issuing_organization' => 'BNSP',
+            'issue_date'           => '2026-03-01',
+            'employee_id'          => '2019031401',
+            'employee_name'        => 'Budi Santoso',
+        ])->assertUnprocessable()->assertJsonValidationErrors(['cert_type']);
+
+        $this->assertDatabaseMissing('certifications', ['name' => 'Legacy Type Must Fail']);
+    }
+
+    #[Test]
     public function legal_can_update_certification_via_http(): void
     {
         $this->authAs('LEGAL');
@@ -233,7 +267,7 @@ class CertificationTest extends TestCase
         $cert = $this->makeCert();
 
         $payload = [
-            'cert_type'            => CertType::LICENSE->value,
+            'cert_type'            => CertType::SNI->value,
             'name'                 => 'SIM B1 Umum - Diperpanjang',
             'description'          => 'Perpanjangan berkala via HTTP test.',
             'issuing_organization' => 'Korlantas Polri',
@@ -253,7 +287,7 @@ class CertificationTest extends TestCase
             ->assertJsonPath('certification.name', 'SIM B1 Umum - Diperpanjang');
 
         $fresh = $cert->fresh();
-        $this->assertSame(CertType::LICENSE, $fresh->cert_type);
+        $this->assertSame(CertType::SNI, $fresh->cert_type);
         $this->assertSame(CertStatus::ACTIVE, $fresh->status);
         $this->assertSame('SIM B1 Umum - Diperpanjang', $fresh->name);
         $this->assertSame('Korlantas Polri', $fresh->issuing_organization);
@@ -267,6 +301,51 @@ class CertificationTest extends TestCase
     }
 
     #[Test]
+    public function certification_attachment_can_be_uploaded_served_and_replaced(): void
+    {
+        Storage::fake('local');
+        $this->authAs('LEGAL');
+        $this->fakeAuditLogRepo();
+
+        $payload = [
+            'cert_type'            => CertType::SNI->value,
+            'name'                 => 'SIM A dengan Attachment',
+            'issuing_organization' => 'Korlantas Polri',
+            'issue_date'           => '2026-03-01',
+            'employee_id'          => '2019031401',
+            'employee_name'        => 'Budi Santoso',
+            'attachment'           => UploadedFile::fake()->create('sim-a.pdf', 100, 'application/pdf'),
+        ];
+
+        $response = $this->post('/hr/certifications', $payload)->assertCreated();
+        $cert = Certification::findOrFail($response->json('certification.id'));
+        $oldPath = $cert->attachment_path;
+
+        Storage::disk('local')->assertExists($oldPath);
+        $this->get("/hr/certifications/{$cert->id}/attachment")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
+
+        $updatePayload = [
+            '_method'             => 'PUT',
+            'cert_type'           => CertType::SNI->value,
+            'name'                => 'SIM A dengan Attachment Baru',
+            'issuing_organization' => 'Korlantas Polri',
+            'issue_date'          => '2026-03-01',
+            'employee_id'         => '2019031401',
+            'employee_name'       => 'Budi Santoso',
+            'attachment'          => UploadedFile::fake()->image('sim-a-baru.jpg'),
+        ];
+
+        $this->post("/hr/certifications/{$cert->id}", $updatePayload)->assertOk();
+
+        $newPath = $cert->fresh()->attachment_path;
+        $this->assertNotSame($oldPath, $newPath);
+        Storage::disk('local')->assertMissing($oldPath);
+        Storage::disk('local')->assertExists($newPath);
+    }
+
+    #[Test]
     public function update_autoderives_expired_status_when_expiry_moved_to_past(): void
     {
         $this->authAs('LEGAL');
@@ -274,7 +353,7 @@ class CertificationTest extends TestCase
 
         $cert = $this->makeCert();
         $payload = [
-            'cert_type'            => CertType::LICENSE->value,
+            'cert_type'            => CertType::SNI->value,
             'name'                 => 'SIM A - Kedaluwarsa',
             'issuing_organization' => 'Korlantas Polri',
             'issue_date'           => '2023-01-01',
@@ -297,7 +376,7 @@ class CertificationTest extends TestCase
 
         $cert = $this->makeCert(['status' => CertStatus::SUSPENDED, 'expiry_date' => now()->subDays(5)->toDateString()]);
         $payload = [
-            'cert_type'            => CertType::LICENSE->value,
+            'cert_type'            => CertType::SNI->value,
             'name'                 => 'SIM B2 - Ditahan',
             'issuing_organization' => 'Korlantas Polri',
             'issue_date'           => '2023-01-01',
@@ -335,7 +414,7 @@ class CertificationTest extends TestCase
         $cert = $this->makeCert();
 
         $payload = [
-            'cert_type'            => CertType::LICENSE->value,
+            'cert_type'            => CertType::SNI->value,
             'name'                 => 'Percobaan Tidak Sah',
             'issuing_organization' => 'X',
             'issue_date'           => '2026-01-01',
@@ -350,4 +429,3 @@ class CertificationTest extends TestCase
         $this->assertDatabaseHas('certifications', ['id' => $cert->id]);
     }
 }
-

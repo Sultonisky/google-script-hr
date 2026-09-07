@@ -19,8 +19,10 @@ class StoreCertificationRequest extends FormRequest
     {
         return [
             'cert_code'            => ['nullable', 'string', 'max:50', 'unique:certifications,cert_code'],
-            'cert_type'            => ['required', Rule::in(array_column(CertType::cases(), 'value'))],
+            'cert_type'            => ['required', Rule::enum(CertType::class)],
             'name'                 => ['required', 'string', 'max:255'],
+            'product_scope'       => ['nullable', 'string', 'max:255'],
+            'brand'                => ['nullable', 'string', 'max:100'],
             'description'          => ['nullable', 'string', 'max:1000'],
             'issuing_organization' => ['required', 'string', 'max:255'],
             'certificate_number'   => ['nullable', 'string', 'max:255'],
@@ -32,6 +34,7 @@ class StoreCertificationRequest extends FormRequest
             'division'             => ['nullable', 'string', 'max:255'],
             'department'           => ['nullable', 'string', 'max:255'],
             'notes'                => ['nullable', 'string', 'max:2000'],
+            'attachment'           => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:10240'],
         ];
     }
 

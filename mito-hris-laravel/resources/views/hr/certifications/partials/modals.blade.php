@@ -16,22 +16,38 @@
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Kode Sertifikasi</label>
                             <div class="input-group">
-                                <input type="text" class="form-control" name="cert_code" id="certificationFormCode" placeholder="Kosongkan untuk auto-generate" maxlength="50">
-                                <button class="btn btn-outline-info" type="button" id="btnCertFormGenerateCode"><i class="bi bi-magic"></i></button>
+                                <input type="text" class="form-control" name="cert_code" id="certificationFormCode"
+                                    placeholder="Kosongkan untuk auto-generate" maxlength="50">
+                                <button class="btn btn-outline-info" type="button" id="btnCertFormGenerateCode"><i
+                                        class="bi bi-magic"></i></button>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold">Jenis *</label>
+                            <label class="form-label fw-semibold">Klasifikasi Sertifikasi *</label>
                             <select class="form-select" name="cert_type" id="certificationFormType" required>
                                 <option value="">-- Pilih --</option>
-                                @foreach(\App\Enums\CertType::cases() as $type)
-                                    <option value="{{ $type->value }}">{{ $type->label() }}</option>
+                                @foreach (\App\Enums\CertType::cases() as $type)
+                                    <option value="{{ $type->value }}">{{ $type->label() }} - {{ $type->description() }}</option>
                                 @endforeach
                             </select>
+                            <div class="form-text">SNI: produk. ISO: sistem perusahaan. K3: keselamatan kerja. Food Safety/Product Safety: keamanan dan kepatuhan produk.</div>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Nama Sertifikasi *</label>
-                            <input type="text" class="form-control" name="name" id="certificationFormName" required maxlength="255">
+                            <input type="text" class="form-control" name="name" id="certificationFormName"
+                                required maxlength="255">
+                        </div>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold">Produk / Scope</label>
+                            <input type="text" class="form-control" name="product_scope" id="certificationFormScope"
+                                maxlength="255" placeholder="Contoh: Rice Cooker atau Quality Management System">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Brand</label>
+                            <input type="text" class="form-control" name="brand" id="certificationFormBrand"
+                                maxlength="100" placeholder="Contoh: MITO">
                         </div>
                     </div>
                     <div class="row g-3 mb-3">
@@ -43,48 +59,75 @@
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Cari Karyawan *</label>
-                            <input type="text" class="form-control" id="certificationEmployeeSearch" autocomplete="off"
-                                placeholder="Ketik nama / ID karyawan...">
+                            <input type="text" class="form-control" id="certificationEmployeeSearch"
+                                autocomplete="off" placeholder="Ketik nama / ID karyawan...">
                             <input type="hidden" name="employee_id" id="certificationFormEmployeeId">
                             <input type="hidden" name="employee_name" id="certificationFormEmployeeName">
-                            <div class="list-group mt-2 d-none" id="certificationEmployeeResults" style="max-height:200px;overflow:auto;position:absolute;z-index:1050;width:calc(100% - 2rem);"></div>
+                            <div class="list-group mt-2 d-none" id="certificationEmployeeResults"
+                                style="max-height:200px;overflow:auto;position:absolute;z-index:1050;width:calc(100% - 2rem);">
+                            </div>
                             <div id="certificationEmployeeError" class="text-danger small mt-1 d-none"></div>
                             <div id="certificationSelectedEmployee" class="d-none mt-2"></div>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label fw-semibold">Division</label>
-                            <input type="text" class="form-control" name="division" id="certificationFormDivision" readonly maxlength="255">
+                            <input type="text" class="form-control" name="division" id="certificationFormDivision"
+                                readonly maxlength="255">
                         </div>
                         <div class="col-md-3">
                             <label class="form-label fw-semibold">Department</label>
-                            <input type="text" class="form-control" name="department" id="certificationFormDepartment" readonly maxlength="255">
+                            <input type="text" class="form-control" name="department"
+                                id="certificationFormDepartment" readonly maxlength="255">
                         </div>
                     </div>
 
                     <div class="asset-section-title mt-3"><i class="bi bi-building-check"></i> Informasi Penerbit</div>
                     <div class="row g-3 mb-3">
                         <div class="col-md-6"><label class="form-label fw-semibold">Lembaga Penerbit *</label>
-                            <input type="text" class="form-control" name="issuing_organization" id="certificationFormOrg" required maxlength="255"></div>
+                            <input type="text" class="form-control" name="issuing_organization"
+                                id="certificationFormOrg" required maxlength="255">
+                        </div>
                         <div class="col-md-6"><label class="form-label fw-semibold">Nomor Sertifikat</label>
-                            <input type="text" class="form-control" name="certificate_number" id="certificationFormNumber" maxlength="255"></div>
+                            <input type="text" class="form-control" name="certificate_number"
+                                id="certificationFormNumber" maxlength="255">
+                        </div>
                     </div>
                     <div class="asset-section-title mt-3"><i class="bi bi-calendar-check"></i> Tanggal</div>
                     <div class="row g-3 mb-3">
                         <div class="col-md-4"><label class="form-label fw-semibold">Tanggal Terbit *</label>
-                            <input type="date" class="form-control" name="issue_date" id="certificationFormIssueDate" required></div>
+                            <input type="date" class="form-control" name="issue_date"
+                                id="certificationFormIssueDate" required>
+                        </div>
                         <div class="col-md-4"><label class="form-label fw-semibold">Tanggal Kedaluwarsa</label>
-                            <input type="date" class="form-control" name="expiry_date" id="certificationFormExpiryDate"></div>
+                            <input type="date" class="form-control" name="expiry_date"
+                                id="certificationFormExpiryDate">
+                        </div>
                         <div class="col-md-4"><label class="form-label fw-semibold">Status</label>
                             <select class="form-select" name="status" id="certificationFormStatus">
                                 <option value="">Auto</option>
-                                @foreach(\App\Enums\CertStatus::cases() as $s)
+                                @foreach (\App\Enums\CertStatus::cases() as $s)
                                     <option value="{{ $s->value }}">{{ $s->label() }}</option>
                                 @endforeach
-                            </select></div>
+                            </select>
+                        </div>
                     </div>
                     <div class="row g-3">
                         <div class="col-12"><label class="form-label fw-semibold">Catatan</label>
                             <textarea class="form-control" name="notes" id="certificationFormNotes" rows="2"></textarea>
+                        </div>
+                    </div>
+                    <div class="row g-3 mt-1">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Attachment Foto / PDF</label>
+                            <input type="file" class="form-control" name="attachment" id="certificationFormAttachment"
+                                accept="application/pdf,image/jpeg,image/png,image/webp">
+                            <div class="form-text">Maksimal 10 MB. Format: PDF, JPG, PNG, atau WEBP.</div>
+                            <div id="certificationCurrentAttachment" class="small mt-2 d-none"></div>
+                            <div class="form-check mt-2 d-none" id="certificationRemoveAttachmentWrap">
+                                <input class="form-check-input" type="checkbox" name="remove_attachment"
+                                    value="1" id="certificationRemoveAttachment">
+                                <label class="form-check-label" for="certificationRemoveAttachment">Hapus attachment saat disimpan</label>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -107,7 +150,8 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p class="mb-3">Tindakan ini <strong>menghapus permanen</strong> sertifikasi dari database dan tidak dapat dibatalkan.</p>
+                <p class="mb-3">Tindakan ini <strong>menghapus permanen</strong> sertifikasi dari database dan tidak
+                    dapat dibatalkan.</p>
                 <div class="border rounded p-3 bg-light">
                     <div class="row g-2">
                         <div class="col-4 text-muted small">Kode</div>
@@ -123,7 +167,8 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
-                <button type="button" class="btn btn-danger" id="btnDeleteCertConfirm"><i class="bi bi-trash me-1"></i>Hapus Permanen</button>
+                <button type="button" class="btn btn-danger" id="btnDeleteCertConfirm"><i
+                        class="bi bi-trash me-1"></i>Hapus Permanen</button>
             </div>
         </div>
     </div>

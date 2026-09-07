@@ -12,6 +12,8 @@ class Certification extends Model
         'cert_code',
         'cert_type',
         'name',
+        'product_scope',
+        'brand',
         'description',
         'issuing_organization',
         'certificate_number',
@@ -51,7 +53,9 @@ class Certification extends Model
               ->orWhereRaw('LOWER(employee_id) LIKE ?', [$term])
               ->orWhereRaw('LOWER(employee_name) LIKE ?', [$term])
               ->orWhereRaw('LOWER(issuing_organization) LIKE ?', [$term])
-              ->orWhereRaw('LOWER(certificate_number) LIKE ?', [$term]);
+              ->orWhereRaw('LOWER(certificate_number) LIKE ?', [$term])
+              ->orWhereRaw('LOWER(product_scope) LIKE ?', [$term])
+              ->orWhereRaw('LOWER(brand) LIKE ?', [$term]);
         });
     }
 
