@@ -549,74 +549,45 @@ class ProbationEvaluationFlowTest extends TestCase
     }
 
     /**
-     * T13 — Second EXTEND succeeds when the employee has valid current contract dates.
-     *
-     * After the first EXTEND, the Employee sheet has:
-     *   Join Date          = new contract start (extStart from first extend)
-     *   End Date (Contract) = new contract end  (server-derived from first extend)
-     *
-     * The second EXTEND must resolve duration from THOSE dates — not from the
-     * original join date, and not from the first Extension Duration history row.
-     *
-     * bindEvaluateFlowMocks() uses the joinDate / endDateContract parameters to
-     * simulate the updated Employee record that would exist in Google Sheets after
-     * the first extend has written 'Join Date' = extStart = '2026-12-01' and
-     * 'End Date (Contract)' = extEnd = '2027-05-31' (6-month extension).
+     * T13 — Second EXTEND is rejected after a first EXTEND.
+     * Business rule: extension is allowed only once. After EXTEND the employee
+     * must be evaluated to PASS or FAIL on the next evaluation.
+     * No evaluation row may be written when the second EXTEND is blocked.
      */
-    public function test_t13_second_extend_after_first_extend_succeeds_with_correct_duration(): void
+    public function test_t13_second_extend_after_first_extend_is_rejected(): void
     {
         $previous = $this->extendHistoryRow();
 
-        // Simulate employee state AFTER the first extend:
-        //   Join Date           = 2026-12-01  (extStart written by first extend)
-        //   End Date (Contract) = 2027-05-31  (extEnd written by first extend: 2026-12-01 + 6mo − 1d)
-        // resolveExtensionDuration(2026-12-01, 2027-05-31) = 6 months (correct per-extension duration)
         [$response, $secondRows] = $this->postEvaluation(
             'Perpanjang Kontrak',
             ['extension_start' => '2027-06-01'],
-            [$previous],
-            '2027-05-31',   // endDateContract after first extend
-            '2026-12-01'    // joinDate updated by first extend
-        );
-
-        $response->assertOk()->assertJsonPath('success', true)
-            ->assertJsonPath('decisionType', 'extend');
-        $this->assertCount(1, $secondRows, 'Second Extend must append exactly one new evaluation row.');
-        $this->assertSame('Perpanjang Kontrak', self::ref($secondRows[0], 'Decision'));
-        // Duration must be 6 Bulan (from current 2026-12-01 → 2027-05-31 contract, not 12 months cumulative)
-        $this->assertSame('6 Bulan', self::ref($secondRows[0], 'Extension Duration'),
-            'Second extend must derive duration from CURRENT contract dates (joinDate after first extend), '
-            . 'not from the original join date which would give cumulative 12 months.');
-        // New contract: 2027-06-01 + 6 months − 1 day = 2027-11-30
-        $this->assertSame('2027-06-01', self::ref($secondRows[0], 'New Contract Start'));
-        $this->assertSame('2027-11-30', self::ref($secondRows[0], 'New Contract End'));
-    }
-
-    /**
-     * T13b — Second Extend with manipulated client duration is still ignored.
-     * Backend derives duration from current contract regardless of what client sends.
-     */
-    public function test_t13b_second_extend_ignores_manipulated_client_duration(): void
-    {
-        $previous = $this->extendHistoryRow();
-
-        [$response, $secondRows] = $this->postEvaluation(
-            'Perpanjang Kontrak',
-            [
-                'extension_duration' => '99 Bulan',   // ← attacker tries to manipulate
-                'extension_start'    => '2027-06-01',
-                'extension_end'      => '2030-01-01', // ← wrong end date also sent
-            ],
             [$previous],
             '2027-05-31',
             '2026-12-01'
         );
 
-        $response->assertOk()->assertJsonPath('success', true);
-        $this->assertSame('6 Bulan', self::ref($secondRows[0], 'Extension Duration'),
-            'Manipulated extension_duration must be ignored on second extend too.');
-        $this->assertSame('2027-11-30', self::ref($secondRows[0], 'New Contract End'),
-            'End date must be server-derived from actual contract duration, not browser value.');
+        $response->assertStatus(422);
+        $this->assertCount(0, $secondRows,
+            'A second Extend must not append an evaluation row — only one extension is allowed.');
+        $this->assertStringContainsString(
+            'Perpanjangan probation hanya dapat dilakukan satu kali',
+            $response->json('message') ?? ''
+        );
+    }
+
+    /**
+     * T13b — After first EXTEND, PASS is still allowed (not blocked).
+     */
+    public function test_t13b_pass_after_extend_succeeds(): void
+    {
+        $previous = $this->extendHistoryRow();
+
+        [$response, $secondRows] = $this->postEvaluation('Lulus', [], [$previous]);
+
+        $response->assertOk()->assertJsonPath('success', true)
+            ->assertJsonPath('decisionType', 'pass');
+        $this->assertCount(1, $secondRows, 'PASS after EXTEND must write exactly one evaluation row.');
+        $this->assertSame('Lulus', self::ref($secondRows[0], 'Decision'));
     }
 
     // =========================================================================

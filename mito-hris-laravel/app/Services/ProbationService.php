@@ -204,12 +204,15 @@ class ProbationService
             throw new RuntimeException('Keputusan evaluasi tidak valid: "' . $decision . '". Pilih salah satu keputusan yang tersedia.');
         }
         // Only PASS and FAIL are terminal — those block any further evaluation.
-        // EXTEND is a continuation; a second (or subsequent) EXTEND is valid
-        // when the employee's current active contract has valid dates.
+        // EXTEND is allowed only once: if the latest decision is already EXTEND,
+        // the next evaluation must be PASS or FAIL (no second extension).
         if ($latest) {
             $latestDecisionType = ProbationDecisionType::fromDecisionString((string) ($latest['decision'] ?? ''));
             if ($latestDecisionType && ($latestDecisionType->isPass() || $latestDecisionType->isFail())) {
                 throw new RuntimeException('Kandidat sudah menyelesaikan evaluasi probation dan tidak dapat dievaluasi kembali.');
+            }
+            if ($latestDecisionType && $latestDecisionType->isExtend() && $decisionType->isExtend()) {
+                throw new RuntimeException('Perpanjangan probation hanya dapat dilakukan satu kali. Pilih keputusan Lulus atau Tidak Lulus.');
             }
         }
         $isLulus = $decisionType->isPass();
