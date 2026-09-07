@@ -65,6 +65,7 @@ class CertificationController extends Controller
         }
 
         $data = $this->fillEmployeeFromProvider($data);
+        $data = $this->normalizeClassificationFields($data);
         $data['attachment_path'] = $this->storeAttachment($data['attachment'] ?? null);
         unset($data['attachment']);
 
@@ -111,6 +112,7 @@ class CertificationController extends Controller
         }
 
         $data = $this->fillEmployeeFromProvider($data);
+        $data = $this->normalizeClassificationFields($data);
 
         if ($uploadedAttachment instanceof UploadedFile) {
             $this->deleteAttachment($certification->attachment_path);
@@ -290,6 +292,15 @@ class CertificationController extends Controller
      */
     private function fillEmployeeFromProvider(array $data): array
     {
+        if (empty($data['employee_id'])) {
+            $data['employee_id'] = null;
+            $data['employee_name'] = null;
+            $data['division'] = null;
+            $data['department'] = null;
+
+            return $data;
+        }
+
         $employee = $this->employeeRepo->findById($data['employee_id']);
 
         if (!$employee) {
@@ -299,6 +310,18 @@ class CertificationController extends Controller
         $data['employee_name'] = $employee->fullName;
         $data['division']      = $employee->division;
         $data['department']    = $employee->department;
+
+        return $data;
+    }
+
+    private function normalizeClassificationFields(array $data): array
+    {
+        if (in_array($data['cert_type'], [\App\Enums\CertType::ISO->value, \App\Enums\CertType::K3->value], true)) {
+            $data['product_scope'] = null;
+            $data['brand'] = null;
+        } else {
+            $data['company_scope'] = null;
+        }
 
         return $data;
     }
