@@ -16,10 +16,13 @@ use Illuminate\View\View;
  * Dedicated Asset Portal authentication.
  *
  * Reuses the existing session-based Users authentication (AuthService). The
- * login view and session context are portal-specific. Authorization is portal-scoped: only users holding
- * the `view_asset` gate may obtain an asset_auth session on the Asset domain,
- * and only Asset routes are reachable there. No second user table, guard, or
- * permission system is introduced — RBAC/Gates remain the authority.
+ * session context is portal-specific; the login view is the ONE shared HRIS
+ * login (auth.login) for visual parity with hrismitogroup.web.id/login.
+ * Authorization is portal-scoped: only users holding
+ * the `access_assets_portal` gate may obtain an asset_auth session on the
+ * Asset domain, and only Asset routes are reachable there. No second user
+ * table, guard, or permission system is introduced — RBAC/Gates remain the
+ * authority.
  */
 class AssetAuthController extends Controller
 {
@@ -39,7 +42,15 @@ class AssetAuthController extends Controller
             return redirect()->route('assets.portal.index');
         }
 
-        return view('assets.auth.login');
+        // Reuse the ONE shared HRIS login view (visual source of truth) so the
+        // Asset portal login is visually identical to hrismitogroup.web.id/login.
+        // Only the portal context differs; authentication behavior is unchanged.
+        return view('auth.login', [
+            'loginPostUrl'         => route('assets.login.post'),
+            'loginRedirectDefault' => route('assets.portal.index'),
+            'loginTitle'           => 'Portal Aset',
+            'loginSubtitle'        => 'Masuk untuk mengelola aset perusahaan.',
+        ]);
     }
 
     public function login(LoginRequest $request): RedirectResponse|JsonResponse
@@ -54,8 +65,8 @@ class AssetAuthController extends Controller
             return $this->loginFailure($request, $result['error'] ?? 'Login gagal.');
         }
 
-        // Portal-scoped gate: the User sheet account must hold view_asset to use
-        // the Asset portal. Without it, no session is created on this domain.
+        // Portal-scoped gate: the User sheet account must hold access_assets_portal
+        // to use the Asset portal. Without it, no session is created on this domain.
         if (!Gate::forUser($result['user'])->allows('access_assets_portal')) {
             return $this->authorizationDenied($request);
         }

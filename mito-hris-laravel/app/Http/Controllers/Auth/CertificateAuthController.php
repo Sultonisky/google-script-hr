@@ -15,8 +15,9 @@ use Illuminate\View\View;
 /**
  * Dedicated Certificate Portal authentication.
  *
- * Mirrors AssetAuthController: reuses AuthService with a dedicated portal
- * view and session, plus portal-scoped authorization via the `view_certification` gate.
+ * Mirrors AssetAuthController: reuses AuthService with the shared HRIS login
+ * view (auth.login), a dedicated portal session, and portal-scoped
+ * authorization via the `access_certificates_portal` gate.
  */
 class CertificateAuthController extends Controller
 {
@@ -36,7 +37,16 @@ class CertificateAuthController extends Controller
             return redirect()->route('certificates.portal.index');
         }
 
-        return view('certificates.auth.login');
+        // Reuse the ONE shared HRIS login view (visual source of truth) so the
+        // Certificate portal login is visually identical to
+        // hrismitogroup.web.id/login. Only the portal context differs;
+        // authentication behavior is unchanged.
+        return view('auth.login', [
+            'loginPostUrl'         => route('certificates.login.post'),
+            'loginRedirectDefault' => route('certificates.portal.index'),
+            'loginTitle'           => 'Portal Sertifikasi',
+            'loginSubtitle'        => 'Masuk untuk mengelola sertifikasi karyawan.',
+        ]);
     }
 
     public function login(LoginRequest $request): RedirectResponse|JsonResponse
