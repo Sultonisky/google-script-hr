@@ -85,16 +85,15 @@ class ProbationEvaluationFlowTest extends TestCase
      * Bind mocks for the evaluate flow. $capturedRows receives every appended
      * kandidat_probation row as a header-mapped assoc array.
      *
-    * A null $existingRows value seeds legacy history; an explicit empty array
-    * exercises first evaluation for a Contract employee with no history.
+     * A null $existingRows value seeds legacy history; an explicit empty array
+     * exercises first evaluation for a Contract employee with no history.
      */
     private function bindEvaluateFlowMocks(
         array &$capturedRows,
         ?array $existingRows = null,
         string $endDateContract = '2026-11-01',
         string $joinDate = '2026-05-01'
-    ): GoogleSheetsService
-    {
+    ): GoogleSheetsService {
         $employeeRepo = Mockery::mock(EmployeeRepositoryInterface::class);
         $employeeRepo->shouldReceive('findById')->with('EMP001')->andReturn($this->makeEmployee($endDateContract, $joinDate))->byDefault();
         $employeeRepo->shouldReceive('update')->andReturn(true)->byDefault();
@@ -183,8 +182,7 @@ class ProbationEvaluationFlowTest extends TestCase
         array $existingRows = [],
         string $endDateContract = '2026-11-01',
         string $joinDate = '2026-05-01'
-    ): array
-    {
+    ): array {
         $this->loginAsHrAdmin();
 
         $captured = [];
@@ -567,8 +565,11 @@ class ProbationEvaluationFlowTest extends TestCase
         );
 
         $response->assertStatus(422);
-        $this->assertCount(0, $secondRows,
-            'A second Extend must not append an evaluation row — only one extension is allowed.');
+        $this->assertCount(
+            0,
+            $secondRows,
+            'A second Extend must not append an evaluation row — only one extension is allowed.'
+        );
         $this->assertStringContainsString(
             'Perpanjangan probation hanya dapat dilakukan satu kali',
             $response->json('message') ?? ''
@@ -609,13 +610,19 @@ class ProbationEvaluationFlowTest extends TestCase
             ->assertJsonPath('decisionType', 'extend');
 
         $row = end($rows);
-        $this->assertSame('3 Bulan', self::ref($row, 'Extension Duration'),
-            'Contract duration 3 months â†’ Extension Duration must be "3 Bulan"');
+        $this->assertSame(
+            '3 Bulan',
+            self::ref($row, 'Extension Duration'),
+            'Contract duration 3 months â†’ Extension Duration must be "3 Bulan"'
+        );
         // New Contract End = 2026-12-01 + 3 months âˆ’ 1 day = 2027-02-28
         $this->assertSame('2027-02-28', self::ref($row, 'New Contract End'));
         // Server-derived duration must appear in the JSON response
-        $this->assertSame('3 Bulan', $response->json('extensionDuration'),
-            'JSON response extensionDuration must reflect server-derived value, not browser input');
+        $this->assertSame(
+            '3 Bulan',
+            $response->json('extensionDuration'),
+            'JSON response extensionDuration must reflect server-derived value, not browser input'
+        );
     }
 
     // =========================================================================
@@ -636,8 +643,11 @@ class ProbationEvaluationFlowTest extends TestCase
         $response->assertOk()->assertJsonPath('decisionType', 'extend');
 
         $row = end($rows);
-        $this->assertSame('12 Bulan', self::ref($row, 'Extension Duration'),
-            'Contract duration 12 months â†’ Extension Duration must be "12 Bulan"');
+        $this->assertSame(
+            '12 Bulan',
+            self::ref($row, 'Extension Duration'),
+            'Contract duration 12 months â†’ Extension Duration must be "12 Bulan"'
+        );
         // New Contract End = 2027-05-01 + 12 months âˆ’ 1 day = 2028-04-30
         $this->assertSame('2028-04-30', self::ref($row, 'New Contract End'));
         $this->assertSame('12 Bulan', $response->json('extensionDuration'));
@@ -665,12 +675,21 @@ class ProbationEvaluationFlowTest extends TestCase
 
         $response->assertOk();
         $row = end($rows);
-        $this->assertSame('3 Bulan', self::ref($row, 'Extension Duration'),
-            'Manipulated extension_duration=12 Bulan must be ignored; contract is 3 months');
-        $this->assertSame('2027-02-28', self::ref($row, 'New Contract End'),
-            'New Contract End must be derived from actual contract duration (3 months), not browser value');
-        $this->assertSame('3 Bulan', $response->json('extensionDuration'),
-            'JSON extensionDuration must echo server-derived value, never browser input');
+        $this->assertSame(
+            '3 Bulan',
+            self::ref($row, 'Extension Duration'),
+            'Manipulated extension_duration=12 Bulan must be ignored; contract is 3 months'
+        );
+        $this->assertSame(
+            '2027-02-28',
+            self::ref($row, 'New Contract End'),
+            'New Contract End must be derived from actual contract duration (3 months), not browser value'
+        );
+        $this->assertSame(
+            '3 Bulan',
+            $response->json('extensionDuration'),
+            'JSON extensionDuration must echo server-derived value, never browser input'
+        );
     }
 
     // =========================================================================
@@ -689,9 +708,12 @@ class ProbationEvaluationFlowTest extends TestCase
         $response->assertOk()->assertJsonPath('decisionType', 'extend');
         // The JSON extensionDuration must be the server-derived "6 Bulan",
         // not an empty string (which was the bug before the controller fix).
-        $this->assertSame('6 Bulan', $response->json('extensionDuration'),
+        $this->assertSame(
+            '6 Bulan',
+            $response->json('extensionDuration'),
             'Before fix: controller echoed $evalData[extension_duration] = "" (empty). '
-            . 'After fix: controller returns $result[extensionDuration] = "6 Bulan".');
+                . 'After fix: controller returns $result[extensionDuration] = "6 Bulan".'
+        );
         // Sheet row must also match
         $this->assertSame('6 Bulan', self::ref(end($rows), 'Extension Duration'));
     }
@@ -749,8 +771,11 @@ class ProbationEvaluationFlowTest extends TestCase
         $response = $this->postJson('/hr/probation/EMP001/evaluate', $payload);
 
         $response->assertStatus(422);
-        $this->assertCount(0, $captured,
-            'No evaluation row may be written when contract duration is not derivable.');
+        $this->assertCount(
+            0,
+            $captured,
+            'No evaluation row may be written when contract duration is not derivable.'
+        );
         $this->assertStringContainsString(
             'Durasi perpanjangan tidak dapat ditentukan',
             $response->json('message') ?? ''
@@ -891,15 +916,21 @@ class ProbationEvaluationFlowTest extends TestCase
 
         $row = $captured[0];
         // Duration = monthsBetween(2026-02-15, 2026-08-14) = 6 months
-        $this->assertSame('6 Bulan', self::ref($row, 'Extension Duration'),
-            'Duration must be derived from import-supplied contract dates (2026-02-15 → 2026-08-14 = 6 months).');
+        $this->assertSame(
+            '6 Bulan',
+            self::ref($row, 'Extension Duration'),
+            'Duration must be derived from import-supplied contract dates (2026-02-15 → 2026-08-14 = 6 months).'
+        );
         $this->assertSame('2026-08-15', self::ref($row, 'New Contract Start'));
         // New end = 2026-08-15 + 6 months − 1 day = 2027-02-14
         $this->assertSame('2027-02-14', self::ref($row, 'New Contract End'));
         $this->assertSame('IMP001', self::ref($row, 'Employee ID'));
         // No recruitment_id — must be stored as empty string, not cause an error
-        $this->assertSame('', self::ref($row, 'Recruitment ID'),
-            'Missing recruitment_id must be stored as empty string, not cause an error.');
+        $this->assertSame(
+            '',
+            self::ref($row, 'Recruitment ID'),
+            'Missing recruitment_id must be stored as empty string, not cause an error.'
+        );
     }
 
     // =========================================================================
@@ -990,7 +1021,10 @@ class ProbationEvaluationFlowTest extends TestCase
         $sheets->shouldReceive('getRowsAsAssoc')->andReturn([])->byDefault();
         $sheets->shouldReceive('clearCache')->andReturn(null)->byDefault();
         $sheets->shouldReceive('appendRow')
-            ->withArgs(function ($s, $r) use (&$captured) { $captured[] = $r; return true; })
+            ->withArgs(function ($s, $r) use (&$captured) {
+                $captured[] = $r;
+                return true;
+            })
             ->andReturn(true)->byDefault();
 
         $this->app->instance(EmployeeRepositoryInterface::class, $employeeRepo);
@@ -1032,8 +1066,11 @@ class ProbationEvaluationFlowTest extends TestCase
         );
 
         $response->assertOk()->assertJsonPath('decisionType', 'extend');
-        $this->assertSame('6 Bulan', self::ref($rows[0], 'Extension Duration'),
-            'Extend must use actual Employee contract dates, not Offering Contract Duration.');
+        $this->assertSame(
+            '6 Bulan',
+            self::ref($rows[0], 'Extension Duration'),
+            'Extend must use actual Employee contract dates, not Offering Contract Duration.'
+        );
         $this->assertSame('2027-05-31', self::ref($rows[0], 'New Contract End'));
     }
 }

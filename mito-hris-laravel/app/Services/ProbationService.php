@@ -592,7 +592,9 @@ class ProbationService
 
     private function isContractEmployee(?string $status): bool
     {
-        return in_array(strtolower(trim((string) $status)), ['contract', 'pkwt'], true);
+        // Accept 'contract', 'pkwt', and legacy 'probation' status values —
+        // all three indicate an employee in an active PKWT/probation engagement.
+        return in_array(strtolower(trim((string) $status)), ['contract', 'pkwt', 'probation'], true);
     }
 
     /**
