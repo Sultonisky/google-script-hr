@@ -37,6 +37,8 @@ class UpdateCertificationRequest extends FormRequest
             'division'             => ['nullable', 'string', 'max:255'],
             'department'           => ['nullable', 'string', 'max:255'],
             'notes'                => ['nullable', 'string', 'max:2000'],
+            'attachment'           => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:10240'],
+            'remove_attachment'    => ['nullable', 'boolean'],
         ];
     }
 

@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class CertificationController extends Controller
 {
@@ -44,8 +45,13 @@ class CertificationController extends Controller
         $certBasePath  = '/certifications';
 
         return view('hr.certifications.index', compact(
-            'certifications', 'stats', 'total', 'currentPage', 'perPage',
-            'certIndexPath', 'certBasePath',
+            'certifications',
+            'stats',
+            'total',
+            'currentPage',
+            'perPage',
+            'certIndexPath',
+            'certBasePath',
         ));
     }
 
@@ -59,11 +65,21 @@ class CertificationController extends Controller
         }
 
         $data = $this->fillEmployeeFromProvider($data);
+        $data['attachment_path'] = $this->storeAttachment($data['attachment'] ?? null);
+        unset($data['attachment']);
 
         $cert = Certification::create($data);
 
-        $this->auditRepo->log('Certification', (string) $cert->id, 'created', null, null,
-            $cert->name, $data['created_by'], 'Certification Management');
+        $this->auditRepo->log(
+            'Certification',
+            (string) $cert->id,
+            'created',
+            null,
+            null,
+            $cert->name,
+            $data['created_by'],
+            'Certification Management'
+        );
 
         return response()->json([
             'success' => true,
@@ -80,6 +96,9 @@ class CertificationController extends Controller
     public function update(UpdateCertificationRequest $request, Certification $certification): JsonResponse
     {
         $data = $request->validated();
+        $uploadedAttachment = $data['attachment'] ?? null;
+        $removeAttachment = (bool) ($data['remove_attachment'] ?? false);
+        unset($data['attachment'], $data['remove_attachment']);
 
         // Mirror store(): when the form leaves status on "Auto" (omitted/empty),
         // derive it from the expiry date via the service. Explicit statuses
@@ -92,6 +111,14 @@ class CertificationController extends Controller
         }
 
         $data = $this->fillEmployeeFromProvider($data);
+
+        if ($uploadedAttachment instanceof UploadedFile) {
+            $this->deleteAttachment($certification->attachment_path);
+            $data['attachment_path'] = $this->storeAttachment($uploadedAttachment);
+        } elseif ($removeAttachment) {
+            $this->deleteAttachment($certification->attachment_path);
+            $data['attachment_path'] = null;
+        }
 
         $old = $certification->only(array_keys($data));
         $certification->fill($data)->save();
@@ -108,8 +135,16 @@ class CertificationController extends Controller
                 : ($newValue instanceof \DateTimeInterface ? $newValue->format('Y-m-d') : $newValue);
 
             if ((string) ($oldPrimitive ?? '') !== (string) ($newPrimitive ?? '')) {
-                $this->auditRepo->log('Certification', (string) $certification->id, 'updated', $field,
-                    $oldPrimitive, $newPrimitive, $actor, 'Certification Management');
+                $this->auditRepo->log(
+                    'Certification',
+                    (string) $certification->id,
+                    'updated',
+                    $field,
+                    $oldPrimitive,
+                    $newPrimitive,
+                    $actor,
+                    'Certification Management'
+                );
             }
         }
 
@@ -127,9 +162,18 @@ class CertificationController extends Controller
         $id = (string) $certification->id;
 
         $certification->delete();
+        $this->deleteAttachment($certification->attachment_path);
 
-        $this->auditRepo->log('Certification', $id, 'deleted', null, null,
-            $name, $actor, 'Certification Management');
+        $this->auditRepo->log(
+            'Certification',
+            $id,
+            'deleted',
+            null,
+            null,
+            $name,
+            $actor,
+            'Certification Management'
+        );
 
         return response()->json([
             'success' => true,
@@ -149,8 +193,16 @@ class CertificationController extends Controller
         try {
             $certification->update(['cert_code' => $this->certService->generateCode()]);
             $actor = $this->actorEmail();
-            $this->auditRepo->log('Certification', (string) $certification->id, 'code_generated', null, null,
-                $certification->cert_code, $actor, 'Certification Management');
+            $this->auditRepo->log(
+                'Certification',
+                (string) $certification->id,
+                'code_generated',
+                null,
+                null,
+                $certification->cert_code,
+                $actor,
+                'Certification Management'
+            );
 
             return response()->json([
                 'success' => true,
@@ -189,10 +241,10 @@ class CertificationController extends Controller
     }
 
     /**
-     * Serve a certification's stored PDF attachment.
+    * Serve a certification's stored PDF or image attachment.
      *
      * The path always comes from the DB record and must match the strict
-     * dummy-document whitelist below, so this endpoint can never be used to
+    * attachment whitelist below, so this endpoint can never be used to
      * read arbitrary files on disk. Access is gated by can:view_certification
      * (group middleware).
      */
@@ -202,7 +254,7 @@ class CertificationController extends Controller
 
         if (
             !$path
-            || !preg_match('#^certifications/[A-Za-z0-9_./-]+\.pdf$#', $path)
+            || !preg_match('#^certifications/[A-Za-z0-9_./-]+\.(pdf|jpe?g|png|webp)$#i', $path)
             || str_contains($path, '..')
         ) {
             abort(404);
@@ -214,8 +266,20 @@ class CertificationController extends Controller
         }
 
         return response()->file($disk->path($path), [
-            'Content-Type' => 'application/pdf',
+            'Content-Type' => $disk->mimeType($path) ?: 'application/octet-stream',
         ]);
+    }
+
+    private function storeAttachment(?UploadedFile $file): ?string
+    {
+        return $file?->store('certifications', 'local');
+    }
+
+    private function deleteAttachment(?string $path): void
+    {
+        if ($path && str_starts_with($path, 'certifications/') && Storage::disk('local')->exists($path)) {
+            Storage::disk('local')->delete($path);
+        }
     }
 
     /**
