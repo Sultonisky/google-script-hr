@@ -39,10 +39,10 @@
             </div>
             <div class="col-6 col-md-3">
                 <div class="stat-card">
-                    <div class="stat-icon bg-red"><i class="bi bi-arrow-repeat"></i></div>
+                    <div class="stat-icon bg-red"><i class="bi bi-x-circle-fill"></i></div>
                     <div>
-                        <div class="stat-label">Diperpanjang</div>
-                        <div class="stat-value" id="probStatExtended">{{ $stats['extended'] ?? 0 }}</div>
+                        <div class="stat-label">Tidak Lulus</div>
+                        <div class="stat-value" id="probStatExtended">{{ $stats['failed'] ?? 0 }}</div>
                     </div>
                 </div>
             </div>

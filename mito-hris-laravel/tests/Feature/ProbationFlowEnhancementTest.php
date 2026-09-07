@@ -127,7 +127,7 @@ class ProbationFlowEnhancementTest extends TestCase
         $this->assertCount(0, $appended);
     }
 
-    public function test_permanent_with_history_is_excluded_from_probation_index(): void
+    public function test_permanent_with_history_is_included_in_probation_index(): void
     {
         $this->loginAsHr();
         $permanent = $this->employee('EMP-PERM-HISTORY', 'Permanent');
@@ -142,8 +142,12 @@ class ProbationFlowEnhancementTest extends TestCase
             : '';
 
         $response->assertOk();
+        // Both must appear: Contract employee and Permanent-with-history employee.
+        // After evaluation a Permanent employee's probation record is kept for audit.
         $this->assertStringContainsString('EMP-CONTRACT-HISTORY', $table);
-        $this->assertStringNotContainsString('EMP-PERM-HISTORY', $table);
+        $this->assertStringContainsString('EMP-PERM-HISTORY', $table);
+        // The passed employee shows the "Passed" badge, not "Not yet evaluated"
+        $this->assertStringContainsString('Passed', $table);
     }
 
     public function test_probation_index_paginates_filtered_records(): void
@@ -164,6 +168,46 @@ class ProbationFlowEnhancementTest extends TestCase
             ->assertSee('data-page-url', false);
         $this->assertStringContainsString('EMP-11', $table);
         $this->assertStringNotContainsString('EMP-01', $table);
+    }
+
+    public function test_terminated_with_history_is_included_in_probation_index(): void
+    {
+        $this->loginAsHr();
+        $terminated = $this->employee('EMP-TERM-HISTORY', 'Terminated');
+        $contract   = $this->employee('EMP-ACTIVE');
+        $history    = $this->probationRow('EMP-TERM-HISTORY', 'Tidak Lulus', '2026-08-05 10:00:00');
+        $history['Eval Date'] = '2026-08-05 10:00:00';
+        $this->bind([$terminated, $contract], [$history]);
+
+        $response = $this->get('/hr/probation');
+        $table = preg_match('/<tbody id="probTableBody">(.*?)<\/tbody>/s', $response->getContent(), $matches)
+            ? $matches[1]
+            : '';
+
+        $response->assertOk();
+        $this->assertStringContainsString('EMP-TERM-HISTORY', $table);
+        $this->assertStringContainsString('EMP-ACTIVE', $table);
+        // Terminated employee shows Terminated badge, not "Not yet evaluated"
+        $this->assertStringContainsString('Terminated', $table);
+    }
+
+    public function test_permanent_without_history_is_excluded_from_probation_index(): void
+    {
+        $this->loginAsHr();
+        $permanent = $this->employee('EMP-PERM-NOHISTORY', 'Permanent');
+        $contract  = $this->employee('EMP-CONTRACT-ONLY');
+        // No probation history rows
+        $this->bind([$permanent, $contract], []);
+
+        $response = $this->get('/hr/probation');
+        $table = preg_match('/<tbody id="probTableBody">(.*?)<\/tbody>/s', $response->getContent(), $matches)
+            ? $matches[1]
+            : '';
+
+        $response->assertOk();
+        $this->assertStringContainsString('EMP-CONTRACT-ONLY', $table);
+        $this->assertStringNotContainsString('EMP-PERM-NOHISTORY', $table,
+            'Permanent employee with no probation history must not appear in the probation index.');
     }
 
     public function test_permanent_without_history_is_not_active_or_evaluable(): void

@@ -36,16 +36,31 @@ class ProbationController extends Controller
         $perPage = max(1, (int) $request->query('per_page', 10));
         $currentPage = max(1, (int) $request->query('page', 1));
 
-        // Employee status is the source of truth for the candidate population.
-        // kandidat_probation contributes evaluation history only.
-        $employeeRows = $this->employeeRepo->getAll();
-        $latestEvals = $this->probationService->latestEvalByEmployee();
+        // Population = all employees who are currently on probation (Contract/PKWT)
+        // PLUS all employees who ever had a probation evaluation record, regardless of
+        // their current status (PKWTT, Terminated, etc.).
+        // This prevents Lulus/Tidak Lulus outcomes from removing rows from the page.
+        $employeeRows  = $this->employeeRepo->getAll();
+        $latestEvals   = $this->probationService->latestEvalByEmployee();
+
+        // Collect every Employee ID that has at least one probation evaluation row.
+        $evaluatedIds = $latestEvals->keys()
+            ->map(fn($id) => strtoupper(ltrim(trim((string) $id), "'")))
+            ->flip()   // flip to use as a fast lookup set
+            ->all();
+
         $allProbations = $employeeRows
-            ->filter(fn($employee) => in_array(
-                strtolower(trim((string) ($employee->statusEmployee ?? ''))),
-                ['contract', 'pkwt'],
-                true
-            ))
+            ->filter(function ($employee) use ($evaluatedIds) {
+                $status = strtolower(trim((string) ($employee->statusEmployee ?? '')));
+                $isActiveContract = in_array($status, ['contract', 'pkwt'], true);
+
+                // Also include employees who have a probation history row, even if
+                // their status has since changed to PKWTT or Terminated.
+                $empIdUpper = strtoupper(ltrim(trim((string) ($employee->employeeId ?? '')), "'"));
+                $hasProbationHistory = $empIdUpper !== '' && isset($evaluatedIds[$empIdUpper]);
+
+                return $isActiveContract || $hasProbationHistory;
+            })
             ->map(function ($employee) use ($latestEvals) {
                 $record = (object) get_object_vars($employee);
                 $employeeId = ltrim(trim((string) ($employee->employeeId ?? '')), "'");
@@ -118,16 +133,22 @@ class ProbationController extends Controller
             return $dt?->isPass();
         })->count();
 
+        $failed = $allProbations->filter(function ($e) {
+            $dt = ProbationDecisionType::fromDecisionString($e->lastDecision ?? '');
+            return $dt?->isFail();
+        })->count();
+
         $extended = $allProbations->filter(function ($e) {
             $dt = ProbationDecisionType::fromDecisionString($e->lastDecision ?? '');
             return $dt?->isExtend();
         })->count();
 
-        // 'onboarding' now means total employees with probation records (historical)
+        // 'onboarding' now means total employees with any probation record (historical + active)
         $stats = [
             'onboarding' => $allProbations->count(),
             'evaluated'  => $evaluated,
             'passed'     => $passed,
+            'failed'     => $failed,
             'extended'   => $extended,
         ];
 
