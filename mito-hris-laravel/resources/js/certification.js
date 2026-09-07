@@ -8,10 +8,40 @@
     };
 
     const MITO_CERT_BASE = window.MITO_CERT_BASE || "/certifications";
+    const certTypeInput = document.getElementById("certificationFormType");
+    const productFields = document.getElementById("certificationProductFields");
+    const companyFields = document.getElementById("certificationCompanyFields");
+    const productScopeInput = document.getElementById("certificationFormScope");
+    const brandInput = document.getElementById("certificationFormBrand");
+    const companyScopeInput = document.getElementById("certificationFormCompanyScope");
     const attachmentInput = document.getElementById("certificationFormAttachment");
     const currentAttachment = document.getElementById("certificationCurrentAttachment");
     const removeAttachmentWrap = document.getElementById("certificationRemoveAttachmentWrap");
     const removeAttachmentInput = document.getElementById("certificationRemoveAttachment");
+
+    function updateClassificationFields() {
+        const type = certTypeInput?.value || "";
+        const productType = ["SNI", "Food Safety", "Product Safety"].includes(type);
+        const companyType = ["ISO", "K3"].includes(type);
+        productFields?.classList.toggle("d-none", !productType);
+        companyFields?.classList.toggle("d-none", !companyType);
+        if (productScopeInput) productScopeInput.disabled = !productType;
+        if (brandInput) brandInput.disabled = !productType;
+        if (companyScopeInput) companyScopeInput.disabled = !companyType;
+        if (productType && productScopeInput) {
+            productScopeInput.placeholder = type === "SNI"
+                ? "Contoh: Rice Cooker, Air Fryer"
+                : "Contoh: Food Contact / Cookware atau Consumer Products";
+        }
+        if (companyType && companyScopeInput) {
+            companyScopeInput.placeholder = type === "ISO"
+                ? "Contoh: Quality Management System"
+                : "Contoh: Keselamatan & Kesehatan Kerja";
+        }
+    }
+
+    certTypeInput?.addEventListener("change", updateClassificationFields);
+    updateClassificationFields();
 
     function showToast(msg, type) {
         if (window.showToast) showToast(msg, type);
@@ -270,6 +300,11 @@
                 );
                 if (empSearch) empSearch.value = "";
                 resetEmpPicker();
+                if (certTypeInput) certTypeInput.value = "";
+                if (productScopeInput) productScopeInput.value = "";
+                if (brandInput) brandInput.value = "";
+                if (companyScopeInput) companyScopeInput.value = "";
+                updateClassificationFields();
                 if (attachmentInput) attachmentInput.value = "";
                 if (currentAttachment) {
                     currentAttachment.innerHTML = "";
@@ -378,6 +413,8 @@
         form.querySelector("#certificationFormName").value = c.name || "";
         form.querySelector("#certificationFormScope").value = c.product_scope || "";
         form.querySelector("#certificationFormBrand").value = c.brand || "";
+        form.querySelector("#certificationFormCompanyScope").value = c.company_scope || "";
+        updateClassificationFields();
         form.querySelector("#certificationFormDesc").value =
             c.description || "";
         form.querySelector("#certificationFormOrg").value =
@@ -389,14 +426,6 @@
         form.querySelector("#certificationFormExpiryDate").value =
             toLocalDateValue(c.expiry_date);
         form.querySelector("#certificationFormStatus").value = c.status || "";
-        form.querySelector("#certificationFormEmployeeId").value =
-            c.employee_id || "";
-        form.querySelector("#certificationFormEmployeeName").value =
-            c.employee_name || "";
-        form.querySelector("#certificationFormDivision").value =
-            c.division || "";
-        form.querySelector("#certificationFormDepartment").value =
-            c.department || "";
         form.querySelector("#certificationFormNotes").value = c.notes || "";
         if (attachmentInput) attachmentInput.value = "";
         if (currentAttachment) {
@@ -547,6 +576,9 @@
                         '<div class="col-md-6"><div class="asset-detail-item"><div class="asset-detail-label">Brand</div><div class="asset-detail-value">' +
                         escHtml(c.brand || "-") +
                         "</div></div></div>" +
+                        '<div class="col-md-6"><div class="asset-detail-item"><div class="asset-detail-label">Scope Perusahaan</div><div class="asset-detail-value">' +
+                        escHtml(c.company_scope || "-") +
+                        "</div></div></div>" +
                         '<div class="col-md-6"><div class="asset-detail-item"><div class="asset-detail-label">Lembaga Penerbit</div><div class="asset-detail-value">' +
                         escHtml(c.issuing_organization || "-") +
                         "</div></div></div>" +
@@ -612,6 +644,11 @@
             if (currentAttachment) currentAttachment.innerHTML = "";
             removeAttachmentWrap?.classList.add("d-none");
             if (removeAttachmentInput) removeAttachmentInput.checked = false;
+            if (certTypeInput) certTypeInput.value = "";
+            if (productScopeInput) productScopeInput.value = "";
+            if (brandInput) brandInput.value = "";
+            if (companyScopeInput) companyScopeInput.value = "";
+            updateClassificationFields();
             if (empSearch) empSearch.value = "";
             resetEmpPicker();
         });
