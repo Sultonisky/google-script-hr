@@ -7,7 +7,6 @@ use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Services\EmployeeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 class OutsourceController extends Controller
@@ -120,7 +119,7 @@ class OutsourceController extends Controller
 
         $result = $this->employeeService->createEmployee(
             $data,
-            Auth::user()?->name ?? 'HR Administrator'
+            $this->hrUserName()
         );
 
         return response()->json($result, $result['success'] ? 201 : 422);

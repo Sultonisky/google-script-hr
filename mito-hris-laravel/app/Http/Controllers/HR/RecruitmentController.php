@@ -13,7 +13,6 @@ use App\Services\RecruitmentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 class RecruitmentController extends Controller
@@ -322,7 +321,7 @@ class RecruitmentController extends Controller
     public function accept(AcceptCandidateRequest $request, string $id): RedirectResponse
     {
         try {
-            $user = Auth::user()?->name ?? Auth::user()?->email ?? 'HR Administrator';
+            $user = $this->hrUserName();
             $this->recruitmentService->acceptCandidateToEmployee(
                 recruitmentId: $id,
                 extraEmployeeData: [],
@@ -409,7 +408,7 @@ class RecruitmentController extends Controller
             }
 
             $now  = now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s');
-            $user = Auth::user()->name ?? Auth::user()->email ?? 'HR Administrator';
+            $user = $this->hrUserName();
 
             $hasExistingOffering = !empty($candidate->offeringCreated) && $candidate->offeringCreated !== '-';
 
@@ -494,7 +493,7 @@ class RecruitmentController extends Controller
         try {
             $response = $request->input('response', 'Menunggu');
             $notes = $request->input('notes', '');
-            $user = Auth::user()->name ?? Auth::user()->email ?? 'HR Administrator';
+            $user = $this->hrUserName();
 
             $allowed = ['Menunggu', 'Diterima', 'Ditolak'];
             if (!in_array($response, $allowed, true)) {
@@ -552,7 +551,7 @@ class RecruitmentController extends Controller
     public function saveContract(Request $request, string $id): JsonResponse
     {
         try {
-            $user = Auth::user()->name ?? Auth::user()->email ?? 'HR Administrator';
+            $user = $this->hrUserName();
             $result = $this->recruitmentService->processContractOnboarding($id, $request->all(), $user);
 
             return response()->json($result);

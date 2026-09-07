@@ -10,7 +10,6 @@ use App\Services\ProbationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use RuntimeException;
 
@@ -52,7 +51,7 @@ class ProbationController extends Controller
         $allProbations = $employeeRows
             ->filter(function ($employee) use ($evaluatedIds) {
                 $status = strtolower(trim((string) ($employee->statusEmployee ?? '')));
-                $isActiveContract = in_array($status, ['contract', 'pkwt'], true);
+                $isActiveContract = in_array($status, ['contract', 'pkwt', 'probation'], true);
 
                 // Also include employees who have a probation history row, even if
                 // their status has since changed to PKWTT or Terminated.
@@ -217,7 +216,7 @@ class ProbationController extends Controller
             'approval_hrbp_date' => $request->input('approval_hrbp_date', ''),
         ];
 
-        $user = Auth::user()->name ?? 'HR Team';
+        $user = $this->hrUserName();
 
         try {
             $result = $this->probationService->evaluateProbation($id, $evalData, $user);

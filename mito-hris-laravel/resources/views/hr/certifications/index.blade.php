@@ -12,12 +12,13 @@
             <div class="panel-header">
                 <div>
                     <h6>Daftar Sertifikasi</h6>
-                    <div class="panel-subtitle">SNI untuk produk, ISO untuk sistem perusahaan, K3 untuk keselamatan kerja, serta klasifikasi food dan product safety.</div>
+                    <div class="panel-subtitle">SNI untuk produk, ISO untuk sistem perusahaan, K3 untuk keselamatan kerja,
+                        serta klasifikasi food dan product safety.</div>
                 </div>
                 <div class="export-btns d-flex flex-wrap gap-2">
                     @can('manage_certification')
                         <button class="btn btn-sm text-white fw-semibold"
-                            style="background:#166534;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
+                            style="background:#eb1c24;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
                             type="button" data-bs-toggle="modal" data-bs-target="#addCertificationModal"
                             id="btnAddCertification">
                             <i class="bi bi-plus-lg me-1"></i>Add Certification
