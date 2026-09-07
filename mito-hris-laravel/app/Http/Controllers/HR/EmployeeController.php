@@ -10,7 +10,6 @@ use App\Services\ProbationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 class EmployeeController extends Controller
@@ -186,7 +185,7 @@ class EmployeeController extends Controller
 
         $result = $this->employeeService->createEmployee(
             $request->all(),
-            Auth::user()?->name ?? 'HR Administrator'
+            $this->hrUserName()
         );
 
         return response()->json($result, $result['success'] ? 201 : 422);
@@ -392,7 +391,7 @@ class EmployeeController extends Controller
 
         $result = $this->employeeService->importEmployees(
             $request->input('employees', []),
-            Auth::user()?->name ?? 'HR Administrator'
+            $this->hrUserName()
         );
 
         // Always return JSON — modal uses Fetch API
@@ -415,7 +414,7 @@ class EmployeeController extends Controller
         // Ambil semua data request kecuali sk_number — Nomor SK wajib di-generate server-side
         $data = $request->except(['sk_number']);
 
-        $result = $this->employeeService->processRotation($id, $data, Auth::user()?->name ?? 'HR Team');
+        $result = $this->employeeService->processRotation($id, $data, $this->hrUserName());
 
         $pdfQuery = http_build_query([
             'rotation_type'     => $result['rotationType'],
@@ -650,7 +649,7 @@ class EmployeeController extends Controller
             $result = $this->employeeService->processOffboarding(
                 $id,
                 $data,
-                Auth::user()?->name ?? 'HR Team'
+                $this->hrUserName()
             );
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("EmployeeController::offboard error for {$id}: " . $e->getMessage());
@@ -681,7 +680,7 @@ class EmployeeController extends Controller
             'last_working_date' => 'required|date',
         ]);
 
-        $result = $this->employeeService->processOffContract($id, $request->all(), Auth::user()?->name ?? 'HR Team');
+        $result = $this->employeeService->processOffContract($id, $request->all(), $this->hrUserName());
 
         // Off Contract hanya menghasilkan satu dokumen: Paklaring.
         $pdfUrls = [];
