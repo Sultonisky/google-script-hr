@@ -236,7 +236,6 @@ if (!app()->environment('local')) {
             Route::get('/{certification}/json', [CertificationController::class, 'getJson'])->name('json');
         });
     });
-
 } // end !local
 
 if (app()->environment('local')) {
