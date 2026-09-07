@@ -10,20 +10,36 @@
     const MITO_CERT_BASE = window.MITO_CERT_BASE || "/certifications";
     const certTypeInput = document.getElementById("certificationFormType");
     const productFields = document.getElementById("certificationProductFields");
-    const productFieldsRow = document.getElementById("certificationProductFieldsRow");
+    const productFieldsRow = document.getElementById(
+        "certificationProductFieldsRow",
+    );
     const companyFields = document.getElementById("certificationCompanyFields");
-    const companyFieldsRow = document.getElementById("certificationCompanyFieldsRow");
+    const companyFieldsRow = document.getElementById(
+        "certificationCompanyFieldsRow",
+    );
     const productScopeInput = document.getElementById("certificationFormScope");
     const brandInput = document.getElementById("certificationFormBrand");
-    const companyScopeInput = document.getElementById("certificationFormCompanyScope");
-    const attachmentInput = document.getElementById("certificationFormAttachment");
-    const currentAttachment = document.getElementById("certificationCurrentAttachment");
-    const removeAttachmentWrap = document.getElementById("certificationRemoveAttachmentWrap");
-    const removeAttachmentInput = document.getElementById("certificationRemoveAttachment");
+    const companyScopeInput = document.getElementById(
+        "certificationFormCompanyScope",
+    );
+    const attachmentInput = document.getElementById(
+        "certificationFormAttachment",
+    );
+    const currentAttachment = document.getElementById(
+        "certificationCurrentAttachment",
+    );
+    const removeAttachmentWrap = document.getElementById(
+        "certificationRemoveAttachmentWrap",
+    );
+    const removeAttachmentInput = document.getElementById(
+        "certificationRemoveAttachment",
+    );
 
     function updateClassificationFields() {
         const type = certTypeInput?.value || "";
-        const productType = ["SNI", "Food Safety", "Product Safety"].includes(type);
+        const productType = ["SNI", "Food Safety", "Product Safety"].includes(
+            type,
+        );
         const companyType = ["ISO", "K3"].includes(type);
         productFields?.classList.toggle("d-none", !productType);
         productFieldsRow?.classList.toggle("d-none", !productType);
@@ -33,14 +49,16 @@
         if (brandInput) brandInput.disabled = !productType;
         if (companyScopeInput) companyScopeInput.disabled = !companyType;
         if (productType && productScopeInput) {
-            productScopeInput.placeholder = type === "SNI"
-                ? "Contoh: Rice Cooker, Air Fryer"
-                : "Contoh: Food Contact / Cookware atau Consumer Products";
+            productScopeInput.placeholder =
+                type === "SNI"
+                    ? "Contoh: Rice Cooker, Air Fryer"
+                    : "Contoh: Food Contact / Cookware atau Consumer Products";
         }
         if (companyType && companyScopeInput) {
-            companyScopeInput.placeholder = type === "ISO"
-                ? "Contoh: Quality Management System"
-                : "Contoh: Keselamatan & Kesehatan Kerja";
+            companyScopeInput.placeholder =
+                type === "ISO"
+                    ? "Contoh: Quality Management System"
+                    : "Contoh: Keselamatan & Kesehatan Kerja";
         }
     }
 
@@ -71,6 +89,36 @@
             String(d.getMonth() + 1).padStart(2, "0") +
             "-" +
             String(d.getDate()).padStart(2, "0")
+        );
+    }
+
+    function formatDisplayDate(iso) {
+        if (!iso) return "";
+        const match = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);
+        const d = match
+            ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+            : new Date(iso);
+        if (isNaN(d.getTime())) return "";
+        const months = [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "Mei",
+            "Jun",
+            "Jul",
+            "Agu",
+            "Sep",
+            "Okt",
+            "Nov",
+            "Des",
+        ];
+        return (
+            String(d.getDate()).padStart(2, "0") +
+            " " +
+            months[d.getMonth()] +
+            " " +
+            d.getFullYear()
         );
     }
 
@@ -315,7 +363,8 @@
                     currentAttachment.classList.add("d-none");
                 }
                 removeAttachmentWrap?.classList.add("d-none");
-                if (removeAttachmentInput) removeAttachmentInput.checked = false;
+                if (removeAttachmentInput)
+                    removeAttachmentInput.checked = false;
             }
             document.getElementById("addCertificationModalLabel").textContent =
                 isEdit ? "Edit Sertifikasi" : "Tambah Sertifikasi Baru";
@@ -415,9 +464,11 @@
         form.querySelector("#certificationFormCode").value = c.cert_code || "";
         form.querySelector("#certificationFormType").value = c.cert_type || "";
         form.querySelector("#certificationFormName").value = c.name || "";
-        form.querySelector("#certificationFormScope").value = c.product_scope || "";
+        form.querySelector("#certificationFormScope").value =
+            c.product_scope || "";
         form.querySelector("#certificationFormBrand").value = c.brand || "";
-        form.querySelector("#certificationFormCompanyScope").value = c.company_scope || "";
+        form.querySelector("#certificationFormCompanyScope").value =
+            c.company_scope || "";
         updateClassificationFields();
         form.querySelector("#certificationFormDesc").value =
             c.description || "";
@@ -590,10 +641,10 @@
                         escHtml(c.certificate_number || "-") +
                         "</div></div></div>" +
                         '<div class="col-md-6"><div class="asset-detail-item"><div class="asset-detail-label">Tanggal Terbit</div><div class="asset-detail-value">' +
-                        escHtml(toLocalDateValue(c.issue_date) || "-") +
+                        escHtml(formatDisplayDate(c.issue_date) || "-") +
                         "</div></div></div>" +
                         '<div class="col-md-6"><div class="asset-detail-item"><div class="asset-detail-label">Tanggal Kedaluwarsa</div><div class="asset-detail-value">' +
-                        escHtml(toLocalDateValue(c.expiry_date) || "-") +
+                        escHtml(formatDisplayDate(c.expiry_date) || "-") +
                         "</div></div></div>" +
                         (c.description
                             ? '<div class="col-12"><div class="asset-detail-item"><div class="asset-detail-label">Deskripsi</div><div class="asset-detail-value">' +
@@ -605,21 +656,21 @@
                               escHtml(c.notes) +
                               "</div></div></div>"
                             : "") +
-                                                (c.attachment_path
-                                                        ? '<div class="col-12 mt-2"><div class="asset-detail-label mb-2">Attachment</div>' +
-                                                            (/\.(jpe?g|png|webp)$/i.test(c.attachment_path)
-                                                                    ? '<img class="img-fluid rounded border" style="max-height:360px" src="' +
-                                                                        MITO_CERT_BASE +
-                                                                        "/" +
-                                                                        c.id +
-                                                                        '/attachment" alt="Attachment sertifikasi">'
-                                                                    : '<a class="btn btn-sm btn-outline-secondary" target="_blank" rel="noopener" href="' +
-                                                                        MITO_CERT_BASE +
-                                                                        "/" +
-                                                                        c.id +
-                                                                        '/attachment"><i class="bi bi-file-earmark-pdf me-1"></i>Buka Dokumen PDF</a>') +
-                                                            "</div>"
-                                                        : '<div class="col-12 mt-2 text-muted small">Tidak ada attachment.</div>') +
+                        (c.attachment_path
+                            ? '<div class="col-12 mt-2"><div class="asset-detail-label mb-2">Attachment</div>' +
+                              (/\.(jpe?g|png|webp)$/i.test(c.attachment_path)
+                                  ? '<img class="img-fluid rounded border" style="max-height:360px" src="' +
+                                    MITO_CERT_BASE +
+                                    "/" +
+                                    c.id +
+                                    '/attachment" alt="Attachment sertifikasi">'
+                                  : '<a class="btn btn-sm btn-outline-secondary" target="_blank" rel="noopener" href="' +
+                                    MITO_CERT_BASE +
+                                    "/" +
+                                    c.id +
+                                    '/attachment"><i class="bi bi-file-earmark-pdf me-1"></i>Buka Dokumen PDF</a>') +
+                              "</div>"
+                            : '<div class="col-12 mt-2 text-muted small">Tidak ada attachment.</div>') +
                         "</div>";
                 } catch (_) {
                     body.innerHTML =
