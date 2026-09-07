@@ -548,17 +548,75 @@ class ProbationEvaluationFlowTest extends TestCase
         $this->assertSame('Extend', self::ref($previous, 'Decision'));
     }
 
-    public function test_t13_re_evaluation_after_extend_rejects_forced_extend_without_writing(): void
+    /**
+     * T13 — Second EXTEND succeeds when the employee has valid current contract dates.
+     *
+     * After the first EXTEND, the Employee sheet has:
+     *   Join Date          = new contract start (extStart from first extend)
+     *   End Date (Contract) = new contract end  (server-derived from first extend)
+     *
+     * The second EXTEND must resolve duration from THOSE dates — not from the
+     * original join date, and not from the first Extension Duration history row.
+     *
+     * bindEvaluateFlowMocks() uses the joinDate / endDateContract parameters to
+     * simulate the updated Employee record that would exist in Google Sheets after
+     * the first extend has written 'Join Date' = extStart = '2026-12-01' and
+     * 'End Date (Contract)' = extEnd = '2027-05-31' (6-month extension).
+     */
+    public function test_t13_second_extend_after_first_extend_succeeds_with_correct_duration(): void
     {
         $previous = $this->extendHistoryRow();
-        [$response, $secondRows] = $this->postEvaluation('Extend', [
-            'extension_duration' => '3 Bulan',
-            'extension_start' => '2026-12-01',
-            'extension_end' => '2027-03-01',
-        ], [$previous]);
 
-        $response->assertStatus(422);
-        $this->assertCount(0, $secondRows, 'A forced second Extend must not append an evaluation row.');
+        // Simulate employee state AFTER the first extend:
+        //   Join Date           = 2026-12-01  (extStart written by first extend)
+        //   End Date (Contract) = 2027-05-31  (extEnd written by first extend: 2026-12-01 + 6mo − 1d)
+        // resolveExtensionDuration(2026-12-01, 2027-05-31) = 6 months (correct per-extension duration)
+        [$response, $secondRows] = $this->postEvaluation(
+            'Perpanjang Kontrak',
+            ['extension_start' => '2027-06-01'],
+            [$previous],
+            '2027-05-31',   // endDateContract after first extend
+            '2026-12-01'    // joinDate updated by first extend
+        );
+
+        $response->assertOk()->assertJsonPath('success', true)
+            ->assertJsonPath('decisionType', 'extend');
+        $this->assertCount(1, $secondRows, 'Second Extend must append exactly one new evaluation row.');
+        $this->assertSame('Perpanjang Kontrak', self::ref($secondRows[0], 'Decision'));
+        // Duration must be 6 Bulan (from current 2026-12-01 → 2027-05-31 contract, not 12 months cumulative)
+        $this->assertSame('6 Bulan', self::ref($secondRows[0], 'Extension Duration'),
+            'Second extend must derive duration from CURRENT contract dates (joinDate after first extend), '
+            . 'not from the original join date which would give cumulative 12 months.');
+        // New contract: 2027-06-01 + 6 months − 1 day = 2027-11-30
+        $this->assertSame('2027-06-01', self::ref($secondRows[0], 'New Contract Start'));
+        $this->assertSame('2027-11-30', self::ref($secondRows[0], 'New Contract End'));
+    }
+
+    /**
+     * T13b — Second Extend with manipulated client duration is still ignored.
+     * Backend derives duration from current contract regardless of what client sends.
+     */
+    public function test_t13b_second_extend_ignores_manipulated_client_duration(): void
+    {
+        $previous = $this->extendHistoryRow();
+
+        [$response, $secondRows] = $this->postEvaluation(
+            'Perpanjang Kontrak',
+            [
+                'extension_duration' => '99 Bulan',   // ← attacker tries to manipulate
+                'extension_start'    => '2027-06-01',
+                'extension_end'      => '2030-01-01', // ← wrong end date also sent
+            ],
+            [$previous],
+            '2027-05-31',
+            '2026-12-01'
+        );
+
+        $response->assertOk()->assertJsonPath('success', true);
+        $this->assertSame('6 Bulan', self::ref($secondRows[0], 'Extension Duration'),
+            'Manipulated extension_duration must be ignored on second extend too.');
+        $this->assertSame('2027-11-30', self::ref($secondRows[0], 'New Contract End'),
+            'End date must be server-derived from actual contract duration, not browser value.');
     }
 
     // =========================================================================
@@ -789,5 +847,222 @@ class ProbationEvaluationFlowTest extends TestCase
         $this->assertSame('12 Bulan', self::ref($row, 'Extension Duration'));
         $this->assertSame('2028-04-30', self::ref($row, 'New Contract End'));
         $this->assertSame('2027-05-01', self::ref($row, 'New Contract Start'));
+    }
+
+    // =========================================================================
+    // T20 — Imported employee (no kandidat_accepted, no Offering Contract Duration)
+    //       can still extend successfully using joinDate / endDateContract.
+    //
+    // This is the canonical "Case 2 — Import" test from the spec:
+    //   Status Employee = Contract
+    //   No kandidat_accepted record
+    //   No Offering Contract Duration
+    //   Join Date = valid
+    //   End Date (Contract) = valid
+    //   → Extend must succeed, duration derived from contract dates.
+    // =========================================================================
+
+    public function test_t20_imported_employee_extend_succeeds_without_recruitment_record(): void
+    {
+        $this->loginAsHrAdmin();
+
+        // Employee created via Excel import — no recruitment_id, no offering data
+        $importedEmployee = new EmployeeData(
+            employeeId: 'IMP001',
+            fullName: 'Siti Rahmawati',
+            branchName: '',
+            department: 'Finance',
+            jobPosition: 'Staff Finance',
+            joinDate: '2026-02-15',          // ← import-supplied contract start
+            endDateContract: '2026-08-14',   // ← import-supplied contract end (6 months)
+            statusEmployee: 'Contract',
+            personalEmail: 'siti@example.com',
+        );
+
+        $employeeRepo = Mockery::mock(EmployeeRepositoryInterface::class);
+        $employeeRepo->shouldReceive('findById')->with('IMP001')->andReturn($importedEmployee);
+        $employeeRepo->shouldReceive('update')->andReturn(true)->byDefault();
+
+        $auditRepo = Mockery::mock(AuditLogRepositoryInterface::class);
+        $auditRepo->shouldReceive('log')->andReturn(true)->byDefault();
+
+        $headers = $this->headers();
+        $captured = [];
+        $sheets = Mockery::mock(GoogleSheetsService::class);
+        $sheets->shouldReceive('getRange')->with('kandidat_probation', '1:1', false)->andReturn([$headers])->byDefault();
+        $sheets->shouldReceive('appendRow')
+            ->withArgs(function (string $sheet, array $row) use ($headers, &$captured) {
+                if (count($row) !== count($headers)) return false;
+                $captured[] = array_combine($headers, $row);
+                return true;
+            })->andReturn(true)->byDefault();
+        $sheets->shouldReceive('getRowsAsAssoc')->andReturn([])->byDefault();  // no prior history
+        $sheets->shouldReceive('clearCache')->andReturn(null)->byDefault();
+        $sheets->shouldReceive('updateRange')->andReturn(true)->byDefault();
+
+        $this->app->instance(EmployeeRepositoryInterface::class, $employeeRepo);
+        $this->app->instance(AuditLogRepositoryInterface::class, $auditRepo);
+        $this->app->instance(GoogleSheetsService::class, $sheets);
+
+        $payload = array_merge([
+            'decision'           => 'Perpanjang Kontrak',
+            'extension_start'    => '2026-08-15',   // day after current contract end
+            // recruitment_id intentionally omitted — imported employee has none
+        ], $this->validIndicatorPayload());
+
+        $response = $this->postJson('/hr/probation/IMP001/evaluate', $payload);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('decisionType', 'extend');
+
+        $this->assertCount(1, $captured, 'Imported employee extend must append exactly one evaluation row.');
+
+        $row = $captured[0];
+        // Duration = monthsBetween(2026-02-15, 2026-08-14) = 6 months
+        $this->assertSame('6 Bulan', self::ref($row, 'Extension Duration'),
+            'Duration must be derived from import-supplied contract dates (2026-02-15 → 2026-08-14 = 6 months).');
+        $this->assertSame('2026-08-15', self::ref($row, 'New Contract Start'));
+        // New end = 2026-08-15 + 6 months − 1 day = 2027-02-14
+        $this->assertSame('2027-02-14', self::ref($row, 'New Contract End'));
+        $this->assertSame('IMP001', self::ref($row, 'Employee ID'));
+        // No recruitment_id — must be stored as empty string, not cause an error
+        $this->assertSame('', self::ref($row, 'Recruitment ID'),
+            'Missing recruitment_id must be stored as empty string, not cause an error.');
+    }
+
+    // =========================================================================
+    // T21 — Invalid contract dates (end < start) → Extend rejected safely
+    //       No probation history appended, no Employee mutation, no fake duration.
+    //
+    // This is "Case 4 — Invalid date" from the spec.
+    // =========================================================================
+
+    public function test_t21_extend_rejected_when_contract_end_before_start(): void
+    {
+        $this->loginAsHrAdmin();
+
+        // end < start → monthsBetweenDates returns null → resolveExtensionDuration returns null
+        $badEmployee = new EmployeeData(
+            employeeId: 'EMP_BAD',
+            fullName: 'Karyawan BadDate',
+            joinDate: '2026-08-01',
+            endDateContract: '2026-07-01',   // ← end is before start — invalid
+            statusEmployee: 'Contract',
+        );
+
+        $employeeRepo = Mockery::mock(EmployeeRepositoryInterface::class);
+        $employeeRepo->shouldReceive('findById')->with('EMP_BAD')->andReturn($badEmployee);
+        $employeeRepo->shouldReceive('update')->never();
+
+        $auditRepo = Mockery::mock(AuditLogRepositoryInterface::class);
+        $auditRepo->shouldReceive('log')->andReturn(true)->byDefault();
+
+        $headers = $this->headers();
+        $captured = [];
+        $sheets = Mockery::mock(GoogleSheetsService::class);
+        $sheets->shouldReceive('getRange')->andReturn([$headers])->byDefault();
+        $sheets->shouldReceive('getRowsAsAssoc')->andReturn([])->byDefault();
+        $sheets->shouldReceive('clearCache')->andReturn(null)->byDefault();
+        $sheets->shouldReceive('appendRow')
+            ->withArgs(function ($s, $r) use ($headers, &$captured) {
+                $captured[] = $r;
+                return true;
+            })->andReturn(true)->byDefault();
+
+        $this->app->instance(EmployeeRepositoryInterface::class, $employeeRepo);
+        $this->app->instance(AuditLogRepositoryInterface::class, $auditRepo);
+        $this->app->instance(GoogleSheetsService::class, $sheets);
+
+        $payload = array_merge([
+            'decision'        => 'Perpanjang Kontrak',
+            'extension_start' => '2026-09-01',
+        ], $this->validIndicatorPayload());
+
+        $response = $this->postJson('/hr/probation/EMP_BAD/evaluate', $payload);
+
+        $response->assertStatus(422);
+        $this->assertCount(0, $captured, 'No evaluation row may be written for invalid contract dates.');
+        $this->assertStringContainsString(
+            'Durasi perpanjangan tidak dapat ditentukan',
+            $response->json('message') ?? ''
+        );
+    }
+
+    // =========================================================================
+    // T22 — Non-contract employee (Status = Permanent) → Extend rejected.
+    //       This is "Case 6 — Non-contract employee" from the spec.
+    // =========================================================================
+
+    public function test_t22_permanent_employee_extend_rejected(): void
+    {
+        $this->loginAsHrAdmin();
+
+        $permanentEmployee = new EmployeeData(
+            employeeId: 'EMP_PERM2',
+            fullName: 'Karyawan Tetap',
+            joinDate: '2024-01-01',
+            endDateContract: null,
+            statusEmployee: 'Permanent',
+        );
+
+        $employeeRepo = Mockery::mock(EmployeeRepositoryInterface::class);
+        $employeeRepo->shouldReceive('findById')->with('EMP_PERM2')->andReturn($permanentEmployee);
+        $employeeRepo->shouldReceive('update')->never();
+
+        $auditRepo = Mockery::mock(AuditLogRepositoryInterface::class);
+        $auditRepo->shouldReceive('log')->andReturn(true)->byDefault();
+
+        $captured = [];
+        $sheets = Mockery::mock(GoogleSheetsService::class);
+        $sheets->shouldReceive('getRange')->andReturn([$this->headers()])->byDefault();
+        $sheets->shouldReceive('getRowsAsAssoc')->andReturn([])->byDefault();
+        $sheets->shouldReceive('clearCache')->andReturn(null)->byDefault();
+        $sheets->shouldReceive('appendRow')
+            ->withArgs(function ($s, $r) use (&$captured) { $captured[] = $r; return true; })
+            ->andReturn(true)->byDefault();
+
+        $this->app->instance(EmployeeRepositoryInterface::class, $employeeRepo);
+        $this->app->instance(AuditLogRepositoryInterface::class, $auditRepo);
+        $this->app->instance(GoogleSheetsService::class, $sheets);
+
+        $payload = array_merge([
+            'decision'        => 'Perpanjang Kontrak',
+            'extension_start' => '2026-09-01',
+        ], $this->validIndicatorPayload());
+
+        $response = $this->postJson('/hr/probation/EMP_PERM2/evaluate', $payload);
+
+        $response->assertStatus(422);
+        $this->assertCount(0, $captured, 'No evaluation row may be written for a non-contract employee.');
+    }
+
+    // =========================================================================
+    // T23 — Recruitment employee works identically to imported employee.
+    //       Both must reach the same extend logic; no origin-based branching.
+    //       This is "Case 1 — Recruitment employee" from the spec.
+    //
+    //       The recruitment employee has a valid joinDate and endDateContract on
+    //       the Employee sheet (set during processContractOnboarding). The extend
+    //       must derive duration from those dates, NOT from kandidat_accepted's
+    //       Offering Contract Duration.
+    // =========================================================================
+
+    public function test_t23_recruitment_employee_extend_uses_employee_contract_dates_not_offering(): void
+    {
+        // Recruitment employee: offering said 12 Bulan, but actual contract is 6 months
+        // (HR entered different dates during onboarding). Extend must use 6 months.
+        [$response, $rows] = $this->postEvaluation(
+            'Perpanjang Kontrak',
+            ['extension_start' => '2026-12-01'],
+            [],
+            '2026-11-01',   // endDateContract (6-month actual contract)
+            '2026-05-01'    // joinDate
+        );
+
+        $response->assertOk()->assertJsonPath('decisionType', 'extend');
+        $this->assertSame('6 Bulan', self::ref($rows[0], 'Extension Duration'),
+            'Extend must use actual Employee contract dates, not Offering Contract Duration.');
+        $this->assertSame('2027-05-31', self::ref($rows[0], 'New Contract End'));
     }
 }
