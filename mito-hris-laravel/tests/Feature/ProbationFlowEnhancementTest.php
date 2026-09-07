@@ -234,7 +234,7 @@ class ProbationFlowEnhancementTest extends TestCase
         $this->assertTrue($result['success']);
         $this->assertCount(1, $appended);
         $this->assertSame('kandidat_probation', $appended[0]['sheet']);
-        $this->assertSame('Probation', $appended[0]['row'][8]);
+        $this->assertSame('Probation', $appended[0]['row'][7]);
         $this->assertSame('Contract', $employee->statusEmployee);
         $this->assertTrue($service->isActiveProbation('EMP-EVAL'));
         $this->assertNotEmpty($updated);

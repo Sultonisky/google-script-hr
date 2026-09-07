@@ -10,7 +10,6 @@ use App\Services\ProbationService;
 use Illuminate\Support\Facades\Session;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
-use ReflectionClass;
 use Tests\TestCase;
 
 /**
@@ -41,10 +40,7 @@ class ProbationMemoizationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        // Pull the canonical PROBATION_HEADERS from the service so the test
-        // never drifts if new columns are appended.
-        $this->probationHeaders = (new ReflectionClass(ProbationService::class))
-            ->getConstant('PROBATION_HEADERS');
+        $this->probationHeaders = config('hris.schemas.kandidat_probation');
     }
 
     protected function tearDown(): void
