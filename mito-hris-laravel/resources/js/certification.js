@@ -10,7 +10,9 @@
     const MITO_CERT_BASE = window.MITO_CERT_BASE || "/certifications";
     const certTypeInput = document.getElementById("certificationFormType");
     const productFields = document.getElementById("certificationProductFields");
+    const productFieldsRow = document.getElementById("certificationProductFieldsRow");
     const companyFields = document.getElementById("certificationCompanyFields");
+    const companyFieldsRow = document.getElementById("certificationCompanyFieldsRow");
     const productScopeInput = document.getElementById("certificationFormScope");
     const brandInput = document.getElementById("certificationFormBrand");
     const companyScopeInput = document.getElementById("certificationFormCompanyScope");
@@ -24,7 +26,9 @@
         const productType = ["SNI", "Food Safety", "Product Safety"].includes(type);
         const companyType = ["ISO", "K3"].includes(type);
         productFields?.classList.toggle("d-none", !productType);
+        productFieldsRow?.classList.toggle("d-none", !productType);
         companyFields?.classList.toggle("d-none", !companyType);
+        companyFieldsRow?.classList.toggle("d-none", !companyType);
         if (productScopeInput) productScopeInput.disabled = !productType;
         if (brandInput) brandInput.disabled = !productType;
         if (companyScopeInput) companyScopeInput.disabled = !companyType;
