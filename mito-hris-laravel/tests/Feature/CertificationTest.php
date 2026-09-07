@@ -11,6 +11,8 @@ use App\Repositories\Local\LocalEmployeeRepository;
 use App\Services\CertificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\UploadedFile;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -264,6 +266,51 @@ class CertificationTest extends TestCase
         $this->assertSame('Budi Santoso', $fresh->employee_name);
         $this->assertSame('GA', $fresh->division);
         $this->assertSame('Facility Management', $fresh->department);
+    }
+
+    #[Test]
+    public function certification_attachment_can_be_uploaded_served_and_replaced(): void
+    {
+        Storage::fake('local');
+        $this->authAs('LEGAL');
+        $this->fakeAuditLogRepo();
+
+        $payload = [
+            'cert_type'            => CertType::LICENSE->value,
+            'name'                 => 'SIM A dengan Attachment',
+            'issuing_organization' => 'Korlantas Polri',
+            'issue_date'           => '2026-03-01',
+            'employee_id'          => '2019031401',
+            'employee_name'        => 'Budi Santoso',
+            'attachment'           => UploadedFile::fake()->create('sim-a.pdf', 100, 'application/pdf'),
+        ];
+
+        $response = $this->post('/hr/certifications', $payload)->assertCreated();
+        $cert = Certification::findOrFail($response->json('certification.id'));
+        $oldPath = $cert->attachment_path;
+
+        Storage::disk('local')->assertExists($oldPath);
+        $this->get("/hr/certifications/{$cert->id}/attachment")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
+
+        $updatePayload = [
+            '_method'             => 'PUT',
+            'cert_type'           => CertType::LICENSE->value,
+            'name'                => 'SIM A dengan Attachment Baru',
+            'issuing_organization'=> 'Korlantas Polri',
+            'issue_date'          => '2026-03-01',
+            'employee_id'         => '2019031401',
+            'employee_name'       => 'Budi Santoso',
+            'attachment'          => UploadedFile::fake()->image('sim-a-baru.jpg'),
+        ];
+
+        $this->post("/hr/certifications/{$cert->id}", $updatePayload)->assertOk();
+
+        $newPath = $cert->fresh()->attachment_path;
+        $this->assertNotSame($oldPath, $newPath);
+        Storage::disk('local')->assertMissing($oldPath);
+        Storage::disk('local')->assertExists($newPath);
     }
 
     #[Test]
