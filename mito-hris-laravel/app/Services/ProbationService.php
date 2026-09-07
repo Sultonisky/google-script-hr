@@ -214,6 +214,9 @@ class ProbationService
         if (!$employee) {
             throw new RuntimeException("Karyawan probation {$employeeId} tidak ditemukan.");
         }
+        if (!$this->isContractEmployee($employee->statusEmployee ?? null)) {
+            throw new RuntimeException('Hanya karyawan dengan status Contract yang dapat dievaluasi.');
+        }
 
         // Normalize Employee ID — strip leading apostrophe that GAS sometimes prepends
         $employeeId = ltrim(trim($employeeId), "'");
@@ -234,6 +237,12 @@ class ProbationService
         }
 
         $user   = $user ?: 'HR Administrator';
+        $submissionKey = 'probation_eval_submission_' . sha1(json_encode([
+            'employee_id' => $employeeId,
+            'user' => $user,
+            'latest_eval_id' => $latest['evalId'] ?? null,
+            'evaluation' => $evalData,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
         $now    = now()->timezone('Asia/Jakarta');
         $nowStr = $now->format('Y-m-d H:i:s');
         $evalId = $this->generateEvalId($now);
@@ -267,10 +276,8 @@ class ProbationService
         $notes       = $evalData['notes']              ?? '';
 
         // === STEP 13 — Extend: derive duration from the employee's actual ===
-        // contract, not from the browser. We use the Contract Duration
-        // captured at promotion time and stored on the kandidat_probation
-        // record (the source of truth for probation employees). If missing
-        // we fall back to the End Date delta, mirroring the promotion flow.
+        // contract, not from the browser. Employee contract dates are the
+        // current source of truth; history is only a fallback for legacy data.
         if ($isPerpanjang && empty($extStart)) {
             throw new RuntimeException('Perpanjangan probation memerlukan tanggal mulai kontrak baru.');
         }
@@ -290,7 +297,18 @@ class ProbationService
             $extEnd      = $this->addMonthsDate($extStart, $resolvedDuration);
         }
 
+        if (!Cache::add($submissionKey, true, 30)) {
+            throw new RuntimeException('Evaluasi yang sama baru saja diproses. Jangan kirim ulang evaluasi tersebut.');
+        }
+
         $branchName = $employee->branchName ?? '';
+        $contractDuration = $this->monthsBetweenDates(
+            $employee->joinDate ?? null,
+            $employee->endDateContract ?? null
+        );
+        $contractDurationLabel = $contractDuration !== null && $contractDuration > 0
+            ? $this->monthsToLabel($contractDuration)
+            : '';
         $skNumber   = '';
 
         // ── 3. Branch per keputusan → update Employee sheet ──────
@@ -357,6 +375,9 @@ class ProbationService
             'Probation ID'       => $this->generateProbationId($now),
             'Employee ID'        => $employeeId,
             'Recruitment ID'     => $evalData['recruitment_id'] ?? '',
+            'Contract Duration'  => $contractDurationLabel,
+            'Contract Start'     => $employee->joinDate ?? '',
+            'Contract End'       => $employee->endDateContract ?? '',
             'Join Date'          => $employee->joinDate ?? '',
             'Status'             => $probStatus,
             'Eval ID'            => $evalId,
@@ -405,7 +426,6 @@ class ProbationService
             'Approval HRBP Name' => $evalData['approval_hrbp_name'] ?? '',
             'Approval HRBP Date' => $evalData['approval_hrbp_date'] ?? '',
         ]);
-
         // ── 5. Audit log ──────────────────────────────────────────
         $action = $isLulus ? 'Probation Lulus' : ($isPutusKontrak ? 'Probation Putus Kontrak' : 'Probation Diperpanjang');
         $this->auditRepo->log(
@@ -546,10 +566,15 @@ class ProbationService
 
     public function canEvaluate(string $employeeId): bool
     {
+        $employee = $this->employeeRepo->findById($employeeId);
+        if (!$employee || !$this->isContractEmployee($employee->statusEmployee ?? null)) {
+            return false;
+        }
+
         $history = $this->getEvalHistory($employeeId);
         $count = count($history);
         if ($count === 0) {
-            return $this->isActiveProbation($employeeId);
+            return true;
         }
         $latest = $history[0]; // newest first
         $decision = $latest['decision'] ?? '';
@@ -570,33 +595,27 @@ class ProbationService
     /**
      * Canonical active-probation determination (single source of truth).
      *
-     * Reads the latest kandidat_probation row for the employee and decides
-     * based on the combination:
-     *
-     *     (Status = 'Probation') + (Decision)
+     * Employee.Status determines the current candidate population. The latest
+     * kandidat_probation row only contributes the terminal evaluation state.
      *
      * Semantics:
-     *   - No row                                  → INACTIVE (no process)
-     *   - Latest row Decision = Lulus             → INACTIVE (completed)
-     *   - Latest row Decision = Tidak Lulus       → INACTIVE (completed)
-     *   - Latest row Decision = empty             → ACTIVE   (initial state)
-     *   - Latest row Decision = Extend/Perpanjang → ACTIVE   (continuation)
+     *   - Contract with no row                    → ACTIVE
+     *   - Non-Contract, regardless of history    → INACTIVE
+     *   - Contract + terminal decision           → INACTIVE
+     *   - Contract + empty/extend decision       → ACTIVE
      *
-     * Implementation deliberately ignores Employee.Status (which is now
-     * restricted to Permanent / Contract / Outsource — see task rules).
-     * Employee.Status is NOT a probation signal.
-     *
-     * Historical completed rows are filtered out automatically because we
-     * look at the LATEST row only, ordered by Updated At desc.
+     * kandidat_probation is evaluation history only.
      */
     public function isActiveProbation(string $employeeId): bool
     {
         $employee = $this->employeeRepo->findById($employeeId);
-        $employeeStatus = strtolower(trim((string) ($employee->statusEmployee ?? '')));
+        if (!$employee || !$this->isContractEmployee($employee->statusEmployee ?? null)) {
+            return false;
+        }
 
         $latest = $this->latestProbationRow($employeeId);
         if ($latest === null) {
-            return in_array($employeeStatus, ['contract', 'pkwt'], true);
+            return true;
         }
 
         $decision = (string) ($latest['Decision'] ?? '');
@@ -613,6 +632,11 @@ class ProbationService
         }
         // Extend / Perpanjang → ACTIVE (continuation).
         return true;
+    }
+
+    private function isContractEmployee(?string $status): bool
+    {
+        return in_array(strtolower(trim((string) $status)), ['contract', 'pkwt'], true);
     }
 
     /**
@@ -659,10 +683,6 @@ class ProbationService
                 continue;
             }
 
-            $rowStatus = strtolower(trim((string) ($row['Status'] ?? '')));
-            if ($rowStatus !== 'probation') {
-                continue;
-            }
             $dateKey = (string) ($row['Updated At'] ?? '');
             if ($latest === null || strcmp($dateKey, $latestDate) > 0) {
                 $latest = $row;
@@ -735,9 +755,9 @@ class ProbationService
         ?string $joinDate,
         ?string $endContract
     ): ?int {
-        $contractMonths = $this->readStoredContractDurationMonths($employeeId);
+        $contractMonths = $this->monthsBetweenDates($joinDate, $endContract);
         if ($contractMonths === null || $contractMonths <= 0) {
-            $contractMonths = $this->monthsBetweenDates($joinDate, $endContract);
+            $contractMonths = $this->readStoredContractDurationMonths($employeeId);
         }
         if ($contractMonths === null || $contractMonths <= 0) {
             return null;

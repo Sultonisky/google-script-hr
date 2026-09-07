@@ -831,18 +831,15 @@ class EmployeeService
     // Probation status helpers + restrictions
     //
     // Canonical source of truth for "is this employee currently in an
-    // active probation process" lives in ProbationService::isActiveProbation()
-    // — it inspects the kandidat_probation sheet (Status + Decision of the
-    // latest row) instead of Employee.Status (which is now restricted to
-    // Permanent / Contract / Outsource).
+    // active probation process" lives in ProbationService::isActiveProbation().
+    // Employee.Status determines the current Contract population; the
+    // kandidat_probation sheet contributes evaluation history only.
     // ==========================================================
 
     /**
-     * Server-side source of truth: whether the employee is in an ACTIVE
-     * probation process. Delegates to ProbationService so all callers
-     * (EmployeeController, EmployeeService, Blade sidebar, frontend
-     * filters) share one canonical rule based on kandidat_probation
-     * (Status + Decision), not on Employee.Status.
+        * Server-side source of truth: whether the employee is in an ACTIVE
+        * probation process. Delegates to ProbationService so all callers share
+        * one canonical rule based on Employee.Status plus evaluation history.
      */
     public function isOnProbation(string $employeeId): bool
     {

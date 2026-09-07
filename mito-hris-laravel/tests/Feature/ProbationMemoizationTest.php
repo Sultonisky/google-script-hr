@@ -7,7 +7,6 @@ use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Services\Google\GoogleSheetsService;
 use App\Services\ProbationService;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Session;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
@@ -83,7 +82,14 @@ class ProbationMemoizationTest extends TestCase
             ->andReturn($rows);
 
         $this->app->instance(GoogleSheetsService::class, $sheets);
-        $this->app->instance(EmployeeRepositoryInterface::class, Mockery::mock(EmployeeRepositoryInterface::class));
+        $employees = Mockery::mock(EmployeeRepositoryInterface::class);
+        $employees->shouldReceive('findById')
+            ->andReturnUsing(fn(string $employeeId) => new EmployeeData(
+                employeeId: $employeeId,
+                statusEmployee: 'Contract'
+            ))
+            ->byDefault();
+        $this->app->instance(EmployeeRepositoryInterface::class, $employees);
         $this->app->instance(AuditLogRepositoryInterface::class, Mockery::mock(AuditLogRepositoryInterface::class));
 
         return $this->app->make(ProbationService::class);
@@ -227,13 +233,12 @@ class ProbationMemoizationTest extends TestCase
     }
 
     // =========================================================================
-    // 7. Actual HR sidebar/dashboard render path = 1 read
+    // 7. HR sidebar renders probation without loading the count dataset
     // =========================================================================
 
     #[Test]
-    public function hr_sidebar_probation_count_reuses_probation_load(): void
+    public function hr_sidebar_probation_link_does_not_load_probation_count(): void
     {
-        cache()->forget('hr_sidebar_probation_count');
         Session::put('hr_user', [
             'email' => 'admin@mito.id',
             'role' => 'Admin',
@@ -241,42 +246,14 @@ class ProbationMemoizationTest extends TestCase
             'auth_domain' => 'users',
         ]);
 
-        $rows = [];
-        foreach (['EMP001', 'EMP002'] as $employeeId) {
-            $row = $this->makeRow($employeeId, 'EVAL-' . $employeeId, 'Perpanjang Kontrak', '2026-08-01 10:00:00');
-            $row['Status'] = 'Probation';
-            $rows[] = $row;
-        }
-
-        $sheets = Mockery::mock(GoogleSheetsService::class);
-        $sheets->shouldReceive('getRowsAsAssoc')
-            ->with(self::SHEET)
-            ->once()
-            ->andReturn($rows);
-
         $employees = Mockery::mock(EmployeeRepositoryInterface::class);
-        $employees->shouldReceive('getAll')
-            ->once()
-            ->andReturn(new Collection([
-                (object) ['employeeId' => 'EMP001'],
-                (object) ['employeeId' => 'EMP002'],
-            ]));
-        $employees->shouldReceive('findById')
-            ->withArgs(fn (string $employeeId) => in_array($employeeId, ['EMP001', 'EMP002'], true))
-            ->twice()
-            ->andReturnUsing(fn (string $employeeId) => new EmployeeData(
-                employeeId: $employeeId,
-                statusEmployee: 'Contract'
-            ));
-
-        $this->app->instance(GoogleSheetsService::class, $sheets);
+        $employees->shouldNotReceive('getAll');
         $this->app->instance(EmployeeRepositoryInterface::class, $employees);
-        $this->app->instance(AuditLogRepositoryInterface::class, Mockery::mock(AuditLogRepositoryInterface::class));
 
         $rendered = (string) $this->view('components.hr-sidebar');
 
         $this->assertStringContainsString('Probation', $rendered);
-        $this->assertStringContainsString('2', $rendered);
+        $this->assertStringNotContainsString('hr_sidebar_probation_count', $rendered);
     }
 
     // =========================================================================

@@ -127,6 +127,45 @@ class ProbationFlowEnhancementTest extends TestCase
         $this->assertCount(0, $appended);
     }
 
+    public function test_permanent_with_history_is_excluded_from_probation_index(): void
+    {
+        $this->loginAsHr();
+        $permanent = $this->employee('EMP-PERM-HISTORY', 'Permanent');
+        $contract = $this->employee('EMP-CONTRACT-HISTORY');
+        $history = $this->probationRow('EMP-PERM-HISTORY', 'Lulus', '2026-08-02 10:00:00');
+        $history['Eval Date'] = '2026-08-02 10:00:00';
+        $this->bind([$permanent, $contract], [$history]);
+
+        $response = $this->get('/hr/probation');
+        $table = preg_match('/<tbody id="probTableBody">(.*?)<\/tbody>/s', $response->getContent(), $matches)
+            ? $matches[1]
+            : '';
+
+        $response->assertOk();
+        $this->assertStringContainsString('EMP-CONTRACT-HISTORY', $table);
+        $this->assertStringNotContainsString('EMP-PERM-HISTORY', $table);
+    }
+
+    public function test_probation_index_paginates_filtered_records(): void
+    {
+        $this->loginAsHr();
+        $employees = array_map(
+            fn(int $number) => $this->employee('EMP-' . str_pad((string) $number, 2, '0', STR_PAD_LEFT)),
+            range(1, 11)
+        );
+        $this->bind($employees, []);
+
+        $response = $this->get('/hr/probation?page=2&per_page=10');
+        $table = preg_match('/<tbody id="probTableBody">(.*?)<\/tbody>/s', $response->getContent(), $matches)
+            ? $matches[1]
+            : '';
+
+        $response->assertOk()
+            ->assertSee('data-page-url', false);
+        $this->assertStringContainsString('EMP-11', $table);
+        $this->assertStringNotContainsString('EMP-01', $table);
+    }
+
     public function test_permanent_without_history_is_not_active_or_evaluable(): void
     {
         $employee = $this->employee('EMP-PERM', 'Permanent');
