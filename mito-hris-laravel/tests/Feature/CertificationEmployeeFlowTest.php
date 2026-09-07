@@ -51,7 +51,7 @@ class CertificationEmployeeFlowTest extends TestCase
     private function payload(array $overrides = []): array
     {
         return array_merge([
-            'cert_type'            => CertType::PROFESSIONAL->value,
+            'cert_type'            => CertType::ISO->value,
             'name'                 => 'Sertifikasi Auditor ISO 45001',
             'issuing_organization' => 'PT Surveyor Indonesia',
             'certificate_number'   => 'SI/45K/2025/0522',
@@ -106,7 +106,7 @@ class CertificationEmployeeFlowTest extends TestCase
         $this->actingAsLegal();
 
         $cert = Certification::create([
-            'cert_type'            => CertType::PROFESSIONAL->value,
+            'cert_type'            => CertType::ISO->value,
             'name'                 => 'Sertifikasi ISO 9001',
             'issuing_organization' => 'TUV',
             'issue_date'           => '2024-01-01',

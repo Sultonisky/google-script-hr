@@ -35,43 +35,48 @@ class CertificationDummySeederTest extends TestCase
             $this->assertMatchesRegularExpression('/^SRT-\d{5}$/', $code);
         }
 
-        // Every CertType value is covered.
+        // Every supported CertType value is covered.
         $expectedTypes = [
-            CertType::PROFESSIONAL->value       => 4,
-            CertType::LICENSE->value            => 3,
-            CertType::INTERNAL_TRAINING->value  => 2,
-            CertType::EXTERNAL_TRAINING->value  => 3,
-            CertType::COMPLIANCE->value         => 2,
-            CertType::OTHER->value              => 1,
+            CertType::SNI->value => 5,
+            CertType::ISO->value => 3,
+            CertType::K3->value  => 1,
+            CertType::FOOD_SAFETY->value => 2,
+            CertType::PRODUCT_SAFETY->value => 4,
         ];
         foreach ($expectedTypes as $typeValue => $count) {
             $this->assertSame($count, Certification::ofType($typeValue)->count(), "Unexpected count for {$typeValue}");
         }
 
+        $this->assertDatabaseHas('certifications', [
+            'name'          => 'Sertifikat SNI Produk Elektronik',
+            'product_scope' => 'Rice Cooker',
+            'brand'         => 'MITO',
+        ]);
+        $this->assertDatabaseHas('certifications', [
+            'name'          => 'LFGB Certificate',
+            'product_scope' => 'Food Contact / Cookware',
+            'brand'         => 'STEIN',
+        ]);
+
         // Every status is covered.
-        $expectedStatuses = [
-            CertStatus::ACTIVE->value    => 11,
-            CertStatus::EXPIRED->value   => 2,
-            CertStatus::SUSPENDED->value => 1,
-            CertStatus::REVOKED->value   => 1,
-        ];
+        $expectedStatuses = [CertStatus::ACTIVE->value => 15];
         foreach ($expectedStatuses as $statusValue => $count) {
             $this->assertSame($count, Certification::ofStatus($statusValue)->count(), "Unexpected count for {$statusValue}");
         }
 
         $today = now()->toDateString();
 
-        // Expired (past expiry date) and no-expiry scenarios.
-        $this->assertSame(3, Certification::whereNotNull('expiry_date')->where('expiry_date', '<', $today)->count());
-        $this->assertSame(3, Certification::whereNull('expiry_date')->count());
+        // The supplied demo matrix is entirely active and currently valid.
+        $this->assertSame(0, Certification::whereNotNull('expiry_date')->where('expiry_date', '<', $today)->count());
+        $this->assertSame(0, Certification::whereNull('expiry_date')->count());
 
         // Active certificates expiring within 30 and within 90 days.
-        $this->assertSame(1, Certification::where('status', CertStatus::ACTIVE->value)
+        $this->assertSame(0, Certification::where('status', CertStatus::ACTIVE->value)
             ->whereNotNull('expiry_date')
             ->where('expiry_date', '>=', $today)
             ->where('expiry_date', '<=', now()->addDays(30)->toDateString())
             ->count());
-        $this->assertSame(1, Certification::where('status', CertStatus::ACTIVE->value)
+        $this->assertSame(0, Certification::where('status', CertStatus::ACTIVE->value)
             ->whereNotNull('expiry_date')
             ->where('expiry_date', '>', now()->addDays(30)->toDateString())
             ->where('expiry_date', '<=', now()->addDays(90)->toDateString())
@@ -96,9 +101,9 @@ class CertificationDummySeederTest extends TestCase
         $this->get('/hr/certifications')
             ->assertOk()
             ->assertSee('Daftar Sertifikasi')
-            ->assertSee('Sertifikat ISO 9001:2015 Quality Management System')
-            ->assertSee('Sertifikat ISO 14001:2015 Environmental Management System')
-            ->assertSee('Sertifikat Operator Forklift (SIO)')
-            ->assertSee('Expiring Soon (30 hari)');
+            ->assertSee('Sertifikat SNI Produk Elektronik')
+            ->assertSee('Sertifikat ISO 9001:2015')
+            ->assertSee('LFGB Certificate')
+            ->assertSee('Product Testing Certificate');
     }
 }

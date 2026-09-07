@@ -56,7 +56,7 @@ class CertificationPdfSeederTest extends TestCase
         Storage::fake('local');
 
         $cert = Certification::create([
-            'cert_type'            => CertType::PROFESSIONAL->value,
+            'cert_type'            => CertType::ISO->value,
             'name'                 => 'Manual Attachment',
             'issuing_organization' => 'BNSP',
             'issue_date'           => '2026-01-01',
