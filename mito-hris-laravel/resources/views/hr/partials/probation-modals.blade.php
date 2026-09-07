@@ -1638,10 +1638,9 @@
                     if (!latest) return;
 
                     var latestType = classifyDecision(latest.decision || '');
-                    // Extend is a continuation — allow EXTEND again after a prior EXTEND.
-                    // Only PASS (Lulus) or FAIL (Tidak Lulus) are terminal and must hide the
-                    // Extend option.
-                    setPreviousDecisionOptions(!latestType.isLulus && !latestType.isPutus);
+                    // Hide Extend option after a prior Extend — only PASS or FAIL allowed next.
+                    // Also hide after PASS/FAIL (terminal decisions).
+                    setPreviousDecisionOptions(!latestType.isLulus && !latestType.isPutus && !latestType.isPerp);
                     if (latestType.isLulus || latestType.isPutus) {
                         showServerError('Evaluasi probation ini sudah final dan tidak dapat dibuka kembali.');
                         return;
