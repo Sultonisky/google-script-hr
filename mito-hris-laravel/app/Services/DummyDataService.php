@@ -729,7 +729,6 @@ class DummyDataService
             $extStart = '';
             $extEnd = '';
             $evalNotes = '';
-            $notes = '';
 
             // ~40% already have evaluation (Performance Review 2026 — indicator-based)
             if ($idx % 5 < 2) {
@@ -748,7 +747,6 @@ class DummyDataService
                 };
                 $decision = $overallTotal >= 8 ? 'Diangkat sebagai Karyawan Tetap' : 'Perpanjang Kontrak';
                 $evalNotes = $this->pick(['Karyawan menunjukkan kinerja baik dan potensi pengembangan.', 'Perlu peningkatan dalam komunikasi dan inisiatif.', 'Hasil kerja cukup memuaskan, namun perlu konsistensi.', 'Karyawan sangat proaktif dan berkontribusi positif.', 'Disarankan perpanjangan untuk melihat perkembangan lebih lanjut.']);
-                $notes = $this->pick(['Catatan tambahan: Perlu monitoring berkala.', 'Sudah melakukan perbaikan signifikan.', 'Koordinasi tim baik, namun perlu peningkatan teknis.']);
                 if ($decision === 'Perpanjang Kontrak') {
                     $durations = ['3 Bulan', '6 Bulan', '12 Bulan'];
                     $extDuration = $durations[array_rand($durations)];
@@ -764,14 +762,11 @@ class DummyDataService
                 'PRO-' . str_pad((string)$probSeq++, 6, '0', STR_PAD_LEFT), // Probation ID
                 $c['employeeId'] ?? '',              // Employee ID
                 $c['recruitmentId'],                 // Recruitment ID
-                'PKB-' . rand(1000, 9999),           // Contract Number
                 '3 Bulan',                           // Contract Duration
                 $contractStart,                      // Contract Start
                 $contractEnd,                        // Contract End
                 $joinDate,                           // Join Date
                 $status,                             // Status
-                $joinDate,                           // Onboarding Date
-                'Demo Generator',                    // Onboarding By
                 $evalDate ? ('EVAL-' . rand(100, 999)) : '', // Eval ID
                 $evalDate,                           // Eval Date
                 $decision,                           // Decision
@@ -781,7 +776,6 @@ class DummyDataService
                 $evalNotes,                          // Evaluator Notes
                 $evalDate ? 'HR Manager' : '',       // Evaluator
                 $decision === 'Diangkat sebagai Karyawan Tetap' ? 'SK Diterbitkan' : ($decision === 'Perpanjang Kontrak' ? 'Diperpanjang' : ''), // SK Status
-                $notes,                              // Notes
                 $nowStr,                             // Created At
                 $nowStr,                             // Updated At
                 // Competency totals (already computed)
