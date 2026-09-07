@@ -54,6 +54,41 @@
     margin-right: 0.35rem;
 }
 
+// Certification badges use the same compact pill and dot treatment as probation.
+table.hr-table .badge-status.cert-sni,
+table.hr-table .badge-status.cert-iso,
+table.hr-table .badge-status.cert-k3,
+table.hr-table .badge-status.cert-food-safety,
+table.hr-table .badge-status.cert-product-safety {
+    padding: 4px 9px;
+    font-size: 10.5px;
+}
+
+.badge-status.cert-sni {
+    background: #eef6ff;
+    color: #0b4a86;
+}
+
+.badge-status.cert-iso {
+    background: #ecfdf3;
+    color: #166534;
+}
+
+.badge-status.cert-k3 {
+    background: #fff8e6;
+    color: #8a6100;
+}
+
+.badge-status.cert-food-safety {
+    background: #f0fdfa;
+    color: #0f766e;
+}
+
+.badge-status.cert-product-safety {
+    background: #f5f3ff;
+    color: #6d28d9;
+}
+
 @media (max-width: 767.98px) {
     .certification-form-body {
         padding: 1rem;
