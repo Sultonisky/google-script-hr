@@ -155,7 +155,7 @@ class CertificationDummySeeder extends Seeder
             [
                 'cert_type'             => CertType::ISO->value,
                 'name'                  => 'Sertifikat ISO 9001:2015',
-                'product_scope'         => 'Quality Management System',
+                'company_scope'         => 'Quality Management System',
                 'brand'                 => 'MITO Group',
                 'description'           => 'Sistem manajemen mutu perusahaan untuk memastikan konsistensi proses dan layanan.',
                 'issuing_organization'  => 'TÜV Rheinland Indonesia',
@@ -173,7 +173,7 @@ class CertificationDummySeeder extends Seeder
             [
                 'cert_type'             => CertType::ISO->value,
                 'name'                  => 'Sertifikat ISO 14001:2015',
-                'product_scope'         => 'Environmental Management System',
+                'company_scope'         => 'Environmental Management System',
                 'brand'                 => 'MITO Group',
                 'description'           => 'Sistem manajemen lingkungan perusahaan untuk pengendalian dampak operasional.',
                 'issuing_organization'  => 'PT Sucofindo',
@@ -193,7 +193,7 @@ class CertificationDummySeeder extends Seeder
             [
                 'cert_type'             => CertType::ISO->value,
                 'name'                  => 'Sertifikat ISO 45001:2018',
-                'product_scope'         => 'Occupational Health & Safety',
+                'company_scope'         => 'Occupational Health & Safety',
                 'brand'                 => 'MITO Group',
                 'description'           => 'Sistem manajemen keselamatan dan kesehatan kerja perusahaan.',
                 'issuing_organization'  => 'PT SGS Indonesia',
@@ -211,7 +211,7 @@ class CertificationDummySeeder extends Seeder
             [
                 'cert_type'             => CertType::K3->value,
                 'name'                  => 'Sertifikat K3',
-                'product_scope'         => 'Keselamatan & Kesehatan Kerja',
+                'company_scope'         => 'Keselamatan & Kesehatan Kerja',
                 'brand'                 => 'MITO Group',
                 'description'           => 'Sertifikasi keselamatan dan kesehatan kerja untuk lingkungan operasional perusahaan.',
                 'issuing_organization'  => 'PT Mahakarya Sukses Indonesia – General Affairs',
