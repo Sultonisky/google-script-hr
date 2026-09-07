@@ -376,6 +376,8 @@
         form.querySelector("#certificationFormCode").value = c.cert_code || "";
         form.querySelector("#certificationFormType").value = c.cert_type || "";
         form.querySelector("#certificationFormName").value = c.name || "";
+        form.querySelector("#certificationFormScope").value = c.product_scope || "";
+        form.querySelector("#certificationFormBrand").value = c.brand || "";
         form.querySelector("#certificationFormDesc").value =
             c.description || "";
         form.querySelector("#certificationFormOrg").value =
@@ -523,7 +525,7 @@
                         escHtml(c.cert_code || "-") +
                         "</div></div></div></div>" +
                         "<hr>" +
-                        '<div class="row g-3"><div class="col-md-6"><div class="asset-detail-item"><div class="asset-detail-label">Jenis</div><div class="asset-detail-value">' +
+                        '<div class="row g-3"><div class="col-md-6"><div class="asset-detail-item"><div class="asset-detail-label">Klasifikasi</div><div class="asset-detail-value">' +
                         escHtml(c.cert_type || "-") +
                         "</div></div></div>" +
                         '<div class="col-md-6"><div class="asset-detail-item"><div class="asset-detail-label">Status</div><div class="asset-detail-value"><span class="badge-status">' +
@@ -538,6 +540,12 @@
                         escHtml(c.division || "-") +
                         " / " +
                         escHtml(c.department || "-") +
+                        "</div></div></div>" +
+                        '<div class="col-md-6"><div class="asset-detail-item"><div class="asset-detail-label">Produk / Scope</div><div class="asset-detail-value">' +
+                        escHtml(c.product_scope || "-") +
+                        "</div></div></div>" +
+                        '<div class="col-md-6"><div class="asset-detail-item"><div class="asset-detail-label">Brand</div><div class="asset-detail-value">' +
+                        escHtml(c.brand || "-") +
                         "</div></div></div>" +
                         '<div class="col-md-6"><div class="asset-detail-item"><div class="asset-detail-label">Lembaga Penerbit</div><div class="asset-detail-value">' +
                         escHtml(c.issuing_organization || "-") +
