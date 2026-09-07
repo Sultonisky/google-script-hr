@@ -332,17 +332,14 @@ return [
             'Probation ID',
             'Employee ID',
             'Recruitment ID',
-            // ── Kontrak Probation (col 4–8)
-            'Contract Number',
+            // ── Kontrak snapshot (col 4–7)
             'Contract Duration',
             'Contract Start',
             'Contract End',
             'Join Date',
-            // ── Status & Onboarding (col 9–11)
+            // ── Evaluation status (col 8)
             'Status',
-            'Onboarding Date',
-            'Onboarding By',
-            // ── Evaluasi header (col 12–13)
+            // ── Evaluasi header (col 9–10)
             'Eval ID',
             'Eval Date',
             // ── Decision
@@ -355,7 +352,6 @@ return [
             'Evaluator Notes',
             'Evaluator',
             'SK Status',
-            'Notes',
             // ── Audit
             'Created At',
             'Updated At',

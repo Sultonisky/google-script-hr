@@ -19,77 +19,6 @@ class ProbationService
     /** @var array<int, array<string,string>>|null Request-scoped memo of kandidat_probation rows. */
     private ?array $probationRowsCache = null;
 
-    /**
-     * Header sheet kandidat_probation — backward-compat dengan GAS PROBATION_HEADERS (Config.gs).
-     * LEGACY kolom skor lama (Score Performance … Average Score) sudah DIHAPUS dari definisi
-     * ini — tidak lagi ditulis/dibaca oleh aplikasi (lihat audit cleanup kandidat_probation).
-     * Data historis pada sheet tetap utuh; append row selalu dipetakan by header name
-     * sehingga posisi fisik kolom lama tidak mengganggu.
-     */
-    private const PROBATION_HEADERS = [
-        // -- Identitas
-        'Probation ID',
-        'Employee ID',
-        'Recruitment ID',
-        // -- Kontrak Probation
-        'Contract Number',
-        'Contract Duration',
-        'Contract Start',
-        'Contract End',
-        'Join Date',
-        // -- Status & Onboarding
-        'Status',
-        'Onboarding Date',
-        'Onboarding By',
-        // -- Evaluasi
-        'Eval ID',
-        'Eval Date',
-        // Decision
-        'Decision',
-        // -- Perpanjangan
-        'Extension Duration',
-        'New Contract Start',
-        'New Contract End',
-        // -- Catatan & SK
-        'Evaluator Notes',
-        'Evaluator',
-        'SK Status',
-        'Notes',
-        // -- Audit
-        'Created At',
-        'Updated At',
-        // ── NEW columns (Performance Review 2026) ────────────────
-        // Competency totals
-        'Integrity Total',
-        'CI Total',
-        'EE Total',
-        'Teamwork Total',
-        'Overall Total',
-        'Category',
-        // Individual indicators (13)
-        'ind_integrity_1',
-        'ind_integrity_2',
-        'ind_integrity_3',
-        'ind_integrity_4',
-        'ind_ci_1',
-        'ind_ci_2',
-        'ind_ci_3',
-        'ind_ci_4',
-        'ind_ee_1',
-        'ind_ee_2',
-        'ind_tw_1',
-        'ind_tw_2',
-        'ind_tw_3',
-        // Approval sign-off (Performance Review Section F)
-        'Reviewer Name',
-        'Approval Dept',
-        'Approval Dept Name',
-        'Approval Dept Date',
-        'Approval HRBP',
-        'Approval HRBP Name',
-        'Approval HRBP Date',
-    ];
-
     /** 13 indicator keys in canonical order (Performance Review 2026). */
     private const INDICATOR_KEYS = [
         'integrity_1',
@@ -120,6 +49,17 @@ class ProbationService
     private function probationSheet(): string
     {
         return config('google.sheets.candidates_probation', 'kandidat_probation');
+    }
+
+    /** Return the single canonical header definition used by config and writers. */
+    private function probationHeaders(): array
+    {
+        $headers = config('hris.schemas.kandidat_probation', []);
+        if (!is_array($headers) || $headers === [] || count($headers) !== count(array_unique($headers))) {
+            throw new RuntimeException('Schema kandidat_probation tidak valid atau memiliki header duplikat.');
+        }
+
+        return array_values($headers);
     }
 
     /**
@@ -270,21 +210,18 @@ class ProbationService
         $isPutusKontrak = $decisionType->isFail();
         $isPerpanjang = $decisionType->isExtend();
 
-        $extDuration = $evalData['extension_duration'] ?? '';
         $extStart    = $evalData['extension_start']    ?? '';
         $extEnd      = $evalData['extension_end']      ?? '';
         $notes       = $evalData['notes']              ?? '';
 
         // === STEP 13 — Extend: derive duration from the employee's actual ===
         // contract, not from the browser. Employee contract dates are the
-        // current source of truth; history is only a fallback for legacy data.
+        // current source of truth for the extension duration.
         if ($isPerpanjang && empty($extStart)) {
             throw new RuntimeException('Perpanjangan probation memerlukan tanggal mulai kontrak baru.');
         }
         if ($isPerpanjang) {
             $resolvedDuration = $this->resolveExtensionDuration(
-                $employeeId,
-                $extDuration,
                 $employee->joinDate ?? null,
                 $employee->endDateContract ?? null
             );
@@ -442,23 +379,26 @@ class ProbationService
         $decisionType = ProbationDecisionType::fromDecisionString($decision);
 
         return [
-            'success'        => true,
-            'evalId'         => $evalId,
-            'employeeId'     => $employeeId,
-            'decision'       => $decision,
-            'overallTotal'   => $overallTotal,
-            'category'       => $category,
-            'integrityTotal' => $integrityTotal,
-            'ciTotal'        => $ciTotal,
-            'eeTotal'        => $eeTotal,
-            'twTotal'        => $twTotal,
-            'isLulus'        => $isLulus,
-            'isPutusKontrak' => $isPutusKontrak,
-            'isPerpanjang'   => $isPerpanjang,
-            'skNumber'       => $skNumber,
+            'success'           => true,
+            'evalId'            => $evalId,
+            'employeeId'        => $employeeId,
+            'decision'          => $decision,
+            'overallTotal'      => $overallTotal,
+            'category'          => $category,
+            'integrityTotal'    => $integrityTotal,
+            'ciTotal'           => $ciTotal,
+            'eeTotal'           => $eeTotal,
+            'twTotal'           => $twTotal,
+            'isLulus'           => $isLulus,
+            'isPutusKontrak'    => $isPutusKontrak,
+            'isPerpanjang'      => $isPerpanjang,
+            'skNumber'          => $skNumber,
+            // extensionDuration: server-derived label ("N Bulan"), empty for non-EXTEND.
+            // The controller must return this value — never the browser-supplied value.
+            'extensionDuration' => $isPerpanjang ? ($extDuration ?? '') : '',
             // hasPdf = false untuk EXTEND → controller tidak membangun URL PDF
-            'hasPdf'         => $decisionType?->hasPdf() ?? false,
-            'message'        => $isLulus
+            'hasPdf'            => $decisionType?->hasPdf() ?? false,
+            'message'           => $isLulus
                 ? "Karyawan lulus probation & diangkat menjadi karyawan tetap (PKWTT). SK: {$skNumber}"
                 : ($isPutusKontrak
                     ? "Kontrak diakhiri. Paklaring diterbitkan. No: {$skNumber}"
@@ -738,69 +678,13 @@ class ProbationService
 
     // ── Extend: resolve duration + end-date from contract data (STEP 13) ──
 
-    /**
-     * Return the Extend duration in whole months, derived from the employee's
-     * actual contract. Priority:
-     *   1. Client-provided extDuration — only accepted when it matches the
-     *      employee-specific contract duration (prevents manual hardcoding
-     *      that contradicts the contract).
-     *   2. kandidat_probation.Contract Duration captured at promotion time.
-     *   3. Employee's current End Date (Contract) − Join Date.
-     *
-     * Returns null when no source is available so the caller can fail loudly.
-     */
+    /** Return the current Employee contract duration in whole months. */
     private function resolveExtensionDuration(
-        string $employeeId,
-        ?string $clientDuration,
         ?string $joinDate,
         ?string $endContract
     ): ?int {
         $contractMonths = $this->monthsBetweenDates($joinDate, $endContract);
-        if ($contractMonths === null || $contractMonths <= 0) {
-            $contractMonths = $this->readStoredContractDurationMonths($employeeId);
-        }
-        if ($contractMonths === null || $contractMonths <= 0) {
-            return null;
-        }
-        if (!empty($clientDuration)) {
-            $clientMonths = $this->labelToMonths($clientDuration);
-            if ($clientMonths !== null && $clientMonths !== $contractMonths) {
-                throw new RuntimeException(
-                    "Durasi perpanjangan ({$clientDuration}) harus mengikuti durasi kontrak karyawan ({$this->monthsToLabel($contractMonths)}). Durasi kontrak bersifat tetap per karyawan."
-                );
-            }
-        }
-        return $contractMonths;
-    }
-
-    /**
-     * Read Contract Duration from the latest kandidat_probation row for the
-     * given employee. Returns null when no row exists.
-     */
-    private function readStoredContractDurationMonths(string $employeeId): ?int
-    {
-        try {
-            $rows = $this->getProbationRows();
-            $empKey = ltrim(trim($employeeId), "'");
-            $empNum = preg_replace('/[^0-9]/', '', $empKey);
-            foreach ($rows as $row) {
-                $rowKey = ltrim(trim($row['Employee ID'] ?? ''), "'");
-                $rowNum = preg_replace('/[^0-9]/', '', $rowKey);
-                if ($rowKey !== $empKey && $rowNum !== $empNum) {
-                    continue;
-                }
-                $stored = trim((string) ($row['Contract Duration'] ?? ''));
-                if ($stored !== '') {
-                    $months = $this->labelToMonths($stored);
-                    if ($months !== null && $months > 0) {
-                        return $months;
-                    }
-                }
-            }
-        } catch (\Throwable) {
-            return null;
-        }
-        return null;
+        return $contractMonths !== null && $contractMonths > 0 ? $contractMonths : null;
     }
 
     /** Convert "N Bulan" / "NBulan" → whole months. */
@@ -851,12 +735,13 @@ class ProbationService
         return $n > 0 ? $n : null;
     }
 
-    /** Add N months to a YYYY-MM-DD start, GMT+7. */
+    /** Add N contract months minus one day to a YYYY-MM-DD start, GMT+7. */
     private function addMonthsDate(string $startDate, int $months): string
     {
         try {
             return \Illuminate\Support\Carbon::parse($startDate)
                 ->addMonthsNoOverflow($months)
+                ->subDay()
                 ->timezone('Asia/Jakarta')->format('Y-m-d');
         } catch (\Throwable) {
             return '';
@@ -894,6 +779,7 @@ class ProbationService
     private function appendProbationEvalRow(array $data): void
     {
         $sheetName = $this->probationSheet();
+        $canonicalHeaders = $this->probationHeaders();
 
         // Ensure all headers exist — adds missing new columns to the sheet
         // if the sheet was created by GAS with only 29 columns.
@@ -903,46 +789,27 @@ class ProbationService
         $headerRow = $this->sheets->getRange($sheetName, '1:1', false)[0] ?? [];
         if (empty($headerRow) || empty(array_filter($headerRow))) {
             // Sheet is empty — write full header set
-            $this->sheets->ensureSheetHeaders($sheetName, self::PROBATION_HEADERS);
-            $headers = self::PROBATION_HEADERS;
+            $this->sheets->ensureSheetHeaders($sheetName, $canonicalHeaders);
+            $headers = $canonicalHeaders;
         } else {
             $existingHeaders = array_map('trim', $headerRow);
-            $missing = array_diff(self::PROBATION_HEADERS, $existingHeaders);
-            if (!empty($missing)) {
-                // Append missing headers immediately after the last existing column
-                $nextCol = count(array_filter($existingHeaders, fn($h) => $h !== '')) + 1;
-                $colLetter = $this->colIndexToLetter($nextCol);
-                $this->sheets->updateRange(
-                    $sheetName,
-                    $colLetter . '1',
-                    [array_values($missing)]
+            if ($existingHeaders !== $canonicalHeaders) {
+                throw new RuntimeException(
+                    'Header kandidat_probation tidak sesuai schema canonical. Migrasikan header Sheet sebelum menulis evaluation.'
                 );
-                // Re-read headers after update
-                $headerRow = $this->sheets->getRange($sheetName, '1:1', false)[0] ?? [];
             }
-            $headers = array_map('trim', $headerRow);
+            $headers = $existingHeaders;
         }
 
         $row = [];
         foreach ($headers as $h) {
             $row[] = $data[$h] ?? '';
         }
+        if (count($row) !== count($headers)) {
+            throw new RuntimeException('Jumlah nilai row kandidat_probation tidak sama dengan jumlah header sheet.');
+        }
         $this->sheets->appendRow($sheetName, $row);
         $this->invalidateProbationRowsCache();
-    }
-
-    /**
-     * Convert 1-based column index to letter(s): 1→A, 26→Z, 27→AA, etc.
-     */
-    private function colIndexToLetter(int $index): string
-    {
-        $letters = '';
-        while ($index > 0) {
-            $index--;
-            $letters = chr(65 + ($index % 26)) . $letters;
-            $index   = (int)($index / 26);
-        }
-        return $letters;
     }
 
     private function getEntityCode(string $branchName): string

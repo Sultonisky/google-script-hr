@@ -467,23 +467,16 @@
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-semibold" style="font-size:12px">
-                                    Durasi Perpanjangan <span class="text-danger">*</span>
+                                    Durasi Kontrak Saat Ini
                                 </label>
-                                <div class="d-flex gap-2 flex-wrap">
-                                    @foreach (['3 Bulan', '6 Bulan', '12 Bulan'] as $dur)
-                                        <button type="button" class="ext-dur-btn btn btn-sm"
-                                            data-dur="{{ $dur }}"
-                                            style="border:2px solid #d1d5db;font-weight:600;font-size:13px;
-                           padding:6px 16px;border-radius:8px;background:#fff;
-                           transition:all .15s">
-                                            {{ $dur }}
-                                        </button>
-                                    @endforeach
+                                <div id="evalExtDurationDisplay" class="form-control form-control-sm"
+                                    style="background:#f9fafb;font-weight:600;color:#92400e">Belum tersedia</div>
+                                <div class="form-text" style="font-size:11px">
+                                    Masa probation diperpanjang mengikuti durasi kontrak yang berlaku.
                                 </div>
                                 <div id="evalExtDurError"
                                     style="display:none;font-size:12px;color:#dc2626;margin-top:4px">
-                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Durasi perpanjangan wajib
-                                    dipilih.
+                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Durasi kontrak tidak tersedia.
                                 </div>
                             </div>
                             <div class="row g-3">
@@ -503,7 +496,7 @@
                                     <input type="date" class="form-control form-control-sm" id="evalExtEnd"
                                         readonly style="background:#f9fafb" />
                                     <div class="form-text" id="evalExtEndHint" style="font-size:11px">
-                                        Auto-dihitung dari durasi yang dipilih.
+                                        Auto-dihitung dari durasi kontrak saat ini.
                                     </div>
                                 </div>
                             </div>
@@ -675,7 +668,6 @@
             var searchInput = document.getElementById('evalEmpSearch');
             var searchClear = document.getElementById('evalEmpSearchClear');
             var decisionOptions = document.querySelectorAll('.eval-decision-opt');
-            var durationButtons = document.querySelectorAll('.ext-dur-btn');
             var approvalButtons = document.querySelectorAll('.approval-btn');
             var indicatorButtons = document.querySelectorAll('.ind-btn-check, .ind-btn-cross');
             var submitButton = document.getElementById('btnConfirmProbationEval');
@@ -700,14 +692,6 @@
                 option.addEventListener('click', function () {
                     if (typeof window.selectEvalDecision === 'function') {
                         window.selectEvalDecision(this);
-                    }
-                });
-            });
-
-            durationButtons.forEach(function (button) {
-                button.addEventListener('click', function () {
-                    if (typeof window.selectExtDuration === 'function') {
-                        window.selectExtDuration(this.dataset.dur, this);
                     }
                 });
             });
@@ -1029,26 +1013,6 @@
             updateSummary();
         };
 
-        // ── Extension duration select ────────────────────────────────────
-        window.selectExtDuration = function(dur, btnEl) {
-            document.getElementById('evalExtDuration').value = dur;
-            document.querySelectorAll('.ext-dur-btn').forEach(function(b) {
-                if (b.getAttribute('data-dur') === dur) {
-                    b.style.borderColor = '#d97706';
-                    b.style.background = '#fef3c7';
-                    b.style.color = '#92400e';
-                } else {
-                    b.style.borderColor = '#d1d5db';
-                    b.style.background = '#fff';
-                    b.style.color = '';
-                }
-            });
-            hideInlineError('evalExtDurError');
-            calcExtendEnd();
-            updateConfirmBtn();
-            updateSummary();
-        };
-
         // ── Approval sign-off button (Section F) ─────────────────────────
         window.selectApproval = function(hiddenId, value, btnEl) {
             var hidden = document.getElementById(hiddenId);
@@ -1092,6 +1056,7 @@
             if (!m) return;
             var d = new Date(startEl.value);
             d.setMonth(d.getMonth() + parseInt(m[1], 10));
+            d.setDate(d.getDate() - 1);
             endEl.value = d.toISOString().split('T')[0];
             if (hintEl) hintEl.textContent = 'Kontrak baru berakhir ' + endEl.value + ' (' + dur + ').';
             updateConfirmBtn();
@@ -1340,7 +1305,6 @@
             });
 
             if (cls.isPerp) {
-                fd.append('extension_duration', document.getElementById('evalExtDuration').value || '');
                 fd.append('extension_start', document.getElementById('evalExtStart').value || '');
                 fd.append('extension_end', document.getElementById('evalExtEnd').value || '');
             }
@@ -1538,6 +1502,26 @@
             updateConfirmBtn();
         };
 
+        function contractDurationLabel(start, end) {
+            if (!start || !end) return '';
+            var startDate = new Date(start + 'T00:00:00Z');
+            var endDate = new Date(end + 'T00:00:00Z');
+            if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()) || endDate < startDate) {
+                return '';
+            }
+            var anchor = new Date(endDate);
+            anchor.setUTCDate(anchor.getUTCDate() + 1);
+            var months = (anchor.getUTCFullYear() - startDate.getUTCFullYear()) * 12 +
+                anchor.getUTCMonth() - startDate.getUTCMonth();
+            while (months > 0) {
+                var candidate = new Date(startDate);
+                candidate.setUTCMonth(candidate.getUTCMonth() + months);
+                if (candidate <= anchor) break;
+                months -= 1;
+            }
+            return months > 0 ? months + ' Bulan' : '';
+        }
+
         window.selectEvalEmployee = function(emp) {
             var dropdown = document.getElementById('evalEmpDropdown');
             var search = document.getElementById('evalEmpSearch');
@@ -1562,6 +1546,15 @@
             tn('evalEmpJoinDate', emp.joinDate);
             tn('evalEmpContractEnd', emp.endDateContract);
             tn('evalEmpReviewer', emp.directSuperior);
+
+            var contractDuration = contractDurationLabel(emp.joinDate, emp.endDateContract);
+            var durationDisplay = document.getElementById('evalExtDurationDisplay');
+            var durationHidden = document.getElementById('evalExtDuration');
+            if (durationHidden) durationHidden.value = contractDuration;
+            if (durationDisplay) {
+                durationDisplay.textContent = contractDuration || 'Tidak tersedia';
+                durationDisplay.style.color = contractDuration ? '#92400e' : '#991b1b';
+            }
 
             var avatar = document.getElementById('evalEmpAvatar');
             if (avatar) {
@@ -1751,6 +1744,11 @@
             // Reset decision
             document.getElementById('evalDecisionValue').value = '';
             document.getElementById('evalExtDuration').value = '';
+            var durationDisplay = document.getElementById('evalExtDurationDisplay');
+            if (durationDisplay) {
+                durationDisplay.textContent = 'Belum tersedia';
+                durationDisplay.style.color = '#92400e';
+            }
             setPreviousDecisionOptions(true);
             document.querySelectorAll('.eval-decision-opt').forEach(function(opt) {
                 opt.style.borderColor = '#e5e7eb';

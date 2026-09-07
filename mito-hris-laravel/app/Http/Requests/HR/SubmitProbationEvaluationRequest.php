@@ -15,8 +15,8 @@ use Illuminate\Foundation\Http\FormRequest;
  * Business rules enforced here:
  *   - decision must classify into PASS / FAIL / EXTEND
  *   - all 13 behavioral indicators are required ("1" or "0")
- *   - EXTEND ("Perpanjang Kontrak") REQUIRES extension_duration ∈ {3 Bulan, 6 Bulan, 12 Bulan}
- *     and extension_start — validation failure means NO evaluation and NO documents.
+ *   - EXTEND ("Perpanjang Kontrak") requires extension_start; duration is derived
+ *     server-side from the current Employee contract dates.
  */
 class SubmitProbationEvaluationRequest extends FormRequest
 {
@@ -54,25 +54,8 @@ class SubmitProbationEvaluationRequest extends FormRequest
             'indicators.tw_2'        => 'required|in:1,0',
             'indicators.tw_3'        => 'required|in:1,0',
 
-            // Extension fields — mandatory ONLY for "Perpanjang Kontrak"
-            //
-            // STEP 13: extend duration is now derived server-side from the
-            // employee's actual contract (see ProbationService::resolveExtensionDuration).
-            // The frontend value is only checked when present so we can reject
-            // mismatches against the contract; no hardcoded 3/6/12 allow-list.
-            'extension_duration' => [
-                'nullable',
-                'string',
-                function ($attribute, $value, $fail) {
-                    $isExtend = ProbationDecisionType::fromDecisionString(
-                        (string) $this->input('decision')
-                    )?->isExtend();
-
-                    if ($isExtend && $value !== null && $value !== '' && !preg_match('/^\d+\s*Bulan$/i', $value)) {
-                        $fail('Durasi perpanjangan harus berformat "N Bulan" (contoh: 6 Bulan).');
-                    }
-                },
-            ],
+            // Kept nullable for backward-compatible clients; the service ignores it.
+            'extension_duration' => 'nullable|string',
             'extension_start' => [
                 'nullable',
                 'date',

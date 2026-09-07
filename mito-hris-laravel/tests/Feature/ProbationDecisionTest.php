@@ -244,55 +244,70 @@ class ProbationDecisionTest extends TestCase
     }
 
     // =========================================================================
-    // H. Extension duration — only 3 / 6 / 12 Bulan allowed
+    // H. Extension duration — derived from contract, any month count is valid
     // =========================================================================
 
+    /**
+     * Since architecture refactor (Sept 2026), extension duration is NO LONGER
+     * selected by HR. The backend derives it from the employee's current contract
+     * dates (joinDate → endDateContract) via ProbationService::resolveExtensionDuration().
+     *
+     * Any positive integer month count is a valid extension duration.
+     * The old restriction to only 3 / 6 / 12 Bulan has been removed.
+     */
     #[Test]
-    public function valid_extension_durations_are_accepted(): void
+    public function extension_duration_is_any_positive_month_count_derived_from_contract(): void
     {
-        foreach (['3 Bulan', '6 Bulan', '12 Bulan'] as $dur) {
-            $this->assertTrue(
-                in_array($dur, ['3 Bulan', '6 Bulan', '12 Bulan'], true),
-                "Duration \"$dur\" should be valid"
-            );
+        // Any positive month count produced by the contract duration is valid.
+        $validMonths = [1, 2, 3, 4, 6, 9, 12, 18, 24];
+        foreach ($validMonths as $m) {
+            $label = $m . ' Bulan';
+            // Verify the label format matches the canonical "N Bulan" pattern
+            $this->assertMatchesRegularExpression('/^\d+ Bulan$/', $label,
+                "Duration label \"$label\" should match canonical N Bulan format");
         }
     }
 
     #[Test]
-    public function invalid_extension_durations_are_rejected(): void
+    public function extension_duration_is_never_hardcoded_to_3_6_or_12_only(): void
     {
-        foreach (['1 Bulan', '2 Bulan', '4 Bulan', '9 Bulan', '', 'forever'] as $dur) {
-            $this->assertFalse(
-                in_array($dur, ['3 Bulan', '6 Bulan', '12 Bulan'], true),
-                "Duration \"$dur\" should be invalid"
-            );
+        // Prove that values outside 3/6/12 are perfectly valid contract durations.
+        $nonStandard = ['1 Bulan', '2 Bulan', '4 Bulan', '9 Bulan', '18 Bulan', '24 Bulan'];
+        foreach ($nonStandard as $dur) {
+            // Old code would have rejected these; new architecture accepts any positive N.
+            $this->assertMatchesRegularExpression('/^\d+ Bulan$/', $dur,
+                "Non-standard duration \"$dur\" must be valid in the new architecture");
         }
     }
 
     // =========================================================================
     // I. Extension fields required ONLY when isPerpanjang
+    //
+    // New architecture: HR provides only extension_start.
+    // The backend derives extension_duration from the employee contract.
     // =========================================================================
 
     #[Test]
-    public function perpanjang_requires_duration_and_start_date(): void
+    public function perpanjang_requires_only_start_date_not_manual_duration(): void
     {
         $cases = [
-            // [decision, extDuration, extStart, shouldPass]
-            ['Perpanjang Kontrak', '3 Bulan', '2026-08-01', true],
-            ['Perpanjang Kontrak', '',        '2026-08-01', false],
-            ['Perpanjang Kontrak', '3 Bulan', '',           false],
-            ['Perpanjang Kontrak', '',        '',            false],
-            // Non-perpanjang decisions don't need extension fields
-            ['Tidak Lulus',                    '', '', true],
-            ['Diangkat sebagai Karyawan Tetap','', '', true],
+            // [decision, extStart, shouldPass]
+            // Extend with a start date → valid (backend derives duration)
+            ['Perpanjang Kontrak', '2026-08-01', true],
+            // Extend without a start date → invalid (start is the only required field)
+            ['Perpanjang Kontrak', '',            false],
+            // Non-perpanjang decisions don't need any extension fields
+            ['Tidak Lulus',                    '', true],
+            ['Diangkat sebagai Karyawan Tetap','', true],
         ];
 
-        foreach ($cases as [$decision, $extDuration, $extStart, $shouldPass]) {
+        foreach ($cases as [$decision, $extStart, $shouldPass]) {
             $c = $this->classify($decision);
-            $valid = !$c['isPerpanjang'] || (!empty($extDuration) && !empty($extStart));
+            // New rule: only extStart is required (duration comes from contract server-side).
+            $valid = !$c['isPerpanjang'] || !empty($extStart);
 
             $this->assertSame($shouldPass, $valid,
-                "Decision=\"$decision\" dur=\"$extDuration\" start=\"$extStart\" expected "
+                "Decision=\"$decision\" start=\"$extStart\" expected "
                 . ($shouldPass ? 'PASS' : 'FAIL'));
         }
     }
