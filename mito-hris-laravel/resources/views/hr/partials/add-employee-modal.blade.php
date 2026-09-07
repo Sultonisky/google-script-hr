@@ -50,17 +50,22 @@
                     <div class="col-md-3">
                         <label class="form-label fw-semibold" style="font-size:12.5px">NIK (16 Digit)</label>
                         <input type="text" class="form-control form-control-sm" id="aeNik"
-                            maxlength="16" placeholder="16 digit NIK" inputmode="numeric" />
+                            maxlength="16" placeholder="16 digit NIK" inputmode="numeric"
+                            autocomplete="off" />
+                        <div class="invalid-feedback" id="aeNikFeedback" style="font-size:11.5px">NIK harus tepat 16 digit angka.</div>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-semibold" style="font-size:12.5px">NPWP (16 Digit)</label>
                         <input type="text" class="form-control form-control-sm" id="aeNpwp"
-                            maxlength="16" placeholder="16 digit NPWP" inputmode="numeric" />
+                            maxlength="16" placeholder="16 digit NPWP" inputmode="numeric"
+                            autocomplete="off" />
+                        <div class="invalid-feedback" id="aeNpwpFeedback" style="font-size:11.5px">NPWP harus tepat 16 digit angka.</div>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold" style="font-size:12.5px">Tempat Lahir</label>
                         <input type="text" class="form-control form-control-sm" id="aeBirthPlace"
-                            placeholder="Kota tempat lahir" />
+                            placeholder="Kota tempat lahir" autocomplete="off" />
+                        <div class="invalid-feedback" id="aeBirthPlaceFeedback" style="font-size:11.5px">Tempat lahir hanya boleh berisi huruf dan spasi.</div>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold" style="font-size:12.5px">Tanggal Lahir</label>
@@ -126,13 +131,20 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold" style="font-size:12.5px">No. HP</label>
-                        <input type="text" class="form-control form-control-sm" id="aeMobilePhone"
-                            placeholder="628xxxxxxxxxx" inputmode="numeric" />
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text" style="font-size:12px;background:#f0f4f8;color:#374151;font-weight:600">+62</span>
+                            <input type="text" class="form-control form-control-sm" id="aeMobilePhone"
+                                placeholder="81234567890" inputmode="numeric" maxlength="13"
+                                autocomplete="off" />
+                        </div>
+                        <div class="invalid-feedback d-block" id="aeMobilePhoneFeedback" style="font-size:11.5px;display:none!important"></div>
+                        <div class="form-text" style="font-size:11px">Format: 8xxxxxxxxxx (tanpa 0 atau +62)</div>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold" style="font-size:12.5px">Email Pribadi</label>
                         <input type="email" class="form-control form-control-sm" id="aePersonalEmail"
-                            placeholder="email@domain.com" />
+                            placeholder="email@domain.com" autocomplete="off" />
+                        <div class="invalid-feedback" id="aePersonalEmailFeedback" style="font-size:11.5px">Format email tidak valid.</div>
                     </div>
 
                     <div class="col-12">
@@ -160,7 +172,8 @@
                     <div class="col-md-4">
                         <label class="form-label fw-semibold" style="font-size:12.5px">Email Kantor</label>
                         <input type="email" class="form-control form-control-sm" id="aeWorkingEmail"
-                            placeholder="email@perusahaan.com" />
+                            placeholder="email@perusahaan.com" autocomplete="off" />
+                        <div class="invalid-feedback" id="aeWorkingEmailFeedback" style="font-size:11.5px">Format email tidak valid.</div>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold" style="font-size:12.5px">Nama Bank</label>
@@ -179,22 +192,29 @@
                     <div class="col-md-4">
                         <label class="form-label fw-semibold" style="font-size:12.5px">Nomor Rekening</label>
                         <input type="text" class="form-control form-control-sm" id="aeBankAccount"
-                            placeholder="Nomor rekening bank" inputmode="numeric" />
+                            placeholder="Nomor rekening bank" inputmode="numeric"
+                            autocomplete="off" />
+                        <div class="invalid-feedback" id="aeBankAccountFeedback" style="font-size:11.5px">Nomor rekening hanya boleh berisi angka.</div>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold" style="font-size:12.5px">Atas Nama Rekening</label>
                         <input type="text" class="form-control form-control-sm" id="aeBankHolder"
-                            placeholder="Nama pemilik rekening" />
+                            placeholder="Nama pemilik rekening" autocomplete="off" />
+                        <div class="invalid-feedback" id="aeBankHolderFeedback" style="font-size:11.5px">Nama pemilik hanya boleh berisi huruf dan spasi.</div>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold" style="font-size:12.5px">BPJS Ketenagakerjaan</label>
                         <input type="text" class="form-control form-control-sm" id="aeBpjsTk"
-                            placeholder="Nomor BPJS Ketenagakerjaan" inputmode="numeric" />
+                            placeholder="Nomor BPJS Ketenagakerjaan" inputmode="numeric"
+                            maxlength="16" autocomplete="off" />
+                        <div class="invalid-feedback" id="aeBpjsTkFeedback" style="font-size:11.5px">Nomor BPJS Ketenagakerjaan hanya boleh berisi angka.</div>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold" style="font-size:12.5px">BPJS Kesehatan</label>
                         <input type="text" class="form-control form-control-sm" id="aeBpjsKes"
-                            placeholder="Nomor BPJS Kesehatan" inputmode="numeric" />
+                            placeholder="Nomor BPJS Kesehatan" inputmode="numeric"
+                            maxlength="13" autocomplete="off" />
+                        <div class="invalid-feedback" id="aeBpjsKesFeedback" style="font-size:11.5px">Nomor BPJS Kesehatan hanya boleh berisi angka.</div>
                     </div>
                 </div>
 
@@ -396,12 +416,10 @@
 (function () {
     'use strict';
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════════════
+    // HELPERS
+    // ═══════════════════════════════════════════════════════════════════════
 
-    /**
-     * Tampilkan toast — reuse fungsi global showToast jika tersedia,
-     * fallback ke alert sederhana.
-     */
     function toast(msg, type) {
         if (typeof showToast === 'function') {
             showToast(msg, type || 'success');
@@ -415,56 +433,322 @@
         return el ? el.value.trim() : '';
     }
 
-    // ── State ─────────────────────────────────────────────────────────────────
+    function setValid(el) {
+        if (!el) return;
+        el.classList.remove('is-invalid');
+        el.classList.add('is-valid');
+    }
 
-    var modalEl   = document.getElementById('addEmployeeModal');
-    var saveBtn   = document.getElementById('btnAddEmployeeSave');
-    var spinner   = document.getElementById('aeSpinner');
-    var icon      = document.getElementById('aeIcon');
-    var fullNameEl = document.getElementById('aeFullName');
-    var statusEl   = document.getElementById('aeStatusEmployee');
+    function setInvalid(el) {
+        if (!el) return;
+        el.classList.remove('is-valid');
+        el.classList.add('is-invalid');
+    }
+
+    function clearState(el) {
+        if (!el) return;
+        el.classList.remove('is-valid', 'is-invalid');
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // ELEMENT REFS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    var modalEl       = document.getElementById('addEmployeeModal');
+    var saveBtn       = document.getElementById('btnAddEmployeeSave');
+    var spinner       = document.getElementById('aeSpinner');
+    var icon          = document.getElementById('aeIcon');
+    var fullNameEl    = document.getElementById('aeFullName');
+    var statusEl      = document.getElementById('aeStatusEmployee');
     var outsourceWrap = document.getElementById('aeOutsourceVendorWrap');
+    var modalTitle    = document.getElementById('aeModalTitle');
+    var modalIcon     = document.getElementById('aeModalIcon');
+    var saveLabel     = document.getElementById('aeSaveLabel');
 
     if (!modalEl || !saveBtn) return;
 
-    // ── Mode: 'employee' (default) atau 'outsource' ────────────────────────
-    // Di-set lewat modalEl.setAttribute('data-mode', 'outsource') dari halaman outsource.
-    // Saat show.bs.modal, mode dibaca dan UI disesuaikan.
+    // ═══════════════════════════════════════════════════════════════════════
+    // VALIDATION STATE — each validator writes here; checkForm reads it
+    // ═══════════════════════════════════════════════════════════════════════
+    var fieldErrors = {
+        fullName:      false,
+        birthPlace:    false,
+        nik:           false,
+        npwp:          false,
+        phone:         false,
+        personalEmail: false,
+        workingEmail:  false,
+        bankAccount:   false,
+        bankHolder:    false,
+        bpjsTk:        false,
+        bpjsKes:       false,
+    };
 
-    var modalTitle  = document.getElementById('aeModalTitle');
-    var modalIcon   = document.getElementById('aeModalIcon');
-    var saveLabel   = document.getElementById('aeSaveLabel');
+    // ═══════════════════════════════════════════════════════════════════════
+    // REGEX CONSTANTS (1:1 with apply.blade.php / GAS validateName_)
+    // ═══════════════════════════════════════════════════════════════════════
+    //
+    // Allowed name chars: Unicode Latin basic + extended, spaces, apostrophe,
+    // hyphen, period — handles d'Silva, van der Waals, Tri-Wahyu, etc.
+    var RX_NAME   = /^[A-Za-zÀ-ÖØ-öø-ÿ\u0100-\u024F '.\-]+$/;
+    var RX_DIGITS = /^\d+$/;
+    var RX_EMAIL  = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    var NAME_MIN  = 3;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // GENERIC VALIDATORS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Validate a name field (letters + allowed punctuation only).
+     * @param {string}  elId        element id
+     * @param {string}  errorKey    key in fieldErrors
+     * @param {boolean} optional    if true, empty value = valid (no error)
+     */
+    function validateNameField(elId, errorKey, optional) {
+        var el = document.getElementById(elId);
+        if (!el) return;
+        var v = el.value;
+
+        // Auto-sanitize: strip digits and most symbols on every keystroke
+        var sanitized = v.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\u0100-\u024F '.\-]/g, '');
+        if (sanitized !== v) {
+            el.value = sanitized;
+            v = sanitized;
+        }
+
+        if (v === '') {
+            clearState(el);
+            fieldErrors[errorKey] = false;
+            checkForm();
+            return;
+        }
+
+        var valid = v.length >= NAME_MIN && RX_NAME.test(v);
+        if (valid || optional) {
+            setValid(el);
+            fieldErrors[errorKey] = false;
+        } else {
+            setInvalid(el);
+            fieldErrors[errorKey] = true;
+        }
+        checkForm();
+    }
+
+    /**
+     * Validate a digits-only field.
+     * @param {string}  elId      element id
+     * @param {string}  errorKey
+     * @param {number}  exactLen  if > 0, enforce exact length
+     * @param {boolean} optional
+     */
+    function validateDigitField(elId, errorKey, exactLen, optional) {
+        var el = document.getElementById(elId);
+        if (!el) return;
+
+        // Strip non-digits on every keystroke (no letters allowed)
+        var stripped = el.value.replace(/\D/g, '');
+        if (stripped !== el.value) {
+            el.value = stripped;
+        }
+
+        var v = el.value;
+
+        if (v === '') {
+            clearState(el);
+            fieldErrors[errorKey] = false;
+            checkForm();
+            return;
+        }
+
+        var lenOk = (exactLen > 0) ? (v.length === exactLen) : true;
+        var valid  = lenOk && RX_DIGITS.test(v);
+
+        if (valid) {
+            setValid(el);
+            fieldErrors[errorKey] = false;
+        } else {
+            setInvalid(el);
+            fieldErrors[errorKey] = true;
+        }
+        checkForm();
+    }
+
+    /**
+     * Validate an email field.
+     * @param {string}  elId
+     * @param {string}  errorKey
+     */
+    function validateEmailField(elId, errorKey) {
+        var el = document.getElementById(elId);
+        if (!el) return;
+        var v = el.value.trim();
+
+        if (v === '') {
+            clearState(el);
+            fieldErrors[errorKey] = false;
+            checkForm();
+            return;
+        }
+
+        if (RX_EMAIL.test(v)) {
+            setValid(el);
+            fieldErrors[errorKey] = false;
+        } else {
+            setInvalid(el);
+            fieldErrors[errorKey] = true;
+        }
+        checkForm();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // FIELD-SPECIFIC VALIDATORS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // Nama Lengkap — required, min 3 chars
+    function validateFullName() { validateNameField('aeFullName',   'fullName',   false); }
+
+    // Tempat Lahir — optional, letters only
+    function validateBirthPlace() { validateNameField('aeBirthPlace', 'birthPlace', true); }
+
+    // NIK — optional, exactly 16 digits
+    function validateNik()  { validateDigitField('aeNik',  'nik',  16, true); }
+
+    // NPWP — optional, exactly 16 digits
+    function validateNpwp() { validateDigitField('aeNpwp', 'npwp', 16, true); }
+
+    // No. HP — optional, digits 9–13 chars (lokal: 8xx... = 9–12 digit subscriber)
+    // Backend normalises to 628xx; UI strips leading 0 or 62/+62 and shows +62 prefix.
+    function validatePhone() {
+        var el = document.getElementById('aeMobilePhone');
+        var fb = document.getElementById('aeMobilePhoneFeedback');
+        if (!el) return;
+
+        // Strip non-digits
+        var stripped = el.value.replace(/\D/g, '');
+
+        // Normalise: remove leading 0 → subscriber number; strip leading 62
+        if (stripped.startsWith('0'))  stripped = stripped.slice(1);
+        if (stripped.startsWith('62')) stripped = stripped.slice(2);
+
+        if (stripped !== el.value) el.value = stripped;
+
+        var v = el.value;
+        if (v === '') {
+            clearState(el);
+            if (fb) fb.style.display = 'none';
+            fieldErrors.phone = false;
+            checkForm();
+            return;
+        }
+
+        // Valid: starts with 8, length 9–12 (subscriber), all digits
+        var valid = /^8\d{8,11}$/.test(v);
+        if (valid) {
+            setValid(el);
+            if (fb) fb.style.display = 'none';
+            fieldErrors.phone = false;
+        } else {
+            setInvalid(el);
+            if (fb) {
+                fb.textContent = 'Format tidak valid. Ketik 8xxxxxxxxxx (9–12 digit, tanpa 0 atau +62).';
+                fb.style.display = '';
+            }
+            fieldErrors.phone = true;
+        }
+        checkForm();
+    }
+
+    // Email Pribadi — optional
+    function validatePersonalEmail() { validateEmailField('aePersonalEmail', 'personalEmail'); }
+
+    // Email Kantor — optional
+    function validateWorkingEmail()  { validateEmailField('aeWorkingEmail',  'workingEmail');  }
+
+    // Nomor Rekening — optional, digits only, no fixed length
+    function validateBankAccount() { validateDigitField('aeBankAccount', 'bankAccount', 0, true); }
+
+    // Atas Nama Rekening — optional, letters + spaces
+    function validateBankHolder()  { validateNameField('aeBankHolder', 'bankHolder', true); }
+
+    // BPJS Ketenagakerjaan — optional, digits only
+    function validateBpjsTk()  { validateDigitField('aeBpjsTk',  'bpjsTk',  0, true); }
+
+    // BPJS Kesehatan — optional, digits only
+    function validateBpjsKes() { validateDigitField('aeBpjsKes', 'bpjsKes', 0, true); }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // ATTACH LISTENERS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function on(id, fn) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('input', fn);
+        el.addEventListener('blur',  fn);
+    }
+
+    on('aeFullName',     validateFullName);
+    on('aeBirthPlace',   validateBirthPlace);
+    on('aeNik',          validateNik);
+    on('aeNpwp',         validateNpwp);
+    on('aeMobilePhone',  validatePhone);
+    on('aePersonalEmail',validatePersonalEmail);
+    on('aeWorkingEmail', validateWorkingEmail);
+    on('aeBankAccount',  validateBankAccount);
+    on('aeBankHolder',   validateBankHolder);
+    on('aeBpjsTk',       validateBpjsTk);
+    on('aeBpjsKes',      validateBpjsKes);
+
+    // Status change always triggers checkForm
+    if (statusEl) statusEl.addEventListener('change', checkForm);
+
+    // Vendor input triggers checkForm
+    var vendorInputEl = document.getElementById('aeOutsourceVendor');
+    if (vendorInputEl) vendorInputEl.addEventListener('input', checkForm);
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // CHECK FORM — gate the Save button
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function checkForm() {
+        var isOutsource = (modalEl.getAttribute('data-mode') === 'outsource');
+        var vendorOk    = !isOutsource || val('aeOutsourceVendor') !== '';
+
+        // Any active validation error blocks save
+        var hasErrors = Object.values(fieldErrors).some(Boolean);
+
+        var ok = val('aeFullName') !== ''
+              && val('aeStatusEmployee') !== ''
+              && !hasErrors
+              && vendorOk;
+
+        saveBtn.disabled = !ok;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // MODE: 'employee' vs 'outsource'
+    // ═══════════════════════════════════════════════════════════════════════
 
     function applyMode(mode) {
         var isOutsource = (mode === 'outsource');
 
-        // Header title + icon
         if (modalTitle) modalTitle.textContent = isOutsource ? 'Tambah Karyawan Outsource' : 'Tambah Karyawan Baru';
-        if (modalIcon)  {
-            modalIcon.className = isOutsource
-                ? 'bi bi-building-fill-gear fs-5'
-                : 'bi bi-person-plus-fill fs-5';
-        }
-        if (saveLabel) saveLabel.textContent = isOutsource ? 'Simpan Outsource' : 'Simpan Karyawan';
+        if (modalIcon)  modalIcon.className    = isOutsource ? 'bi bi-building-fill-gear fs-5' : 'bi bi-person-plus-fill fs-5';
+        if (saveLabel)  saveLabel.textContent  = isOutsource ? 'Simpan Outsource' : 'Simpan Karyawan';
 
-        // Status dropdown: force Outsource + readonly
         if (statusEl) {
             if (isOutsource) {
                 statusEl.value    = 'Outsource';
                 statusEl.disabled = true;
-                statusEl.style.background    = '#f0f4f8';
-                statusEl.style.cursor        = 'not-allowed';
-                statusEl.style.pointerEvents = 'none';
+                statusEl.style.cssText = 'background:#f0f4f8;cursor:not-allowed;pointer-events:none';
             } else {
                 statusEl.value    = 'Contract';
                 statusEl.disabled = false;
-                statusEl.style.background    = '';
-                statusEl.style.cursor        = '';
-                statusEl.style.pointerEvents = '';
+                statusEl.style.cssText = '';
             }
         }
 
-        // Sync dependent fields after mode change
         syncStatusDependentFields();
         checkForm();
     }
@@ -473,192 +757,111 @@
         applyMode(this.getAttribute('data-mode') || 'employee');
     });
 
-    // ── Enable/Disable simpan button ─────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════════════
+    // EMPLOYEE ID PREVIEW
+    // ═══════════════════════════════════════════════════════════════════════
 
-    function checkForm() {
-        var isOutsource = (modalEl.getAttribute('data-mode') === 'outsource');
-        var vendorOk    = !isOutsource || val('aeOutsourceVendor') !== '';
-        var ok = val('aeFullName') !== '' && val('aeStatusEmployee') !== '' && !nameHasError && vendorOk;
-        saveBtn.disabled = !ok;
-    }
-
-    // Vendor input juga trigger checkForm
-    var vendorInputEl = document.getElementById('aeOutsourceVendor');
-    if (vendorInputEl) vendorInputEl.addEventListener('input', checkForm);
-
-    // ── Validasi Nama Lengkap (1:1 dari GAS / public career apply.blade.php) ─
-    // Hanya huruf (termasuk huruf berdiakritik/aksara) dan spasi tunggal antar kata.
-    // Regex: Unicode letter categories \p{L} — di-emulasi dengan rentang karakter
-    // yang mencakup Latin + Latin Extended (nama Indonesia, Arab, dll.).
-
-    var nameHasError = false;
-    var nameEl       = document.getElementById('aeFullName');
-    var nameFeedback = document.getElementById('aeFullNameFeedback');
-
-    // Regex huruf + spasi: melarang angka, tanda baca, simbol
-    // Menggunakan rentang Unicode Latin dasar & extended agar nama dengan
-    // aksen (é, ñ, ü, dll.) tetap diterima — konsisten dengan pattern di apply.blade.php
-    var NAME_VALID_CHARS = /^[A-Za-zÀ-ÖØ-öø-ÿ\u0100-\u024F '.\-]+$/;
-    var NAME_MIN_LENGTH  = 3;
-
-    function validateFullName() {
-        if (!nameEl) return;
-        var v = nameEl.value;
-
-        if (v === '') {
-            // Kosong — reset ke netral (belum disentuh)
-            nameEl.classList.remove('is-valid', 'is-invalid');
-            nameHasError = false;
-            checkForm();
-            return;
-        }
-
-        // Sanitize otomatis: buang karakter yang jelas tidak valid (angka, simbol)
-        // tapi biarkan huruf, spasi, apostrof, titik, dan tanda hubung (nama seperti
-        // "d'Silva", "van der Waals", "Tri-Wahyu") — konsisten dengan GAS validateName_()
-        var sanitized = v.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\u0100-\u024F '.\-]/g, '');
-        if (sanitized !== v) {
-            nameEl.value = sanitized;
-            v = sanitized;
-        }
-
-        // Minimal 3 karakter & hanya karakter yang diizinkan
-        if (v.length < NAME_MIN_LENGTH || !NAME_VALID_CHARS.test(v)) {
-            nameEl.classList.add('is-invalid');
-            nameEl.classList.remove('is-valid');
-            nameHasError = true;
-        } else {
-            nameEl.classList.remove('is-invalid');
-            nameEl.classList.add('is-valid');
-            nameHasError = false;
-        }
-        checkForm();
-    }
-
-    if (nameEl) {
-        nameEl.addEventListener('input', validateFullName);
-        nameEl.addEventListener('blur',  validateFullName);
-    }
-
-    ['aeStatusEmployee'].forEach(function (id) {
-        var el = document.getElementById(id);
-        if (el) el.addEventListener('input', checkForm);
-    });
-
-    // ── Employee ID preview (format: YYYYMMDDxx — 1:1 dengan EmployeeIdGenerator.php) ──
-
-    var joinDateEl     = document.getElementById('aeJoinDate');
-    var idPreviewEl    = document.getElementById('aeEmployeeIdPreview');
+    var joinDateEl  = document.getElementById('aeJoinDate');
+    var idPreviewEl = document.getElementById('aeEmployeeIdPreview');
 
     function updateIdPreview() {
         if (!idPreviewEl) return;
         var dateVal = joinDateEl ? joinDateEl.value : '';
-        if (!dateVal) {
-            idPreviewEl.value = '';
-            idPreviewEl.placeholder = 'Pilih tanggal masuk...';
-            return;
-        }
-        // Auto-uruti hanya jika user belum edit manual
+        if (!dateVal) { idPreviewEl.value = ''; idPreviewEl.placeholder = 'Pilih tanggal masuk...'; return; }
         if (idPreviewEl.dataset.manualChanged === '1') return;
-        // Format: YYYYMMDD (hapus tanda hubung dari value "YYYY-MM-DD")
-        var datePart = dateVal.replace(/-/g, '');
-        // Sequence preview selalu 01 — server yang tentukan urutan final
-        idPreviewEl.value = datePart + '01';
+        idPreviewEl.value = dateVal.replace(/-/g, '') + '01';
         idPreviewEl.placeholder = '';
     }
 
-    if (idPreviewEl) {
-        idPreviewEl.addEventListener('input', function () {
-            this.dataset.manualChanged = '1';
-        });
-    }
-
+    if (idPreviewEl) idPreviewEl.addEventListener('input', function () { this.dataset.manualChanged = '1'; });
     if (joinDateEl) {
         joinDateEl.addEventListener('change', updateIdPreview);
-        joinDateEl.addEventListener('input', updateIdPreview);
+        joinDateEl.addEventListener('input',  updateIdPreview);
     }
 
-    // NIK autofill dinonaktifkan — input NIK murni sebagai teks 16 digit biasa.
-    // Tidak ada parse, tidak ada auto-fill tanggal lahir / jenis kelamin / wilayah.
+    // ═══════════════════════════════════════════════════════════════════════
+    // CONTRACT / OUTSOURCE SECTION VISIBILITY
+    // ═══════════════════════════════════════════════════════════════════════
 
     var contractSection = document.getElementById('aeContractSection');
-
-    // ── Show/hide contract section (only for Contract / PKWT) ────────────────
-    // ── Show/hide outsource vendor field ─────────────────────────────────────
 
     function syncStatusDependentFields() {
         var status = statusEl ? statusEl.value : '';
 
-        // Contract section: visible only when status === 'Contract'
         if (contractSection) {
             var isContract = (status === 'Contract');
             contractSection.style.display = isContract ? '' : 'none';
-            // Clear the date when hiding so no stale value gets submitted
             if (!isContract) {
-                var endDateEl = document.getElementById('aeEndDateContract');
-                if (endDateEl) endDateEl.value = '';
+                var ed = document.getElementById('aeEndDateContract');
+                if (ed) ed.value = '';
             }
         }
 
-        // Outsource vendor field
         if (outsourceWrap) {
             outsourceWrap.style.display = (status === 'Outsource') ? '' : 'none';
             if (status !== 'Outsource') {
-                var vendorEl = document.getElementById('aeOutsourceVendor');
-                if (vendorEl) vendorEl.value = '';
+                var ov = document.getElementById('aeOutsourceVendor');
+                if (ov) ov.value = '';
             }
         }
     }
 
     if (statusEl) {
         statusEl.addEventListener('change', syncStatusDependentFields);
-        // Run once on load to match the pre-selected default ('Contract')
         syncStatusDependentFields();
     }
 
-    // ── Reset form on modal close ─────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════════════
+    // RESET on modal close
+    // ═══════════════════════════════════════════════════════════════════════
 
     modalEl.addEventListener('hidden.bs.modal', function () {
-        // Clear all inputs / selects / textareas inside modal-body
         modalEl.querySelectorAll('.modal-body input, .modal-body select, .modal-body textarea')
             .forEach(function (el) {
                 if (el.tagName === 'SELECT') {
-                    // Restore default: Contract for status, empty for others
-                    if (el.id === 'aeStatusEmployee') {
-                        el.value = 'Contract';
-                    } else {
-                        el.value = '';
-                    }
+                    el.value = (el.id === 'aeStatusEmployee') ? 'Contract' : '';
                 } else if (el.id === 'aeBankName') {
                     el.value = 'BCA';
                 } else {
                     el.value = '';
                 }
+                clearState(el);
             });
+
+        // Reset error state map
+        Object.keys(fieldErrors).forEach(function (k) { fieldErrors[k] = false; });
+
         if (outsourceWrap) outsourceWrap.style.display = 'none';
-        // Re-sync dependent fields after reset (Contract default → show contract section)
         syncStatusDependentFields();
-        // Clear Employee ID preview
         updateIdPreview();
-        // Clear NIK feedback dan reset manual birth date flag
-        var bdReset = document.getElementById('aeBirthDate');
-        if (bdReset) delete bdReset.dataset.manualChanged;
-        var bpReset = document.getElementById('aeBirthPlace');
-        if (bpReset) delete bpReset.dataset.manualChanged;
-        // Reset nama validation state
-        if (nameEl) nameEl.classList.remove('is-valid', 'is-invalid');
-        nameHasError = false;
-        // Reset Employee ID manual flag
+
         var idPreviewReset = document.getElementById('aeEmployeeIdPreview');
         if (idPreviewReset) delete idPreviewReset.dataset.manualChanged;
-        // Reset mode → employee (data-mode tetap di element, tapi title/status di-restore)
-        // applyMode dipanggil lagi saat show.bs.modal berikutnya, tidak perlu reset di sini
+
+        var phoneFb = document.getElementById('aeMobilePhoneFeedback');
+        if (phoneFb) phoneFb.style.display = 'none';
+
         saveBtn.disabled = true;
     });
 
-    // ── Submit via Fetch ──────────────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════════════
+    // SUBMIT
+    // ═══════════════════════════════════════════════════════════════════════
 
     saveBtn.addEventListener('click', function () {
+        // Run all validators once more to catch un-touched fields
+        validateFullName();
+        validateBirthPlace();
+        validateNik();
+        validateNpwp();
+        validatePhone();
+        validatePersonalEmail();
+        validateWorkingEmail();
+        validateBankAccount();
+        validateBankHolder();
+        validateBpjsTk();
+        validateBpjsKes();
+
         var fullName    = val('aeFullName');
         var status      = val('aeStatusEmployee');
         var isOutsource = (modalEl.getAttribute('data-mode') === 'outsource');
@@ -667,13 +870,19 @@
             toast('Nama lengkap dan Status Karyawan wajib diisi.', 'danger');
             return;
         }
-
         if (isOutsource && !val('aeOutsourceVendor')) {
             toast('Vendor Outsource wajib diisi untuk status Outsource.', 'danger');
             return;
         }
+        if (Object.values(fieldErrors).some(Boolean)) {
+            toast('Perbaiki field yang tidak valid terlebih dahulu.', 'danger');
+            return;
+        }
 
-        // Build payload — semua field Employee sheet (camelCase sesuai EmployeeService::createEmployee)
+        // ── Build phone value for backend: normalise to 628xx format ──────
+        var rawPhone = val('aeMobilePhone');   // already stripped to subscriber (8xx...)
+        var phoneForBackend = rawPhone ? '62' + rawPhone : '';
+
         var payload = {
             fullName:             fullName,
             statusEmployee:       status,
@@ -692,7 +901,6 @@
             indirectSuperior:     val('aeIndirectSuperior'),
             outsourceVendor:      val('aeOutsourceVendor'),
             endDateContract:      val('aeEndDateContract'),
-            // Identitas pribadi
             nikNpwp:              val('aeNik'),
             npwp:                 val('aeNpwp'),
             birthPlace:           val('aeBirthPlace'),
@@ -702,51 +910,44 @@
             religion:             val('aeReligion'),
             maritalStatus:        val('aeMarital'),
             ptkpStatus:           val('aePtkp'),
-            mobilePhone:          val('aeMobilePhone'),
+            mobilePhone:          phoneForBackend,
             personalEmail:        val('aePersonalEmail'),
             workingEmail:         val('aeWorkingEmail'),
             citizenIdAddress:     val('aeCitizenAddress'),
             residentialAddress:   val('aeResidentialAddress'),
-            // Bank & BPJS
             bankName:             val('aeBankName'),
             bankAccount:          val('aeBankAccount'),
             bankAccountHolder:    val('aeBankHolder'),
             bpjsKetenagakerjaan:  val('aeBpjsTk'),
             bpjsKesehatan:        val('aeBpjsKes'),
-            // Catatan
             hrNotes:              val('aeHrNotes'),
         };
 
-        // Spinner on, button disabled
         saveBtn.disabled = true;
         if (spinner) spinner.classList.remove('d-none');
         if (icon) icon.classList.add('d-none');
 
-        // Resolve store URL — pakai data attribute di modal agar domain-agnostic
-        var storeUrl = modalEl.getAttribute('data-store-url') || '/hr/employees';
-
+        var storeUrl  = modalEl.getAttribute('data-store-url') || '/hr/employees';
         var csrfToken = document.querySelector('meta[name="csrf-token"]');
 
         fetch(storeUrl, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': csrfToken ? csrfToken.getAttribute('content') : '',
-                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type':    'application/json',
+                'Accept':          'application/json',
+                'X-CSRF-TOKEN':    csrfToken ? csrfToken.getAttribute('content') : '',
+                'X-Requested-With':'XMLHttpRequest',
             },
             body: JSON.stringify(payload),
         })
-        .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+        .then(function (res) { return res.json().then(function (d) { return { ok: res.ok, data: d }; }); })
         .then(function (result) {
             if (result.ok && result.data.success) {
                 toast('Karyawan berhasil ditambahkan. Employee ID: ' + (result.data.employeeId || '-'), 'success');
                 bootstrap.Modal.getInstance(modalEl).hide();
-                // Reload halaman agar tabel dan stats ter-refresh
                 setTimeout(function () { window.location.reload(); }, 900);
             } else {
                 var msg = result.data.message || 'Gagal menyimpan data karyawan.';
-                // Jika Laravel mengembalikan validation errors (errors object)
                 if (result.data.errors) {
                     var errs = Object.values(result.data.errors).flat();
                     msg = errs.join(' ');
