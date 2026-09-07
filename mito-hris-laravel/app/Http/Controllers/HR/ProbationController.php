@@ -258,10 +258,11 @@ class ProbationController extends Controller
                 'eeTotal'        => $result['eeTotal'],
                 'twTotal'        => $result['twTotal'],
                 'previewUrl'     => route('hr.probation.preview', [$id]) . '?eval_id=' . urlencode($result['evalId']),
-                'pdfUrl'         => $pdfUrl,      // null for EXTEND
-                'evalPdfUrl'     => $evalPdfUrl,  // null for EXTEND
-                'skNumber'       => $result['skNumber'],
-                'extensionDuration'  => $evalData['extension_duration'] ?? '',
+                'pdfUrl'            => $pdfUrl,      // null for EXTEND
+                'evalPdfUrl'        => $evalPdfUrl,  // null for EXTEND
+                'skNumber'          => $result['skNumber'],
+                // Server-derived extension duration — never echoes browser input.
+                'extensionDuration' => $result['extensionDuration'] ?? '',
             ]);
         }
 
