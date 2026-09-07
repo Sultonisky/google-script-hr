@@ -6,7 +6,6 @@
                 <th>Kode</th>
                 <th>Nama Sertifikasi</th>
                 <th>Klasifikasi</th>
-                <th>Karyawan</th>
                 <th>Penerbit</th>
                 <th>Terbit</th>
                 <th>Kedaluwarsa</th>
@@ -35,10 +34,6 @@
                     </td>
                     <td>
                         <span class="badge-status {{ $cert->cert_type->badgeClass() }}">{{ $cert->cert_type->label() }}</span>
-                    </td>
-                    <td>
-                        <div class="fw-semibold">{{ $cert->employee_name }}</div>
-                        <div class="cand-sub">{{ $cert->employee_id }}</div>
                     </td>
                     <td>{{ $cert->issuing_organization }}</td>
                     <td>{{ $cert->issue_date ? $cert->issue_date->format('d M Y') : '-' }}</td>
@@ -76,7 +71,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="9">
+                    <td colspan="8">
                         <div class="table-empty">
                             <i class="bi bi-inbox"></i>
                             <p>Belum ada data sertifikasi.</p>

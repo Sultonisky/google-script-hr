@@ -14,6 +14,7 @@ class Certification extends Model
         'name',
         'product_scope',
         'brand',
+        'company_scope',
         'description',
         'issuing_organization',
         'certificate_number',
@@ -50,12 +51,13 @@ class Certification extends Model
         return $query->where(function ($q) use ($term) {
             $q->whereRaw('LOWER(cert_code) LIKE ?', [$term])
               ->orWhereRaw('LOWER(name) LIKE ?', [$term])
-              ->orWhereRaw('LOWER(employee_id) LIKE ?', [$term])
-              ->orWhereRaw('LOWER(employee_name) LIKE ?', [$term])
+              ->orWhereRaw('LOWER(COALESCE(employee_id, \'\')) LIKE ?', [$term])
+              ->orWhereRaw('LOWER(COALESCE(employee_name, \'\')) LIKE ?', [$term])
               ->orWhereRaw('LOWER(issuing_organization) LIKE ?', [$term])
               ->orWhereRaw('LOWER(certificate_number) LIKE ?', [$term])
               ->orWhereRaw('LOWER(product_scope) LIKE ?', [$term])
-              ->orWhereRaw('LOWER(brand) LIKE ?', [$term]);
+              ->orWhereRaw('LOWER(brand) LIKE ?', [$term])
+              ->orWhereRaw('LOWER(company_scope) LIKE ?', [$term]);
         });
     }
 

@@ -28,16 +28,17 @@ class UpdateCertificationRequest extends FormRequest
             ],
             'cert_type'            => ['required', Rule::enum(CertType::class)],
             'name'                 => ['required', 'string', 'max:255'],
-            'product_scope'       => ['nullable', 'string', 'max:255'],
-            'brand'                => ['nullable', 'string', 'max:100'],
+            'product_scope'        => ['nullable', 'string', 'max:255', Rule::requiredIf(fn () => $this->productClassification()), Rule::prohibitedIf(fn () => $this->companyClassification())],
+            'brand'                => ['nullable', 'string', 'max:100', Rule::requiredIf(fn () => $this->productClassification()), Rule::prohibitedIf(fn () => $this->companyClassification())],
+            'company_scope'        => ['nullable', 'string', 'max:255', Rule::requiredIf(fn () => $this->companyClassification()), Rule::prohibitedIf(fn () => $this->productClassification())],
             'description'          => ['nullable', 'string', 'max:1000'],
             'issuing_organization' => ['required', 'string', 'max:255'],
             'certificate_number'   => ['nullable', 'string', 'max:255'],
             'issue_date'           => ['required', 'date'],
             'expiry_date'          => ['nullable', 'date', 'after_or_equal:issue_date'],
             'status'               => ['nullable', Rule::in(array_column(CertStatus::cases(), 'value'))],
-            'employee_id'          => ['required', 'string', 'max:100', new ExistingEmployeeId],
-            'employee_name'        => ['required', 'string', 'max:255'],
+            'employee_id'          => ['nullable', 'string', 'max:100', new ExistingEmployeeId],
+            'employee_name'        => ['nullable', 'string', 'max:255'],
             'division'             => ['nullable', 'string', 'max:255'],
             'department'           => ['nullable', 'string', 'max:255'],
             'notes'                => ['nullable', 'string', 'max:2000'],
@@ -53,10 +54,25 @@ class UpdateCertificationRequest extends FormRequest
             'name.required'                 => 'Nama sertifikasi wajib diisi.',
             'issuing_organization.required' => 'Lembaga penerbit wajib diisi.',
             'issue_date.required'           => 'Tanggal terbit wajib diisi.',
-            'employee_id.required'          => 'Karyawan wajib dipilih.',
-            'employee_name.required'        => 'Nama karyawan wajib diisi.',
             'cert_code.unique'              => 'Kode sertifikasi sudah digunakan.',
             'expiry_date.after_or_equal'    => 'Tanggal kedaluwarsa harus setelah atau sama dengan tanggal terbit.',
+            'product_scope.required'        => 'Produk / scope produk wajib diisi untuk klasifikasi ini.',
+            'brand.required'                => 'Brand wajib diisi untuk klasifikasi produk.',
+            'company_scope.required'        => 'Scope perusahaan wajib diisi untuk klasifikasi ISO/K3.',
         ];
+    }
+
+    private function productClassification(): bool
+    {
+        return in_array($this->input('cert_type'), [
+            CertType::SNI->value,
+            CertType::FOOD_SAFETY->value,
+            CertType::PRODUCT_SAFETY->value,
+        ], true);
+    }
+
+    private function companyClassification(): bool
+    {
+        return in_array($this->input('cert_type'), [CertType::ISO->value, CertType::K3->value], true);
     }
 }

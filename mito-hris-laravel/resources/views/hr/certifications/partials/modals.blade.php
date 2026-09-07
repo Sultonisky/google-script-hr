@@ -38,9 +38,9 @@
                                 required maxlength="255">
                         </div>
                     </div>
-                    <div class="row g-3 mb-3">
+                    <div class="row g-3 mb-3 d-none" id="certificationProductFields">
                         <div class="col-md-8">
-                            <label class="form-label fw-semibold">Produk / Scope</label>
+                            <label class="form-label fw-semibold" id="certificationProductScopeLabel">Produk / Scope</label>
                             <input type="text" class="form-control" name="product_scope" id="certificationFormScope"
                                 maxlength="255" placeholder="Contoh: Rice Cooker atau Quality Management System">
                         </div>
@@ -50,37 +50,19 @@
                                 maxlength="100" placeholder="Contoh: MITO">
                         </div>
                     </div>
+                    <div class="row g-3 mb-3 d-none" id="certificationCompanyFields">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Scope Perusahaan</label>
+                            <input type="text" class="form-control" name="company_scope" id="certificationFormCompanyScope"
+                                maxlength="255" placeholder="Contoh: Quality Management System">
+                            <div class="form-text">Gunakan scope sistem atau area perusahaan, bukan nama produk/brand.</div>
+                        </div>
+                    </div>
                     <div class="row g-3 mb-3">
                         <div class="col-12"><label class="form-label fw-semibold">Deskripsi</label>
                             <textarea class="form-control" name="description" id="certificationFormDesc" rows="2"></textarea>
                         </div>
                     </div>
-                    <div class="asset-section-title mt-3"><i class="bi bi-person-badge"></i> Informasi Karyawan</div>
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Cari Karyawan *</label>
-                            <input type="text" class="form-control" id="certificationEmployeeSearch"
-                                autocomplete="off" placeholder="Ketik nama / ID karyawan...">
-                            <input type="hidden" name="employee_id" id="certificationFormEmployeeId">
-                            <input type="hidden" name="employee_name" id="certificationFormEmployeeName">
-                            <div class="list-group mt-2 d-none" id="certificationEmployeeResults"
-                                style="max-height:200px;overflow:auto;position:absolute;z-index:1050;width:calc(100% - 2rem);">
-                            </div>
-                            <div id="certificationEmployeeError" class="text-danger small mt-1 d-none"></div>
-                            <div id="certificationSelectedEmployee" class="d-none mt-2"></div>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label fw-semibold">Division</label>
-                            <input type="text" class="form-control" name="division" id="certificationFormDivision"
-                                readonly maxlength="255">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label fw-semibold">Department</label>
-                            <input type="text" class="form-control" name="department"
-                                id="certificationFormDepartment" readonly maxlength="255">
-                        </div>
-                    </div>
-
                     <div class="asset-section-title mt-3"><i class="bi bi-building-check"></i> Informasi Penerbit</div>
                     <div class="row g-3 mb-3">
                         <div class="col-md-6"><label class="form-label fw-semibold">Lembaga Penerbit *</label>
