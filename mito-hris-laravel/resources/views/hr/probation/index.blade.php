@@ -54,7 +54,7 @@
                 <div>
                     <h6>Karyawan Probation</h6>
                     <div class="panel-subtitle" id="probPanelSubtitle">
-                        Menampilkan {{ $probations->count() }} dari {{ $stats['onboarding'] }} data
+                        Menampilkan {{ $probations->count() }} dari {{ $total }} data
                     </div>
                 </div>
                 <div class="export-btns">
@@ -283,8 +283,22 @@
 
             <div class="panel-footer">
                 <span id="probFooterCount">
-                    Menampilkan {{ $probations->count() }} dari {{ $stats['onboarding'] }} data
+                    Menampilkan {{ $probations->count() }} dari {{ $total }} data
                 </span>
+                @if ($total > $perPage)
+                    <x-pagination
+                        :currentPage="$currentPage"
+                        :total="$total"
+                        :perPage="$perPage"
+                        :route="'hr.probation.index'"
+                        :queryParams="[
+                            'search' => request('search'),
+                            'status' => request('status'),
+                            'score' => request('score'),
+                            'sort' => request('sort'),
+                        ]"
+                    />
+                @endif
             </div>
         </div>
 
