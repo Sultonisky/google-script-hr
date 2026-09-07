@@ -7,6 +7,7 @@ use App\Enums\ProbationDecisionType;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Services\Google\GoogleSheetsService;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Session;
 use Mockery;
 use ReflectionClass;
@@ -28,6 +29,12 @@ use Tests\TestCase;
  */
 class ProbationEvaluationFlowTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Cache::flush();
+    }
+
     private const HEADERS = [
         'Probation ID',
         'Employee ID',
@@ -119,11 +126,10 @@ class ProbationEvaluationFlowTest extends TestCase
      * Bind mocks for the evaluate flow. $capturedRows receives every appended
      * kandidat_probation row as a header-mapped assoc array.
      *
-     * If $existingRows is empty, a default active-probation row (Decision='')
-     * is injected so the canonical `isActiveProbation` returns true and
-     * evaluations can proceed.
+    * A null $existingRows value seeds legacy history; an explicit empty array
+    * exercises first evaluation for a Contract employee with no history.
      */
-    private function bindEvaluateFlowMocks(array &$capturedRows, array $existingRows = []): GoogleSheetsService
+    private function bindEvaluateFlowMocks(array &$capturedRows, ?array $existingRows = null): GoogleSheetsService
     {
         $employeeRepo = Mockery::mock(EmployeeRepositoryInterface::class);
         $employeeRepo->shouldReceive('findById')->with('EMP001')->andReturn($this->makeEmployee())->byDefault();
@@ -147,10 +153,8 @@ class ProbationEvaluationFlowTest extends TestCase
             })->andReturn(true)->byDefault();
         $sheets->shouldReceive('clearCache')->andReturn(null)->byDefault();
         $sheets->shouldReceive('updateRange')->andReturn(true)->byDefault();
-        // Default existingRows: an active-probation base row (Decision='')
-        // so ProbationService::isActiveProbation returns true via the
-        // canonical helper, and the evaluation flow can proceed.
-        if (empty($existingRows)) {
+        // Optional legacy history fixture for re-evaluation tests.
+        if ($existingRows === null) {
             $existingRows = [
                 array_combine($headers, array_pad([
                     'PROB-EMP001',
@@ -248,6 +252,7 @@ class ProbationEvaluationFlowTest extends TestCase
             ->assertJsonPath('decisionType', 'pass');
 
         $row = end($rows);
+        $this->assertCount(1, $rows, 'First evaluation must create exactly one history row.');
         $this->assertSame('Probation', self::ref($row, 'Status'));
         $this->assertSame('Lulus', self::ref($row, 'Decision'));
         $this->assertSame('13', self::ref($row, 'Overall Total'));
@@ -353,6 +358,26 @@ class ProbationEvaluationFlowTest extends TestCase
 
         $response->assertStatus(422);
         $this->assertCount(0, $rows, 'No evaluation row may be written when validation fails.');
+    }
+
+    public function test_duplicate_evaluation_submission_does_not_append_twice(): void
+    {
+        $this->loginAsHrAdmin();
+        $captured = [];
+        $this->bindEvaluateFlowMocks($captured, []);
+        $payload = array_merge([
+            'decision' => 'Perpanjang Kontrak',
+            'extension_start' => '2026-12-01',
+            'notes' => 'duplicate-protection-' . uniqid(),
+        ], $this->validIndicatorPayload());
+
+        $this->postJson('/hr/probation/EMP001/evaluate', $payload)
+            ->assertOk()
+            ->assertJsonPath('success', true);
+        $this->postJson('/hr/probation/EMP001/evaluate', $payload)
+            ->assertStatus(422);
+
+        $this->assertCount(1, $captured);
     }
 
     // =========================================================================

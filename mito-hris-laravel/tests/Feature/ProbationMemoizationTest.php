@@ -82,7 +82,14 @@ class ProbationMemoizationTest extends TestCase
             ->andReturn($rows);
 
         $this->app->instance(GoogleSheetsService::class, $sheets);
-        $this->app->instance(EmployeeRepositoryInterface::class, Mockery::mock(EmployeeRepositoryInterface::class));
+        $employees = Mockery::mock(EmployeeRepositoryInterface::class);
+        $employees->shouldReceive('findById')
+            ->andReturnUsing(fn(string $employeeId) => new EmployeeData(
+                employeeId: $employeeId,
+                statusEmployee: 'Contract'
+            ))
+            ->byDefault();
+        $this->app->instance(EmployeeRepositoryInterface::class, $employees);
         $this->app->instance(AuditLogRepositoryInterface::class, Mockery::mock(AuditLogRepositoryInterface::class));
 
         return $this->app->make(ProbationService::class);
