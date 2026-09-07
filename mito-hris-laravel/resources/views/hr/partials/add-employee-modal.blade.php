@@ -245,18 +245,14 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold" style="font-size:12.5px">
-                            Employee ID <span class="text-muted fw-normal" style="font-size:11px">(auto-generate, dapat diubah)</span>
+                            Employee ID <span class="text-muted fw-normal" style="font-size:11px">(opsional)</span>
                         </label>
-                        <div class="input-group input-group-sm">
-                            <input type="text" class="form-control form-control-sm font-monospace" id="aeEmployeeIdPreview"
-                                placeholder="Pilih tanggal masuk..."
-                                style="background:#f0f4f8;color:#374151;font-weight:600;letter-spacing:0.04em" />
-                            <span class="input-group-text" style="background:#e9ecef;border-color:#d1d5db;font-size:11px;color:#6b7280">
-                                <i class="bi bi-hash me-1"></i>Preview
-                            </span>
-                        </div>
+                        <input type="text" class="form-control form-control-sm font-monospace" id="aeEmployeeIdPreview"
+                            placeholder="Contoh: 202501001"
+                            maxlength="50" autocomplete="off"
+                            style="letter-spacing:0.04em" />
                         <div class="form-text" style="font-size:11px;color:#6b7280">
-                            <i class="bi bi-info-circle me-1"></i>Auto-terugat saat pilih tanggal masuk, urutan ditentukan server. ID final di-generate server saat simpan.
+                            <i class="bi bi-info-circle me-1"></i>Kosongkan jika ingin di-generate otomatis oleh server.
                         </div>
                     </div>
                     <div class="col-md-4">
@@ -758,28 +754,6 @@
     });
 
     // ═══════════════════════════════════════════════════════════════════════
-    // EMPLOYEE ID PREVIEW
-    // ═══════════════════════════════════════════════════════════════════════
-
-    var joinDateEl  = document.getElementById('aeJoinDate');
-    var idPreviewEl = document.getElementById('aeEmployeeIdPreview');
-
-    function updateIdPreview() {
-        if (!idPreviewEl) return;
-        var dateVal = joinDateEl ? joinDateEl.value : '';
-        if (!dateVal) { idPreviewEl.value = ''; idPreviewEl.placeholder = 'Pilih tanggal masuk...'; return; }
-        if (idPreviewEl.dataset.manualChanged === '1') return;
-        idPreviewEl.value = dateVal.replace(/-/g, '') + '01';
-        idPreviewEl.placeholder = '';
-    }
-
-    if (idPreviewEl) idPreviewEl.addEventListener('input', function () { this.dataset.manualChanged = '1'; });
-    if (joinDateEl) {
-        joinDateEl.addEventListener('change', updateIdPreview);
-        joinDateEl.addEventListener('input',  updateIdPreview);
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
     // CONTRACT / OUTSOURCE SECTION VISIBILITY
     // ═══════════════════════════════════════════════════════════════════════
 
@@ -833,10 +807,6 @@
 
         if (outsourceWrap) outsourceWrap.style.display = 'none';
         syncStatusDependentFields();
-        updateIdPreview();
-
-        var idPreviewReset = document.getElementById('aeEmployeeIdPreview');
-        if (idPreviewReset) delete idPreviewReset.dataset.manualChanged;
 
         var phoneFb = document.getElementById('aeMobilePhoneFeedback');
         if (phoneFb) phoneFb.style.display = 'none';
@@ -884,6 +854,7 @@
         var phoneForBackend = rawPhone ? '62' + rawPhone : '';
 
         var payload = {
+            employeeId:           val('aeEmployeeIdPreview'),
             fullName:             fullName,
             statusEmployee:       status,
             joinDate:             val('aeJoinDate'),
