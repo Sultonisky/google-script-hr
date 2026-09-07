@@ -52,6 +52,7 @@ class CertificationEmployeeFlowTest extends TestCase
     {
         return array_merge([
             'cert_type'            => CertType::ISO->value,
+            'company_scope'        => 'Quality Management System',
             'name'                 => 'Sertifikasi Auditor ISO 45001',
             'issuing_organization' => 'PT Surveyor Indonesia',
             'certificate_number'   => 'SI/45K/2025/0522',

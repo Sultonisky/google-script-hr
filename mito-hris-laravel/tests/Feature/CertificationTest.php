@@ -206,6 +206,8 @@ class CertificationTest extends TestCase
         $payload = [
             'cert_type'            => CertType::SNI->value,
             'name'                 => 'SIM A Kendaraan Dinas',
+            'product_scope'        => 'Rice Cooker',
+            'brand'                => 'MITO',
             'issuing_organization' => 'Korlantas Polri',
             'certificate_number'   => 'SIM-88776655',
             'issue_date'           => '2026-03-01',
@@ -241,6 +243,28 @@ class CertificationTest extends TestCase
     }
 
     #[Test]
+    public function certification_can_be_created_without_employee_owner(): void
+    {
+        $this->authAs('LEGAL');
+        $this->fakeAuditLogRepo();
+
+        $response = $this->postJson('/hr/certifications', [
+            'cert_type'            => CertType::ISO->value,
+            'name'                 => 'ISO Company Scope Only',
+            'company_scope'        => 'Quality Management System',
+            'issuing_organization' => 'TUV Rheinland Indonesia',
+            'issue_date'           => '2026-01-01',
+        ])->assertCreated();
+
+        $this->assertDatabaseHas('certifications', [
+            'id'            => $response->json('certification.id'),
+            'company_scope' => 'Quality Management System',
+            'employee_id'   => null,
+            'employee_name' => null,
+        ]);
+    }
+
+    #[Test]
     public function legacy_certification_type_is_rejected(): void
     {
         $this->authAs('LEGAL');
@@ -269,6 +293,8 @@ class CertificationTest extends TestCase
         $payload = [
             'cert_type'            => CertType::SNI->value,
             'name'                 => 'SIM B1 Umum - Diperpanjang',
+            'product_scope'        => 'Rice Cooker',
+            'brand'                => 'MITO',
             'description'          => 'Perpanjangan berkala via HTTP test.',
             'issuing_organization' => 'Korlantas Polri',
             'certificate_number'   => 'SIM-B1-889900',
@@ -310,6 +336,8 @@ class CertificationTest extends TestCase
         $payload = [
             'cert_type'            => CertType::SNI->value,
             'name'                 => 'SIM A dengan Attachment',
+            'product_scope'        => 'Rice Cooker',
+            'brand'                => 'MITO',
             'issuing_organization' => 'Korlantas Polri',
             'issue_date'           => '2026-03-01',
             'employee_id'          => '2019031401',
@@ -330,6 +358,8 @@ class CertificationTest extends TestCase
             '_method'             => 'PUT',
             'cert_type'           => CertType::SNI->value,
             'name'                => 'SIM A dengan Attachment Baru',
+            'product_scope'       => 'Rice Cooker',
+            'brand'              => 'MITO',
             'issuing_organization' => 'Korlantas Polri',
             'issue_date'          => '2026-03-01',
             'employee_id'         => '2019031401',
@@ -346,6 +376,25 @@ class CertificationTest extends TestCase
     }
 
     #[Test]
+    public function classification_rejects_mixed_product_and_company_fields(): void
+    {
+        $this->authAs('LEGAL');
+        $this->fakeAuditLogRepo();
+
+        $this->postJson('/hr/certifications', [
+            'cert_type'            => CertType::ISO->value,
+            'name'                 => 'ISO Mixed Scope',
+            'product_scope'        => 'Rice Cooker',
+            'brand'                => 'MITO',
+            'company_scope'        => 'Quality Management System',
+            'issuing_organization' => 'TUV',
+            'issue_date'           => '2026-01-01',
+            'employee_id'          => '2019031401',
+            'employee_name'        => 'Budi Santoso',
+        ])->assertUnprocessable()->assertJsonValidationErrors(['product_scope', 'brand']);
+    }
+
+    #[Test]
     public function update_autoderives_expired_status_when_expiry_moved_to_past(): void
     {
         $this->authAs('LEGAL');
@@ -355,6 +404,8 @@ class CertificationTest extends TestCase
         $payload = [
             'cert_type'            => CertType::SNI->value,
             'name'                 => 'SIM A - Kedaluwarsa',
+            'product_scope'        => 'Rice Cooker',
+            'brand'                => 'MITO',
             'issuing_organization' => 'Korlantas Polri',
             'issue_date'           => '2023-01-01',
             'expiry_date'          => now()->subDays(5)->toDateString(),
@@ -378,6 +429,8 @@ class CertificationTest extends TestCase
         $payload = [
             'cert_type'            => CertType::SNI->value,
             'name'                 => 'SIM B2 - Ditahan',
+            'product_scope'        => 'Rice Cooker',
+            'brand'                => 'MITO',
             'issuing_organization' => 'Korlantas Polri',
             'issue_date'           => '2023-01-01',
             'expiry_date'          => now()->subDays(5)->toDateString(),
@@ -416,6 +469,8 @@ class CertificationTest extends TestCase
         $payload = [
             'cert_type'            => CertType::SNI->value,
             'name'                 => 'Percobaan Tidak Sah',
+            'product_scope'        => 'Rice Cooker',
+            'brand'                => 'MITO',
             'issuing_organization' => 'X',
             'issue_date'           => '2026-01-01',
             'employee_id'          => 'EMP-001',
