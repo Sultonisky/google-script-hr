@@ -2,7 +2,7 @@
 
 @section('title', 'Certification Management - MITO HRIS')
 @section('page-title', 'Certification Management')
-@section('page-subtitle', 'Kelola sertifikasi dan lisensi karyawan')
+@section('page-subtitle', 'Kelola klasifikasi SNI, ISO, K3, Food Safety, dan Product Safety')
 
 @section('content')
     <section class="page-section active" id="pageCertification">
@@ -12,7 +12,7 @@
             <div class="panel-header">
                 <div>
                     <h6>Daftar Sertifikasi</h6>
-                    <div class="panel-subtitle">Kelola seluruh sertifikasi dan lisensi karyawan.</div>
+                    <div class="panel-subtitle">SNI untuk produk, ISO untuk sistem perusahaan, K3 untuk keselamatan kerja, serta klasifikasi food dan product safety.</div>
                 </div>
                 <div class="export-btns d-flex flex-wrap gap-2">
                     @can('manage_certification')
@@ -38,10 +38,10 @@
                             value="{{ request('search', '') }}" />
                     </div>
                     <select class="filter-select" name="type" id="certTypeFilter" data-auto-submit="true">
-                        <option value="">Semua Jenis</option>
+                        <option value="">Semua Klasifikasi</option>
                         @foreach (\App\Enums\CertType::cases() as $type)
                             <option value="{{ $type->value }}" {{ request('type') === $type->value ? 'selected' : '' }}>
-                                {{ $type->label() }}
+                                {{ $type->label() }} - {{ $type->description() }}
                             </option>
                         @endforeach
                     </select>

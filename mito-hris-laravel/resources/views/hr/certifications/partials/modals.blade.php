@@ -23,18 +23,31 @@
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold">Jenis *</label>
+                            <label class="form-label fw-semibold">Klasifikasi Sertifikasi *</label>
                             <select class="form-select" name="cert_type" id="certificationFormType" required>
                                 <option value="">-- Pilih --</option>
                                 @foreach (\App\Enums\CertType::cases() as $type)
-                                    <option value="{{ $type->value }}">{{ $type->label() }}</option>
+                                    <option value="{{ $type->value }}">{{ $type->label() }} - {{ $type->description() }}</option>
                                 @endforeach
                             </select>
+                            <div class="form-text">SNI: produk. ISO: sistem perusahaan. K3: keselamatan kerja. Food Safety/Product Safety: keamanan dan kepatuhan produk.</div>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Nama Sertifikasi *</label>
                             <input type="text" class="form-control" name="name" id="certificationFormName"
                                 required maxlength="255">
+                        </div>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold">Produk / Scope</label>
+                            <input type="text" class="form-control" name="product_scope" id="certificationFormScope"
+                                maxlength="255" placeholder="Contoh: Rice Cooker atau Quality Management System">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Brand</label>
+                            <input type="text" class="form-control" name="brand" id="certificationFormBrand"
+                                maxlength="100" placeholder="Contoh: MITO">
                         </div>
                     </div>
                     <div class="row g-3 mb-3">

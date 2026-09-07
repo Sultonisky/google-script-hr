@@ -5,7 +5,7 @@
             <tr>
                 <th>Kode</th>
                 <th>Nama Sertifikasi</th>
-                <th>Jenis</th>
+                <th>Klasifikasi</th>
                 <th>Karyawan</th>
                 <th>Penerbit</th>
                 <th>Terbit</th>
@@ -26,6 +26,9 @@
                     </td>
                     <td>
                         <div class="cand-name fw-bold text-navy">{{ $cert->name }}</div>
+                        @if($cert->product_scope || $cert->brand)
+                            <div class="cand-sub">{{ $cert->product_scope ?: '-' }}{{ $cert->brand ? ' · ' . $cert->brand : '' }}</div>
+                        @endif
                         @if($cert->description)
                             <div class="cand-sub">{{ Str::limit($cert->description, 40) }}</div>
                         @endif
