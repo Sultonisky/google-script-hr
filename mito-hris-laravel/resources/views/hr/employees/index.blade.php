@@ -276,7 +276,19 @@
                                 <td>{{ $emp->division ?? '-' }}</td>
                                 <td class="fw-semibold text-navy">{{ $emp->jobPosition ?? '-' }}</td>
                                 <td>
-                                    <x-badge-status :status="$emp->statusEmployee" />
+                                    @php
+                                        $employeeStatus = strtolower(trim((string) ($emp->statusEmployee ?? '')));
+                                        $employeeBadgeClass = match (true) {
+                                            in_array($employeeStatus, ['permanent', 'pkwtt', 'active', 'aktif'], true) => 'accepted',
+                                            in_array($employeeStatus, ['contract', 'pkwt', 'probation'], true) => 'hold',
+                                            default => null,
+                                        };
+                                    @endphp
+                                    @if ($employeeBadgeClass)
+                                        <span class="badge-status {{ $employeeBadgeClass }}">{{ $emp->statusEmployee ?? '-' }}</span>
+                                    @else
+                                        <x-badge-status :status="$emp->statusEmployee" />
+                                    @endif
                                 </td>
                                 <td class="id-mono">{{ $emp->joinDate ?? '-' }}</td>
                             </tr>
