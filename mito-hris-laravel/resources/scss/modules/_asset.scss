@@ -28,6 +28,48 @@ table.hr-table .badge-status.asset-electronic {
     color: #166534;
 }
 
+:root[data-theme="dark"] .asset-section-title,
+[data-bs-theme="dark"] .asset-section-title {
+    color: var(--color-text-soft);
+    border-color: var(--color-border);
+}
+
+:root[data-theme="dark"] .asset-detail-grid .asset-detail-label,
+[data-bs-theme="dark"] .asset-detail-grid .asset-detail-label,
+:root[data-theme="dark"] .asset-history-table th,
+[data-bs-theme="dark"] .asset-history-table th {
+    color: var(--color-text-soft);
+}
+
+:root[data-theme="dark"] .asset-detail-grid .asset-detail-value,
+[data-bs-theme="dark"] .asset-detail-grid .asset-detail-value {
+    color: var(--color-text);
+}
+
+:root[data-theme="dark"] .badge-status.asset-building,
+[data-bs-theme="dark"] .badge-status.asset-building {
+    background: #263241;
+    color: #cbd5e1;
+}
+
+:root[data-theme="dark"] .badge-status.asset-vehicle,
+[data-bs-theme="dark"] .badge-status.asset-vehicle {
+    background: #173453;
+    color: #93c5fd;
+}
+
+:root[data-theme="dark"] .badge-status.asset-office,
+[data-bs-theme="dark"] .badge-status.asset-office {
+    background: #123b3a;
+    color: #99f6e4;
+}
+
+:root[data-theme="dark"] .badge-status.asset-electronic,
+[data-bs-theme="dark"] .badge-status.asset-electronic {
+    background: #143b27;
+    color: #86efac;
+}
+
 .asset-section-title {
     font-size: 0.8rem;
     font-weight: 700;

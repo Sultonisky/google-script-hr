@@ -89,6 +89,53 @@ table.hr-table .badge-status.cert-product-safety {
     color: #6d28d9;
 }
 
+:root[data-theme="dark"] .certification-form-body .form-label,
+[data-bs-theme="dark"] .certification-form-body .form-label,
+:root[data-theme="dark"] .certification-form-body .asset-section-title,
+[data-bs-theme="dark"] .certification-form-body .asset-section-title {
+    color: var(--color-text);
+}
+
+:root[data-theme="dark"] .certification-form-body .form-text,
+[data-bs-theme="dark"] .certification-form-body .form-text {
+    color: var(--color-text-soft);
+}
+
+:root[data-theme="dark"] .certification-form-body .asset-section-title,
+[data-bs-theme="dark"] .certification-form-body .asset-section-title {
+    border-color: var(--color-border);
+}
+
+:root[data-theme="dark"] .badge-status.cert-sni,
+[data-bs-theme="dark"] .badge-status.cert-sni {
+    background: #173453;
+    color: #93c5fd;
+}
+
+:root[data-theme="dark"] .badge-status.cert-iso,
+[data-bs-theme="dark"] .badge-status.cert-iso {
+    background: #143b27;
+    color: #86efac;
+}
+
+:root[data-theme="dark"] .badge-status.cert-k3,
+[data-bs-theme="dark"] .badge-status.cert-k3 {
+    background: #493818;
+    color: #fde68a;
+}
+
+:root[data-theme="dark"] .badge-status.cert-food-safety,
+[data-bs-theme="dark"] .badge-status.cert-food-safety {
+    background: #123b3a;
+    color: #99f6e4;
+}
+
+:root[data-theme="dark"] .badge-status.cert-product-safety,
+[data-bs-theme="dark"] .badge-status.cert-product-safety {
+    background: #33245c;
+    color: #ddd6fe;
+}
+
 @media (max-width: 767.98px) {
     .certification-form-body {
         padding: 1rem;
