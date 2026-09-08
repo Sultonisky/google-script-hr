@@ -25,8 +25,6 @@
                 <i class="bi bi-chevron-down ms-1"></i>
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 py-2">
-                <li class="px-3 py-2 small text-muted">{{ $portalName }}</li>
-                <li><hr class="dropdown-divider my-1"></li>
                 <li>
                     <form method="POST" action="{{ route($logoutRoute) }}">
                         @csrf

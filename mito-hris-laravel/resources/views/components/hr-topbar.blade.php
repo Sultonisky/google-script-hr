@@ -48,15 +48,6 @@
         <i class="bi bi-chevron-down ms-1"></i>
       </button>
       <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 py-2" style="min-width: 200px;">
-        @if (!$isDedicatedMprUser)
-          {{-- HRIS users: Settings links are gated by Gate permission on hr_user role. --}}
-          @can('manage_settings')
-            <li><a class="dropdown-item py-2" href="{{ route('hr.users.index') }}"><i class="bi bi-people-fill me-2 text-primary"></i> Manajemen Pengguna</a></li>
-            <li><a class="dropdown-item py-2" href="{{ route('hr.settings.index') }}"><i class="bi bi-gear-fill me-2 text-primary"></i> Pengaturan</a></li>
-          @endcan
-        @endif
-        <li><a class="dropdown-item py-2" href="{{ url('/') }}" target="_blank"><i class="bi bi-globe me-2 text-primary"></i> Portal Karir</a></li>
-        <li><hr class="dropdown-divider my-1"></li>
         <li>
           @if ($isDedicatedMprUser)
             {{-- MPR Requestor: use MPR-specific logout to clear only the MPR session key. --}}

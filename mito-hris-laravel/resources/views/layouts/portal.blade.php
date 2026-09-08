@@ -46,6 +46,27 @@
     </div>
 
     @yield('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const button = document.getElementById('btnDarkModeToggle');
+            if (!button) return;
+
+            const syncIcon = function (theme) {
+                const icon = button.querySelector('i');
+                if (icon) icon.className = theme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+            };
+
+            syncIcon(localStorage.getItem('mito_theme') || 'light');
+            button.addEventListener('click', function () {
+                const current = document.documentElement.getAttribute('data-theme') || 'light';
+                const next = current === 'dark' ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-theme', next);
+                document.documentElement.setAttribute('data-bs-theme', next);
+                localStorage.setItem('mito_theme', next);
+                syncIcon(next);
+            });
+        });
+    </script>
 </body>
 
 </html>
