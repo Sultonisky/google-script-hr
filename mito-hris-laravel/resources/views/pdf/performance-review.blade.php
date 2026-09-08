@@ -380,11 +380,32 @@
         $apHrbpDate = $extraData['approval_hrbp_date'] ?? '';
     @endphp
 
+    @php
+        $mitoLogoPath = public_path('assets/mito-red.png');
+        $mitoLogoBase64 = file_exists($mitoLogoPath)
+            ? 'data:image/png;base64,' . base64_encode(file_get_contents($mitoLogoPath))
+            : null;
+
+        $steinLogoPath = public_path('assets/stein-pdf.png');
+        $steinLogoBase64 = file_exists($steinLogoPath)
+            ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($steinLogoPath))
+            : null;
+    @endphp
+
     {{-- ── LOGO ROW ────────────────────────────────────────────────── --}}
     <div class="logo-row">
-        <div class="logo-text-mito">MiTO <span>electronics</span></div>
-        <div class="logo-text-stein">Stein°<br><small style="font-weight:400;font-size:7pt">PREMIUM HEALTHY
-                COOKWARE</small></div>
+        @if ($mitoLogoBase64)
+            <img src="{{ $mitoLogoBase64 }}" style="max-height: 38px; max-width: 110px; object-fit: contain;" alt="MiTO electronics">
+        @else
+            <div class="logo-text-mito">MiTO <span>electronics</span></div>
+        @endif
+
+        @if ($steinLogoBase64)
+            <img src="{{ $steinLogoBase64 }}" style="max-height: 36px; max-width: 120px; object-fit: contain;" alt="Stein">
+        @else
+            <div class="logo-text-stein">Stein°<br><small style="font-weight:400;font-size:7pt">PREMIUM HEALTHY
+                    COOKWARE</small></div>
+        @endif
     </div>
     <hr style="border:none;border-top:2px solid #000;margin:4px 0 8px">
 
