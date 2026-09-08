@@ -104,7 +104,7 @@
                         @forelse($requestors ?? [] as $requestor)
                             @php
                                 $status = $requestor['Status'] ?? '-';
-                                $statusClass = strtolower(trim($status)) === 'active' ? 'bg-success' : 'bg-secondary';
+                                $statusClass = strtolower(trim($status)) === 'active' ? 'accepted' : 'blacklist';
                             @endphp
                             <tr data-requestor-email="{{ $requestor['Email'] ?? '' }}">
                                 <td class="id-mono">{{ $loop->iteration }}</td>
@@ -117,7 +117,7 @@
                                 <td><span
                                         class="fw-semibold text-navy requestor-role">{{ $requestor['Role'] ?? '-' }}</span>
                                 </td>
-                                <td><span class="badge {{ $statusClass }} requestor-status">{{ $status }}</span>
+                                <td><span class="badge-status {{ $statusClass }} requestor-status">{{ $status }}</span>
                                 </td>
                                 <td class="id-mono">{{ $requestor['Last Login'] ?? '-' }}</td>
                                 <td class="id-mono">{{ $requestor['Created At'] ?? '-' }}</td>
