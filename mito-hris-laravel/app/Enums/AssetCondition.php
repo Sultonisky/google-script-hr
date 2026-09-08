@@ -22,10 +22,10 @@ enum AssetCondition: string
     public function badgeClass(): string
     {
         return match ($this) {
-            self::GOOD    => 'bg-success text-white',
-            self::FAIR    => 'bg-info text-white',
-            self::POOR    => 'bg-warning text-dark',
-            self::DAMAGED => 'bg-danger text-white',
+            self::GOOD    => 'accepted',
+            self::FAIR    => 'hold',
+            self::POOR    => 'pending',
+            self::DAMAGED => 'blacklist',
         };
     }
 }

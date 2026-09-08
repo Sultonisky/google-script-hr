@@ -103,9 +103,9 @@
                             @php
                                 $role = $user['Role'] ?? '-';
                                 $status = $user['Status'] ?? '-';
-                                $statusClass = in_array(strtolower($status), ['aktif', 'active'])
-                                    ? 'bg-success'
-                                    : 'bg-secondary';
+                                $statusClass = in_array(strtolower(trim($status)), ['aktif', 'active'])
+                                    ? 'accepted'
+                                    : 'blacklist';
                             @endphp
                             <tr data-user-email="{{ $user['Email'] ?? '' }}">
                                 <td class="id-mono">{{ $loop->iteration }}</td>
@@ -115,7 +115,7 @@
                                 </td>
                                 <td class="id-mono user-username">{{ $user['Username'] ?? '-' }}</td>
                                 <td><span class="fw-semibold text-navy">{{ $role }}</span></td>
-                                <td><span class="badge {{ $statusClass }}">{{ $status }}</span></td>
+                                <td><span class="badge-status {{ $statusClass }}">{{ $status }}</span></td>
                                 <td class="id-mono">{{ $user['Last Login'] ?? '-' }}</td>
                                 <td class="id-mono">{{ $user['Created At'] ?? '-' }}</td>
                                 <td>

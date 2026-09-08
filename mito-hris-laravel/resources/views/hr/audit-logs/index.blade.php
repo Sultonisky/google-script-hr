@@ -120,6 +120,11 @@
             letter-spacing: .02em;
         }
 
+        #pageAuditLog .audit-table .badge-status.audit-badge {
+            padding: 4px 9px;
+            white-space: nowrap;
+        }
+
         #pageAuditLog .audit-badge-entity {
             background: #eef5fb;
             border-color: #d7e6f4;
@@ -358,6 +363,15 @@
                                 @php
                                     $action = strtolower(trim($log['Action'] ?? ''));
                                     $actionSlug = preg_replace('/[^a-z0-9]+/', '-', $action) ?: 'default';
+                                    $knownActionSlugs = [
+                                        'created', 'approved', 'promoted', 'login-success',
+                                        'updated', 'generated', 'exported', 'imported', 'logged-in',
+                                        'status-changed', 'hold', 'extended', 'demoted',
+                                        'deleted', 'blacklist', 'offboarded', 'login-failed', 'rejected',
+                                    ];
+                                    $actionFallbackClass = in_array($actionSlug, $knownActionSlugs, true)
+                                        ? ''
+                                        : 'audit-action-default';
                                     $oldValue = (string) ($log['Old Value'] ?? '');
                                     $newValue = (string) ($log['New Value'] ?? '');
                                     $detail = [
@@ -379,7 +393,7 @@
                                 </td>
                                 <td class="audit-entity-id id-mono fw-bold text-primary">{{ $detail['Entity ID'] }}</td>
                                 <td><span
-                                        class="badge rounded-pill audit-badge audit-action-{{ $actionSlug }} audit-action-default">{{ $detail['Action'] }}</span>
+                                    class="badge-status audit-badge audit-action-{{ $actionSlug }} {{ $actionFallbackClass }}">{{ $detail['Action'] }}</span>
                                 </td>
                                 <td>{{ $detail['Field'] }}</td>
                                 <td class="audit-value text-danger" title="{{ $oldValue }}">{{ $oldValue ?: '-' }}
