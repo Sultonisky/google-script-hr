@@ -29,7 +29,7 @@ class LocalDevAdminTest extends TestCase
 
     private function actingAsRole(string $role, string $email): static
     {
-        Session::put('hr_user', [
+        Session::put('hr_user', $this->migratedTestUser([
             'email'       => $email,
             'fullName'    => $role . ' User',
             'role'        => $role,
@@ -37,7 +37,7 @@ class LocalDevAdminTest extends TestCase
             'auth_domain' => 'users',
             'entities'    => [],
             'branch'      => '',
-        ]);
+        ]));
 
         return $this;
     }

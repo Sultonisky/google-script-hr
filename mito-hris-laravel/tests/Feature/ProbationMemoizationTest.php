@@ -235,12 +235,12 @@ class ProbationMemoizationTest extends TestCase
     #[Test]
     public function hr_sidebar_probation_link_does_not_load_probation_count(): void
     {
-        Session::put('hr_user', [
+        Session::put('hr_user', $this->migratedTestUser([
             'email' => 'admin@mito.id',
             'role' => 'Admin',
             'permissions' => config('hris.auth.role_permissions.Admin', []),
             'auth_domain' => 'users',
-        ]);
+        ]));
 
         $employees = Mockery::mock(EmployeeRepositoryInterface::class);
         $employees->shouldNotReceive('getAll');

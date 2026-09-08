@@ -15,13 +15,13 @@ class UserManagementTest extends TestCase
 {
     private function actingAsRole(string $role): void
     {
-        Session::put('hr_user', [
+        Session::put('hr_user', $this->migratedTestUser([
             'email' => strtolower(str_replace(' ', '.', $role)) . '@mito.test',
             'fullName' => $role . ' Test',
             'role' => $role,
             'permissions' => config('hris.auth.role_permissions.' . $role, []),
             'auth_domain' => 'users',
-        ]);
+        ]));
     }
 
     private function mockAuditLog(): void

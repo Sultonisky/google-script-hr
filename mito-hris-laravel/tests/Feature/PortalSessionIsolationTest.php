@@ -49,7 +49,7 @@ class PortalSessionIsolationTest extends TestCase
 
     private function makeHrisUser(array $overrides = []): array
     {
-        return array_merge([
+        return $this->migratedTestUser(array_merge([
             'email'       => 'admin@hris.example.com',
             'fullName'    => 'HRIS Admin User',
             'name'        => 'HRIS Admin User',
@@ -57,7 +57,7 @@ class PortalSessionIsolationTest extends TestCase
             'auth_domain' => 'users',
             'portal'      => 'hris',
             'permissions' => config('hris.auth.role_permissions.Admin', []),
-        ], $overrides);
+        ], $overrides));
     }
 
     private function makeMprRequestor(array $overrides = []): array

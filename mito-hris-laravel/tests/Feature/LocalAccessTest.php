@@ -34,7 +34,7 @@ class LocalAccessTest extends TestCase
     private function actingAsRole(string $role): static
     {
         $emailMap = ['GA_IT' => self::GA_IT_EMAIL, 'LEGAL' => self::LEGAL_EMAIL];
-        Session::put('hr_user', [
+        Session::put('hr_user', $this->migratedTestUser([
             'email'       => $emailMap[$role] ?? strtolower($role) . '@mito.id',
             'fullName'    => $role . ' User',
             'role'        => $role,
@@ -42,7 +42,7 @@ class LocalAccessTest extends TestCase
             'auth_domain' => 'users',
             'entities'    => [],
             'branch'      => '',
-        ]);
+        ]));
         return $this;
     }
 
@@ -211,23 +211,27 @@ class LocalAccessTest extends TestCase
         $this->assertSame('LEGAL', \App\Support\Rbac::normalizeRole('LEGAL'));
     }
 
-    #[Test] public function rbac_allows_ga_it_view_asset(): void
+    #[Test] public function migrated_ga_it_user_allows_view_asset(): void
     {
-        $this->assertTrue(\App\Support\Rbac::allows('GA_IT', 'view_asset'));
+        $this->actingAsRole('GA_IT');
+        $this->assertTrue(Gate::allows('view_asset'));
     }
 
-    #[Test] public function rbac_allows_legal_manage_certification(): void
+    #[Test] public function migrated_legal_user_allows_manage_certification(): void
     {
-        $this->assertTrue(\App\Support\Rbac::allows('LEGAL', 'manage_certification'));
+        $this->actingAsRole('LEGAL');
+        $this->assertTrue(Gate::allows('manage_certification'));
     }
 
-    #[Test] public function rbac_denies_ga_it_manage_certification(): void
+    #[Test] public function migrated_ga_it_user_denies_manage_certification(): void
     {
-        $this->assertFalse(\App\Support\Rbac::allows('GA_IT', 'manage_certification'));
+        $this->actingAsRole('GA_IT');
+        $this->assertFalse(Gate::allows('manage_certification'));
     }
 
-    #[Test] public function rbac_denies_legal_view_asset(): void
+    #[Test] public function migrated_legal_user_denies_view_asset(): void
     {
-        $this->assertFalse(\App\Support\Rbac::allows('LEGAL', 'view_asset'));
+        $this->actingAsRole('LEGAL');
+        $this->assertFalse(Gate::allows('view_asset'));
     }
 }

@@ -35,7 +35,7 @@ class CertificationEmployeeFlowTest extends TestCase
 
     private function actingAsLegal(): static
     {
-        Session::put('hr_user', [
+        Session::put('hr_user', $this->migratedTestUser([
             'email'       => 'legal@mito.id',
             'fullName'    => 'Legal User',
             'role'        => 'LEGAL',
@@ -43,7 +43,7 @@ class CertificationEmployeeFlowTest extends TestCase
             'auth_domain' => 'users',
             'entities'    => [],
             'branch'      => '',
-        ]);
+        ]));
 
         return $this;
     }

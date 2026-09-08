@@ -35,7 +35,7 @@ class EmployeePickerTest extends TestCase
 
     private function actingAsRole(string $role): static
     {
-        Session::put('hr_user', $this->sessionUser($role));
+        Session::put('hr_user', $this->migratedTestUser($this->sessionUser($role)));
 
         return $this;
     }

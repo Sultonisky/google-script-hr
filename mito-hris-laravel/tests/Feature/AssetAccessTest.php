@@ -30,7 +30,7 @@ class AssetAccessTest extends TestCase
 
     private function actingAsRole(string $role): static
     {
-        Session::put('hr_user', $this->makeSessionUser($role));
+        Session::put('hr_user', $this->migratedTestUser($this->makeSessionUser($role)));
         return $this;
     }
 

@@ -30,7 +30,7 @@ class AssetAssignmentFlowTest extends TestCase
 
     private function actingAsGaIt(): static
     {
-        Session::put('hr_user', [
+        Session::put('hr_user', $this->migratedTestUser([
             'email'       => 'ga.it@mito.id',
             'fullName'    => 'GA IT User',
             'role'        => 'GA_IT',
@@ -38,7 +38,7 @@ class AssetAssignmentFlowTest extends TestCase
             'auth_domain' => 'users',
             'entities'    => [],
             'branch'      => '',
-        ]);
+        ]));
 
         return $this;
     }
