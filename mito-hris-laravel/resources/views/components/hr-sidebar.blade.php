@@ -149,6 +149,12 @@
                         <i class="bi bi-gear-fill"></i> Settings
                     </a>
                 @endcan
+                @can('manage_permissions')
+                    <a href="{{ route('hr.permissions.index') }}"
+                        class="nav-item {{ request()->routeIs('hr.permissions.*') ? 'active' : '' }}">
+                        <i class="bi bi-key-fill"></i> Permission Management
+                    </a>
+                @endcan
                 @can('view_reports')
                     <a href="{{ route('hr.audit-logs.index') }}"
                         class="nav-item {{ request()->routeIs('hr.audit-logs.*') ? 'active' : '' }}">

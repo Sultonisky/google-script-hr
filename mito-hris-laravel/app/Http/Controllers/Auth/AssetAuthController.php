@@ -17,7 +17,7 @@ use Illuminate\View\View;
  *
  * Reuses the existing session-based Users authentication (AuthService). The
  * login view and session context are portal-specific. Authorization is portal-scoped: only users holding
- * the `view_asset` gate may obtain an asset_auth session on the Asset domain,
+ * the `assets.access` gate may obtain an asset_auth session on the Asset domain,
  * and only Asset routes are reachable there. No second user table, guard, or
  * permission system is introduced — RBAC/Gates remain the authority.
  */
@@ -54,7 +54,7 @@ class AssetAuthController extends Controller
             return $this->loginFailure($request, $result['error'] ?? 'Login gagal.');
         }
 
-        // Portal-scoped gate: the User sheet account must hold view_asset to use
+        // Portal-scoped gate: the User sheet account must hold assets.access to use
         // the Asset portal. Without it, no session is created on this domain.
         if (!Gate::forUser($result['user'])->allows('access_assets_portal')) {
             return $this->authorizationDenied($request);

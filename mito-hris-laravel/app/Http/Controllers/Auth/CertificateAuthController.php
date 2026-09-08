@@ -16,7 +16,7 @@ use Illuminate\View\View;
  * Dedicated Certificate Portal authentication.
  *
  * Mirrors AssetAuthController: reuses AuthService with a dedicated portal
- * view and session, plus portal-scoped authorization via the `view_certification` gate.
+ * view and session, plus portal-scoped authorization via the `certificates.access` gate.
  */
 class CertificateAuthController extends Controller
 {
