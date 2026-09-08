@@ -36,6 +36,24 @@
             margin-bottom: 6px;
         }
 
+        .logo-slot {
+            width: 50%;
+            height: 38px;
+            display: flex;
+            align-items: center;
+        }
+
+        .logo-slot-end {
+            justify-content: flex-end;
+        }
+
+        .logo-slot img {
+            height: 38px;
+            width: auto;
+            max-width: 120px;
+            object-fit: contain;
+        }
+
         .logo-text-mito {
             font-size: 18pt;
             font-weight: 900;
@@ -394,18 +412,22 @@
 
     {{-- ── LOGO ROW ────────────────────────────────────────────────── --}}
     <div class="logo-row">
-        @if ($mitoLogoBase64)
-            <img src="{{ $mitoLogoBase64 }}" style="max-height: 38px; max-width: 110px; object-fit: contain;" alt="MiTO electronics">
-        @else
-            <div class="logo-text-mito">MiTO <span>electronics</span></div>
-        @endif
+        <div class="logo-slot">
+            @if ($mitoLogoBase64)
+                <img src="{{ $mitoLogoBase64 }}" alt="MiTO electronics">
+            @else
+                <div class="logo-text-mito">MiTO <span>electronics</span></div>
+            @endif
+        </div>
 
-        @if ($steinLogoBase64)
-            <img src="{{ $steinLogoBase64 }}" style="max-height: 36px; max-width: 120px; object-fit: contain;" alt="Stein">
-        @else
-            <div class="logo-text-stein">Stein°<br><small style="font-weight:400;font-size:7pt">PREMIUM HEALTHY
-                    COOKWARE</small></div>
-        @endif
+        <div class="logo-slot logo-slot-end">
+            @if ($steinLogoBase64)
+                <img src="{{ $steinLogoBase64 }}" alt="Stein">
+            @else
+                <div class="logo-text-stein">Stein°<br><small style="font-weight:400;font-size:7pt">PREMIUM HEALTHY
+                        COOKWARE</small></div>
+            @endif
+        </div>
     </div>
     <hr style="border:none;border-top:2px solid #000;margin:4px 0 8px">
 

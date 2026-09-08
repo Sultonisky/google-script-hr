@@ -122,3 +122,13 @@
   font-size: 10px;
   opacity: 0.5;
 }
+
+.topbar-logout-menu {
+  min-width: 200px;
+}
+
+.topbar-logout-menu .dropdown-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
