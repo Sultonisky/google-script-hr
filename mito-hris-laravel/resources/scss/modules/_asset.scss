@@ -1,5 +1,33 @@
 // Asset Management Module Styles
 
+table.hr-table .badge-status.asset-building,
+table.hr-table .badge-status.asset-vehicle,
+table.hr-table .badge-status.asset-office,
+table.hr-table .badge-status.asset-electronic {
+    padding: 4px 9px;
+    font-size: 10.5px;
+}
+
+.badge-status.asset-building {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.badge-status.asset-vehicle {
+    background: #eef6ff;
+    color: #0b4a86;
+}
+
+.badge-status.asset-office {
+    background: #f0fdfa;
+    color: #0f766e;
+}
+
+.badge-status.asset-electronic {
+    background: #ecfdf3;
+    color: #166534;
+}
+
 .asset-section-title {
     font-size: 0.8rem;
     font-weight: 700;

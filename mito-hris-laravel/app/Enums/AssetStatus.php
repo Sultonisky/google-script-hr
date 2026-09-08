@@ -26,12 +26,12 @@ enum AssetStatus: string
     public function badgeClass(): string
     {
         return match ($this) {
-            self::AVAILABLE   => 'bg-success text-white',
-            self::ASSIGNED    => 'bg-primary text-white',
-            self::MAINTENANCE => 'bg-warning text-dark',
-            self::DAMAGED     => 'bg-danger text-white',
-            self::LOST        => 'bg-dark text-white',
-            self::DISPOSED    => 'bg-secondary text-white',
+            self::AVAILABLE   => 'accepted',
+            self::ASSIGNED    => 'hold',
+            self::MAINTENANCE => 'pending',
+            self::DAMAGED     => 'blacklist',
+            self::LOST        => 'blacklist',
+            self::DISPOSED    => 'blacklist',
         };
     }
 

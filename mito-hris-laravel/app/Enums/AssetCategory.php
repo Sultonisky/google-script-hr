@@ -42,10 +42,10 @@ enum AssetCategory: string
     public function badgeClass(): string
     {
         return match ($this) {
-            self::BUILDING   => 'bg-secondary text-white',
-            self::VEHICLE    => 'bg-primary text-white',
-            self::OFFICE     => 'bg-info text-white',
-            self::ELEKTRONIK => 'bg-success text-white',
+            self::BUILDING   => 'asset-building',
+            self::VEHICLE    => 'asset-vehicle',
+            self::OFFICE     => 'asset-office',
+            self::ELEKTRONIK => 'asset-electronic',
         };
     }
 
