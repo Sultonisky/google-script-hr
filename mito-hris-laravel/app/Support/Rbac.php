@@ -29,29 +29,4 @@ final class Rbac
         return $role;
     }
 
-    public static function permissionsForRole(?string $role): array
-    {
-        $canonicalRole = self::normalizeRole($role);
-        return config('hris.auth.role_permissions', [])[$canonicalRole] ?? [];
-    }
-
-    public static function allows(?string $role, string $permission): bool
-    {
-        $permissions = self::permissionsForRole($role);
-        return in_array('*', $permissions, true) || in_array($permission, $permissions, true);
-    }
-
-    public static function allowsDedicatedPortal(array $user, string $portal): bool
-    {
-        $allowedRoles = config("hris.auth.dedicated_portal_roles.{$portal}", []);
-        $sourceRole = trim((string) ($user['source_role'] ?? $user['role'] ?? ''));
-
-        foreach ($allowedRoles as $allowedRole) {
-            if (strcasecmp($sourceRole, (string) $allowedRole) === 0) {
-                return true;
-            }
-        }
-
-        return false;
-    }
 }

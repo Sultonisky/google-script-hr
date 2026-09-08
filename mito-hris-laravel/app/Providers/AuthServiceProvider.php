@@ -6,6 +6,8 @@ use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvid
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use App\Support\Rbac;
+use App\Support\PermissionCatalog;
+use App\Services\PermissionResolver;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -33,12 +35,6 @@ class AuthServiceProvider extends ServiceProvider
         // $user is now the session array resolved above.
         // ==============================================================
         Gate::before(function ($user, $ability) {
-            if (in_array($ability, ['access_assets_portal', 'access_certificates_portal'], true)) {
-                $portal = $ability === 'access_assets_portal' ? 'assets' : 'certificates';
-
-                return Rbac::allowsDedicatedPortal($user, $portal);
-            }
-
             if (Rbac::normalizeRole($user['role'] ?? null) === 'Super Admin') {
                 return true;
             }
@@ -50,8 +46,7 @@ class AuthServiceProvider extends ServiceProvider
         // Skips '*' — that is only a wildcard marker, not a real ability.
         // Super Admin bypasses these via Gate::before above.
         // ==============================================================
-        $permissions = config('hris.auth.role_permissions', []);
-        $allPermissions = array_unique(array_merge(...array_values($permissions)));
+        $allPermissions = PermissionCatalog::keys();
 
         foreach ($allPermissions as $permission) {
             if ($permission === '*') {
@@ -59,7 +54,7 @@ class AuthServiceProvider extends ServiceProvider
             }
 
             Gate::define($permission, function ($user) use ($permission) {
-                return Rbac::allows($user['role'] ?? null, $permission);
+                return app(PermissionResolver::class)->allows($user, $permission);
             });
         }
 
@@ -71,14 +66,12 @@ class AuthServiceProvider extends ServiceProvider
         // view_employees permission just to pick an assignee.
         // ==============================================================
         Gate::define('lookup_employee', function ($user) {
-            $role = $user['role'] ?? null;
-
-            return Rbac::allows($role, 'view_employees')
-                || Rbac::allows($role, 'view_asset')
-                || Rbac::allows($role, 'view_certification');
+            return app(PermissionResolver::class)->allows($user, 'view_employees')
+                || app(PermissionResolver::class)->allows($user, 'view_asset')
+                || app(PermissionResolver::class)->allows($user, 'view_certification');
         });
 
-        Gate::define('access_assets_portal', fn ($user) => Rbac::allowsDedicatedPortal($user, 'assets'));
-        Gate::define('access_certificates_portal', fn ($user) => Rbac::allowsDedicatedPortal($user, 'certificates'));
+        Gate::define('access_assets_portal', fn ($user) => app(PermissionResolver::class)->allows($user, 'assets.access'));
+        Gate::define('access_certificates_portal', fn ($user) => app(PermissionResolver::class)->allows($user, 'certificates.access'));
     }
 }
