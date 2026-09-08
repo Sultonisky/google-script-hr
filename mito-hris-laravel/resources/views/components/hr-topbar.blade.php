@@ -47,25 +47,25 @@
         </div>
         <i class="bi bi-chevron-down ms-1"></i>
       </button>
-      <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 py-2" style="min-width: 200px;">
+      <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 py-2 topbar-logout-menu">
         <li>
           @if ($isDedicatedMprUser)
             {{-- MPR Requestor: use MPR-specific logout to clear only the MPR session key. --}}
-            <form method="POST" action="{{ route('mpr.auth.logout') }}" class="d-inline w-100">
+            <form method="POST" action="{{ route('mpr.auth.logout') }}" class="d-block w-100">
               @csrf
               <button type="submit" class="dropdown-item py-2 text-danger w-100 text-start border-0 bg-transparent">
                 <i class="bi bi-box-arrow-right me-2"></i> Keluar
               </button>
             </form>
           @elseif ($currentPortal === 'assets')
-            <form method="POST" action="{{ route('assets.logout') }}" class="d-inline w-100">
+            <form method="POST" action="{{ route('assets.logout') }}" class="d-block w-100">
               @csrf
               <button type="submit" class="dropdown-item py-2 text-danger w-100 text-start border-0 bg-transparent">
                 <i class="bi bi-box-arrow-right me-2"></i> Keluar
               </button>
             </form>
           @elseif ($currentPortal === 'certificates')
-            <form method="POST" action="{{ route('certificates.logout') }}" class="d-inline w-100">
+            <form method="POST" action="{{ route('certificates.logout') }}" class="d-block w-100">
               @csrf
               <button type="submit" class="dropdown-item py-2 text-danger w-100 text-start border-0 bg-transparent">
                 <i class="bi bi-box-arrow-right me-2"></i> Keluar
