@@ -3,6 +3,16 @@
 return [
     /*
     |--------------------------------------------------------------------------
+    | Google Sheets Integration Enabled
+    |--------------------------------------------------------------------------
+    | When true, the application uses Google Sheets repositories for data
+    | access. When false, local/database repositories are used.
+    | This decouples data source selection from APP_ENV.
+    */
+    'enabled' => env('GOOGLE_SHEETS_ENABLED', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Google Cloud Credentials & Service Account
     |--------------------------------------------------------------------------
     | Path to JSON key file generated from Google Cloud Console Service Account.

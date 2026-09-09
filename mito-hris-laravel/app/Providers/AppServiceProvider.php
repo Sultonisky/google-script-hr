@@ -41,25 +41,24 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        // ponytail: env-aware binding; remove when Sheets repo works without Google credentials locally.
-        if (app()->environment('local', 'testing')) {
-            $this->app->bind(UserRepositoryInterface::class, UserDatabaseRepository::class);
-            $this->app->singleton(UserPermissionRepositoryInterface::class, ArrayUserPermissionRepository::class);
-            $this->app->singleton(PermissionCatalogRepositoryInterface::class, StaticPermissionCatalogRepository::class);
-        } else {
+        // Data source selection is driven by google.enabled config, not APP_ENV.
+        // This decouples data source from environment:
+        // - Local dev with Google Sheets configured → use Sheets repositories
+        // - Testing/CI without Google Sheets → use local/mock repositories
+        // - Production with Google Sheets → use Sheets repositories
+        if (config('google.enabled', false)) {
             $this->app->bind(UserRepositoryInterface::class, UserSheetsRepository::class);
             $this->app->singleton(UserPermissionRepositoryInterface::class, UserPermissionSheetsRepository::class);
             $this->app->singleton(PermissionCatalogRepositoryInterface::class, PermissionCatalogSheetsRepository::class);
+            $this->app->bind(EmployeeRepositoryInterface::class, EmployeeSheetsRepository::class);
+        } else {
+            $this->app->bind(UserRepositoryInterface::class, UserDatabaseRepository::class);
+            $this->app->singleton(UserPermissionRepositoryInterface::class, ArrayUserPermissionRepository::class);
+            $this->app->singleton(PermissionCatalogRepositoryInterface::class, StaticPermissionCatalogRepository::class);
+            $this->app->bind(EmployeeRepositoryInterface::class, LocalEmployeeRepository::class);
         }
         $this->app->singleton(PermissionResolver::class);
         $this->app->bind(CandidateRepositoryInterface::class, CandidateSheetsRepository::class);
-        // ponytail: dummy employee source only for local dev; remove when
-        // EmployeeSheetsRepository works without Google credentials locally.
-        if (app()->environment('local')) {
-            $this->app->bind(EmployeeRepositoryInterface::class, LocalEmployeeRepository::class);
-        } else {
-            $this->app->bind(EmployeeRepositoryInterface::class, EmployeeSheetsRepository::class);
-        }
         $this->app->bind(AuditLogRepositoryInterface::class, AuditLogSheetsRepository::class);
         $this->app->bind(MprRepositoryInterface::class, MprSheetsRepository::class);
         $this->app->bind(MprRequestorRepositoryInterface::class, MprRequestorSheetsRepository::class);
