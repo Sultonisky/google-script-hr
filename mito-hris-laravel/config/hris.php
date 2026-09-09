@@ -212,11 +212,11 @@ return [
         ],
         'role_permissions' => [
             'Super Admin' => ['*'],
-            'Admin' => ['manage_recruitment', 'manage_employees', 'manage_probation', 'view_employees', 'view_recruitment', 'update_candidates', 'create_offering', 'manage_hold_blacklist', 'view_mpr', 'create_mpr', 'update_mpr', 'export_mpr', 'view_asset', 'edit_asset', 'view_certification', 'manage_certification'],
+            'Admin' => ['manage_recruitment', 'manage_employees', 'manage_probation', 'view_employees', 'view_recruitment', 'update_candidates', 'create_offering', 'manage_hold_blacklist', 'view_mpr', 'create_mpr', 'update_mpr', 'export_mpr', 'assets.access', 'assets.view', 'assets.create', 'assets.update', 'assets.delete', 'assets.assign', 'assets.return', 'assets.generate_code', 'certificates.access', 'certificates.view', 'certificates.create', 'certificates.update', 'certificates.delete', 'certificates.generate_code', 'view_asset', 'edit_asset', 'view_certification', 'manage_certification'],
             'User' => ['view_recruitment', 'update_candidates', 'create_offering', 'manage_hold_blacklist', 'view_mpr', 'export_mpr', 'view_asset', 'view_certification'],
             'Manpower' => ['view_mpr', 'create_mpr', 'export_mpr'],
-            'GA_IT' => ['view_asset', 'edit_asset'],
-            'LEGAL' => ['view_certification', 'manage_certification'],
+            'GA_IT' => ['assets.access', 'assets.view', 'assets.create', 'assets.update', 'assets.delete', 'assets.assign', 'assets.return', 'assets.generate_code', 'view_asset', 'edit_asset'],
+            'LEGAL' => ['certificates.access', 'certificates.view', 'certificates.create', 'certificates.update', 'certificates.delete', 'certificates.generate_code', 'view_certification', 'manage_certification'],
         ],
         'dedicated_portal_roles' => [
             'assets' => ['Super Admin', 'Admin'],
@@ -326,6 +326,23 @@ return [
             'Created At',
             'Updated At',
             'Created By',
+        ],
+        'Permissions' => [
+            'Permission Key',
+            'Name',
+            'Description',
+            'Group',
+            'Status',
+            'Created At',
+            'Updated At',
+        ],
+        'User_Permissions' => [
+            'User Email',
+            'Permission Key',
+            'Granted',
+            'Granted By',
+            'Created At',
+            'Updated At',
         ],
         'kandidat_probation' => [
             // ── Identitas (col 1–3)

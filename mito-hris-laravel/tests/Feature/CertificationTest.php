@@ -53,7 +53,7 @@ class CertificationTest extends TestCase
 
     private function authAs(string $role): void
     {
-        Session::put('hr_user', [
+        Session::put('hr_user', $this->migratedTestUser([
             'email'       => strtolower($role) . '@mito.id',
             'fullName'    => $role . ' User',
             'role'        => $role,
@@ -61,7 +61,7 @@ class CertificationTest extends TestCase
             'auth_domain' => 'users',
             'entities'    => [],
             'branch'      => '',
-        ]);
+        ]));
     }
 
     private function fakeAuditLogRepo(): void

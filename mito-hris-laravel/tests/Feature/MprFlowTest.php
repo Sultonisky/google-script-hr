@@ -52,7 +52,7 @@ class MprFlowTest extends TestCase
         array $entities = [],
         string $branch = ''
     ): static {
-        Session::put('hr_user', $this->makeSessionUser($role, $email, $name));
+        Session::put('hr_user', $this->migratedTestUser($this->makeSessionUser($role, $email, $name)));
         return $this;
     }
 

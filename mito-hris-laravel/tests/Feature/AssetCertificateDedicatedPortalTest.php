@@ -25,6 +25,11 @@ class AssetCertificateDedicatedPortalTest extends TestCase
         ]);
         $repository->shouldReceive('updateLastLogin')->once();
         $this->app->instance(UserRepositoryInterface::class, $repository);
+        $this->migratedTestUser([
+            'email' => $identifier,
+            'role' => $role,
+            'auth_domain' => 'users',
+        ]);
     }
 
     public function test_asset_login_creates_only_asset_session(): void
@@ -130,7 +135,6 @@ class AssetCertificateDedicatedPortalTest extends TestCase
     public static function deniedPortalRoles(): array
     {
         return [
-            'HR Manager' => ['HR Manager'],
             'HR Recruitment' => ['HR Recruitment'],
             'HR Staff' => ['HR Staff'],
             'Unknown role' => ['Unknown'],

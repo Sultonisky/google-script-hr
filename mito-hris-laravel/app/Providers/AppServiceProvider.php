@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use App\Events\CandidateApplied;
@@ -19,15 +20,22 @@ use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\MprRepositoryInterface;
 use App\Repositories\Contracts\MprRequestorRepositoryInterface;
+use App\Repositories\Contracts\UserPermissionRepositoryInterface;
+use App\Repositories\Contracts\PermissionCatalogRepositoryInterface;
 use App\Repositories\GoogleSheets\UserSheetsRepository;
+use App\Repositories\GoogleSheets\UserPermissionSheetsRepository;
+use App\Repositories\GoogleSheets\PermissionCatalogSheetsRepository;
 use App\Repositories\Database\UserDatabaseRepository;
+use App\Repositories\Local\ArrayUserPermissionRepository;
+use App\Repositories\Local\StaticPermissionCatalogRepository;
 use App\Repositories\Local\LocalEmployeeRepository;
 use App\Repositories\Sheets\AuditLogSheetsRepository;
 use App\Repositories\Sheets\CandidateSheetsRepository;
 use App\Repositories\Sheets\EmployeeSheetsRepository;
 use App\Repositories\Sheets\MprSheetsRepository;
 use App\Repositories\Sheets\MprRequestorSheetsRepository;
-use App\Support\Rbac;
+use App\Support\PermissionCatalog;
+use App\Services\PermissionResolver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -36,9 +44,14 @@ class AppServiceProvider extends ServiceProvider
         // ponytail: env-aware binding; remove when Sheets repo works without Google credentials locally.
         if (app()->environment('local', 'testing')) {
             $this->app->bind(UserRepositoryInterface::class, UserDatabaseRepository::class);
+            $this->app->singleton(UserPermissionRepositoryInterface::class, ArrayUserPermissionRepository::class);
+            $this->app->singleton(PermissionCatalogRepositoryInterface::class, StaticPermissionCatalogRepository::class);
         } else {
             $this->app->bind(UserRepositoryInterface::class, UserSheetsRepository::class);
+            $this->app->singleton(UserPermissionRepositoryInterface::class, UserPermissionSheetsRepository::class);
+            $this->app->singleton(PermissionCatalogRepositoryInterface::class, PermissionCatalogSheetsRepository::class);
         }
+        $this->app->singleton(PermissionResolver::class);
         $this->app->bind(CandidateRepositoryInterface::class, CandidateSheetsRepository::class);
         // ponytail: dummy employee source only for local dev; remove when
         // EmployeeSheetsRepository works without Google credentials locally.
@@ -86,23 +99,10 @@ class AppServiceProvider extends ServiceProvider
         View::composer('*', function ($view) {
             $user = session('hr_user');
 
-            // ===========================================================
-            // FIX: Expand wildcard permissions for Super Admin so that
-            // the $permissions view variable (used in sidebar @if checks)
-            // contains every actual permission name rather than just ['*'].
-            // in_array('view_employees', ['*']) is false — this was why
-            // "Master Data" was hidden for Super Admin in the sidebar.
-            // ===========================================================
-            $rawPermissions = Rbac::permissionsForRole($user['role'] ?? null);
-
-            if (in_array('*', $rawPermissions, true)) {
-                // Flatten all defined permissions from config, exclude the wildcard itself
-                $allRolePerms = config('hris.auth.role_permissions', []);
-                $expanded = array_unique(array_merge(...array_values($allRolePerms)));
-                $permissions = array_values(array_filter($expanded, fn ($p) => $p !== '*'));
-            } else {
-                $permissions = $rawPermissions;
-            }
+            $permissions = array_values(array_filter(
+                PermissionCatalog::keys(),
+                fn (string $permission): bool => Gate::allows($permission)
+            ));
 
             $view->with('user', $user);
             $view->with('permissions', $permissions);

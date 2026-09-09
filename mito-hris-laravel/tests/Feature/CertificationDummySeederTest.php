@@ -86,7 +86,7 @@ class CertificationDummySeederTest extends TestCase
     #[Test]
     public function certification_index_renders_seeded_data_for_legal(): void
     {
-        Session::put('hr_user', [
+        Session::put('hr_user', $this->migratedTestUser([
             'email'       => 'legal@mito.id',
             'fullName'    => 'Legal User',
             'role'        => 'LEGAL',
@@ -94,7 +94,7 @@ class CertificationDummySeederTest extends TestCase
             'auth_domain' => 'users',
             'entities'    => [],
             'branch'      => '',
-        ]);
+        ]));
 
         $this->seed(CertificationDummySeeder::class);
 

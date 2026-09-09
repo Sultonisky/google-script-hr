@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Session;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
@@ -52,7 +53,15 @@ class RbacTest extends TestCase
     /** Simulate a logged-in session for the given role (internal HRIS). */
     private function actingAsRole(string $role): static
     {
-        Session::put('hr_user', $this->makeSessionUser($role));
+        $user = $this->makeSessionUser($role);
+        if ($role !== 'Super Admin') {
+            $repository = app(\App\Repositories\Contracts\UserPermissionRepositoryInterface::class);
+            foreach (\App\Support\LegacyRolePermissionSource::permissionsForRole($role) as $permission) {
+                $repository->upsert($user['email'], $permission, true, 'migration-test');
+            }
+            app(\App\Services\PermissionResolver::class)->forget($user['email']);
+        }
+        Session::put('hr_user', $user);
         return $this;
     }
 
@@ -110,6 +119,155 @@ class RbacTest extends TestCase
         // Gate should now resolve to the same user
         $this->assertTrue(Gate::allows('view_recruitment'), 'Gate should resolve session user, not Auth::user()');
         $this->assertFalse(Gate::allows('manage_settings'), 'User should not have manage_settings');
+    }
+
+    #[Test]
+    public function same_role_different_permission_overrides_are_respected(): void
+    {
+        $resolver = app(\App\Services\PermissionResolver::class);
+        $repo = app(\App\Repositories\Contracts\UserPermissionRepositoryInterface::class);
+        $emailA = 'same-role-a@mito.id';
+        $emailB = 'same-role-b@mito.id';
+
+        $userA = ['email' => $emailA, 'fullName' => 'A', 'role' => 'User'];
+        $userB = ['email' => $emailB, 'fullName' => 'B', 'role' => 'User'];
+
+        $repo->upsert($emailA, 'assets.access', true, 'superadmin');
+        $repo->upsert($emailB, 'assets.access', false, 'superadmin');
+        $resolver->forget($emailA);
+        $resolver->forget($emailB);
+
+        $this->assertTrue($resolver->allows($userA, 'assets.access'));
+        $this->assertFalse($resolver->allows($userB, 'assets.access'));
+
+        $repo->upsert($emailB, 'certificates.access', true, 'superadmin');
+        $resolver->forget($emailB);
+        $this->assertTrue($resolver->allows($userB, 'certificates.access'));
+        $this->assertFalse($resolver->allows($userA, 'certificates.access'));
+    }
+
+    #[Test]
+    public function grant_and_revoke_permission_is_reflected_without_restart(): void
+    {
+        $resolver = app(\App\Services\PermissionResolver::class);
+        $repo = app(\App\Repositories\Contracts\UserPermissionRepositoryInterface::class);
+        $email = 'grant-revoke@mito.id';
+        $user = ['email' => $email, 'fullName' => 'Grant Revoke', 'role' => 'User'];
+
+        $repo->upsert($email, 'assets.access', true, 'superadmin');
+        $resolver->forget($email);
+        $this->assertTrue($resolver->allows($user, 'assets.access'));
+
+        $repo->upsert($email, 'assets.access', false, 'superadmin');
+        $resolver->forget($email);
+        $this->assertFalse($resolver->allows($user, 'assets.access'));
+
+        $repo->upsert($email, 'assets.access', true, 'superadmin');
+        $resolver->forget($email);
+        $this->assertTrue($resolver->allows($user, 'assets.access'));
+    }
+
+    #[Test]
+    public function normal_admin_without_user_permissions_has_no_runtime_asset_or_certificate_permissions(): void
+    {
+        Session::put('hr_user', [
+            'email' => 'user-a@example.com',
+            'fullName' => 'User A',
+            'role' => 'Admin',
+            'auth_domain' => 'users',
+        ]);
+
+        foreach (['assets.view', 'assets.access', 'certificates.view', 'certificates.access'] as $permission) {
+            $this->assertFalse(
+                Gate::allows($permission),
+                "A normal Admin without a User_Permissions mapping must not receive {$permission} from role metadata."
+            );
+        }
+    }
+
+    #[Test]
+    public function explicit_user_permission_grants_only_the_assigned_permission(): void
+    {
+        $repo = app(\App\Repositories\Contracts\UserPermissionRepositoryInterface::class);
+        $repo->upsert('user-a@example.com', 'assets.view', true, 'superadmin');
+
+        Session::put('hr_user', [
+            'email' => 'user-a@example.com',
+            'fullName' => 'User A',
+            'role' => 'User',
+            'auth_domain' => 'users',
+        ]);
+
+        $this->assertTrue(Gate::allows('assets.view'));
+        $this->assertFalse(Gate::allows('assets.access'));
+        $this->assertFalse(Gate::allows('certificates.view'));
+        $this->assertFalse(Gate::allows('certificates.access'));
+    }
+
+    #[Test]
+    public function same_role_user_without_assets_view_mapping_is_denied(): void
+    {
+        Session::put('hr_user', [
+            'email' => 'user-b@example.com',
+            'fullName' => 'User B',
+            'role' => 'User',
+            'auth_domain' => 'users',
+        ]);
+
+        $this->assertFalse(Gate::allows('assets.view'));
+    }
+
+    #[Test]
+    public function changing_role_does_not_grant_or_revoke_user_permission_mapping(): void
+    {
+        $resolver = app(\App\Services\PermissionResolver::class);
+        $repo = app(\App\Repositories\Contracts\UserPermissionRepositoryInterface::class);
+        $email = 'user-a@example.com';
+
+        $repo->upsert($email, 'assets.view', true, 'superadmin');
+        Session::put('hr_user', [
+            'email' => $email,
+            'fullName' => 'User A',
+            'role' => 'User',
+            'auth_domain' => 'users',
+        ]);
+        $this->assertTrue(Gate::allows('assets.view'));
+
+        Session::put('hr_user.role', 'Admin');
+        $resolver->forget($email);
+        $this->assertTrue(Gate::allows('assets.view'));
+
+        $repo->upsert($email, 'assets.view', false, 'superadmin');
+        $resolver->forget($email);
+        $this->assertFalse(Gate::allows('assets.view'));
+    }
+
+    #[Test]
+    public function dedicated_portals_require_explicit_access_permissions(): void
+    {
+        $repo = app(\App\Repositories\Contracts\UserPermissionRepositoryInterface::class);
+
+        Session::put('hr_user', [
+            'email' => 'admin-without-portal-permissions@example.com',
+            'fullName' => 'Admin Without Portal Permissions',
+            'role' => 'Admin',
+            'auth_domain' => 'users',
+        ]);
+        $this->assertFalse(Gate::allows('assets.access'));
+        $this->assertFalse(Gate::allows('certificates.access'));
+
+        $repo->upsert('legacy-user@example.com', 'view_asset', true, 'superadmin');
+        $repo->upsert('legacy-user@example.com', 'view_certification', true, 'superadmin');
+        Session::put('hr_user', [
+            'email' => 'legacy-user@example.com',
+            'fullName' => 'Legacy User',
+            'role' => 'User',
+            'auth_domain' => 'users',
+        ]);
+        $this->assertTrue(Gate::allows('assets.view'));
+        $this->assertTrue(Gate::allows('certificates.view'));
+        $this->assertFalse(Gate::allows('assets.access'));
+        $this->assertFalse(Gate::allows('certificates.access'));
     }
 
     // =========================================================================
@@ -352,16 +510,20 @@ class RbacTest extends TestCase
     #[Test]
     public function hr_staff_cannot_access_outsource_or_employee_actions(): void
     {
+        $this->withoutMiddleware([
+            ValidateCsrfToken::class,
+            \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
+        ]);
         $this->actingAsRole('User');
 
         $this->get('/hr/outsource')->assertStatus(403);
         $this->get('/hr/mpr')->assertOk();
-        $this->post('/hr/employees/EMP001/rotate')->assertStatus(403);
-        $this->post('/hr/employees/EMP001/offboard')->assertStatus(403);
-        $this->post('/hr/recruitment/REC-001/accept', ['recruitment_id' => 'REC-001'])->assertStatus(302);
-        $this->post('/hr/recruitment/REC-001/save-notes', ['notes' => 'Catatan'])->assertStatus(200);
-        $this->post('/hr/recruitment/REC-001/save-contract', ['contract_number' => 'C-001'])->assertStatus(500);
-        $this->post('/hr/recruitment/REC-001/save-offering-response', ['response' => 'Ya'])->assertStatus(422);
+        $this->post('/hr/employees/EMP001/rotate', ['_token' => 'test-token'])->assertStatus(403);
+        $this->post('/hr/employees/EMP001/offboard', ['_token' => 'test-token'])->assertStatus(403);
+        $this->post('/hr/recruitment/REC-001/accept', ['_token' => 'test-token', 'recruitment_id' => 'REC-001'])->assertStatus(302);
+        $this->post('/hr/recruitment/REC-001/save-notes', ['_token' => 'test-token', 'notes' => 'Catatan'])->assertStatus(200);
+        $this->post('/hr/recruitment/REC-001/save-contract', ['_token' => 'test-token', 'contract_number' => 'C-001'])->assertStatus(500);
+        $this->post('/hr/recruitment/REC-001/save-offering-response', ['_token' => 'test-token', 'response' => 'Ya'])->assertStatus(422);
     }
 
     #[Test]
@@ -446,12 +608,16 @@ class RbacTest extends TestCase
     #[Test]
     public function user_can_mutate_recruitment_endpoints_allowed_by_legacy_privileged_permissions(): void
     {
+        $this->withoutMiddleware([
+            ValidateCsrfToken::class,
+            \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
+        ]);
         $this->actingAsRole('User');
 
         $this->get('/hr/employees')->assertStatus(403);
-        $this->post('/hr/employees/import')->assertStatus(403);
-        $this->post('/hr/recruitment/REC-001/hold', ['reason' => 'Cek ulang', 'follow_up_date' => '2026-09-12', 'notes' => 'Hold'])->assertStatus(302);
-        $this->post('/hr/recruitment/REC-001/save-offering', ['offering_number' => 'OF-001'])->assertStatus(404);
+        $this->post('/hr/employees/import', ['_token' => 'test-token'])->assertStatus(403);
+        $this->post('/hr/recruitment/REC-001/hold', ['_token' => 'test-token', 'reason' => 'Cek ulang', 'follow_up_date' => '2026-09-12', 'notes' => 'Hold'])->assertStatus(302);
+        $this->post('/hr/recruitment/REC-001/save-offering', ['_token' => 'test-token', 'offering_number' => 'OF-001'])->assertStatus(404);
     }
 
     // =========================================================================
@@ -840,7 +1006,8 @@ class RbacTest extends TestCase
         //
         // Such a session passes PortalAccessMiddleware (auth_domain='users' is valid)
         // and MprRequestorMiddleware (just checks hr_user exists).
-        // Gate then enforces RBAC: Manpower role has only view_mpr/create_mpr/export_mpr.
+        // Gate then enforces the explicit User_Permissions source. A Manpower
+        // role copied into the Users sheet has no normal HRIS permissions.
         // Dashboard requires no explicit gate (any authenticated hr_user can see it),
         // but individual modules that require 'manage_settings', 'view_employees', etc.
         // will deny access via Gate.
@@ -850,7 +1017,6 @@ class RbacTest extends TestCase
             'email'       => 'bad.manager@mito.id',
             'fullName'    => 'Bad Manager',
             'role'        => 'Manpower',
-            'permissions' => config('hris.auth.role_permissions.Manpower', []),
             'auth_domain' => 'users',
             'entities'    => [],
             'branch'      => '',
@@ -860,7 +1026,7 @@ class RbacTest extends TestCase
         $this->assertFalse(Gate::allows('manage_settings'), 'Manpower must not have manage_settings');
         $this->assertFalse(Gate::allows('view_employees'),  'Manpower must not have view_employees');
         $this->assertFalse(Gate::allows('view_recruitment'), 'Manpower must not have view_recruitment');
-        $this->assertTrue(Gate::allows('view_mpr'),         'Manpower should have view_mpr');
+        $this->assertFalse(Gate::allows('view_mpr'),        'Invalid Users-sheet Manpower must not gain MPR access');
 
         // Protected HRIS routes enforce Gate checks.
         $this->get('/hr/settings')->assertStatus(403);

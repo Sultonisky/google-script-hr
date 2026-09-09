@@ -30,7 +30,7 @@ class EmployeeExportXlsxTest extends TestCase
     /** Build a session user array for a given role. */
     private function actingAsRole(string $role): static
     {
-        Session::put('hr_user', [
+        Session::put('hr_user', $this->migratedTestUser([
             'email'       => strtolower(str_replace(' ', '.', $role)) . '@mito.id',
             'fullName'    => $role . ' User',
             'role'        => $role,
@@ -38,7 +38,7 @@ class EmployeeExportXlsxTest extends TestCase
             'auth_domain' => 'users',
             'entities'    => [],
             'branch'      => '',
-        ]);
+        ]));
         return $this;
     }
 

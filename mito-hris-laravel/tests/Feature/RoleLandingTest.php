@@ -48,7 +48,7 @@ private function actingAsRole(string $role): static
             'LEGAL' => 'legal@mitogroup.local',
         ];
 
-        Session::put('hr_user', [
+        Session::put('hr_user', $this->migratedTestUser([
             'email'       => $emailMap[$role] ?? strtolower($role) . '@mito.id',
             'fullName'    => $role . ' User',
             'role'        => $role,
@@ -56,7 +56,7 @@ private function actingAsRole(string $role): static
             'auth_domain' => 'users',
             'entities'    => [],
             'branch'      => '',
-        ]);
+        ]));
 
         return $this;
     }

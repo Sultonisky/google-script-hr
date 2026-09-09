@@ -18,7 +18,7 @@ class AssetCategoryTest extends TestCase
 
     private function actingAsAdmin(): static
     {
-        Session::put('hr_user', [
+        Session::put('hr_user', $this->migratedTestUser([
             'email'       => 'asset.admin@mito.id',
             'fullName'    => 'Asset Admin',
             'role'        => 'Admin',
@@ -26,7 +26,7 @@ class AssetCategoryTest extends TestCase
             'auth_domain' => 'users',
             'entities'    => [],
             'branch'      => '',
-        ]);
+        ]));
 
         return $this;
     }

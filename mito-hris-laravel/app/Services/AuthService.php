@@ -83,7 +83,6 @@ class AuthService
                 'fullName'    => $user['Full Name'] ?? $user['Email'],
                 'role'        => $role,
                 'source_role' => trim((string) ($user['Role'] ?? '')),
-                'permissions' => $this->getPermissionsForRole($role),
                 // Internal HRIS users do NOT use entity/branch for auth
                 'entities'    => [],
                 'branch'      => '',
@@ -92,16 +91,6 @@ class AuthService
                 'auth_domain' => 'users',
             ],
         ];
-    }
-
-    public function getPermissionsForRole(string $role): array
-    {
-        return Rbac::permissionsForRole($role);
-    }
-
-    public function hasPermission(string $role, string $permission): bool
-    {
-        return Rbac::allows($role, $permission);
     }
 
     public function isValidRole(string $role): bool
@@ -147,7 +136,6 @@ class AuthService
                 'email' => strtolower(trim($email)),
                 'fullName' => $fullName,
                 'role' => 'Super Admin',
-                'permissions' => $this->getPermissionsForRole('Super Admin'),
             ],
         ];
     }

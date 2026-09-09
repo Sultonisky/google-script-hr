@@ -38,6 +38,19 @@ abstract class TestCase extends BaseTestCase
      */
     protected string $activeDomainKey = 'hris';
 
+    protected function migratedTestUser(array $user): array
+    {
+        if (($user['role'] ?? null) !== 'Super Admin' && ($user['auth_domain'] ?? 'users') === 'users') {
+            $repository = app(\App\Repositories\Contracts\UserPermissionRepositoryInterface::class);
+            foreach (\App\Support\LegacyRolePermissionSource::permissionsForRole($user['role'] ?? null) as $permission) {
+                $repository->upsert((string) ($user['email'] ?? ''), $permission, true, 'migration-test');
+            }
+            app(\App\Services\PermissionResolver::class)->forget((string) ($user['email'] ?? ''));
+        }
+
+        return $user;
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
