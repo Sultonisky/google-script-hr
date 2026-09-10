@@ -80,6 +80,64 @@ class PermissionResolver
     }
 
     /**
+     * Return the dependency requirements for a permission.
+     *
+     * Keys are permission keys; values are arrays of permission keys that must
+     * also be granted for the requested permission to be meaningful.
+     *
+     * Portal access permissions have no requirements.
+     * Feature permissions require their portal access permission.
+     */
+    public function dependenciesFor(string $permission): array
+    {
+        $permission = trim((string) $permission);
+
+        return match ($permission) {
+            'assets.view',
+            'assets.create',
+            'assets.update',
+            'assets.delete',
+            'assets.assign',
+            'assets.return' => ['assets.access'],
+
+            'assets.generate_code' => ['assets.access'],
+
+            'certificates.view',
+            'certificates.create',
+            'certificates.update',
+            'certificates.delete' => ['certificates.access'],
+
+            'certificates.generate_code' => ['certificates.access'],
+
+            default => [],
+        };
+    }
+
+    /**
+     * Normalize a set of granted permissions by adding missing dependencies.
+     *
+     * @return array<string, bool> normalized permission map
+     */
+    public function normalizeDependencies(array $granted): array
+    {
+        $normalized = $granted;
+
+        foreach ($granted as $permission => $value) {
+            if ($value !== true) {
+                continue;
+            }
+
+            foreach ($this->dependenciesFor($permission) as $dependency) {
+                if (empty($normalized[$dependency])) {
+                    $normalized[$dependency] = true;
+                }
+            }
+        }
+
+        return $normalized;
+    }
+
+    /**
      * Determine if user has access to the general HRIS portal.
      *
      * Architecture: Users with ONLY dedicated portal permissions (assets, certificates)
