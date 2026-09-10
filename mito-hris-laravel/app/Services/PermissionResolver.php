@@ -166,7 +166,8 @@ class PermissionResolver
             return true;
         }
 
-        $mappings = $this->mappings((string) ($user['email'] ?? $user['Email'] ?? ''));
+        $email = strtolower(trim((string) ($user['email'] ?? $user['Email'] ?? '')));
+        $mappings = $this->mappings($email);
         $granted  = array_filter($mappings, static fn (bool $v) => $v === true);
 
         if ($granted === []) {
@@ -174,12 +175,33 @@ class PermissionResolver
         }
 
         foreach (array_keys($granted) as $permission) {
-            if (!$this->isDedicatedPortalPermission($permission)) {
+            if ($this->isHrisPortalPermission($permission)) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    private function isHrisPortalPermission(string $permission): bool
+    {
+        return in_array($permission, [
+            'manage_recruitment',
+            'view_recruitment',
+            'update_candidates',
+            'create_offering',
+            'manage_hold_blacklist',
+            'manage_probation',
+            'manage_employees',
+            'view_employees',
+            'view_mpr',
+            'create_mpr',
+            'update_mpr',
+            'export_mpr',
+            'manage_settings',
+            'manage_permissions',
+            'view_reports',
+        ], true);
     }
 
     private function compatibilityAliases(string $permission): array
@@ -195,18 +217,6 @@ class PermissionResolver
             'manage_certification' === $permission => ['certificates.create', 'certificates.update', 'certificates.delete', 'certificates.generate_code'],
             default => [],
         };
-    }
-
-    private function isDedicatedPortalPermission(string $permission): bool
-    {
-        return str_starts_with($permission, 'assets.')
-            || str_starts_with($permission, 'certificates.')
-            || in_array($permission, [
-                'view_asset',
-                'edit_asset',
-                'view_certification',
-                'manage_certification',
-            ], true);
     }
 
     private function parseBoolean(mixed $value): bool
