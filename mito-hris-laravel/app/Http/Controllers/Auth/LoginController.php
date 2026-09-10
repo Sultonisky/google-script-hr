@@ -160,16 +160,19 @@ class LoginController extends Controller
         // HRIS authentication always remains inside the HRIS portal. Dedicated
         // Asset and Certificate portals have their own login boundaries.
         $redirect = $this->postLoginRedirect($user);
+        $fullName = trim((string) ($user['Full Name'] ?? $user['fullName'] ?? $user['username'] ?? 'User'));
+        $greeting = "Selamat datang, {$fullName}! Anda telah berhasil masuk ke Sistem HRIS.";
 
         if ($request->expectsJson()) {
             return response()->json([
                 'success'  => true,
                 'user'     => $user,
                 'redirect' => $redirect,
+                'message'  => $greeting,
             ]);
         }
 
-        return redirect($redirect);
+        return redirect($redirect)->with('success', $greeting);
     }
 
 
