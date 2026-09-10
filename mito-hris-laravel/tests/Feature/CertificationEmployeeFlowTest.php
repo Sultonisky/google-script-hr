@@ -33,13 +33,13 @@ class CertificationEmployeeFlowTest extends TestCase
         );
     }
 
-    private function actingAsLegal(): static
+    private function actingAsAdmin(): static
     {
         Session::put('hr_user', $this->migratedTestUser([
-            'email'       => 'legal@mito.id',
-            'fullName'    => 'Legal User',
-            'role'        => 'LEGAL',
-            'permissions' => config('hris.auth.role_permissions')['LEGAL'] ?? [],
+            'email'       => 'admin@mito.id',
+            'fullName'    => 'Admin User',
+            'role'        => 'Admin',
+            'permissions' => config('hris.auth.role_permissions')['Admin'] ?? [],
             'auth_domain' => 'users',
             'entities'    => [],
             'branch'      => '',
@@ -69,7 +69,7 @@ class CertificationEmployeeFlowTest extends TestCase
     #[Test]
     public function create_with_picked_employee_persists_provider_profile(): void
     {
-        $this->actingAsLegal();
+        $this->actingAsAdmin();
 
         $this->postJson('/hr/certifications', $this->payload())
             ->assertCreated()
@@ -87,7 +87,7 @@ class CertificationEmployeeFlowTest extends TestCase
     #[Test]
     public function invalid_employee_id_is_rejected_with_422(): void
     {
-        $this->actingAsLegal();
+        $this->actingAsAdmin();
 
         $this->postJson('/hr/certifications', $this->payload([
             'employee_id'   => 'EMP-NOT-EXIST',
@@ -104,7 +104,7 @@ class CertificationEmployeeFlowTest extends TestCase
     #[Test]
     public function edit_can_change_employee_and_view_reflects_it(): void
     {
-        $this->actingAsLegal();
+        $this->actingAsAdmin();
 
         $cert = Certification::create([
             'cert_type'            => CertType::ISO->value,

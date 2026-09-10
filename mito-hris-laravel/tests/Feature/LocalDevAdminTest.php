@@ -15,8 +15,7 @@ use Tests\TestCase;
  * test@example.com is the local Admin/full-access account produced by
  * `php artisan migrate:fresh --seed`. These tests lock that contract:
  *   1. DatabaseSeeder creates test@example.com with role=Admin.
- *   2. GA_IT / LEGAL dummy users are still produced by LocalDevUsersSeeder.
- *   3. Admin can perform the admin-only Asset (edit_asset) and Certification
+ *   2. Admin can perform the admin-only Asset (edit_asset) and Certification
  *      (manage_certification) actions — not merely view the index pages.
  */
 class LocalDevAdminTest extends TestCase
@@ -24,9 +23,6 @@ class LocalDevAdminTest extends TestCase
     use RefreshDatabase;
 
     private const ADMIN_EMAIL = 'test@example.com';
-    private const GA_IT_EMAIL = 'ga.it@mitogroup.local';
-    private const LEGAL_EMAIL = 'legal@mitogroup.local';
-
     private function actingAsRole(string $role, string $email): static
     {
         Session::put('hr_user', $this->migratedTestUser([
@@ -50,8 +46,6 @@ class LocalDevAdminTest extends TestCase
         $this->assertDatabaseHas('users', [
             'email' => self::ADMIN_EMAIL, 'role' => 'Admin', 'status' => 'Active',
         ]);
-        $this->assertDatabaseHas('users', ['email' => self::GA_IT_EMAIL, 'role' => 'GA_IT']);
-        $this->assertDatabaseHas('users', ['email' => self::LEGAL_EMAIL, 'role' => 'LEGAL']);
     }
 
     #[Test]

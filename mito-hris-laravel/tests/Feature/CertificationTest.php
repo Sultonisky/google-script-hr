@@ -200,7 +200,7 @@ class CertificationTest extends TestCase
     #[Test]
     public function legal_can_create_certification_via_http(): void
     {
-        $this->authAs('LEGAL');
+        $this->authAs('Admin');
         $this->fakeAuditLogRepo();
 
         $payload = [
@@ -245,7 +245,7 @@ class CertificationTest extends TestCase
     #[Test]
     public function certification_can_be_created_without_employee_owner(): void
     {
-        $this->authAs('LEGAL');
+        $this->authAs('Admin');
         $this->fakeAuditLogRepo();
 
         $response = $this->postJson('/hr/certifications', [
@@ -267,7 +267,7 @@ class CertificationTest extends TestCase
     #[Test]
     public function legacy_certification_type_is_rejected(): void
     {
-        $this->authAs('LEGAL');
+        $this->authAs('Admin');
         $this->fakeAuditLogRepo();
 
         $this->postJson('/hr/certifications', [
@@ -285,7 +285,7 @@ class CertificationTest extends TestCase
     #[Test]
     public function legal_can_update_certification_via_http(): void
     {
-        $this->authAs('LEGAL');
+        $this->authAs('Admin');
         $this->fakeAuditLogRepo();
 
         $cert = $this->makeCert();
@@ -330,7 +330,7 @@ class CertificationTest extends TestCase
     public function certification_attachment_can_be_uploaded_served_and_replaced(): void
     {
         Storage::fake('local');
-        $this->authAs('LEGAL');
+        $this->authAs('Admin');
         $this->fakeAuditLogRepo();
 
         $payload = [
@@ -378,7 +378,7 @@ class CertificationTest extends TestCase
     #[Test]
     public function classification_rejects_mixed_product_and_company_fields(): void
     {
-        $this->authAs('LEGAL');
+        $this->authAs('Admin');
         $this->fakeAuditLogRepo();
 
         $this->postJson('/hr/certifications', [
@@ -397,7 +397,7 @@ class CertificationTest extends TestCase
     #[Test]
     public function update_autoderives_expired_status_when_expiry_moved_to_past(): void
     {
-        $this->authAs('LEGAL');
+        $this->authAs('Admin');
         $this->fakeAuditLogRepo();
 
         $cert = $this->makeCert();
@@ -422,7 +422,7 @@ class CertificationTest extends TestCase
     #[Test]
     public function update_preserves_explicit_suspended_status(): void
     {
-        $this->authAs('LEGAL');
+        $this->authAs('Admin');
         $this->fakeAuditLogRepo();
 
         $cert = $this->makeCert(['status' => CertStatus::SUSPENDED, 'expiry_date' => now()->subDays(5)->toDateString()]);
@@ -446,7 +446,7 @@ class CertificationTest extends TestCase
     #[Test]
     public function legal_can_delete_certification_via_http(): void
     {
-        $this->authAs('LEGAL');
+        $this->authAs('Admin');
         $this->fakeAuditLogRepo();
 
         $cert = $this->makeCert();

@@ -79,6 +79,104 @@ class PermissionResolver
         unset($this->cache[strtolower(trim($email))]);
     }
 
+    /**
+     * Return the dependency requirements for a permission.
+     *
+     * Keys are permission keys; values are arrays of permission keys that must
+     * also be granted for the requested permission to be meaningful.
+     *
+     * Portal access permissions have no requirements.
+     * Feature permissions require their portal access permission.
+     */
+    public function dependenciesFor(string $permission): array
+    {
+        $permission = trim((string) $permission);
+
+        return match ($permission) {
+            'assets.view',
+            'assets.create',
+            'assets.update',
+            'assets.delete',
+            'assets.assign',
+            'assets.return' => ['assets.access'],
+
+            'assets.generate_code' => ['assets.access'],
+
+            'certificates.view',
+            'certificates.create',
+            'certificates.update',
+            'certificates.delete' => ['certificates.access'],
+
+            'certificates.generate_code' => ['certificates.access'],
+
+            default => [],
+        };
+    }
+
+    /**
+     * Normalize a set of granted permissions by adding missing dependencies.
+     *
+     * @return array<string, bool> normalized permission map
+     */
+    public function normalizeDependencies(array $granted): array
+    {
+        $normalized = $granted;
+
+        foreach ($granted as $permission => $value) {
+            if ($value !== true) {
+                continue;
+            }
+
+            foreach ($this->dependenciesFor($permission) as $dependency) {
+                if (empty($normalized[$dependency])) {
+                    $normalized[$dependency] = true;
+                }
+            }
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * Determine if user has access to the general HRIS portal.
+     *
+     * Architecture: Users with ONLY dedicated portal permissions (assets, certificates)
+     * must be explicitly restricted via Permission Mappings. If a user has:
+     *   - No permission mappings → allowed (uses role-based access)
+     *   - Permission mappings with non-dedicated permissions → allowed
+     *   - Permission mappings with ONLY dedicated permissions → denied
+     *
+     * To restrict user to dedicated portals only (e.g., assets-only user):
+     * 1. Create user in Users sheet with desired Role
+     * 2. Go to Permission Management (HR → Permissions)
+     * 3. Select the user and assign ONLY dedicated portal permissions (assets.*, certificates.*)
+     * 4. Leave all HRIS permissions unchecked
+     * 5. Save permissions
+     *
+     * The user will then be denied HRIS portal access on login.
+     */
+    public function hasHrisAccess(array $user): bool
+    {
+        if (Rbac::normalizeRole($user['role'] ?? null) === 'Super Admin') {
+            return true;
+        }
+
+        $mappings = $this->mappings((string) ($user['email'] ?? $user['Email'] ?? ''));
+        $granted  = array_filter($mappings, static fn (bool $v) => $v === true);
+
+        if ($granted === []) {
+            return true;
+        }
+
+        foreach (array_keys($granted) as $permission) {
+            if (!$this->isDedicatedPortalPermission($permission)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private function compatibilityAliases(string $permission): array
     {
         return match (true) {
@@ -92,6 +190,18 @@ class PermissionResolver
             'manage_certification' === $permission => ['certificates.create', 'certificates.update', 'certificates.delete', 'certificates.generate_code'],
             default => [],
         };
+    }
+
+    private function isDedicatedPortalPermission(string $permission): bool
+    {
+        return str_starts_with($permission, 'assets.')
+            || str_starts_with($permission, 'certificates.')
+            || in_array($permission, [
+                'view_asset',
+                'edit_asset',
+                'view_certification',
+                'manage_certification',
+            ], true);
     }
 
     private function parseBoolean(mixed $value): bool

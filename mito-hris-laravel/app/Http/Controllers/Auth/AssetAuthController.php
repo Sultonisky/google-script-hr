@@ -87,16 +87,19 @@ class AssetAuthController extends Controller
         }
 
         $redirect = route('assets.portal.index');
+        $fullName = trim((string) ($user['Full Name'] ?? $user['fullName'] ?? $user['username'] ?? 'User'));
+        $greeting = "Selamat datang, {$fullName}!";
 
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
                 'user'    => $user,
                 'redirect' => $redirect,
+                'message' => $greeting,
             ]);
         }
 
-        return redirect($redirect);
+        return redirect($redirect)->with('success', $greeting);
     }
 
     private function loginFailure(Request $request, string $errorMessage): RedirectResponse|JsonResponse

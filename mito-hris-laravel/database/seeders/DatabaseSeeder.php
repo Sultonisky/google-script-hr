@@ -24,7 +24,6 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        $this->call(LocalDevUsersSeeder::class);
         $this->call(AssetDummySeeder::class);
         $this->call(CertificationDummySeeder::class);
     }

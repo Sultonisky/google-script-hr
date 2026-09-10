@@ -38,7 +38,7 @@ class UserController extends Controller
             'name'  => 'required|string|min:3',
             'email' => 'required|email',
             'username' => 'required|string|min:3',
-            'role'  => ['required', 'string', Rule::in(config('hris.auth.valid_roles_internal', []))],
+            'role'  => ['required', 'string', Rule::in(config('hris.auth.valid_roles', []))],
             'password' => 'required|string|min:8|confirmed',
         ]);
 
@@ -81,7 +81,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|min:3',
             'username' => 'required|string|min:3',
-            'role' => ['required', 'string', Rule::in(config('hris.auth.valid_roles_internal', []))],
+            'role' => ['required', 'string', Rule::in(config('hris.auth.valid_roles', []))],
             'status' => ['required', 'string', Rule::in(['Active', 'Inactive'])],
             'password' => 'nullable|string|min:8|confirmed',
         ]);

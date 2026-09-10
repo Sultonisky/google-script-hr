@@ -87,15 +87,19 @@ class MigrateUserPermissionsCommand extends Command
             ];
         }
 
-        // ── Per-user dry-run detail ────────────────────────────────────────
+        // Keep the compact summary stable for scripts and existing tests.
         $mode = $dryRun ? 'DRY-RUN' : 'APPLIED';
-        $this->line('');
-        $this->info("Permission seed {$mode}");
-        $this->line("Users found:    {$usersFound}");
-        $this->line("Super Admin skipped: {$skippedUsers}");
-        $this->line("Normal users:   " . ($usersFound - $skippedUsers - $invalidUsers));
+        $this->info("Permission migration {$mode}.");
+        $this->line("Users found: {$usersFound}");
+        $this->line("Mappings to create: {$mappingsToCreate}");
+        $this->line("Mappings already existing: {$mappingsExisting}");
+        $this->line("Conflicts: {$conflicts}");
+        $this->line("Skipped users: {$skippedUsers}");
+        $this->line("Invalid users: {$invalidUsers}");
         $this->line('');
 
+        // ── Per-user migration detail ──────────────────────────────────────
+        $this->line("Normal users: " . ($usersFound - $skippedUsers - $invalidUsers));
         foreach ($userPlan as $plan) {
             $this->line("  {$plan['email']}");
             $this->line("    Role:   {$plan['role']}");
@@ -136,7 +140,7 @@ class MigrateUserPermissionsCommand extends Command
     {
         $permissions = array_values(array_filter(
             LegacyRolePermissionSource::permissionsForRole($role),
-            fn (string $permission): bool => $permission !== '*'
+            fn(string $permission): bool => $permission !== '*'
         ));
 
         $portalRoles = config('hris.auth.dedicated_portal_roles', []);
