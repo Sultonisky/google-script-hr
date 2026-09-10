@@ -140,7 +140,7 @@ class MigrateUserPermissionsCommand extends Command
     {
         $permissions = array_values(array_filter(
             LegacyRolePermissionSource::permissionsForRole($role),
-            fn (string $permission): bool => $permission !== '*'
+            fn(string $permission): bool => $permission !== '*'
         ));
 
         $portalRoles = config('hris.auth.dedicated_portal_roles', []);
