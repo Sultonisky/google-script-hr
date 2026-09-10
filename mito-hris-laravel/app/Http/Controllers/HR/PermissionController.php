@@ -8,6 +8,7 @@ use App\Repositories\Contracts\PermissionCatalogRepositoryInterface;
 use App\Repositories\Contracts\UserPermissionRepositoryInterface;
 use App\Repositories\Contracts\UserRepositoryInterface;
 use App\Services\PermissionResolver;
+use App\Support\Rbac;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -107,7 +108,14 @@ class PermissionController extends Controller
         }
 
         $target = $this->sessionUser($user);
+        $isSuperAdmin = Rbac::normalizeRole($target['role'] ?? null) === 'Super Admin';
+
+        if (!$isSuperAdmin) {
+            $requested = $this->resolver->normalizeDependencies($requested);
+        }
+
         $actor = strtolower(trim((string) session('hr_user.email', '')));
+        $added = [];
         foreach ($catalog->keys()->all() as $key) {
             $old = $this->resolver->allows($target, $key);
             $new = isset($requested[$key]);
@@ -116,11 +124,19 @@ class PermissionController extends Controller
             }
             if ($old !== $new) {
                 $this->auditRepository->log('User Permission', strtolower(trim($email)), 'UPDATED', $key, $old, $new, $actor, 'Permission Management');
+                if ($new && !$old) {
+                    $added[] = $key;
+                }
             }
         }
         $this->resolver->forget($email);
 
-        return response()->json(['success' => true, 'message' => 'Permission berhasil diperbarui.']);
+        $message = 'Permission berhasil diperbarui.';
+        if ($added !== []) {
+            $message .= ' Portal access dependencies were automatically enabled: ' . implode(', ', $added) . '.';
+        }
+
+        return response()->json(['success' => true, 'message' => $message]);
     }
 
     private function findUser(string $email): ?array
@@ -131,12 +147,14 @@ class PermissionController extends Controller
     private function catalog(): array
     {
         return array_values(array_map(function (array $permission): array {
+            $key = (string) ($permission['Permission Key'] ?? $permission['key'] ?? '');
             return [
-                'key' => (string) ($permission['Permission Key'] ?? $permission['key'] ?? ''),
+                'key' => $key,
                 'name' => (string) ($permission['Name'] ?? $permission['name'] ?? ''),
                 'description' => (string) ($permission['Description'] ?? $permission['description'] ?? ''),
                 'group' => (string) ($permission['Group'] ?? $permission['group'] ?? 'Other'),
                 'status' => strtolower((string) ($permission['Status'] ?? $permission['status'] ?? 'Active')),
+                'requires' => $key !== '' ? $this->resolver->dependenciesFor($key) : [],
             ];
         }, $this->permissionCatalog->all()));
     }

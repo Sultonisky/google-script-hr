@@ -185,6 +185,19 @@
             flex: 1 1 auto;
         }
     }
+    [data-permission-management] .permission-dependency-warning {
+        color: var(--bs-warning);
+        font-size: 0.75rem;
+    }
+
+    [data-permission-management] .permission-dependency-requires {
+        color: var(--bs-muted);
+        font-size: 0.7rem;
+    }
+
+    [data-permission-management] .permission-item.has-unmet-dependencies .permission-checkbox {
+        accent-color: var(--bs-warning);
+    }
 </style>
 @endsection
 
@@ -448,13 +461,18 @@ document.addEventListener('DOMContentLoaded', function () {
                         const key = escapeHtml(rawKey);
                         const label = escapeHtml(permission.name);
                         const description = escapeHtml(permission.description || 'Tidak ada detail tambahan untuk permission ini.');
+                        const requires = permission.requires && permission.requires.length > 0 ? permission.requires : [];
+                        const unmet = requires.filter(dep => !currentPermissions.has(dep));
+                        const hasUnmet = unmet.length > 0 && currentPermissions.has(rawKey);
                         const id = `permission-${rawKey.replace(/[^a-z0-9]+/gi, '-')}`;
-                        return `<div class="permission-item py-3 d-flex gap-3">
+                        return `<div class="permission-item py-3 d-flex gap-3 ${hasUnmet ? 'has-unmet-dependencies' : ''}">
                             <input class="form-check-input permission-checkbox flex-shrink-0 mt-1" type="checkbox" value="${key}" id="${id}" ${currentPermissions.has(rawKey) ? 'checked' : ''}>
                             <label class="form-check-label flex-grow-1" for="${id}">
                                 <span class="fw-semibold d-block">${label}</span>
                                 <span class="permission-description d-block small text-muted mt-1">${description}</span>
                                 <code class="small text-muted">${key}</code>
+                                ${requires.length > 0 ? `<div class="permission-dependency-requires mt-1">Requires: ${requires.map(r => escapeHtml(r)).join(', ')}</div>` : ''}
+                                ${hasUnmet ? `<div class="permission-dependency-warning mt-1"><i class="bi bi-exclamation-triangle me-1"></i>Missing: ${unmet.map(u => escapeHtml(u)).join(', ')}</div>` : ''}
                             </label>
                             <button type="button" class="btn btn-sm btn-link text-secondary p-0 align-self-start permission-detail" data-key="${key}" data-group="${escapeHtml(group)}" aria-label="Show details for ${label}" title="Show permission details"><i class="bi bi-info-circle" aria-hidden="true"></i></button>
                         </div>`;
@@ -649,7 +667,9 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(response.status === 419 ? 'Your session has expired. Refresh the page and try again.' : response.status === 403 ? 'You are not authorized to save permissions.' : data.message || 'Failed to save permissions.');
-            originalPermissions = new Set(currentPermissions);
+            if (selectedEmail) {
+                await loadUser(selectedEmail);
+            }
             showAlert(data.message || 'Permission updated successfully.', 'success');
         } catch (error) {
             showAlert(error.message, 'danger');

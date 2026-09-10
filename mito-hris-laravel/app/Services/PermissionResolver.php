@@ -80,6 +80,64 @@ class PermissionResolver
     }
 
     /**
+     * Return the dependency requirements for a permission.
+     *
+     * Keys are permission keys; values are arrays of permission keys that must
+     * also be granted for the requested permission to be meaningful.
+     *
+     * Portal access permissions have no requirements.
+     * Feature permissions require their portal access permission.
+     */
+    public function dependenciesFor(string $permission): array
+    {
+        $permission = trim((string) $permission);
+
+        return match ($permission) {
+            'assets.view',
+            'assets.create',
+            'assets.update',
+            'assets.delete',
+            'assets.assign',
+            'assets.return' => ['assets.access'],
+
+            'assets.generate_code' => ['assets.access'],
+
+            'certificates.view',
+            'certificates.create',
+            'certificates.update',
+            'certificates.delete' => ['certificates.access'],
+
+            'certificates.generate_code' => ['certificates.access'],
+
+            default => [],
+        };
+    }
+
+    /**
+     * Normalize a set of granted permissions by adding missing dependencies.
+     *
+     * @return array<string, bool> normalized permission map
+     */
+    public function normalizeDependencies(array $granted): array
+    {
+        $normalized = $granted;
+
+        foreach ($granted as $permission => $value) {
+            if ($value !== true) {
+                continue;
+            }
+
+            foreach ($this->dependenciesFor($permission) as $dependency) {
+                if (empty($normalized[$dependency])) {
+                    $normalized[$dependency] = true;
+                }
+            }
+        }
+
+        return $normalized;
+    }
+
+    /**
      * Determine if user has access to the general HRIS portal.
      *
      * Architecture: Users with ONLY dedicated portal permissions (assets, certificates)
@@ -104,19 +162,18 @@ class PermissionResolver
         }
 
         $mappings = $this->mappings((string) ($user['email'] ?? $user['Email'] ?? ''));
-        // No explicit mappings → allow based on role (backward compatible)
-        if ($mappings === []) {
+        $granted  = array_filter($mappings, static fn (bool $v) => $v === true);
+
+        if ($granted === []) {
             return true;
         }
 
-        // Check if user has any non-dedicated portal permission in their mappings
-        foreach (array_keys($mappings) as $permission) {
+        foreach (array_keys($granted) as $permission) {
             if (!$this->isDedicatedPortalPermission($permission)) {
                 return true;
             }
         }
 
-        // All mapped permissions are dedicated portals only → deny HRIS access
         return false;
     }
 
