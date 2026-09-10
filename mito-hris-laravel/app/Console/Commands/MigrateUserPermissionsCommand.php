@@ -26,6 +26,9 @@ class MigrateUserPermissionsCommand extends Command
         $invalidUsers = 0;
         $dryRun = (bool) $this->option('dry-run');
 
+        /** @var array<int,array{email:string,role:string,toCreate:list<string>,existing:list<string>}> */
+        $userPlan = [];
+
         foreach ($userRepository->getAll() as $user) {
             $usersFound++;
             $email = strtolower(trim((string) ($user['Email'] ?? $user['email'] ?? '')));
@@ -40,7 +43,7 @@ class MigrateUserPermissionsCommand extends Command
 
             if ($role === 'Super Admin') {
                 $skippedUsers++;
-                $this->line("Skipped {$email}: Super Admin keeps wildcard access.");
+                $userPlan[] = ['email' => $email, 'role' => $role, 'action' => 'SKIPPED — wildcard', 'toCreate' => [], 'existing' => []];
                 continue;
             }
 
@@ -59,27 +62,72 @@ class MigrateUserPermissionsCommand extends Command
                 $existing[$key] = $granted;
             }
 
+            $toCreate = [];
+            $alreadyExisting = [];
             foreach ($this->permissionsForUser($role) as $permission) {
                 if (array_key_exists($permission, $existing)) {
                     $mappingsExisting++;
+                    $alreadyExisting[] = $permission;
                     continue;
                 }
 
                 $mappingsToCreate++;
+                $toCreate[] = $permission;
                 if (!$dryRun && $permissionRepository->upsert($email, $permission, true, 'migration:role_permissions')) {
                     $existing[$permission] = true;
                 }
             }
+
+            $userPlan[] = [
+                'email'    => $email,
+                'role'     => $role,
+                'action'   => 'SEEDED',
+                'toCreate' => $toCreate,
+                'existing' => $alreadyExisting,
+            ];
         }
 
+        // ── Per-user dry-run detail ────────────────────────────────────────
         $mode = $dryRun ? 'DRY-RUN' : 'APPLIED';
-        $this->info("Permission migration {$mode}.");
-        $this->line("Users found: {$usersFound}");
-        $this->line("Mappings to create: {$mappingsToCreate}");
-        $this->line("Mappings already existing: {$mappingsExisting}");
-        $this->line("Conflicts: {$conflicts}");
-        $this->line("Skipped users: {$skippedUsers}");
-        $this->line("Invalid users: {$invalidUsers}");
+        $this->line('');
+        $this->info("Permission seed {$mode}");
+        $this->line("Users found:    {$usersFound}");
+        $this->line("Super Admin skipped: {$skippedUsers}");
+        $this->line("Normal users:   " . ($usersFound - $skippedUsers - $invalidUsers));
+        $this->line('');
+
+        foreach ($userPlan as $plan) {
+            $this->line("  {$plan['email']}");
+            $this->line("    Role:   {$plan['role']}");
+            $this->line("    Action: {$plan['action']}");
+
+            if ($plan['action'] === 'SKIPPED — wildcard') {
+                $this->line('');
+                continue;
+            }
+
+            if (!empty($plan['toCreate'])) {
+                $verb = $dryRun ? 'Would create' : 'Created';
+                $this->line("    {$verb} (" . count($plan['toCreate']) . ')');
+                foreach ($plan['toCreate'] as $p) {
+                    $this->line("      + {$p}");
+                }
+            }
+
+            if (!empty($plan['existing'])) {
+                $this->line("    Already existing (" . count($plan['existing']) . ')');
+                foreach ($plan['existing'] as $p) {
+                    $this->line("      = {$p}");
+                }
+            }
+
+            $this->line('');
+        }
+
+        $this->line("Total mappings to create:   {$mappingsToCreate}");
+        $this->line("Mappings already existing:  {$mappingsExisting}");
+        $this->line("Conflicts:                  {$conflicts}");
+        $this->line("Invalid users skipped:      {$invalidUsers}");
 
         return Command::SUCCESS;
     }
