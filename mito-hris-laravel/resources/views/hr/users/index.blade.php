@@ -73,7 +73,7 @@
                 </div>
                 <select class="filter-select" id="userRoleFilter" aria-label="Filter role">
                     <option value="">Semua Role</option>
-                    @foreach (config('hris.auth.valid_roles_internal', []) as $roleOption)
+                    @foreach (config('hris.auth.valid_roles', []) as $roleOption)
                         <option value="{{ strtolower($roleOption) }}">{{ $roleOption }}</option>
                     @endforeach
                 </select>
@@ -192,7 +192,7 @@
                             <label class="form-label" for="userRole">Role Hak Akses <span
                                     class="text-danger">*</span></label>
                             <select class="form-select" id="userRole" name="role" required>
-                                @foreach (config('hris.auth.valid_roles_internal', []) as $role)
+                                @foreach (config('hris.auth.valid_roles', []) as $role)
                                     <option value="{{ $role }}">{{ $role }}</option>
                                 @endforeach
                             </select>
@@ -262,7 +262,7 @@
                                 <label class="form-label" for="userEditRole">Role <span
                                         class="text-danger">*</span></label>
                                 <select class="form-select" id="userEditRole" name="role" required>
-                                    @foreach (config('hris.auth.valid_roles_internal', []) as $role)
+                                    @foreach (config('hris.auth.valid_roles', []) as $role)
                                         <option value="{{ $role }}">{{ $role }}</option>
                                     @endforeach
                                 </select>

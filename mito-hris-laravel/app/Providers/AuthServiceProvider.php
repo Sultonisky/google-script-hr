@@ -62,7 +62,7 @@ class AuthServiceProvider extends ServiceProvider
         // Composite ability used by the Asset / Certification employee
         // pickers: the picker only returns id/name/division/department, so
         // any role that can open those modules (or the full employee
-        // directory) is allowed. GA_IT and LEGAL must NOT need the whole
+        // directory) is allowed. Asset and certificate users must NOT need the whole
         // view_employees permission just to pick an assignee.
         // ==============================================================
         Gate::define('lookup_employee', function ($user) {

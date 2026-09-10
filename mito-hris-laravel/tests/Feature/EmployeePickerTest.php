@@ -93,9 +93,9 @@ class EmployeePickerTest extends TestCase
     }
 
     #[Test]
-    public function ga_it_can_lookup_employees_without_view_employees_permission(): void
+    public function user_can_lookup_employees_with_module_view_permission(): void
     {
-        $this->actingAsRole('GA_IT');
+        $this->actingAsRole('User');
 
         $this->getJson('/hr/employees/lookup?q=Budi')
             ->assertOk()
@@ -103,9 +103,9 @@ class EmployeePickerTest extends TestCase
     }
 
     #[Test]
-    public function legal_can_lookup_employees_without_view_employees_permission(): void
+    public function user_can_lookup_certification_employee_without_view_employees_permission(): void
     {
-        $this->actingAsRole('LEGAL');
+        $this->actingAsRole('User');
 
         $this->getJson('/hr/employees/lookup?q=Siti')
             ->assertOk()

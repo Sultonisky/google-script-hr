@@ -44,8 +44,6 @@ private function actingAsRole(string $role): static
     {
         $emailMap = [
             'Admin' => 'admin@mito.id',
-            'GA_IT' => 'ga.it@mitogroup.local',
-            'LEGAL' => 'legal@mitogroup.local',
         ];
 
         Session::put('hr_user', $this->migratedTestUser([
@@ -95,38 +93,6 @@ private function actingAsRole(string $role): static
         $this->assertSame(parse_url(route('hr.dashboard', [], false), PHP_URL_PATH), $this->redirectPath($response->json()));
     }
 
-    #[Test]
-    public function ga_it_login_stays_in_hris(): void
-    {
-        $this->mockUserDomain('GA_IT', 'ga.it@mitogroup.local', 'ga_it_secret');
-
-        $response = $this->withoutMiddleware(ValidateCsrfToken::class)->postJson('/login', [
-            'identifier' => 'ga.it@mitogroup.local',
-            'password'   => 'ga_it_secret',
-        ]);
-
-        $response->assertOk()
-            ->assertJsonPath('success', true);
-
-        $this->assertSame(parse_url(route('hr.dashboard', [], false), PHP_URL_PATH), $this->redirectPath($response->json()));
-    }
-
-    #[Test]
-    public function legal_login_stays_in_hris(): void
-    {
-        $this->mockUserDomain('LEGAL', 'legal@mitogroup.local', 'legal_secret');
-
-        $response = $this->withoutMiddleware(ValidateCsrfToken::class)->postJson('/login', [
-            'identifier' => 'legal@mitogroup.local',
-            'password'   => 'legal_secret',
-        ]);
-
-        $response->assertOk()
-            ->assertJsonPath('success', true);
-
-        $this->assertSame(parse_url(route('hr.dashboard', [], false), PHP_URL_PATH), $this->redirectPath($response->json()));
-    }
-
     // ── Sidebar visibility ────────────────────────────────────────────────
     // Render the sidebar component directly. Avoids full-page rendering and
     // its dependencies (DB / external repos / Vite), isolating the blade change.
@@ -140,32 +106,6 @@ private function actingAsRole(string $role): static
 
         $this->assertStringContainsString('/hr/dashboard', $rendered);          // Dashboard link present
         $this->assertStringContainsString('bi-grid-1x2-fill', $rendered);      // Dashboard icon present
-        $this->assertStringNotContainsString('Asset Management', $rendered);
-        $this->assertStringNotContainsString('Certification Management', $rendered);
-    }
-
-    #[Test]
-    public function ga_it_sidebar_stays_hris_only(): void
-    {
-        $this->actingAsRole('GA_IT');
-
-        $rendered = (string) $this->view('components.hr-sidebar');
-
-        $this->assertStringContainsString('bi-grid-1x2-fill', $rendered);
-        $this->assertStringContainsString('/hr/dashboard', $rendered);
-        $this->assertStringNotContainsString('Asset Management', $rendered);
-        $this->assertStringNotContainsString('Certification Management', $rendered);
-    }
-
-    #[Test]
-    public function legal_sidebar_stays_hris_only(): void
-    {
-        $this->actingAsRole('LEGAL');
-
-        $rendered = (string) $this->view('components.hr-sidebar');
-
-        $this->assertStringContainsString('bi-grid-1x2-fill', $rendered);
-        $this->assertStringContainsString('/hr/dashboard', $rendered);
         $this->assertStringNotContainsString('Asset Management', $rendered);
         $this->assertStringNotContainsString('Certification Management', $rendered);
     }
@@ -184,21 +124,4 @@ private function actingAsRole(string $role): static
         $this->assertStringNotContainsString('/hr/certifications', $rendered);
     }
 
-    // ── Local dummy users used by LocalDevUsersSeeder still resolve ────────
-
-    #[Test]
-    public function local_dummy_users_have_expected_roles(): void
-    {
-        \App\Models\User::create([
-            'name' => 'GA IT User', 'email' => 'ga.it@mitogroup.local',
-            'password' => Hash::make('ga_it_secret'), 'role' => 'GA_IT', 'status' => 'Active',
-        ]);
-        \App\Models\User::create([
-            'name' => 'Legal User', 'email' => 'legal@mitogroup.local',
-            'password' => Hash::make('legal_secret'), 'role' => 'LEGAL', 'status' => 'Active',
-        ]);
-
-        $this->assertDatabaseHas('users', ['email' => 'ga.it@mitogroup.local', 'role' => 'GA_IT']);
-        $this->assertDatabaseHas('users', ['email' => 'legal@mitogroup.local', 'role' => 'LEGAL']);
-    }
 }
