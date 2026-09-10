@@ -88,7 +88,7 @@ class AssetAuthController extends Controller
 
         $redirect = route('assets.portal.index');
         $fullName = trim((string) ($user['Full Name'] ?? $user['fullName'] ?? $user['username'] ?? 'User'));
-        $greeting = "Selamat datang Cantiknya aku, {$fullName}!";
+        $greeting = "Selamat datang, {$fullName}!";
 
         if ($request->expectsJson()) {
             return response()->json([
