@@ -406,4 +406,138 @@ class HrisPortalAccessTest extends TestCase
         $response->assertForbidden();
         $this->assertFalse(session()->has('certificate_auth'));
     }
+
+    // =========================================================================
+    // lookup_employee must not grant HRIS portal access
+    // =========================================================================
+
+    #[Test]
+    public function assets_only_user_with_lookup_employee_true_is_denied_hris_access(): void
+    {
+        $this->mockUserRepo($this->makeUserRow(), true);
+        $this->setMariePermissions([
+            'assets.access'        => true,
+            'assets.view'          => true,
+            'assets.create'        => true,
+            'assets.update'        => true,
+            'assets.delete'        => true,
+            'assets.assign'        => true,
+            'assets.return'        => true,
+            'assets.generate_code' => true,
+            'view_asset'           => true,
+            'edit_asset'           => true,
+            'lookup_employee'      => true,
+        ]);
+
+        $response = $this->postJson('/login', [
+            'identifier' => 'marie@example.com',
+            'password'   => 'test-password',
+        ]);
+
+        $response->assertStatus(422)->assertJsonPath('success', false);
+        $this->assertFalse(session()->has('hr_user'));
+    }
+
+    #[Test]
+    public function assets_only_user_with_lookup_employee_false_is_denied_hris_access(): void
+    {
+        $this->mockUserRepo($this->makeUserRow(), true);
+        $this->setMariePermissions([
+            'assets.access'        => true,
+            'assets.view'          => true,
+            'assets.create'        => true,
+            'assets.update'        => true,
+            'assets.delete'        => true,
+            'assets.assign'        => true,
+            'assets.return'        => true,
+            'assets.generate_code' => true,
+            'view_asset'           => true,
+            'edit_asset'           => true,
+            'lookup_employee'      => false,
+        ]);
+
+        $response = $this->postJson('/login', [
+            'identifier' => 'marie@example.com',
+            'password'   => 'test-password',
+        ]);
+
+        $response->assertStatus(422)->assertJsonPath('success', false);
+        $this->assertFalse(session()->has('hr_user'));
+    }
+
+    #[Test]
+    public function certificates_only_user_is_denied_hris_access(): void
+    {
+        $this->mockUserRepo($this->makeUserRow(), true);
+        $this->setMariePermissions([
+            'certificates.access'       => true,
+            'certificates.view'         => true,
+            'certificates.create'       => true,
+            'certificates.update'       => true,
+            'certificates.delete'       => true,
+            'certificates.generate_code' => true,
+            'view_certification'        => true,
+            'manage_certification'      => true,
+            'lookup_employee'           => true,
+        ]);
+
+        $response = $this->postJson('/login', [
+            'identifier' => 'marie@example.com',
+            'password'   => 'test-password',
+        ]);
+
+        $response->assertStatus(422)->assertJsonPath('success', false);
+        $this->assertFalse(session()->has('hr_user'));
+    }
+
+    #[Test]
+    public function user_with_genuine_hris_permission_is_allowed_hris_access(): void
+    {
+        $this->mockUserRepo($this->makeUserRow(), true);
+        $this->setMariePermissions([
+            'view_recruitment' => true,
+        ]);
+
+        $response = $this->postJson('/login', [
+            'identifier' => 'marie@example.com',
+            'password'   => 'test-password',
+        ]);
+
+        $response->assertOk()->assertJsonPath('success', true);
+        $this->assertTrue(session()->has('hr_user'));
+    }
+
+    #[Test]
+    public function lookup_employee_only_does_not_grant_hris_access(): void
+    {
+        $this->mockUserRepo($this->makeUserRow(), true);
+        $this->setMariePermissions([
+            'lookup_employee' => true,
+        ]);
+
+        $response = $this->postJson('/login', [
+            'identifier' => 'marie@example.com',
+            'password'   => 'test-password',
+        ]);
+
+        $response->assertStatus(422)->assertJsonPath('success', false);
+        $this->assertFalse(session()->has('hr_user'));
+    }
+
+    #[Test]
+    public function unknown_permission_does_not_grant_hris_access(): void
+    {
+        $this->mockUserRepo($this->makeUserRow(), true);
+        $this->setMariePermissions([
+            'some_new_permission' => true,
+        ]);
+
+        $response = $this->postJson('/login', [
+            'identifier' => 'marie@example.com',
+            'password'   => 'test-password',
+        ]);
+
+        $response->assertStatus(422)->assertJsonPath('success', false);
+        $this->assertFalse(session()->has('hr_user'));
+    }
 }

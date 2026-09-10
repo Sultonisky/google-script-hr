@@ -552,8 +552,9 @@ document.addEventListener('DOMContentLoaded', function () {
         return !hasDirtyChanges() || window.confirm('You have unsaved permission changes. Discard changes and switch user?');
     }
 
-    async function loadUser(email) {
-        if (!email || isLoading || !confirmDiscard()) {
+    async function loadUser(email, options = {}) {
+        const { skipConfirm = false } = options;
+        if (!email || isLoading || (!skipConfirm && !confirmDiscard())) {
             renderUserSelection(selectedEmail);
             return;
         }
@@ -668,7 +669,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const data = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(response.status === 419 ? 'Your session has expired. Refresh the page and try again.' : response.status === 403 ? 'You are not authorized to save permissions.' : data.message || 'Failed to save permissions.');
             if (selectedEmail) {
-                await loadUser(selectedEmail);
+                await loadUser(selectedEmail, { skipConfirm: true });
             }
             showAlert(data.message || 'Permission updated successfully.', 'success');
         } catch (error) {
