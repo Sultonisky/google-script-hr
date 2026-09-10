@@ -30,28 +30,27 @@
 
         /* ── Header logos ── */
         .logo-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            display: table;
+            table-layout: fixed;
+            width: 100%;
             margin-bottom: 6px;
         }
 
         .logo-slot {
+            display: table-cell;
             width: 50%;
             height: 38px;
-            display: flex;
-            align-items: center;
+            vertical-align: middle;
         }
 
         .logo-slot-end {
-            justify-content: flex-end;
+            text-align: right;
         }
 
         .logo-slot img {
             height: 38px;
             width: auto;
             max-width: 120px;
-            object-fit: contain;
         }
 
         .logo-text-mito {
