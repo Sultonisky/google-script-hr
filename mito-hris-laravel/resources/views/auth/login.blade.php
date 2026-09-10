@@ -679,8 +679,8 @@
                     if (loginLoading) loginLoading.style.display = 'none';
                     var successState = document.getElementById('loginSuccessState');
                     var welcomeEl = document.getElementById('loginSuccessWelcome');
-                    if (welcomeEl && result.user && (result.user.fullName || result.user.name)) {
-                        welcomeEl.textContent = 'Selamat datang, ' + (result.user.fullName || result.user.name);
+                    if (welcomeEl && result.message) {
+                        welcomeEl.textContent = result.message;
                     }
                     if (successState) successState.classList.add('show');
 
