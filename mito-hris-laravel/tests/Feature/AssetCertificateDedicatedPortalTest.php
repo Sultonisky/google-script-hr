@@ -226,8 +226,8 @@ class AssetCertificateDedicatedPortalTest extends TestCase
     public function test_hris_session_does_not_grant_certificate_access(): void
     {
         Session::put('hr_user', [
-            'email' => 'legal@mito.id',
-            'role' => 'LEGAL',
+            'email' => 'admin@mito.id',
+            'role' => 'Admin',
             'auth_domain' => 'users',
             'portal' => 'hris',
         ]);

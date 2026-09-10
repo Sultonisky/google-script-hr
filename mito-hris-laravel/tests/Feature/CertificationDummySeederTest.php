@@ -84,13 +84,13 @@ class CertificationDummySeederTest extends TestCase
     }
 
     #[Test]
-    public function certification_index_renders_seeded_data_for_legal(): void
+    public function certification_index_renders_seeded_data_for_admin(): void
     {
         Session::put('hr_user', $this->migratedTestUser([
-            'email'       => 'legal@mito.id',
-            'fullName'    => 'Legal User',
-            'role'        => 'LEGAL',
-            'permissions' => config('hris.auth.role_permissions')['LEGAL'] ?? [],
+            'email'       => 'admin@mito.id',
+            'fullName'    => 'Admin User',
+            'role'        => 'Admin',
+            'permissions' => config('hris.auth.role_permissions')['Admin'] ?? [],
             'auth_domain' => 'users',
             'entities'    => [],
             'branch'      => '',

@@ -93,6 +93,22 @@ class UserManagementTest extends TestCase
             ->assertSessionHas('success');
     }
 
+    public function test_super_admin_cannot_create_user_with_legacy_department_role(): void
+    {
+        $this->actingAsRole('Super Admin');
+
+        $this->withoutMiddleware(VerifyCsrfToken::class)
+            ->post(route('hr.users.store'), [
+                'name' => 'Legacy Role User',
+                'email' => 'legacy.user@example.test',
+                'username' => 'legacyuser',
+                'role' => 'Department Access',
+                'password' => 'secret-password',
+                'password_confirmation' => 'secret-password',
+            ])
+            ->assertSessionHasErrors('role');
+    }
+
     public function test_super_admin_can_edit_user_and_audits_changed_fields(): void
     {
         $this->actingAsRole('Super Admin');

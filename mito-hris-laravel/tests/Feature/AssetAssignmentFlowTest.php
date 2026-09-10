@@ -28,13 +28,13 @@ class AssetAssignmentFlowTest extends TestCase
         );
     }
 
-    private function actingAsGaIt(): static
+    private function actingAsAdmin(): static
     {
         Session::put('hr_user', $this->migratedTestUser([
-            'email'       => 'ga.it@mito.id',
-            'fullName'    => 'GA IT User',
-            'role'        => 'GA_IT',
-            'permissions' => config('hris.auth.role_permissions')['GA_IT'] ?? [],
+            'email'       => 'admin@mito.id',
+            'fullName'    => 'Admin User',
+            'role'        => 'Admin',
+            'permissions' => config('hris.auth.role_permissions')['Admin'] ?? [],
             'auth_domain' => 'users',
             'entities'    => [],
             'branch'      => '',
@@ -54,14 +54,14 @@ class AssetAssignmentFlowTest extends TestCase
             'serial_number' => 'SN-FLOW-001',
             'status'     => AssetStatus::AVAILABLE->value,
             'condition_status' => 'Good',
-            'created_by' => 'ga.it@mito.id',
+            'created_by' => 'admin@mito.id',
         ]);
     }
 
     #[Test]
     public function assign_to_picked_employee_persists_employee_id_and_name(): void
     {
-        $this->actingAsGaIt();
+        $this->actingAsAdmin();
         $asset = $this->makeAsset();
 
         $this->postJson('/hr/assets/' . $asset->id . '/assign', [
@@ -84,7 +84,7 @@ class AssetAssignmentFlowTest extends TestCase
     #[Test]
     public function assign_with_unknown_employee_is_rejected(): void
     {
-        $this->actingAsGaIt();
+        $this->actingAsAdmin();
         $asset = $this->makeAsset();
 
         $this->postJson('/hr/assets/' . $asset->id . '/assign', [
@@ -100,7 +100,7 @@ class AssetAssignmentFlowTest extends TestCase
     #[Test]
     public function return_clears_active_assignment_and_restores_available(): void
     {
-        $this->actingAsGaIt();
+        $this->actingAsAdmin();
         $asset = $this->makeAsset();
 
         $this->postJson('/hr/assets/' . $asset->id . '/assign', [
