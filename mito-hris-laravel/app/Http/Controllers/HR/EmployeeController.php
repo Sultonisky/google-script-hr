@@ -528,7 +528,7 @@ class EmployeeController extends Controller
      *
      * Returns ONLY picker-relevant fields (id / name / division /
      * department / job position). Access is gated by the composite
-     * `lookup_employee` ability so GA_IT and LEGAL can pick assignees
+    * `lookup_employee` ability so asset and certificate users can pick assignees
      * without full view_employees directory access.
      */
     public function lookup(Request $request): JsonResponse
