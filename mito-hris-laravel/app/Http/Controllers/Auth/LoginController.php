@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Services\AuthService;
+use App\Services\PermissionResolver;
 use App\Support\Rbac;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use Illuminate\Http\JsonResponse;
@@ -17,6 +18,7 @@ class LoginController extends Controller
 {
     public function __construct(
         protected AuthService $authService,
+        protected PermissionResolver $permissionResolver,
         protected AuditLogRepositoryInterface $auditRepo,
     ) {}
 
@@ -61,6 +63,13 @@ class LoginController extends Controller
             return $this->loginFailure(
                 $request,
                 $result['error'] ?? 'Login gagal.'
+            );
+        }
+
+        if (!$this->permissionResolver->hasHrisAccess($result['user'])) {
+            return $this->loginFailure(
+                $request,
+                'Akun ini hanya memiliki akses ke portal khusus. Silakan gunakan domain portal yang sesuai.'
             );
         }
 
