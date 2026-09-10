@@ -82,7 +82,9 @@ class HrisPortalAccessTest extends TestCase
             'password'   => 'test-password',
         ]);
 
-        $response->assertStatus(422)->assertJsonPath('success', false);
+        $response->assertStatus(403)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error', 'Anda tidak memiliki akses ke HRIS Portal. Akun Anda belum diberikan izin untuk mengakses portal ini. Silakan hubungi administrator jika Anda membutuhkan akses.');
         $this->assertFalse(session()->has('hr_user'));
     }
 
@@ -106,7 +108,9 @@ class HrisPortalAccessTest extends TestCase
             'password'   => 'test-password',
         ]);
 
-        $response->assertStatus(422)->assertJsonPath('success', false);
+        $response->assertStatus(403)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error', 'Anda tidak memiliki akses ke HRIS Portal. Akun Anda belum diberikan izin untuk mengakses portal ini. Silakan hubungi administrator jika Anda membutuhkan akses.');
         $this->assertFalse(session()->has('hr_user'));
     }
 
@@ -222,7 +226,9 @@ class HrisPortalAccessTest extends TestCase
             'identifier' => 'marie@example.com',
             'password'   => 'test-password',
         ]);
-        $hrisResponse->assertStatus(422)->assertJsonPath('success', false);
+        $hrisResponse->assertStatus(403)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error', 'Anda tidak memiliki akses ke HRIS Portal. Akun Anda belum diberikan izin untuk mengakses portal ini. Silakan hubungi administrator jika Anda membutuhkan akses.');
         $this->assertFalse(session()->has('hr_user'));
 
         // Certificates login must be denied (certificates.access = FALSE).
@@ -357,7 +363,10 @@ class HrisPortalAccessTest extends TestCase
                 'password'   => 'test-password',
             ]);
 
-        $response->assertForbidden();
+        $response->assertForbidden()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error', 'Anda tidak memiliki akses ke Assets Portal. Akun Anda belum diberikan izin untuk mengakses portal ini. Silakan hubungi administrator jika Anda membutuhkan akses.')
+            ->assertJsonPath('code', 'PORTAL_ACCESS_DENIED');
         $this->assertFalse(session()->has('asset_auth'));
     }
 
@@ -403,7 +412,10 @@ class HrisPortalAccessTest extends TestCase
                 'password'   => 'test-password',
             ]);
 
-        $response->assertForbidden();
+        $response->assertForbidden()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error', 'Anda tidak memiliki akses ke Certificates Portal. Akun Anda belum diberikan izin untuk mengakses portal ini. Silakan hubungi administrator jika Anda membutuhkan akses.')
+            ->assertJsonPath('code', 'PORTAL_ACCESS_DENIED');
         $this->assertFalse(session()->has('certificate_auth'));
     }
 
@@ -434,7 +446,9 @@ class HrisPortalAccessTest extends TestCase
             'password'   => 'test-password',
         ]);
 
-        $response->assertStatus(422)->assertJsonPath('success', false);
+        $response->assertStatus(403)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error', 'Anda tidak memiliki akses ke HRIS Portal. Akun Anda belum diberikan izin untuk mengakses portal ini. Silakan hubungi administrator jika Anda membutuhkan akses.');
         $this->assertFalse(session()->has('hr_user'));
     }
 
@@ -461,7 +475,9 @@ class HrisPortalAccessTest extends TestCase
             'password'   => 'test-password',
         ]);
 
-        $response->assertStatus(422)->assertJsonPath('success', false);
+        $response->assertStatus(403)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error', 'Anda tidak memiliki akses ke HRIS Portal. Akun Anda belum diberikan izin untuk mengakses portal ini. Silakan hubungi administrator jika Anda membutuhkan akses.');
         $this->assertFalse(session()->has('hr_user'));
     }
 
@@ -486,7 +502,9 @@ class HrisPortalAccessTest extends TestCase
             'password'   => 'test-password',
         ]);
 
-        $response->assertStatus(422)->assertJsonPath('success', false);
+        $response->assertStatus(403)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error', 'Anda tidak memiliki akses ke HRIS Portal. Akun Anda belum diberikan izin untuk mengakses portal ini. Silakan hubungi administrator jika Anda membutuhkan akses.');
         $this->assertFalse(session()->has('hr_user'));
     }
 
@@ -520,7 +538,9 @@ class HrisPortalAccessTest extends TestCase
             'password'   => 'test-password',
         ]);
 
-        $response->assertStatus(422)->assertJsonPath('success', false);
+        $response->assertStatus(403)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error', 'Anda tidak memiliki akses ke HRIS Portal. Akun Anda belum diberikan izin untuk mengakses portal ini. Silakan hubungi administrator jika Anda membutuhkan akses.');
         $this->assertFalse(session()->has('hr_user'));
     }
 
@@ -537,7 +557,9 @@ class HrisPortalAccessTest extends TestCase
             'password'   => 'test-password',
         ]);
 
-        $response->assertStatus(422)->assertJsonPath('success', false);
+        $response->assertStatus(403)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error', 'Anda tidak memiliki akses ke HRIS Portal. Akun Anda belum diberikan izin untuk mengakses portal ini. Silakan hubungi administrator jika Anda membutuhkan akses.');
         $this->assertFalse(session()->has('hr_user'));
     }
 }

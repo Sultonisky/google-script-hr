@@ -67,10 +67,7 @@ class LoginController extends Controller
         }
 
         if (!$this->permissionResolver->hasHrisAccess($result['user'])) {
-            return $this->loginFailure(
-                $request,
-                'Akun ini hanya memiliki akses ke portal khusus. Silakan gunakan domain portal yang sesuai.'
-            );
+            return $this->portalAccessDenied($request);
         }
 
         return $this->loginSuccess(
@@ -205,5 +202,21 @@ class LoginController extends Controller
         throw ValidationException::withMessages([
             'identifier' => [$genericError],
         ]);
+    }
+
+    private function portalAccessDenied(Request $request): RedirectResponse|JsonResponse
+    {
+        $message = 'Anda tidak memiliki akses ke HRIS Portal. Akun Anda belum diberikan izin untuk mengakses portal ini. Silakan hubungi administrator jika Anda membutuhkan akses.';
+        $this->auditRepo->log('Authentication', $request->input('identifier', 'UNKNOWN'), 'portal_access_denied', null, null, null, $request->input('identifier', 'UNKNOWN'), 'Authentication');
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => false,
+                'error'   => $message,
+                'code'    => 'PORTAL_ACCESS_DENIED',
+            ], 403);
+        }
+
+        abort(403, $message);
     }
 }

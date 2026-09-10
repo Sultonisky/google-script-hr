@@ -64,9 +64,10 @@ class LoginSecurityTest extends TestCase
             'password' => 'correct-password',
         ]);
 
-        $response->assertStatus(422)
+        $response->assertStatus(403)
             ->assertJsonPath('success', false)
-            ->assertJsonPath('error', 'Email/username atau password salah.');
+            ->assertJsonPath('error', 'Anda tidak memiliki akses ke HRIS Portal. Akun Anda belum diberikan izin untuk mengakses portal ini. Silakan hubungi administrator jika Anda membutuhkan akses.')
+            ->assertJsonPath('code', 'PORTAL_ACCESS_DENIED');
         $this->assertFalse($this->app['session']->has('hr_user'));
     }
 

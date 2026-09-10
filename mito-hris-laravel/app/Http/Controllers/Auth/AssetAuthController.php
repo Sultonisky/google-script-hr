@@ -118,10 +118,16 @@ class AssetAuthController extends Controller
 
     private function authorizationDenied(Request $request): RedirectResponse|JsonResponse
     {
+        $message = 'Anda tidak memiliki akses ke Assets Portal. Akun Anda belum diberikan izin untuk mengakses portal ini. Silakan hubungi administrator jika Anda membutuhkan akses.';
+
         if ($request->expectsJson()) {
-            return response()->json(['success' => false, 'error' => 'Anda tidak memiliki akses ke Portal Aset.'], 403);
+            return response()->json([
+                'success' => false,
+                'error'   => $message,
+                'code'    => 'PORTAL_ACCESS_DENIED',
+            ], 403);
         }
 
-        abort(403, 'Anda tidak memiliki akses ke Portal Aset.');
+        abort(403, $message);
     }
 }
