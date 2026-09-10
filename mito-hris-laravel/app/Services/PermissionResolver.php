@@ -79,6 +79,47 @@ class PermissionResolver
         unset($this->cache[strtolower(trim($email))]);
     }
 
+    /**
+     * Determine if user has access to the general HRIS portal.
+     *
+     * Architecture: Users with ONLY dedicated portal permissions (assets, certificates)
+     * must be explicitly restricted via Permission Mappings. If a user has:
+     *   - No permission mappings → allowed (uses role-based access)
+     *   - Permission mappings with non-dedicated permissions → allowed
+     *   - Permission mappings with ONLY dedicated permissions → denied
+     *
+     * To restrict user to dedicated portals only (e.g., assets-only user):
+     * 1. Create user in Users sheet with desired Role
+     * 2. Go to Permission Management (HR → Permissions)
+     * 3. Select the user and assign ONLY dedicated portal permissions (assets.*, certificates.*)
+     * 4. Leave all HRIS permissions unchecked
+     * 5. Save permissions
+     *
+     * The user will then be denied HRIS portal access on login.
+     */
+    public function hasHrisAccess(array $user): bool
+    {
+        if (Rbac::normalizeRole($user['role'] ?? null) === 'Super Admin') {
+            return true;
+        }
+
+        $mappings = $this->mappings((string) ($user['email'] ?? $user['Email'] ?? ''));
+        // No explicit mappings → allow based on role (backward compatible)
+        if ($mappings === []) {
+            return true;
+        }
+
+        // Check if user has any non-dedicated portal permission in their mappings
+        foreach (array_keys($mappings) as $permission) {
+            if (!$this->isDedicatedPortalPermission($permission)) {
+                return true;
+            }
+        }
+
+        // All mapped permissions are dedicated portals only → deny HRIS access
+        return false;
+    }
+
     private function compatibilityAliases(string $permission): array
     {
         return match (true) {
@@ -92,6 +133,18 @@ class PermissionResolver
             'manage_certification' === $permission => ['certificates.create', 'certificates.update', 'certificates.delete', 'certificates.generate_code'],
             default => [],
         };
+    }
+
+    private function isDedicatedPortalPermission(string $permission): bool
+    {
+        return str_starts_with($permission, 'assets.')
+            || str_starts_with($permission, 'certificates.')
+            || in_array($permission, [
+                'view_asset',
+                'edit_asset',
+                'view_certification',
+                'manage_certification',
+            ], true);
     }
 
     private function parseBoolean(mixed $value): bool

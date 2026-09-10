@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Repositories\Contracts\UserRepositoryInterface;
+use App\Repositories\Local\ArrayUserPermissionRepository;
+use App\Repositories\Contracts\UserPermissionRepositoryInterface;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Hash;
 use Mockery;
@@ -48,6 +50,24 @@ class LoginSecurityTest extends TestCase
         $this->assertStringNotContainsString('correct-password', $response->getContent());
         $this->assertTrue($this->app['session']->has('hr_user'));
         $this->assertTrue($this->app['session']->get('hris_remember'));
+    }
+
+    public function test_assets_only_user_cannot_login_to_hris_dashboard(): void
+    {
+        $this->mockUserDomain($this->activeUser(), true);
+        $permissions = new ArrayUserPermissionRepository();
+        $permissions->upsert('admin@example.test', 'assets.access', true, 'test');
+        $this->app->instance(UserPermissionRepositoryInterface::class, $permissions);
+
+        $response = $this->postJson('/login', [
+            'identifier' => 'admin',
+            'password' => 'correct-password',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error', 'Email/username atau password salah.');
+        $this->assertFalse($this->app['session']->has('hr_user'));
     }
 
     public function test_failed_login_uses_generic_error_without_echoing_password(): void

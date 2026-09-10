@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Services\AuthService;
+use App\Services\PermissionResolver;
 use App\Support\Rbac;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use Illuminate\Http\JsonResponse;
@@ -17,6 +18,7 @@ class LoginController extends Controller
 {
     public function __construct(
         protected AuthService $authService,
+        protected PermissionResolver $permissionResolver,
         protected AuditLogRepositoryInterface $auditRepo,
     ) {}
 
@@ -61,6 +63,13 @@ class LoginController extends Controller
             return $this->loginFailure(
                 $request,
                 $result['error'] ?? 'Login gagal.'
+            );
+        }
+
+        if (!$this->permissionResolver->hasHrisAccess($result['user'])) {
+            return $this->loginFailure(
+                $request,
+                'Akun ini hanya memiliki akses ke portal khusus. Silakan gunakan domain portal yang sesuai.'
             );
         }
 
@@ -151,16 +160,19 @@ class LoginController extends Controller
         // HRIS authentication always remains inside the HRIS portal. Dedicated
         // Asset and Certificate portals have their own login boundaries.
         $redirect = $this->postLoginRedirect($user);
+        $fullName = trim((string) ($user['Full Name'] ?? $user['fullName'] ?? $user['username'] ?? 'User'));
+        $greeting = "Selamat datang, {$fullName}! Anda telah berhasil masuk ke Sistem HRIS.";
 
         if ($request->expectsJson()) {
             return response()->json([
                 'success'  => true,
                 'user'     => $user,
                 'redirect' => $redirect,
+                'message'  => $greeting,
             ]);
         }
 
-        return redirect($redirect);
+        return redirect($redirect)->with('success', $greeting);
     }
 
 

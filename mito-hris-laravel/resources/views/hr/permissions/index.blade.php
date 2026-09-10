@@ -15,12 +15,14 @@
     [data-permission-management] .permission-editor {
         border: 1px solid var(--bs-border-color);
         box-shadow: 0 0.35rem 1.25rem rgba(20, 32, 45, 0.06);
+        overflow: hidden;
     }
 
     [data-permission-management] .permission-sidebar > .card-body {
         display: flex;
         min-height: 0;
         flex-direction: column;
+        overflow: hidden;
     }
 
     [data-permission-management] .permission-editor {
@@ -32,6 +34,7 @@
         display: flex;
         min-height: 0;
         flex-direction: column;
+        overflow: hidden;
     }
 
     [data-permission-management] .permission-content-scroll {
@@ -188,7 +191,7 @@
 @section('content')
 <div class="container-fluid py-3" data-permission-management>
     <div class="permission-shell">
-        <div class="row g-4">
+        <div class="row g-4 align-items-start">
             <div class="col-lg-4">
                 <div class="card permission-sidebar">
                     <div class="card-body p-4">
@@ -215,6 +218,11 @@
                                     $userStatusClass = in_array(strtolower($userStatus), ['active', 'aktif'], true)
                                         ? 'accepted'
                                         : 'blacklist';
+                                    $userRoleClass = match (strtolower(trim((string) $user['role']))) {
+                                        'super admin' => 'blacklist',
+                                        'admin' => 'pending',
+                                        default => 'hold',
+                                    };
                                 @endphp
                                 <button type="button" class="permission-user d-flex align-items-center gap-3 p-2" role="option" aria-selected="false" data-email="{{ $user['email'] }}" data-search="{{ strtolower($user['fullName'] . ' ' . $user['email'] . ' ' . $user['role']) }}">
                                     <span class="permission-avatar" aria-hidden="true">{{ collect(explode(' ', trim($user['fullName'])))->filter()->map(fn ($part) => strtoupper(substr($part, 0, 1)))->take(2)->implode('') }}</span>
@@ -222,7 +230,7 @@
                                         <span class="d-block fw-semibold text-truncate">{{ $user['fullName'] }}</span>
                                         <span class="permission-user-email d-block small text-muted">{{ $user['email'] }}</span>
                                         <span class="d-flex flex-wrap gap-1 mt-1">
-                                            <span class="badge-status hold permission-role-badge">{{ $user['role'] }}</span>
+                                            <span class="badge-status {{ $userRoleClass }} permission-role-badge">{{ $user['role'] }}</span>
                                             <span class="badge-status {{ $userStatusClass }}">{{ $user['status'] }}</span>
                                         </span>
                                     </span>
@@ -236,7 +244,7 @@
                 </div>
             </div>
             <div class="col-lg-8">
-                <div class="card permission-editor h-100">
+                <div class="card permission-editor">
                     <div class="card-body p-4">
                         <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
                             <div>
@@ -377,6 +385,14 @@ document.addEventListener('DOMContentLoaded', function () {
         return ['active', 'aktif'].includes(String(status || '').trim().toLowerCase()) ? 'accepted' : 'blacklist';
     }
 
+    function getRoleBadgeClass(role) {
+        switch (String(role || '').trim().toLowerCase()) {
+            case 'super admin': return 'blacklist';
+            case 'admin': return 'pending';
+            default: return 'hold';
+        }
+    }
+
     function sortedPermissionKeys(set) {
         return Array.from(set).sort();
     }
@@ -455,7 +471,7 @@ document.addEventListener('DOMContentLoaded', function () {
         summary.innerHTML = `<div class="fw-semibold text-body mb-1">${escapeHtml(user.fullName)}</div>
             <div>${escapeHtml(user.email)}</div>
             <div class="d-flex flex-wrap gap-1 mt-2">
-                <span class="badge-status hold permission-role-badge">${escapeHtml(user.role)}</span>
+                <span class="badge-status ${getRoleBadgeClass(user.role)} permission-role-badge">${escapeHtml(user.role)}</span>
                 <span class="badge-status ${getStatusBadgeClass(user.status)}">${escapeHtml(user.status)}</span>
             </div>`;
     }

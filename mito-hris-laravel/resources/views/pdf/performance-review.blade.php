@@ -398,7 +398,7 @@
     @endphp
 
     @php
-        $mitoLogoPath = public_path('assets/mito-red.png');
+        $mitoLogoPath = public_path('assets/mito-pdf.png');
         $mitoLogoBase64 = file_exists($mitoLogoPath)
             ? 'data:image/png;base64,' . base64_encode(file_get_contents($mitoLogoPath))
             : null;
