@@ -1,6 +1,8 @@
 @extends('layouts.hr')
 
-@section('title', 'Permission Management')
+@section('title', 'Permission - MITO HRIS')
+@section('page-title', 'Permission Management')
+@section('page-subtitle', 'Manage individual user access without changing their role.')
 
 @section('styles')
 <style>
@@ -15,20 +17,40 @@
         box-shadow: 0 0.35rem 1.25rem rgba(20, 32, 45, 0.06);
     }
 
-    [data-permission-management] .permission-user-list {
-        max-height: 560px;
+    [data-permission-management] .permission-sidebar > .card-body {
+        display: flex;
+        min-height: 0;
+        flex-direction: column;
+    }
+
+    [data-permission-management] .permission-editor {
+        height: clamp(520px, calc(100vh - 220px), 900px);
+        min-height: 0;
+    }
+
+    [data-permission-management] .permission-editor > .card-body {
+        display: flex;
+        min-height: 0;
+        flex-direction: column;
+    }
+
+    [data-permission-management] .permission-content-scroll {
+        min-height: 0;
+        flex: 1 1 auto;
+        overflow-x: hidden;
         overflow-y: auto;
-    }
-
-    [data-permission-management] .permission-user-list option {
-        padding: 0.65rem 0.5rem;
+        scrollbar-gutter: stable;
+        padding-right: 0.35rem;
     }
 
     [data-permission-management] .permission-user-list {
+        max-height: min(560px, 42vh);
+        min-height: 8rem;
         display: grid;
         gap: 0.35rem;
-        max-height: 560px;
+        overflow-x: hidden;
         overflow-y: auto;
+        scrollbar-gutter: stable;
     }
 
     [data-permission-management] .permission-user {
@@ -75,6 +97,11 @@
         white-space: nowrap;
     }
 
+    [data-permission-management] .permission-user .badge-status {
+        padding: 3px 8px;
+        font-size: 0.68rem;
+    }
+
     [data-permission-management] .permission-group {
         border: 1px solid var(--bs-border-color);
         border-radius: 0.65rem;
@@ -103,6 +130,15 @@
         line-height: 1.4;
     }
 
+    [data-permission-management] .permission-toolbar-search {
+        flex: 1 1 18rem;
+        max-width: 26rem;
+    }
+
+    [data-permission-management] .permission-toolbar-actions {
+        margin-left: auto;
+    }
+
     [data-permission-management] .permission-summary-value {
         font-size: 1.15rem;
         font-weight: 600;
@@ -113,14 +149,11 @@
     }
 
     [data-permission-management] .permission-save-footer {
-        position: sticky;
-        bottom: 0;
-        z-index: 2;
+        flex: 0 0 auto;
         margin: 1rem -1.5rem -1.5rem;
         padding: 0.9rem 1.5rem;
         border-top: 1px solid var(--bs-border-color);
         background: color-mix(in srgb, var(--bs-body-bg) 94%, transparent);
-        backdrop-filter: blur(8px);
     }
 
     [data-permission-management] .permission-super-admin {
@@ -133,6 +166,11 @@
     }
 
     @media (max-width: 575.98px) {
+        [data-permission-management] .permission-editor {
+            height: calc(100vh - 190px);
+            min-height: 480px;
+        }
+
         [data-permission-management] .permission-save-footer {
             margin-left: -1rem;
             margin-right: -1rem;
@@ -150,18 +188,9 @@
 @section('content')
 <div class="container-fluid py-3" data-permission-management>
     <div class="permission-shell">
-        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
-            <div>
-                <div class="text-uppercase small fw-semibold text-primary mb-1">Access Control</div>
-                <h2 class="mb-1"><i class="bi bi-shield-lock me-2"></i>Permission Management</h2>
-                <p class="text-muted mb-0">Manage individual user access without changing their role.</p>
-            </div>
-            <span class="badge text-bg-dark px-3 py-2"><i class="bi bi-shield-check me-1"></i> Super Admin</span>
-        </div>
-
         <div class="row g-4">
             <div class="col-lg-4">
-                <div class="card permission-sidebar h-100">
+                <div class="card permission-sidebar">
                     <div class="card-body p-4">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <div>
@@ -181,14 +210,20 @@
                         </div>
                         <div id="permission-user-list" class="permission-user-list" role="listbox" aria-label="Users" aria-describedby="permission-user-help">
                             @foreach ($users as $user)
+                                @php
+                                    $userStatus = trim((string) $user['status']);
+                                    $userStatusClass = in_array(strtolower($userStatus), ['active', 'aktif'], true)
+                                        ? 'accepted'
+                                        : 'blacklist';
+                                @endphp
                                 <button type="button" class="permission-user d-flex align-items-center gap-3 p-2" role="option" aria-selected="false" data-email="{{ $user['email'] }}" data-search="{{ strtolower($user['fullName'] . ' ' . $user['email'] . ' ' . $user['role']) }}">
                                     <span class="permission-avatar" aria-hidden="true">{{ collect(explode(' ', trim($user['fullName'])))->filter()->map(fn ($part) => strtoupper(substr($part, 0, 1)))->take(2)->implode('') }}</span>
                                     <span class="permission-user-meta flex-grow-1">
                                         <span class="d-block fw-semibold text-truncate">{{ $user['fullName'] }}</span>
                                         <span class="permission-user-email d-block small text-muted">{{ $user['email'] }}</span>
                                         <span class="d-flex flex-wrap gap-1 mt-1">
-                                            <span class="badge text-bg-light border">{{ $user['role'] }}</span>
-                                            <span class="badge text-bg-light border">{{ $user['status'] }}</span>
+                                            <span class="badge-status hold permission-role-badge">{{ $user['role'] }}</span>
+                                            <span class="badge-status {{ $userStatusClass }}">{{ $user['status'] }}</span>
                                         </span>
                                     </span>
                                 </button>
@@ -214,7 +249,6 @@
                             </div>
                         </div>
                         <div id="permission-status" class="permission-status small text-muted mb-3" aria-live="polite">No unsaved changes</div>
-                        <div id="permission-alert" class="alert d-none" role="alert"></div>
                         <div id="permission-loading" class="text-muted d-none py-4 text-center" aria-live="polite"><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Loading permissions...</div>
                         <div id="permission-empty" class="border rounded p-5 text-center text-muted">
                             <i class="bi bi-person-check fs-1 d-block mb-2"></i>
@@ -230,18 +264,20 @@
                                 </div>
                             </div>
                         </div>
-                        <div id="permission-toolbar" class="d-none flex-wrap justify-content-between align-items-center gap-2 mb-3">
-                            <div class="input-group input-group-sm" style="max-width: 26rem;">
+                        <div id="permission-toolbar" class="d-none d-flex flex-wrap align-items-center gap-2 mb-3">
+                            <div class="input-group input-group-sm permission-toolbar-search">
                                 <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
                                 <input id="permission-search" class="form-control" type="search" placeholder="Search permissions" autocomplete="off">
                             </div>
-                            <div class="d-flex gap-2">
+                            <div class="permission-toolbar-actions d-flex gap-2">
                                 <button type="button" class="btn btn-sm btn-outline-secondary" id="permission-select-all"><i class="bi bi-check2-square me-1"></i>Select all</button>
                                 <button type="button" class="btn btn-sm btn-outline-danger" id="permission-clear-all"><i class="bi bi-x-circle me-1"></i>Clear all</button>
                             </div>
                         </div>
-                        <div id="permission-no-results" class="d-none border rounded p-4 text-center text-muted small">No permissions found</div>
-                        <div id="permission-groups" class="row g-3"></div>
+                        <div class="permission-content-scroll">
+                            <div id="permission-no-results" class="d-none border rounded p-4 text-center text-muted small">No permissions found</div>
+                            <div id="permission-groups" class="row g-3"></div>
+                        </div>
                         <div class="permission-save-footer d-flex flex-wrap justify-content-between align-items-center gap-3">
                             <div class="small text-muted"><i class="bi bi-info-circle me-1"></i><span id="permission-save-hint">Changes are saved as user permissions.</span></div>
                             <button type="button" class="btn btn-primary" id="permission-save" disabled>
@@ -286,7 +322,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const saveLabel = document.getElementById('permission-save-label');
     const saveHint = document.getElementById('permission-save-hint');
     const loading = document.getElementById('permission-loading');
-    const alertBox = document.getElementById('permission-alert');
     const status = document.getElementById('permission-status');
     const summary = document.getElementById('permission-user-summary');
     const emptyState = document.getElementById('permission-empty');
@@ -319,8 +354,9 @@ document.addEventListener('DOMContentLoaded', function () {
     let isSaving = false;
 
     function showAlert(message, type) {
-        alertBox.textContent = message;
-        alertBox.className = 'alert alert-' + type;
+        if (typeof window.showToast === 'function') {
+            window.showToast(message, type === 'danger' ? 'error' : type);
+        }
     }
 
     function escapeHtml(value) {
@@ -335,6 +371,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function getInitials(name) {
         return String(name || '').trim().split(/\s+/).filter(Boolean).slice(0, 2).map(part => part.charAt(0).toUpperCase()).join('') || '--';
+    }
+
+    function getStatusBadgeClass(status) {
+        return ['active', 'aktif'].includes(String(status || '').trim().toLowerCase()) ? 'accepted' : 'blacklist';
     }
 
     function sortedPermissionKeys(set) {
@@ -414,7 +454,10 @@ document.addEventListener('DOMContentLoaded', function () {
     function renderUserSummary(user) {
         summary.innerHTML = `<div class="fw-semibold text-body mb-1">${escapeHtml(user.fullName)}</div>
             <div>${escapeHtml(user.email)}</div>
-            <div class="mt-2"><span class="badge text-bg-light border me-1">${escapeHtml(user.role)}</span><span class="badge text-bg-light border">${escapeHtml(user.status)}</span></div>`;
+            <div class="d-flex flex-wrap gap-1 mt-2">
+                <span class="badge-status hold permission-role-badge">${escapeHtml(user.role)}</span>
+                <span class="badge-status ${getStatusBadgeClass(user.status)}">${escapeHtml(user.status)}</span>
+            </div>`;
     }
 
     function renderUserSelection(email) {
@@ -507,7 +550,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 toolbar.classList.remove('d-none');
                 renderGroups();
             }
-            alertBox.className = 'alert d-none';
         } catch (error) {
             showAlert(error.message, 'danger');
             resetEditor();
