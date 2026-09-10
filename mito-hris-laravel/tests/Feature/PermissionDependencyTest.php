@@ -306,7 +306,7 @@ class PermissionDependencyTest extends TestCase
         $this->assertTrue($resolver->allows($user, 'assets.access'));
         $this->assertTrue($resolver->allows($user, 'assets.view'));
         $this->assertTrue($resolver->allows($user, 'assets.create'));
-        $this->assertTrue($resolver->allows($user, 'lookup_employee'));
+        $this->assertFalse($resolver->allows($user, 'lookup_employee'));
     }
 
     // =========================================================================
@@ -325,5 +325,100 @@ class PermissionDependencyTest extends TestCase
         ]);
 
         $response->assertStatus(422);
+    }
+
+    // =========================================================================
+    // lookup_employee explicit deny precedence
+    // =========================================================================
+
+    #[Test]
+    public function lookup_employee_true_is_allowed(): void
+    {
+        $this->mockUserRepo($this->makeUserRow());
+        $this->setMariePermissions(['lookup_employee' => true]);
+
+        $resolver = app(PermissionResolver::class);
+        $this->assertTrue($resolver->allows(['email' => 'marie@example.com', 'role' => 'User'], 'lookup_employee'));
+    }
+
+    #[Test]
+    public function lookup_employee_false_with_view_asset_true_is_denied(): void
+    {
+        $this->mockUserRepo($this->makeUserRow());
+        $this->setMariePermissions([
+            'lookup_employee' => false,
+            'view_asset'      => true,
+        ]);
+
+        $resolver = app(PermissionResolver::class);
+        $this->assertFalse($resolver->allows(['email' => 'marie@example.com', 'role' => 'User'], 'lookup_employee'));
+    }
+
+    #[Test]
+    public function lookup_employee_false_with_view_employees_true_is_denied(): void
+    {
+        $this->mockUserRepo($this->makeUserRow());
+        $this->setMariePermissions([
+            'lookup_employee' => false,
+            'view_employees'  => true,
+        ]);
+
+        $resolver = app(PermissionResolver::class);
+        $this->assertFalse($resolver->allows(['email' => 'marie@example.com', 'role' => 'User'], 'lookup_employee'));
+    }
+
+    #[Test]
+    public function lookup_employee_false_with_view_certification_true_is_denied(): void
+    {
+        $this->mockUserRepo($this->makeUserRow());
+        $this->setMariePermissions([
+            'lookup_employee'     => false,
+            'view_certification'  => true,
+        ]);
+
+        $resolver = app(PermissionResolver::class);
+        $this->assertFalse($resolver->allows(['email' => 'marie@example.com', 'role' => 'User'], 'lookup_employee'));
+    }
+
+    #[Test]
+    public function lookup_employee_true_with_all_related_false_is_allowed(): void
+    {
+        $this->mockUserRepo($this->makeUserRow());
+        $this->setMariePermissions([
+            'lookup_employee'    => true,
+            'view_employees'     => false,
+            'view_asset'         => false,
+            'view_certification' => false,
+        ]);
+
+        $resolver = app(PermissionResolver::class);
+        $this->assertTrue($resolver->allows(['email' => 'marie@example.com', 'role' => 'User'], 'lookup_employee'));
+    }
+
+    #[Test]
+    public function lookup_employee_false_falls_back_to_related_permissions_when_not_explicitly_set(): void
+    {
+        $this->mockUserRepo($this->makeUserRow());
+        $this->setMariePermissions([
+            'view_asset' => true,
+        ]);
+
+        $resolver = app(PermissionResolver::class);
+        $this->assertTrue($resolver->allows(['email' => 'marie@example.com', 'role' => 'User'], 'lookup_employee'));
+    }
+
+    // =========================================================================
+    // Super Admin bypass remains unrestricted
+    // =========================================================================
+
+    #[Test]
+    public function super_admin_lookup_employee_remains_unrestricted(): void
+    {
+        $this->actingAsSuperAdmin();
+        $this->mockUserRepo($this->makeUserRow());
+        $this->setMariePermissions(['lookup_employee' => false]);
+
+        $resolver = app(PermissionResolver::class);
+        $this->assertTrue($resolver->allows(['email' => 'marie@example.com', 'role' => 'Super Admin'], 'lookup_employee'));
     }
 }

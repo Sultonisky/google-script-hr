@@ -31,14 +31,19 @@ class PermissionResolver
             return true;
         }
 
-        if ($permission === 'lookup_employee') {
-            return $this->allows($user, 'view_employees')
-                || $this->allows($user, 'view_asset')
-                || $this->allows($user, 'view_certification');
-        }
-
         $email = strtolower(trim((string) ($user['email'] ?? $user['Email'] ?? '')));
         $mappings = $this->mappings($email);
+
+        if ($permission === 'lookup_employee') {
+            if (array_key_exists('lookup_employee', $mappings)) {
+                return $mappings['lookup_employee'];
+            }
+
+            return ($mappings['view_employees'] ?? false)
+                || ($mappings['view_asset'] ?? false)
+                || ($mappings['view_certification'] ?? false);
+        }
+
         if (array_key_exists($permission, $mappings)) {
             return $mappings[$permission];
         }

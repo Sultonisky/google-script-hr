@@ -65,12 +65,6 @@ class AuthServiceProvider extends ServiceProvider
         // directory) is allowed. Asset and certificate users must NOT need the whole
         // view_employees permission just to pick an assignee.
         // ==============================================================
-        Gate::define('lookup_employee', function ($user) {
-            return app(PermissionResolver::class)->allows($user, 'view_employees')
-                || app(PermissionResolver::class)->allows($user, 'view_asset')
-                || app(PermissionResolver::class)->allows($user, 'view_certification');
-        });
-
         Gate::define('access_assets_portal', fn ($user) => app(PermissionResolver::class)->allows($user, 'assets.access'));
         Gate::define('access_certificates_portal', fn ($user) => app(PermissionResolver::class)->allows($user, 'certificates.access'));
     }
