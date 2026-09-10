@@ -104,19 +104,18 @@ class PermissionResolver
         }
 
         $mappings = $this->mappings((string) ($user['email'] ?? $user['Email'] ?? ''));
-        // No explicit mappings → allow based on role (backward compatible)
-        if ($mappings === []) {
+        $granted  = array_filter($mappings, static fn (bool $v) => $v === true);
+
+        if ($granted === []) {
             return true;
         }
 
-        // Check if user has any non-dedicated portal permission in their mappings
-        foreach (array_keys($mappings) as $permission) {
+        foreach (array_keys($granted) as $permission) {
             if (!$this->isDedicatedPortalPermission($permission)) {
                 return true;
             }
         }
 
-        // All mapped permissions are dedicated portals only → deny HRIS access
         return false;
     }
 
