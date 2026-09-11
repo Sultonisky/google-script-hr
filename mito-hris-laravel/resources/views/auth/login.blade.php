@@ -702,7 +702,6 @@
 
                 var errMsg = result && result.error ? result.error : 'Login gagal. Silakan coba lagi.';
                 showError(errMsg);
-                showToast(errMsg, 'error');
             }
 
             togglePassword.addEventListener('click', function(e) {
@@ -786,7 +785,6 @@
                     .catch(function(err) {
                         showError('Gagal terhubung ke server: ' + (err && err.message ? err.message :
                             String(err)));
-                        showToast('Koneksi gagal. Coba lagi.', 'error');
                     });
             });
 
