@@ -211,6 +211,7 @@
             width: 150px;
             height: 150px;
             object-fit: cover;
+            border-radius: 8px;
             border: 4px solid var(--mito-border);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
             background: #fff;
