@@ -59,9 +59,6 @@
                             class="btn-reset-filter text-decoration-none" title="Reset filter">
                             <i class="bi bi-arrow-counterclockwise"></i> Reset
                         </a>
-                        <button class="btn-refresh" type="button" title="Muat ulang" data-refresh="page">
-                            <i class="bi bi-arrow-repeat"></i>
-                        </button>
                     </div>
                 </div>
             </form>
