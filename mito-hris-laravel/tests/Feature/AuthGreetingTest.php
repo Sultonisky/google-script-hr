@@ -38,10 +38,18 @@ class AuthGreetingTest extends TestCase
         $this->app->instance(UserRepositoryInterface::class, $repo);
     }
 
+    private function grantHrisPermission(string $email): void
+    {
+        $repo = app(\App\Repositories\Contracts\UserPermissionRepositoryInterface::class);
+        $repo->upsert($email, 'view_recruitment', true, 'test');
+        app(\App\Services\PermissionResolver::class)->forget($email);
+    }
+
     #[Test]
     public function hris_login_returns_greeting_message(): void
     {
         $this->mockUserRepo($this->makeUser());
+        $this->grantHrisPermission('marie@example.com');
 
         $response = $this->postJson('/login', [
             'identifier' => 'marie@example.com',
@@ -57,6 +65,7 @@ class AuthGreetingTest extends TestCase
     public function hris_login_includes_name_in_greeting(): void
     {
         $this->mockUserRepo($this->makeUser(['Full Name' => 'Budi Santoso']));
+        $this->grantHrisPermission('marie@example.com');
 
         $response = $this->postJson('/login', [
             'identifier' => 'marie@example.com',
@@ -74,6 +83,7 @@ class AuthGreetingTest extends TestCase
             'Full Name' => 'Siti Nurhaliza',
             'Username'  => 'siti',
         ]));
+        $this->grantHrisPermission('marie@example.com');
 
         $response = $this->postJson('/login', [
             'identifier' => 'marie@example.com',
@@ -88,6 +98,7 @@ class AuthGreetingTest extends TestCase
     public function hris_login_includes_correct_domain_reference_in_greeting(): void
     {
         $this->mockUserRepo($this->makeUser());
+        $this->grantHrisPermission('marie@example.com');
 
         $response = $this->postJson('/login', [
             'identifier' => 'marie@example.com',

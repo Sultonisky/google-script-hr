@@ -147,7 +147,7 @@ class PermissionResolver
      *
      * Architecture: Users with ONLY dedicated portal permissions (assets, certificates)
      * must be explicitly restricted via Permission Mappings. If a user has:
-     *   - No permission mappings → allowed (uses role-based access)
+     *   - No permission mappings → denied (strict mode)
      *   - Permission mappings with non-dedicated permissions → allowed
      *   - Permission mappings with ONLY dedicated permissions → denied
      *
@@ -171,7 +171,7 @@ class PermissionResolver
         $granted  = array_filter($mappings, static fn (bool $v) => $v === true);
 
         if ($granted === []) {
-            return true;
+            return false;
         }
 
         foreach (array_keys($granted) as $permission) {
