@@ -207,6 +207,16 @@
             line-height: 1.6;
         }
 
+        .hero-avatar-img {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 4px solid var(--mito-border);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+            background: #fff;
+        }
+
         /* User Active Session Box */
         .session-card {
             background-color: var(--mito-bg);
@@ -337,9 +347,8 @@
     <!-- Hero Section -->
     <section class="portal-hero">
         <div class="container">
-            <div class="row">
-                <div class="col-lg-9 col-xl-8">
-
+            <div class="row align-items-center">
+                <div class="col-lg-8 col-md-7">
                     <h1 class="hero-title">
                         Portal Layanan Internal HRIS
                     </h1>
@@ -367,6 +376,10 @@
                             Portal Sertifikasi
                         </a>
                     </div>
+                </div>
+                <div class="col-lg-4 col-md-5 d-none d-md-flex justify-content-end align-items-center">
+                    <img src="{{ asset('assets/mito.png') }}" alt="Logo MITO untuk Portal HRIS"
+                        class="hero-avatar-img" width="150" height="150" fetchpriority="high">
                 </div>
             </div>
         </div>
