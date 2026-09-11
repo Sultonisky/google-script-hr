@@ -37,6 +37,9 @@ class LoginSecurityTest extends TestCase
     public function test_successful_login_creates_session_without_returning_password(): void
     {
         $this->mockUserDomain($this->activeUser(), true);
+        $permissions = new ArrayUserPermissionRepository();
+        $permissions->upsert('admin@example.test', 'view_recruitment', true, 'test');
+        $this->app->instance(UserPermissionRepositoryInterface::class, $permissions);
 
         $response = $this->postJson('/login', [
             'identifier' => 'admin',

@@ -81,6 +81,10 @@ private function actingAsRole(string $role): static
     public function admin_login_lands_on_dashboard(): void
     {
         $this->mockUserDomain('Admin', 'admin@mito.id', 'admin-secret');
+        $permissions = new \App\Repositories\Local\ArrayUserPermissionRepository();
+        $permissions->upsert('admin@mito.id', 'view_recruitment', true, 'test');
+        $this->app->instance(\App\Repositories\Contracts\UserPermissionRepositoryInterface::class, $permissions);
+        app(\App\Services\PermissionResolver::class)->forget('admin@mito.id');
 
         $response = $this->withoutMiddleware(ValidateCsrfToken::class)->postJson('/login', [
             'identifier' => 'admin@mito.id',

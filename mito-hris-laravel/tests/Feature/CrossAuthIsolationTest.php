@@ -76,6 +76,13 @@ class CrossAuthIsolationTest extends TestCase
         $this->app->instance(UserRepositoryInterface::class, $repo);
     }
 
+    private function grantHrisPermission(string $email): void
+    {
+        $repo = app(\App\Repositories\Contracts\UserPermissionRepositoryInterface::class);
+        $repo->upsert($email, 'view_recruitment', true, 'test');
+        app(\App\Services\PermissionResolver::class)->forget($email);
+    }
+
     private function mockMprRequestorRepo(?array $requestor, bool $expectLastLogin = false): void
     {
         $repo = Mockery::mock(MprRequestorRepositoryInterface::class);
@@ -93,6 +100,7 @@ class CrossAuthIsolationTest extends TestCase
     public function hris_login_succeeds_when_account_exists_only_in_users(): void
     {
         $this->mockUserRepo($this->makeUserRow(), true);
+        $this->grantHrisPermission('john@example.com');
 
         $response = $this->postJson('/login', [
             'identifier' => 'john@example.com',
@@ -146,6 +154,7 @@ class CrossAuthIsolationTest extends TestCase
         // Same email 'john@example.com' is in BOTH users and mpr_requestors.
         // HRIS login must use users only, create hr_user, redirect to HRIS dashboard.
         $this->mockUserRepo($this->makeUserRow(), true);
+        $this->grantHrisPermission('john@example.com');
         // The mpr_requestors repo must NOT be queried during HRIS login.
         // We do not mock it — if it is queried, the test will fail with a binding error.
 
@@ -177,6 +186,7 @@ class CrossAuthIsolationTest extends TestCase
     public function hris_login_stays_hris_when_same_username_exists_in_both_stores(): void
     {
         $this->mockUserRepo($this->makeUserRow(['Username' => 'john']), true);
+        $this->grantHrisPermission('john@example.com');
 
         $response = $this->postJson('/login', [
             'identifier' => 'john',  // login by username
@@ -382,6 +392,7 @@ class CrossAuthIsolationTest extends TestCase
         $this->app->instance(MprRequestorRepositoryInterface::class, $strictMpr);
 
         $this->mockUserRepo($this->makeUserRow(), true);
+        $this->grantHrisPermission('john@example.com');
 
         $this->postJson('/login', [
             'identifier' => 'john@example.com',

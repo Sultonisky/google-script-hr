@@ -137,11 +137,11 @@ class HrisPortalAccessTest extends TestCase
     }
 
     // =========================================================================
-    // HRIS portal access: backward compatibility for users with no mappings
+    // HRIS portal access: strict enforcement — zero mappings = DENY
     // =========================================================================
 
     #[Test]
-    public function user_with_no_permission_mappings_is_allowed_hris_access(): void
+    public function user_with_no_permission_mappings_is_denied_hris_access(): void
     {
         $this->mockUserRepo($this->makeUserRow(), true);
 
@@ -150,8 +150,10 @@ class HrisPortalAccessTest extends TestCase
             'password'   => 'test-password',
         ]);
 
-        $response->assertOk()->assertJsonPath('success', true);
-        $this->assertTrue(session()->has('hr_user'));
+        $response->assertStatus(403)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error', 'Anda tidak memiliki akses ke HRIS Portal. Akun Anda belum diberikan izin untuk mengakses portal ini. Silakan hubungi administrator jika Anda membutuhkan akses.');
+        $this->assertFalse(session()->has('hr_user'));
     }
 
     // =========================================================================
@@ -550,6 +552,44 @@ class HrisPortalAccessTest extends TestCase
         $this->mockUserRepo($this->makeUserRow(), true);
         $this->setMariePermissions([
             'some_new_permission' => true,
+        ]);
+
+        $response = $this->postJson('/login', [
+            'identifier' => 'marie@example.com',
+            'password'   => 'test-password',
+        ]);
+
+        $response->assertStatus(403)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error', 'Anda tidak memiliki akses ke HRIS Portal. Akun Anda belum diberikan izin untuk mengakses portal ini. Silakan hubungi administrator jika Anda membutuhkan akses.');
+        $this->assertFalse(session()->has('hr_user'));
+    }
+
+    #[Test]
+    public function legacy_asset_compatibility_permission_only_does_not_grant_hris_access(): void
+    {
+        $this->mockUserRepo($this->makeUserRow(), true);
+        $this->setMariePermissions([
+            'view_asset' => true,
+        ]);
+
+        $response = $this->postJson('/login', [
+            'identifier' => 'marie@example.com',
+            'password'   => 'test-password',
+        ]);
+
+        $response->assertStatus(403)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error', 'Anda tidak memiliki akses ke HRIS Portal. Akun Anda belum diberikan izin untuk mengakses portal ini. Silakan hubungi administrator jika Anda membutuhkan akses.');
+        $this->assertFalse(session()->has('hr_user'));
+    }
+
+    #[Test]
+    public function legacy_certificate_compatibility_permission_only_does_not_grant_hris_access(): void
+    {
+        $this->mockUserRepo($this->makeUserRow(), true);
+        $this->setMariePermissions([
+            'manage_certification' => true,
         ]);
 
         $response = $this->postJson('/login', [

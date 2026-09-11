@@ -120,6 +120,13 @@ class PortalSessionIsolationTest extends TestCase
         $this->app->instance(MprRequestorRepositoryInterface::class, $repo);
     }
 
+    private function grantHrisPermission(string $email): void
+    {
+        $repo = app(\App\Repositories\Contracts\UserPermissionRepositoryInterface::class);
+        $repo->upsert($email, 'view_recruitment', true, 'test');
+        app(\App\Services\PermissionResolver::class)->forget($email);
+    }
+
     // =========================================================================
     // Test 1 — MPR session does NOT authenticate HRIS
     //
@@ -193,6 +200,7 @@ class PortalSessionIsolationTest extends TestCase
 
         // Now the user logs into HRIS in the same browser tab.
         $this->mockUserRepo($this->makeSheetsUserRow());
+        $this->grantHrisPermission('admin@hris.example.com');
 
         $response = $this->postJson('/login', [
             'identifier' => 'admin@hris.example.com',
@@ -320,6 +328,7 @@ class PortalSessionIsolationTest extends TestCase
         Session::put(config('mpr.session_key', 'mpr_requestor_auth'), $this->makeMprRequestor());
 
         $this->mockUserRepo($this->makeSheetsUserRow());
+        $this->grantHrisPermission('admin@hris.example.com');
 
         $this->postJson('/login', [
             'identifier' => 'admin@hris.example.com',
