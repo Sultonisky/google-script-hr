@@ -32,7 +32,7 @@ class ContractTrackingController extends Controller
             ->filter(function ($employee) {
                 $status = strtolower(trim((string) ($employee->statusEmployee ?? '')));
 
-                return in_array($status, ['contract', 'pkwt'], true)
+                return in_array($status, ['contract', 'pkwt', 'outsource'], true)
                     && !empty(trim((string) ($employee->endDateContract ?? '')));
             })
             ->map(function ($employee) use ($today) {
