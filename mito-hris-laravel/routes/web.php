@@ -108,7 +108,7 @@ if (!app()->environment('local')) {
                 Route::get('/', [OutsourceController::class, 'index'])->name('index');
                 Route::post('/', [OutsourceController::class, 'store'])->name('store')->middleware('can:manage_employees');
             });
-            Route::prefix('contracts')->name('contracts.')->middleware('can:view_employees')->group(function () {
+            Route::prefix('contracts')->name('contracts.')->middleware('can:view_contracts')->group(function () {
                 Route::get('/', [ContractTrackingController::class, 'index'])->name('index');
             });
             Route::prefix('audit-logs')->name('audit-logs.')->middleware('can:view_reports')->group(function () {
@@ -330,7 +330,7 @@ if (app()->environment('local')) {
                 Route::post('/', [OutsourceController::class, 'store'])->name('store')->middleware('can:manage_employees');
             });
 
-            Route::prefix('contracts')->name('contracts.')->middleware('can:view_employees')->group(function () {
+            Route::prefix('contracts')->name('contracts.')->middleware('can:view_contracts')->group(function () {
                 Route::get('/', [ContractTrackingController::class, 'index'])->name('index');
             });
 
