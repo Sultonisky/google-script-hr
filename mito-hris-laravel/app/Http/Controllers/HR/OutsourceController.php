@@ -3,23 +3,38 @@
 namespace App\Http\Controllers\HR;
 
 use App\Http\Controllers\Controller;
+use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Services\EmployeeService;
+use App\Services\OutsourceContractService;
+use App\Services\PdfGeneratorService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
 
 class OutsourceController extends Controller
 {
     protected EmployeeRepositoryInterface $employeeRepo;
     protected EmployeeService $employeeService;
+    protected OutsourceContractService $contractService;
+    protected PdfGeneratorService $pdfService;
+    protected AuditLogRepositoryInterface $auditRepo;
 
     public function __construct(
         EmployeeRepositoryInterface $employeeRepo,
-        EmployeeService $employeeService
+        EmployeeService $employeeService,
+        OutsourceContractService $contractService,
+        PdfGeneratorService $pdfService,
+        AuditLogRepositoryInterface $auditRepo
     ) {
         $this->employeeRepo    = $employeeRepo;
         $this->employeeService = $employeeService;
+        $this->contractService = $contractService;
+        $this->pdfService      = $pdfService;
+        $this->auditRepo       = $auditRepo;
     }
 
     public function index(Request $request): View
@@ -76,8 +91,12 @@ class OutsourceController extends Controller
         $offset     = ($currentPage - 1) * $perPage;
         $outsources = $filtered->slice($offset, $perPage)->values();
 
+        // Full outsource list for Proses Kontrak modal search (all pages)
+        $allOutsourcesForSearch = $allOutsources->values();
+
         return view('hr.outsource.index', compact(
             'outsources',
+            'allOutsourcesForSearch',
             'stats',
             'total',
             'currentPage',
@@ -123,5 +142,119 @@ class OutsourceController extends Controller
         );
 
         return response()->json($result, $result['success'] ? 201 : 422);
+    }
+
+    /**
+     * Allocate nomor kontrak + siapkan 2 PDF (kontrak + surat pernyataan).
+     * Returns JSON with download URLs — frontend download keduanya.
+     *
+     * POST /hr/outsource/kontrak-pkwt-tad
+     */
+    public function generateKontrakPkwtTad(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'employee_id'   => 'required|string|max:64',
+            'perusahaan'    => 'required|string|max:255',
+            'beralamat_di'  => 'required|string|max:500',
+            'mulai_tanggal' => 'required|date',
+            'pendidikan'    => 'required|string|max:100',
+            'contract_duration' => 'nullable|string|max:50',
+        ]);
+
+        $employee = $this->employeeRepo->findById($validated['employee_id']);
+        if (!$employee) {
+            return response()->json(['success' => false, 'message' => 'Data karyawan outsource tidak ditemukan.'], 404);
+        }
+
+        if (!$this->contractService->isOutsource($employee)) {
+            return response()->json(['success' => false, 'message' => 'Karyawan yang dipilih bukan status Outsource.'], 422);
+        }
+
+        $alloc = $this->contractService->allocateContractNumber($employee);
+        $now   = now()->timezone('Asia/Jakarta');
+
+        $extraData = [
+            'contract_number'   => $alloc['contract_number'],
+            'perusahaan'        => $validated['perusahaan'],
+            'beralamat_di'      => $validated['beralamat_di'],
+            'mulai_tanggal'     => $validated['mulai_tanggal'],
+            'pendidikan'        => $validated['pendidikan'],
+            'join_date'         => $validated['mulai_tanggal'],
+            'doc_date'          => $now->format('Y-m-d'),
+            'contract_duration' => $validated['contract_duration'] ?? '12 Bulan',
+            'position'          => $employee->jobPosition,
+            'department'        => $employee->department,
+            'division'          => $employee->division,
+            'direct_superior'   => $employee->directSuperior,
+        ];
+
+        $token = (string) Str::uuid();
+        Cache::put('osc_pkwt_tad_' . $token, [
+            'employee_id' => $employee->employeeId,
+            'extra_data'  => $extraData,
+            'safe_name'   => preg_replace('/[^a-zA-Z0-9_-]+/', '_', $employee->fullName ?? 'Outsource'),
+        ], now()->addMinutes(15));
+
+        $this->auditRepo->log(
+            'Outsource',
+            $employee->employeeId,
+            'generated',
+            'contract_pkwt_tad',
+            null,
+            $alloc['contract_number'],
+            $this->hrUserName(),
+            'Export'
+        );
+
+        $baseQuery = ['token' => $token];
+
+        return response()->json([
+            'success'         => true,
+            'contract_number' => $alloc['contract_number'],
+            'message'         => 'Kontrak PKWT TAD siap diunduh.',
+            'pdf_urls'        => [
+                'kontrak'    => route('hr.outsource.kontrak-pkwt-tad.download', $baseQuery + ['type' => 'kontrak']),
+                'pernyataan' => route('hr.outsource.kontrak-pkwt-tad.download', $baseQuery + ['type' => 'pernyataan']),
+            ],
+        ]);
+    }
+
+    /**
+     * Download satu PDF (kontrak | pernyataan) via token dari generate.
+     *
+     * GET /hr/outsource/kontrak-pkwt-tad/download?token=...&type=kontrak|pernyataan
+     */
+    public function downloadKontrakPkwtTad(Request $request): Response
+    {
+        $token = trim((string) $request->query('token', ''));
+        $type  = strtolower(trim((string) $request->query('type', 'kontrak')));
+
+        if ($token === '' || !in_array($type, ['kontrak', 'pernyataan'], true)) {
+            abort(404, 'Parameter download tidak valid.');
+        }
+
+        $payload = Cache::get('osc_pkwt_tad_' . $token);
+        if (!$payload || empty($payload['employee_id'])) {
+            abort(410, 'Link download kedaluwarsa. Generate ulang dari form.');
+        }
+
+        $employee = $this->employeeRepo->findById($payload['employee_id']);
+        if (!$employee) {
+            abort(404, 'Data karyawan tidak ditemukan.');
+        }
+
+        $extraData = $payload['extra_data'] ?? [];
+        $safeName  = $payload['safe_name'] ?? 'Outsource';
+        $empId     = $employee->employeeId;
+
+        if ($type === 'pernyataan') {
+            $pdf = $this->pdfService->generateSuratPernyataanOutsourcePdf($employee, $extraData);
+            $filename = "Surat_Pernyataan_{$safeName}_{$empId}.pdf";
+        } else {
+            $pdf = $this->pdfService->generateKontrakPkwtTadPdf($employee, $extraData);
+            $filename = "PKWT_TAD_{$safeName}_{$empId}.pdf";
+        }
+
+        return $pdf->download($filename);
     }
 }
