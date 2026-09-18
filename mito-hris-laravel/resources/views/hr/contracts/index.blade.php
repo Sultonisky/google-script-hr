@@ -2,7 +2,7 @@
 
 @section('title', 'Contract Tracking - MITO HRIS')
 @section('page-title', 'Contract Tracking')
-@section('page-subtitle', 'Monitoring kontrak karyawan yang akan berakhir dalam 21 hari')
+@section('page-subtitle', 'Monitoring kontrak karyawan (Contract / PKWT / Outsource) yang akan berakhir dalam 21 hari')
 
 @section('content')
     <section class="page-section active" id="pageContractTracking">
