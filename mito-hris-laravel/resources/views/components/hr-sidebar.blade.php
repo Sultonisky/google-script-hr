@@ -128,6 +128,10 @@
                         class="nav-item {{ request()->routeIs('hr.outsource.*') ? 'active' : '' }}">
                         <i class="bi bi-building"></i> Outsource
                     </a>
+                    <a href="{{ route('hr.contracts.index') }}"
+                        class="nav-item {{ request()->routeIs('hr.contracts.*') ? 'active' : '' }}">
+                        <i class="bi bi-calendar2-range"></i> Contract Tracking
+                    </a>
                 @endcan
             @endcanany
 
