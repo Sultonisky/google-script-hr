@@ -271,7 +271,8 @@ return [
             'Outsource Vendor',
             'Created By',
             'Created At',
-            'Updated At'
+            'Updated At',
+            'Outsource Contract Seq',
         ],
         'data_kandidat' => [
             'Recruitment ID',
