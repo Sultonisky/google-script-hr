@@ -26,7 +26,7 @@ class PermissionMigrationCommandTest extends TestCase
         $this->artisan('mito:permissions:migrate', ['--dry-run' => true])
             ->assertExitCode(0)
             ->expectsOutput('Permission migration DRY-RUN.')
-            ->expectsOutput('Mappings to create: 30');
+            ->expectsOutput('Mappings to create: 31');
     }
 
     public function test_migration_preserves_explicit_revoke_and_is_idempotent(): void

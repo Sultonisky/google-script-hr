@@ -194,6 +194,7 @@ class PermissionResolver
             'manage_probation',
             'manage_employees',
             'view_employees',
+            'view_contracts',
             'view_mpr',
             'create_mpr',
             'update_mpr',

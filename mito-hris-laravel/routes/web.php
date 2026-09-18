@@ -11,6 +11,7 @@ use App\Http\Controllers\HR\RecruitmentController;
 use App\Http\Controllers\HR\EmployeeController;
 use App\Http\Controllers\HR\ProbationController;
 use App\Http\Controllers\HR\OutsourceController;
+use App\Http\Controllers\HR\ContractTrackingController;
 use App\Http\Controllers\HR\AuditLogController;
 use App\Http\Controllers\HR\MasterDataController;
 use App\Http\Controllers\HR\SettingsController;
@@ -106,6 +107,9 @@ if (!app()->environment('local')) {
             Route::prefix('outsource')->name('outsource.')->middleware('can:view_employees')->group(function () {
                 Route::get('/', [OutsourceController::class, 'index'])->name('index');
                 Route::post('/', [OutsourceController::class, 'store'])->name('store')->middleware('can:manage_employees');
+            });
+            Route::prefix('contracts')->name('contracts.')->middleware('can:view_contracts')->group(function () {
+                Route::get('/', [ContractTrackingController::class, 'index'])->name('index');
             });
             Route::prefix('audit-logs')->name('audit-logs.')->middleware('can:view_reports')->group(function () {
                 Route::get('/', [AuditLogController::class, 'index'])->name('index');
@@ -324,6 +328,10 @@ if (app()->environment('local')) {
             Route::prefix('outsource')->name('outsource.')->middleware('can:view_employees')->group(function () {
                 Route::get('/', [OutsourceController::class, 'index'])->name('index');
                 Route::post('/', [OutsourceController::class, 'store'])->name('store')->middleware('can:manage_employees');
+            });
+
+            Route::prefix('contracts')->name('contracts.')->middleware('can:view_contracts')->group(function () {
+                Route::get('/', [ContractTrackingController::class, 'index'])->name('index');
             });
 
             Route::prefix('audit-logs')->name('audit-logs.')->middleware('can:view_reports')->group(function () {

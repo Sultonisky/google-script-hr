@@ -29,6 +29,7 @@ final class PermissionCatalog
             ['key' => 'create_offering', 'name' => 'Create offerings', 'description' => 'Create offering and contract documents.', 'group' => 'Recruitment'],
             ['key' => 'manage_hold_blacklist', 'name' => 'Manage hold and blacklist', 'description' => 'Manage candidate hold and blacklist actions.', 'group' => 'Recruitment'],
             ['key' => 'manage_probation', 'name' => 'Manage probation', 'description' => 'Manage probation evaluations.', 'group' => 'Probation'],
+            ['key' => 'view_contracts', 'name' => 'View contracts', 'description' => 'View contract tracking and upcoming contract end dates.', 'group' => 'Contracts'],
             ['key' => 'view_mpr', 'name' => 'View MPR', 'description' => 'View manpower requests.', 'group' => 'MPR'],
             ['key' => 'create_mpr', 'name' => 'Create MPR', 'description' => 'Create manpower requests.', 'group' => 'MPR'],
             ['key' => 'update_mpr', 'name' => 'Update MPR', 'description' => 'Update manpower requests.', 'group' => 'MPR'],
