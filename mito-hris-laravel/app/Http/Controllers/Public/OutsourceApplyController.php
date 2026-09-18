@@ -158,6 +158,7 @@ class OutsourceApplyController extends Controller
             directSuperior: $validated['atasan_langsung'],
             indirectSuperior: $validated['atasan_tidak_langsung'],
             outsourceVendor: $validated['vendor_outsource'],
+            outsourceContractSeq: 0,
             birthDate: $validated['birth_date'],
             birthPlace: $validated['tempat_lahir'],
             citizenIdAddress: $alamatKtp,

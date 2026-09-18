@@ -53,6 +53,7 @@ class EmployeeData
         public ?string $offboardingDocsFolder = null,
         public ?string $offboardingDocLinks = null,
         public ?string $outsourceVendor = null,
+        public ?int $outsourceContractSeq = null,
         public ?string $createdBy = null,
         public ?string $createdAt = null,
         public ?string $updatedAt = null,
@@ -119,6 +120,9 @@ class EmployeeData
             offboardingDocsFolder: $row['Offboarding Documents Folder'] ?? null,
             offboardingDocLinks: $row['Offboarding Document Links'] ?? null,
             outsourceVendor: $row['Outsource Vendor'] ?? null,
+            outsourceContractSeq: isset($row['Outsource Contract Seq']) && $row['Outsource Contract Seq'] !== ''
+                ? (int) $row['Outsource Contract Seq']
+                : null,
             createdBy: $row['Created By'] ?? null,
             createdAt: $row['Created At'] ?? null,
             updatedAt: $row['Updated At'] ?? null,
@@ -180,6 +184,7 @@ class EmployeeData
             $this->createdBy ?? 'HR Administrator',
             $this->createdAt ?? now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
             $this->updatedAt ?? now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
+            $this->outsourceContractSeq !== null ? (string) $this->outsourceContractSeq : '',
         ];
     }
 

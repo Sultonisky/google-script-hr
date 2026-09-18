@@ -184,6 +184,30 @@ class PdfGeneratorService
             ->setPaper('a4', 'portrait');
     }
 
+    public function generateKontrakPkwtTadPdf(EmployeeData $employee, array $extraData = []): \Barryvdh\DomPDF\PDF
+    {
+        // PT Damarindo Mandiri as contracting party for TAD / outsource placement
+        $company = [
+            'name'    => 'PT. DAMARINDO MANDIRI',
+            'address' => 'Ruko Sastra Plasa Blok A No. 06 Jalan Raya Gatot Subroto KM 5,4, Jatiuwung Kota Tangerang',
+            'city'    => 'Tangerang',
+            'brand'   => 'DAMARINDO',
+            'code'    => 'DM',
+        ];
+
+        return Pdf::loadView('pdf.kontrak-pkwt-tad', compact('employee', 'extraData', 'company'))
+            ->setPaper('a4', 'portrait');
+    }
+
+    /**
+     * Generate Surat Pernyataan (Outsource / TAD) — file terpisah dari PKWT TAD.
+     */
+    public function generateSuratPernyataanOutsourcePdf(EmployeeData $employee, array $extraData = []): \Barryvdh\DomPDF\PDF
+    {
+        return Pdf::loadView('pdf.surat-pernyataan-outsource', compact('employee', 'extraData'))
+            ->setPaper('a4', 'portrait');
+    }
+
     /**
      * Generate Performance Review – Evaluation Form PDF.
      * Mirrors the printed template (2026) — 4 competencies, 13 indicators, checklist model.
