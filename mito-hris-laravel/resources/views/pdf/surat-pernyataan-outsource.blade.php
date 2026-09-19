@@ -76,8 +76,8 @@
         .sign-table td {
             width: 50%;
             vertical-align: top;
-            text-align: center;
-            padding: 0 8px;
+            text-align: left;
+            padding: 0 8px 0 0;
         }
 
         .sign-label {
@@ -166,13 +166,13 @@
 
     <table class="sign-table">
         <tr>
-            <td></td>
             <td>
                 <div>Tangerang, {{ $docDateFmt }}</div>
                 <div class="sign-label" style="margin-top:8px">Yang menyatakan</div>
                 <div class="sign-materai">Materai 10.000</div>
                 <div class="sign-line">({{ $fullName }})</div>
             </td>
+            <td></td>
         </tr>
     </table>
 </body>
