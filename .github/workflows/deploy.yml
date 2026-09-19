@@ -66,7 +66,7 @@ jobs:
 
             REPO_DIR="/opt/mito-hris/app"
             COMPOSE_DIR="/opt/mito-hris"
-            DEPLOY_SHA="${{ github.event.workflow_run.head_sha }}"
+            DEPLOY_SHA="${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}"
 
             echo "== Deployment target =="
             echo "Commit: $DEPLOY_SHA"
