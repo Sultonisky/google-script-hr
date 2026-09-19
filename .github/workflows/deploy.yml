@@ -45,7 +45,23 @@ jobs:
             set -Eeuo pipefail
 
             trap 'echo "Deployment failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
+echo "== Server identity =="
+hostname
+whoami
+pwd
+id
 
+echo "== OS =="
+cat /etc/os-release | head -n 5
+
+echo "== /opt =="
+ls -la /opt || true
+
+echo "== /opt/mito-hris =="
+ls -la /opt/mito-hris || true
+
+echo "== /opt/mito-hris/app =="
+ls -la /opt/mito-hris/app || true
             REPO_DIR="/opt/mito-hris/app"
             COMPOSE_DIR="/opt/mito-hris"
             DEPLOY_SHA="${{ github.event.workflow_run.head_sha }}"
