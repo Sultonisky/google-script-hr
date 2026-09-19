@@ -37,6 +37,14 @@
                 @can('manage_employees')
                     <div class="export-btns d-flex flex-wrap gap-2">
                         <button class="btn btn-sm fw-semibold text-white"
+                            style="background:#0d6efd;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
+                            type="button"
+                            data-bs-toggle="modal"
+                            data-bs-target="#outsourceContractModal"
+                            id="btnProsesKontrakOutsource">
+                            <i class="bi bi-file-earmark-text me-1"></i>Proses Kontrak
+                        </button>
+                        <button class="btn btn-sm fw-semibold text-white"
                             style="background:#eb1c24;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
                             type="button"
                             data-bs-toggle="modal"
@@ -140,6 +148,10 @@
         </div>
 
     </section>
+
+    @can('manage_employees')
+        @include('hr.partials.outsource-contract-modal')
+    @endcan
 @endsection
 
 @section('scripts')

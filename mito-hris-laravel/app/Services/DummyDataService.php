@@ -694,6 +694,7 @@ class DummyDataService
             'Demo Generator',                        // Created By
             $nowStr,                                 // Created At
             $nowStr,                                 // Updated At
+            '0',                                     // Outsource Contract Seq
         ];
     }
 

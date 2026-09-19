@@ -131,6 +131,7 @@ class EmployeeService
             offboardingDocsFolder: '',
             offboardingDocLinks: '',
             outsourceVendor: trim($data['outsourceVendor'] ?? ''),
+            outsourceContractSeq: 0,
             createdBy: $user,
             createdAt: $nowStr,
             updatedAt: $nowStr,
@@ -426,6 +427,7 @@ class EmployeeService
                 offboardingReason: trim($row['offboardingReason'] ?? ''),
                 offboardingApprovedBy: trim($row['offboardingApprovedBy'] ?? ''),
                 outsourceVendor: trim($row['outsourceVendor'] ?? $row['vendor'] ?? ''),
+                outsourceContractSeq: 0,
                 createdBy: $user,
                 createdAt: now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
                 updatedAt: now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')

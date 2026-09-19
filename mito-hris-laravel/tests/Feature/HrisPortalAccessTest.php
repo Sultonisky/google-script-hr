@@ -209,6 +209,7 @@ class HrisPortalAccessTest extends TestCase
             'create_offering'      => false,
             'manage_hold_blacklist'=> false,
             'manage_probation'     => false,
+            'view_contracts'       => false,
             'view_mpr'             => false,
             'create_mpr'           => false,
             'update_mpr'           => false,

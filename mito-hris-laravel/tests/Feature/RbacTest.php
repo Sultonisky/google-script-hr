@@ -301,6 +301,7 @@ class RbacTest extends TestCase
         $this->assertTrue(Gate::allows('view_employees'));
         $this->assertTrue(Gate::allows('manage_employees'));
         $this->assertTrue(Gate::allows('manage_probation'));
+        $this->assertTrue(Gate::allows('view_contracts'));
         $this->assertTrue(Gate::allows('view_reports'));
         $this->assertTrue(Gate::allows('manage_settings'));
     }
@@ -342,6 +343,13 @@ class RbacTest extends TestCase
     {
         $this->actingAsRole('Super Admin');
         $this->get('/hr/outsource')->assertOk();
+    }
+
+    #[Test]
+    public function super_admin_can_access_contracts(): void
+    {
+        $this->actingAsRole('Super Admin');
+        $this->get('/hr/contracts')->assertOk();
     }
 
     #[Test]
@@ -387,6 +395,7 @@ class RbacTest extends TestCase
             'manage_employees',
             'manage_probation',
             'view_employees',
+            'view_contracts',
             'view_recruitment',
             'update_candidates',
             'create_offering',
@@ -415,6 +424,13 @@ class RbacTest extends TestCase
     {
         $this->actingAsRole('Admin');
         $this->get('/hr/employees')->assertOk();
+    }
+
+    #[Test]
+    public function hr_manager_can_access_contracts(): void
+    {
+        $this->actingAsRole('Admin');
+        $this->get('/hr/contracts')->assertOk();
     }
 
     #[Test]
@@ -448,7 +464,7 @@ class RbacTest extends TestCase
         $this->actingAsRole('User');
 
         $allowed = ['view_recruitment', 'update_candidates', 'create_offering', 'manage_hold_blacklist', 'view_mpr', 'export_mpr'];
-        $denied  = ['view_employees', 'manage_employees', 'manage_probation', 'view_reports', 'manage_settings'];
+        $denied  = ['view_employees', 'view_contracts', 'manage_employees', 'manage_probation', 'view_reports', 'manage_settings'];
 
         foreach ($allowed as $p) {
             $this->assertTrue(Gate::allows($p), "User should have: {$p}");
@@ -501,6 +517,13 @@ class RbacTest extends TestCase
     }
 
     #[Test]
+    public function hr_staff_cannot_access_contracts(): void
+    {
+        $this->actingAsRole('User');
+        $this->get('/hr/contracts')->assertStatus(403);
+    }
+
+    #[Test]
     public function hr_staff_cannot_access_master_data(): void
     {
         $this->actingAsRole('User');
@@ -537,6 +560,7 @@ class RbacTest extends TestCase
             ->assertSee('Manpower Request')
             ->assertDontSee('href="' . route('hr.employees.index') . '"')
             ->assertDontSee('href="' . route('hr.outsource.index') . '"')
+            ->assertDontSee('href="' . route('hr.contracts.index') . '"')
             ->assertDontSee('href="' . route('hr.settings.index') . '"')
             ->assertDontSee('href="' . route('hr.users.index') . '"')
             ->assertDontSee('id="btnHold"')
