@@ -1,9 +1,12 @@
 name: Deploy MITO HRIS
 
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows:
+      - "CI - MITO HRIS"
+    types:
+      - completed
+
   workflow_dispatch:
 
 permissions:
@@ -15,8 +18,17 @@ concurrency:
 
 jobs:
   deploy:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_branch == 'main'
+      )
+
     runs-on: ubuntu-latest
     timeout-minutes: 30
+
     environment:
       name: production
 
@@ -28,72 +40,93 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           command_timeout: 30m
+
           script: |
             set -Eeuo pipefail
 
             trap 'echo "Deployment failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
 
-            cd /home/ubuntu/hris/mito-hris-laravel
+            REPO_DIR="/opt/mito-hris/app"
+            COMPOSE_DIR="/opt/mito-hris"
+            DEPLOY_SHA="${{ github.event.workflow_run.head_sha }}"
+
+            echo "== Deployment target =="
+            echo "Commit: $DEPLOY_SHA"
 
             echo "== Updating source =="
+
+            cd "$REPO_DIR"
+
             git fetch --prune origin main
-            git reset --hard origin/main
-            test "$(git rev-parse HEAD)" = "${{ github.sha }}" || {
-              echo "Server checkout does not match the workflow commit." >&2
+
+            git reset --hard "$DEPLOY_SHA"
+
+            echo "== Verifying deployed commit =="
+
+            test "$(git rev-parse HEAD)" = "$DEPLOY_SHA" || {
+              echo "Server checkout does not match CI commit." >&2
+              echo "Expected: $DEPLOY_SHA" >&2
+              echo "Actual:   $(git rev-parse HEAD)" >&2
               exit 1
             }
 
-            echo "== Installing PHP dependencies =="
-            composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress
+            echo "Deploying commit: $(git rev-parse --short HEAD)"
 
-            echo "== Checking Node dependencies =="
-            if [ -f package-lock.json ]; then
-              npm ci --no-audit --no-fund
-            else
-              npm install --no-audit --no-fund
-            fi
+            echo "== Building HRIS Docker image =="
 
-            echo "== Building frontend assets =="
-            npm run build
+            cd "$COMPOSE_DIR"
 
-            echo "== Preparing writable Laravel directories =="
-            PHP_FPM_USER="${PHP_FPM_USER:-www-data}"
-            if ! id "$PHP_FPM_USER" >/dev/null 2>&1; then
-              echo "PHP-FPM user '$PHP_FPM_USER' does not exist. Set PHP_FPM_USER to the server's PHP-FPM account." >&2
-              exit 1
-            fi
-            sudo mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache database
-            sudo chown -R "$(id -un):$PHP_FPM_USER" storage bootstrap/cache database
-            sudo chmod -R ug+rwX storage bootstrap/cache database
+            docker compose build hris-app
+
+            echo "== Updating containers =="
+
+            docker compose up -d hris-app hris-nginx
+
+            echo "== Waiting for HRIS container =="
+
+            for i in {1..30}; do
+              if docker inspect -f '{{.State.Running}}' hris-app 2>/dev/null | grep -q true; then
+                echo "hris-app is running."
+                break
+              fi
+
+              if [ "$i" -eq 30 ]; then
+                echo "hris-app failed to start." >&2
+                docker logs --tail 100 hris-app >&2 || true
+                exit 1
+              fi
+
+              sleep 2
+            done
 
             echo "== Applying database migrations =="
-            php artisan migrate --force
 
-            echo "== Running Laravel tests =="
-            echo "Tests already passed in the verify job. Production deploy skips dev-only PHPUnit dependencies."
+            docker exec hris-app php artisan migrate --force
 
             echo "== Running MITO diagnostics =="
-            # Clear framework caches before the Google Sheets sync so the
-            # freshly synchronized sheet data remains available to the first
-            # production request after deployment.
-            php artisan optimize:clear
-            php artisan mito:diagnose
+
+            docker exec hris-app php artisan optimize:clear
+            docker exec hris-app php artisan mito:diagnose
 
             echo "== Checking Google Sheets =="
-            php artisan mito:health-check
-            php artisan mito:setup-sheets --fix --no-interaction
-            php artisan mito:validate-schema
-            php artisan mito:sync
+
+            docker exec hris-app php artisan mito:health-check
+            docker exec hris-app php artisan mito:setup-sheets --fix --no-interaction
+            docker exec hris-app php artisan mito:validate-schema
+            docker exec hris-app php artisan mito:sync
 
             echo "== Laravel optimization =="
-            php artisan config:cache
-            php artisan route:cache
-            php artisan view:cache
 
-            echo "== Reloading PHP-FPM =="
-            sudo systemctl reload php8.3-fpm
+            docker exec hris-app php artisan config:cache
+            docker exec hris-app php artisan route:cache
+            docker exec hris-app php artisan view:cache
 
             echo "== Post-deploy application check =="
-            php artisan about >/dev/null
+
+            docker exec hris-app php artisan about >/dev/null
+
+            echo "== Container status =="
+
+            docker compose ps
 
             echo "== Deployment completed successfully =="
