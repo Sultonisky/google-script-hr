@@ -12,6 +12,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'domain' => \App\Http\Middleware\DomainMiddleware::class,
             'portal.access' => \App\Http\Middleware\PortalAccessMiddleware::class,
