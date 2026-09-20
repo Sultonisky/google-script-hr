@@ -62,6 +62,33 @@ class PublicRecruitmentSubmissionFlowTest extends TestCase
         $response->assertRedirect(route('public.career.submission-success'));
     }
 
+    public function test_apply_form_exposes_mito_page_loader_for_submit(): void
+    {
+        $response = $this->onDomain('recruitment')
+            ->withSession(['candidate_consent' => true])
+            ->get(route('public.career.form'));
+
+        $response->assertOk();
+        $response->assertSee('id="publicLoader"', false);
+        $response->assertSee('window.showPublicLoader', false);
+        $response->assertSee('showPublicLoader(\'Mengirim data\')', false);
+
+        $outsource = $this->onDomain('outsource')->get(route('public.outsource.apply'));
+        $outsource->assertOk();
+        $outsource->assertSee('showPublicLoader(\'Mengirim data\')', false);
+    }
+
+    public function test_success_page_is_terminal_without_navigation_actions(): void
+    {
+        $response = $this->onDomain('recruitment')
+            ->withSession(['public_recruitment_submission_completed' => true])
+            ->get(route('public.career.submission-success'));
+
+        $response->assertOk();
+        $response->assertDontSee('Kembali ke Halaman Info');
+        $response->assertSee('history.pushState', false);
+    }
+
     public function test_invalid_submission_does_not_create_success_state(): void
     {
         $response = $this->onDomain('recruitment')
@@ -70,7 +97,7 @@ class PublicRecruitmentSubmissionFlowTest extends TestCase
             ->post(route('public.career.store'), []);
 
         $response->assertRedirect(route('public.career.form'));
-        $response->assertSessionHasErrors(['posisi_dilamar', 'nama_lengkap', 'nik', 'email', 'nomor_telepon', 'agreement']);
+        $response->assertSessionHasErrors(['posisi_dilamar', 'nama_lengkap', 'nik', 'email', 'nomor_telepon', 'golongan_darah', 'agreement']);
         $response->assertSessionMissing('public_recruitment_submission_completed');
     }
 
@@ -82,6 +109,22 @@ class PublicRecruitmentSubmissionFlowTest extends TestCase
             'nik' => '3273010101900001',
             'email' => 'pelamar.uji@example.com',
             'nomor_telepon' => '81234567890',
+            'jenis_kelamin' => 'Laki-laki',
+            'birth_date' => '1990-01-01',
+            'usia' => 36,
+            'golongan_darah' => 'O',
+            'marital_status' => 'Belum Menikah',
+            'alamat_domisili' => 'Jl. Merdeka No. 1',
+            'provinsi' => '32',
+            'kota' => '3273',
+            'kota_nama' => 'KOTA BANDUNG',
+            'kecamatan' => 'Coblong',
+            'pendidikan_terakhir' => 'S1',
+            'pengalaman_kerja' => 'Fresh Graduate',
+            'status_bekerja' => 'Unemployed',
+            'kesediaan_bergabung' => 'Segera',
+            'ekspektasi_gaji' => '5.000.000',
+            'sumber_informasi' => 'Website Perusahaan',
             'agreement' => '1',
         ];
     }
