@@ -189,7 +189,7 @@ class LoginController extends Controller
         Request $request,
         string $errorMessage
     ): RedirectResponse|JsonResponse {
-        $genericError = 'Email/username atau password salah.';
+        $genericError = 'Email atau password salah.';
         $this->auditRepo->log('Authentication', $request->input('identifier', 'UNKNOWN'), 'login_failed', null, null, null, $request->input('identifier', 'UNKNOWN'), 'Authentication');
 
         if ($request->expectsJson()) {

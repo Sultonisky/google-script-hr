@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\LoginRequest;
 use App\Repositories\Contracts\MprRequestorRepositoryInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -33,15 +34,11 @@ class MprAuthController extends Controller
         return view('auth.mpr-auth');
     }
 
-    public function login(Request $request)
+    public function login(LoginRequest $request)
     {
-        $request->validate([
-            'identifier' => ['required', 'string', 'max:255'],
-            'password' => ['required', 'string'],
-        ]);
-
-        $identifier = strtolower(trim((string) $request->input('identifier')));
-        $password = (string) $request->input('password');
+        $data = $request->validated();
+        $identifier = strtolower(trim((string) ($data['identifier'] ?? '')));
+        $password = (string) ($data['password'] ?? '');
         $key = 'mpr-login|' . $identifier . '|' . $request->ip();
 
         if (RateLimiter::tooManyAttempts($key, 5)) {
