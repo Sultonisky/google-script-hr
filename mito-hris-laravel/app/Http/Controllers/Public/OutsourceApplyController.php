@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Public\OutsourceApplyRequest;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
+use App\Services\EmployeeIdGenerator;
 use App\Services\RecruitmentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -17,13 +18,16 @@ class OutsourceApplyController extends Controller
 
     protected EmployeeRepositoryInterface $employeeRepo;
     protected AuditLogRepositoryInterface $auditRepo;
+    protected EmployeeIdGenerator $idGenerator;
 
     public function __construct(
         EmployeeRepositoryInterface $employeeRepo,
-        AuditLogRepositoryInterface $auditRepo
+        AuditLogRepositoryInterface $auditRepo,
+        EmployeeIdGenerator $idGenerator
     ) {
         $this->employeeRepo = $employeeRepo;
         $this->auditRepo = $auditRepo;
+        $this->idGenerator = $idGenerator;
     }
 
     public function index(): View|RedirectResponse
@@ -70,8 +74,19 @@ class OutsourceApplyController extends Controller
             'location' => $request->input('consent_location', $request->input('location')),
         ];
 
-        $now = now()->timezone('Asia/Jakarta');
-        $employeeId = 'EMP-OS-' . $now->format('Y') . '-' . str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT);
+        $existingIds = $this->employeeRepo->getAll()
+            ->pluck('employeeId')
+            ->filter()
+            ->map(fn ($id) => strtoupper(trim((string) $id)))
+            ->all();
+
+        $joinDate = $validated['tanggal_masuk'] ?? null;
+        $employeeId = $this->idGenerator->generate($joinDate, $existingIds);
+        $attempts = 0;
+        while (in_array(strtoupper($employeeId), $existingIds, true) && $attempts < 10) {
+            $employeeId = $this->idGenerator->generate($joinDate, $existingIds);
+            $attempts++;
+        }
 
         // Resolve kecamatan: dropdown first, fallback manual
         $kecamatan = $validated['kecamatan'] ?? null;
