@@ -8,6 +8,12 @@ use Illuminate\Validation\Rule;
 
 class StoreMprRequest extends FormRequest
 {
+    private const NAME_REGEX = '/^[\p{L}]+(?:[ ]+[\p{L}]+)*$/u';
+
+    private const POSITION_REGEX = '/^[\p{L}]+(?:[ \-]+[\p{L}]+)*$/u';
+
+    private const LANGUAGES_REGEX = '/^[\p{L} ,.\(\)\r\n]+$/u';
+
     public function authorize(): bool
     {
         return true;
@@ -16,7 +22,7 @@ class StoreMprRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'position'           => ['required', 'string', 'max:255'],
+            'position'           => ['required', 'string', 'max:255', 'regex:' . self::POSITION_REGEX],
             'department'         => ['required', 'string', 'max:255', Rule::in(array_keys(config('hris.mpr_department_divisions', [])))],
             'division'           => ['required', 'string', 'max:255', new DivisionBelongsToDepartment((string) $this->input('department'))],
             'approval_division'  => ['nullable', 'string', 'max:255', Rule::in(config('hris.mpr.approval_divisions', []))],
@@ -41,17 +47,21 @@ class StoreMprRequest extends FormRequest
             'requirements'       => ['nullable', 'string'],
             // 'Notes' deprecated — diganti 'Special Notes'
             // Requestor identity (for HR/Super Admin creating on behalf of manager)
-            'manager_name'       => ['nullable', 'string', 'max:255'],
+            'manager_name'       => ['nullable', 'string', 'max:255', 'regex:' . self::NAME_REGEX],
             'manager_email'      => ['nullable', 'email', 'max:255'],
             // entity: target entity yang dituju untuk kebutuhan posisi
             'entity'             => ['required', 'string', 'max:255', Rule::in(array_keys(config('hris.mpr_form_options.target_entities', [])))],
             // -- Field baru (Refactor Create MPR) --
-            'requestor_position'    => ['nullable', 'string', 'max:255'],
-            // Hari Kerja: multiple checkbox
-            'working_days'          => ['required', 'array', 'min:1'],
+            'requestor_position'    => ['nullable', 'string', 'max:255', 'regex:' . self::POSITION_REGEX],
+            // Hari Kerja: single radio
+            'working_days'          => ['required', 'array', 'min:1', 'max:1'],
             'working_days.*'        => ['string', Rule::in(array_keys(config('hris.mpr_form_options.working_days', [])))],
-            // Jam Kerja: multiple checkbox
-            'working_hours'         => ['required', 'array', 'min:1'],
+            // Jam Kerja: single radio (tidak wajib jika Hari Kerja = Shifting)
+            'working_hours'         => [
+                Rule::requiredIf(fn () => !$this->isShiftingSelected()),
+                'array',
+                'max:1',
+            ],
             'working_hours.*'       => ['string', Rule::in(array_keys(config('hris.mpr_form_options.working_hours', [])))],
             // Shift Detail: free text, wajib hanya jika Hari Kerja "Shifting" dipilih
             'shift_detail'          => [
@@ -63,15 +73,15 @@ class StoreMprRequest extends FormRequest
                     }
                 },
             ],
-            // Benefits: multiple checkbox
-            'benefits'              => ['required', 'array', 'min:1'],
+            // Benefits: single radio
+            'benefits'              => ['required', 'array', 'min:1', 'max:1'],
             'benefits.*'            => ['string', Rule::in(array_keys(config('hris.mpr_form_options.benefits', [])))],
             // Pendidikan & Pengalaman: single selection
             'education_background'  => ['required', 'string', Rule::in(array_keys(config('hris.mpr_form_options.education_background', [])))],
             'work_experience'       => ['required', 'string', Rule::in(array_keys(config('hris.mpr_form_options.work_experience', [])))],
             // Free text kualifikasi
             'skills_competencies'   => ['nullable', 'string', 'max:2000'],
-            'languages'             => ['nullable', 'string', 'max:1000'],
+            'languages'             => ['nullable', 'string', 'max:1000', 'regex:' . self::LANGUAGES_REGEX],
             'industry_reference'    => ['nullable', 'string', 'max:1000'],
             'special_notes'         => ['nullable', 'string', 'max:2000'],
             'key_results_targets'   => ['nullable', 'string', 'max:4000'],
@@ -98,16 +108,30 @@ class StoreMprRequest extends FormRequest
             'expected_join_date.date'     => 'Format tanggal target bergabung tidak valid.',
             'reason.required'             => 'Alasan permintaan manpower wajib dipilih.',
             'entity.required'             => 'Pilih entitas / perusahaan untuk pengajuan MPR ini.',
-            'working_days.required'       => 'Hari Kerja wajib dipilih minimal satu.',
+            'position.regex'              => 'Posisi / nama jabatan hanya boleh huruf, spasi, dan tanda hubung.',
+            'manager_name.regex'          => 'Nama pemohon hanya boleh huruf dan spasi.',
+            'requestor_position.regex'    => 'Jabatan pemohon hanya boleh huruf, spasi, dan tanda hubung.',
+            'languages.regex'             => 'Bahasa yang dikuasai hanya boleh huruf, spasi, koma, titik, dan kurung.',
+            'working_days.required'       => 'Hari Kerja wajib dipilih.',
+            'working_days.max'            => 'Hari Kerja hanya boleh dipilih satu.',
             'working_days.*.in'           => 'Pilihan Hari Kerja tidak valid.',
-            'working_hours.required'      => 'Jam Kerja wajib dipilih minimal satu.',
+            'working_hours.required'      => 'Jam Kerja wajib dipilih.',
+            'working_hours.max'           => 'Jam Kerja hanya boleh dipilih satu.',
             'working_hours.*.in'          => 'Pilihan Jam Kerja tidak valid.',
-            'benefits.required'           => 'Benefits wajib dipilih minimal satu.',
+            'benefits.required'           => 'Benefits wajib dipilih.',
+            'benefits.max'                => 'Benefits hanya boleh dipilih satu.',
             'benefits.*.in'               => 'Pilihan Benefits tidak valid.',
             'education_background.required' => 'Latar Belakang Pendidikan wajib dipilih.',
             'education_background.in'     => 'Pilihan Latar Belakang Pendidikan tidak valid.',
             'work_experience.required'    => 'Pengalaman Kerja wajib dipilih.',
             'work_experience.in'          => 'Pilihan Pengalaman Kerja tidak valid.',
         ];
+    }
+
+    private function isShiftingSelected(): bool
+    {
+        $days = array_map('strtolower', array_map('trim', (array) $this->input('working_days', [])));
+
+        return in_array('shifting', $days, true);
     }
 }

@@ -624,6 +624,13 @@
         }
 
         // Submit edit employee via Fetch API — PUT /hr/employees/{id}
+        function sanitizeOrgTitleValue(value) {
+            return String(value || '')
+                .replace(/[^\p{L} \-\/]/gu, '')
+                .replace(/ {2,}/g, ' ')
+                .trim();
+        }
+
         function empSave() {
             var empId = (document.getElementById('efId') || {}).value || '';
             var name = ((document.getElementById('efName') || {}).value || '').trim();
@@ -655,11 +662,11 @@
                 bpjsKesehatan: (document.getElementById('efBpjsKes') || {}).value || '',
                 statusEmployee: (document.getElementById('efStatusEmployee') || {}).value || '',
                 branchName: (document.getElementById('efBranch') || {}).value || '',
-                division: (document.getElementById('efDivision') || {}).value || '',
+                division: sanitizeOrgTitleValue((document.getElementById('efDivision') || {}).value),
                 department: (document.getElementById('efDept') || {}).value || '',
                 costCenter: (document.getElementById('efCostCenter') || {}).value || '',
-                jobPositionLocation: (document.getElementById('efPos') || {}).value || '',
-                jobPosition: (document.getElementById('efPosNoLoc') || {}).value || '',
+                jobPositionLocation: sanitizeOrgTitleValue((document.getElementById('efPos') || {}).value),
+                jobPosition: sanitizeOrgTitleValue((document.getElementById('efPosNoLoc') || {}).value),
                 jobLevel: (document.getElementById('efJobLevel') || {}).value || '',
                 grade: (document.getElementById('efGrade') || {}).value || '',
                 areaKerja: (document.getElementById('efDistrict') || {}).value || '',
@@ -723,6 +730,9 @@
                         btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Simpan';
                     }
                     var msg = (err && err.message) ? err.message : 'Terjadi kesalahan. Coba lagi.';
+                    if (err && err.errors) {
+                        msg = Object.values(err.errors).flat().join(' ');
+                    }
                     showToast(msg, 'error');
                 });
         }

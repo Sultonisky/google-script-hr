@@ -16,7 +16,9 @@
             button.disabled = !checkbox.checked;
         };
 
-        checkbox.addEventListener("change", syncButton);
+        ["change", "input", "click"].forEach(function (eventName) {
+            checkbox.addEventListener(eventName, syncButton);
+        });
         syncButton();
     }
 
@@ -159,6 +161,51 @@
                 const sanitize = function () {
                     field.value = field.value
                         .replace(/[^\p{L}0-9 .,&\-\/]/gu, "")
+                        .replace(/ {2,}/g, " ");
+                };
+
+                field.addEventListener("input", sanitize);
+                field.addEventListener("blur", function () {
+                    field.value = field.value.trim();
+                });
+            });
+
+        document
+            .querySelectorAll("[data-sanitize-position]")
+            .forEach(function (field) {
+                const sanitize = function () {
+                    field.value = field.value
+                        .replace(/[^\p{L} \-]/gu, "")
+                        .replace(/ {2,}/g, " ");
+                };
+
+                field.addEventListener("input", sanitize);
+                field.addEventListener("blur", function () {
+                    field.value = field.value.trim();
+                });
+            });
+
+        document
+            .querySelectorAll("[data-sanitize-languages]")
+            .forEach(function (field) {
+                const sanitize = function () {
+                    field.value = field.value
+                        .replace(/[^\p{L} ,.\(\)\r\n]/gu, "")
+                        .replace(/ {2,}/g, " ");
+                };
+
+                field.addEventListener("input", sanitize);
+                field.addEventListener("blur", function () {
+                    field.value = field.value.trim();
+                });
+            });
+
+        document
+            .querySelectorAll("[data-sanitize-org-title]")
+            .forEach(function (field) {
+                const sanitize = function () {
+                    field.value = field.value
+                        .replace(/[^\p{L} \-\/]/gu, "")
                         .replace(/ {2,}/g, " ");
                 };
 

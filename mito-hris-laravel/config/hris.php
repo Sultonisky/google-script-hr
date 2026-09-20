@@ -104,18 +104,18 @@ return [
         'Creative' => ['Graphic Design', 'Multimedia', 'Content Production', 'Creative Design', 'Photography & Videography'],
     ],
     'mpr_form_options' => [
-        // Multiple checkbox — Hari Kerja
+        // Single radio — Hari Kerja
         'working_days' => [
             'senin_jumat' => 'Senin - Jumat',
             'senin_sabtu' => 'Senin - Sabtu',
             'shifting'    => 'Shifting',
         ],
-        // Multiple checkbox — Jam Kerja
+        // Single radio — Jam Kerja
         'working_hours' => [
             '08_00_17_00' => '08:00 - 17:00',
             '08_30_17_30' => '08:30 - 17:30',
         ],
-        // Multiple checkbox — Benefits
+        // Single radio — Benefits
         'benefits' => [
             'bpjs'                  => 'BPJS',
             'asuransi_kesehatan'    => 'Asuransi Kesehatan',

@@ -170,6 +170,10 @@ class EmployeeController extends Controller
         $request->validate([
             'fullName'       => 'required|string|max:255',
             'statusEmployee' => 'required|string|max:100',
+            'employeeId'     => ['nullable', 'string', 'max:12', 'regex:/^\d{1,12}$/'],
+            'division'       => ['nullable', 'string', 'max:255', 'regex:/^[\p{L}]+(?:[ \-\/]+[\p{L}]+)*$/u'],
+            'jobPosition'    => ['nullable', 'string', 'max:255', 'regex:/^[\p{L}]+(?:[ \-\/]+[\p{L}]+)*$/u'],
+            'jobPositionLocation' => ['nullable', 'string', 'max:255', 'regex:/^[\p{L}]+(?:[ \-\/]+[\p{L}]+)*$/u'],
             'joinDate'       => 'nullable|date',
             'personalEmail'  => 'nullable|email|max:255',
             'workingEmail'   => 'nullable|email|max:255',
@@ -181,6 +185,11 @@ class EmployeeController extends Controller
             'bankAccount'    => 'nullable|string|max:30',
             'bpjsKetenagakerjaan' => 'nullable|string|max:30',
             'bpjsKesehatan'  => 'nullable|string|max:30',
+        ], [
+            'employeeId.regex' => 'Employee ID hanya boleh angka (maksimal 12 digit).',
+            'division.regex' => 'Divisi hanya boleh huruf, spasi, tanda hubung, dan garis miring.',
+            'jobPosition.regex' => 'Jabatan hanya boleh huruf, spasi, tanda hubung, dan garis miring.',
+            'jobPositionLocation.regex' => 'Jabatan (dengan lokasi) hanya boleh huruf, spasi, tanda hubung, dan garis miring.',
         ]);
 
         $result = $this->employeeService->createEmployee(
@@ -715,8 +724,16 @@ class EmployeeController extends Controller
     public function update(Request $request, string $id): JsonResponse
     {
         // Validasi minimal — nama wajib, field lain opsional (sesuai GAS updateEmployee)
+        $orgTitle = '/^[\p{L}]+(?:[ \-\/]+[\p{L}]+)*$/u';
         $request->validate([
             'fullName' => 'required|string|max:255',
+            'division' => ['nullable', 'string', 'max:255', 'regex:' . $orgTitle],
+            'jobPosition' => ['nullable', 'string', 'max:255', 'regex:' . $orgTitle],
+            'jobPositionLocation' => ['nullable', 'string', 'max:255', 'regex:' . $orgTitle],
+        ], [
+            'division.regex' => 'Divisi hanya boleh huruf, spasi, tanda hubung, dan garis miring.',
+            'jobPosition.regex' => 'Jabatan hanya boleh huruf, spasi, tanda hubung, dan garis miring.',
+            'jobPositionLocation.regex' => 'Jabatan (dengan lokasi) hanya boleh huruf, spasi, tanda hubung, dan garis miring.',
         ]);
 
         $employee = $this->employeeRepo->findById($id);

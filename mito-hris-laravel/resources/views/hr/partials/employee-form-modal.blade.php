@@ -51,7 +51,8 @@
                             <label class="form-label fw-semibold" style="font-size:12.5px">Nama Lengkap <span
                                     class="text-danger">*</span></label>
                             <input type="text" class="form-control form-control-sm" id="efName"
-                                placeholder="Nama lengkap sesuai KTP" required />
+                                placeholder="Nama lengkap sesuai KTP" required maxlength="255"
+                                data-sanitize-name="true" />
                         </div>
                         <div class="col-md-3">
                             <label class="form-label fw-semibold" style="font-size:12.5px">NIK (16 Digit)</label>
@@ -231,7 +232,7 @@
                         <div class="col-md-4">
                             <label class="form-label fw-semibold" style="font-size:12.5px">Divisi</label>
                             <input type="text" class="form-control form-control-sm" id="efDivision"
-                                placeholder="Nama divisi" />
+                                placeholder="Nama divisi" maxlength="255" data-sanitize-org-title="true" />
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold" style="font-size:12.5px">Departemen</label>
@@ -247,13 +248,13 @@
                             <label class="form-label fw-semibold" style="font-size:12.5px">Jabatan (dengan
                                 Lokasi)</label>
                             <input type="text" class="form-control form-control-sm" id="efPos"
-                                placeholder="Jabatan + lokasi" />
+                                placeholder="Jabatan + lokasi" maxlength="255" data-sanitize-org-title="true" />
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold" style="font-size:12.5px">Jabatan (tanpa
                                 Lokasi)</label>
                             <input type="text" class="form-control form-control-sm" id="efPosNoLoc"
-                                placeholder="Jabatan tanpa lokasi" />
+                                placeholder="Jabatan tanpa lokasi" maxlength="255" data-sanitize-org-title="true" />
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold" style="font-size:12.5px">Job Level</label>

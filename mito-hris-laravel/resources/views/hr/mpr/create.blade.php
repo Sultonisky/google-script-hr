@@ -142,7 +142,8 @@
                                                 class="text-danger">*</span></label>
                                         <input type="text" name="position" class="form-control"
                                             value="{{ old('position') }}"
-                                            placeholder="Contoh: Frontend Developer, Sales Executive" required>
+                                            placeholder="Contoh: Frontend Developer, Sales Executive" required
+                                            maxlength="255" data-sanitize-position="true">
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Departemen <span class="text-danger">*</span></label>
@@ -234,7 +235,7 @@
                                         <div class="border rounded p-2 d-flex flex-column gap-1">
                                             @foreach ($mprOptions['working_days'] ?? [] as $dayKey => $dayLabel)
                                                 <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" name="working_days[]"
+                                                    <input class="form-check-input" type="radio" name="working_days[]"
                                                         value="{{ $dayKey }}" id="wd_{{ $dayKey }}"
                                                         {{ in_array($dayKey, $oldWorkingDays) ? 'checked' : '' }}>
                                                     <label class="form-check-label"
@@ -248,7 +249,7 @@
                                         <div class="border rounded p-2 d-flex flex-column gap-1">
                                             @foreach ($mprOptions['working_hours'] ?? [] as $hourKey => $hourLabel)
                                                 <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox"
+                                                    <input class="form-check-input" type="radio"
                                                         name="working_hours[]" value="{{ $hourKey }}"
                                                         id="wh_{{ $hourKey }}"
                                                         {{ in_array($hourKey, $oldWorkingHours) ? 'checked' : '' }}>
@@ -269,7 +270,7 @@
                                             placeholder="Contoh: Shift pagi 07:00-15:00, shift siang 15:00-23:00, rotasi mingguan..."
                                             disabled>{{ old('shift_detail') }}</textarea>
                                         <div class="form-text text-muted small mt-1" id="shiftDetailNote">
-                                            <i class="bi bi-info-circle me-1"></i>Centang "Shifting" pada Hari Kerja untuk mengisi detail shift.
+                                            <i class="bi bi-info-circle me-1"></i>Pilih "Shifting" pada Hari Kerja untuk mengisi detail shift.
                                         </div>
                                     </div>
                                     <div class="col-12">
@@ -279,7 +280,7 @@
                                             @foreach ($mprOptions['benefits'] ?? [] as $benefitKey => $benefitLabel)
                                                 <div class="col-md-4 col-6">
                                                     <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" name="benefits[]"
+                                                        <input class="form-check-input" type="radio" name="benefits[]"
                                                             value="{{ $benefitKey }}" id="bn_{{ $benefitKey }}"
                                                             {{ in_array($benefitKey, $oldBenefits) ? 'checked' : '' }}>
                                                         <label class="form-check-label"
@@ -363,7 +364,10 @@
                                     <div class="col-md-6">
                                         <label class="form-label">Bahasa yang Dikuasai</label>
                                         <textarea name="languages" class="form-control" rows="3"
-                                            placeholder="Contoh: Bahasa Indonesia (aktif), Bahasa Inggris (pasif)...">{{ old('languages') }}</textarea>
+                                            placeholder="Contoh: Bahasa Indonesia (aktif), Bahasa Inggris (pasif)..."
+                                            maxlength="1000" data-sanitize-languages="true"
+                                            autocomplete="off">{{ old('languages') }}</textarea>
+                                        <div class="form-text text-muted small">Hanya huruf, spasi, koma, titik, dan kurung.</div>
                                     </div>
 
                                     {{-- Baris 4: Referensi Industri (full width) --}}
@@ -454,15 +458,34 @@
 
             const formMpr = document.getElementById('formManagerMpr');
 
+            function sanitizeLanguagesField(field) {
+                if (!field) return;
+                field.value = field.value
+                    .replace(/[^\p{L} ,.\(\)\r\n]/gu, '')
+                    .replace(/ {2,}/g, ' ');
+            }
+
+            if (formMpr) {
+                const languagesField = formMpr.querySelector('textarea[name="languages"]');
+                if (languagesField) {
+                    languagesField.addEventListener('input', function () {
+                        sanitizeLanguagesField(languagesField);
+                    });
+                    languagesField.addEventListener('blur', function () {
+                        languagesField.value = languagesField.value.trim();
+                    });
+                }
+            }
+
             /**
              * Logika Shifting:
-             * - Jika "Shifting" diceklis:
-             *   → Semua checkbox hari kerja lain (non-shifting) di-uncheck & disabled
-             *   → Semua checkbox jam kerja di-uncheck & disabled
+             * - Jika "Shifting" dipilih (radio):
+             *   → Radio hari kerja lain di-disable
+             *   → Radio jam kerja di-uncheck & disabled
              *   → Textarea detail shift: enabled, required, border highlight
-             * - Jika "Shifting" di-unceklis:
-             *   → Semua checkbox hari kerja lain kembali enabled
-             *   → Semua checkbox jam kerja kembali enabled
+             * - Jika hari kerja lain dipilih:
+             *   → Radio hari kerja lain kembali enabled
+             *   → Radio jam kerja kembali enabled
              *   → Textarea detail shift: disabled, not required, clear value
              */
             function applyShiftingState(form) {
@@ -521,10 +544,9 @@
             }
 
             if (formMpr) {
-                const shiftingCb = formMpr.querySelector('input[name="working_days[]"][value="shifting"]');
-                if (shiftingCb) {
-                    shiftingCb.addEventListener('change', () => applyShiftingState(formMpr));
-                }
+                formMpr.querySelectorAll('input[name="working_days[]"]').forEach(function (dayRadio) {
+                    dayRadio.addEventListener('change', () => applyShiftingState(formMpr));
+                });
                 // Inisialisasi state saat halaman dimuat (handle old() value saat validation error)
                 applyShiftingState(formMpr);
             }

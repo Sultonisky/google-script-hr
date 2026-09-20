@@ -101,6 +101,35 @@ class PublicRecruitmentSubmissionFlowTest extends TestCase
         $response->assertSessionMissing('public_recruitment_submission_completed');
     }
 
+    public function test_consent_without_location_unlocks_the_application_form(): void
+    {
+        $response = $this->onDomain('recruitment')
+            ->post(route('public.career.consent'), [
+                'consent' => '1',
+            ]);
+
+        $response->assertRedirect(route('public.career.form'));
+        $response->assertSessionHas('candidate_consent', true);
+
+        $form = $this->onDomain('recruitment')
+            ->withSession(['candidate_consent' => true])
+            ->get(route('public.career.form'));
+
+        $form->assertOk();
+    }
+
+    public function test_landing_enables_proceed_from_consent_without_waiting_for_gps(): void
+    {
+        $response = $this->onDomain('recruitment')->get(route('public.career.index'));
+
+        $response->assertOk();
+        $response->assertSee('id="btnProceedApply"', false);
+        $response->assertSee('id="consentCheckbox"', false);
+        $response->assertSee('timeout: 4000', false);
+        $response->assertSee("locationField.value = 'unavailable'", false);
+        $response->assertSee('syncProceedButton', false);
+    }
+
     private function validPayload(): array
     {
         return [
