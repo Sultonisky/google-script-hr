@@ -42,16 +42,7 @@ class UserSheetsRepository implements UserRepositoryInterface
 
     public function findByIdentifier(string $identifier): ?array
     {
-        $rows = $this->sheets->getRowsAsAssoc($this->sheetName);
-        foreach ($rows as $row) {
-            $email = strtolower(trim($row['Email'] ?? ''));
-            $username = strtolower(trim($row['Username'] ?? ''));
-            $identifierLower = strtolower(trim($identifier));
-            if ($email === $identifierLower || $username === $identifierLower) {
-                return $row;
-            }
-        }
-        return null;
+        return $this->findByEmail($identifier);
     }
 
     public function getAll(): array

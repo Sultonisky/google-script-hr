@@ -10,7 +10,7 @@ interface MprRequestorRepositoryInterface
     public function findByEmail(string $email): ?array;
 
     /**
-     * Find a requestor by email OR username.
+     * Find a requestor by email (login identifier).
      */
     public function findByIdentifier(string $identifier): ?array;
 

@@ -40,16 +40,7 @@ class MprRequestorSheetsRepository implements MprRequestorRepositoryInterface
 
     public function findByIdentifier(string $identifier): ?array
     {
-        $rows = $this->sheets->getRowsAsAssoc($this->sheetName);
-        $needle = strtolower(trim($identifier));
-        foreach ($rows as $row) {
-            $email    = strtolower(trim($row['Email']    ?? ''));
-            $username = strtolower(trim($row['Username'] ?? ''));
-            if ($email === $needle || $username === $needle) {
-                return $row;
-            }
-        }
-        return null;
+        return $this->findByEmail($identifier);
     }
 
     public function getAll(): array

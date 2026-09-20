@@ -36,9 +36,6 @@ class UserSheetsRepository implements UserRepositoryInterface
             if (strtolower(trim($row['Email'] ?? '')) === strtolower(trim($identifier))) {
                 return $row;
             }
-            if (strtolower(trim($row['Username'] ?? '')) === strtolower(trim($identifier))) {
-                return $row;
-            }
         }
         return null;
     }
