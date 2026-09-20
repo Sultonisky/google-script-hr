@@ -228,6 +228,11 @@
             box-shadow: 0 0 0 3px rgba(235, 28, 36, 0.1);
         }
 
+        .login-form-group input.is-invalid {
+            border-color: #dc2626;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+        }
+
         .password-toggle {
             position: absolute;
             right: 10px;
@@ -528,7 +533,7 @@
         <div class="login-card">
 
             <div class="login-card-title">{{ $loginTitle ?? 'Masuk ke Sistem' }}</div>
-            <div class="login-card-subtitle">{{ $loginSubtitle ?? 'Gunakan email/username dan password Anda' }}</div>
+            <div class="login-card-subtitle">{{ $loginSubtitle ?? 'Gunakan email dan password Anda' }}</div>
 
             <div class="login-error" id="loginError">
                 <i class="bi bi-exclamation-triangle-fill"></i>
@@ -552,14 +557,15 @@
                 <div class="login-success-welcome" id="loginSuccessWelcome"></div>
             </div>
 
-            <form id="loginForm" autocomplete="on" method="POST" action="{{ $loginPostUrl ?? route('login') }}">
+            <form id="loginForm" autocomplete="on" method="POST" action="{{ $loginPostUrl ?? route('login') }}"
+                novalidate>
                 @csrf
                 <div class="login-form-group">
-                    <label for="loginIdentifier">Email atau Username</label>
+                    <label for="loginIdentifier">Email</label>
                     <div class="input-wrapper">
-                        <i class="bi bi-person-fill"></i>
-                        <input type="text" id="loginIdentifier" name="identifier" placeholder="Email atau Username"
-                            autocomplete="username" required />
+                        <i class="bi bi-envelope-fill"></i>
+                        <input type="email" id="loginIdentifier" name="identifier" placeholder="nama@perusahaan.com"
+                            autocomplete="email" inputmode="email" maxlength="255" required />
                     </div>
                 </div>
                 <div class="login-form-group">
@@ -567,7 +573,7 @@
                     <div class="input-wrapper">
                         <i class="bi bi-lock-fill"></i>
                         <input type="password" id="loginPassword" name="password" placeholder="Password"
-                            autocomplete="current-password" required />
+                            autocomplete="current-password" maxlength="255" required />
                         <button type="button" class="password-toggle" id="togglePassword" tabindex="-1"
                             aria-label="Tampilkan password">
                             <i class="bi bi-eye-fill"></i>
@@ -718,23 +724,43 @@
                     'Tampilkan password');
             });
 
+            var EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+            function setInvalid(el, invalid) {
+                if (el) el.classList.toggle('is-invalid', !!invalid);
+            }
+
             document.getElementById('loginForm').addEventListener('submit', function(e) {
                 e.preventDefault();
 
-                var identifier = String(document.getElementById('loginIdentifier').value || '').trim();
-                var password = String(document.getElementById('loginPassword').value || '');
+                var emailInput = document.getElementById('loginIdentifier');
+                var passwordInput = document.getElementById('loginPassword');
+                var identifier = String(emailInput.value || '').trim().toLowerCase();
+                var password = String(passwordInput.value || '');
+
+                setInvalid(emailInput, false);
+                setInvalid(passwordInput, false);
 
                 if (!identifier) {
-                    document.getElementById('loginIdentifier').focus();
-                    showError('Email atau Username wajib diisi.');
+                    setInvalid(emailInput, true);
+                    emailInput.focus();
+                    showError('Email wajib diisi.');
+                    return;
+                }
+                if (!EMAIL_PATTERN.test(identifier)) {
+                    setInvalid(emailInput, true);
+                    emailInput.focus();
+                    showError('Format email tidak valid.');
                     return;
                 }
                 if (!password) {
-                    document.getElementById('loginPassword').focus();
+                    setInvalid(passwordInput, true);
+                    passwordInput.focus();
                     showError('Password wajib diisi.');
                     return;
                 }
 
+                emailInput.value = identifier;
                 btnManualLogin.disabled = true;
                 showLoading();
 

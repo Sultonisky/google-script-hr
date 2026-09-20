@@ -228,6 +228,11 @@
             box-shadow: 0 0 0 3px rgba(235, 28, 36, 0.1);
         }
 
+        .login-form-group input.is-invalid {
+            border-color: #dc2626;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+        }
+
         .btn-login {
             display: flex;
             align-items: center;
@@ -454,7 +459,7 @@
 
         <div class="login-card">
             <div class="login-card-title">Masuk ke MPR</div>
-            <div class="login-card-subtitle">Gunakan email requestor MPR Anda</div>
+            <div class="login-card-subtitle">Gunakan email dan password requestor MPR Anda</div>
 
             @if (session('error'))
                 <div class="login-error show" role="alert">
@@ -474,14 +479,21 @@
                 <div class="login-spinner"></div>
             </div>
 
-            <form id="mprLoginForm" method="POST" action="{{ route('mpr.auth.login.post') }}" autocomplete="on">
+            <div class="login-error" id="loginClientError">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <div class="error-text" id="loginClientErrorText"></div>
+            </div>
+
+            <form id="mprLoginForm" method="POST" action="{{ route('mpr.auth.login.post') }}" autocomplete="on"
+                novalidate>
                 @csrf
                 <div class="login-form-group">
-                    <label for="identifier">Email atau Username</label>
+                    <label for="identifier">Email</label>
                     <div class="input-wrapper">
-                        <i class="bi bi-person-fill"></i>
-                        <input type="text" id="identifier" name="identifier" value="{{ old('identifier') }}"
-                            placeholder="Email atau Username" required autofocus />
+                        <i class="bi bi-envelope-fill"></i>
+                        <input type="email" id="identifier" name="identifier" value="{{ old('identifier') }}"
+                            placeholder="nama@perusahaan.com" autocomplete="email" inputmode="email"
+                            maxlength="255" required autofocus />
                     </div>
                 </div>
 
@@ -489,7 +501,8 @@
                     <label for="password">Password</label>
                     <div class="input-wrapper">
                         <i class="bi bi-lock-fill"></i>
-                        <input type="password" id="password" name="password" placeholder="Password" required />
+                        <input type="password" id="password" name="password" placeholder="Password"
+                            autocomplete="current-password" maxlength="255" required />
                         <button type="button" class="password-toggle" id="togglePassword" tabindex="-1"
                             aria-label="Tampilkan password">
                             <i class="bi bi-eye-fill"></i>
@@ -505,7 +518,7 @@
 
             <div class="login-divider">Manpower Request Portal</div>
             <div class="text-center mt-3">
-                <a href="{{ route('mpr.auth.portal') }}" class="back-link">
+                <a href="{{ route('mpr.auth.domain.root') }}" class="back-link">
                     <i class="bi bi-arrow-left"></i>
                     Kembali ke Portal MPR
                 </a>
@@ -532,11 +545,27 @@
         document.addEventListener('DOMContentLoaded', function() {
             const togglePassword = document.getElementById('togglePassword');
             const passwordInput = document.getElementById('password');
+            const emailInput = document.getElementById('identifier');
             const form = document.getElementById('mprLoginForm');
             const loading = document.getElementById('loginLoading');
             const submitButton = document.getElementById('btnMprLogin');
             const page = document.querySelector('.login-page');
             const overlay = document.getElementById('loginTransitionOverlay');
+            const clientError = document.getElementById('loginClientError');
+            const clientErrorText = document.getElementById('loginClientErrorText');
+            const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+            function setInvalid(el, invalid) {
+                if (el) el.classList.toggle('is-invalid', !!invalid);
+            }
+
+            function showClientError(message, focusEl) {
+                if (clientError && clientErrorText) {
+                    clientErrorText.textContent = message;
+                    clientError.classList.add('show');
+                }
+                if (focusEl) focusEl.focus();
+            }
 
             if (togglePassword && passwordInput) {
                 togglePassword.addEventListener('click', function() {
@@ -554,6 +583,32 @@
             if (form && loading && submitButton) {
                 form.addEventListener('submit', function(event) {
                     event.preventDefault();
+
+                    var email = String(emailInput && emailInput.value ? emailInput.value : '').trim()
+                        .toLowerCase();
+                    var password = String(passwordInput && passwordInput.value ? passwordInput.value : '');
+
+                    setInvalid(emailInput, false);
+                    setInvalid(passwordInput, false);
+                    if (clientError) clientError.classList.remove('show');
+
+                    if (!email) {
+                        setInvalid(emailInput, true);
+                        showClientError('Email wajib diisi.', emailInput);
+                        return;
+                    }
+                    if (!EMAIL_PATTERN.test(email)) {
+                        setInvalid(emailInput, true);
+                        showClientError('Format email tidak valid.', emailInput);
+                        return;
+                    }
+                    if (!password) {
+                        setInvalid(passwordInput, true);
+                        showClientError('Password wajib diisi.', passwordInput);
+                        return;
+                    }
+
+                    if (emailInput) emailInput.value = email;
 
                     form.style.display = 'none';
                     loading.style.display = 'flex';

@@ -130,6 +130,7 @@
         #certLoginPassword { padding-right: 42px; }
         .login-form-group input::placeholder { color: #c0c4cc; }
         .login-form-group input:focus { border-color: #eb1c24; box-shadow: 0 0 0 3px rgba(235,28,36,.1); }
+        .login-form-group input.is-invalid { border-color: #dc2626; box-shadow: 0 0 0 3px rgba(220,38,38,.12); }
 
         .password-toggle {
             position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
@@ -285,7 +286,7 @@
                 document.addEventListener('DOMContentLoaded', function () {
                     var el = document.getElementById('loginError');
                     var tx = document.getElementById('loginErrorText');
-                    if (el && tx) { tx.textContent = 'Email/username atau password salah.'; el.classList.add('show'); }
+                    if (el && tx) { tx.textContent = 'Email atau password salah.'; el.classList.add('show'); }
                 });
             </script>
         @endif
@@ -293,11 +294,12 @@
         <form id="loginForm" method="POST" action="{{ route('certificates.login.post') }}" autocomplete="on" novalidate>
             @csrf
             <div class="login-form-group">
-                <label for="certLoginIdentifier">Email atau Username</label>
+                <label for="certLoginIdentifier">Email</label>
                 <div class="input-wrapper">
-                    <i class="bi bi-person-fill"></i>
-                    <input type="text" id="certLoginIdentifier" name="identifier"
-                           placeholder="Email atau Username" autocomplete="username" required autofocus />
+                    <i class="bi bi-envelope-fill"></i>
+                    <input type="email" id="certLoginIdentifier" name="identifier"
+                           placeholder="nama@perusahaan.com" autocomplete="email" inputmode="email"
+                           maxlength="255" required autofocus />
                 </div>
             </div>
             <div class="login-form-group">
@@ -305,7 +307,7 @@
                 <div class="input-wrapper">
                     <i class="bi bi-lock-fill"></i>
                     <input type="password" id="certLoginPassword" name="password"
-                           placeholder="Password" autocomplete="current-password" required />
+                           placeholder="Password" autocomplete="current-password" maxlength="255" required />
                     <button type="button" class="password-toggle" id="togglePassword" tabindex="-1"
                             aria-label="Tampilkan password">
                         <i class="bi bi-eye-fill"></i>
@@ -430,16 +432,29 @@
         });
     }
 
+    var EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    function setInvalid(el, invalid) {
+        if (el) el.classList.toggle('is-invalid', !!invalid);
+    }
+
     // submit
     document.getElementById('loginForm').addEventListener('submit', function (e) {
         e.preventDefault();
 
-        var identifier = String(document.getElementById('certLoginIdentifier').value || '').trim();
-        var password   = String(document.getElementById('certLoginPassword').value || '');
+        var emailInput    = document.getElementById('certLoginIdentifier');
+        var passwordInput = document.getElementById('certLoginPassword');
+        var identifier    = String(emailInput.value || '').trim().toLowerCase();
+        var password      = String(passwordInput.value || '');
 
-        if (!identifier) { document.getElementById('certLoginIdentifier').focus(); showError('Email atau Username wajib diisi.'); return; }
-        if (!password)   { document.getElementById('certLoginPassword').focus();   showError('Password wajib diisi.');           return; }
+        setInvalid(emailInput, false);
+        setInvalid(passwordInput, false);
 
+        if (!identifier) { setInvalid(emailInput, true); emailInput.focus(); showError('Email wajib diisi.'); return; }
+        if (!EMAIL_PATTERN.test(identifier)) { setInvalid(emailInput, true); emailInput.focus(); showError('Format email tidak valid.'); return; }
+        if (!password)   { setInvalid(passwordInput, true); passwordInput.focus(); showError('Password wajib diisi.'); return; }
+
+        emailInput.value = identifier;
         btnLogin.disabled = true;
         showLoading();
 
