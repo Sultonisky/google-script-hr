@@ -183,19 +183,19 @@ class CrossAuthIsolationTest extends TestCase
     }
 
     #[Test]
-    public function hris_login_stays_hris_when_same_username_exists_in_both_stores(): void
+    public function hris_login_rejects_username_even_when_same_username_exists_in_both_stores(): void
     {
-        $this->mockUserRepo($this->makeUserRow(['Username' => 'john']), true);
+        $this->mockUserRepo($this->makeUserRow(['Username' => 'john']));
         $this->grantHrisPermission('john@example.com');
 
         $response = $this->postJson('/login', [
-            'identifier' => 'john',  // login by username
+            'identifier' => 'john',
             'password'   => 'hris-password',
         ]);
 
-        $response->assertOk()->assertJsonPath('success', true);
-        $this->assertTrue(session()->has('hr_user'));
-        $this->assertSame('users', session('hr_user')['auth_domain']);
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['identifier']);
+        $this->assertFalse(session()->has('hr_user'));
         $this->assertFalse(
             session()->has(config('mpr.session_key', 'mpr_requestor_auth')),
             'Username-based HRIS login must never create mpr_requestor_auth'
@@ -335,19 +335,17 @@ class CrossAuthIsolationTest extends TestCase
     }
 
     #[Test]
-    public function mpr_login_stays_mpr_when_same_username_exists_in_both_stores(): void
+    public function mpr_login_rejects_username_even_when_same_username_exists_in_both_stores(): void
     {
         $this->mockMprRequestorRepo($this->makeMprRequestorRow(['Username' => 'john']));
 
         $response = $this->post(route('mpr.auth.login.post'), [
-            'identifier' => 'john',  // login by username
+            'identifier' => 'john',
             'password'   => 'mpr-password',
         ]);
 
-        $response->assertRedirect(route('mpr.auth.request'));
-        $sessionKey = config('mpr.session_key', 'mpr_requestor_auth');
-        $this->assertTrue(session()->has($sessionKey));
-        $this->assertSame('mpr_requestor', session($sessionKey)['auth_domain']);
+        $response->assertSessionHasErrors('identifier');
+        $this->assertFalse(session()->has(config('mpr.session_key', 'mpr_requestor_auth')));
         $this->assertFalse(session()->has('hr_user'), 'Username-based MPR login must never create hr_user');
     }
 
