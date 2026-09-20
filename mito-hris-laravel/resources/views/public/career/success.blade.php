@@ -16,6 +16,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
   @include('components.seo', [
     'title' => $successTitle . ' - MITO Career Portal',
     'description' => 'Konfirmasi penerimaan data melalui MITO HRIS Career Portal.',
@@ -92,32 +94,6 @@
       font-weight: 700;
       margin-bottom: 32px;
     }
-    .success-actions {
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-    .btn-success-secondary {
-      background: var(--color-surface);
-      color: var(--color-text);
-      border: 1.5px solid var(--color-border);
-      padding: 12px 28px;
-      font-size: 14px;
-      font-weight: 600;
-      border-radius: 10px;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      transition: all 0.25s ease;
-      cursor: pointer;
-    }
-    .btn-success-secondary:hover {
-      background: var(--color-bg);
-      border-color: var(--color-primary);
-      color: var(--color-primary);
-    }
     .footer {
       background: #fff;
       border-top: 1px solid var(--color-border);
@@ -133,8 +109,6 @@
     @media (max-width: 576px) {
       .success-page { padding: 60px 16px; }
       .success-title { font-size: 24px; }
-      .success-actions { flex-direction: column; align-items: center; }
-      .btn-success-secondary { width: 100%; justify-content: center; }
     }
   </style>
 </head>
@@ -146,11 +120,6 @@
       </div>
       <h2 class="success-title">{{ $successTitle }}</h2>
       <p class="success-message">{{ $customMsg }}</p>
-      <div class="success-actions">
-        <a href="{{ route('public.career.index') }}" class="btn-success-secondary">
-          <i class="bi bi-arrow-left"></i> Kembali ke Halaman Info
-        </a>
-      </div>
     </div>
   </div>
 
@@ -162,5 +131,22 @@
     </div>
   </div>
 
+  <script>
+    (function () {
+      if (!window.history || !window.history.pushState) {
+        return;
+      }
+      history.replaceState({ mitoTerminal: true }, '', location.href);
+      history.pushState({ mitoTerminal: true }, '', location.href);
+      window.addEventListener('popstate', function () {
+        history.pushState({ mitoTerminal: true }, '', location.href);
+      });
+      window.addEventListener('pageshow', function (event) {
+        if (event.persisted) {
+          location.replace(location.href);
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
