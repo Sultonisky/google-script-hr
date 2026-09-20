@@ -472,7 +472,8 @@
                                         <label class="form-label fw-semibold small">Posisi / Nama Jabatan yang Diminta <span
                                                 class="text-danger">*</span></label>
                                         <input type="text" name="position" class="form-control"
-                                            placeholder="Contoh: Frontend Developer, Sales Executive" required>
+                                            placeholder="Contoh: Frontend Developer, Sales Executive" required
+                                            maxlength="255" data-sanitize-position="true">
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label fw-semibold small">Departemen <span
@@ -556,7 +557,7 @@
                                         <div class="border rounded p-2 d-flex flex-column gap-1">
                                             @foreach ($mprOptions['working_days'] ?? [] as $dayKey => $dayLabel)
                                                 <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" name="working_days[]"
+                                                    <input class="form-check-input" type="radio" name="working_days[]"
                                                         value="{{ $dayKey }}" id="mgwd_{{ $dayKey }}">
                                                     <label class="form-check-label small" for="mgwd_{{ $dayKey }}">{{ $dayLabel }}</label>
                                                 </div>
@@ -568,7 +569,7 @@
                                         <div class="border rounded p-2 d-flex flex-column gap-1">
                                             @foreach ($mprOptions['working_hours'] ?? [] as $hourKey => $hourLabel)
                                                 <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" name="working_hours[]"
+                                                    <input class="form-check-input" type="radio" name="working_hours[]"
                                                         value="{{ $hourKey }}" id="mgwh_{{ $hourKey }}">
                                                     <label class="form-check-label small" for="mgwh_{{ $hourKey }}">{{ $hourLabel }}</label>
                                                 </div>
@@ -586,7 +587,7 @@
                                             placeholder="Contoh: Shift pagi 07:00-15:00, shift siang 15:00-23:00, rotasi mingguan..."
                                             disabled></textarea>
                                         <div class="form-text text-muted small mt-1" id="mgShiftDetailNote">
-                                            <i class="bi bi-info-circle me-1"></i>Centang "Shifting" pada Hari Kerja untuk mengisi detail shift.
+                                            <i class="bi bi-info-circle me-1"></i>Pilih "Shifting" pada Hari Kerja untuk mengisi detail shift.
                                         </div>
                                     </div>
                                     <div class="col-12">
@@ -659,7 +660,8 @@
                                     <div class="col-md-6">
                                         <label class="form-label fw-semibold small">Bahasa yang Dikuasai</label>
                                         <textarea name="languages" class="form-control" rows="2"
-                                            placeholder="Contoh: Bahasa Indonesia (aktif), Bahasa Inggris (pasif)..."></textarea>
+                                            placeholder="Contoh: Bahasa Indonesia (aktif), Bahasa Inggris (pasif)..."
+                                            maxlength="1000" data-sanitize-languages="true"></textarea>
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label fw-semibold small">Kualifikasi &amp; Persyaratan Khusus Kandidat</label>
@@ -1012,14 +1014,16 @@
                                             <label class="form-label fw-semibold small">Nama Pemohon <span
                                                     class="text-danger">*</span></label>
                                             <input type="text" name="manager_name" class="form-control form-control-sm"
-                                                value="{{ $user['fullName'] ?? 'HR Manager' }}" required>
+                                                value="{{ $user['fullName'] ?? 'HR Manager' }}" required
+                                                maxlength="255" data-sanitize-name="true">
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-semibold small">Jabatan Pemohon <span
                                                     class="text-danger">*</span></label>
                                             <input type="text" name="requestor_position"
                                                 class="form-control form-control-sm"
-                                                placeholder="Contoh: Area Manager, Branch Manager" required>
+                                                placeholder="Contoh: Area Manager, Branch Manager" required
+                                                maxlength="255" data-sanitize-position="true">
                                         </div>
                                         <input type="hidden" name="manager_email" value="{{ $user['email'] ?? '' }}">
                                         <div class="col-12">
@@ -1047,7 +1051,8 @@
                                             <label class="form-label fw-semibold small">Posisi / Nama Jabatan yang Diminta <span
                                                     class="text-danger">*</span></label>
                                             <input type="text" name="position" class="form-control form-control-sm"
-                                                placeholder="Contoh: Digital Marketing Lead" required>
+                                                placeholder="Contoh: Digital Marketing Lead" required
+                                                maxlength="255" data-sanitize-position="true">
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-semibold small">Departemen <span
@@ -1132,7 +1137,7 @@
                                             <div class="border rounded p-2 d-flex flex-column gap-1">
                                                 @foreach ($mprOptions['working_days'] ?? [] as $dayKey => $dayLabel)
                                                     <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox"
+                                                        <input class="form-check-input" type="radio"
                                                             name="working_days[]" value="{{ $dayKey }}"
                                                             id="hrwd_{{ $dayKey }}">
                                                         <label class="form-check-label small"
@@ -1147,7 +1152,7 @@
                                             <div class="border rounded p-2 d-flex flex-column gap-1">
                                                 @foreach ($mprOptions['working_hours'] ?? [] as $hourKey => $hourLabel)
                                                     <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox"
+                                                        <input class="form-check-input" type="radio"
                                                             name="working_hours[]" value="{{ $hourKey }}"
                                                             id="hrwh_{{ $hourKey }}">
                                                         <label class="form-check-label small"
@@ -1167,7 +1172,7 @@
                                                 placeholder="Contoh: Shift pagi 07:00-15:00, shift siang 15:00-23:00, rotasi mingguan..."
                                                 disabled></textarea>
                                             <div class="form-text text-muted small mt-1" id="hrShiftDetailNote">
-                                                <i class="bi bi-info-circle me-1"></i>Centang "Shifting" pada Hari Kerja untuk mengisi detail shift.
+                                                <i class="bi bi-info-circle me-1"></i>Pilih "Shifting" pada Hari Kerja untuk mengisi detail shift.
                                             </div>
                                         </div>
                                         <div class="col-12">
@@ -1243,7 +1248,8 @@
                                         <div class="col-md-6">
                                             <label class="form-label fw-semibold small">Bahasa yang Dikuasai</label>
                                             <textarea name="languages" class="form-control form-control-sm" rows="2"
-                                                placeholder="Contoh: Bahasa Indonesia (aktif), Bahasa Inggris (pasif)..."></textarea>
+                                                placeholder="Contoh: Bahasa Indonesia (aktif), Bahasa Inggris (pasif)..."
+                                                maxlength="1000" data-sanitize-languages="true"></textarea>
                                         </div>
                                         <div class="col-12">
                                             <label class="form-label fw-semibold small">Referensi Industri Sejenis</label>
@@ -1317,7 +1323,8 @@
                                 <div class="row g-3 mb-4">
                                     <div class="col-md-6">
                                         <label class="form-label small fw-semibold">Posisi / Nama Jabatan <span class="text-danger">*</span></label>
-                                        <input name="position" class="form-control form-control-sm" required>
+                                        <input name="position" class="form-control form-control-sm" required
+                                            maxlength="255" data-sanitize-position="true">
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label small fw-semibold">Entitas / Perusahaan <span class="text-danger">*</span></label>
@@ -1398,7 +1405,7 @@
                                         <div class="border rounded p-2 d-flex flex-column gap-1">
                                             @foreach ($mprOptions['working_days'] ?? [] as $dayKey => $dayLabel)
                                                 <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" name="working_days[]"
+                                                    <input class="form-check-input" type="radio" name="working_days[]"
                                                         value="{{ $dayKey }}" id="editwd_{{ $dayKey }}">
                                                     <label class="form-check-label small" for="editwd_{{ $dayKey }}">{{ $dayLabel }}</label>
                                                 </div>
@@ -1410,7 +1417,7 @@
                                         <div class="border rounded p-2 d-flex flex-column gap-1">
                                             @foreach ($mprOptions['working_hours'] ?? [] as $hourKey => $hourLabel)
                                                 <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" name="working_hours[]"
+                                                    <input class="form-check-input" type="radio" name="working_hours[]"
                                                         value="{{ $hourKey }}" id="editwh_{{ $hourKey }}">
                                                     <label class="form-check-label small" for="editwh_{{ $hourKey }}">{{ $hourLabel }}</label>
                                                 </div>
@@ -1428,7 +1435,7 @@
                                             placeholder="Contoh: Shift pagi 07:00-15:00, shift siang 15:00-23:00, rotasi mingguan..."
                                             disabled></textarea>
                                         <div class="form-text text-muted small mt-1" id="editShiftDetailNote">
-                                            <i class="bi bi-info-circle me-1"></i>Centang "Shifting" pada Hari Kerja untuk mengisi detail shift.
+                                            <i class="bi bi-info-circle me-1"></i>Pilih "Shifting" pada Hari Kerja untuk mengisi detail shift.
                                         </div>
                                     </div>
                                     <div class="col-12">
@@ -1499,7 +1506,8 @@
                                     <div class="col-md-6">
                                         <label class="form-label small fw-semibold">Bahasa yang Dikuasai</label>
                                         <textarea name="languages" class="form-control form-control-sm" rows="2"
-                                            placeholder="Contoh: Bahasa Indonesia (aktif), Bahasa Inggris (pasif)..."></textarea>
+                                            placeholder="Contoh: Bahasa Indonesia (aktif), Bahasa Inggris (pasif)..."
+                                            maxlength="1000" data-sanitize-languages="true"></textarea>
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label small fw-semibold">Referensi Industri Sejenis</label>
@@ -1575,9 +1583,9 @@
 
             /**
              * Logika Shifting (shared helper — digunakan di semua form MPR):
-             * - Shifting diceklis → hari kerja lain + jam kerja di-disable & uncheck,
+             * - Shifting dipilih → radio hari kerja lain + jam kerja di-disable & uncheck,
              *   textarea detail shift: enabled, required, border highlight
-             * - Shifting di-unceklis → semua checkbox kembali enabled,
+             * - Hari kerja lain dipilih → semua radio kembali enabled,
              *   textarea detail shift: disabled, not required, value dikosongkan
              */
             function applyShiftingState(form) {
@@ -1666,17 +1674,24 @@
                 if (noteText)     noteText.classList.toggle('d-none', isReplacement);
             }
 
+            function bindWorkingDaysRadios(form) {
+                if (!form) return;
+                if (!form.dataset.workingDaysBound) {
+                    form.querySelectorAll('input[name="working_days[]"]').forEach(function (dayRadio) {
+                        dayRadio.addEventListener('change', () => applyShiftingState(form));
+                    });
+                    form.dataset.workingDaysBound = '1';
+                }
+                applyShiftingState(form);
+            }
+
             // Pasang listener & inisialisasi untuk form HR Create MPR (modal)
             const hrCreateForm = document.getElementById('formHrCreateMpr');
 
             // Pasang listener & inisialisasi untuk Manager Experience form (inline)
             const mgForm = document.getElementById('formManagerMpr');
             if (mgForm) {
-                const mgShiftingCb = mgForm.querySelector('input[name="working_days[]"][value="shifting"]');
-                if (mgShiftingCb) {
-                    mgShiftingCb.addEventListener('change', () => applyShiftingState(mgForm));
-                }
-                applyShiftingState(mgForm);
+                bindWorkingDaysRadios(mgForm);
 
                 const mgReasonSelect = mgForm.querySelector('[name="reason"]');
                 if (mgReasonSelect) {
@@ -1686,11 +1701,7 @@
             }
 
             if (hrCreateForm) {
-                const shiftingCb = hrCreateForm.querySelector('input[name="working_days[]"][value="shifting"]');
-                if (shiftingCb) {
-                    shiftingCb.addEventListener('change', () => applyShiftingState(hrCreateForm));
-                }
-                applyShiftingState(hrCreateForm);
+                bindWorkingDaysRadios(hrCreateForm);
 
                 // Re-apply saat modal dibuka kembali (setelah reset)
                 const modalCreateEl = document.getElementById('modalCreateMpr');
@@ -2079,11 +2090,7 @@
                                     document.getElementById('editMprErrors').classList.add('d-none');
                                     
                                     // Setup Shifting logic
-                                    const editShiftingCb = editForm.querySelector('input[name="working_days[]"][value="shifting"]');
-                                    if (editShiftingCb) {
-                                        editShiftingCb.addEventListener('change', () => applyShiftingState(editForm));
-                                        applyShiftingState(editForm);
-                                    }
+                                    bindWorkingDaysRadios(editForm);
                                     
                                     // Setup Replacement logic
                                     const editReasonSelect = editForm.querySelector('[name="reason"]');

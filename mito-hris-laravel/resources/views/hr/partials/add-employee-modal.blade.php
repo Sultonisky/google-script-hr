@@ -248,8 +248,9 @@
                             Employee ID <span class="text-muted fw-normal" style="font-size:11px">(opsional)</span>
                         </label>
                         <input type="text" class="form-control form-control-sm font-monospace" id="aeEmployeeIdPreview"
-                            placeholder="Contoh: 202501001"
-                            maxlength="50" autocomplete="off"
+                            placeholder="Contoh: 2025010101"
+                            maxlength="12" inputmode="numeric" autocomplete="off"
+                            data-sanitize-digits="true"
                             style="letter-spacing:0.04em" />
                         <div class="form-text" style="font-size:11px;color:#6b7280">
                             <i class="bi bi-info-circle me-1"></i>Kosongkan jika ingin di-generate otomatis oleh server.
@@ -277,17 +278,17 @@
                     <div class="col-md-4">
                         <label class="form-label fw-semibold" style="font-size:12.5px">Divisi</label>
                         <input type="text" class="form-control form-control-sm" id="aeDivision"
-                            placeholder="Nama divisi" />
+                            placeholder="Nama divisi" maxlength="255" data-sanitize-org-title="true" />
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold" style="font-size:12.5px">Jabatan (dengan Lokasi)</label>
                         <input type="text" class="form-control form-control-sm" id="aeJobPositionLocation"
-                            placeholder="Contoh: HR Staff - Jakarta" />
+                            placeholder="Contoh: HR Staff - Jakarta" maxlength="255" data-sanitize-org-title="true" />
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold" style="font-size:12.5px">Jabatan (tanpa Lokasi)</label>
                         <input type="text" class="form-control form-control-sm" id="aeJobPosition"
-                            placeholder="Contoh: HR Staff" />
+                            placeholder="Contoh: HR Staff" maxlength="255" data-sanitize-org-title="true" />
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold" style="font-size:12.5px">Job Level</label>
@@ -478,6 +479,10 @@
         bankHolder:    false,
         bpjsTk:        false,
         bpjsKes:       false,
+        employeeId:    false,
+        division:      false,
+        jobPosition:   false,
+        jobPositionLocation: false,
     };
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -489,7 +494,9 @@
     var RX_NAME   = /^[A-Za-zÀ-ÖØ-öø-ÿ\u0100-\u024F '.\-]+$/;
     var RX_DIGITS = /^\d+$/;
     var RX_EMAIL  = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    var RX_ORG    = /^[\p{L}]+(?:[ \-\/]+[\p{L}]+)*$/u;
     var NAME_MIN  = 3;
+    var EMP_ID_MAX = 12;
 
     // ═══════════════════════════════════════════════════════════════════════
     // GENERIC VALIDATORS
@@ -695,6 +702,10 @@
     on('aeBankHolder',   validateBankHolder);
     on('aeBpjsTk',       validateBpjsTk);
     on('aeBpjsKes',      validateBpjsKes);
+    on('aeEmployeeIdPreview', validateEmployeeId);
+    on('aeDivision',     validateDivision);
+    on('aeJobPositionLocation', validateJobPositionLocation);
+    on('aeJobPosition',  validateJobPosition);
 
     // Status change always triggers checkForm
     if (statusEl) statusEl.addEventListener('change', checkForm);
@@ -831,6 +842,10 @@
         validateBankHolder();
         validateBpjsTk();
         validateBpjsKes();
+        validateEmployeeId();
+        validateDivision();
+        validateJobPositionLocation();
+        validateJobPosition();
 
         var fullName    = val('aeFullName');
         var status      = val('aeStatusEmployee');
