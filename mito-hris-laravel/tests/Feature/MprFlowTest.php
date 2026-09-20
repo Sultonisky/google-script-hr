@@ -825,4 +825,82 @@ class MprFlowTest extends TestCase
         // PDF header check (%PDF-)
         $this->assertStringStartsWith('%PDF-', $output);
     }
+
+    #[Test]
+    public function store_rejects_numeric_manager_name_position_and_languages(): void
+    {
+        $this->actingAsRole('Admin', 'admin.sanitize@mito.id', 'HR Admin');
+
+        $response = $this->postJson(route('hr.mpr.store'), array_merge($this->validStorePayload(), [
+            'manager_name' => 'Andi 99',
+            'requestor_position' => 'Manager 1',
+            'position' => 'Staff 123',
+            'languages' => 'Bahasa 2',
+        ]));
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['manager_name', 'requestor_position', 'position', 'languages']);
+    }
+
+    #[Test]
+    public function store_rejects_multiple_working_days_or_hours(): void
+    {
+        $this->actingAsRole('Admin', 'admin.radio@mito.id', 'HR Admin');
+
+        $this->postJson(route('hr.mpr.store'), array_merge($this->validStorePayload(), [
+            'working_days' => ['senin_jumat', 'senin_sabtu'],
+        ]))->assertStatus(422)->assertJsonValidationErrors(['working_days']);
+
+        $this->postJson(route('hr.mpr.store'), array_merge($this->validStorePayload(), [
+            'working_hours' => ['08_00_17_00', '08_30_17_30'],
+        ]))->assertStatus(422)->assertJsonValidationErrors(['working_hours']);
+    }
+
+    #[Test]
+    public function store_accepts_languages_and_hyphenated_position(): void
+    {
+        $this->actingAsRole('Admin', 'admin.oktext@mito.id', 'HR Admin');
+
+        $mockRepo = Mockery::mock(MprRepositoryInterface::class);
+        $mockRepo->shouldReceive('create')->once()->andReturnUsing(function (MprData $mpr) {
+            $mpr->mprNumber ??= 'MPR-20260824-SANITIZE';
+            return $mpr;
+        });
+        $this->app->instance(MprRepositoryInterface::class, $mockRepo);
+
+        $response = $this->postJson(route('hr.mpr.store'), array_merge($this->validStorePayload(), [
+            'position' => 'HR Staff - Jakarta',
+            'languages' => 'Bahasa Indonesia (aktif), Bahasa Inggris (pasif).',
+        ]));
+
+        $response->assertStatus(201);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function validStorePayload(): array
+    {
+        return [
+            'position' => 'Backend Developer',
+            'department' => 'IT',
+            'division' => 'IT Support',
+            'job_level' => 'Staff',
+            'work_location' => 'Head Office (HO)',
+            'employment_type' => 'Permanent (PKWTT)',
+            'quantity' => 1,
+            'expected_join_date' => '2026-09-15',
+            'reason' => 'Penambahan Karyawan Baru',
+            'entity' => 'MSI',
+            'manager_name' => 'HR Admin',
+            'manager_email' => 'admin.sanitize@mito.id',
+            'requestor_position' => 'HR Manager',
+            'working_days' => ['senin_jumat'],
+            'working_hours' => ['08_00_17_00'],
+            'benefits' => ['bpjs'],
+            'education_background' => 's1',
+            'work_experience' => '1_tahun',
+            'approval_division' => config('hris.mpr.approval_divisions.0', 'IT'),
+        ];
+    }
 }
