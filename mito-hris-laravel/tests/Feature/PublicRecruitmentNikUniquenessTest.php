@@ -136,9 +136,9 @@ class PublicRecruitmentNikUniquenessTest extends TestCase
     private function payload(): array
     {
         return [
-            'nama_lengkap' => 'Rafi Akbar Sulistyo',
+            'nama_lengkap' => 'Andi Wijaya',
             'nik' => '3174100205050003',
-            'email' => 'rafiakbar0205@gmail.com',
+            'email' => 'andi.wijaya@example.com',
             'nomor_telepon' => '875258233',
             'posisi_dilamar' => 'Graphic Designer',
             'agreement' => '1',
