@@ -4,11 +4,11 @@ namespace App\Http\Controllers\Public;
 
 use App\DTOs\EmployeeData;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Public\OutsourceApplyRequest;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Services\RecruitmentService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class OutsourceApplyController extends Controller
@@ -49,58 +49,13 @@ class OutsourceApplyController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(OutsourceApplyRequest $request): RedirectResponse
     {
         if (session(self::SUBMISSION_COMPLETED)) {
             return redirect()->route('public.outsource.success');
         }
 
-        $validated = $request->validate([
-            'nama_lengkap'              => ['required', 'string', 'min:3', 'max:255', 'regex:/^[\p{L}]+(?:[ ]+[\p{L}]+)*$/u'],
-            'nik'                       => 'required|digits:16',
-            'birth_date'                => 'required|string|max:10', // DD/MM/YYYY from JS auto-slash
-            'tempat_lahir'              => 'required|string',
-            'usia'                      => 'nullable|numeric',
-            'jenis_kelamin'             => 'required|string',
-            'agama'                     => 'required|string',
-            'golongan_darah'            => 'required|string',
-            'status_pernikahan'         => 'required|string',
-            'email_pribadi'             => 'required|email',
-            'email_kantor'              => 'required|email',
-            'nomor_telepon'             => 'required|string',
-            'provinsi'                  => 'required|string',
-            'kota'                      => 'required|string',
-            'kecamatan'                 => 'nullable|string',
-            'kecamatan_manual'          => 'nullable|string',
-            'kota_nama'                 => 'nullable|string|max:120',
-            'alamat_ktp'                => 'required|string',
-            'alamat_domisili'           => 'required|string',
-            'cabang_penempatan'         => 'required|string',
-            'vendor_outsource'          => 'required|string|min:3',
-            'divisi'                    => 'required|string',
-            'departemen'                => 'required|string',
-            'area_kerja'                => 'required|string',
-            'cost_center'               => 'required|string',
-            'lokasi_kerja'              => 'required|string',
-            'posisi_jabatan'            => 'required|string',
-            'job_level'                 => 'required|string',
-            'status_karyawan'           => 'required|string',
-            'tanggal_masuk'             => 'required|date',
-            'tanggal_berakhir_kontrak'  => 'required|date',
-            'atasan_langsung'           => 'required|string',
-            'atasan_tidak_langsung'     => 'required|string',
-            'nama_bank'                 => 'nullable|string',
-            'nomor_rekening'            => 'required|string',
-            'nama_pemilik_rekening'     => 'required|string',
-            'npwp'                      => 'required|string',
-            'status_ptkp'               => 'required|string',
-            'bpjs_ketenagakerjaan'      => 'required|string',
-            'bpjs_kesehatan'            => 'required|string',
-            'agreement'                 => 'required|in:1',
-        ], [
-            'nama_lengkap.regex'       => 'Nama lengkap hanya boleh berisi huruf dan spasi.',
-            'agreement.required'        => 'Anda harus menyetujui pernyataan keabsahan data untuk melanjutkan.',
-        ]);
+        $validated = $request->validated();
 
         $consentEvidence = [
             'stage' => 'outsource_agreement',

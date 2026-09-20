@@ -72,10 +72,10 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by($identifier . '|' . $request->ip());
         });
 
-        RateLimiter::for('mpr-login', function (Request $request) {
-            $email = strtolower(trim((string) $request->input('email', '')));
+        RateLimiter::for('career-apply', function (Request $request) {
+            $nik = preg_replace('/\D+/', '', (string) $request->input('nik', ''));
 
-            return Limit::perMinute(5)->by($email . '|' . $request->ip());
+            return Limit::perMinute(8)->by(($nik !== '' ? $nik : 'anon') . '|' . $request->ip());
         });
 
         // ==============================================================
