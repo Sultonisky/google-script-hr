@@ -32,6 +32,15 @@ class MprRequestorAuthService
      */
     public function attemptLogin(string $identifier, string $password): array
     {
+        $identifier = strtolower(trim($identifier));
+
+        if ($identifier === '' || filter_var($identifier, FILTER_VALIDATE_EMAIL) === false) {
+            return [
+                'success' => false,
+                'error'   => 'Format email tidak valid.',
+            ];
+        }
+
         $requestor = $this->requestorRepo->findByIdentifier($identifier);
 
         if ($requestor === null) {
