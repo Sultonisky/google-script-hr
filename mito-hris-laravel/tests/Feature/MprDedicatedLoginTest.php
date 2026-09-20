@@ -65,26 +65,20 @@ class MprDedicatedLoginTest extends TestCase
         $this->assertSame('manager@mito.co.id', session(config('mpr.session_key', 'mpr_requestor_auth'))['email']);
     }
 
-    public function test_valid_requestor_can_login_with_username_or_email(): void
+    public function test_requestor_cannot_login_with_username(): void
     {
-        $requestor = $this->makeRequestorRow();
-
         $repo = Mockery::mock(MprRequestorRepositoryInterface::class);
-        $repo->shouldReceive('findByIdentifier')
-            ->once()
-            ->with('manager.test')
-            ->andReturn($requestor);
-
+        $repo->shouldNotReceive('findByIdentifier');
         $this->app->instance(MprRequestorRepositoryInterface::class, $repo);
 
-        $response = $this->post(route('mpr.auth.login.post'), [
+        $response = $this->from(route('mpr.auth.login'))->post(route('mpr.auth.login.post'), [
             'identifier' => 'manager.test',
             'password' => 'password123',
         ]);
 
-        $response->assertRedirect(route('mpr.auth.request'));
-        $this->assertTrue(session()->has(config('mpr.session_key', 'mpr_requestor_auth')));
-        $this->assertSame('manager@mito.co.id', session(config('mpr.session_key', 'mpr_requestor_auth'))['email']);
+        $response->assertRedirect(route('mpr.auth.login'));
+        $response->assertSessionHasErrors('identifier');
+        $this->assertFalse(session()->has(config('mpr.session_key', 'mpr_requestor_auth')));
     }
 
     public function test_wrong_password_is_rejected_for_mpr_requestor(): void

@@ -259,6 +259,7 @@ class DummyDataService
             'age'                      => $age,
             'gender'                   => $isMale ? 'Laki-laki' : 'Perempuan',
             'maritalStatus'            => $marital,
+            'bloodType'                => $this->pick($this->bloodTypes),
             'email'                    => $email,
             'phone'                    => $phone,
             'address'                  => $address,
@@ -293,8 +294,9 @@ class DummyDataService
     // ==============================================================
 
     /**
-     * Build a row for data_kandidat (24 columns — final schema).
+     * Build a row for data_kandidat (25 columns — final schema).
      * No CV Link. No pipeline cols (Hold/Blacklist/Employee ID).
+     * Blood Type is appended at the end so live columns stay aligned.
      */
     private function pendingRow(array $c): array
     {
@@ -327,11 +329,13 @@ class DummyDataService
             $c['createdBy'],
             // [23] Updated At
             $c['updatedAt'],
+            // [24] Blood Type
+            $c['bloodType'] ?? '',
         ];
     }
 
     /**
-     * Build a row for kandidat_hold or kandidat_blacklist (31 columns — final schema).
+     * Build a row for kandidat_hold or kandidat_blacklist (32 columns — final schema).
      * No CV Link. No Employee ID.
      * Includes: Hold/Blacklist cols + Processed Date/By.
      */
@@ -380,6 +384,8 @@ class DummyDataService
             $c['processedDate'] ?? '',
             // [30] Processed By
             $c['processedBy'] ?? '',
+            // [31] Blood Type
+            $c['bloodType'] ?? '',
         ];
     }
 
@@ -544,6 +550,7 @@ class DummyDataService
                 $offerEmpStatus,    // Offering Employment Status
                 $offerContractDur,  // Offering Contract Duration
                 $offerWorkingHours, // Offering Working Hours
+                $c['bloodType'] ?? '', // Blood Type
             ]);
 
             $rows[] = $row;
