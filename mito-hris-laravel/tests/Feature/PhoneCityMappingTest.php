@@ -10,6 +10,7 @@ use App\Repositories\Contracts\CandidateRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Services\Google\GoogleDriveService;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
@@ -47,6 +48,12 @@ use PHPUnit\Framework\Attributes\Test;
  */
 class PhoneCityMappingTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Cache::flush();
+    }
+
     // -----------------------------------------------------------------------
     // PC01-PC06: normalizePhone unit tests (pure logic, no I/O)
     // -----------------------------------------------------------------------
@@ -118,9 +125,10 @@ class PhoneCityMappingTest extends TestCase
         return array_merge([
             'nama_lengkap'       => 'Budi Santoso',
             'nik'                => '3374010101900001',
-            'birth_date'         => '01/01/1990',
+            'birth_date'         => '1990-01-01',
             'usia'               => 35,
             'jenis_kelamin'      => 'Laki-laki',
+            'golongan_darah'     => 'O',
             'marital_status'     => 'Belum Menikah',
             'email'              => 'budi@example.com',
             'nomor_telepon'      => '89696969',
@@ -265,6 +273,7 @@ class PhoneCityMappingTest extends TestCase
         $numericCodes = ['3327', '3174', '1271', '9171'];
 
         foreach ($numericCodes as $code) {
+            Cache::flush();
             $captured = null;
             $candidateRepo = Mockery::mock(CandidateRepositoryInterface::class);
             $candidateRepo->shouldReceive('findByNik')->andReturn(null);
@@ -298,6 +307,7 @@ class PhoneCityMappingTest extends TestCase
         $inputs = ['89696969', '089696969', '6289696969'];
 
         foreach ($inputs as $input) {
+            Cache::flush();
             $captured = null;
             $candidateRepo = Mockery::mock(CandidateRepositoryInterface::class);
             $candidateRepo->shouldReceive('findByNik')->andReturn(null);
@@ -342,9 +352,10 @@ class PhoneCityMappingTest extends TestCase
         return array_merge([
             'nama_lengkap'          => 'Shohibul Anwar',
             'nik'                   => '3305210807980001',
-            'birth_date'            => '08/07/1998',
+            'birth_date'            => '1998-07-08',
             'usia'                  => 28,
             'jenis_kelamin'         => 'Laki-laki',
+            'golongan_darah'        => 'O',
             'marital_status'        => 'Menikah',
             'email'                 => 'anwarshohibul@example.com',
             'nomor_telepon'         => '82336534192',   // bare subscriber, no +62
@@ -428,10 +439,11 @@ class PhoneCityMappingTest extends TestCase
 
         $this->assertSame('Shohibul Anwar',      $captured->fullName,               'fullName');
         $this->assertSame('3305210807980001',     $captured->nik,                    'nik');
-        $this->assertSame('08/07/1998',           $captured->birthDate,              'birthDate');
+        $this->assertSame('1998-07-08',           $captured->birthDate,              'birthDate');
         $this->assertSame('28',                   (string) $captured->age,           'age');
         $this->assertSame('Laki-laki',            $captured->gender,                 'gender');
         $this->assertSame('Menikah',              $captured->maritalStatus,          'maritalStatus');
+        $this->assertSame('O',                    $captured->bloodType,              'bloodType');
         $this->assertSame('anwarshohibul@example.com', $captured->email,             'email');
         $this->assertSame('+6282336534192',       $captured->phone,                  'phone');
         // Address has kecamatan prepended
@@ -453,7 +465,7 @@ class PhoneCityMappingTest extends TestCase
      * PC15 — toSheetRow() positional alignment: verify every element of the
      * final Sheets row maps to the correct data_kandidat header position.
      *
-     * Final schema (24 columns, 0-indexed):
+     * Final schema (25 columns, 0-indexed):
      *   0  Recruitment ID       12 Position Applied
      *   1  Created Date         13 Education
      *   2  Full Name            14 Work Experience
@@ -466,6 +478,7 @@ class PhoneCityMappingTest extends TestCase
      *   9  Phone                21 HR Notes
      *  10  Address              22 Created By
      *  11  City                 23 Updated At
+     *                               24 Blood Type
      *
      * CV Link removed. Pipeline cols (Hold Reason, Blacklist Reason, Employee ID, etc.)
      * removed — they live only in their respective destination sheets.
@@ -477,10 +490,11 @@ class PhoneCityMappingTest extends TestCase
             createdDate:             '2026-09-02 16:14:09',
             fullName:                'Shohibul Anwar',
             nik:                     '3305210807980001',
-            birthDate:               '08/07/1998',
+            birthDate:               '1998-07-08',
             age:                     '28',
             gender:                  'Laki-laki',
             maritalStatus:           'Menikah',
+            bloodType:               'O',
             email:                   'anwarshohibul@example.com',
             phone:                   '+6282336534192',
             address:                 'Cengkareng, Jl. Merdeka No. 1',
@@ -502,14 +516,14 @@ class PhoneCityMappingTest extends TestCase
         $row = $candidate->toSheetRow();
 
         // Verify array length matches the canonical 24-column schema
-        $this->assertCount(24, $row, 'toSheetRow() must produce exactly 24 elements');
+        $this->assertCount(25, $row, 'toSheetRow() must produce exactly 25 elements');
 
         // Verify each position against the data_kandidat header order
         $this->assertSame('REC-TEST-ROW-001',               $row[0],  'Col 0 = Recruitment ID');
         $this->assertSame('2026-09-02 16:14:09',            $row[1],  'Col 1 = Created Date');
         $this->assertSame('Shohibul Anwar',                  $row[2],  'Col 2 = Full Name');
         $this->assertSame("'3305210807980001",               $row[3],  'Col 3 = NIK (text-prefixed)');
-        $this->assertSame('08/07/1998',                     $row[4],  'Col 4 = Birth Date');
+        $this->assertSame('1998-07-08',                     $row[4],  'Col 4 = Birth Date');
         $this->assertSame('28',                              $row[5],  'Col 5 = Age');
         $this->assertSame('Laki-laki',                      $row[6],  'Col 6 = Gender');
         $this->assertSame('Menikah',                        $row[7],  'Col 7 = Marital Status');
@@ -529,6 +543,7 @@ class PhoneCityMappingTest extends TestCase
         $this->assertSame('',                               $row[21], 'Col 21 = HR Notes (blank)');
         $this->assertSame('Candidate',                      $row[22], 'Col 22 = Created By');
         $this->assertSame('2026-09-02 16:14:09',            $row[23], 'Col 23 = Updated At');
+        $this->assertSame('O',                              $row[24], 'Col 24 = Blood Type');
     }
 
     /**
