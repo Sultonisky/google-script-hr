@@ -358,12 +358,6 @@ class RecruitmentService
         $now = now()->timezone('Asia/Jakarta');
         $nowStr = $now->format('Y-m-d H:i:s');
 
-        // -- Employee ID (pakai yang ada, atau generate) ----------
-        $employeeId = $candidate->employeeId ?: ($contractData['employee_id'] ?? '');
-        if (empty($employeeId)) {
-            $employeeId = $this->idGenerator->generate();
-        }
-
         // -- Data kontrak ------------------------------------------
         $branchName = $contractData['branch_name'] ?? $candidate->offeringCompanyEntity ?? '';
         $division   = $contractData['division'] ?? $candidate->offeringDivision ?? '';
@@ -374,6 +368,12 @@ class RecruitmentService
         $directSuperior = $contractData['direct_superior'] ?? '';
         $joinDate   = $contractData['join_date'] ?? $candidate->offeringJoinDate ?? '';
         $contractEnd = $contractData['contract_end'] ?? '';
+
+        // -- Employee ID (pakai yang ada, atau generate dari join date) ----------
+        $employeeId = $candidate->employeeId ?: ($contractData['employee_id'] ?? '');
+        if (empty($employeeId)) {
+            $employeeId = $this->idGenerator->generate($joinDate !== '' ? $joinDate : null);
+        }
 
         $titles = $this->composeEmployeeJobTitles($position, $jobLevel, $lokasiKerja);
 
