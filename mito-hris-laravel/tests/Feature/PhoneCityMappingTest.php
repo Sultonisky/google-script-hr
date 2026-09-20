@@ -465,20 +465,8 @@ class PhoneCityMappingTest extends TestCase
      * PC15 — toSheetRow() positional alignment: verify every element of the
      * final Sheets row maps to the correct data_kandidat header position.
      *
-     * Final schema (25 columns, 0-indexed):
-     *   0  Recruitment ID       12 Position Applied
-     *   1  Created Date         13 Education
-     *   2  Full Name            14 Work Experience
-     *   3  NIK                  15 Last Company
-     *   4  Birth Date           16 Current Employment Status
-     *   5  Age                  17 Available to Join
-     *   6  Gender               18 Expected Salary
-     *   7  Marital Status       19 Recruitment Source
-     *   8  Email                20 Status
-     *   9  Phone                21 HR Notes
-     *  10  Address              22 Created By
-     *  11  City                 23 Updated At
-     *                               24 Blood Type
+     * Final schema (25 columns, 0-indexed) matches config/hris.php data_kandidat:
+     * Blood Type is after Gender (index 7).
      *
      * CV Link removed. Pipeline cols (Hold Reason, Blacklist Reason, Employee ID, etc.)
      * removed — they live only in their respective destination sheets.
@@ -526,24 +514,24 @@ class PhoneCityMappingTest extends TestCase
         $this->assertSame('1998-07-08',                     $row[4],  'Col 4 = Birth Date');
         $this->assertSame('28',                              $row[5],  'Col 5 = Age');
         $this->assertSame('Laki-laki',                      $row[6],  'Col 6 = Gender');
-        $this->assertSame('Menikah',                        $row[7],  'Col 7 = Marital Status');
-        $this->assertSame('dimas.prasetyo@example.com',      $row[8],  'Col 8 = Email');
-        $this->assertSame("'+6282336534192",                 $row[9],  'Col 9 = Phone (text-prefixed)');
-        $this->assertSame('Cengkareng, Jl. Merdeka No. 1',  $row[10], 'Col 10 = Address');
-        $this->assertSame('KOTA JAKARTA BARAT',             $row[11], 'Col 11 = City');
-        $this->assertSame('Sales Director',                 $row[12], 'Col 12 = Position Applied');
-        $this->assertSame('S3',                             $row[13], 'Col 13 = Education');
-        $this->assertSame('Fresh Graduate',                 $row[14], 'Col 14 = Work Experience');
-        $this->assertSame('',                               $row[15], 'Col 15 = Last Company (blank)');
-        $this->assertSame('Unemployed',                     $row[16], 'Col 16 = Current Employment Status');
-        $this->assertSame('Segera',                         $row[17], 'Col 17 = Available to Join');
-        $this->assertSame('500.000.000',                    $row[18], 'Col 18 = Expected Salary');
-        $this->assertSame('JobStreet',                      $row[19], 'Col 19 = Recruitment Source');
-        $this->assertSame('Pending',                        $row[20], 'Col 20 = Status');
-        $this->assertSame('',                               $row[21], 'Col 21 = HR Notes (blank)');
-        $this->assertSame('Candidate',                      $row[22], 'Col 22 = Created By');
-        $this->assertSame('2026-09-02 16:14:09',            $row[23], 'Col 23 = Updated At');
-        $this->assertSame('O',                              $row[24], 'Col 24 = Blood Type');
+        $this->assertSame('O',                              $row[7],  'Col 7 = Blood Type');
+        $this->assertSame('Menikah',                        $row[8],  'Col 8 = Marital Status');
+        $this->assertSame('dimas.prasetyo@example.com',      $row[9],  'Col 9 = Email');
+        $this->assertSame("'+6282336534192",                 $row[10], 'Col 10 = Phone (text-prefixed)');
+        $this->assertSame('Cengkareng, Jl. Merdeka No. 1',  $row[11], 'Col 11 = Address');
+        $this->assertSame('KOTA JAKARTA BARAT',             $row[12], 'Col 12 = City');
+        $this->assertSame('Sales Director',                 $row[13], 'Col 13 = Position Applied');
+        $this->assertSame('S3',                             $row[14], 'Col 14 = Education');
+        $this->assertSame('Fresh Graduate',                 $row[15], 'Col 15 = Work Experience');
+        $this->assertSame('',                               $row[16], 'Col 16 = Last Company (blank)');
+        $this->assertSame('Unemployed',                     $row[17], 'Col 17 = Current Employment Status');
+        $this->assertSame('Segera',                         $row[18], 'Col 18 = Available to Join');
+        $this->assertSame('500.000.000',                    $row[19], 'Col 19 = Expected Salary');
+        $this->assertSame('JobStreet',                      $row[20], 'Col 20 = Recruitment Source');
+        $this->assertSame('Pending',                        $row[21], 'Col 21 = Status');
+        $this->assertSame('',                               $row[22], 'Col 22 = HR Notes (blank)');
+        $this->assertSame('Candidate',                      $row[23], 'Col 23 = Created By');
+        $this->assertSame('2026-09-02 16:14:09',            $row[24], 'Col 24 = Updated At');
     }
 
     /**
@@ -584,10 +572,10 @@ class PhoneCityMappingTest extends TestCase
         $this->assertNull($captured->city,
             'City must be null when kota_nama is absent and kota is a numeric code');
 
-        // And the Sheet row at Col 11 must be empty string (null ?? '' in toSheetRow)
+        // And the Sheet row at Col 12 (City) must be empty string (null ?? '' in toSheetRow)
         $row = $captured->toSheetRow();
-        $this->assertSame('', $row[11],
-            'Col 11 (City) in Sheet row must be blank string, not "3173"');
+        $this->assertSame('', $row[12],
+            'Col 12 (City) in Sheet row must be blank string, not "3173"');
     }
 
     /**

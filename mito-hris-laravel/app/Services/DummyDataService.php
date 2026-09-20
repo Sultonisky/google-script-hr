@@ -296,7 +296,7 @@ class DummyDataService
     /**
      * Build a row for data_kandidat (25 columns — final schema).
      * No CV Link. No pipeline cols (Hold/Blacklist/Employee ID).
-     * Blood Type is appended at the end so live columns stay aligned.
+     * Blood Type sits after Gender, matching config/hris.php.
      */
     private function pendingRow(array $c): array
     {
@@ -308,6 +308,7 @@ class DummyDataService
             $c['birthDate'],
             $c['age'],
             $c['gender'],
+            $c['bloodType'] ?? '',
             $c['maritalStatus'],
             $c['email'],
             "'" . $c['phone'],
@@ -321,16 +322,14 @@ class DummyDataService
             $c['availableToJoin'],
             $c['expectedSalary'],
             $c['recruitmentSource'],
-            // [20] Status
+            // [21] Status
             $c['status'],
-            // [21] HR Notes
+            // [22] HR Notes
             $c['hrNotes'],
-            // [22] Created By
+            // [23] Created By
             $c['createdBy'],
-            // [23] Updated At
+            // [24] Updated At
             $c['updatedAt'],
-            // [24] Blood Type
-            $c['bloodType'] ?? '',
         ];
     }
 
@@ -349,6 +348,7 @@ class DummyDataService
             $c['birthDate'],
             $c['age'],
             $c['gender'],
+            $c['bloodType'] ?? '',
             $c['maritalStatus'],
             $c['email'],
             "'" . $c['phone'],
@@ -362,35 +362,33 @@ class DummyDataService
             $c['availableToJoin'],
             $c['expectedSalary'],
             $c['recruitmentSource'],
-            // [20] Status
+            // [21] Status
             $c['status'],
-            // [21] HR Notes
+            // [22] HR Notes
             $c['hrNotes'],
-            // [22] Created By
+            // [23] Created By
             $c['createdBy'],
-            // [23] Updated At
+            // [24] Updated At
             $c['updatedAt'],
-            // [24] Hold Reason
+            // [25] Hold Reason
             $c['holdReason'] ?? '',
-            // [25] Hold Follow Up Date
+            // [26] Hold Follow Up Date
             $c['holdFollowUpDate'] ?? '',
-            // [26] Blacklist Reason
+            // [27] Blacklist Reason
             $c['blacklistReason'] ?? '',
-            // [27] Blacklist Date
+            // [28] Blacklist Date
             $c['blacklistDate'] ?? '',
-            // [28] Blacklist Updated By
+            // [29] Blacklist Updated By
             $c['blacklistUpdatedBy'] ?? '',
-            // [29] Processed Date
+            // [30] Processed Date
             $c['processedDate'] ?? '',
-            // [30] Processed By
+            // [31] Processed By
             $c['processedBy'] ?? '',
-            // [31] Blood Type
-            $c['bloodType'] ?? '',
         ];
     }
 
     /**
-     * Build the base row for kandidat_accepted (32 columns — final schema).
+     * Build the base row for kandidat_accepted (33 identity/pipeline columns).
      * No CV Link. Keeps Employee ID + Hold/Blacklist cols.
      * Offering/Onboarding columns are appended separately by writeAcceptedSheet().
      */
@@ -404,6 +402,7 @@ class DummyDataService
             $c['birthDate'],
             $c['age'],
             $c['gender'],
+            $c['bloodType'] ?? '',
             $c['maritalStatus'],
             $c['email'],
             "'" . $c['phone'],
@@ -417,29 +416,29 @@ class DummyDataService
             $c['availableToJoin'],
             $c['expectedSalary'],
             $c['recruitmentSource'],
-            // [20] Status
+            // [21] Status
             $c['status'],
-            // [21] HR Notes
+            // [22] HR Notes
             $c['hrNotes'],
-            // [22] Created By
+            // [23] Created By
             $c['createdBy'],
-            // [23] Updated At
+            // [24] Updated At
             $c['updatedAt'],
-            // [24] Hold Reason
+            // [25] Hold Reason
             $c['holdReason'] ?? '',
-            // [25] Hold Follow Up Date
+            // [26] Hold Follow Up Date
             $c['holdFollowUpDate'] ?? '',
-            // [26] Blacklist Reason
+            // [27] Blacklist Reason
             $c['blacklistReason'] ?? '',
-            // [27] Blacklist Date
+            // [28] Blacklist Date
             $c['blacklistDate'] ?? '',
-            // [28] Blacklist Updated By
+            // [29] Blacklist Updated By
             $c['blacklistUpdatedBy'] ?? '',
-            // [29] Employee ID  ← KEPT in kandidat_accepted
+            // [30] Employee ID  ← KEPT in kandidat_accepted
             $c['employeeId'] ?? '',
-            // [30] Processed Date
+            // [31] Processed Date
             $c['processedDate'] ?? '',
-            // [31] Processed By
+            // [32] Processed By
             $c['processedBy'] ?? '',
         ];
     }
@@ -550,7 +549,6 @@ class DummyDataService
                 $offerEmpStatus,    // Offering Employment Status
                 $offerContractDur,  // Offering Contract Duration
                 $offerWorkingHours, // Offering Working Hours
-                $c['bloodType'] ?? '', // Blood Type
             ]);
 
             $rows[] = $row;
