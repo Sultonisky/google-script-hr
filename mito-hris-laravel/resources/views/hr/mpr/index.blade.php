@@ -596,7 +596,7 @@
                                             @foreach ($mprOptions['benefits'] ?? [] as $benefitKey => $benefitLabel)
                                                 <div class="col-md-4 col-6">
                                                     <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" name="benefits[]"
+                                                        <input class="form-check-input" type="radio" name="benefits[]"
                                                             value="{{ $benefitKey }}" id="mgbn_{{ $benefitKey }}">
                                                         <label class="form-check-label small" for="mgbn_{{ $benefitKey }}">{{ $benefitLabel }}</label>
                                                     </div>
@@ -1182,7 +1182,7 @@
                                                 @foreach ($mprOptions['benefits'] ?? [] as $benefitKey => $benefitLabel)
                                                     <div class="col-md-4 col-6">
                                                         <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox"
+                                                            <input class="form-check-input" type="radio"
                                                                 name="benefits[]" value="{{ $benefitKey }}"
                                                                 id="hrbn_{{ $benefitKey }}">
                                                             <label class="form-check-label small"
@@ -1444,7 +1444,7 @@
                                             @foreach ($mprOptions['benefits'] ?? [] as $benefitKey => $benefitLabel)
                                                 <div class="col-md-4 col-6">
                                                     <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" name="benefits[]"
+                                                        <input class="form-check-input" type="radio" name="benefits[]"
                                                             value="{{ $benefitKey }}" id="editbn_{{ $benefitKey }}">
                                                         <label class="form-check-label small" for="editbn_{{ $benefitKey }}">{{ $benefitLabel }}</label>
                                                     </div>
@@ -1674,6 +1674,22 @@
                 if (noteText)     noteText.classList.toggle('d-none', isReplacement);
             }
 
+            function bindLanguagesSanitizer() {
+                document.querySelectorAll('textarea[name="languages"]').forEach(function (field) {
+                    if (field.dataset.languagesBound) return;
+                    const sanitize = function () {
+                        field.value = field.value
+                            .replace(/[^\p{L} ,.\(\)\r\n]/gu, '')
+                            .replace(/ {2,}/g, ' ');
+                    };
+                    field.addEventListener('input', sanitize);
+                    field.addEventListener('blur', function () {
+                        field.value = field.value.trim();
+                    });
+                    field.dataset.languagesBound = '1';
+                });
+            }
+
             function bindWorkingDaysRadios(form) {
                 if (!form) return;
                 if (!form.dataset.workingDaysBound) {
@@ -1684,6 +1700,8 @@
                 }
                 applyShiftingState(form);
             }
+
+            bindLanguagesSanitizer();
 
             // Pasang listener & inisialisasi untuk form HR Create MPR (modal)
             const hrCreateForm = document.getElementById('formHrCreateMpr');

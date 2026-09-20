@@ -280,7 +280,7 @@
                                             @foreach ($mprOptions['benefits'] ?? [] as $benefitKey => $benefitLabel)
                                                 <div class="col-md-4 col-6">
                                                     <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" name="benefits[]"
+                                                        <input class="form-check-input" type="radio" name="benefits[]"
                                                             value="{{ $benefitKey }}" id="bn_{{ $benefitKey }}"
                                                             {{ in_array($benefitKey, $oldBenefits) ? 'checked' : '' }}>
                                                         <label class="form-check-label"
@@ -365,7 +365,9 @@
                                         <label class="form-label">Bahasa yang Dikuasai</label>
                                         <textarea name="languages" class="form-control" rows="3"
                                             placeholder="Contoh: Bahasa Indonesia (aktif), Bahasa Inggris (pasif)..."
-                                            maxlength="1000" data-sanitize-languages="true">{{ old('languages') }}</textarea>
+                                            maxlength="1000" data-sanitize-languages="true"
+                                            autocomplete="off">{{ old('languages') }}</textarea>
+                                        <div class="form-text text-muted small">Hanya huruf, spasi, koma, titik, dan kurung.</div>
                                     </div>
 
                                     {{-- Baris 4: Referensi Industri (full width) --}}
@@ -455,6 +457,25 @@
             document.querySelectorAll('form').forEach(form => setupDepartmentDivision(form));
 
             const formMpr = document.getElementById('formManagerMpr');
+
+            function sanitizeLanguagesField(field) {
+                if (!field) return;
+                field.value = field.value
+                    .replace(/[^\p{L} ,.\(\)\r\n]/gu, '')
+                    .replace(/ {2,}/g, ' ');
+            }
+
+            if (formMpr) {
+                const languagesField = formMpr.querySelector('textarea[name="languages"]');
+                if (languagesField) {
+                    languagesField.addEventListener('input', function () {
+                        sanitizeLanguagesField(languagesField);
+                    });
+                    languagesField.addEventListener('blur', function () {
+                        languagesField.value = languagesField.value.trim();
+                    });
+                }
+            }
 
             /**
              * Logika Shifting:
