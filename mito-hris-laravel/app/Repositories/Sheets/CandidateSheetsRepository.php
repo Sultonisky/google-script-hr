@@ -64,16 +64,36 @@ class CandidateSheetsRepository implements CandidateRepositoryInterface
         return null;
     }
 
-    public function findByNik(string $nik): ?CandidateData
+    public function findByNik(string $nik, bool $useCache = true): ?CandidateData
     {
-        $rows = $this->sheets->getRowsAsAssoc($this->sheetName);
         $cleanNik = trim(ltrim($nik, "'"));
-        foreach ($rows as $row) {
-            $rowNik = trim(ltrim($row['NIK'] ?? '', "'"));
-            if ($rowNik === $cleanNik) {
-                return CandidateData::fromSheetRow($row);
+        if ($cleanNik === '') {
+            return null;
+        }
+
+        $sheetKeys = ['candidates', 'candidates_hold', 'candidates_blacklist', 'candidates_accepted', 'candidates_probation'];
+        foreach ($sheetKeys as $key) {
+            $sheetName = config("google.sheets.{$key}");
+            if (!$sheetName) {
+                continue;
+            }
+
+            $rows = $this->sheets->getRowsAsAssoc($sheetName, $useCache);
+            foreach ($rows as $row) {
+                $rowNik = trim(ltrim($row['NIK'] ?? '', "'"));
+                if ($rowNik !== $cleanNik) {
+                    continue;
+                }
+
+                $candidate = CandidateData::fromSheetRow($row);
+                if (strtolower(trim((string) $candidate->status)) === 'deleted') {
+                    continue;
+                }
+
+                return $candidate;
             }
         }
+
         return null;
     }
 
@@ -284,6 +304,7 @@ class CandidateSheetsRepository implements CandidateRepositoryInterface
             'Age'                         => $c->age ?? '',
             'Gender'                      => $c->gender ?? '',
             'Marital Status'              => $c->maritalStatus ?? '',
+            'Blood Type'                  => $c->bloodType ?? '',
             'Email'                       => $c->email ?? '',
             'Phone'                       => "'" . ($c->phone ?? ''),
             'Address'                     => $c->address ?? '',

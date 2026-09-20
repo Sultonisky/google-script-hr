@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Public\ApplyJobRequest;
 use App\Http\Requests\Public\CandidateSelfUpdateRequest;
 use App\Services\RecruitmentService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -64,6 +65,30 @@ class CareerController extends Controller
 
         $positions = app(\App\Services\JobPositionService::class)->getPositionNames();
         return view('public.career.apply', compact('positions'));
+    }
+
+    /**
+     * Probe whether a NIK already has a recruitment record.
+     */
+    public function checkNik(Request $request): JsonResponse
+    {
+        if (!session('candidate_consent')) {
+            return response()->json([
+                'available' => false,
+                'message' => 'Harap menyetujui syarat & ketentuan terlebih dahulu.',
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'nik' => ['required', 'digits:16'],
+        ], [
+            'nik.required' => 'NIK wajib diisi.',
+            'nik.digits' => 'NIK harus berupa 16 digit angka.',
+        ]);
+
+        $status = $this->recruitmentService->nikRegistrationStatus($validated['nik']);
+
+        return response()->json($status);
     }
 
     /**

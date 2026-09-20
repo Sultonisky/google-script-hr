@@ -19,9 +19,9 @@ interface CandidateRepositoryInterface
     public function findById(string $recruitmentId): ?CandidateData;
 
     /**
-     * Find candidate by NIK.
+     * Find candidate by NIK across recruitment sheets.
      */
-    public function findByNik(string $nik): ?CandidateData;
+    public function findByNik(string $nik, bool $useCache = true): ?CandidateData;
 
     /**
      * Create a new candidate.

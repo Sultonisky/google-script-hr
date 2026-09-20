@@ -13,6 +13,7 @@ class CandidateData
         public ?string $age = null,
         public ?string $gender = null,
         public ?string $maritalStatus = null,
+        public ?string $bloodType = null,
         public ?string $email = null,
         public ?string $phone = null,
         public ?string $address = null,
@@ -77,6 +78,7 @@ class CandidateData
             age: $row['Age'] ?? null,
             gender: $row['Gender'] ?? null,
             maritalStatus: $row['Marital Status'] ?? null,
+            bloodType: $row['Blood Type'] ?? null,
             email: $row['Email'] ?? null,
             phone: self::sanitizePhone($row['Phone'] ?? ''),
             address: $row['Address'] ?? null,
@@ -135,7 +137,7 @@ class CandidateData
     }
 
     /**
-     * Build a positional row for data_kandidat (24 columns).
+     * Build a positional row for data_kandidat (25 columns).
      *
      * Final schema (index → header):
      *   0  Recruitment ID           12 Position Applied
@@ -150,6 +152,11 @@ class CandidateData
      *   9  Phone                    21 HR Notes
      *  10  Address                  22 Created By
      *  11  City                     23 Updated At
+     *                               24 Blood Type
+     *
+     * Blood Type is appended at the end so existing production columns
+     * stay aligned. Schema repair appends missing headers rather than
+     * inserting them in the middle of live rows.
      *
      * NOTE: CV Link has been removed from this sheet.
      * Pipeline columns (Hold Reason, Blacklist Reason, Employee ID, etc.)
@@ -184,6 +191,7 @@ class CandidateData
             $this->hrNotes ?? '',
             $this->createdBy ?? 'Candidate',
             $this->updatedAt ?? now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
+            $this->bloodType ?? '',
         ];
     }
 
