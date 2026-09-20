@@ -52,6 +52,27 @@ class PublicOutsourceApplyValidationTest extends TestCase
         $response->assertSessionHas('public_outsource_submission_completed', true);
         $this->assertSame('vendor.staff@gmail.com', $this->capturedEmployee?->workingEmail);
         $this->assertSame('Outsource', $this->capturedEmployee?->statusEmployee);
+        $this->assertMatchesRegularExpression('/^20260115\d{2,}$/', (string) $this->capturedEmployee?->employeeId);
+        $this->assertStringStartsNotWith('EMP-OS-', (string) $this->capturedEmployee?->employeeId);
+    }
+
+    public function test_employee_id_uses_join_date_and_next_sequence(): void
+    {
+        \Illuminate\Support\Facades\Cache::flush();
+
+        $this->bindReposExpectingCreate(collect([
+            new EmployeeData(employeeId: '2026011503', fullName: 'Karyawan Lama'),
+            new EmployeeData(employeeId: 'EMP-OS-2026-1111', fullName: 'Prefix Lama'),
+        ]));
+
+        $response = $this->onDomain('outsource')
+            ->from(route('public.outsource.apply'))
+            ->post(route('public.outsource.store'), $this->validPayload([
+                'tanggal_masuk' => '2026-01-15',
+            ]));
+
+        $response->assertRedirect(route('public.outsource.success'));
+        $this->assertSame('2026011504', $this->capturedEmployee?->employeeId);
     }
 
     public function test_rejects_name_fields_with_digits_or_symbols(): void
@@ -178,11 +199,12 @@ class PublicOutsourceApplyValidationTest extends TestCase
             ->post(route('public.outsource.store'), $this->validPayload($overrides));
     }
 
-    private function bindReposExpectingCreate(): void
+    private function bindReposExpectingCreate($existingEmployees = null): void
     {
         $this->capturedEmployee = null;
 
         $employeeRepo = Mockery::mock(EmployeeRepositoryInterface::class);
+        $employeeRepo->shouldReceive('getAll')->andReturn($existingEmployees ?? collect());
         $employeeRepo->shouldReceive('create')
             ->once()
             ->withArgs(function (EmployeeData $data) {
