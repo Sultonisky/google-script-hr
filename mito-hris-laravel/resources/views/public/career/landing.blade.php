@@ -140,6 +140,7 @@
                         <input type="hidden" name="consent_device" id="consentDevice">
                         <input type="hidden" name="consent_latitude" id="consentLatitude">
                         <input type="hidden" name="consent_longitude" id="consentLongitude">
+                        <input type="hidden" name="consent_location" id="consentLocation" value="pending">
                         <div class="p-3 rounded-3 mb-4" style="background:#fff5f5;border:1px solid #fed7d7;">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="consentCheckbox" name="consent"
@@ -167,21 +168,83 @@
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         (function() {
+            var form = document.getElementById('formConsent');
+            var checkbox = document.getElementById('consentCheckbox');
+            var button = document.getElementById('btnProceedApply');
             var timestamp = document.getElementById('consentTimestamp');
             var device = document.getElementById('consentDevice');
             var latitude = document.getElementById('consentLatitude');
             var longitude = document.getElementById('consentLongitude');
+            var locationField = document.getElementById('consentLocation');
+            var geoRequested = false;
 
-            if (timestamp) timestamp.value = new Date().toISOString();
-            if (device) device.value = navigator.userAgentData && navigator.userAgentData.platform ?
-                navigator.userAgentData.platform :
-                navigator.platform || 'Unknown';
+            function setDevice() {
+                if (!device) return;
+                try {
+                    device.value = (navigator.userAgentData && navigator.userAgentData.platform)
+                        ? navigator.userAgentData.platform
+                        : (navigator.platform || 'Unknown');
+                } catch (e) {
+                    device.value = navigator.platform || 'Unknown';
+                }
+            }
 
-            if (navigator.geolocation) {
+            function syncProceedButton() {
+                if (!checkbox || !button) return;
+                button.disabled = !checkbox.checked;
+            }
+
+            function markLocationUnavailable() {
+                if (locationField && locationField.value !== 'granted') {
+                    locationField.value = 'unavailable';
+                }
+            }
+
+            function requestLocationOptional() {
+                if (geoRequested) return;
+                geoRequested = true;
+
+                if (!navigator.geolocation || typeof navigator.geolocation.getCurrentPosition !== 'function') {
+                    markLocationUnavailable();
+                    return;
+                }
+
                 navigator.geolocation.getCurrentPosition(function(position) {
                     if (latitude) latitude.value = position.coords.latitude;
                     if (longitude) longitude.value = position.coords.longitude;
-                }, function() {});
+                    if (locationField) locationField.value = 'granted';
+                }, function() {
+                    markLocationUnavailable();
+                }, {
+                    enableHighAccuracy: false,
+                    timeout: 4000,
+                    maximumAge: 300000
+                });
+            }
+
+            if (timestamp) timestamp.value = new Date().toISOString();
+            setDevice();
+            syncProceedButton();
+
+            if (checkbox) {
+                ['change', 'input', 'click'].forEach(function(eventName) {
+                    checkbox.addEventListener(eventName, function() {
+                        syncProceedButton();
+                        if (checkbox.checked) {
+                            requestLocationOptional();
+                        }
+                    });
+                });
+            }
+
+            if (form) {
+                form.addEventListener('submit', function() {
+                    if (timestamp) timestamp.value = new Date().toISOString();
+                    setDevice();
+                    if (checkbox && checkbox.checked && !geoRequested) {
+                        markLocationUnavailable();
+                    }
+                });
             }
         }());
     </script>

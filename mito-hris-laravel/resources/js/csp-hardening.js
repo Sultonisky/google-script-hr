@@ -16,7 +16,9 @@
             button.disabled = !checkbox.checked;
         };
 
-        checkbox.addEventListener("change", syncButton);
+        ["change", "input", "click"].forEach(function (eventName) {
+            checkbox.addEventListener(eventName, syncButton);
+        });
         syncButton();
     }
 

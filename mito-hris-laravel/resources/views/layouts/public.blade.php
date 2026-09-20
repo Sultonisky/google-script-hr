@@ -422,10 +422,13 @@
             if (document.readyState === 'complete') {
                 hideLoader();
             } else {
+                document.addEventListener('DOMContentLoaded', hideLoader, {
+                    once: true
+                });
                 window.addEventListener('load', hideLoader, {
                     once: true
                 });
-                window.setTimeout(hideLoader, 4000);
+                window.setTimeout(hideLoader, 2500);
             }
         })();
     </script>
