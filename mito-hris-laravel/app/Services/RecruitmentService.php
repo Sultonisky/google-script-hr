@@ -45,18 +45,98 @@ class RecruitmentService
      */
     public function apply(array $validatedData, ?UploadedFile $cvFile = null): CandidateData
     {
-        // Check for duplicate active application by NIK
-        if (!empty($validatedData['nik'])) {
-            $existing = $this->candidateRepo->findByNik($validatedData['nik']);
-            if ($existing && !in_array($existing->status, ['Rejected', 'Deleted'])) {
-                // If already blacklist, refuse
-                if ($existing->status === 'Blacklist') {
-                    throw new RuntimeException('NIK Anda terdaftar dalam daftar hitam (blacklist) sistem.');
-                }
+        $nik = preg_replace('/\D+/', '', (string) ($validatedData['nik'] ?? ''));
+        $lockAcquired = false;
+
+        if ($nik !== '') {
+            if (strlen($nik) !== 16) {
+                throw new RuntimeException('NIK harus terdiri dari 16 digit angka.');
+            }
+
+            $lockAcquired = Cache::add($this->nikLockKey($nik), 1, 90);
+            if (!$lockAcquired) {
+                throw new RuntimeException('NIK ini sudah terdaftar atau sedang diproses. Setiap NIK hanya dapat digunakan untuk satu kali pendaftaran.');
+            }
+
+            try {
+                $this->assertNikAvailable($nik);
+            } catch (RuntimeException $e) {
+                Cache::forget($this->nikLockKey($nik));
+                throw $e;
             }
         }
 
-        // Extract CV link from input or upload
+        try {
+            return $this->persistApplication($validatedData, $cvFile, $nik !== '' ? $nik : ($validatedData['nik'] ?? null));
+        } catch (\Throwable $e) {
+            if ($lockAcquired && $nik !== '') {
+                Cache::forget($this->nikLockKey($nik));
+            }
+            throw $e;
+        }
+    }
+
+    /**
+     * Public uniqueness probe for the apply form (does not create a lock).
+     */
+    public function nikRegistrationStatus(string $nik): array
+    {
+        $nik = preg_replace('/\D+/', '', $nik);
+        if (strlen($nik) !== 16) {
+            return [
+                'available' => false,
+                'message' => 'NIK harus terdiri dari 16 digit angka.',
+            ];
+        }
+
+        if (Cache::has($this->nikLockKey($nik))) {
+            return [
+                'available' => false,
+                'message' => 'NIK ini sudah terdaftar. Setiap NIK hanya dapat digunakan untuk satu kali pendaftaran.',
+            ];
+        }
+
+        try {
+            $this->assertNikAvailable($nik);
+        } catch (RuntimeException $e) {
+            return [
+                'available' => false,
+                'message' => $e->getMessage(),
+            ];
+        }
+
+        return [
+            'available' => true,
+            'message' => null,
+        ];
+    }
+
+    private function assertNikAvailable(string $nik): void
+    {
+        $existing = $this->candidateRepo->findByNik($nik, false);
+        if ($existing === null) {
+            return;
+        }
+
+        $status = strtolower(trim((string) ($existing->status ?? '')));
+        if ($status === 'deleted') {
+            return;
+        }
+
+        if ($status === 'blacklist') {
+            throw new RuntimeException('NIK Anda terdaftar dalam daftar hitam (blacklist) sistem.');
+        }
+
+        throw new RuntimeException('NIK ini sudah terdaftar. Setiap NIK hanya dapat digunakan untuk satu kali pendaftaran.');
+    }
+
+    private function nikLockKey(string $nik): string
+    {
+        return 'career-apply-nik:' . $nik;
+    }
+
+    private function persistApplication(array $validatedData, ?UploadedFile $cvFile, ?string $nik): CandidateData
+    {
         $cvLink = $validatedData['cv_link'] ?? ($validatedData['cvLink'] ?? null);
         if ($cvFile !== null) {
             $uploadRes = $this->drive->uploadUploadedFile($cvFile);
@@ -96,11 +176,12 @@ class RecruitmentService
 
         $candidate = new CandidateData(
             fullName: $validatedData['nama_lengkap'] ?? ($validatedData['full_name'] ?? null),
-            nik: $validatedData['nik'] ?? null,
+            nik: $nik,
             birthDate: $validatedData['birth_date'] ?? ($validatedData['tanggal_lahir'] ?? null),
             age: $validatedData['usia'] ?? ($validatedData['age'] ?? null),
             gender: $validatedData['jenis_kelamin'] ?? ($validatedData['gender'] ?? null),
             maritalStatus: $validatedData['marital_status'] ?? null,
+            bloodType: $validatedData['golongan_darah'] ?? ($validatedData['blood_type'] ?? null),
             email: $validatedData['email'] ?? null,
             phone: $canonicalPhone,
             address: $alamatDomisili,
