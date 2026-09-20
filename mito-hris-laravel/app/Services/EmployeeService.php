@@ -71,10 +71,10 @@ class EmployeeService
             ->map(fn($id) => strtoupper(trim($id)))
             ->toArray();
 
-        $empId   = $this->idGenerator->generate();
+        $empId   = $this->idGenerator->generate($data['joinDate'] ?? null, $existingIds);
         $attempts = 0;
         while (in_array(strtoupper($empId), $existingIds, true) && $attempts < 10) {
-            $empId = $this->idGenerator->generate();
+            $empId = $this->idGenerator->generate($data['joinDate'] ?? null, $existingIds);
             $attempts++;
         }
         if (in_array(strtoupper($empId), $existingIds, true)) {
