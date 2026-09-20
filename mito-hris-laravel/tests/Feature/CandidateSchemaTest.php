@@ -16,12 +16,12 @@ use App\DTOs\CandidateData;
  *
  * Any deviation here means a column shift is occurring in production.
  *
- * Final schemas (per spec):
+ * Final schemas (per spec, matching config/hris.php):
  *
- *  data_kandidat      — 24 cols. No CV Link. No pipeline cols.
- *  kandidat_hold      — 31 cols. No CV Link. No Employee ID. Has Hold/Blacklist + Processed.
- *  kandidat_blacklist — 31 cols. No CV Link. No Employee ID. Has Hold/Blacklist + Processed.
- *  kandidat_accepted  — 57 cols. No CV Link. HAS Employee ID. All Offering/Onboarding fields.
+ *  data_kandidat      — 25 cols. No CV Link. No pipeline cols. Blood Type after Gender.
+ *  kandidat_hold      — 32 cols. No CV Link. No Employee ID. Has Hold/Blacklist + Processed. Blood Type after Gender.
+ *  kandidat_blacklist — 32 cols. No CV Link. No Employee ID. Has Hold/Blacklist + Processed. Blood Type after Gender.
+ *  kandidat_accepted  — 58 cols. No CV Link. HAS Employee ID. All Offering/Onboarding fields. Blood Type after Gender.
  */
 class CandidateSchemaTest extends TestCase
 {
@@ -40,6 +40,7 @@ class CandidateSchemaTest extends TestCase
             'Birth Date',
             'Age',
             'Gender',
+            'Blood Type',
             'Marital Status',
             'Email',
             'Phone',
@@ -71,6 +72,7 @@ class CandidateSchemaTest extends TestCase
             'Birth Date',
             'Age',
             'Gender',
+            'Blood Type',
             'Marital Status',
             'Email',
             'Phone',
@@ -116,6 +118,7 @@ class CandidateSchemaTest extends TestCase
             'Birth Date',
             'Age',
             'Gender',
+            'Blood Type',
             'Marital Status',
             'Email',
             'Phone',
@@ -184,6 +187,7 @@ class CandidateSchemaTest extends TestCase
             age:                     $overrides['age']                     ?? '36',
             gender:                  $overrides['gender']                  ?? 'Laki-laki',
             maritalStatus:           $overrides['maritalStatus']           ?? 'Belum Menikah',
+            bloodType:               $overrides['bloodType']               ?? 'O',
             email:                   $overrides['email']                   ?? 'andi@example.com',
             phone:                   $overrides['phone']                   ?? '+6281234567890',
             address:                 $overrides['address']                 ?? 'Jl. Merdeka No. 1',
@@ -231,6 +235,7 @@ class CandidateSchemaTest extends TestCase
         $this->assertNotContains('Blacklist Date',       $headers, 'data_kandidat must NOT contain Blacklist Date');
         $this->assertNotContains('Blacklist Updated By', $headers, 'data_kandidat must NOT contain Blacklist Updated By');
         $this->assertNotContains('Employee ID',          $headers, 'data_kandidat must NOT contain Employee ID');
+        $this->assertContains('Blood Type',              $headers, 'data_kandidat MUST contain Blood Type');
     }
 
     // =========================================================================
@@ -264,6 +269,7 @@ class CandidateSchemaTest extends TestCase
         $this->assertContains('Blacklist Updated By', $headers, 'kandidat_hold MUST contain Blacklist Updated By');
         $this->assertContains('Processed Date',       $headers, 'kandidat_hold MUST contain Processed Date');
         $this->assertContains('Processed By',         $headers, 'kandidat_hold MUST contain Processed By');
+        $this->assertContains('Blood Type',           $headers, 'kandidat_hold MUST contain Blood Type');
     }
 
     // =========================================================================
@@ -295,6 +301,7 @@ class CandidateSchemaTest extends TestCase
         $this->assertContains('Blacklist Updated By', $headers, 'kandidat_blacklist MUST contain Blacklist Updated By');
         $this->assertContains('Processed Date',       $headers, 'kandidat_blacklist MUST contain Processed Date');
         $this->assertContains('Processed By',         $headers, 'kandidat_blacklist MUST contain Processed By');
+        $this->assertContains('Blood Type',           $headers, 'kandidat_blacklist MUST contain Blood Type');
     }
 
     // =========================================================================
@@ -355,6 +362,7 @@ class CandidateSchemaTest extends TestCase
             'Offering Employment Status',
             'Offering Contract Duration',
             'Offering Working Hours',
+            'Blood Type',
         ] as $required) {
             $this->assertContains($required, $headers,
                 "kandidat_accepted MUST contain '{$required}'");
@@ -367,14 +375,14 @@ class CandidateSchemaTest extends TestCase
 
     public function test_schema09_column_counts(): void
     {
-        $this->assertCount(24, config('hris.schemas.data_kandidat'),
-            'data_kandidat must have exactly 24 columns');
-        $this->assertCount(31, config('hris.schemas.kandidat_hold'),
-            'kandidat_hold must have exactly 31 columns');
-        $this->assertCount(31, config('hris.schemas.kandidat_blacklist'),
-            'kandidat_blacklist must have exactly 31 columns');
-        $this->assertCount(57, config('hris.schemas.kandidat_accepted'),
-            'kandidat_accepted must have exactly 57 columns');
+        $this->assertCount(25, config('hris.schemas.data_kandidat'),
+            'data_kandidat must have exactly 25 columns');
+        $this->assertCount(32, config('hris.schemas.kandidat_hold'),
+            'kandidat_hold must have exactly 32 columns');
+        $this->assertCount(32, config('hris.schemas.kandidat_blacklist'),
+            'kandidat_blacklist must have exactly 32 columns');
+        $this->assertCount(58, config('hris.schemas.kandidat_accepted'),
+            'kandidat_accepted must have exactly 58 columns');
     }
 
     // =========================================================================
@@ -429,10 +437,11 @@ class CandidateSchemaTest extends TestCase
         $this->assertSame('Pending',          $row[$idxByStatus],   'Status at correct position');
 
         // Explicit numeric positions for the columns most likely to shift
-        $this->assertSame(20, $idxByStatus,  'Status must be at index 20 (not shifted by CV Link removal)');
-        $this->assertSame(21, array_search('HR Notes', $headers, true),   'HR Notes at index 21');
-        $this->assertSame(22, array_search('Created By', $headers, true), 'Created By at index 22');
-        $this->assertSame(23, array_search('Updated At', $headers, true), 'Updated At at index 23');
+        $this->assertSame(7, array_search('Blood Type', $headers, true), 'Blood Type at index 7 (after Gender)');
+        $this->assertSame(21, $idxByStatus,  'Status must be at index 21');
+        $this->assertSame(22, array_search('HR Notes', $headers, true),   'HR Notes at index 22');
+        $this->assertSame(23, array_search('Created By', $headers, true), 'Created By at index 23');
+        $this->assertSame(24, array_search('Updated At', $headers, true), 'Updated At at index 24');
 
         // These fields must NOT be present in data_kandidat
         $this->assertFalse(array_search('CV Link',    $headers, true), 'CV Link must not exist in data_kandidat');
@@ -447,36 +456,32 @@ class CandidateSchemaTest extends TestCase
     {
         $headers = config('hris.schemas.kandidat_accepted');
 
-        // Employee ID must exist and be at position 29 (0-indexed)
+        $this->assertSame(7, array_search('Blood Type', $headers, true),
+            'Blood Type must be at index 7 (after Gender) in kandidat_accepted');
+
         $idxEmployeeId = array_search('Employee ID', $headers, true);
         $this->assertNotFalse($idxEmployeeId,
             'Employee ID must exist in kandidat_accepted');
-        $this->assertSame(29, $idxEmployeeId,
-            'Employee ID must be at index 29 in kandidat_accepted');
+        $this->assertSame(30, $idxEmployeeId,
+            'Employee ID must be at index 30 in kandidat_accepted');
 
-        // Hold Reason must be at position 24
-        $this->assertSame(24, array_search('Hold Reason', $headers, true),
-            'Hold Reason must be at index 24 in kandidat_accepted');
+        $this->assertSame(25, array_search('Hold Reason', $headers, true),
+            'Hold Reason must be at index 25 in kandidat_accepted');
 
-        // Blacklist Reason at 26
-        $this->assertSame(26, array_search('Blacklist Reason', $headers, true),
-            'Blacklist Reason must be at index 26 in kandidat_accepted');
+        $this->assertSame(27, array_search('Blacklist Reason', $headers, true),
+            'Blacklist Reason must be at index 27 in kandidat_accepted');
 
-        // Processed Date at 30
-        $this->assertSame(30, array_search('Processed Date', $headers, true),
-            'Processed Date must be at index 30 in kandidat_accepted');
+        $this->assertSame(31, array_search('Processed Date', $headers, true),
+            'Processed Date must be at index 31 in kandidat_accepted');
 
-        // Offering Created at 32
-        $this->assertSame(32, array_search('Offering Created', $headers, true),
-            'Offering Created must be at index 32 in kandidat_accepted');
+        $this->assertSame(33, array_search('Offering Created', $headers, true),
+            'Offering Created must be at index 33 in kandidat_accepted');
 
-        // Onboarding Status at 45
-        $this->assertSame(45, array_search('Onboarding Status', $headers, true),
-            'Onboarding Status must be at index 45 in kandidat_accepted');
+        $this->assertSame(46, array_search('Onboarding Status', $headers, true),
+            'Onboarding Status must be at index 46 in kandidat_accepted');
 
-        // Offering Working Hours must be last (index 56)
-        $this->assertSame(56, array_search('Offering Working Hours', $headers, true),
-            'Offering Working Hours must be the last column (index 56) in kandidat_accepted');
+        $this->assertSame(57, array_search('Offering Working Hours', $headers, true),
+            'Offering Working Hours must remain the last column (index 57) in kandidat_accepted');
 
         // CV Link must NOT be present
         $this->assertFalse(array_search('CV Link', $headers, true),
@@ -492,18 +497,20 @@ class CandidateSchemaTest extends TestCase
         foreach (['kandidat_hold', 'kandidat_blacklist'] as $sheet) {
             $headers = config("hris.schemas.{$sheet}");
 
+            $this->assertSame(7, array_search('Blood Type', $headers, true),
+                "Blood Type must be at index 7 (after Gender) in {$sheet}");
+
             $idxStatus = array_search('Status', $headers, true);
-            $this->assertSame(20, $idxStatus,
-                "Status must be at index 20 in {$sheet} (not shifted by CV Link removal)");
+            $this->assertSame(21, $idxStatus,
+                "Status must be at index 21 in {$sheet}");
 
             $this->assertFalse(array_search('CV Link',    $headers, true),
                 "CV Link must NOT exist in {$sheet}");
             $this->assertFalse(array_search('Employee ID', $headers, true),
                 "Employee ID must NOT exist in {$sheet}");
 
-            // Processed By must be last (index 30)
-            $this->assertSame(30, array_search('Processed By', $headers, true),
-                "Processed By must be at index 30 (last) in {$sheet}");
+            $this->assertSame(31, array_search('Processed By', $headers, true),
+                "Processed By must be at index 31 in {$sheet}");
         }
     }
 }

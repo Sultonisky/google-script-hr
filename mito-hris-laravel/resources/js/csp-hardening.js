@@ -112,13 +112,53 @@
         });
     }
 
-    function bindOutsourceNameSanitization() {
+    function bindOutsourceFieldSanitization() {
         document
             .querySelectorAll("[data-sanitize-name]")
             .forEach(function (field) {
                 const sanitize = function () {
                     field.value = field.value
                         .replace(/[^\p{L} ]/gu, "")
+                        .replace(/ {2,}/g, " ");
+                };
+
+                field.addEventListener("input", sanitize);
+                field.addEventListener("blur", function () {
+                    field.value = field.value.trim();
+                });
+            });
+
+        document
+            .querySelectorAll("[data-sanitize-digits]")
+            .forEach(function (field) {
+                const max = parseInt(field.getAttribute("maxlength") || "32", 10);
+                const sanitize = function () {
+                    field.value = field.value.replace(/\D+/g, "").substring(0, max);
+                };
+
+                field.addEventListener("input", sanitize);
+                field.addEventListener("blur", sanitize);
+            });
+
+        document
+            .querySelectorAll("[data-sanitize-npwp]")
+            .forEach(function (field) {
+                const sanitize = function () {
+                    field.value = field.value
+                        .replace(/[^0-9.\-]/g, "")
+                        .substring(0, 20);
+                };
+
+                field.addEventListener("input", sanitize);
+                field.addEventListener("blur", sanitize);
+            });
+
+        document
+            .querySelectorAll("[data-sanitize-moderate]")
+            .forEach(function (field) {
+                const sanitize = function () {
+                    field.value = field.value
+                        .replace(/[^\p{L}0-9 .,&\-\/]/gu, "")
                         .replace(/ {2,}/g, " ");
                 };
 
@@ -439,7 +479,7 @@
             bindPublicCareerFormHelpers();
             bindMasterDataHelpers();
             bindMasterDataWarnings();
-            bindOutsourceNameSanitization();
+            bindOutsourceFieldSanitization();
             bindOutsourceAddressCopy();
             bindHrAutoSubmitFilters();
             bindHrActionButtons();
@@ -461,7 +501,7 @@
     bindPublicCareerFormHelpers();
     bindMasterDataHelpers();
     bindMasterDataWarnings();
-    bindOutsourceNameSanitization();
+    bindOutsourceFieldSanitization();
     bindOutsourceAddressCopy();
     bindHrAutoSubmitFilters();
     bindHrActionButtons();

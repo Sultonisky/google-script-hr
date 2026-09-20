@@ -19,13 +19,7 @@ class UserDatabaseRepository implements UserRepositoryInterface
 {
     public function findByIdentifier(string $identifier): ?array
     {
-        $identifier = strtolower(trim($identifier));
-
-        $user = User::whereRaw('LOWER(email) = ?', [$identifier])
-            ->orWhereRaw('LOWER(name) = ?', [$identifier])
-            ->first();
-
-        return $user ? $this->toSheetFormat($user) : null;
+        return $this->findByEmail($identifier);
     }
 
     public function findByEmail(string $email): ?array

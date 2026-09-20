@@ -118,10 +118,11 @@
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold" for="birth_date" style="font-size:13px">Tanggal
                                         Lahir <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="birth_date" name="birth_date"
-                                        value="{{ old('birth_date') }}" required placeholder="DD/MM/YYYY" maxlength="10"
-                                        autocomplete="off" inputmode="numeric">
-                                    <div class="invalid-feedback">Tanggal lahir wajib diisi dengan format DD/MM/YYYY.</div>
+                                    <input type="date" class="form-control" id="birth_date" name="birth_date"
+                                        value="{{ old('birth_date') }}" required min="1900-01-01"
+                                        max="{{ now()->timezone('Asia/Jakarta')->toDateString() }}"
+                                        autocomplete="bday">
+                                    <div class="invalid-feedback">Tanggal lahir wajib diisi dengan format YYYY-MM-DD.</div>
                                 </div>
 
                                 <div class="col-md-6">
@@ -145,6 +146,19 @@
                                             {{ old('jenis_kelamin') === 'Perempuan' ? 'selected' : '' }}>Perempuan</option>
                                     </select>
                                     <div class="invalid-feedback">Jenis kelamin wajib dipilih.</div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold" for="blood_type"
+                                        style="font-size:13px">Golongan Darah <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="blood_type" name="golongan_darah" required>
+                                        <option value="">-- Pilih Golongan Darah --</option>
+                                        <option value="A" {{ old('golongan_darah') === 'A' ? 'selected' : '' }}>A</option>
+                                        <option value="B" {{ old('golongan_darah') === 'B' ? 'selected' : '' }}>B</option>
+                                        <option value="AB" {{ old('golongan_darah') === 'AB' ? 'selected' : '' }}>AB</option>
+                                        <option value="O" {{ old('golongan_darah') === 'O' ? 'selected' : '' }}>O</option>
+                                    </select>
+                                    <div class="invalid-feedback">Golongan darah wajib dipilih.</div>
                                 </div>
 
                                 <div class="col-md-6">
@@ -445,12 +459,6 @@
                     nomor telepon yang telah didaftarkan.
                 </p>
                 <p id="successRecruitId" style="font-size:14px;color:#eb1c24;font-weight:700;margin-bottom:32px;"></p>
-                <div class="success-actions" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-                    <a href="{{ route('public.career.index') }}"
-                        style="background:#fff;color:#1f2937;border:1.5px solid #e5e7eb;padding:12px 28px;font-size:14px;font-weight:600;border-radius:10px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;">
-                        <i class="bi bi-arrow-left"></i> Kembali ke Halaman Info
-                    </a>
-                </div>
             </div>
 
         </div>
@@ -977,6 +985,9 @@
         var phoneInput = null;
         var salaryInput = null;
         var nikDuplicateWarning = null;
+        var nikIsBlocked = false;
+        var nikCheckTimer = null;
+        var SUBMISSION_FLAG = 'mito_career_submitted';
         var manualBirthDateChanged = false;
         var isSubmitting = false;
 
@@ -986,7 +997,7 @@
         var FORM_SECTIONS = [{
                 id: 'sectionPersonal',
                 badgeId: 'secBadgePersonal',
-                fields: ['nik', 'full_name', 'birth_date', 'age', 'gender', 'marital_status']
+                fields: ['nik', 'full_name', 'birth_date', 'age', 'gender', 'blood_type', 'marital_status']
             },
             {
                 id: 'sectionContact',
@@ -1150,24 +1161,20 @@
         }
 
         // ============================================================
-        // BIRTH DATE — auto-slash DD/MM/YYYY + strict validation (1:1 GAS)
+        // BIRTH DATE — native YYYY-MM-DD + age / calendar validation
         // ============================================================
         function attachBirthDateListeners() {
             birthDateInput.addEventListener('input', function() {
                 manualBirthDateChanged = true;
-                var val = this.value.replace(/[^0-9]/g, '');
-                var f = '';
-                if (val.length > 0) {
-                    f = val.substring(0, 2);
-                    if (val.length > 2) f += '/' + val.substring(2, 4);
-                    if (val.length > 4) f += '/' + val.substring(4, 8);
-                }
-                this.value = f;
                 calculateAge();
-                if (f.length === 10) validateBirthDate();
-                else {
-                    this.classList.remove('is-valid', 'is-invalid');
-                }
+                if (this.value) validateBirthDate();
+                else this.classList.remove('is-valid', 'is-invalid');
+                updateProgress();
+            });
+            birthDateInput.addEventListener('change', function() {
+                manualBirthDateChanged = true;
+                calculateAge();
+                if (this.value.trim().length > 0) validateBirthDate();
                 updateProgress();
             });
             birthDateInput.addEventListener('blur', function() {
@@ -1196,18 +1203,18 @@
                 el.classList.add('is-valid');
                 if (feedback) feedback.style.display = 'none';
             }
-            if (!val || val.length < 10) {
-                setInvalid('Tanggal lahir wajib diisi dengan format DD/MM/YYYY.');
+            if (!val) {
+                setInvalid('Tanggal lahir wajib diisi dengan format YYYY-MM-DD.');
                 return false;
             }
-            var p = val.split('/');
-            if (p.length !== 3 || p[0].length !== 2 || p[1].length !== 2 || p[2].length !== 4) {
-                setInvalid('Format tidak valid. Gunakan DD/MM/YYYY (contoh: 15/08/1990).');
+            var p = val.split('-');
+            if (p.length !== 3 || p[0].length !== 4 || p[1].length !== 2 || p[2].length !== 2) {
+                setInvalid('Format tidak valid. Gunakan YYYY-MM-DD (contoh: 1990-08-15).');
                 return false;
             }
-            var day = parseInt(p[0], 10),
+            var year = parseInt(p[0], 10),
                 month = parseInt(p[1], 10),
-                year = parseInt(p[2], 10),
+                day = parseInt(p[2], 10),
                 curYear = new Date().getFullYear();
             if (isNaN(day) || isNaN(month) || isNaN(year)) {
                 setInvalid('Tanggal lahir mengandung karakter tidak valid.');
@@ -1253,11 +1260,11 @@
                 ageInput.value = '';
                 return;
             }
-            var p = val.split('/');
+            var p = val.split('-');
             if (p.length !== 3) return;
-            var day = parseInt(p[0], 10),
+            var year = parseInt(p[0], 10),
                 month = parseInt(p[1], 10),
-                year = parseInt(p[2], 10);
+                day = parseInt(p[2], 10);
             if (!day || !month || !year || month < 1 || month > 12 || day < 1 || day > 31) return;
             var bd = new Date(year, month - 1, day),
                 today = new Date();
@@ -1287,7 +1294,7 @@
                     day: day,
                     month: month,
                     year: fullYear,
-                    formatted: ('0' + day).slice(-2) + '/' + ('0' + month).slice(-2) + '/' + fullYear
+                    formatted: fullYear + '-' + ('0' + month).slice(-2) + '-' + ('0' + day).slice(-2)
                 },
                 gender: gender,
                 provinceCode: nik.substring(0, 2),
@@ -1328,6 +1335,78 @@
             }
             showNIKFeedback(true, r);
             updateProgress();
+            scheduleNikAvailabilityCheck(nik);
+        }
+
+        function getCsrfToken() {
+            var meta = document.querySelector('meta[name="csrf-token"]');
+            return meta ? meta.getAttribute('content') : '';
+        }
+
+        function setNikBlocked(blocked, message) {
+            nikIsBlocked = !!blocked;
+            if (!nikDuplicateWarning) return;
+            if (blocked) {
+                nikDuplicateWarning.innerHTML =
+                    '<div class="alert alert-danger p-2 mb-0" style="font-size:12px"><i class="bi bi-exclamation-octagon-fill me-1"></i> <strong>' +
+                    (message || 'NIK ini sudah terdaftar. Setiap NIK hanya dapat digunakan untuk satu kali pendaftaran.') +
+                    '</strong></div>';
+                if (submitBtn) submitBtn.disabled = true;
+            } else {
+                nikDuplicateWarning.innerHTML = '';
+            }
+            updateProgress();
+        }
+
+        function scheduleNikAvailabilityCheck(nik) {
+            setNikBlocked(false);
+            if (nikCheckTimer) clearTimeout(nikCheckTimer);
+            nikCheckTimer = setTimeout(function() {
+                checkNikAvailability(nik);
+            }, 250);
+        }
+
+        function checkNikAvailability(nik) {
+            fetch('{{ route('public.career.nik-check') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': getCsrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ nik: nik })
+            }).then(function(res) {
+                return res.json().then(function(data) {
+                    return { status: res.status, data: data };
+                });
+            }).then(function(result) {
+                if (String(nikInput.value || '') !== String(nik)) return;
+                if (result.data && result.data.available === false) {
+                    setNikBlocked(true, result.data.message);
+                }
+            }).catch(function() {
+                // Keep the form usable if the probe fails; server still enforces uniqueness.
+            });
+        }
+
+        function isAlreadySubmitted() {
+            try {
+                return window.sessionStorage.getItem(SUBMISSION_FLAG) === '1';
+            } catch (err) {
+                return false;
+            }
+        }
+
+        function markSubmitted() {
+            try {
+                window.sessionStorage.setItem(SUBMISSION_FLAG, '1');
+            } catch (err) {}
+        }
+
+        function showAlreadySubmittedPage() {
+            window.location.replace('{{ route('public.career.submission-success') }}');
         }
 
         function showNIKFeedback(success, r) {
@@ -1590,6 +1669,7 @@
             nikInput.addEventListener('input', function() {
                 var nik = this.value.replace(/[^0-9]/g, '').substring(0, 16);
                 this.value = nik;
+                setNikBlocked(false);
                 if (nik.length === 16) processNIK(nik);
                 else nikFeedback.innerHTML = nik.length > 0 ?
                     '<span class="text-muted" style="font-size:12px">Ketik 16 digit NIK... (' + nik.length +
@@ -1749,6 +1829,11 @@
                     showAlreadySubmittedPage();
                     return;
                 }
+                if (nikIsBlocked) {
+                    e.preventDefault();
+                    nikInput.focus();
+                    return;
+                }
                 if (!agreementCheckbox.checked) {
                     e.preventDefault();
                     agreementError.style.display = 'block';
@@ -1770,18 +1855,21 @@
                     });
                     return;
                 }
-                // Valid — show loading overlay, let form submit normally
-                // Final authoritative sync: ensure kota_nama always reflects the
-                // current city dropdown value regardless of prior event timing.
+                // Valid — lock the form immediately so a second tap cannot POST twice.
+                isSubmitting = true;
+                markSubmitted();
                 var kotaNamaInput = document.getElementById('kotaNama');
                 if (kotaNamaInput && citySelect) {
                     kotaNamaInput.value = citySelect.value ? (REGIONS.cities[citySelect.value] || '') : '';
                 }
-                isSubmitting = true;
                 submitBtn.disabled = true;
                 submitSpinner.classList.remove('d-none');
                 submitText.textContent = 'Mengirim...';
-                loadingOverlay.classList.add('is-active');
+                if (typeof window.showPublicLoader === 'function') {
+                    window.showPublicLoader('Mengirim data');
+                } else if (loadingOverlay) {
+                    loadingOverlay.classList.add('is-active');
+                }
             });
 
             updateProgress();

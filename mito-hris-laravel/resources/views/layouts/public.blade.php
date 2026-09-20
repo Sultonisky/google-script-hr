@@ -396,13 +396,27 @@
             const loader = document.getElementById('publicLoader');
             if (!loader) return;
 
+            let holdVisible = false;
+
             const hideLoader = () => {
-                if (loader.classList.contains('is-hidden')) return;
+                if (holdVisible || loader.classList.contains('is-hidden')) return;
 
                 window.requestAnimationFrame(() => {
+                    if (holdVisible) return;
                     loader.classList.add('is-hidden');
-                    window.setTimeout(() => loader.remove(), 500);
                 });
+            };
+
+            window.showPublicLoader = function(label) {
+                holdVisible = true;
+                loader.setAttribute('aria-label', label || 'Memuat halaman');
+                loader.classList.remove('is-hidden');
+                const content = loader.querySelector('.public-loader-content');
+                if (content) {
+                    content.style.animation = 'none';
+                    void content.offsetWidth;
+                    content.style.animation = '';
+                }
             };
 
             if (document.readyState === 'complete') {

@@ -28,16 +28,16 @@
 .public-submit-loader {
     position: fixed;
     inset: 0;
-    z-index: 1999;
+    z-index: 2000;
     display: grid;
     place-items: center;
-    background: rgba(255, 255, 255, 0.94);
+    background: #fff;
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
     transition:
-        opacity 0.3s ease,
-        visibility 0s linear 0.3s;
+        opacity 0.35s ease,
+        visibility 0s linear 0.35s;
 }
 
 .public-submit-loader.is-active {

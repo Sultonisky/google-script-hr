@@ -13,6 +13,7 @@ class CandidateData
         public ?string $age = null,
         public ?string $gender = null,
         public ?string $maritalStatus = null,
+        public ?string $bloodType = null,
         public ?string $email = null,
         public ?string $phone = null,
         public ?string $address = null,
@@ -77,6 +78,7 @@ class CandidateData
             age: $row['Age'] ?? null,
             gender: $row['Gender'] ?? null,
             maritalStatus: $row['Marital Status'] ?? null,
+            bloodType: $row['Blood Type'] ?? null,
             email: $row['Email'] ?? null,
             phone: self::sanitizePhone($row['Phone'] ?? ''),
             address: $row['Address'] ?? null,
@@ -135,21 +137,30 @@ class CandidateData
     }
 
     /**
-     * Build a positional row for data_kandidat (24 columns).
+     * Build a positional row for data_kandidat (25 columns).
      *
      * Final schema (index → header):
-     *   0  Recruitment ID           12 Position Applied
-     *   1  Created Date             13 Education
-     *   2  Full Name                14 Work Experience
-     *   3  NIK                      15 Last Company
-     *   4  Birth Date               16 Current Employment Status
-     *   5  Age                      17 Available to Join
-     *   6  Gender                   18 Expected Salary
-     *   7  Marital Status           19 Recruitment Source
-     *   8  Email                    20 Status
-     *   9  Phone                    21 HR Notes
-     *  10  Address                  22 Created By
-     *  11  City                     23 Updated At
+     *   0  Recruitment ID           13 Education
+     *   1  Created Date             14 Work Experience
+     *   2  Full Name                15 Last Company
+     *   3  NIK                      16 Current Employment Status
+     *   4  Birth Date               17 Available to Join
+     *   5  Age                      18 Expected Salary
+     *   6  Gender                   19 Expected Salary
+     *   7  Blood Type               20 Recruitment Source
+     *   8  Marital Status           21 Status
+     *   9  Email                    22 HR Notes
+     *  10  Phone                    23 Created By
+     *  11  Address                  24 Updated At
+     *  12  City
+     *  13  Position Applied
+     *  14  Education
+     *  15  Work Experience
+     *  16  Last Company
+     *  17  Current Employment Status
+     *  18  Available to Join
+     *
+     * Blood Type sits after Gender, matching config/hris.php schemas.data_kandidat.
      *
      * NOTE: CV Link has been removed from this sheet.
      * Pipeline columns (Hold Reason, Blacklist Reason, Employee ID, etc.)
@@ -167,6 +178,7 @@ class CandidateData
             $this->birthDate ?? '',
             $this->age ?? '',
             $this->gender ?? '',
+            $this->bloodType ?? '',
             $this->maritalStatus ?? '',
             $this->email ?? '',
             "'" . ($this->phone ?? ''),

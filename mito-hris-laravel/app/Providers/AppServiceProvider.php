@@ -66,16 +66,19 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        RateLimiter::for('login', function (Request $request) {
+        $loginLimiter = function (Request $request) {
             $identifier = strtolower(trim((string) $request->input('identifier', '')));
 
             return Limit::perMinute(5)->by($identifier . '|' . $request->ip());
-        });
+        };
 
-        RateLimiter::for('mpr-login', function (Request $request) {
-            $email = strtolower(trim((string) $request->input('email', '')));
+        RateLimiter::for('login', $loginLimiter);
+        RateLimiter::for('mpr-login', $loginLimiter);
 
-            return Limit::perMinute(5)->by($email . '|' . $request->ip());
+        RateLimiter::for('career-apply', function (Request $request) {
+            $nik = preg_replace('/\D+/', '', (string) $request->input('nik', ''));
+
+            return Limit::perMinute(8)->by(($nik !== '' ? $nik : 'anon') . '|' . $request->ip());
         });
 
         // ==============================================================

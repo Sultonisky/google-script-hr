@@ -90,7 +90,7 @@
                                         Induk Kependudukan) <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="nik" name="nik"
                                         value="{{ old('nik') }}" required maxlength="16" pattern="[0-9]{16}"
-                                        autocomplete="off" inputmode="numeric">
+                                        autocomplete="off" inputmode="numeric" data-sanitize-digits="true">
                                     <div class="invalid-feedback">NIK harus tepat 16 digit angka.</div>
                                     <div class="p-2 rounded mt-2 d-flex align-items-center gap-2"
                                         style="background:#f0f7ff;border:1px solid #c7dff7;font-size:12px;color:#005BAC">
@@ -113,18 +113,21 @@
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold" for="birth_date" style="font-size:13px">Tanggal
                                         Lahir <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="birth_date" name="birth_date"
-                                        value="{{ old('birth_date') }}" required placeholder="DD/MM/YYYY" maxlength="10"
-                                        autocomplete="off" inputmode="numeric">
-                                    <div class="invalid-feedback">Tanggal lahir wajib diisi dengan format DD/MM/YYYY.</div>
+                                    <input type="date" class="form-control" id="birth_date" name="birth_date"
+                                        value="{{ old('birth_date') }}" required min="1900-01-01"
+                                        max="{{ now()->timezone('Asia/Jakarta')->toDateString() }}"
+                                        autocomplete="bday">
+                                    <div class="invalid-feedback">Tanggal lahir wajib diisi dengan format YYYY-MM-DD.</div>
                                 </div>
 
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold" for="birth_place" style="font-size:13px">Tempat
                                         Lahir <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="birth_place" name="tempat_lahir"
-                                        value="{{ old('tempat_lahir') }}" required placeholder="Contoh: Jakarta">
-                                    <div class="invalid-feedback">Tempat lahir wajib diisi.</div>
+                                        value="{{ old('tempat_lahir') }}" required minlength="3" maxlength="120"
+                                        pattern="[\p{L}]+( [\p{L}]+)*" placeholder="Contoh: Jakarta"
+                                        data-sanitize-name="true">
+                                    <div class="invalid-feedback">Tempat lahir hanya boleh berisi huruf dan spasi.</div>
                                 </div>
 
                                 <div class="col-md-6">
@@ -169,10 +172,10 @@
                                         style="font-size:13px">Golongan Darah <span class="text-danger">*</span></label>
                                     <select class="form-select" id="blood_type" name="golongan_darah" required>
                                         <option value="">-- Pilih Golongan Darah --</option>
-                                        <option value="A">A</option>
-                                        <option value="B">B</option>
-                                        <option value="AB">AB</option>
-                                        <option value="O">O</option>
+                                        <option value="A" {{ old('golongan_darah') === 'A' ? 'selected' : '' }}>A</option>
+                                        <option value="B" {{ old('golongan_darah') === 'B' ? 'selected' : '' }}>B</option>
+                                        <option value="AB" {{ old('golongan_darah') === 'AB' ? 'selected' : '' }}>AB</option>
+                                        <option value="O" {{ old('golongan_darah') === 'O' ? 'selected' : '' }}>O</option>
                                     </select>
                                     <div class="invalid-feedback">Golongan darah wajib dipilih.</div>
                                 </div>
@@ -217,12 +220,13 @@
 
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold" for="working_email"
-                                        style="font-size:13px">Email Kantor (MITO) <span
+                                        style="font-size:13px">Email Kantor <span
                                             class="text-danger">*</span></label>
                                     <input type="email" class="form-control" id="working_email" name="email_kantor"
-                                        value="{{ old('email_kantor') }}" required autocomplete="off"
-                                        placeholder="nama@mitogroup.co.id">
-                                    <div class="invalid-feedback">Email kantor wajib diisi.</div>
+                                        value="{{ old('email_kantor') }}" required autocomplete="off" maxlength="255"
+                                        placeholder="nama@email.com">
+                                    <div class="invalid-feedback">Format alamat email kantor tidak valid.</div>
+                                    <div class="form-text">Gunakan email kerja yang aktif. Email MITO tidak wajib.</div>
                                 </div>
 
                                 <div class="col-md-6">
@@ -235,6 +239,7 @@
                                         <input type="tel" class="form-control rounded-start-0" id="phone"
                                             name="nomor_telepon" value="{{ old('nomor_telepon') }}" required
                                             maxlength="13" pattern="8[0-9]{6,12}" autocomplete="tel" inputmode="numeric"
+                                            data-sanitize-digits="true"
                                             placeholder="81234567890">
                                     </div>
                                     <div class="invalid-feedback">Nomor HP tidak valid. Gunakan format 8xxxxxxxxxx.</div>
@@ -273,6 +278,7 @@
                                     <div id="districtManualWrap" style="display:none;margin-top:6px;">
                                         <input type="text" class="form-control" id="districtManual"
                                             name="kecamatan_manual" value="{{ old('kecamatan_manual') }}"
+                                            minlength="3" maxlength="120" data-sanitize-moderate="true"
                                             placeholder="Ketik nama kecamatan manual">
                                         <div class="form-text">Data kecamatan tidak tersedia, isi manual.</div>
                                     </div>
@@ -282,6 +288,7 @@
                                     <label class="form-label fw-semibold" for="address" style="font-size:13px">Alamat
                                         KTP <span class="text-danger">*</span></label>
                                     <textarea class="form-control" id="address" name="alamat_ktp" rows="2" required
+                                        minlength="5" maxlength="500"
                                         placeholder="Jalan, RT/RW, Kelurahan, Kecamatan, Kota, Provinsi...">{{ old('alamat_ktp') }}</textarea>
                                     <div class="invalid-feedback">Alamat KTP wajib diisi.</div>
                                 </div>
@@ -297,6 +304,7 @@
                                         style="font-size:13px">Alamat Tinggal (Domisili) <span
                                             class="text-danger">*</span></label>
                                     <textarea class="form-control" id="address_residential" name="alamat_domisili" rows="2" required
+                                        minlength="5" maxlength="500"
                                         placeholder="Alamat tempat tinggal saat ini...">{{ old('alamat_domisili') }}</textarea>
                                     <div class="invalid-feedback">Alamat tinggal wajib diisi.</div>
                                 </div>
@@ -338,7 +346,8 @@
                                         style="font-size:13px">Vendor Outsource <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="outsource_vendor"
                                         name="vendor_outsource" value="{{ old('vendor_outsource') }}" required
-                                        minlength="3" maxlength="120" placeholder="Contoh: PT Nama Vendor Outsource">
+                                        minlength="3" maxlength="120" data-sanitize-moderate="true"
+                                        placeholder="Contoh: PT Nama Vendor Outsource">
                                     <div class="invalid-feedback">Vendor outsource wajib diisi (min. 3 karakter).</div>
                                 </div>
 
@@ -346,7 +355,8 @@
                                     <label class="form-label fw-semibold" for="division" style="font-size:13px">Divisi
                                         <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="division" name="divisi"
-                                        value="{{ old('divisi') }}" required placeholder="Contoh: Finance, IT, HRD">
+                                        value="{{ old('divisi') }}" required minlength="2" maxlength="80"
+                                        data-sanitize-moderate="true" placeholder="Contoh: Finance, IT, HRD">
                                     <div class="invalid-feedback">Divisi wajib diisi.</div>
                                 </div>
 
@@ -354,7 +364,8 @@
                                     <label class="form-label fw-semibold" for="department"
                                         style="font-size:13px">Departemen <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="department" name="departemen"
-                                        value="{{ old('departemen') }}" required
+                                        value="{{ old('departemen') }}" required minlength="2" maxlength="80"
+                                        data-sanitize-moderate="true"
                                         placeholder="Contoh: Human Resources, Finance">
                                     <div class="invalid-feedback">Departemen wajib diisi.</div>
                                 </div>
@@ -375,7 +386,8 @@
                                     <label class="form-label fw-semibold" for="cost_center" style="font-size:13px">Cost
                                         Center <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="cost_center" name="cost_center"
-                                        value="{{ old('cost_center') }}" required
+                                        value="{{ old('cost_center') }}" required minlength="2" maxlength="80"
+                                        data-sanitize-moderate="true"
                                         placeholder="Contoh: IT, Finance, Manufacture">
                                     <div class="invalid-feedback">Cost center wajib diisi.</div>
                                 </div>
@@ -384,7 +396,8 @@
                                     <label class="form-label fw-semibold" for="lokasi_kerja"
                                         style="font-size:13px">Lokasi Kerja <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="lokasi_kerja" name="lokasi_kerja"
-                                        value="{{ old('lokasi_kerja') }}" required
+                                        value="{{ old('lokasi_kerja') }}" required minlength="3" maxlength="120"
+                                        data-sanitize-moderate="true"
                                         placeholder="Contoh: Jakarta, Bandung, Surabaya">
                                     <div class="invalid-feedback">Lokasi kerja wajib diisi.</div>
                                 </div>
@@ -418,21 +431,17 @@
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold" for="employee_status"
                                         style="font-size:13px">Status Karyawan <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="employee_status" name="status_karyawan" required>
-                                        <option value="">-- Pilih Status --</option>
-                                        <option value="Probation">Probation</option>
-                                        <option value="Contract">Contract</option>
-                                        <option value="Permanent">Permanent</option>
-                                        <option value="Outsource">Outsource</option>
-                                    </select>
-                                    <div class="invalid-feedback">Status karyawan wajib dipilih.</div>
+                                    <input type="text" class="form-control bg-light" id="employee_status"
+                                        value="Outsource" readonly disabled style="cursor:default;">
+                                    <input type="hidden" name="status_karyawan" value="Outsource">
+                                    <div class="form-text">Status dikunci Outsource karena pendaftaran melalui portal outsource.</div>
                                 </div>
 
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold" for="join_date" style="font-size:13px">Tanggal
                                         Masuk (Join Date) <span class="text-danger">*</span></label>
                                     <input type="date" class="form-control" id="join_date" name="tanggal_masuk"
-                                        value="{{ old('tanggal_masuk', date('Y-m-d')) }}" required>
+                                        value="{{ old('tanggal_masuk', date('Y-m-d')) }}" required min="1900-01-01">
                                     <div class="invalid-feedback">Tanggal masuk wajib diisi.</div>
                                 </div>
 
@@ -442,8 +451,8 @@
                                             class="text-danger">*</span></label>
                                     <input type="date" class="form-control" id="contract_end_date"
                                         name="tanggal_berakhir_kontrak" value="{{ old('tanggal_berakhir_kontrak') }}"
-                                        required>
-                                    <div class="invalid-feedback">Tanggal berakhir kontrak wajib diisi.</div>
+                                        required min="1900-01-02">
+                                    <div class="invalid-feedback">Tanggal berakhir kontrak harus setelah tanggal masuk.</div>
                                 </div>
 
                                 <div class="col-md-6">
@@ -452,8 +461,9 @@
                                             class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="direct_superior"
                                         name="atasan_langsung" value="{{ old('atasan_langsung') }}" required
-                                        placeholder="Nama atasan langsung">
-                                    <div class="invalid-feedback">Atasan langsung wajib diisi.</div>
+                                        minlength="3" maxlength="255" pattern="[\p{L}]+( [\p{L}]+)*"
+                                        data-sanitize-name="true" placeholder="Nama atasan langsung">
+                                    <div class="invalid-feedback">Nama atasan langsung hanya boleh berisi huruf dan spasi.</div>
                                 </div>
 
                                 <div class="col-md-6">
@@ -462,8 +472,9 @@
                                             class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="indirect_superior"
                                         name="atasan_tidak_langsung" value="{{ old('atasan_tidak_langsung') }}" required
-                                        placeholder="Nama atasan tidak langsung">
-                                    <div class="invalid-feedback">Atasan tidak langsung wajib diisi.</div>
+                                        minlength="3" maxlength="255" pattern="[\p{L}]+( [\p{L}]+)*"
+                                        data-sanitize-name="true" placeholder="Nama atasan tidak langsung">
+                                    <div class="invalid-feedback">Nama atasan tidak langsung hanya boleh berisi huruf dan spasi.</div>
                                 </div>
                             </div>
                         </div>
@@ -494,8 +505,9 @@
                                         Rekening <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="bank_account" name="nomor_rekening"
                                         value="{{ old('nomor_rekening') }}" required inputmode="numeric"
+                                        maxlength="20" pattern="[0-9]{8,20}" data-sanitize-digits="true"
                                         placeholder="Contoh: 1234567890">
-                                    <div class="invalid-feedback">Nomor rekening wajib diisi.</div>
+                                    <div class="invalid-feedback">Nomor rekening hanya boleh berisi 8–20 digit angka.</div>
                                 </div>
 
                                 <div class="col-md-6">
@@ -504,17 +516,18 @@
                                             class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="bank_account_holder"
                                         name="nama_pemilik_rekening" value="{{ old('nama_pemilik_rekening') }}" required
-                                        placeholder="Nama sesuai di buku rekening">
-                                    <div class="invalid-feedback">Nama pemilik rekening wajib diisi.</div>
+                                        minlength="3" maxlength="255" pattern="[\p{L}]+( [\p{L}]+)*"
+                                        data-sanitize-name="true" placeholder="Nama sesuai di buku rekening">
+                                    <div class="invalid-feedback">Nama pemilik rekening hanya boleh berisi huruf dan spasi.</div>
                                 </div>
 
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold" for="npwp" style="font-size:13px">NPWP
                                         <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="npwp" name="npwp"
-                                        value="{{ old('npwp') }}" required maxlength="20"
+                                        value="{{ old('npwp') }}" required maxlength="20" data-sanitize-npwp="true"
                                         placeholder="Contoh: 01.123.456.7-123.000">
-                                    <div class="invalid-feedback">NPWP wajib diisi.</div>
+                                    <div class="invalid-feedback">NPWP wajib 15 atau 16 digit angka.</div>
                                 </div>
 
                                 <div class="col-md-6">
@@ -540,17 +553,19 @@
                                             class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="bpjs_ketenagakerjaan"
                                         name="bpjs_ketenagakerjaan" value="{{ old('bpjs_ketenagakerjaan') }}" required
-                                        maxlength="13" inputmode="numeric" placeholder="Contoh: 123456789012">
-                                    <div class="invalid-feedback">BPJS Ketenagakerjaan wajib diisi.</div>
+                                        maxlength="16" minlength="11" pattern="[0-9]{11,16}" inputmode="numeric"
+                                        data-sanitize-digits="true" placeholder="Contoh: 123456789012">
+                                    <div class="invalid-feedback">BPJS Ketenagakerjaan hanya boleh berisi 11–16 digit angka.</div>
                                 </div>
 
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold" for="bpjs_kesehatan"
                                         style="font-size:13px">BPJS Kesehatan <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="bpjs_kesehatan" name="bpjs_kesehatan"
-                                        value="{{ old('bpjs_kesehatan') }}" required maxlength="13" inputmode="numeric"
+                                        value="{{ old('bpjs_kesehatan') }}" required maxlength="16" minlength="13"
+                                        pattern="[0-9]{13,16}" inputmode="numeric" data-sanitize-digits="true"
                                         placeholder="Contoh: 1234567890123">
-                                    <div class="invalid-feedback">BPJS Kesehatan wajib diisi.</div>
+                                    <div class="invalid-feedback">BPJS Kesehatan hanya boleh berisi 13–16 digit angka.</div>
                                 </div>
                             </div>
                         </div>
@@ -606,12 +621,6 @@
                     Apabila ada pertanyaan, silakan menghubungi tim HR.
                 </p>
                 <p id="successRecruitId" style="font-size:14px;color:#eb1c24;font-weight:700;margin-bottom:32px;"></p>
-                <div class="success-actions" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-                    <a href="{{ route('public.career.index') }}"
-                        style="background:#fff;color:#1f2937;border:1.5px solid #e5e7eb;padding:12px 28px;font-size:14px;font-weight:600;border-radius:10px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;">
-                        <i class="bi bi-arrow-left"></i> Kembali ke Halaman Info
-                    </a>
-                </div>
             </div>
 
         </div>
@@ -908,6 +917,25 @@
         var districtInput, districtLoading, districtManualWrap, districtManualInput;
         var manualBirthDateChanged = false;
         var isSubmitting = false;
+        var SUBMISSION_FLAG = 'mito_outsource_submitted';
+
+        function isAlreadySubmitted() {
+            try {
+                return window.sessionStorage.getItem(SUBMISSION_FLAG) === '1';
+            } catch (err) {
+                return false;
+            }
+        }
+
+        function markSubmitted() {
+            try {
+                window.sessionStorage.setItem(SUBMISSION_FLAG, '1');
+            } catch (err) {}
+        }
+
+        function showAlreadySubmittedPage() {
+            window.location.replace('{{ route('public.outsource.success') }}');
+        }
 
         function isDistrictValid() {
             if (districtManualWrap && districtManualWrap.style.display !== 'none') {
@@ -1052,22 +1080,20 @@
         }
 
         // ============================================================
-        // BIRTH DATE — auto-slash DD/MM/YYYY (1:1 from GAS outsourceApp)
+        // BIRTH DATE — native YYYY-MM-DD + age / calendar validation
         // ============================================================
         function attachBirthDateListeners(birthDateEl, ageEl) {
             birthDateEl.addEventListener('input', function() {
                 manualBirthDateChanged = true;
-                var val = this.value.replace(/[^0-9]/g, '');
-                var f = '';
-                if (val.length > 0) {
-                    f = val.substring(0, 2);
-                    if (val.length > 2) f += '/' + val.substring(2, 4);
-                    if (val.length > 4) f += '/' + val.substring(4, 8);
-                }
-                this.value = f;
-                calculateAge(f, ageEl);
-                if (f.length === 10) validateBirthDate(birthDateEl);
+                calculateAge(this.value, ageEl);
+                if (this.value) validateBirthDate(birthDateEl);
                 else this.classList.remove('is-valid', 'is-invalid');
+                updateProgress();
+            });
+            birthDateEl.addEventListener('change', function() {
+                manualBirthDateChanged = true;
+                calculateAge(this.value, ageEl);
+                if (this.value.trim().length > 0) validateBirthDate(birthDateEl);
                 updateProgress();
             });
             birthDateEl.addEventListener('blur', function() {
@@ -1095,18 +1121,18 @@
                 el.classList.add('is-valid');
                 if (feedback) feedback.style.display = 'none';
             }
-            if (!val || val.length < 10) {
-                setInvalid('Tanggal lahir wajib diisi dengan format DD/MM/YYYY.');
+            if (!val) {
+                setInvalid('Tanggal lahir wajib diisi dengan format YYYY-MM-DD.');
                 return false;
             }
-            var p = val.split('/');
-            if (p.length !== 3 || p[0].length !== 2 || p[1].length !== 2 || p[2].length !== 4) {
-                setInvalid('Format tidak valid. Gunakan DD/MM/YYYY.');
+            var p = val.split('-');
+            if (p.length !== 3 || p[0].length !== 4 || p[1].length !== 2 || p[2].length !== 2) {
+                setInvalid('Format tidak valid. Gunakan YYYY-MM-DD.');
                 return false;
             }
-            var day = parseInt(p[0], 10),
+            var year = parseInt(p[0], 10),
                 month = parseInt(p[1], 10),
-                year = parseInt(p[2], 10),
+                day = parseInt(p[2], 10),
                 curYear = new Date().getFullYear();
             if (isNaN(day) || isNaN(month) || isNaN(year)) {
                 setInvalid('Tanggal lahir mengandung karakter tidak valid.');
@@ -1151,11 +1177,11 @@
                 ageEl.value = '';
                 return;
             }
-            var p = bdStr.split('/');
+            var p = bdStr.split('-');
             if (p.length !== 3) return;
-            var day = parseInt(p[0], 10),
+            var year = parseInt(p[0], 10),
                 month = parseInt(p[1], 10),
-                year = parseInt(p[2], 10);
+                day = parseInt(p[2], 10);
             if (!day || !month || !year) return;
             var bd = new Date(year, month - 1, day),
                 today = new Date();
@@ -1163,6 +1189,37 @@
                 m = today.getMonth() - bd.getMonth();
             if (m < 0 || (m === 0 && today.getDate() < bd.getDate())) age--;
             ageEl.value = (age >= 0 && age <= 120) ? age : '';
+        }
+
+        function syncContractEndMin(joinEl, endEl) {
+            if (!joinEl || !endEl || !joinEl.value) return;
+            var parts = joinEl.value.split('-');
+            if (parts.length !== 3) return;
+            var next = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10) + 1);
+            if (isNaN(next.getTime())) return;
+            var min = next.getFullYear() + '-' + ('0' + (next.getMonth() + 1)).slice(-2) + '-' + ('0' + next.getDate()).slice(-2);
+            endEl.min = min;
+        }
+
+        function validateContractDates(joinEl, endEl) {
+            if (!joinEl || !endEl) return true;
+            var feedback = endEl.closest('.col-md-6') ? endEl.closest('.col-md-6').querySelector('.invalid-feedback') : null;
+            if (!joinEl.value || !endEl.value) {
+                return false;
+            }
+            if (endEl.value <= joinEl.value) {
+                endEl.classList.add('is-invalid');
+                endEl.classList.remove('is-valid');
+                if (feedback) {
+                    feedback.textContent = 'Tanggal berakhir kontrak harus setelah tanggal masuk.';
+                    feedback.style.display = 'flex';
+                }
+                return false;
+            }
+            endEl.classList.remove('is-invalid');
+            endEl.classList.add('is-valid');
+            if (feedback) feedback.style.display = 'none';
+            return true;
         }
 
         // ============================================================
@@ -1182,7 +1239,7 @@
                     day: day,
                     month: month,
                     year: fullYear,
-                    formatted: ('0' + day).slice(-2) + '/' + ('0' + month).slice(-2) + '/' + fullYear
+                    formatted: fullYear + '-' + ('0' + month).slice(-2) + '-' + ('0' + day).slice(-2)
                 },
                 gender: gender,
                 provinceCode: nik.substring(0, 2),
@@ -1393,6 +1450,21 @@
             populateProvinces(provinceEl);
             attachBirthDateListeners(birthDateEl, ageEl);
 
+            var joinDateEl = document.getElementById('join_date');
+            var contractEndEl = document.getElementById('contract_end_date');
+            syncContractEndMin(joinDateEl, contractEndEl);
+            if (joinDateEl && contractEndEl) {
+                joinDateEl.addEventListener('change', function() {
+                    syncContractEndMin(joinDateEl, contractEndEl);
+                    if (contractEndEl.value) validateContractDates(joinDateEl, contractEndEl);
+                    updateProgress();
+                });
+                contractEndEl.addEventListener('change', function() {
+                    validateContractDates(joinDateEl, contractEndEl);
+                    updateProgress();
+                });
+            }
+
             // NIK input
             nikEl.addEventListener('input', function() {
                 var nik = this.value.replace(/[^0-9]/g, '').substring(0, 16);
@@ -1538,10 +1610,15 @@
                 }
                 agreementError.style.display = 'none';
                 var bdValid = validateBirthDate(birthDateEl);
-                if (!form.checkValidity() || !bdValid) {
+                var contractValid = validateContractDates(joinDateEl, contractEndEl);
+                if (!form.checkValidity() || !bdValid || !contractValid) {
                     e.preventDefault();
                     form.classList.add('was-validated');
                     if (!bdValid) birthDateEl.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                    else if (!contractValid) contractEndEl.scrollIntoView({
                         behavior: 'smooth',
                         block: 'center'
                     });
@@ -1554,10 +1631,15 @@
                     kotaNamaInput.value = cityEl.value ? (REGIONS.cities[cityEl.value] || '') : '';
                 }
                 isSubmitting = true;
+                markSubmitted();
                 submitBtn.disabled = true;
                 submitSpinner.classList.remove('d-none');
                 submitText.textContent = 'Mengirim...';
-                loadingOverlay.classList.add('is-active');
+                if (typeof window.showPublicLoader === 'function') {
+                    window.showPublicLoader('Mengirim data');
+                } else if (loadingOverlay) {
+                    loadingOverlay.classList.add('is-active');
+                }
             });
 
             updateProgress();

@@ -104,7 +104,7 @@ class AssetAuthController extends Controller
 
     private function loginFailure(Request $request, string $errorMessage): RedirectResponse|JsonResponse
     {
-        $errorMessage = 'Email/username atau password salah.';
+        $errorMessage = 'Email atau password salah.';
 
         if ($request->expectsJson()) {
             return response()->json([

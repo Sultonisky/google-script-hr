@@ -10,6 +10,7 @@ use App\Repositories\Contracts\CandidateRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Services\Google\GoogleDriveService;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
@@ -47,6 +48,12 @@ use PHPUnit\Framework\Attributes\Test;
  */
 class PhoneCityMappingTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Cache::flush();
+    }
+
     // -----------------------------------------------------------------------
     // PC01-PC06: normalizePhone unit tests (pure logic, no I/O)
     // -----------------------------------------------------------------------
@@ -118,9 +125,10 @@ class PhoneCityMappingTest extends TestCase
         return array_merge([
             'nama_lengkap'       => 'Budi Santoso',
             'nik'                => '3374010101900001',
-            'birth_date'         => '01/01/1990',
+            'birth_date'         => '1990-01-01',
             'usia'               => 35,
             'jenis_kelamin'      => 'Laki-laki',
+            'golongan_darah'     => 'O',
             'marital_status'     => 'Belum Menikah',
             'email'              => 'budi@example.com',
             'nomor_telepon'      => '89696969',
@@ -265,6 +273,7 @@ class PhoneCityMappingTest extends TestCase
         $numericCodes = ['3327', '3174', '1271', '9171'];
 
         foreach ($numericCodes as $code) {
+            Cache::flush();
             $captured = null;
             $candidateRepo = Mockery::mock(CandidateRepositoryInterface::class);
             $candidateRepo->shouldReceive('findByNik')->andReturn(null);
@@ -298,6 +307,7 @@ class PhoneCityMappingTest extends TestCase
         $inputs = ['89696969', '089696969', '6289696969'];
 
         foreach ($inputs as $input) {
+            Cache::flush();
             $captured = null;
             $candidateRepo = Mockery::mock(CandidateRepositoryInterface::class);
             $candidateRepo->shouldReceive('findByNik')->andReturn(null);
@@ -330,23 +340,24 @@ class PhoneCityMappingTest extends TestCase
 
     // -----------------------------------------------------------------------
     // PC13-PC17: Complete row payload regression — exact scenario from real
-    // submission REC-20260902-4744 (Shohibul Anwar)
+    // submission REC-20260902-4744 (Dimas Prasetyo)
     // -----------------------------------------------------------------------
 
     /**
      * Build the exact payload structure equivalent to what the Career form
-     * submits for the Shohibul Anwar scenario.
+     * submits for the Dimas Prasetyo scenario.
      */
-    private function shohibulPayload(array $overrides = []): array
+    private function scenarioPayload(array $overrides = []): array
     {
         return array_merge([
-            'nama_lengkap'          => 'Shohibul Anwar',
+            'nama_lengkap'          => 'Dimas Prasetyo',
             'nik'                   => '3305210807980001',
-            'birth_date'            => '08/07/1998',
+            'birth_date'            => '1998-07-08',
             'usia'                  => 28,
             'jenis_kelamin'         => 'Laki-laki',
+            'golongan_darah'        => 'O',
             'marital_status'        => 'Menikah',
-            'email'                 => 'anwarshohibul@example.com',
+            'email'                 => 'dimas.prasetyo@example.com',
             'nomor_telepon'         => '82336534192',   // bare subscriber, no +62
             'kota'                  => '3173',          // numeric code for KOTA JAKARTA BARAT
             'kota_nama'             => 'KOTA JAKARTA BARAT', // JS-resolved name
@@ -381,12 +392,12 @@ class PhoneCityMappingTest extends TestCase
                 return true;
             })
             ->andReturnUsing(function (CandidateData $d) {
-                $d->recruitmentId = 'REC-TEST-SHOHIBUL-001';
+                $d->recruitmentId = 'REC-TEST-SCENARIO-001';
                 return $d;
             });
 
         $service = $this->makeService($candidateRepo);
-        $service->apply($this->shohibulPayload());
+        $service->apply($this->scenarioPayload());
 
         // Phone must have +62 prefix
         $this->assertSame('+6282336534192', $captured->phone,
@@ -419,20 +430,21 @@ class PhoneCityMappingTest extends TestCase
                 return true;
             })
             ->andReturnUsing(function (CandidateData $d) {
-                $d->recruitmentId = 'REC-TEST-SHOHIBUL-002';
+                $d->recruitmentId = 'REC-TEST-SCENARIO-002';
                 return $d;
             });
 
         $service = $this->makeService($candidateRepo);
-        $service->apply($this->shohibulPayload());
+        $service->apply($this->scenarioPayload());
 
-        $this->assertSame('Shohibul Anwar',      $captured->fullName,               'fullName');
+        $this->assertSame('Dimas Prasetyo',      $captured->fullName,               'fullName');
         $this->assertSame('3305210807980001',     $captured->nik,                    'nik');
-        $this->assertSame('08/07/1998',           $captured->birthDate,              'birthDate');
+        $this->assertSame('1998-07-08',           $captured->birthDate,              'birthDate');
         $this->assertSame('28',                   (string) $captured->age,           'age');
         $this->assertSame('Laki-laki',            $captured->gender,                 'gender');
         $this->assertSame('Menikah',              $captured->maritalStatus,          'maritalStatus');
-        $this->assertSame('anwarshohibul@example.com', $captured->email,             'email');
+        $this->assertSame('O',                    $captured->bloodType,              'bloodType');
+        $this->assertSame('dimas.prasetyo@example.com', $captured->email,             'email');
         $this->assertSame('+6282336534192',       $captured->phone,                  'phone');
         // Address has kecamatan prepended
         $this->assertSame('Cengkareng, Jl. Merdeka No. 1', $captured->address,      'address');
@@ -453,19 +465,8 @@ class PhoneCityMappingTest extends TestCase
      * PC15 — toSheetRow() positional alignment: verify every element of the
      * final Sheets row maps to the correct data_kandidat header position.
      *
-     * Final schema (24 columns, 0-indexed):
-     *   0  Recruitment ID       12 Position Applied
-     *   1  Created Date         13 Education
-     *   2  Full Name            14 Work Experience
-     *   3  NIK                  15 Last Company
-     *   4  Birth Date           16 Current Employment Status
-     *   5  Age                  17 Available to Join
-     *   6  Gender               18 Expected Salary
-     *   7  Marital Status       19 Recruitment Source
-     *   8  Email                20 Status
-     *   9  Phone                21 HR Notes
-     *  10  Address              22 Created By
-     *  11  City                 23 Updated At
+     * Final schema (25 columns, 0-indexed) matches config/hris.php data_kandidat:
+     * Blood Type is after Gender (index 7).
      *
      * CV Link removed. Pipeline cols (Hold Reason, Blacklist Reason, Employee ID, etc.)
      * removed — they live only in their respective destination sheets.
@@ -475,13 +476,14 @@ class PhoneCityMappingTest extends TestCase
         $candidate = new CandidateData(
             recruitmentId:           'REC-TEST-ROW-001',
             createdDate:             '2026-09-02 16:14:09',
-            fullName:                'Shohibul Anwar',
+            fullName:                'Dimas Prasetyo',
             nik:                     '3305210807980001',
-            birthDate:               '08/07/1998',
+            birthDate:               '1998-07-08',
             age:                     '28',
             gender:                  'Laki-laki',
             maritalStatus:           'Menikah',
-            email:                   'anwarshohibul@example.com',
+            bloodType:               'O',
+            email:                   'dimas.prasetyo@example.com',
             phone:                   '+6282336534192',
             address:                 'Cengkareng, Jl. Merdeka No. 1',
             city:                    'KOTA JAKARTA BARAT',
@@ -502,33 +504,34 @@ class PhoneCityMappingTest extends TestCase
         $row = $candidate->toSheetRow();
 
         // Verify array length matches the canonical 24-column schema
-        $this->assertCount(24, $row, 'toSheetRow() must produce exactly 24 elements');
+        $this->assertCount(25, $row, 'toSheetRow() must produce exactly 25 elements');
 
         // Verify each position against the data_kandidat header order
         $this->assertSame('REC-TEST-ROW-001',               $row[0],  'Col 0 = Recruitment ID');
         $this->assertSame('2026-09-02 16:14:09',            $row[1],  'Col 1 = Created Date');
-        $this->assertSame('Shohibul Anwar',                  $row[2],  'Col 2 = Full Name');
+        $this->assertSame('Dimas Prasetyo',                  $row[2],  'Col 2 = Full Name');
         $this->assertSame("'3305210807980001",               $row[3],  'Col 3 = NIK (text-prefixed)');
-        $this->assertSame('08/07/1998',                     $row[4],  'Col 4 = Birth Date');
+        $this->assertSame('1998-07-08',                     $row[4],  'Col 4 = Birth Date');
         $this->assertSame('28',                              $row[5],  'Col 5 = Age');
         $this->assertSame('Laki-laki',                      $row[6],  'Col 6 = Gender');
-        $this->assertSame('Menikah',                        $row[7],  'Col 7 = Marital Status');
-        $this->assertSame('anwarshohibul@example.com',      $row[8],  'Col 8 = Email');
-        $this->assertSame("'+6282336534192",                 $row[9],  'Col 9 = Phone (text-prefixed)');
-        $this->assertSame('Cengkareng, Jl. Merdeka No. 1',  $row[10], 'Col 10 = Address');
-        $this->assertSame('KOTA JAKARTA BARAT',             $row[11], 'Col 11 = City');
-        $this->assertSame('Sales Director',                 $row[12], 'Col 12 = Position Applied');
-        $this->assertSame('S3',                             $row[13], 'Col 13 = Education');
-        $this->assertSame('Fresh Graduate',                 $row[14], 'Col 14 = Work Experience');
-        $this->assertSame('',                               $row[15], 'Col 15 = Last Company (blank)');
-        $this->assertSame('Unemployed',                     $row[16], 'Col 16 = Current Employment Status');
-        $this->assertSame('Segera',                         $row[17], 'Col 17 = Available to Join');
-        $this->assertSame('500.000.000',                    $row[18], 'Col 18 = Expected Salary');
-        $this->assertSame('JobStreet',                      $row[19], 'Col 19 = Recruitment Source');
-        $this->assertSame('Pending',                        $row[20], 'Col 20 = Status');
-        $this->assertSame('',                               $row[21], 'Col 21 = HR Notes (blank)');
-        $this->assertSame('Candidate',                      $row[22], 'Col 22 = Created By');
-        $this->assertSame('2026-09-02 16:14:09',            $row[23], 'Col 23 = Updated At');
+        $this->assertSame('O',                              $row[7],  'Col 7 = Blood Type');
+        $this->assertSame('Menikah',                        $row[8],  'Col 8 = Marital Status');
+        $this->assertSame('dimas.prasetyo@example.com',      $row[9],  'Col 9 = Email');
+        $this->assertSame("'+6282336534192",                 $row[10], 'Col 10 = Phone (text-prefixed)');
+        $this->assertSame('Cengkareng, Jl. Merdeka No. 1',  $row[11], 'Col 11 = Address');
+        $this->assertSame('KOTA JAKARTA BARAT',             $row[12], 'Col 12 = City');
+        $this->assertSame('Sales Director',                 $row[13], 'Col 13 = Position Applied');
+        $this->assertSame('S3',                             $row[14], 'Col 14 = Education');
+        $this->assertSame('Fresh Graduate',                 $row[15], 'Col 15 = Work Experience');
+        $this->assertSame('',                               $row[16], 'Col 16 = Last Company (blank)');
+        $this->assertSame('Unemployed',                     $row[17], 'Col 17 = Current Employment Status');
+        $this->assertSame('Segera',                         $row[18], 'Col 18 = Available to Join');
+        $this->assertSame('500.000.000',                    $row[19], 'Col 19 = Expected Salary');
+        $this->assertSame('JobStreet',                      $row[20], 'Col 20 = Recruitment Source');
+        $this->assertSame('Pending',                        $row[21], 'Col 21 = Status');
+        $this->assertSame('',                               $row[22], 'Col 22 = HR Notes (blank)');
+        $this->assertSame('Candidate',                      $row[23], 'Col 23 = Created By');
+        $this->assertSame('2026-09-02 16:14:09',            $row[24], 'Col 24 = Updated At');
     }
 
     /**
@@ -549,7 +552,7 @@ class PhoneCityMappingTest extends TestCase
                 return true;
             })
             ->andReturnUsing(function (CandidateData $d) {
-                $d->recruitmentId = 'REC-TEST-SHOHIBUL-003';
+                $d->recruitmentId = 'REC-TEST-SCENARIO-003';
                 return $d;
             });
 
@@ -557,7 +560,7 @@ class PhoneCityMappingTest extends TestCase
 
         // Simulate what happened with REC-20260902-4744 before the kota_nama fix:
         // kota_nama was not in the payload at all, only the numeric code in kota.
-        $payload = $this->shohibulPayload(['kota' => '3173']);
+        $payload = $this->scenarioPayload(['kota' => '3173']);
         unset($payload['kota_nama']);
         $service->apply($payload);
 
@@ -569,10 +572,10 @@ class PhoneCityMappingTest extends TestCase
         $this->assertNull($captured->city,
             'City must be null when kota_nama is absent and kota is a numeric code');
 
-        // And the Sheet row at Col 11 must be empty string (null ?? '' in toSheetRow)
+        // And the Sheet row at Col 12 (City) must be empty string (null ?? '' in toSheetRow)
         $row = $captured->toSheetRow();
-        $this->assertSame('', $row[11],
-            'Col 11 (City) in Sheet row must be blank string, not "3173"');
+        $this->assertSame('', $row[12],
+            'Col 12 (City) in Sheet row must be blank string, not "3173"');
     }
 
     /**
@@ -603,7 +606,7 @@ class PhoneCityMappingTest extends TestCase
                 return true;
             })
             ->andReturnUsing(function (CandidateData $d) {
-                $d->recruitmentId = 'REC-TEST-SHOHIBUL-004';
+                $d->recruitmentId = 'REC-TEST-SCENARIO-004';
                 return $d;
             });
 
@@ -611,7 +614,7 @@ class PhoneCityMappingTest extends TestCase
 
         // kota is blank (city was reset by province change),
         // but kota_nama still holds the old value from the previous selection.
-        $service->apply($this->shohibulPayload([
+        $service->apply($this->scenarioPayload([
             'kota'      => '',
             'kota_nama' => 'KOTA JAKARTA BARAT', // stale from prior selection
         ]));

@@ -42,7 +42,7 @@ class LoginSecurityTest extends TestCase
         $this->app->instance(UserPermissionRepositoryInterface::class, $permissions);
 
         $response = $this->postJson('/login', [
-            'identifier' => 'admin',
+            'identifier' => 'admin@example.test',
             'password' => 'correct-password',
             'rememberMe' => true,
         ]);
@@ -63,7 +63,7 @@ class LoginSecurityTest extends TestCase
         $this->app->instance(UserPermissionRepositoryInterface::class, $permissions);
 
         $response = $this->postJson('/login', [
-            'identifier' => 'admin',
+            'identifier' => 'admin@example.test',
             'password' => 'correct-password',
         ]);
 
@@ -79,13 +79,13 @@ class LoginSecurityTest extends TestCase
         $this->mockUserDomain($this->activeUser());
 
         $response = $this->postJson('/login', [
-            'identifier' => 'admin',
+            'identifier' => 'admin@example.test',
             'password' => 'wrong-password',
         ]);
 
         $response->assertStatus(422)
             ->assertJsonPath('success', false)
-            ->assertJsonPath('error', 'Email/username atau password salah.');
+            ->assertJsonPath('error', 'Email atau password salah.');
         $this->assertStringNotContainsString('wrong-password', $response->getContent());
         $this->assertFalse($this->app['session']->has('hr_user'));
     }
@@ -100,7 +100,21 @@ class LoginSecurityTest extends TestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonPath('error', 'Email/username atau password salah.');
+            ->assertJsonPath('error', 'Email atau password salah.');
+    }
+
+    public function test_username_login_is_rejected(): void
+    {
+        $this->mockUserDomain($this->activeUser());
+
+        $response = $this->postJson('/login', [
+            'identifier' => 'admin',
+            'password' => 'correct-password',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['identifier']);
+        $this->assertFalse($this->app['session']->has('hr_user'));
     }
 
     public function test_login_is_rate_limited_per_identifier_and_ip(): void

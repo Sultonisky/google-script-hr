@@ -201,24 +201,19 @@ class MprRequestorAuthTest extends TestCase
     }
 
     // =========================================================================
-    // Test 8: Username-based login also works
+    // Test 8: Username-based login is rejected
     // =========================================================================
 
     #[Test]
-    public function login_via_username_works(): void
+    public function login_via_username_is_rejected(): void
     {
-        $row = $this->makeRequestorRow();
-
         $mockRepo = Mockery::mock(MprRequestorRepositoryInterface::class);
-        $mockRepo->shouldReceive('findByIdentifier')
-            ->once()->with('manager.test')
-            ->andReturn($row);
-        $mockRepo->shouldReceive('updateLastLogin')->once();
+        $mockRepo->shouldNotReceive('findByIdentifier');
 
         $service = new MprRequestorAuthService($mockRepo);
         $result  = $service->attemptLogin('manager.test', 'password123');
 
-        $this->assertTrue($result['success']);
-        $this->assertSame('mpr_requestor', $result['user']['auth_domain']);
+        $this->assertFalse($result['success']);
+        $this->assertStringContainsString('email', strtolower($result['error']));
     }
 }

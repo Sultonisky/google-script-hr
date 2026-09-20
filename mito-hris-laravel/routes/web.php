@@ -201,7 +201,8 @@ if (!app()->environment('local')) {
         Route::get('/', [CareerController::class, 'index'])->name('public.career.index');
         Route::post('/career/consent', [CareerController::class, 'consent'])->name('public.career.consent');
         Route::get('/apply', [CareerController::class, 'form'])->name('public.career.form');
-        Route::post('/apply', [CareerController::class, 'store'])->name('public.career.store');
+        Route::post('/apply/nik-check', [CareerController::class, 'checkNik'])->middleware('throttle:career-apply')->name('public.career.nik-check');
+        Route::post('/apply', [CareerController::class, 'store'])->middleware('throttle:career-apply')->name('public.career.store');
         Route::get('/career/submission-success', [CareerController::class, 'submissionSuccess'])->name('public.career.submission-success');
         Route::get('/check-status', [CareerController::class, 'checkStatus'])->name('public.career.check-status');
         Route::get('/self-update/{id}', [CareerController::class, 'selfUpdate'])->name('public.career.self-update');
@@ -438,7 +439,8 @@ if (app()->environment('local')) {
         Route::get('/career', [CareerController::class, 'index'])->name('public.career.index');
         Route::post('/career/consent', [CareerController::class, 'consent'])->name('public.career.consent');
         Route::get('/career/apply', [CareerController::class, 'form'])->name('public.career.form');
-        Route::post('/career/apply', [CareerController::class, 'store'])->name('public.career.store');
+        Route::post('/career/apply/nik-check', [CareerController::class, 'checkNik'])->middleware('throttle:career-apply')->name('public.career.nik-check');
+        Route::post('/career/apply', [CareerController::class, 'store'])->middleware('throttle:career-apply')->name('public.career.store');
         Route::get('/career/submission-success', [CareerController::class, 'submissionSuccess'])->name('public.career.submission-success');
         Route::get('/career/check-status', [CareerController::class, 'checkStatus'])->name('public.career.check-status');
         Route::get('/career/self-update/{id}', [CareerController::class, 'selfUpdate'])->name('public.career.self-update');
