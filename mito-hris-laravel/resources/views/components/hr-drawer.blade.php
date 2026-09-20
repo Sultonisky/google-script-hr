@@ -48,6 +48,10 @@
                         <div class="cv-value" id="cvMaritalStatus">-</div>
                     </div>
                     <div class="cv-field">
+                        <div class="cv-label">Golongan Darah</div>
+                        <div class="cv-value" id="cvBloodType">-</div>
+                    </div>
+                    <div class="cv-field">
                         <div class="cv-label">NIK</div>
                         <div class="cv-value" id="cvNik">-</div>
                     </div>

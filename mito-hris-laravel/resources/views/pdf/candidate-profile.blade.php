@@ -117,6 +117,7 @@
         </td>
         <td class="column-right">
           <div class="field"><span class="field-label">Status Pernikahan</span><span class="field-value">{{ $candidate->maritalStatus ?? '-' }}</span></div>
+          <div class="field"><span class="field-label">Golongan Darah</span><span class="field-value">{{ $candidate->bloodType ?? '-' }}</span></div>
           <div class="field"><span class="field-label">Email</span><span class="field-value">{{ $candidate->email ?? '-' }}</span></div>
           <div class="field"><span class="field-label">No. HP</span><span class="field-value">{{ $candidate->phone ?? '-' }}</span></div>
           <div class="field"><span class="field-label">Kota</span><span class="field-value">{{ $candidate->city ?? '-' }}</span></div>

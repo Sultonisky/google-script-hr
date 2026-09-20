@@ -235,6 +235,7 @@
                     setDrawerText('cvGender', c.gender === 'Male' ? 'Laki-laki' : (c.gender === 'Female' ?
                         'Perempuan' : c.gender));
                     setDrawerText('cvMaritalStatus', c.maritalStatus);
+                    setDrawerText('cvBloodType', c.bloodType);
                     setDrawerText('cvNik', c.nik);
                     setDrawerText('cvPhone', c.phone);
                     setDrawerText('cvEmail', c.email);
