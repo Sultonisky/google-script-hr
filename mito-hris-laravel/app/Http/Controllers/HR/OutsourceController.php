@@ -119,6 +119,10 @@ class OutsourceController extends Controller
         $request->validate([
             'fullName'            => 'required|string|max:255',
             'outsourceVendor'     => 'required|string|max:255',
+            'employeeId'          => ['nullable', 'string', 'max:12', 'regex:/^\d{1,12}$/'],
+            'division'            => ['nullable', 'string', 'max:255', 'regex:/^[\p{L}]+(?:[ \-\/]+[\p{L}]+)*$/u'],
+            'jobPosition'         => ['nullable', 'string', 'max:255', 'regex:/^[\p{L}]+(?:[ \-\/]+[\p{L}]+)*$/u'],
+            'jobPositionLocation' => ['nullable', 'string', 'max:255', 'regex:/^[\p{L}]+(?:[ \-\/]+[\p{L}]+)*$/u'],
             'joinDate'            => 'nullable|date',
             'endDateContract'     => 'nullable|date',
             'personalEmail'       => 'nullable|email|max:255',
@@ -130,6 +134,11 @@ class OutsourceController extends Controller
             'bankAccount'         => 'nullable|string|max:30',
             'bpjsKetenagakerjaan' => 'nullable|string|max:30',
             'bpjsKesehatan'       => 'nullable|string|max:30',
+        ], [
+            'employeeId.regex' => 'Employee ID hanya boleh angka (maksimal 12 digit).',
+            'division.regex' => 'Divisi hanya boleh huruf, spasi, tanda hubung, dan garis miring.',
+            'jobPosition.regex' => 'Jabatan hanya boleh huruf, spasi, tanda hubung, dan garis miring.',
+            'jobPositionLocation.regex' => 'Jabatan (dengan lokasi) hanya boleh huruf, spasi, tanda hubung, dan garis miring.',
         ]);
 
         // Force statusEmployee = Outsource — tidak boleh dioverride dari frontend
