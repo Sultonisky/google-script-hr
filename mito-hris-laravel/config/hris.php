@@ -282,6 +282,7 @@ return [
             'Birth Date',
             'Age',
             'Gender',
+            'Blood Type',
             'Marital Status',
             'Email',
             'Phone',
@@ -299,7 +300,6 @@ return [
             'HR Notes',
             'Created By',
             'Updated At',
-            'Blood Type',
         ],
         'Audit_Log' => [
             'Audit ID',
@@ -411,6 +411,7 @@ return [
             'Birth Date',
             'Age',
             'Gender',
+            'Blood Type',
             'Marital Status',
             'Email',
             'Phone',
@@ -435,7 +436,6 @@ return [
             'Blacklist Updated By',
             'Processed Date',
             'Processed By',
-            'Blood Type',
         ],
         'kandidat_accepted' => [
             'Recruitment ID',
@@ -445,6 +445,7 @@ return [
             'Birth Date',
             'Age',
             'Gender',
+            'Blood Type',
             'Marital Status',
             'Email',
             'Phone',
@@ -495,7 +496,6 @@ return [
             'Offering Employment Status',
             'Offering Contract Duration',
             'Offering Working Hours',
-            'Blood Type',
         ],
         'kandidat_blacklist' => [
             'Recruitment ID',
@@ -505,6 +505,7 @@ return [
             'Birth Date',
             'Age',
             'Gender',
+            'Blood Type',
             'Marital Status',
             'Email',
             'Phone',
@@ -529,7 +530,6 @@ return [
             'Blacklist Updated By',
             'Processed Date',
             'Processed By',
-            'Blood Type',
         ],
         'MPR' => [
             'MPR Number',
