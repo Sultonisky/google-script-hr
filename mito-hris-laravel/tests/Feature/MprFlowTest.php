@@ -854,6 +854,10 @@ class MprFlowTest extends TestCase
         $this->postJson(route('hr.mpr.store'), array_merge($this->validStorePayload(), [
             'working_hours' => ['08_00_17_00', '08_30_17_30'],
         ]))->assertStatus(422)->assertJsonValidationErrors(['working_hours']);
+
+        $this->postJson(route('hr.mpr.store'), array_merge($this->validStorePayload(), [
+            'benefits' => ['bpjs', 'laptop_pc'],
+        ]))->assertStatus(422)->assertJsonValidationErrors(['benefits']);
     }
 
     #[Test]
