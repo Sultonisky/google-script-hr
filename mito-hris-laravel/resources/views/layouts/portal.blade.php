@@ -25,7 +25,6 @@
         'resources/scss/hr.scss',
         'resources/js/app.js',
         'resources/js/page-loader.js',
-        'resources/js/csp-hardening.js',
     ])
     @yield('styles')
 </head>
@@ -46,7 +45,7 @@
     </div>
 
     @yield('scripts')
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         document.addEventListener('DOMContentLoaded', function () {
             const button = document.getElementById('btnDarkModeToggle');
             if (!button) return;

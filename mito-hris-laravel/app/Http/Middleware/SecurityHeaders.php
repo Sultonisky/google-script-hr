@@ -17,6 +17,9 @@ class SecurityHeaders
      */
     public function handle(Request $request, Closure $next)
     {
+        $nonce = base64_encode(random_bytes(16));
+        $request->attributes->set('csp_nonce', $nonce);
+
         /** @var Response $response */
         $response = $next($request);
 
@@ -24,9 +27,6 @@ class SecurityHeaders
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('Permissions-Policy', 'geolocation=(self), microphone=(), camera=(), display-capture=(), fullscreen=()');
-
-        $nonce = base64_encode(random_bytes(16));
-        $request->attributes->set('csp_nonce', $nonce);
         $response->headers->set('Content-Security-Policy-Report-Only', $this->buildCsp($nonce));
 
         // Phase 3: HSTS — only on HTTPS to enforce secure transport

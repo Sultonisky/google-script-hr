@@ -275,12 +275,13 @@
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label">Benefits / Tunjangan <span
-                                                class="text-danger">*</span></label>
+                                                class="text-danger">*</span>
+                                            <span class="text-muted fw-normal small">(boleh pilih lebih dari satu)</span></label>
                                         <div class="border rounded p-2 row g-1">
                                             @foreach ($mprOptions['benefits'] ?? [] as $benefitKey => $benefitLabel)
                                                 <div class="col-md-4 col-6">
                                                     <div class="form-check">
-                                                        <input class="form-check-input" type="radio" name="benefits[]"
+                                                        <input class="form-check-input" type="checkbox" name="benefits[]"
                                                             value="{{ $benefitKey }}" id="bn_{{ $benefitKey }}"
                                                             {{ in_array($benefitKey, $oldBenefits) ? 'checked' : '' }}>
                                                         <label class="form-check-label"
@@ -480,11 +481,10 @@
             /**
              * Logika Shifting:
              * - Jika "Shifting" dipilih (radio):
-             *   → Radio hari kerja lain di-disable
+             *   → Radio hari kerja lain tetap bisa diklik agar bisa ganti opsi
              *   → Radio jam kerja di-uncheck & disabled
              *   → Textarea detail shift: enabled, required, border highlight
              * - Jika hari kerja lain dipilih:
-             *   → Radio hari kerja lain kembali enabled
              *   → Radio jam kerja kembali enabled
              *   → Textarea detail shift: disabled, not required, clear value
              */
@@ -492,8 +492,6 @@
                 if (!form) return;
 
                 const shiftingCb   = form.querySelector('input[name="working_days[]"][value="shifting"]');
-                const otherDayCbs  = Array.from(form.querySelectorAll('input[name="working_days[]"]'))
-                                         .filter(cb => cb.value !== 'shifting');
                 const hourCbs      = Array.from(form.querySelectorAll('input[name="working_hours[]"]'));
                 const shiftField   = form.querySelector('#shiftDetailField');
                 const requiredMark = form.querySelector('#shiftDetailRequiredMark');
@@ -502,18 +500,6 @@
                 if (!shiftingCb) return;
 
                 const isShifting = shiftingCb.checked;
-
-                // --- Hari Kerja lain ---
-                otherDayCbs.forEach(cb => {
-                    if (isShifting) {
-                        cb.checked  = false;
-                        cb.disabled = true;
-                        cb.closest('.form-check')?.classList.add('opacity-50');
-                    } else {
-                        cb.disabled = false;
-                        cb.closest('.form-check')?.classList.remove('opacity-50');
-                    }
-                });
 
                 // --- Jam Kerja ---
                 hourCbs.forEach(cb => {

@@ -1,6 +1,7 @@
 import "./bootstrap";
 import * as bootstrap from "bootstrap";
 import "./toast";
+import "./csp-hardening";
 
 window.bootstrap = bootstrap;
 

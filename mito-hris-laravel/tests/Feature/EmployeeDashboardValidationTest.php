@@ -36,6 +36,21 @@ class EmployeeDashboardValidationTest extends TestCase
     }
 
     #[Test]
+    public function add_employee_modal_defines_client_validators_on_hr_pages(): void
+    {
+        $this->actingAsAdmin();
+
+        $response = $this->get('/hr/employees');
+
+        $response->assertOk();
+        $response->assertSee('function validateEmployeeId', false);
+        $response->assertSee('function validateDivision', false);
+        $response->assertSee('function validateJobPosition', false);
+        $response->assertSee('function validateJobPositionLocation', false);
+        $response->assertDontSee('resources/js/csp-hardening.js', false);
+    }
+
+    #[Test]
     public function store_rejects_employee_id_with_letters(): void
     {
         $this->actingAsAdmin();

@@ -5,15 +5,6 @@
 @section('robots', 'noindex,follow,noarchive')
 
 @section('content')
-    <!-- Branded submit loading overlay -->
-    <div class="public-submit-loader" id="loadingOverlay" role="status" aria-label="Mengirim data">
-        <div class="public-submit-loader-content">
-            <img class="public-loader-logo" src="{{ asset('assets/mito-red-load.png') }}" alt="MITO">
-            <div class="public-loader-dots" aria-hidden="true"><span></span><span></span><span></span></div>
-            <span class="public-submit-loader-label">Mengirim data...</span>
-        </div>
-    </div>
-
     <!-- HERO (1:1 from GAS OutsourceForm.html) -->
     <div class="hero-section">
         <div class="container">
@@ -625,9 +616,10 @@
 
         </div>
     </div>
+@endsection
 
 @section('scripts')
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         // ============================================================
         // REGIONS DATASET (same as career form, 1:1 from GAS js/regions.html)
         // ============================================================
@@ -999,7 +991,7 @@
                 '<i class="bi bi-hourglass-split"></i>';
         }
 
-        var agreementCheckbox, agreementError, submitBtn, submitSpinner, submitText, loadingOverlay;
+        var agreementCheckbox, agreementError, submitBtn, submitSpinner, submitText;
         var progressFill, progressCount, progressMessage;
 
         function updateFormState() {
@@ -1426,7 +1418,6 @@
             submitBtn = document.getElementById('submitBtn');
             submitSpinner = document.getElementById('submitSpinner');
             submitText = document.getElementById('submitText');
-            loadingOverlay = document.getElementById('loadingOverlay');
             progressFill = document.getElementById('progressFill');
             progressCount = document.getElementById('progressCount');
             progressMessage = document.getElementById('progressMessage');
@@ -1637,8 +1628,6 @@
                 submitText.textContent = 'Mengirim...';
                 if (typeof window.showPublicLoader === 'function') {
                     window.showPublicLoader('Mengirim data');
-                } else if (loadingOverlay) {
-                    loadingOverlay.classList.add('is-active');
                 }
             });
 
@@ -1652,5 +1641,4 @@
             }
         });
     </script>
-@endsection
 @endsection

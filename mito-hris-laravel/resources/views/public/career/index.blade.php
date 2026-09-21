@@ -226,7 +226,7 @@
 @endsection
 
 @section('scripts')
-<script>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
   document.addEventListener('DOMContentLoaded', async () => {
     // Load Provinces
     const provSelect = document.getElementById('province');

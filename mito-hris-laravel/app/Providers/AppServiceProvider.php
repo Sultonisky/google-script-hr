@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Vite;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use App\Events\CandidateApplied;
@@ -108,6 +109,12 @@ class AppServiceProvider extends ServiceProvider
 
             $view->with('user', $user);
             $view->with('permissions', $permissions);
+        });
+
+        Vite::useScriptTagAttributes(function (): array {
+            $nonce = request()->attributes->get('csp_nonce');
+
+            return is_string($nonce) && $nonce !== '' ? ['nonce' => $nonce] : [];
         });
     }
 }

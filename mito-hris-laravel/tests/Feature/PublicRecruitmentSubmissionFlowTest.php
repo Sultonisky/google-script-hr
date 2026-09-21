@@ -72,10 +72,15 @@ class PublicRecruitmentSubmissionFlowTest extends TestCase
         $response->assertSee('id="publicLoader"', false);
         $response->assertSee('window.showPublicLoader', false);
         $response->assertSee('showPublicLoader(\'Mengirim data\')', false);
+        $response->assertDontSee('id="loadingOverlay"', false);
+        $response->assertDontSee('Mengirim data...', false);
 
         $outsource = $this->onDomain('outsource')->get(route('public.outsource.apply'));
         $outsource->assertOk();
+        $outsource->assertSee('id="publicLoader"', false);
         $outsource->assertSee('showPublicLoader(\'Mengirim data\')', false);
+        $outsource->assertDontSee('id="loadingOverlay"', false);
+        $outsource->assertDontSee('Mengirim data...', false);
     }
 
     public function test_success_page_is_terminal_without_navigation_actions(): void
@@ -128,6 +133,8 @@ class PublicRecruitmentSubmissionFlowTest extends TestCase
         $response->assertSee('timeout: 4000', false);
         $response->assertSee("locationField.value = 'unavailable'", false);
         $response->assertSee('syncProceedButton', false);
+        $response->assertSee('id="publicLoader"', false);
+        $response->assertSee("showPublicLoader('Memuat formulir')", false);
     }
 
     private function validPayload(): array
