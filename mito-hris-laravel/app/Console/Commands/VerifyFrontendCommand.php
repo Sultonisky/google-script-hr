@@ -6,7 +6,7 @@ use Illuminate\Console\Command;
 
 class VerifyFrontendCommand extends Command
 {
-    protected $signature = 'mito:verify-frontend';
+    protected $signature = 'mito:verify-frontend {--build-path : Print the Vite build directory after a successful check}';
 
     protected $description = 'Verify Vite build output exists so public and HR pages do not 404';
 
@@ -53,6 +53,12 @@ class VerifyFrontendCommand extends Command
             $this->error('Missing Vite files: ' . implode(', ', $missing));
 
             return self::FAILURE;
+        }
+
+        if ($this->option('build-path')) {
+            $this->output->writeln(public_path('build'));
+
+            return self::SUCCESS;
         }
 
         $this->info('Vite frontend assets are present.');
