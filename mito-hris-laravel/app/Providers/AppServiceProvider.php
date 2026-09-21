@@ -82,6 +82,12 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(8)->by(($nik !== '' ? $nik : 'anon') . '|' . $request->ip());
         });
 
+        RateLimiter::for('outsource-apply', function (Request $request) {
+            $nik = preg_replace('/\D+/', '', (string) $request->input('nik', ''));
+
+            return Limit::perMinute(8)->by(($nik !== '' ? $nik : 'anon') . '|' . $request->ip());
+        });
+
         // ==============================================================
         // Register Event → Listener mappings.
         // These listeners were previously NOT wired, so cache invalidation

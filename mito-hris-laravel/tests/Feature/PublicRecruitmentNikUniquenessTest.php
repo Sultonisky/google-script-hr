@@ -117,6 +117,40 @@ class PublicRecruitmentNikUniquenessTest extends TestCase
             ->assertJsonPath('message', 'NIK ini sudah terdaftar. Setiap NIK hanya dapat digunakan untuk satu kali pendaftaran.');
     }
 
+    public function test_apply_form_exposes_strict_duplicate_nik_ui_lock(): void
+    {
+        $response = $this->onDomain('recruitment')
+            ->withSession(['candidate_consent' => true])
+            ->get(route('public.career.form'));
+
+        $response->assertOk();
+        $response->assertSee('id="nikDuplicateWarning"', false);
+        $response->assertSee('id="nikLockBanner"', false);
+        $response->assertSee('lockFormExceptNik', false);
+        $response->assertSee('clearNikAutofill', false);
+        $response->assertSee('applyNikAutofill', false);
+        $response->assertSee('nik-duplicate-locked', false);
+        $response->assertSee('submitBtn.disabled = nikIsBlocked || nikCheckPending', false);
+        $response->assertSee('if (result.data && result.data.available === false)', false);
+        $response->assertSee('Ubah NIK di kolom identitas untuk membuka kembali formulir', false);
+        $response->assertDontSee('processNIK(nik)', false);
+    }
+
+    public function test_apply_form_locks_from_server_duplicate_error_without_autofill(): void
+    {
+        $response = $this->onDomain('recruitment')
+            ->withSession([
+                'candidate_consent' => true,
+                'error' => 'NIK ini sudah terdaftar. Setiap NIK hanya dapat digunakan untuk satu kali pendaftaran.',
+            ])
+            ->get(route('public.career.form'));
+
+        $response->assertOk();
+        $response->assertSee('setNikBlocked(true, serverError)', false);
+        $response->assertSee('showNikChecking()', false);
+        $response->assertSee('scheduleNikAvailabilityCheck', false);
+    }
+
     private function makeService(CandidateRepositoryInterface $candidateRepo): RecruitmentService
     {
         $employeeRepo = Mockery::mock(EmployeeRepositoryInterface::class);

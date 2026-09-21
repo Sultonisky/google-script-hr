@@ -5,6 +5,28 @@
 @section('robots', 'noindex,follow,noarchive')
 
 @section('content')
+    <style>
+        #formOutsource.nik-duplicate-locked .form-section:not(#sectionPersonal),
+        #formOutsource.nik-duplicate-locked .card {
+            opacity: 0.55;
+            pointer-events: none;
+            filter: grayscale(0.12);
+        }
+
+        #formOutsource.nik-duplicate-locked #sectionPersonal .form-section-body .row > [class*="col-"]:not(:first-child) {
+            opacity: 0.55;
+            pointer-events: none;
+        }
+
+        #nik.nik-duplicate {
+            border-color: #dc2626;
+            background: #fff5f5;
+        }
+
+        #nikLockBanner {
+            border-radius: 14px;
+        }
+    </style>
     <!-- HERO (1:1 from GAS OutsourceForm.html) -->
     <div class="hero-section">
         <div class="container">
@@ -52,9 +74,34 @@
                 </div>
             @endif
 
+            @if ($errors->any())
+                <div class="alert alert-danger p-3 mb-4 rounded-3" role="alert">
+                    <div class="d-flex align-items-start gap-2">
+                        <i class="bi bi-exclamation-triangle-fill fs-5 flex-shrink-0 mt-1"></i>
+                        <div>
+                            <strong>Form belum bisa dikirim.</strong>
+                            <div class="mt-1" style="font-size:13px;">Periksa isian yang ditandai, lalu kirim ulang.</div>
+                            <ul class="mb-0 mt-2 ps-3" style="font-size:13px;">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             <div id="registrationForm">
                 <form action="{{ route('public.outsource.store') }}" method="POST" id="formOutsource" novalidate>
                     @csrf
+                    <div id="nikLockBanner" class="alert alert-danger d-none p-3 mb-4 d-flex align-items-start gap-2" role="alert">
+                        <i class="bi bi-exclamation-octagon-fill fs-5 flex-shrink-0 mt-1"></i>
+                        <div>
+                            <strong id="nikLockBannerTitle">NIK sudah terdaftar.</strong>
+                            <div id="nikLockBannerMessage" class="mt-1" style="font-size:13px;"></div>
+                            <div class="mt-1" style="font-size:12px;">Ubah NIK di kolom identitas untuk membuka kembali formulir. Tombol kirim dan seluruh isian lain dikunci sampai NIK unik terdeteksi.</div>
+                        </div>
+                    </div>
                     <input type="hidden" name="consent_timestamp" id="consentTimestamp">
                     <input type="hidden" name="consent_device" id="consentDevice">
                     <input type="hidden" name="consent_latitude" id="consentLatitude">
@@ -90,6 +137,7 @@
                                             NIK. Pastikan data sudah sesuai sebelum mengirim.</div>
                                     </div>
                                     <div class="mt-1" id="nikFeedback"></div>
+                                    <div class="mt-2" id="nikDuplicateWarning" role="alert" aria-live="assertive"></div>
                                 </div>
 
                                 <div class="col-md-6">
@@ -487,8 +535,9 @@
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold" for="bank_name" style="font-size:13px">Nama
                                         Bank</label>
-                                    <input type="text" class="form-control bg-light" id="bank_name" name="nama_bank"
-                                        value="BCA" readonly style="cursor:default;" disabled>
+                                    <input type="text" class="form-control bg-light" id="bank_name"
+                                        value="BCA" readonly disabled style="cursor:default;">
+                                    <input type="hidden" name="nama_bank" value="BCA">
                                 </div>
 
                                 <div class="col-md-6">
@@ -516,8 +565,10 @@
                                     <label class="form-label fw-semibold" for="npwp" style="font-size:13px">NPWP
                                         <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="npwp" name="npwp"
-                                        value="{{ old('npwp') }}" required maxlength="20" data-sanitize-npwp="true"
-                                        placeholder="Contoh: 01.123.456.7-123.000">
+                                        value="{{ old('npwp') }}" required inputmode="numeric" minlength="15"
+                                        maxlength="16" pattern="[0-9]{15,16}" data-sanitize-npwp="true"
+                                        placeholder="15 atau 16 digit" aria-describedby="npwpHelp">
+                                    <div class="form-text" id="npwpHelp" style="font-size:12px;">NPWP harus 15 atau 16 digit angka. Titik atau strip dihapus otomatis.</div>
                                     <div class="invalid-feedback">NPWP wajib 15 atau 16 digit angka.</div>
                                 </div>
 
@@ -910,6 +961,21 @@
         var manualBirthDateChanged = false;
         var isSubmitting = false;
         var SUBMISSION_FLAG = 'mito_outsource_submitted';
+        var form = null;
+        var nikEl = null;
+        var nikFeedback = null;
+        var nikDuplicateWarning = null;
+        var nikLockBanner = null;
+        var birthDateEl = null;
+        var ageEl = null;
+        var genderEl = null;
+        var provinceEl = null;
+        var cityEl = null;
+        var nikIsBlocked = false;
+        var nikCheckTimer = null;
+        var nikCheckSeq = 0;
+        var nikCheckPending = false;
+        var pendingDistrictValue = @json(old('kecamatan'));
 
         function isAlreadySubmitted() {
             try {
@@ -929,6 +995,21 @@
             window.location.replace('{{ route('public.outsource.success') }}');
         }
 
+        function clearClientSubmitFlag() {
+            try {
+                window.sessionStorage.removeItem(SUBMISSION_FLAG);
+            } catch (err) {}
+        }
+
+        function prepareFormForSubmit() {
+            lockFormExceptNik(false);
+            if (!form) return;
+            form.querySelectorAll('input, select, textarea').forEach(function(el) {
+                if (!el.name || el.name === '_token') return;
+                el.disabled = false;
+            });
+        }
+
         function isDistrictValid() {
             if (districtManualWrap && districtManualWrap.style.display !== 'none') {
                 return (districtManualInput.value || '').trim() !== '';
@@ -939,6 +1020,10 @@
         function isFieldValid(el) {
             if (!el) return false;
             if (el.type === 'checkbox') return !!el.checked;
+            if (el.id === 'npwp') {
+                var digits = (el.value || '').replace(/\D+/g, '');
+                return digits.length === 15 || digits.length === 16;
+            }
             var v = (el.value || '').trim();
             if (v === '') return false;
             if (el.checkValidity) return el.checkValidity();
@@ -1021,8 +1106,29 @@
                 submitBtn.disabled = true;
             }
             var hint = document.getElementById('agreementHint');
-            if (hint) hint.style.display = allComplete ? 'none' : 'block';
-            submitBtn.disabled = !(allComplete && agreementCheckbox.checked);
+            if (hint) hint.style.display = (allComplete && !nikIsBlocked) ? 'none' : 'block';
+            if (nikIsBlocked) {
+                agreementCheckbox.setAttribute('data-unlocked', '0');
+                agreementCheckbox.checked = false;
+                agreementCheckbox.style.cursor = 'not-allowed';
+                agreementCheckbox.style.opacity = '0.5';
+                agreementCheckbox.onclick = function() {
+                    return false;
+                };
+                agreementCheckbox.onfocus = function() {
+                    this.blur();
+                };
+                if (hint) {
+                    hint.style.display = 'block';
+                    hint.innerHTML = '<i class="bi bi-exclamation-octagon-fill me-1"></i> NIK sudah terdaftar. Ubah NIK agar formulir dan tombol kirim dapat digunakan kembali.';
+                }
+                submitBtn.disabled = true;
+                return;
+            }
+            if (hint && !allComplete) {
+                hint.innerHTML = '<i class="bi bi-info-circle-fill me-1"></i> Lengkapi seluruh data pada semua bagian terlebih dahulu untuk mengaktifkan persetujuan.';
+            }
+            submitBtn.disabled = nikIsBlocked || nikCheckPending || !(allComplete && agreementCheckbox.checked);
         }
 
         var progressMessages = [{
@@ -1239,7 +1345,8 @@
             };
         }
 
-        function processNIK(nik, nikFeedback, genderEl, birthDateEl, ageEl, provinceEl, cityEl) {
+        function applyNikAutofill(nik) {
+            if (nikIsBlocked) return;
             var r = parseNIK(nik);
             if (!r) {
                 showNIKFeedback(nikFeedback, false);
@@ -1257,7 +1364,6 @@
                 if (REGIONS.cities[r.cityCode]) {
                     cityEl.value = r.cityCode;
                     loadDistricts(r.cityCode);
-                    // BUG FIX #2: sync kotaNama from NIK autofill
                     var kotaNamaInput = document.getElementById('kotaNama');
                     if (kotaNamaInput) {
                         kotaNamaInput.value = REGIONS.cities[r.cityCode];
@@ -1268,7 +1374,169 @@
             updateProgress();
         }
 
+        function clearNikAutofill() {
+            manualBirthDateChanged = false;
+            if (birthDateEl) {
+                birthDateEl.value = '';
+                birthDateEl.classList.remove('is-valid', 'is-invalid');
+            }
+            if (ageEl) {
+                ageEl.value = '';
+                ageEl.classList.remove('is-valid', 'is-invalid');
+            }
+            if (genderEl) {
+                genderEl.value = '';
+                genderEl.classList.remove('is-valid', 'is-invalid');
+            }
+            if (provinceEl) {
+                provinceEl.value = '';
+                provinceEl.classList.remove('is-valid', 'is-invalid');
+            }
+            if (cityEl && provinceEl) {
+                populateCities('', provinceEl, cityEl);
+                cityEl.classList.remove('is-valid', 'is-invalid');
+            }
+            var kotaNamaInput = document.getElementById('kotaNama');
+            if (kotaNamaInput) kotaNamaInput.value = '';
+            if (districtInput) resetDistrict();
+        }
+
+        function lockFormExceptNik(locked) {
+            if (!form) return;
+            form.classList.toggle('nik-duplicate-locked', !!locked);
+            var controls = form.querySelectorAll('input, select, textarea, button');
+            controls.forEach(function(el) {
+                if (el.id === 'nik') return;
+                if (el.type === 'hidden' || el.name === '_token') return;
+                if (locked) {
+                    if (!el.hasAttribute('data-nik-lock-prev')) {
+                        el.setAttribute('data-nik-lock-prev', el.disabled ? '1' : '0');
+                    }
+                    el.disabled = true;
+                    el.setAttribute('aria-disabled', 'true');
+                } else if (el.hasAttribute('data-nik-lock-prev')) {
+                    el.disabled = el.getAttribute('data-nik-lock-prev') === '1';
+                    el.removeAttribute('data-nik-lock-prev');
+                    el.removeAttribute('aria-disabled');
+                }
+            });
+        }
+
+        function showNikChecking() {
+            if (nikFeedback) {
+                nikFeedback.innerHTML =
+                    '<div class="alert alert-info p-2 mb-0" style="font-size:12px"><i class="bi bi-hourglass-split me-1"></i> <strong>Memeriksa NIK...</strong> Sistem memastikan NIK belum terdaftar sebelum mengisi data otomatis.</div>';
+            }
+            if (nikDuplicateWarning) nikDuplicateWarning.innerHTML = '';
+        }
+
+        function getCsrfToken() {
+            var meta = document.querySelector('meta[name="csrf-token"]');
+            return meta ? meta.getAttribute('content') : '';
+        }
+
+        function setNikBlocked(blocked, message) {
+            nikIsBlocked = !!blocked;
+            var duplicateMessage = message || 'NIK ini sudah terdaftar. Setiap NIK hanya dapat digunakan untuk satu kali pendaftaran.';
+            if (blocked) {
+                clearNikAutofill();
+                lockFormExceptNik(true);
+                if (nikEl) {
+                    nikEl.classList.add('is-invalid', 'nik-duplicate');
+                    nikEl.classList.remove('is-valid');
+                    nikEl.setAttribute('aria-invalid', 'true');
+                }
+                if (nikFeedback) nikFeedback.innerHTML = '';
+                if (nikDuplicateWarning) {
+                    nikDuplicateWarning.innerHTML =
+                        '<div class="alert alert-danger p-3 mb-0" style="font-size:13px"><i class="bi bi-exclamation-octagon-fill me-1"></i> <strong>' +
+                        duplicateMessage +
+                        '</strong><div class="mt-1" style="font-size:12px;">Data otomatis dari NIK tidak diisi. Seluruh isian dan tombol kirim dikunci. Ubah NIK untuk membuka kembali formulir.</div></div>';
+                }
+                if (nikLockBanner) {
+                    nikLockBanner.classList.remove('d-none');
+                    var bannerMsg = document.getElementById('nikLockBannerMessage');
+                    if (bannerMsg) bannerMsg.textContent = duplicateMessage;
+                }
+                if (submitBtn) submitBtn.disabled = true;
+                if (typeof window.showToast === 'function') {
+                    window.showToast({
+                        type: 'error',
+                        title: 'NIK sudah terdaftar',
+                        message: duplicateMessage
+                    });
+                }
+            } else {
+                lockFormExceptNik(false);
+                if (nikEl) {
+                    nikEl.classList.remove('nik-duplicate');
+                    nikEl.setAttribute('aria-invalid', 'false');
+                    if (nikEl.value && nikEl.checkValidity()) {
+                        nikEl.classList.remove('is-invalid');
+                        nikEl.classList.add('is-valid');
+                    }
+                }
+                if (nikDuplicateWarning) nikDuplicateWarning.innerHTML = '';
+                if (nikLockBanner) nikLockBanner.classList.add('d-none');
+            }
+            updateProgress();
+            if (blocked && nikEl) {
+                nikEl.focus();
+                if (nikDuplicateWarning && typeof nikDuplicateWarning.scrollIntoView === 'function') {
+                    nikDuplicateWarning.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                }
+            }
+        }
+
+        function scheduleNikAvailabilityCheck(nik) {
+            nikCheckPending = true;
+            if (submitBtn) submitBtn.disabled = true;
+            if (nikCheckTimer) clearTimeout(nikCheckTimer);
+            nikCheckTimer = setTimeout(function() {
+                checkNikAvailability(nik);
+            }, 250);
+        }
+
+        function checkNikAvailability(nik) {
+            var seq = ++nikCheckSeq;
+            fetch('{{ route('public.outsource.nik-check') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': getCsrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ nik: nik })
+            }).then(function(res) {
+                return res.json().then(function(data) {
+                    return { status: res.status, data: data };
+                });
+            }).then(function(result) {
+                if (seq !== nikCheckSeq) return;
+                if (String(nikEl.value || '') !== String(nik)) return;
+                nikCheckPending = false;
+                if (result.data && result.data.available === false) {
+                    setNikBlocked(true, result.data.message);
+                    return;
+                }
+                setNikBlocked(false);
+                applyNikAutofill(nik);
+            }).catch(function() {
+                if (seq !== nikCheckSeq) return;
+                if (String(nikEl.value || '') !== String(nik)) return;
+                nikCheckPending = false;
+                setNikBlocked(false);
+                applyNikAutofill(nik);
+            });
+        }
+
         function showNIKFeedback(el, success, r) {
+            if (nikIsBlocked || !el) return;
             if (success) {
                 var det = ['Tanggal Lahir: ' + r.birthDate.formatted, 'Jenis Kelamin: ' + r.gender];
                 if (REGIONS.provinces[r.provinceCode]) det.push('Provinsi: ' + REGIONS.provinces[r.provinceCode]);
@@ -1364,7 +1632,13 @@
                 districtManualWrap.style.display = 'none';
                 districtManualInput.required = false;
                 districtInput.classList.remove('is-invalid');
-                districtInput.classList.add('is-valid');
+                if (pendingDistrictValue && districts.indexOf(pendingDistrictValue) !== -1) {
+                    districtInput.value = pendingDistrictValue;
+                    pendingDistrictValue = null;
+                }
+                if (districtInput.value) {
+                    districtInput.classList.add('is-valid');
+                }
             } else {
                 showDistrictManualFallback();
             }
@@ -1387,11 +1661,37 @@
         // ============================================================
         // FIELD VALIDATION HELPER
         // ============================================================
+        function sanitizeNpwpField(el) {
+            if (!el) return '';
+            el.value = (el.value || '').replace(/\D+/g, '').substring(0, 16);
+            var len = el.value.length;
+            var help = document.getElementById('npwpHelp');
+            if (help) {
+                help.textContent = len > 0
+                    ? ('Terisi ' + len + ' digit dari 15–16 yang diperlukan.')
+                    : 'NPWP harus 15 atau 16 digit angka. Titik atau strip dihapus otomatis.';
+            }
+            if (len === 0 || len === 15 || len === 16) {
+                el.setCustomValidity('');
+            } else {
+                el.setCustomValidity('NPWP harus 15 atau 16 digit angka.');
+            }
+            return el.value;
+        }
+
         function validateField(el) {
             if (!el) return;
+            if (el.id === 'nik' && nikIsBlocked) {
+                el.classList.add('is-invalid', 'nik-duplicate');
+                el.classList.remove('is-valid');
+                return;
+            }
             if (el.id === 'birth_date') {
                 validateBirthDate(el);
                 return;
+            }
+            if (el.id === 'npwp') {
+                sanitizeNpwpField(el);
             }
             var container = el.closest('.col-md-6, .col-md-4, .col-12');
             var feedback = container ? container.querySelector('.invalid-feedback') : null;
@@ -1426,20 +1726,39 @@
             districtManualWrap = document.getElementById('districtManualWrap');
             districtManualInput = document.getElementById('districtManual');
 
-            var nikEl = document.getElementById('nik');
-            var nikFeedback = document.getElementById('nikFeedback');
-            var birthDateEl = document.getElementById('birth_date');
-            var ageEl = document.getElementById('age');
-            var genderEl = document.getElementById('gender');
-            var provinceEl = document.getElementById('province');
-            var cityEl = document.getElementById('city');
+            nikEl = document.getElementById('nik');
+            nikFeedback = document.getElementById('nikFeedback');
+            nikDuplicateWarning = document.getElementById('nikDuplicateWarning');
+            nikLockBanner = document.getElementById('nikLockBanner');
+            birthDateEl = document.getElementById('birth_date');
+            ageEl = document.getElementById('age');
+            genderEl = document.getElementById('gender');
+            provinceEl = document.getElementById('province');
+            cityEl = document.getElementById('city');
             var phoneEl = document.getElementById('phone');
             var emailEl = document.getElementById('email');
             var emailValidation = document.getElementById('emailValidation');
-            var form = document.getElementById('formOutsource');
+            form = document.getElementById('formOutsource');
+            clearClientSubmitFlag();
+            sanitizeNpwpField(document.getElementById('npwp'));
 
             populateProvinces(provinceEl);
             attachBirthDateListeners(birthDateEl, ageEl);
+
+            var oldProvince = @json(old('provinsi'));
+            var oldCity = @json(old('kota'));
+            if (oldProvince) {
+                provinceEl.value = oldProvince;
+                populateCities(oldProvince, provinceEl, cityEl);
+                if (oldCity) {
+                    cityEl.value = oldCity;
+                    var kotaNamaInput = document.getElementById('kotaNama');
+                    if (kotaNamaInput && !kotaNamaInput.value) {
+                        kotaNamaInput.value = REGIONS.cities[oldCity] || '';
+                    }
+                    loadDistricts(oldCity);
+                }
+            }
 
             var joinDateEl = document.getElementById('join_date');
             var contractEndEl = document.getElementById('contract_end_date');
@@ -1456,15 +1775,24 @@
                 });
             }
 
-            // NIK input
+            // NIK input — uniqueness check first; autofill only after NIK is available.
             nikEl.addEventListener('input', function() {
                 var nik = this.value.replace(/[^0-9]/g, '').substring(0, 16);
                 this.value = nik;
-                if (nik.length === 16) processNIK(nik, nikFeedback, genderEl, birthDateEl, ageEl,
-                    provinceEl, cityEl);
-                else nikFeedback.innerHTML = nik.length > 0 ?
-                    '<span class="text-muted" style="font-size:12px">Ketik 16 digit NIK... (' + nik.length +
-                    '/16)</span>' : '';
+                if (nikCheckTimer) clearTimeout(nikCheckTimer);
+                nikCheckSeq++;
+                if (nik.length === 16) {
+                    clearNikAutofill();
+                    showNikChecking();
+                    scheduleNikAvailabilityCheck(nik);
+                } else {
+                    nikCheckPending = false;
+                    setNikBlocked(false);
+                    clearNikAutofill();
+                    nikFeedback.innerHTML = nik.length > 0 ?
+                        '<span class="text-muted" style="font-size:12px">Ketik 16 digit NIK... (' + nik.length +
+                        '/16)</span>' : '';
+                }
                 validateField(this);
                 updateProgress();
             });
@@ -1593,6 +1921,11 @@
                     showAlreadySubmittedPage();
                     return;
                 }
+                if (nikIsBlocked || nikCheckPending) {
+                    e.preventDefault();
+                    nikEl.focus();
+                    return;
+                }
                 if (!agreementCheckbox.checked) {
                     e.preventDefault();
                     agreementError.style.display = 'block';
@@ -1600,6 +1933,7 @@
                     return;
                 }
                 agreementError.style.display = 'none';
+                sanitizeNpwpField(document.getElementById('npwp'));
                 var bdValid = validateBirthDate(birthDateEl);
                 var contractValid = validateContractDates(joinDateEl, contractEndEl);
                 if (!form.checkValidity() || !bdValid || !contractValid) {
@@ -1615,6 +1949,7 @@
                     });
                     return;
                 }
+                prepareFormForSubmit();
                 // Final authoritative sync: ensure kota_nama always reflects the
                 // current city dropdown value regardless of prior event timing.
                 var kotaNamaInput = document.getElementById('kotaNama');
@@ -1631,13 +1966,24 @@
                 }
             });
 
+            var initialNik = (nikEl.value || '').replace(/[^0-9]/g, '').substring(0, 16);
+            var serverError = @json(session('error'));
+            if (initialNik.length === 16) {
+                if (serverError && /sudah terdaftar|daftar hitam/i.test(String(serverError))) {
+                    setNikBlocked(true, serverError);
+                } else {
+                    showNikChecking();
+                    scheduleNikAvailabilityCheck(initialNik);
+                }
+            }
+
             updateProgress();
         });
 
         // Ask the server to resolve a form restored from BFCache.
         window.addEventListener('pageshow', function(event) {
             if (event.persisted) {
-                window.location.replace('{{ route('public.outsource.success') }}');
+                window.location.reload();
             }
         });
     </script>
