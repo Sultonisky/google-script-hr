@@ -49,7 +49,6 @@
                     <div>
                         <h5 class="mb-0"><i class="bi bi-file-earmark-plus-fill me-2"></i>Formulir Pengajuan Manpower Request</h5>
                     </div>
-                    <span class="badge bg-white text-primary fw-bold mpr-badge">Role: Manpower</span>
                 </div>
                 <div class="card-body p-0">
                     <div class="mpr-form-body">
