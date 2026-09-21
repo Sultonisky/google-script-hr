@@ -238,11 +238,20 @@
             }
 
             if (form) {
-                form.addEventListener('submit', function() {
+                form.addEventListener('submit', function(e) {
+                    if (!checkbox || !checkbox.checked) {
+                        e.preventDefault();
+                        syncProceedButton();
+                        return;
+                    }
                     if (timestamp) timestamp.value = new Date().toISOString();
                     setDevice();
-                    if (checkbox && checkbox.checked && !geoRequested) {
+                    if (!geoRequested) {
                         markLocationUnavailable();
+                    }
+                    if (button) button.disabled = true;
+                    if (typeof window.showPublicLoader === 'function') {
+                        window.showPublicLoader('Memuat formulir');
                     }
                 });
             }

@@ -131,7 +131,7 @@
     </div>
   </div>
 
-  <script>
+  <script nonce="{{ request()->attributes->get('csp_nonce') }}">
     (function () {
       if (!window.history || !window.history.pushState) {
         return;

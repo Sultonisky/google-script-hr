@@ -7,15 +7,6 @@
 @section('robots', 'noindex,follow,noarchive')
 
 @section('content')
-    <!-- Branded submit loading overlay -->
-    <div class="public-submit-loader" id="loadingOverlay" role="status" aria-label="Mengirim data">
-        <div class="public-submit-loader-content">
-            <img class="public-loader-logo" src="{{ asset('assets/mito-red-load.png') }}" alt="MITO">
-            <div class="public-loader-dots" aria-hidden="true"><span></span><span></span><span></span></div>
-            <span class="public-submit-loader-label">Mengirim data...</span>
-        </div>
-    </div>
-
     <!-- HERO (1:1 from GAS FormPendaftaran.html) -->
     <div class="hero-section">
         <div class="container">
@@ -463,9 +454,10 @@
 
         </div>
     </div>
+@endsection
 
 @section('scripts')
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         // ============================================================
         // REGIONS DATASET (1:1 from GAS js/regions.html)
         // ============================================================
@@ -967,7 +959,6 @@
         var emailValidation = null;
         var workExpSelect = null;
         var lastCompanyGroup = null;
-        var loadingOverlay = null;
         var nikInput = null;
         var birthDateInput = null;
         var ageInput = null;
@@ -1638,7 +1629,6 @@
             emailValidation = document.getElementById('emailValidation');
             workExpSelect = document.getElementById('work_experience');
             lastCompanyGroup = document.getElementById('lastCompanyGroup');
-            loadingOverlay = document.getElementById('loadingOverlay');
             nikInput = document.getElementById('nik');
             birthDateInput = document.getElementById('birth_date');
             ageInput = document.getElementById('age');
@@ -1867,8 +1857,6 @@
                 submitText.textContent = 'Mengirim...';
                 if (typeof window.showPublicLoader === 'function') {
                     window.showPublicLoader('Mengirim data');
-                } else if (loadingOverlay) {
-                    loadingOverlay.classList.add('is-active');
                 }
             });
 
@@ -1884,5 +1872,4 @@
             }
         });
     </script>
-@endsection
 @endsection
