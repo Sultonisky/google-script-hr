@@ -137,6 +137,27 @@ class PublicRecruitmentSubmissionFlowTest extends TestCase
         $response->assertSee("showPublicLoader('Memuat formulir')", false);
     }
 
+    public function test_public_layout_skips_vite_tags_when_build_files_are_missing(): void
+    {
+        $entries = ['resources/scss/app.scss', 'resources/scss/public.scss', 'resources/js/app.js'];
+        $landing = $this->onDomain('recruitment')->get(route('public.career.index'));
+        $landing->assertOk();
+
+        $outsource = $this->onDomain('outsource')->get(route('public.outsource.apply'));
+        $outsource->assertOk();
+
+        if (\App\Support\FrontendAssets::ready($entries)) {
+            $landing->assertSee('/build/assets/', false);
+            $outsource->assertSee('/build/assets/', false);
+            return;
+        }
+
+        $landing->assertSee('cdn.jsdelivr.net/npm/bootstrap', false);
+        $landing->assertDontSee('/build/assets/', false);
+        $outsource->assertSee('cdn.jsdelivr.net/npm/bootstrap', false);
+        $outsource->assertDontSee('/build/assets/', false);
+    }
+
     private function validPayload(): array
     {
         return [
