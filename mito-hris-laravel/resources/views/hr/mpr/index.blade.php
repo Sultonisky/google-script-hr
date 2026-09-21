@@ -591,12 +591,13 @@
                                         </div>
                                     </div>
                                     <div class="col-12">
-                                        <label class="form-label fw-semibold small">Benefits / Tunjangan <span class="text-danger">*</span></label>
+                                        <label class="form-label fw-semibold small">Benefits / Tunjangan <span class="text-danger">*</span>
+                                            <span class="text-muted fw-normal">(boleh pilih lebih dari satu)</span></label>
                                         <div class="border rounded p-2 row g-1">
                                             @foreach ($mprOptions['benefits'] ?? [] as $benefitKey => $benefitLabel)
                                                 <div class="col-md-4 col-6">
                                                     <div class="form-check">
-                                                        <input class="form-check-input" type="radio" name="benefits[]"
+                                                        <input class="form-check-input" type="checkbox" name="benefits[]"
                                                             value="{{ $benefitKey }}" id="mgbn_{{ $benefitKey }}">
                                                         <label class="form-check-label small" for="mgbn_{{ $benefitKey }}">{{ $benefitLabel }}</label>
                                                     </div>
@@ -1177,12 +1178,13 @@
                                         </div>
                                         <div class="col-12">
                                             <label class="form-label fw-semibold small">Benefits / Tunjangan <span
-                                                    class="text-danger">*</span></label>
+                                                    class="text-danger">*</span>
+                                                <span class="text-muted fw-normal">(boleh pilih lebih dari satu)</span></label>
                                             <div class="border rounded p-2 row g-1">
                                                 @foreach ($mprOptions['benefits'] ?? [] as $benefitKey => $benefitLabel)
                                                     <div class="col-md-4 col-6">
                                                         <div class="form-check">
-                                                            <input class="form-check-input" type="radio"
+                                                            <input class="form-check-input" type="checkbox"
                                                                 name="benefits[]" value="{{ $benefitKey }}"
                                                                 id="hrbn_{{ $benefitKey }}">
                                                             <label class="form-check-label small"
@@ -1439,12 +1441,13 @@
                                         </div>
                                     </div>
                                     <div class="col-12">
-                                        <label class="form-label small fw-semibold">Benefits / Tunjangan <span class="text-danger">*</span></label>
+                                        <label class="form-label small fw-semibold">Benefits / Tunjangan <span class="text-danger">*</span>
+                                            <span class="text-muted fw-normal">(boleh pilih lebih dari satu)</span></label>
                                         <div class="border rounded p-2 row g-1">
                                             @foreach ($mprOptions['benefits'] ?? [] as $benefitKey => $benefitLabel)
                                                 <div class="col-md-4 col-6">
                                                     <div class="form-check">
-                                                        <input class="form-check-input" type="radio" name="benefits[]"
+                                                        <input class="form-check-input" type="checkbox" name="benefits[]"
                                                             value="{{ $benefitKey }}" id="editbn_{{ $benefitKey }}">
                                                         <label class="form-check-label small" for="editbn_{{ $benefitKey }}">{{ $benefitLabel }}</label>
                                                     </div>
@@ -1583,17 +1586,14 @@
 
             /**
              * Logika Shifting (shared helper — digunakan di semua form MPR):
-             * - Shifting dipilih → radio hari kerja lain + jam kerja di-disable & uncheck,
-             *   textarea detail shift: enabled, required, border highlight
-             * - Hari kerja lain dipilih → semua radio kembali enabled,
-             *   textarea detail shift: disabled, not required, value dikosongkan
+             * - Shifting dipilih → jam kerja di-disable & uncheck, textarea detail shift aktif
+             * - Hari kerja lain tetap bisa diklik agar user bisa ganti opsi
+             * - Hari kerja lain dipilih → jam kerja kembali enabled, textarea detail shift dikosongkan
              */
             function applyShiftingState(form) {
                 if (!form) return;
 
                 const shiftingCb   = form.querySelector('input[name="working_days[]"][value="shifting"]');
-                const otherDayCbs  = Array.from(form.querySelectorAll('input[name="working_days[]"]'))
-                                         .filter(cb => cb.value !== 'shifting');
                 const hourCbs      = Array.from(form.querySelectorAll('input[name="working_hours[]"]'));
                 const shiftField   = form.querySelector('[id$="ShiftDetailField"]');
                 const requiredMark = form.querySelector('[id$="ShiftDetailRequiredMark"]');
@@ -1601,18 +1601,6 @@
 
                 if (!shiftingCb) return;
                 const isShifting = shiftingCb.checked;
-
-                // Hari Kerja lain
-                otherDayCbs.forEach(cb => {
-                    if (isShifting) {
-                        cb.checked  = false;
-                        cb.disabled = true;
-                        cb.closest('.form-check')?.classList.add('opacity-50');
-                    } else {
-                        cb.disabled = false;
-                        cb.closest('.form-check')?.classList.remove('opacity-50');
-                    }
-                });
 
                 // Jam Kerja
                 hourCbs.forEach(cb => {
