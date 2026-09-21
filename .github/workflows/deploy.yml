@@ -6,7 +6,6 @@ on:
       - "CI - MITO HRIS"
     types:
       - completed
-
   workflow_dispatch:
 
 permissions:
@@ -25,10 +24,8 @@ jobs:
         github.event.workflow_run.event == 'push' &&
         github.event.workflow_run.head_branch == 'main'
       )
-
     runs-on: ubuntu-latest
     timeout-minutes: 30
-
     environment:
       name: production
 
@@ -40,10 +37,8 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           command_timeout: 30m
-
           script: |
             set -Eeuo pipefail
-
             trap 'echo "Deployment failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
 
             echo "== Server identity =="
@@ -72,15 +67,11 @@ jobs:
             echo "Commit: $DEPLOY_SHA"
 
             echo "== Updating source =="
-
             cd "$REPO_DIR"
-
             git fetch --prune origin main
-
             git reset --hard "$DEPLOY_SHA"
 
             echo "== Verifying deployed commit =="
-
             test "$(git rev-parse HEAD)" = "$DEPLOY_SHA" || {
               echo "Server checkout does not match CI commit." >&2
               echo "Expected: $DEPLOY_SHA" >&2
@@ -102,34 +93,27 @@ jobs:
             echo "App directory: $APP_DIR"
 
             echo "== Building HRIS Docker image =="
-
             cd "$COMPOSE_DIR"
-
             docker compose build hris-app
 
             echo "== Updating containers =="
-
             docker compose up -d hris-app hris-nginx
 
             echo "== Waiting for HRIS container =="
-
             for i in {1..30}; do
               if docker inspect -f '{{.State.Running}}' hris-app 2>/dev/null | grep -q true; then
                 echo "hris-app is running."
                 break
               fi
-
               if [ "$i" -eq 30 ]; then
                 echo "hris-app failed to start." >&2
                 docker logs --tail 100 hris-app >&2 || true
                 exit 1
               fi
-
               sleep 2
             done
 
             echo "== Publishing Vite assets for nginx =="
-
             docker exec hris-app php artisan mito:verify-frontend
 
             BUILD_PATH="$(docker exec hris-app php artisan mito:verify-frontend --build-path | tail -n 1 | tr -d '\r')"
@@ -143,7 +127,6 @@ jobs:
               | tar \
                   --no-same-owner \
                   --no-same-permissions \
-                  --overwrite \
                   --no-overwrite-dir \
                   -xf - \
                   -C "$APP_DIR/public/build"
@@ -155,33 +138,27 @@ jobs:
             echo "Vite assets published successfully."
 
             echo "== Applying database migrations =="
-
             docker exec hris-app php artisan migrate --force
 
             echo "== Running MITO diagnostics =="
-
             docker exec hris-app php artisan optimize:clear
             docker exec hris-app php artisan mito:diagnose
 
             echo "== Checking Google Sheets =="
-
             docker exec hris-app php artisan mito:health-check
             docker exec hris-app php artisan mito:setup-sheets --fix --no-interaction
             docker exec hris-app php artisan mito:validate-schema
             docker exec hris-app php artisan mito:sync
 
             echo "== Laravel optimization =="
-
             docker exec hris-app php artisan config:cache
             docker exec hris-app php artisan route:cache
             docker exec hris-app php artisan view:cache
 
             echo "== Post-deploy application check =="
-
             docker exec hris-app php artisan about >/dev/null
 
             echo "== Container status =="
-
             docker compose ps
 
             echo "== Deployment completed successfully =="
