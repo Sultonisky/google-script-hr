@@ -411,7 +411,6 @@
                                 <small class="text-white">Isi data kebutuhan tenaga kerja untuk diproses oleh Tim
                                     HR</small>
                             </div>
-                            <span class="badge text-primary fw-bold px-3 py-2" style="background: var(--color-surface); border: 1px solid var(--color-border);">Role: Manpower</span>
                         </div>
                         <div class="card-body p-4 mpr-form-body">
 
