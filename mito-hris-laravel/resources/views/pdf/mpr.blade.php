@@ -297,7 +297,7 @@
                         // MITO Group: MSI, MEP, PII → logo mito-pdf.png
                         // Stein Group: SPI atau lainnya → logo stein.jpg
                         $isMitoGroup = in_array($entityCode, ['MSI', 'MEP', 'PII']);
-                        $logoPath = $isMitoGroup ? public_path('assets/mito-red.png') : public_path('assets/stein-pdf.png');
+                        $logoPath = $isMitoGroup ? public_path('assets/mito-pdf.png') : public_path('assets/stein-pdf.png');
                         $logoBase64 = file_exists($logoPath)
                             ? 'data:image/' .
                                 ($isMitoGroup ? 'png' : 'jpeg') .
