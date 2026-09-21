@@ -99,24 +99,7 @@ jobs:
               exit 1
             fi
 
-            echo "== Building Vite assets =="
             echo "App directory: $APP_DIR"
-
-            rm -rf "$APP_DIR/public/build"
-
-            docker run --rm \
-              -v "$APP_DIR:/app" \
-              -w /app \
-              node:20-bookworm \
-              bash -lc 'set -Eeuo pipefail
-                if [ -f package-lock.json ]; then
-                  npm ci --no-audit --no-fund
-                else
-                  npm install --no-audit --no-fund
-                fi
-                npm run build
-                test -f public/build/manifest.json
-              '
 
             echo "== Building HRIS Docker image =="
 
@@ -145,15 +128,17 @@ jobs:
               sleep 2
             done
 
-            echo "== Syncing Vite assets into HRIS container =="
-
-            CONTAINER_PUBLIC="$(docker exec hris-app php -r 'echo public_path();')"
-            docker exec hris-app mkdir -p "$CONTAINER_PUBLIC/build"
-            docker cp "$APP_DIR/public/build/." "hris-app:${CONTAINER_PUBLIC}/build/"
-
-            echo "== Verifying frontend assets =="
+            echo "== Publishing Vite assets for nginx =="
 
             docker exec hris-app php artisan mito:verify-frontend
+
+            BUILD_PATH="$(docker exec hris-app php artisan mito:verify-frontend --build-path | tail -n 1 | tr -d '\r')"
+            test -n "$BUILD_PATH"
+            mkdir -p "$APP_DIR/public/build"
+            docker cp "hris-app:${BUILD_PATH}/." "$APP_DIR/public/build/"
+            test -f "$APP_DIR/public/build/manifest.json"
+            ls "$APP_DIR/public/build/assets"/app-*.js >/dev/null
+            ls "$APP_DIR/public/build/assets"/public-*.css >/dev/null
 
             echo "== Applying database migrations =="
 

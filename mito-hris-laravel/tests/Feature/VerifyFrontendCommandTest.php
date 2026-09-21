@@ -13,6 +13,9 @@ class VerifyFrontendCommandTest extends TestCase
 
         if (is_file($manifest)) {
             $result->assertSuccessful();
+            $this->artisan('mito:verify-frontend', ['--build-path' => true])
+                ->expectsOutputToContain(public_path('build'))
+                ->assertSuccessful();
 
             return;
         }
