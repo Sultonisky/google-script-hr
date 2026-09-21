@@ -135,8 +135,8 @@ jobs:
             BUILD_PATH="$(docker exec hris-app php artisan mito:verify-frontend --build-path | tail -n 1 | tr -d '\r')"
             test -n "$BUILD_PATH"
 
-            rm -rf "$APP_DIR/public/build"
-            mkdir -p "$APP_DIR/public/build"
+            sudo rm -rf "$APP_DIR/public/build"
+            sudo mkdir -p "$APP_DIR/public/build"
 
             docker exec hris-app tar \
               -C "$BUILD_PATH" \
@@ -147,6 +147,8 @@ jobs:
                   --no-overwrite-dir \
                   -xf - \
                   -C "$APP_DIR/public/build"
+
+            sudo chown -R "${USER}:${USER}" "$APP_DIR/public/build
 
             test -f "$APP_DIR/public/build/manifest.json"
             ls "$APP_DIR/public/build/assets"/app-*.js >/dev/null
