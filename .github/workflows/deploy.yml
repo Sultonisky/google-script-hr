@@ -90,6 +90,34 @@ jobs:
 
             echo "Deploying commit: $(git rev-parse --short HEAD)"
 
+            if [ -f "$REPO_DIR/mito-hris-laravel/package.json" ]; then
+              APP_DIR="$REPO_DIR/mito-hris-laravel"
+            elif [ -f "$REPO_DIR/package.json" ]; then
+              APP_DIR="$REPO_DIR"
+            else
+              echo "Cannot find Laravel package.json under $REPO_DIR" >&2
+              exit 1
+            fi
+
+            echo "== Building Vite assets =="
+            echo "App directory: $APP_DIR"
+
+            rm -rf "$APP_DIR/public/build"
+
+            docker run --rm \
+              -v "$APP_DIR:/app" \
+              -w /app \
+              node:20-bookworm \
+              bash -lc 'set -Eeuo pipefail
+                if [ -f package-lock.json ]; then
+                  npm ci --no-audit --no-fund
+                else
+                  npm install --no-audit --no-fund
+                fi
+                npm run build
+                test -f public/build/manifest.json
+              '
+
             echo "== Building HRIS Docker image =="
 
             cd "$COMPOSE_DIR"
@@ -116,6 +144,16 @@ jobs:
 
               sleep 2
             done
+
+            echo "== Syncing Vite assets into HRIS container =="
+
+            CONTAINER_PUBLIC="$(docker exec hris-app php -r 'echo public_path();')"
+            docker exec hris-app mkdir -p "$CONTAINER_PUBLIC/build"
+            docker cp "$APP_DIR/public/build/." "hris-app:${CONTAINER_PUBLIC}/build/"
+
+            echo "== Verifying frontend assets =="
+
+            docker exec hris-app php artisan mito:verify-frontend
 
             echo "== Applying database migrations =="
 

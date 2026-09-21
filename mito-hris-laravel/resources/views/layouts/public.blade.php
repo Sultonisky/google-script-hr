@@ -137,7 +137,12 @@
         }
     </style>
 
-    @vite(['resources/scss/app.scss', 'resources/scss/public.scss', 'resources/js/app.js'])
+    @if (\App\Support\FrontendAssets::ready(['resources/scss/app.scss', 'resources/scss/public.scss', 'resources/js/app.js']))
+        @vite(['resources/scss/app.scss', 'resources/scss/public.scss', 'resources/js/app.js'])
+    @else
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+    @endif
     @yield('styles')
     <style>
         :root {
