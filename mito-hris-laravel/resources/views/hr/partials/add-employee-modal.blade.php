@@ -409,7 +409,7 @@
     </div>
 </div>
 
-<script>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
 (function () {
     'use strict';
 
@@ -679,6 +679,44 @@
 
     // BPJS Kesehatan — optional, digits only
     function validateBpjsKes() { validateDigitField('aeBpjsKes', 'bpjsKes', 0, true); }
+
+    function validateOrgField(elId, errorKey) {
+        var el = document.getElementById(elId);
+        if (!el) return;
+        var v = el.value.trim();
+
+        if (v === '') {
+            clearState(el);
+            fieldErrors[errorKey] = false;
+            checkForm();
+            return;
+        }
+
+        if (RX_ORG.test(v)) {
+            setValid(el);
+            fieldErrors[errorKey] = false;
+        } else {
+            setInvalid(el);
+            fieldErrors[errorKey] = true;
+        }
+        checkForm();
+    }
+
+    // Employee ID — optional, digits only, max 12
+    function validateEmployeeId() {
+        var el = document.getElementById('aeEmployeeIdPreview');
+        if (el) {
+            var digits = el.value.replace(/\D/g, '').slice(0, EMP_ID_MAX);
+            if (digits !== el.value) {
+                el.value = digits;
+            }
+        }
+        validateDigitField('aeEmployeeIdPreview', 'employeeId', 0, true);
+    }
+
+    function validateDivision() { validateOrgField('aeDivision', 'division'); }
+    function validateJobPositionLocation() { validateOrgField('aeJobPositionLocation', 'jobPositionLocation'); }
+    function validateJobPosition() { validateOrgField('aeJobPosition', 'jobPosition'); }
 
     // ═══════════════════════════════════════════════════════════════════════
     // ATTACH LISTENERS

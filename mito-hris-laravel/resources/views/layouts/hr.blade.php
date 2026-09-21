@@ -21,7 +21,7 @@
         })();
     </script>
 
-    @vite(['resources/scss/app.scss', 'resources/scss/hr.scss', 'resources/js/app.js', 'resources/js/page-loader.js', 'resources/js/csp-hardening.js'])
+    @vite(['resources/scss/app.scss', 'resources/scss/hr.scss', 'resources/js/app.js', 'resources/js/page-loader.js'])
     @yield('styles')
 </head>
 
@@ -63,7 +63,7 @@
     @include('components.hr-drawer')
 
     <!-- Core Scripts for Burger, Theme & FAB -->
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         // Drawer Functions (1:1 from GAS js/drawer.html)
         var activeCandidateId = null;
         var _activeDrawerCandidate = null;

@@ -6,7 +6,7 @@
 @endphp
 
 @if ($flashToasts->isNotEmpty())
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         window.__flashToasts = @json($flashToasts);
     </script>
 @endif
