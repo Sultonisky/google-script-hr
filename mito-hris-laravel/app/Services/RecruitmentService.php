@@ -375,7 +375,7 @@ class RecruitmentService
             $employeeId = $this->idGenerator->generate($joinDate !== '' ? $joinDate : null);
         }
 
-        $titles = $this->composeEmployeeJobTitles($position, $jobLevel, $lokasiKerja);
+        $titles = self::composeEmployeeJobTitles($position, $jobLevel, $lokasiKerja);
 
         // -- Nomor PKWT (generate bila kosong) --------------------
         $contractNumber = trim($contractData['contract_number'] ?? '');
@@ -471,7 +471,7 @@ class RecruitmentService
      *
      * @return array{jobPosition:string, jobPositionLocation:string}
      */
-    private function composeEmployeeJobTitles(?string $position, ?string $jobLevel, ?string $lokasiKerja): array
+    public static function composeEmployeeJobTitles(?string $position, ?string $jobLevel, ?string $lokasiKerja): array
     {
         $title = trim((string) $position);
         $level = trim((string) $jobLevel);

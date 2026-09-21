@@ -146,13 +146,12 @@
             .querySelectorAll("[data-sanitize-npwp]")
             .forEach(function (field) {
                 const sanitize = function () {
-                    field.value = field.value
-                        .replace(/[^0-9.\-]/g, "")
-                        .substring(0, 20);
+                    field.value = field.value.replace(/\D+/g, "").substring(0, 16);
                 };
 
                 field.addEventListener("input", sanitize);
                 field.addEventListener("blur", sanitize);
+                sanitize();
             });
 
         document

@@ -7,6 +7,28 @@
 @section('robots', 'noindex,follow,noarchive')
 
 @section('content')
+    <style>
+        #formPendaftaran.nik-duplicate-locked .form-section:not(#sectionPersonal),
+        #formPendaftaran.nik-duplicate-locked .card {
+            opacity: 0.55;
+            pointer-events: none;
+            filter: grayscale(0.12);
+        }
+
+        #formPendaftaran.nik-duplicate-locked #sectionPersonal .form-section-body .row > [class*="col-"]:not(:first-child) {
+            opacity: 0.55;
+            pointer-events: none;
+        }
+
+        #nik.nik-duplicate {
+            border-color: #dc2626;
+            background: #fff5f5;
+        }
+
+        #nikLockBanner {
+            border-radius: 14px;
+        }
+    </style>
     <!-- HERO (1:1 from GAS FormPendaftaran.html) -->
     <div class="hero-section">
         <div class="container">
@@ -58,6 +80,14 @@
             <div id="registrationForm">
                 <form action="{{ route('public.career.store') }}" method="POST" id="formPendaftaran" novalidate>
                     @csrf
+                    <div id="nikLockBanner" class="alert alert-danger d-none p-3 mb-4 d-flex align-items-start gap-2" role="alert">
+                        <i class="bi bi-exclamation-octagon-fill fs-5 flex-shrink-0 mt-1"></i>
+                        <div>
+                            <strong id="nikLockBannerTitle">NIK sudah terdaftar.</strong>
+                            <div id="nikLockBannerMessage" class="mt-1" style="font-size:13px;"></div>
+                            <div class="mt-1" style="font-size:12px;">Ubah NIK di kolom identitas untuk membuka kembali formulir. Tombol kirim dan seluruh isian lain dikunci sampai NIK unik terdeteksi.</div>
+                        </div>
+                    </div>
                     <input type="hidden" name="consent_timestamp" id="consentTimestamp">
                     <input type="hidden" name="consent_device" id="consentDevice">
                     <input type="hidden" name="consent_latitude" id="consentLatitude">
@@ -95,6 +125,7 @@
                                             untuk proses rekrutmen.</div>
                                     </div>
                                     <div class="nik-feedback mt-2" id="nikFeedback"></div>
+                                    <div class="mt-2" id="nikDuplicateWarning" role="alert" aria-live="assertive"></div>
                                 </div>
 
                                 <div class="col-md-12">
@@ -976,8 +1007,11 @@
         var phoneInput = null;
         var salaryInput = null;
         var nikDuplicateWarning = null;
+        var nikLockBanner = null;
         var nikIsBlocked = false;
         var nikCheckTimer = null;
+        var nikCheckSeq = 0;
+        var nikCheckPending = false;
         var SUBMISSION_FLAG = 'mito_career_submitted';
         var manualBirthDateChanged = false;
         var isSubmitting = false;
@@ -1101,8 +1135,29 @@
                 submitBtn.disabled = true;
             }
             var hint = document.getElementById('agreementHint');
-            if (hint) hint.style.display = allComplete ? 'none' : 'block';
-            submitBtn.disabled = !(allComplete && agreementCheckbox.checked);
+            if (hint) hint.style.display = (allComplete && !nikIsBlocked) ? 'none' : 'block';
+            if (nikIsBlocked) {
+                agreementCheckbox.setAttribute('data-unlocked', '0');
+                agreementCheckbox.checked = false;
+                agreementCheckbox.style.cursor = 'not-allowed';
+                agreementCheckbox.style.opacity = '0.5';
+                agreementCheckbox.onclick = function() {
+                    return false;
+                };
+                agreementCheckbox.onfocus = function() {
+                    this.blur();
+                };
+                if (hint) {
+                    hint.style.display = 'block';
+                    hint.innerHTML = '<i class="bi bi-exclamation-octagon-fill me-1"></i> NIK sudah terdaftar. Ubah NIK agar formulir dan tombol kirim dapat digunakan kembali.';
+                }
+                submitBtn.disabled = true;
+                return;
+            }
+            if (hint && !allComplete) {
+                hint.innerHTML = '<i class="bi bi-info-circle-fill me-1"></i> Lengkapi seluruh data pada semua bagian terlebih dahulu untuk mengaktifkan persetujuan.';
+            }
+            submitBtn.disabled = nikIsBlocked || nikCheckPending || !(allComplete && agreementCheckbox.checked);
         }
 
         var progressMessages = [{
@@ -1293,7 +1348,8 @@
             };
         }
 
-        function processNIK(nik) {
+        function applyNikAutofill(nik) {
+            if (nikIsBlocked) return;
             var r = parseNIK(nik);
             if (!r) {
                 showNIKFeedback(false);
@@ -1317,7 +1373,6 @@
                     citySelect.value = r.cityCode;
                     validateField(citySelect);
                     loadDistricts(r.cityCode);
-                    // BUG FIX #2: sync kotaNama from NIK autofill
                     var kotaNamaInput = document.getElementById('kotaNama');
                     if (kotaNamaInput) {
                         kotaNamaInput.value = cityName;
@@ -1326,7 +1381,63 @@
             }
             showNIKFeedback(true, r);
             updateProgress();
-            scheduleNikAvailabilityCheck(nik);
+        }
+
+        function clearNikAutofill() {
+            manualBirthDateChanged = false;
+            if (birthDateInput) {
+                birthDateInput.value = '';
+                birthDateInput.classList.remove('is-valid', 'is-invalid');
+            }
+            if (ageInput) {
+                ageInput.value = '';
+                ageInput.classList.remove('is-valid', 'is-invalid');
+            }
+            if (genderSelect) {
+                genderSelect.value = '';
+                genderSelect.classList.remove('is-valid', 'is-invalid');
+            }
+            if (provinceSelect) {
+                provinceSelect.value = '';
+                provinceSelect.classList.remove('is-valid', 'is-invalid');
+            }
+            if (citySelect) {
+                populateCities('');
+                citySelect.classList.remove('is-valid', 'is-invalid');
+            }
+            var kotaNamaInput = document.getElementById('kotaNama');
+            if (kotaNamaInput) kotaNamaInput.value = '';
+            if (districtInput) resetDistrict();
+        }
+
+        function lockFormExceptNik(locked) {
+            if (!form) return;
+            form.classList.toggle('nik-duplicate-locked', !!locked);
+            var controls = form.querySelectorAll('input, select, textarea, button');
+            controls.forEach(function(el) {
+                if (el.id === 'nik') return;
+                if (el.type === 'hidden' || el.name === '_token') return;
+                if (locked) {
+                    if (!el.hasAttribute('data-nik-lock-prev')) {
+                        el.setAttribute('data-nik-lock-prev', el.disabled ? '1' : '0');
+                    }
+                    el.disabled = true;
+                    el.setAttribute('aria-disabled', 'true');
+                } else if (el.hasAttribute('data-nik-lock-prev')) {
+                    el.disabled = el.getAttribute('data-nik-lock-prev') === '1';
+                    el.removeAttribute('data-nik-lock-prev');
+                    el.removeAttribute('aria-disabled');
+                }
+            });
+        }
+
+        function showNikChecking() {
+            if (nikFeedback) {
+                nikFeedback.classList.add('show');
+                nikFeedback.innerHTML =
+                    '<div class="alert alert-info p-2 mb-0" style="font-size:12px"><i class="bi bi-hourglass-split me-1"></i> <strong>Memeriksa NIK...</strong> Sistem memastikan NIK belum terdaftar sebelum mengisi data otomatis.</div>';
+            }
+            if (nikDuplicateWarning) nikDuplicateWarning.innerHTML = '';
         }
 
         function getCsrfToken() {
@@ -1336,21 +1447,63 @@
 
         function setNikBlocked(blocked, message) {
             nikIsBlocked = !!blocked;
-            if (!nikDuplicateWarning) return;
+            var duplicateMessage = message || 'NIK ini sudah terdaftar. Setiap NIK hanya dapat digunakan untuk satu kali pendaftaran.';
             if (blocked) {
-                nikDuplicateWarning.innerHTML =
-                    '<div class="alert alert-danger p-2 mb-0" style="font-size:12px"><i class="bi bi-exclamation-octagon-fill me-1"></i> <strong>' +
-                    (message || 'NIK ini sudah terdaftar. Setiap NIK hanya dapat digunakan untuk satu kali pendaftaran.') +
-                    '</strong></div>';
+                clearNikAutofill();
+                lockFormExceptNik(true);
+                if (nikInput) {
+                    nikInput.classList.add('is-invalid', 'nik-duplicate');
+                    nikInput.classList.remove('is-valid');
+                    nikInput.setAttribute('aria-invalid', 'true');
+                }
+                if (nikFeedback) nikFeedback.innerHTML = '';
+                if (nikDuplicateWarning) {
+                    nikDuplicateWarning.innerHTML =
+                        '<div class="alert alert-danger p-3 mb-0" style="font-size:13px"><i class="bi bi-exclamation-octagon-fill me-1"></i> <strong>' +
+                        duplicateMessage +
+                        '</strong><div class="mt-1" style="font-size:12px;">Data otomatis dari NIK tidak diisi. Seluruh isian dan tombol kirim dikunci. Ubah NIK untuk membuka kembali formulir.</div></div>';
+                }
+                if (nikLockBanner) {
+                    nikLockBanner.classList.remove('d-none');
+                    var bannerMsg = document.getElementById('nikLockBannerMessage');
+                    if (bannerMsg) bannerMsg.textContent = duplicateMessage;
+                }
                 if (submitBtn) submitBtn.disabled = true;
+                if (typeof window.showToast === 'function') {
+                    window.showToast({
+                        type: 'error',
+                        title: 'NIK sudah terdaftar',
+                        message: duplicateMessage
+                    });
+                }
             } else {
-                nikDuplicateWarning.innerHTML = '';
+                lockFormExceptNik(false);
+                if (nikInput) {
+                    nikInput.classList.remove('nik-duplicate');
+                    nikInput.setAttribute('aria-invalid', 'false');
+                    if (nikInput.value && nikInput.checkValidity()) {
+                        nikInput.classList.remove('is-invalid');
+                        nikInput.classList.add('is-valid');
+                    }
+                }
+                if (nikDuplicateWarning) nikDuplicateWarning.innerHTML = '';
+                if (nikLockBanner) nikLockBanner.classList.add('d-none');
             }
             updateProgress();
+            if (blocked && nikInput) {
+                nikInput.focus();
+                if (nikDuplicateWarning && typeof nikDuplicateWarning.scrollIntoView === 'function') {
+                    nikDuplicateWarning.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                }
+            }
         }
 
         function scheduleNikAvailabilityCheck(nik) {
-            setNikBlocked(false);
+            nikCheckPending = true;
+            if (submitBtn) submitBtn.disabled = true;
             if (nikCheckTimer) clearTimeout(nikCheckTimer);
             nikCheckTimer = setTimeout(function() {
                 checkNikAvailability(nik);
@@ -1358,6 +1511,7 @@
         }
 
         function checkNikAvailability(nik) {
+            var seq = ++nikCheckSeq;
             fetch('{{ route('public.career.nik-check') }}', {
                 method: 'POST',
                 headers: {
@@ -1373,12 +1527,21 @@
                     return { status: res.status, data: data };
                 });
             }).then(function(result) {
+                if (seq !== nikCheckSeq) return;
                 if (String(nikInput.value || '') !== String(nik)) return;
+                nikCheckPending = false;
                 if (result.data && result.data.available === false) {
                     setNikBlocked(true, result.data.message);
+                    return;
                 }
+                setNikBlocked(false);
+                applyNikAutofill(nik);
             }).catch(function() {
-                // Keep the form usable if the probe fails; server still enforces uniqueness.
+                if (seq !== nikCheckSeq) return;
+                if (String(nikInput.value || '') !== String(nik)) return;
+                nikCheckPending = false;
+                setNikBlocked(false);
+                applyNikAutofill(nik);
             });
         }
 
@@ -1401,6 +1564,7 @@
         }
 
         function showNIKFeedback(success, r) {
+            if (nikIsBlocked) return;
             nikFeedback.classList.add('show');
             if (success) {
                 var det = ['Tanggal Lahir: ' + r.birthDate.formatted, 'Jenis Kelamin: ' + r.gender];
@@ -1422,6 +1586,11 @@
         // ============================================================
         function validateField(el) {
             if (!el) return;
+            if (el.id === 'nik' && nikIsBlocked) {
+                el.classList.add('is-invalid', 'nik-duplicate');
+                el.classList.remove('is-valid');
+                return;
+            }
             if (el.id === 'birth_date') {
                 validateBirthDate();
                 return;
@@ -1640,30 +1809,35 @@
             districtManualWrap = document.getElementById('districtManualWrap');
             districtManualInput = document.getElementById('districtManual');
             nikFeedback = document.getElementById('nikFeedback');
+            nikDuplicateWarning = document.getElementById('nikDuplicateWarning');
+            nikLockBanner = document.getElementById('nikLockBanner');
             progressFill = document.getElementById('progressFill');
             progressCount = document.getElementById('progressCount');
             progressMessage = document.getElementById('progressMessage');
             phoneInput = document.getElementById('phone');
             salaryInput = document.getElementById('expected_salary');
 
-            // Inject duplicate NIK warning element after nikFeedback
-            nikDuplicateWarning = document.createElement('div');
-            nikDuplicateWarning.className = 'mt-1';
-            nikDuplicateWarning.id = 'nikDuplicateWarning';
-            nikFeedback.parentNode.insertBefore(nikDuplicateWarning, nikFeedback.nextSibling);
-
             populateProvinces();
             attachBirthDateListeners();
 
-            // NIK input
+            // NIK input — uniqueness check first; autofill only after NIK is available.
             nikInput.addEventListener('input', function() {
                 var nik = this.value.replace(/[^0-9]/g, '').substring(0, 16);
                 this.value = nik;
-                setNikBlocked(false);
-                if (nik.length === 16) processNIK(nik);
-                else nikFeedback.innerHTML = nik.length > 0 ?
-                    '<span class="text-muted" style="font-size:12px">Ketik 16 digit NIK... (' + nik.length +
-                    '/16)</span>' : '';
+                if (nikCheckTimer) clearTimeout(nikCheckTimer);
+                nikCheckSeq++;
+                if (nik.length === 16) {
+                    clearNikAutofill();
+                    showNikChecking();
+                    scheduleNikAvailabilityCheck(nik);
+                } else {
+                    nikCheckPending = false;
+                    setNikBlocked(false);
+                    clearNikAutofill();
+                    nikFeedback.innerHTML = nik.length > 0 ?
+                        '<span class="text-muted" style="font-size:12px">Ketik 16 digit NIK... (' + nik.length +
+                        '/16)</span>' : '';
+                }
                 validateField(this);
                 updateProgress();
             });
@@ -1819,7 +1993,7 @@
                     showAlreadySubmittedPage();
                     return;
                 }
-                if (nikIsBlocked) {
+                if (nikIsBlocked || nikCheckPending) {
                     e.preventDefault();
                     nikInput.focus();
                     return;
@@ -1859,6 +2033,17 @@
                     window.showPublicLoader('Mengirim data');
                 }
             });
+
+            var initialNik = (nikInput.value || '').replace(/[^0-9]/g, '').substring(0, 16);
+            var serverError = @json(session('error'));
+            if (initialNik.length === 16) {
+                if (serverError && /sudah terdaftar|daftar hitam/i.test(String(serverError))) {
+                    setNikBlocked(true, serverError);
+                } else {
+                    showNikChecking();
+                    scheduleNikAvailabilityCheck(initialNik);
+                }
+            }
 
             updateProgress();
         }
