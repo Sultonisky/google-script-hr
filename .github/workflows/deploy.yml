@@ -134,11 +134,23 @@ jobs:
 
             BUILD_PATH="$(docker exec hris-app php artisan mito:verify-frontend --build-path | tail -n 1 | tr -d '\r')"
             test -n "$BUILD_PATH"
+
             mkdir -p "$APP_DIR/public/build"
-            docker cp "hris-app:${BUILD_PATH}/." "$APP_DIR/public/build/"
+
+            docker exec hris-app tar \
+              -C "$BUILD_PATH" \
+              -cf - . \
+              | tar \
+                  --no-same-owner \
+                  --no-same-permissions \
+                  -xf - \
+                  -C "$APP_DIR/public/build"
+
             test -f "$APP_DIR/public/build/manifest.json"
             ls "$APP_DIR/public/build/assets"/app-*.js >/dev/null
             ls "$APP_DIR/public/build/assets"/public-*.css >/dev/null
+
+            echo "Vite assets published successfully."
 
             echo "== Applying database migrations =="
 
