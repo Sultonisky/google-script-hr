@@ -96,6 +96,40 @@ class DiagnoseCommand extends Command
                     ? 'OK (' . count($roles) . ' internal roles, ' . count($requestorRoles) . ' requestor roles)'
                     : 'FAIL (no roles defined)';
             },
+            'Vite build assets' => function () {
+                $manifest = public_path('build/manifest.json');
+                if (!is_file($manifest)) {
+                    return 'WARN: public/build/manifest.json missing (run npm run build)';
+                }
+
+                $entries = json_decode((string) file_get_contents($manifest), true);
+                if (!is_array($entries) || $entries === []) {
+                    return 'WARN: Vite manifest is empty or invalid';
+                }
+
+                $missing = [];
+                foreach ($entries as $entry) {
+                    $file = is_array($entry) ? ($entry['file'] ?? null) : null;
+                    if (!is_string($file) || $file === '') {
+                        continue;
+                    }
+
+                    $absolute = public_path('build/' . ltrim($file, '/'));
+                    if (!is_file($absolute)) {
+                        $missing[] = $file;
+                    }
+
+                    if (count($missing) >= 3) {
+                        break;
+                    }
+                }
+
+                if ($missing !== []) {
+                    return 'WARN: missing built files: ' . implode(', ', $missing);
+                }
+
+                return 'OK (' . count($entries) . ' manifest entries)';
+            },
             'MPR Requestor Sheet' => function () use ($sheets) {
                 try {
                     $sheetName = config('google.sheets.mpr_requestor', 'mpr_requestor');

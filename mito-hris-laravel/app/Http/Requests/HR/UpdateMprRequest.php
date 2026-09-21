@@ -56,7 +56,7 @@ class UpdateMprRequest extends FormRequest
                     }
                 },
             ],
-            'benefits'              => ['nullable', 'array', 'max:1'],
+            'benefits'              => ['nullable', 'array'],
             'benefits.*'            => ['nullable', 'string', Rule::in(array_keys(config('hris.mpr_form_options.benefits', [])))],
             'education_background'  => ['nullable', 'string', Rule::in(array_keys(config('hris.mpr_form_options.education_background', [])))],
             'work_experience'       => ['nullable', 'string', Rule::in(array_keys(config('hris.mpr_form_options.work_experience', [])))],

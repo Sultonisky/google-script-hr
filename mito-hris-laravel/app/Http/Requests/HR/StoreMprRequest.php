@@ -73,8 +73,8 @@ class StoreMprRequest extends FormRequest
                     }
                 },
             ],
-            // Benefits: single radio
-            'benefits'              => ['required', 'array', 'min:1', 'max:1'],
+            // Benefits: multiple checkbox
+            'benefits'              => ['required', 'array', 'min:1'],
             'benefits.*'            => ['string', Rule::in(array_keys(config('hris.mpr_form_options.benefits', [])))],
             // Pendidikan & Pengalaman: single selection
             'education_background'  => ['required', 'string', Rule::in(array_keys(config('hris.mpr_form_options.education_background', [])))],
@@ -119,7 +119,7 @@ class StoreMprRequest extends FormRequest
             'working_hours.max'           => 'Jam Kerja hanya boleh dipilih satu.',
             'working_hours.*.in'          => 'Pilihan Jam Kerja tidak valid.',
             'benefits.required'           => 'Benefits wajib dipilih.',
-            'benefits.max'                => 'Benefits hanya boleh dipilih satu.',
+            'benefits.min'                => 'Benefits wajib dipilih minimal satu.',
             'benefits.*.in'               => 'Pilihan Benefits tidak valid.',
             'education_background.required' => 'Latar Belakang Pendidikan wajib dipilih.',
             'education_background.in'     => 'Pilihan Latar Belakang Pendidikan tidak valid.',
