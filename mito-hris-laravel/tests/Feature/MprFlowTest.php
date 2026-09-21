@@ -854,10 +854,58 @@ class MprFlowTest extends TestCase
         $this->postJson(route('hr.mpr.store'), array_merge($this->validStorePayload(), [
             'working_hours' => ['08_00_17_00', '08_30_17_30'],
         ]))->assertStatus(422)->assertJsonValidationErrors(['working_hours']);
+    }
+
+    #[Test]
+    public function store_accepts_multiple_benefits(): void
+    {
+        $this->actingAsRole('Admin', 'admin.benefits@mito.id', 'HR Admin');
+
+        $mockRepo = Mockery::mock(MprRepositoryInterface::class);
+        $mockRepo->shouldReceive('create')->once()->andReturnUsing(function (MprData $mpr) {
+            $this->assertSame('BPJS, Laptop / PC', $mpr->benefits);
+            $mpr->mprNumber ??= 'MPR-20260824-BENEFITS';
+            return $mpr;
+        });
+        $this->app->instance(MprRepositoryInterface::class, $mockRepo);
 
         $this->postJson(route('hr.mpr.store'), array_merge($this->validStorePayload(), [
             'benefits' => ['bpjs', 'laptop_pc'],
-        ]))->assertStatus(422)->assertJsonValidationErrors(['benefits']);
+        ]))->assertStatus(201);
+    }
+
+    #[Test]
+    public function create_forms_use_benefit_checkboxes_and_keep_working_days_enabled(): void
+    {
+        $this->actingAsRole('Admin', 'admin.form@mito.id', 'HR Admin');
+
+        $mockRepo = Mockery::mock(MprRepositoryInterface::class);
+        $mockRepo->shouldReceive('getAll')->andReturn(collect());
+        $this->app->instance(MprRepositoryInterface::class, $mockRepo);
+
+        $index = $this->get('/hr/mpr');
+        $index->assertOk();
+        $index->assertSee('type="checkbox" name="benefits[]"', false);
+        $index->assertDontSee('type="radio" name="benefits[]"', false);
+        $index->assertSee('type="radio" name="working_days[]"', false);
+        $index->assertDontSee("filter(cb => cb.value !== 'shifting')", false);
+
+        $create = $this->withSession([
+            config('mpr.session_key', 'mpr_requestor_auth') => [
+                'email' => 'manpower.form@mito.id',
+                'fullName' => 'Manpower User',
+                'role' => 'Manpower',
+                'auth_domain' => 'mpr_requestor',
+                'portal' => 'mpr',
+                'requestor_id' => 'MPR-REQ-FORM',
+            ],
+        ])->get(route('mpr.auth.request'));
+        $create->assertOk();
+        $create->assertViewIs('hr.mpr.create');
+        $create->assertSee('type="checkbox" name="benefits[]"', false);
+        $create->assertDontSee('type="radio" name="benefits[]"', false);
+        $create->assertSee('type="radio" name="working_days[]"', false);
+        $create->assertDontSee("filter(cb => cb.value !== 'shifting')", false);
     }
 
     #[Test]
