@@ -12,7 +12,6 @@ export default defineConfig({
                 'resources/scss/modules/_certification.scss',
                 'resources/js/app.js',
                 'resources/js/page-loader.js',
-                'resources/js/csp-hardening.js',
                 'resources/js/utils/nik-autofill.js',
                 'resources/js/asset.js',
                 'resources/js/certification.js',

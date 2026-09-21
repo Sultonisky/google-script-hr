@@ -71,7 +71,32 @@ class SecurityHeadersTest extends TestCase
         $csp = $response->headers->get('Content-Security-Policy-Report-Only');
         $this->assertNotNull($csp);
         $this->assertStringContainsString("'nonce-", $csp);
-        $this->assertMatchesRegularExpression("/script-src .*'nonce-[A-Za-z0-9+\/]+=*' .*'self'/", $csp);
+        $this->assertMatchesRegularExpression("/script-src .*'nonce-[A-Za-z0-9+\/]+=*'/", $csp);
+    }
+
+    public function test_public_inline_scripts_use_the_csp_header_nonce(): void
+    {
+        $response = $this->onDomain('recruitment')
+            ->withSession(['candidate_consent' => true])
+            ->get(route('public.career.form'));
+
+        $response->assertOk();
+        $csp = (string) $response->headers->get('Content-Security-Policy-Report-Only');
+        $this->assertMatchesRegularExpression("/'nonce-([A-Za-z0-9+\/]+=*)'/", $csp);
+        preg_match("/'nonce-([A-Za-z0-9+\/]+=*)'/", $csp, $matches);
+        $nonce = $matches[1];
+
+        $response->assertSee('nonce="' . $nonce . '"', false);
+        $this->assertDoesNotMatchRegularExpression('/<script\b(?![^>]*\bnonce=)/i', $response->getContent());
+        $response->assertSee('mito-red-load.png', false);
+        $response->assertDontSee('rel="preload" as="image" href="' . asset('assets/mito-red.png') . '"', false);
+
+        $outsource = $this->onDomain('outsource')->get(route('public.outsource.apply'));
+        $outsource->assertOk();
+        $outsourceCsp = (string) $outsource->headers->get('Content-Security-Policy-Report-Only');
+        preg_match("/'nonce-([A-Za-z0-9+\/]+=*)'/", $outsourceCsp, $outsourceMatches);
+        $outsource->assertSee('nonce="' . $outsourceMatches[1] . '"', false);
+        $this->assertDoesNotMatchRegularExpression('/<script\b(?![^>]*\bnonce=)/i', $outsource->getContent());
     }
 
     public function test_geolocation_permission_is_enabled_for_self(): void

@@ -115,7 +115,7 @@ return [
             '08_00_17_00' => '08:00 - 17:00',
             '08_30_17_30' => '08:30 - 17:30',
         ],
-        // Single radio — Benefits
+        // Multi checkbox — Benefits
         'benefits' => [
             'bpjs'                  => 'BPJS',
             'asuransi_kesehatan'    => 'Asuransi Kesehatan',
