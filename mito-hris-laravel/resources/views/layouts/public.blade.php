@@ -21,7 +21,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link rel="icon" type="image/png" href="{{ asset('assets/logo-favicon.png') }}">
-    <link rel="preload" as="image" href="{{ asset('assets/mito-red.png') }}" fetchpriority="high">
+    <link rel="preload" as="image" href="{{ asset('assets/mito-red-load.png') }}" fetchpriority="high">
 
     <style>
         .public-loader {
@@ -40,6 +40,24 @@
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
+        }
+
+        .public-submit-loader {
+            position: fixed;
+            inset: 0;
+            z-index: 2000;
+            display: grid;
+            place-items: center;
+            background: #fff;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .public-submit-loader.is-active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
         }
 
         .public-loader-content {
@@ -119,7 +137,7 @@
         }
     </style>
 
-    @vite(['resources/scss/app.scss', 'resources/scss/public.scss', 'resources/js/app.js', 'resources/js/csp-hardening.js'])
+    @vite(['resources/scss/app.scss', 'resources/scss/public.scss', 'resources/js/app.js'])
     @yield('styles')
     <style>
         :root {
@@ -389,19 +407,17 @@
         </div>
     </footer>
 
-    @yield('scripts')
-
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         (function() {
             const loader = document.getElementById('publicLoader');
             if (!loader) return;
 
             let holdVisible = false;
 
-            const hideLoader = () => {
+            const hideLoader = function() {
                 if (holdVisible || loader.classList.contains('is-hidden')) return;
 
-                window.requestAnimationFrame(() => {
+                window.requestAnimationFrame(function() {
                     if (holdVisible) return;
                     loader.classList.add('is-hidden');
                 });
@@ -419,6 +435,12 @@
                 }
             };
 
+            window.addEventListener('pageshow', function(event) {
+                if (!event.persisted) return;
+                holdVisible = false;
+                loader.classList.add('is-hidden');
+            });
+
             if (document.readyState === 'complete') {
                 hideLoader();
             } else {
@@ -432,6 +454,8 @@
             }
         })();
     </script>
+
+    @yield('scripts')
 </body>
 
 </html>
