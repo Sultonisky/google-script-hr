@@ -88,12 +88,15 @@
     @include('pdf.components.kop-surat')
 
     @php
-        // 1:1 dengan GAS exportSuratBPJS()
-        $romanMonth = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
-        $letterNumber =
-            $extraData['letter_number'] ??
-            ($extraData['sk_number'] ??
-                '001/HRD-SKK/' . ($company['code'] ?? 'MSI') . '/' . $romanMonth[date('n') - 1] . '/' . date('Y'));
+        // Nomor surat BPJS dinonaktifkan (kode generate tetap ada di bawah untuk referensi).
+        // $romanMonth = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+        // $letterNumber =
+        //     $extraData['letter_number'] ??
+        //     ($extraData['sk_number'] ??
+        //         '001/HRD-SKK/' . ($company['code'] ?? 'MSI') . '/' . $romanMonth[date('n') - 1] . '/' . date('Y'));
+        $letterNumber = trim((string) (
+            $extraData['letter_number'] ?? $extraData['sk_number'] ?? $extraData['skNumber'] ?? ''
+        ));
 
         $endDate =
             $extraData['effective_date'] ??
@@ -114,7 +117,9 @@
     @endphp
 
     <div class="doc-title">SURAT KETERANGAN</div>
-    <div class="doc-no">Nomor: {{ $letterNumber }}</div>
+    @if ($letterNumber !== '')
+        <div class="doc-no">Nomor: {{ $letterNumber }}</div>
+    @endif
 
     <p>Yang bertandatangan di bawah ini:</p>
 
