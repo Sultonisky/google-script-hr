@@ -281,7 +281,7 @@ class ProbationController extends Controller
                 'pdfUrl'            => $pdfUrl,      // null for EXTEND
                 'evalPdfUrl'        => $evalPdfUrl,  // null for EXTEND
                 'skNumber'          => $result['skNumber'],
-                // Server-derived extension duration — never echoes browser input.
+                // Extension duration label derived from manual start/end dates.
                 'extensionDuration' => $result['extensionDuration'] ?? '',
             ]);
         }

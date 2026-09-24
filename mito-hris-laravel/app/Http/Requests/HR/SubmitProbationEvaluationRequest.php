@@ -15,8 +15,8 @@ use Illuminate\Foundation\Http\FormRequest;
  * Business rules enforced here:
  *   - decision must classify into PASS / FAIL / EXTEND
  *   - all 13 behavioral indicators are required ("1" or "0")
- *   - EXTEND ("Perpanjang Kontrak") requires extension_start; duration is derived
- *     server-side from the current Employee contract dates.
+ *   - EXTEND requires manual extension_start + extension_end (end after start)
+ *   - Extension Duration is derived server-side from those two dates
  */
 class SubmitProbationEvaluationRequest extends FormRequest
 {
@@ -28,6 +28,10 @@ class SubmitProbationEvaluationRequest extends FormRequest
 
     public function rules(): array
     {
+        $isExtend = ProbationDecisionType::fromDecisionString(
+            (string) $this->input('decision')
+        )?->isExtend() ?? false;
+
         return [
             'decision' => [
                 'required',
@@ -54,22 +58,17 @@ class SubmitProbationEvaluationRequest extends FormRequest
             'indicators.tw_2'        => 'required|in:1,0',
             'indicators.tw_3'        => 'required|in:1,0',
 
-            // Kept nullable for backward-compatible clients; the service ignores it.
+            // Ignored by the service; kept nullable for backward-compatible clients.
             'extension_duration' => 'nullable|string',
             'extension_start' => [
-                'nullable',
+                $isExtend ? 'required' : 'nullable',
                 'date',
-                function ($attribute, $value, $fail) {
-                    $isExtend = ProbationDecisionType::fromDecisionString(
-                        (string) $this->input('decision')
-                    )?->isExtend();
-
-                    if ($isExtend && empty($value)) {
-                        $fail('Tanggal mulai kontrak baru wajib diisi untuk keputusan Perpanjang Kontrak.');
-                    }
-                },
             ],
-            'extension_end' => 'nullable|date',
+            'extension_end' => array_values(array_filter([
+                $isExtend ? 'required' : 'nullable',
+                'date',
+                $isExtend ? 'after:extension_start' : null,
+            ])),
 
             'notes'              => 'nullable|string|max:1000',
             'reviewer_name'      => 'nullable|string|max:200',
@@ -79,6 +78,15 @@ class SubmitProbationEvaluationRequest extends FormRequest
             'approval_hrbp'      => 'nullable|string|in:Setuju,Tidak',
             'approval_hrbp_name' => 'nullable|string|max:200',
             'approval_hrbp_date' => 'nullable|date',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'extension_start.required' => 'Tanggal mulai kontrak baru wajib diisi untuk keputusan Perpanjang Kontrak.',
+            'extension_end.required'   => 'Tanggal akhir kontrak baru wajib diisi untuk keputusan Perpanjang Kontrak.',
+            'extension_end.after'      => 'Tanggal akhir kontrak baru harus setelah tanggal mulai.',
         ];
     }
 }
