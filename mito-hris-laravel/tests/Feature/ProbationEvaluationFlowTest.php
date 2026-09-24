@@ -146,6 +146,10 @@ class ProbationEvaluationFlowTest extends TestCase
         $this->app->instance(EmployeeRepositoryInterface::class, $employeeRepo);
         $this->app->instance(AuditLogRepositoryInterface::class, $auditRepo);
         $this->app->instance(GoogleSheetsService::class, $sheets);
+        $this->app->instance(
+            \App\Repositories\Contracts\EmployeeDocumentRepositoryInterface::class,
+            new \App\Repositories\Local\ArrayEmployeeDocumentRepository()
+        );
 
         return $sheets;
     }
@@ -173,6 +177,15 @@ class ProbationEvaluationFlowTest extends TestCase
             'tw_3'
         ];
         return ['indicators' => collect($keys)->mapWithKeys(fn($k) => [$k => '1'])->all()];
+    }
+
+    /** Manual extend window submitted by HR (start + end required). */
+    private function manualExtend(string $start, string $end): array
+    {
+        return [
+            'extension_start' => $start,
+            'extension_end'   => $end,
+        ];
     }
 
     /** POST an evaluation with mocked sheets; returns [response, capturedRows]. */
@@ -229,8 +242,7 @@ class ProbationEvaluationFlowTest extends TestCase
 
     public function test_evaluation_row_preserves_all_45_header_positions(): void
     {
-        [$response, $rows] = $this->postEvaluation('Perpanjang Kontrak', [
-            'extension_start'    => '2026-12-01',
+        [$response, $rows] = $this->postEvaluation('Perpanjang Kontrak', array_merge([
             'notes'              => 'Catatan lengkap',
             'reviewer_name'      => 'Reviewer',
             'approval_dept'      => 'Setuju',
@@ -239,7 +251,7 @@ class ProbationEvaluationFlowTest extends TestCase
             'approval_hrbp'      => 'Setuju',
             'approval_hrbp_name' => 'HRBP',
             'approval_hrbp_date' => '2026-12-03',
-        ]);
+        ], $this->manualExtend('2026-12-01', '2027-05-31')));
 
         $response->assertOk();
         $this->assertCount(1, $rows);
@@ -286,9 +298,10 @@ class ProbationEvaluationFlowTest extends TestCase
 
     public function test_t03_extend_resolves_duration_from_contract(): void
     {
-        [$response, $rows] = $this->postEvaluation('Perpanjang Kontrak', [
-            'extension_start'    => '2026-12-01',
-        ]);
+        [$response, $rows] = $this->postEvaluation(
+            'Perpanjang Kontrak',
+            $this->manualExtend('2026-12-01', '2027-05-31')
+        );
 
         $response->assertOk()->assertJsonPath('success', true)
             ->assertJsonPath('decisionType', 'extend')
@@ -305,20 +318,95 @@ class ProbationEvaluationFlowTest extends TestCase
     }
 
     // =========================================================================
+    // T03b — EXTEND must not overwrite Employee Join Date (original hire date).
+    //       Only End Date (Contract) advances to New Contract End.
+    // =========================================================================
+
+    public function test_t03b_extend_preserves_employee_join_date(): void
+    {
+        $this->loginAsHrAdmin();
+
+        $originalJoinDate = '2024-12-23';
+        $employee = new EmployeeData(
+            employeeId: 'EMP001',
+            fullName: 'Budi Santoso',
+            branchName: 'HO',
+            department: 'HR',
+            jobPosition: 'Staff',
+            joinDate: $originalJoinDate,
+            endDateContract: '2025-06-22', // 6 months from join (PKWT: start + N − 1 day)
+            statusEmployee: 'Contract',
+            personalEmail: 'budi@example.com',
+        );
+
+        $employeeUpdates = [];
+        $employeeRepo = Mockery::mock(EmployeeRepositoryInterface::class);
+        $employeeRepo->shouldReceive('findById')->with('EMP001')->andReturn($employee);
+        $employeeRepo->shouldReceive('update')
+            ->withArgs(function (string $id, array $updates) use (&$employeeUpdates) {
+                $employeeUpdates[] = $updates;
+                return $id === 'EMP001';
+            })
+            ->andReturn(true);
+
+        $auditRepo = Mockery::mock(AuditLogRepositoryInterface::class);
+        $auditRepo->shouldReceive('log')->andReturn(true)->byDefault();
+
+        $headers = $this->headers();
+        $sheets = Mockery::mock(GoogleSheetsService::class);
+        $sheets->shouldReceive('getRange')->with('kandidat_probation', '1:1', false)->andReturn([$headers])->byDefault();
+        $sheets->shouldReceive('appendRow')->andReturn(true)->byDefault();
+        $sheets->shouldReceive('getRowsAsAssoc')->andReturn([])->byDefault();
+        $sheets->shouldReceive('clearCache')->andReturn(null)->byDefault();
+        $sheets->shouldReceive('updateRange')->andReturn(true)->byDefault();
+
+        $this->app->instance(EmployeeRepositoryInterface::class, $employeeRepo);
+        $this->app->instance(AuditLogRepositoryInterface::class, $auditRepo);
+        $this->app->instance(GoogleSheetsService::class, $sheets);
+
+        $payload = array_merge([
+            'decision' => 'Perpanjang Kontrak',
+        ], $this->manualExtend('2026-09-22', '2027-03-21'), $this->validIndicatorPayload());
+
+        $response = $this->postJson('/hr/probation/EMP001/evaluate', $payload);
+
+        $response->assertOk()->assertJsonPath('decisionType', 'extend');
+        $this->assertCount(1, $employeeUpdates);
+        $this->assertArrayNotHasKey(
+            'Join Date',
+            $employeeUpdates[0],
+            'Extend must not overwrite Employee Join Date with New Contract Start / submit date.'
+        );
+        $this->assertSame(
+            '2027-03-21',
+            $employeeUpdates[0]['End Date (Contract)'] ?? null,
+            'Extend must advance End Date (Contract) to the manually entered New Contract End.'
+        );
+        $this->assertSame(
+            '2026-09-22',
+            $employeeUpdates[0]['Start Date (Contract)'] ?? null,
+            'Extend must sync Start Date (Contract) for the Employee edit modal contract section.'
+        );
+        $this->assertSame(
+            '6 Bulan',
+            $employeeUpdates[0]['Contract Duration'] ?? null,
+            'Extend must sync Contract Duration for the Employee edit modal contract section.'
+        );
+    }
+
+    // =========================================================================
     // T04 â€” EXTEND: a manipulated client duration is ignored.
     // =========================================================================
 
     public function test_t04_extend_rejects_mismatched_duration(): void
     {
-        [$response, $rows] = $this->postEvaluation('Perpanjang Kontrak', [
-            'extension_duration' => '3 Bulan',
-            'extension_start'    => '2026-12-01',
-            'extension_end'      => '2027-03-01',
-        ]);
+        [$response, $rows] = $this->postEvaluation('Perpanjang Kontrak', array_merge([
+            'extension_duration' => '12 Bulan',
+        ], $this->manualExtend('2026-12-01', '2027-02-28')));
 
         $response->assertOk();
-        $this->assertSame('6 Bulan', self::ref($rows[0], 'Extension Duration'));
-        $this->assertSame('2027-05-31', self::ref($rows[0], 'New Contract End'));
+        $this->assertSame('3 Bulan', self::ref($rows[0], 'Extension Duration'));
+        $this->assertSame('2027-02-28', self::ref($rows[0], 'New Contract End'));
     }
 
     // =========================================================================
@@ -327,9 +415,10 @@ class ProbationEvaluationFlowTest extends TestCase
 
     public function test_t05_extend_resolves_duration_when_client_sends_none(): void
     {
-        [$response, $rows] = $this->postEvaluation('Perpanjang Kontrak', [
-            'extension_start' => '2026-12-01',
-        ]);
+        [$response, $rows] = $this->postEvaluation(
+            'Perpanjang Kontrak',
+            $this->manualExtend('2026-12-01', '2027-05-31')
+        );
 
         $response->assertOk()->assertJsonPath('success', true)
             ->assertJsonPath('decisionType', 'extend')
@@ -350,10 +439,33 @@ class ProbationEvaluationFlowTest extends TestCase
     {
         // No extension_start sent â†’ backend must reject with 422.
         // extension_duration is irrelevant â€” backend ignores it regardless.
-        [$response, $rows] = $this->postEvaluation('Perpanjang Kontrak');
+        [$response, $rows] = $this->postEvaluation('Perpanjang Kontrak', [
+            'extension_end' => '2027-05-31',
+        ]);
 
         $response->assertStatus(422);
         $this->assertCount(0, $rows, 'No evaluation row may be written when validation fails.');
+    }
+
+    public function test_t06b_extend_without_end_date_fails_validation(): void
+    {
+        [$response, $rows] = $this->postEvaluation('Perpanjang Kontrak', [
+            'extension_start' => '2026-12-01',
+        ]);
+
+        $response->assertStatus(422);
+        $this->assertCount(0, $rows);
+    }
+
+    public function test_t06c_extend_end_before_start_fails_validation(): void
+    {
+        [$response, $rows] = $this->postEvaluation(
+            'Perpanjang Kontrak',
+            $this->manualExtend('2026-12-01', '2026-11-01')
+        );
+
+        $response->assertStatus(422);
+        $this->assertCount(0, $rows);
     }
 
     public function test_duplicate_evaluation_submission_does_not_append_twice(): void
@@ -364,6 +476,7 @@ class ProbationEvaluationFlowTest extends TestCase
         $payload = array_merge([
             'decision' => 'Perpanjang Kontrak',
             'extension_start' => '2026-12-01',
+            'extension_end' => '2027-05-31',
             'notes' => 'duplicate-protection-' . uniqid(),
         ], $this->validIndicatorPayload());
 
@@ -558,7 +671,7 @@ class ProbationEvaluationFlowTest extends TestCase
 
         [$response, $secondRows] = $this->postEvaluation(
             'Perpanjang Kontrak',
-            ['extension_start' => '2027-06-01'],
+            $this->manualExtend('2027-06-01', '2027-11-30'),
             [$previous],
             '2027-05-31',
             '2026-12-01'
@@ -600,10 +713,10 @@ class ProbationEvaluationFlowTest extends TestCase
         // joinDate=2026-09-01, endDateContract=2026-11-30 â†’ 3 calendar months
         [$response, $rows] = $this->postEvaluation(
             'Perpanjang Kontrak',
-            ['extension_start' => '2026-12-01'],
+            $this->manualExtend('2026-12-01', '2027-02-28'),
             [],
-            '2026-11-30',  // endDateContract
-            '2026-09-01'   // joinDate
+            '2026-11-30',
+            '2026-09-01'
         );
 
         $response->assertOk()->assertJsonPath('success', true)
@@ -634,10 +747,10 @@ class ProbationEvaluationFlowTest extends TestCase
         // joinDate=2026-05-01, endDateContract=2027-04-30 â†’ 12 calendar months
         [$response, $rows] = $this->postEvaluation(
             'Perpanjang Kontrak',
-            ['extension_start' => '2027-05-01'],
+            $this->manualExtend('2027-05-01', '2028-04-30'),
             [],
-            '2027-04-30',  // endDateContract
-            '2026-05-01'   // joinDate (default)
+            '2027-04-30',
+            '2026-05-01'
         );
 
         $response->assertOk()->assertJsonPath('decisionType', 'extend');
@@ -663,14 +776,12 @@ class ProbationEvaluationFlowTest extends TestCase
         // joinDate=2026-09-01, endDateContract=2026-11-30 â†’ 3 calendar months
         [$response, $rows] = $this->postEvaluation(
             'Perpanjang Kontrak',
-            [
-                'extension_duration' => '12 Bulan',   // â† manipulated by attacker
-                'extension_start'    => '2026-12-01',
-                'extension_end'      => '2026-12-01',  // â† wrong end date also sent
-            ],
+            array_merge([
+                'extension_duration' => '12 Bulan',
+            ], $this->manualExtend('2026-12-01', '2027-02-28')),
             [],
-            '2026-11-30',  // endDateContract â€” 3-month contract
-            '2026-09-01'   // joinDate
+            '2026-11-30',
+            '2026-09-01'
         );
 
         $response->assertOk();
@@ -678,12 +789,12 @@ class ProbationEvaluationFlowTest extends TestCase
         $this->assertSame(
             '3 Bulan',
             self::ref($row, 'Extension Duration'),
-            'Manipulated extension_duration=12 Bulan must be ignored; contract is 3 months'
+            'Manipulated extension_duration=12 Bulan must be ignored; duration comes from manual start/end'
         );
         $this->assertSame(
             '2027-02-28',
             self::ref($row, 'New Contract End'),
-            'New Contract End must be derived from actual contract duration (3 months), not browser value'
+            'New Contract End must equal the manually submitted extension_end'
         );
         $this->assertSame(
             '3 Bulan',
@@ -700,10 +811,10 @@ class ProbationEvaluationFlowTest extends TestCase
     public function test_t17_json_response_extension_duration_is_server_derived(): void
     {
         // 6-month contract (default: joinDate=2026-05-01, endDateContract=2026-11-01 â†’ 6 months)
-        [$response, $rows] = $this->postEvaluation('Perpanjang Kontrak', [
-            'extension_start' => '2026-12-01',
-            // Deliberately omit extension_duration â€” browser sends nothing
-        ]);
+        [$response, $rows] = $this->postEvaluation(
+            'Perpanjang Kontrak',
+            $this->manualExtend('2026-12-01', '2027-05-31')
+        );
 
         $response->assertOk()->assertJsonPath('decisionType', 'extend');
         // The JSON extensionDuration must be the server-derived "6 Bulan",
@@ -764,22 +875,15 @@ class ProbationEvaluationFlowTest extends TestCase
         $this->app->instance(GoogleSheetsService::class, $sheets);
 
         $payload = array_merge([
-            'decision'        => 'Perpanjang Kontrak',
-            'extension_start' => '2026-12-01',
-        ], $this->validIndicatorPayload());
+            'decision' => 'Perpanjang Kontrak',
+        ], $this->manualExtend('2026-12-01', '2027-05-31'), $this->validIndicatorPayload());
 
         $response = $this->postJson('/hr/probation/EMP001/evaluate', $payload);
 
-        $response->assertStatus(422);
-        $this->assertCount(
-            0,
-            $captured,
-            'No evaluation row may be written when contract duration is not derivable.'
-        );
-        $this->assertStringContainsString(
-            'Durasi perpanjangan tidak dapat ditentukan',
-            $response->json('message') ?? ''
-        );
+        // Manual start/end make extend independent of Employee contract dates.
+        $response->assertOk()->assertJsonPath('decisionType', 'extend');
+        $this->assertCount(1, $captured);
+        $this->assertSame('6 Bulan', (string) ($captured[0]['Extension Duration'] ?? ''));
     }
 
     // =========================================================================
@@ -797,7 +901,7 @@ class ProbationEvaluationFlowTest extends TestCase
         // New end = 2026-12-01 + 3 months - 1 day = 2027-02-28
         [$response, $rows] = $this->postEvaluation(
             'Perpanjang Kontrak',
-            ['extension_start' => '2026-12-01'],
+            $this->manualExtend('2026-12-01', '2027-02-28'),
             [],
             '2026-11-30',
             '2026-09-01'
@@ -815,7 +919,7 @@ class ProbationEvaluationFlowTest extends TestCase
         // New end = 2026-12-01 + 6 months - 1 day = 2027-05-31
         [$response, $rows] = $this->postEvaluation(
             'Perpanjang Kontrak',
-            ['extension_start' => '2026-12-01'],
+            $this->manualExtend('2026-12-01', '2027-05-31'),
             [],
             '2026-11-01',
             '2026-05-01'
@@ -833,7 +937,7 @@ class ProbationEvaluationFlowTest extends TestCase
         // New end = 2027-05-01 + 12 months - 1 day = 2028-04-30
         [$response, $rows] = $this->postEvaluation(
             'Perpanjang Kontrak',
-            ['extension_start' => '2027-05-01'],
+            $this->manualExtend('2027-05-01', '2028-04-30'),
             [],
             '2027-04-30',
             '2026-05-01'
@@ -902,7 +1006,8 @@ class ProbationEvaluationFlowTest extends TestCase
 
         $payload = array_merge([
             'decision'           => 'Perpanjang Kontrak',
-            'extension_start'    => '2026-08-15',   // day after current contract end
+            'extension_start'    => '2026-08-15',
+            'extension_end'      => '2027-02-14',
             // recruitment_id intentionally omitted — imported employee has none
         ], $this->validIndicatorPayload());
 
@@ -919,7 +1024,7 @@ class ProbationEvaluationFlowTest extends TestCase
         $this->assertSame(
             '6 Bulan',
             self::ref($row, 'Extension Duration'),
-            'Duration must be derived from import-supplied contract dates (2026-02-15 → 2026-08-14 = 6 months).'
+            'Duration must be derived from manual New Contract Start/End dates.'
         );
         $this->assertSame('2026-08-15', self::ref($row, 'New Contract Start'));
         // New end = 2026-08-15 + 6 months − 1 day = 2027-02-14
@@ -944,18 +1049,18 @@ class ProbationEvaluationFlowTest extends TestCase
     {
         $this->loginAsHrAdmin();
 
-        // end < start → monthsBetweenDates returns null → resolveExtensionDuration returns null
+        // Employee contract dates are invalid, but manual extend dates are valid.
         $badEmployee = new EmployeeData(
             employeeId: 'EMP_BAD',
             fullName: 'Karyawan BadDate',
             joinDate: '2026-08-01',
-            endDateContract: '2026-07-01',   // ← end is before start — invalid
+            endDateContract: '2026-07-01',
             statusEmployee: 'Contract',
         );
 
         $employeeRepo = Mockery::mock(EmployeeRepositoryInterface::class);
         $employeeRepo->shouldReceive('findById')->with('EMP_BAD')->andReturn($badEmployee);
-        $employeeRepo->shouldReceive('update')->never();
+        $employeeRepo->shouldReceive('update')->andReturn(true)->once();
 
         $auditRepo = Mockery::mock(AuditLogRepositoryInterface::class);
         $auditRepo->shouldReceive('log')->andReturn(true)->byDefault();
@@ -968,7 +1073,7 @@ class ProbationEvaluationFlowTest extends TestCase
         $sheets->shouldReceive('clearCache')->andReturn(null)->byDefault();
         $sheets->shouldReceive('appendRow')
             ->withArgs(function ($s, $r) use ($headers, &$captured) {
-                $captured[] = $r;
+                $captured[] = array_combine($headers, $r);
                 return true;
             })->andReturn(true)->byDefault();
 
@@ -977,18 +1082,14 @@ class ProbationEvaluationFlowTest extends TestCase
         $this->app->instance(GoogleSheetsService::class, $sheets);
 
         $payload = array_merge([
-            'decision'        => 'Perpanjang Kontrak',
-            'extension_start' => '2026-09-01',
-        ], $this->validIndicatorPayload());
+            'decision' => 'Perpanjang Kontrak',
+        ], $this->manualExtend('2026-09-01', '2027-02-28'), $this->validIndicatorPayload());
 
         $response = $this->postJson('/hr/probation/EMP_BAD/evaluate', $payload);
 
-        $response->assertStatus(422);
-        $this->assertCount(0, $captured, 'No evaluation row may be written for invalid contract dates.');
-        $this->assertStringContainsString(
-            'Durasi perpanjangan tidak dapat ditentukan',
-            $response->json('message') ?? ''
-        );
+        $response->assertOk()->assertJsonPath('decisionType', 'extend');
+        $this->assertCount(1, $captured);
+        $this->assertSame('6 Bulan', self::ref($captured[0], 'Extension Duration'));
     }
 
     // =========================================================================
@@ -1032,9 +1133,8 @@ class ProbationEvaluationFlowTest extends TestCase
         $this->app->instance(GoogleSheetsService::class, $sheets);
 
         $payload = array_merge([
-            'decision'        => 'Perpanjang Kontrak',
-            'extension_start' => '2026-09-01',
-        ], $this->validIndicatorPayload());
+            'decision' => 'Perpanjang Kontrak',
+        ], $this->manualExtend('2026-09-01', '2027-02-28'), $this->validIndicatorPayload());
 
         $response = $this->postJson('/hr/probation/EMP_PERM2/evaluate', $payload);
 
@@ -1055,22 +1155,67 @@ class ProbationEvaluationFlowTest extends TestCase
 
     public function test_t23_recruitment_employee_extend_uses_employee_contract_dates_not_offering(): void
     {
-        // Recruitment employee: offering said 12 Bulan, but actual contract is 6 months
-        // (HR entered different dates during onboarding). Extend must use 6 months.
+        // Manual start/end define the extension window; Employee join/end are only
+        // used for Contract Duration snapshot on the evaluation row history.
         [$response, $rows] = $this->postEvaluation(
             'Perpanjang Kontrak',
-            ['extension_start' => '2026-12-01'],
+            $this->manualExtend('2026-12-01', '2027-05-31'),
             [],
-            '2026-11-01',   // endDateContract (6-month actual contract)
-            '2026-05-01'    // joinDate
+            '2026-11-01',
+            '2026-05-01'
         );
 
         $response->assertOk()->assertJsonPath('decisionType', 'extend');
         $this->assertSame(
             '6 Bulan',
             self::ref($rows[0], 'Extension Duration'),
-            'Extend must use actual Employee contract dates, not Offering Contract Duration.'
+            'Extension Duration must come from manual New Contract Start/End.'
         );
         $this->assertSame('2027-05-31', self::ref($rows[0], 'New Contract End'));
+    }
+
+    // =========================================================================
+    // T24 — After EXTEND, drawer/edit contract fields use New Contract Start/End
+    //       (not Join Date) when Start Date (Contract) is missing on Employee.
+    // =========================================================================
+
+    public function test_t24_enrich_contract_display_uses_latest_extend_dates(): void
+    {
+        $employee = new EmployeeData(
+            employeeId: 'EMP001',
+            fullName: 'Budi Santoso',
+            joinDate: '2024-12-23',
+            endDateContract: '2027-02-10',
+            contractStart: null,
+            contractDuration: null,
+            statusEmployee: 'Contract',
+        );
+
+        $headers = $this->headers();
+        $extendRow = array_combine($headers, array_fill(0, count($headers), ''));
+        $extendRow['Employee ID'] = 'EMP001';
+        $extendRow['Eval ID'] = 'EVAL-EXT';
+        $extendRow['Eval Date'] = '2026-09-22 10:00:00';
+        $extendRow['Decision'] = 'Perpanjang Kontrak';
+        $extendRow['Extension Duration'] = '6 Bulan';
+        $extendRow['New Contract Start'] = '2026-08-11';
+        $extendRow['New Contract End'] = '2027-02-10';
+
+        $sheets = Mockery::mock(GoogleSheetsService::class);
+        $sheets->shouldReceive('getRowsAsAssoc')->andReturn([$extendRow])->byDefault();
+        $this->app->instance(GoogleSheetsService::class, $sheets);
+
+        $employeeRepo = Mockery::mock(EmployeeRepositoryInterface::class);
+        $this->app->instance(EmployeeRepositoryInterface::class, $employeeRepo);
+        $auditRepo = Mockery::mock(AuditLogRepositoryInterface::class);
+        $this->app->instance(AuditLogRepositoryInterface::class, $auditRepo);
+
+        $service = $this->app->make(\App\Services\ProbationService::class);
+        $enriched = $service->enrichEmployeeContractDisplay($employee);
+
+        $this->assertSame('2026-08-11', $enriched->contractStart);
+        $this->assertSame('2027-02-10', $enriched->endDateContract);
+        $this->assertSame('6 Bulan', $enriched->contractDuration);
+        $this->assertSame('2024-12-23', $enriched->joinDate, 'Join Date must remain the original hire date.');
     }
 }

@@ -328,6 +328,7 @@
                                 <option value="1 Bulan">1 Bulan</option>
                                 <option value="3 Bulan">3 Bulan</option>
                                 <option value="6 Bulan">6 Bulan</option>
+                                <option value="12 Bulan">12 Bulan</option>
                                 <option value="1 Tahun">1 Tahun</option>
                                 <option value="2 Tahun">2 Tahun</option>
                                 <option value="3 Tahun">3 Tahun</option>
@@ -355,7 +356,7 @@
                     <div class="alert alert-info d-flex align-items-center gap-2 py-2 px-3 mb-3" id="efNoMutasiInfo"
                         style="font-size:12px;border-radius:8px">
                         <i class="bi bi-info-circle-fill"></i>
-                        <span>Field Jabatan Sebelumnya, Tipe Rotasi, dan Nomor SK hanya diisi jika karyawan pernah
+                        <span>Field Jabatan Sebelumnya, Tipe Rotasi, dan Nomor SK Terakhir hanya diisi jika karyawan pernah
                             dimutasi/rotasi. Gunakan Fitur <strong>Rotasi</strong> untuk memproses rotasi baru.</span>
                     </div>
                     <div class="row g-2">
@@ -376,9 +377,9 @@
                             <input type="date" class="form-control form-control-sm" id="efMutasiDate" disabled />
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold" style="font-size:12.5px">Nomor SK</label>
+                            <label class="form-label fw-semibold" style="font-size:12.5px">Nomor SK Terakhir</label>
                             <input type="text" class="form-control form-control-sm" id="efNoSk"
-                                placeholder="Nomor SK / surat keputusan" disabled />
+                                placeholder="Nomor SK terakhir (otomatis)" disabled />
                         </div>
                         <div class="col-md-3" id="efResignDateWrap" style="display:none">
                             <label class="form-label fw-semibold" style="font-size:12.5px">Tanggal Resign / Akhir

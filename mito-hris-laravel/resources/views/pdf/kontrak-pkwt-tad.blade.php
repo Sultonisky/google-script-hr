@@ -196,7 +196,11 @@
     $perusahaanPenempatan = $extraData['perusahaan']    ?? '-';
     $alamatPenempatan     = $extraData['beralamat_di']  ?? ($extraData['beralamatDi'] ?? '-');
 
-    $contractNo = $extraData['contract_number'] ?? ($extraData['contractNumber'] ?? '001/DM-PKWT/TAD/' . date('Y'));
+    $contractNo = $extraData['contract_number']
+        ?? ($extraData['contractNumber'] ?? ($extraData['sk_number'] ?? ($employee->contractNumber ?? ($employee->nomorSk ?? ''))));
+    if ($contractNo === '') {
+        $contractNo = '-';
+    }
 
     $rawDoc  = $extraData['doc_date'] ?? ($extraData['docDate'] ?? null);
     $docObj  = $rawDoc ? \Carbon\Carbon::parse($rawDoc) : now()->timezone('Asia/Jakarta');

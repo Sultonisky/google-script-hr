@@ -96,7 +96,8 @@ class PendingStatusFlowTest extends TestCase
             $employeeRepo ?? Mockery::mock(EmployeeRepositoryInterface::class),
             Mockery::mock(\App\Services\Google\GoogleDriveService::class),
             $this->mockAuditRepo(),
-            new EmployeeIdGenerator()
+            new EmployeeIdGenerator(),
+            $this->app->make(\App\Services\SkNumberService::class)
         );
     }
 

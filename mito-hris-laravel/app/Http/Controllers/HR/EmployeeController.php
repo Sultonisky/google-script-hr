@@ -7,6 +7,7 @@ use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Services\EmployeeService;
 use App\Services\ProbationService;
+use App\Services\SkNumberService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,17 +19,20 @@ class EmployeeController extends Controller
     protected EmployeeService $employeeService;
     protected AuditLogRepositoryInterface $auditRepo;
     protected ProbationService $probationService;
+    protected SkNumberService $skNumbers;
 
     public function __construct(
         EmployeeRepositoryInterface $employeeRepo,
         EmployeeService $employeeService,
         AuditLogRepositoryInterface $auditRepo,
-        ProbationService $probationService
+        ProbationService $probationService,
+        SkNumberService $skNumbers
     ) {
         $this->employeeRepo       = $employeeRepo;
         $this->employeeService    = $employeeService;
         $this->auditRepo          = $auditRepo;
         $this->probationService   = $probationService;
+        $this->skNumbers          = $skNumbers;
     }
 
     public function index(Request $request): View
@@ -875,7 +879,10 @@ class EmployeeController extends Controller
         try {
             $auditLogs = $this->auditRepo->getLogs((string) $employee->employeeId)
                 ->filter(function ($log) {
-                    return in_array(strtolower(trim($log['Entity Type'] ?? $log['entityType'] ?? '')), ['employee', 'outsource'], true);
+                    $type = strtolower(trim($log['Entity Type'] ?? $log['entityType'] ?? ''));
+                    // Include Probation so extend / lulus / putus kontrak appear in
+                    // Riwayat Aktivitas instead of being buried in HR Notes.
+                    return in_array($type, ['employee', 'outsource', 'probation'], true);
                 })
                 ->take(20)
                 ->values();
@@ -884,6 +891,21 @@ class EmployeeController extends Controller
             $auditLogs = collect();
         }
 
+        $employee = $this->probationService->enrichEmployeeContractDisplay($employee);
+        $employee->hrNotes = $this->stripSystemActivityLinesFromNotes($employee->hrNotes);
+
+        $skDocuments = $this->skNumbers->historyForEmployee((string) $employee->employeeId)
+            ->map(fn (array $row) => [
+                'documentId' => $row['Document ID'] ?? '',
+                'docType' => $row['Doc Type'] ?? '',
+                'docCode' => $row['Doc Code'] ?? '',
+                'nomor' => $row['Nomor'] ?? '',
+                'issuedAt' => $row['Issued At'] ?? '',
+                'issuedBy' => $row['Issued By'] ?? '',
+                'reference' => $row['Reference'] ?? '',
+            ])
+            ->values();
+
         return response()->json([
             'success' => true,
             'employee' => $employee,
@@ -891,6 +913,40 @@ class EmployeeController extends Controller
             // kandidat_probation evaluation history.
             'isActiveProbation' => $this->probationService->isActiveProbation($id),
             'auditLogs' => $auditLogs,
+            'skDocuments' => $skDocuments,
         ]);
+    }
+
+    /**
+     * HR Notes is free-form catatan only. Strip legacy system timeline lines
+     * that used to be appended on probation evaluate (display-only; sheet
+     * value is left unchanged until HR edits/saves notes).
+     */
+    private function stripSystemActivityLinesFromNotes(?string $notes): ?string
+    {
+        if ($notes === null || trim($notes) === '') {
+            return $notes;
+        }
+
+        $kept = [];
+        foreach (preg_split("/\r\n|\n|\r/", $notes) as $line) {
+            $trimmed = trim($line);
+            if ($trimmed === '') {
+                continue;
+            }
+            if (preg_match(
+                '/^\[\d{4}-\d{2}-\d{2}[^\]]*\]\s*(Lulus Probation|Tidak Lulus Probation|Probation diperpanjang)\b/u',
+                $trimmed
+            )) {
+                continue;
+            }
+            $kept[] = $line;
+        }
+
+        if ($kept === []) {
+            return null;
+        }
+
+        return implode("\n", $kept);
     }
 }

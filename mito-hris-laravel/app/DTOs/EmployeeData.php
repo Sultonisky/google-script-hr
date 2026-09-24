@@ -23,6 +23,12 @@ class EmployeeData
         public ?string $personalEmail = null,
         public ?string $workingEmail = null,
         public ?string $endDateContract = null,
+        // Optional contract-section fields used by the Employee edit modal.
+        // Not part of the canonical Employee create schema (toSheetRow); read
+        // when present so drawer/edit stays in sync after probation extend.
+        public ?string $contractStart = null,
+        public ?string $contractDuration = null,
+        public ?string $contractNumber = null,
         public ?string $birthPlace = null,
         public ?string $birthDate = null,
         public ?string $citizenIdAddress = null,
@@ -90,6 +96,9 @@ class EmployeeData
             personalEmail: $row['Personal Email'] ?? null,
             workingEmail: $row['Working Email'] ?? null,
             endDateContract: $row['End Date (Contract)'] ?? null,
+            contractStart: self::resolveContractStart($row),
+            contractDuration: self::resolveContractDuration($row),
+            contractNumber: $row['Contract Number'] ?? null,
             birthPlace: $row['Birth Place'] ?? null,
             birthDate: $row['Birth Date'] ?? null,
             citizenIdAddress: $row['Citizen ID Address'] ?? null,
@@ -185,7 +194,61 @@ class EmployeeData
             $this->createdAt ?? now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
             $this->updatedAt ?? now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
             $this->outsourceContractSeq !== null ? (string) $this->outsourceContractSeq : '',
+            $this->contractStart ?? '',
+            $this->contractDuration ?? '',
+            $this->contractNumber ?? '',
         ];
+    }
+
+    /**
+     * Prefer explicit Start Date (Contract) from the Employee sheet.
+     * Do NOT fall back to Join Date here — after probation extend, Join Date
+     * is the hire date while the active contract window lives on New Contract
+     * Start (see ProbationService::enrichEmployeeContractDisplay).
+     */
+    private static function resolveContractStart(array $row): ?string
+    {
+        $start = trim((string) ($row['Start Date (Contract)'] ?? $row['Contract Start'] ?? ''));
+        return $start !== '' ? $start : null;
+    }
+
+    /**
+     * Prefer stored Contract Duration; otherwise derive "N Bulan" from
+     * Start Date (Contract) or Join Date → End Date (Contract).
+     */
+    private static function resolveContractDuration(array $row): ?string
+    {
+        $stored = trim((string) ($row['Contract Duration'] ?? ''));
+        if ($stored !== '') {
+            return $stored;
+        }
+
+        $start = trim((string) ($row['Start Date (Contract)'] ?? $row['Contract Start'] ?? ''));
+        if ($start === '') {
+            $start = trim((string) ($row['Join Date'] ?? ''));
+        }
+        $end = trim((string) ($row['End Date (Contract)'] ?? ''));
+        if ($start === '' || $end === '') {
+            return null;
+        }
+
+        try {
+            $s = \Illuminate\Support\Carbon::parse($start)->startOfDay();
+            $e = \Illuminate\Support\Carbon::parse($end)->startOfDay();
+        } catch (\Throwable) {
+            return null;
+        }
+        if ($e->lessThan($s)) {
+            return null;
+        }
+
+        $anchor = $e->copy()->addDay();
+        $n = ($anchor->year - $s->year) * 12 + ($anchor->month - $s->month);
+        while ($n > 0 && $s->copy()->addMonthsNoOverflow($n)->greaterThan($anchor)) {
+            $n--;
+        }
+
+        return $n > 0 ? $n . ' Bulan' : null;
     }
 
     /**

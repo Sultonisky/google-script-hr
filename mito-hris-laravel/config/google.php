@@ -46,6 +46,7 @@ return [
         'user_permissions' => env('GOOGLE_SHEET_USER_PERMISSIONS', 'User_Permissions'),
         'mpr'        => env('GOOGLE_SHEET_MPR', 'MPR'),
         'mpr_requestor' => env('GOOGLE_SHEET_MPR_REQUESTOR', 'mpr_requestor'),
+        'employee_documents' => env('GOOGLE_SHEET_EMPLOYEE_DOCUMENTS', 'Employee_Documents'),
     ],
 
     /*

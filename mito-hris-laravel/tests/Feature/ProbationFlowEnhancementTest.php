@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\DTOs\EmployeeData;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
+use App\Repositories\Contracts\EmployeeDocumentRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
+use App\Repositories\Local\ArrayEmployeeDocumentRepository;
 use App\Services\EmployeeService;
 use App\Services\Google\GoogleSheetsService;
 use App\Services\ProbationService;
@@ -98,6 +100,7 @@ class ProbationFlowEnhancementTest extends TestCase
         $this->app->instance(EmployeeRepositoryInterface::class, $this->employeeRepo($employees));
         $this->app->instance(AuditLogRepositoryInterface::class, $this->auditRepo());
         $this->app->instance(GoogleSheetsService::class, $this->sheets($rows, $appended));
+        $this->app->instance(EmployeeDocumentRepositoryInterface::class, new ArrayEmployeeDocumentRepository());
     }
 
     public function test_contract_without_history_is_active_and_evaluable_without_writing_history(): void
@@ -272,6 +275,7 @@ class ProbationFlowEnhancementTest extends TestCase
         $result = $service->evaluateProbation('EMP-EVAL', [
             'decision' => 'Perpanjang Kontrak',
             'extension_start' => '2026-07-01',
+            'extension_end' => '2026-12-31',
             'indicators' => [],
         ], 'HR Admin');
 
@@ -297,6 +301,7 @@ class ProbationFlowEnhancementTest extends TestCase
         $this->app->instance(AuditLogRepositoryInterface::class, $this->auditRepo());
         $appended = [];
         $this->app->instance(GoogleSheetsService::class, $this->sheets([], $appended));
+        $this->app->instance(EmployeeDocumentRepositoryInterface::class, new ArrayEmployeeDocumentRepository());
 
         $result = $this->app->make(ProbationService::class)->evaluateProbation('EMP-LULUS', [
             'decision' => 'Lulus',
@@ -304,7 +309,10 @@ class ProbationFlowEnhancementTest extends TestCase
         ]);
 
         $this->assertTrue($result['success']);
-        $this->assertSame('PKWTT', $updates[0]['Status Employee']);
+        $statusUpdate = collect($updates)->first(fn ($row) => isset($row['Status Employee']));
+        $this->assertNotNull($statusUpdate);
+        $this->assertSame('PKWTT', $statusUpdate['Status Employee']);
+        $this->assertStringContainsString('/SKP/', (string) ($result['skNumber'] ?? ''));
     }
 
     public function test_active_probation_blocks_rotation(): void

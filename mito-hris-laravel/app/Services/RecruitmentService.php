@@ -5,6 +5,7 @@ namespace App\Services;
 use App\DTOs\CandidateData;
 use App\DTOs\EmployeeData;
 use App\Enums\CandidateStatus;
+use App\Enums\SkDocumentType;
 use App\Events\CandidateApplied;
 use App\Events\CandidateStatusChanged;
 use App\Events\EmployeeHired;
@@ -14,6 +15,7 @@ use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Services\EmployeeIdGenerator;
 use App\Services\Google\GoogleDriveService;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use RuntimeException;
@@ -31,7 +33,8 @@ class RecruitmentService
         EmployeeRepositoryInterface $employeeRepo,
         GoogleDriveService $drive,
         AuditLogRepositoryInterface $auditRepo,
-        EmployeeIdGenerator $idGenerator
+        EmployeeIdGenerator $idGenerator,
+        private SkNumberService $skNumbers
     ) {
         $this->candidateRepo = $candidateRepo;
         $this->employeeRepo = $employeeRepo;
@@ -377,11 +380,9 @@ class RecruitmentService
 
         $titles = self::composeEmployeeJobTitles($position, $jobLevel, $lokasiKerja);
 
-        // -- Nomor PKWT (generate bila kosong) --------------------
-        $contractNumber = trim($contractData['contract_number'] ?? '');
-        if ($contractNumber === '') {
-            $contractNumber = $this->generatePkwtNumber($branchName, $contractData['doc_date'] ?? $nowStr, $now);
-        }
+        // Manual override from form (rare). Otherwise issue via SkNumberService
+        // AFTER the employee row exists so Nomor SK + Contract Number stay aligned.
+        $manualContractNumber = trim($contractData['contract_number'] ?? '');
 
         // -- 1. Buat record Employee (status Contract) ------------
         $employee = new EmployeeData(
@@ -399,6 +400,9 @@ class RecruitmentService
             directSuperior: $directSuperior,
             personalEmail: $candidate->email ?? '',
             endDateContract: $contractEnd,
+            contractStart: $joinDate,
+            contractDuration: $contractData['contract_duration'] ?? '',
+            contractNumber: $manualContractNumber !== '' ? $manualContractNumber : null,
             birthPlace: $candidate->city ?? '',
             birthDate: $candidate->birthDate ?? '',
             citizenIdAddress: $candidate->address ?? '',
@@ -416,7 +420,7 @@ class RecruitmentService
         // Buat baru bila belum ada; kalau sudah ada, update jadi Contract
         $existingEmp = $this->employeeRepo->findById($employeeId);
         if ($existingEmp) {
-            $this->employeeRepo->update($employeeId, [
+            $attrs = [
                 'Branch Name' => $branchName,
                 'Division' => $division,
                 'Department' => $department,
@@ -427,11 +431,40 @@ class RecruitmentService
                 'Direct Superior' => $directSuperior,
                 'Join Date' => $joinDate,
                 'End Date (Contract)' => $contractEnd,
+                'Start Date (Contract)' => $joinDate,
+                'Contract Duration' => $contractData['contract_duration'] ?? '',
                 'Status Employee' => 'Contract',
                 'Updated At' => $nowStr,
-            ]);
+            ];
+            if ($manualContractNumber !== '') {
+                $attrs['Contract Number'] = $manualContractNumber;
+            }
+            $this->employeeRepo->update($employeeId, $attrs);
         } else {
             $this->employeeRepo->create($employee);
+        }
+
+        if ($manualContractNumber !== '') {
+            $contractNumber = $manualContractNumber;
+        } else {
+            $docAt = $now;
+            if (!empty($contractData['doc_date'])) {
+                try {
+                    $docAt = Carbon::parse($contractData['doc_date'])->timezone('Asia/Jakarta');
+                } catch (\Throwable) {
+                    $docAt = $now;
+                }
+            }
+            $issued = $this->skNumbers->issue(
+                employeeId: $employeeId,
+                type: SkDocumentType::PKWT,
+                branchName: $branchName,
+                issuedBy: $user,
+                reference: $recruitmentId,
+                notes: 'Kontrak PKWT onboarding',
+                issuedAt: $docAt,
+            );
+            $contractNumber = $issued['nomor'];
         }
 
         // -- 2. Tandai Onboarding di sheet kandidat_accepted ------
@@ -492,35 +525,6 @@ class RecruitmentService
         }
 
         return ['jobPosition' => $noLoc, 'jobPositionLocation' => $withLoc];
-    }
-
-    /**
-     * Generate nomor Surat PKWT: NNN/{branchCode}-HR/PKWT/{RomawiBulan}/{tahun}.
-     * Port dari GAS generatePkwtNumber_ + toRomanMonth_ (counter harian via Cache).
-     */
-    private function generatePkwtNumber(string $branchName, string $docDate, \Illuminate\Support\Carbon $now): string
-    {
-        $bLower = strtolower($branchName);
-        $branchCode = 'MSI';
-        if (str_contains($bLower, 'stein')) $branchCode = 'SPI';
-        elseif (str_contains($bLower, 'injeksi')) $branchCode = 'PII';
-        elseif (str_contains($bLower, 'mitra') || str_contains($bLower, 'elektro')) $branchCode = 'MEP';
-
-        $docObj = $docDate ? \Illuminate\Support\Carbon::parse($docDate) : $now;
-        $roman = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'][$docObj->month - 1];
-
-        $datePart = $now->format('Ymd');
-        $key = "PKWT_COUNTER_{$datePart}";
-        $lock = Cache::lock("lock_{$key}", 10);
-        try {
-            $lock->block(10);
-            $seq = (int) Cache::get($key, 0) + 1;
-            Cache::put($key, $seq, $now->endOfDay());
-        } finally {
-            $lock->release();
-        }
-
-        return sprintf('%03d/%s-HR/PKWT/%s/%d', $seq, $branchCode, $roman, $docObj->year);
     }
 
     /**

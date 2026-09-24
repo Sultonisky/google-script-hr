@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\DTOs\EmployeeData;
 use App\Enums\ProbationDecisionType;
+use App\Enums\SkDocumentType;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Services\Google\GoogleSheetsService;
@@ -15,6 +17,7 @@ class ProbationService
     protected EmployeeRepositoryInterface $employeeRepo;
     protected AuditLogRepositoryInterface $auditRepo;
     protected GoogleSheetsService $sheets;
+    protected SkNumberService $skNumbers;
 
     /** @var array<int, array<string,string>>|null Request-scoped memo of kandidat_probation rows. */
     private ?array $probationRowsCache = null;
@@ -39,11 +42,13 @@ class ProbationService
     public function __construct(
         EmployeeRepositoryInterface $employeeRepo,
         AuditLogRepositoryInterface $auditRepo,
-        GoogleSheetsService $sheets
+        GoogleSheetsService $sheets,
+        SkNumberService $skNumbers
     ) {
         $this->employeeRepo = $employeeRepo;
         $this->auditRepo    = $auditRepo;
         $this->sheets       = $sheets;
+        $this->skNumbers    = $skNumbers;
     }
 
     private function probationSheet(): string
@@ -219,28 +224,30 @@ class ProbationService
         $isPutusKontrak = $decisionType->isFail();
         $isPerpanjang = $decisionType->isExtend();
 
-        $extStart    = $evalData['extension_start']    ?? '';
-        $extEnd      = $evalData['extension_end']      ?? '';
+        $extStart    = trim((string) ($evalData['extension_start'] ?? ''));
+        $extEnd      = trim((string) ($evalData['extension_end'] ?? ''));
         $notes       = $evalData['notes']              ?? '';
+        $extDuration = '';
 
-        // === STEP 13 — Extend: derive duration from the employee's actual ===
-        // contract, not from the browser. Employee contract dates are the
-        // current source of truth for the extension duration.
-        if ($isPerpanjang && empty($extStart)) {
-            throw new RuntimeException('Perpanjangan probation memerlukan tanggal mulai kontrak baru.');
-        }
+        // Extend uses manual New Contract Start / End from the form.
+        // Duration label ("N Bulan") is derived from those two dates only —
+        // never from the previous Employee contract window, and never from a
+        // client-supplied extension_duration string.
         if ($isPerpanjang) {
-            $resolvedDuration = $this->resolveExtensionDuration(
-                $employee->joinDate ?? null,
-                $employee->endDateContract ?? null
-            );
+            if ($extStart === '') {
+                throw new RuntimeException('Perpanjangan probation memerlukan tanggal mulai kontrak baru.');
+            }
+            if ($extEnd === '') {
+                throw new RuntimeException('Perpanjangan probation memerlukan tanggal akhir kontrak baru.');
+            }
+
+            $resolvedDuration = $this->monthsBetweenDates($extStart, $extEnd);
             if ($resolvedDuration === null || $resolvedDuration <= 0) {
                 throw new RuntimeException(
-                    'Durasi perpanjangan tidak dapat ditentukan dari data kontrak karyawan. Pastikan karyawan memiliki Contract Start dan End Date yang valid.'
+                    'Rentang tanggal kontrak baru tidak valid. Pastikan tanggal akhir setelah tanggal mulai dan membentuk durasi minimal 1 bulan.'
                 );
             }
             $extDuration = $this->monthsToLabel($resolvedDuration);
-            $extEnd      = $this->addMonthsDate($extStart, $resolvedDuration);
         }
 
         if (!Cache::add($submissionKey, true, 30)) {
@@ -258,59 +265,54 @@ class ProbationService
         $skNumber   = '';
 
         // ── 3. Branch per keputusan → update Employee sheet ──────
+        // HR Notes stays free-form catatan HR — activity belongs in Audit_Log
+        // (Riwayat Aktivitas), not appended into the notes field.
+        // Nomor SK is issued via SkNumberService (fixed per-employee sequence).
         if ($isLulus) {
-            $skNumber = $this->generateSuratNumber('HRD-PK', $branchName, $now);
+            $issued = $this->skNumbers->issue(
+                employeeId: $employeeId,
+                type: SkDocumentType::PENGANGKATAN,
+                branchName: $branchName,
+                issuedBy: $user,
+                reference: $evalId,
+            );
+            $skNumber = $issued['nomor'];
             $this->employeeRepo->update($employeeId, [
                 'Status Employee' => 'PKWTT',
-                'Nomor SK'        => $skNumber,
-                'HR Notes'        => $this->appendNote(
-                    $employee->hrNotes,
-                    "[{$nowStr}] Lulus Probation (total {$overallTotal}/13, {$category}) — SK {$skNumber} by {$user}"
-                ),
                 'Updated At'      => $nowStr,
             ]);
             // Status remains the probation process label; Decision stores the outcome.
             $probStatus = 'Probation';
             $skStatus   = 'SK Diterbitkan';
         } elseif ($isPutusKontrak) {
-            $skNumber = $this->generatePaklaringNumber($branchName, $evalId, $now);
+            $issued = $this->skNumbers->issue(
+                employeeId: $employeeId,
+                type: SkDocumentType::PAKLARING,
+                branchName: $branchName,
+                issuedBy: $user,
+                reference: $evalId,
+            );
+            $skNumber = $issued['nomor'];
             $this->employeeRepo->update($employeeId, [
                 'Status Employee'     => 'Terminated',
                 'Resign Date'         => $now->format('Y-m-d'),
                 'Offboarding Type'    => 'End of Probation',
                 'Offboarding Reason'  => 'Tidak Lolos Evaluasi Probation',
-                'Nomor SK'            => $skNumber,
-                'HR Notes'            => $this->appendNote(
-                    $employee->hrNotes,
-                    "[{$nowStr}] Tidak Lulus Probation (total {$overallTotal}/13, {$category}) — Paklaring {$skNumber} by {$user}"
-                ),
                 'Updated At'          => $nowStr,
             ]);
             $probStatus = 'Probation';
             $skStatus   = 'Paklaring Diterbitkan';
         } else {
-            // Perpanjang (1:1 GAS isPerpanjang branch)
+            // Perpanjang: sync active-contract fields used by the Employee
+            // edit modal (Seksi Kontrak). Join Date stays the original hire date.
+            // Start Date (Contract) / Contract Duration are written only when
+            // those optional headers exist on the Employee sheet.
             $updates = [
                 'End Date (Contract)'   => $extEnd,
-                'HR Notes'              => $this->appendNote(
-                    $employee->hrNotes,
-                    "[{$nowStr}] Probation diperpanjang {$extDuration} ({$extStart} s/d {$extEnd}) — total {$overallTotal}/13, {$category} by {$user}"
-                ),
+                'Start Date (Contract)' => $extStart,
+                'Contract Duration'     => $extDuration,
                 'Updated At'            => $nowStr,
             ];
-            // Update 'Join Date' (the canonical contract-start column in the
-            // Employee sheet) so that the NEXT evaluation's
-            // resolveExtensionDuration(joinDate, endDateContract) measures the
-            // duration of THIS new contract period, not the cumulative span
-            // from the original join date.
-            // 'Start Date (Contract)' does not exist in the Employee sheet schema
-            // and would be silently ignored by EmployeeSheetsRepository::update().
-            if (!empty($extStart)) {
-                $updates['Join Date'] = $extStart;
-            }
-            if (!empty($extDuration)) {
-                $updates['Contract Duration'] = $extDuration;
-            }
             $this->employeeRepo->update($employeeId, $updates);
             $probStatus = 'Probation';
             $skStatus   = 'Diperpanjang';
@@ -379,15 +381,18 @@ class ProbationService
             'Approval HRBP Name' => $evalData['approval_hrbp_name'] ?? '',
             'Approval HRBP Date' => $evalData['approval_hrbp_date'] ?? '',
         ]);
-        // ── 5. Audit log ──────────────────────────────────────────
+        // ── 5. Audit log → Riwayat Aktivitas (not HR Notes) ────────
         $action = $isLulus ? 'Probation Lulus' : ($isPutusKontrak ? 'Probation Putus Kontrak' : 'Probation Diperpanjang');
+        $auditNewValue = $isPerpanjang
+            ? "{$decision} {$extDuration} ({$extStart} s/d {$extEnd}) — total {$overallTotal}/13, {$category}"
+            : ("{$decision} (total {$overallTotal}/13, {$category})" . ($skNumber ? " — {$skNumber}" : ''));
         $this->auditRepo->log(
             entityType: 'Probation',
             entityId: $employeeId,
             action: $action,
             field: 'Employment Status',
             oldValue: $employee->statusEmployee ?? 'Probation',
-            newValue: "{$decision} (total {$overallTotal}/13, {$category})" . ($skNumber ? " — {$skNumber}" : ''),
+            newValue: $auditNewValue,
             user: $user,
             source: 'Dashboard'
         );
@@ -409,9 +414,9 @@ class ProbationService
             'isPutusKontrak'    => $isPutusKontrak,
             'isPerpanjang'      => $isPerpanjang,
             'skNumber'          => $skNumber,
-            // extensionDuration: server-derived label ("N Bulan"), empty for non-EXTEND.
-            // The controller must return this value — never the browser-supplied value.
-            'extensionDuration' => $isPerpanjang ? ($extDuration ?? '') : '',
+            // extensionDuration: label ("N Bulan") derived from manual start/end.
+            // The controller must return this value — never a browser-supplied duration string.
+            'extensionDuration' => $isPerpanjang ? $extDuration : '',
             // hasPdf = false untuk EXTEND → controller tidak membangun URL PDF
             'hasPdf'            => $decisionType?->hasPdf() ?? false,
             'message'           => $isLulus
@@ -498,6 +503,73 @@ class ProbationService
         // Urut terbaru dulu
         usort($history, fn($a, $b) => strcmp($b['evalDate'], $a['evalDate']));
         return $history;
+    }
+
+    /**
+     * Fill Employee contract-section display fields for drawer / edit modal.
+     *
+     * Priority for Tanggal Mulai Kontrak:
+     *   1. Start Date (Contract) already on the Employee sheet
+     *   2. Latest EXTEND row's New Contract Start (post-probation extension)
+     *   3. Join Date (original hire — never overwritten by extend)
+     *
+     * End Date (Contract) is updated on extend write; if still empty, fall back
+     * to New Contract End. Duration prefers stored / Extension Duration, else
+     * derives from the resolved start → end window.
+     */
+    public function enrichEmployeeContractDisplay(EmployeeData $employee): EmployeeData
+    {
+        $employeeId = trim((string) ($employee->employeeId ?? ''));
+        $latestExtend = $employeeId !== '' ? $this->latestExtendEvaluation($employeeId) : null;
+
+        $start = trim((string) ($employee->contractStart ?? ''));
+        $end = trim((string) ($employee->endDateContract ?? ''));
+        $duration = trim((string) ($employee->contractDuration ?? ''));
+
+        if ($latestExtend) {
+            $newStart = trim((string) ($latestExtend['newContractStart'] ?? ''));
+            $newEnd = trim((string) ($latestExtend['newContractEnd'] ?? ''));
+            $extDuration = trim((string) ($latestExtend['extensionDuration'] ?? ''));
+
+            if ($start === '' && $newStart !== '') {
+                $start = $newStart;
+            }
+            if ($end === '' && $newEnd !== '') {
+                $end = $newEnd;
+            }
+            if ($duration === '' && $extDuration !== '') {
+                $duration = $extDuration;
+            }
+        }
+
+        if ($start === '') {
+            $start = trim((string) ($employee->joinDate ?? ''));
+        }
+
+        if ($duration === '' && $start !== '' && $end !== '') {
+            $months = $this->monthsBetweenDates($start, $end);
+            $duration = $months !== null && $months > 0 ? $this->monthsToLabel($months) : '';
+        }
+
+        $employee->contractStart = $start !== '' ? $start : null;
+        $employee->endDateContract = $end !== '' ? $end : $employee->endDateContract;
+        $employee->contractDuration = $duration !== '' ? $duration : null;
+
+        return $employee;
+    }
+
+    /**
+     * Latest EXTEND evaluation for an employee (newest first), or null.
+     */
+    public function latestExtendEvaluation(string $employeeId): ?array
+    {
+        foreach ($this->getEvalHistory($employeeId) as $row) {
+            $type = ProbationDecisionType::fromDecisionString((string) ($row['decision'] ?? ''));
+            if ($type && $type->isExtend()) {
+                return $row;
+            }
+        }
+        return null;
     }
 
     /**
@@ -694,26 +766,7 @@ class ProbationService
         };
     }
 
-    // ── Extend: resolve duration + end-date from contract data (STEP 13) ──
-
-    /** Return the current Employee contract duration in whole months. */
-    private function resolveExtensionDuration(
-        ?string $joinDate,
-        ?string $endContract
-    ): ?int {
-        $contractMonths = $this->monthsBetweenDates($joinDate, $endContract);
-        return $contractMonths !== null && $contractMonths > 0 ? $contractMonths : null;
-    }
-
-    /** Convert "N Bulan" / "NBulan" → whole months. */
-    private function labelToMonths(string $label): ?int
-    {
-        if (preg_match('/(\d+)\s*Bulan/i', $label, $m)) {
-            $n = (int) $m[1];
-            return $n > 0 ? $n : null;
-        }
-        return null;
-    }
+    // ── Extend helpers: duration label from manual start/end ──
 
     /** Whole-month count → "N Bulan" label. */
     private function monthsToLabel(int $months): string
@@ -751,19 +804,6 @@ class ProbationService
             $n--;
         }
         return $n > 0 ? $n : null;
-    }
-
-    /** Add N contract months minus one day to a YYYY-MM-DD start, GMT+7. */
-    private function addMonthsDate(string $startDate, int $months): string
-    {
-        try {
-            return \Illuminate\Support\Carbon::parse($startDate)
-                ->addMonthsNoOverflow($months)
-                ->subDay()
-                ->timezone('Asia/Jakarta')->format('Y-m-d');
-        } catch (\Throwable) {
-            return '';
-        }
     }
 
     /**
@@ -830,26 +870,6 @@ class ProbationService
         $this->invalidateProbationRowsCache();
     }
 
-    private function getEntityCode(string $branchName): string
-    {
-        $b = strtolower($branchName);
-        if (str_contains($b, 'stein')) {
-            return 'SPI';
-        }
-        if (str_contains($b, 'injeksi')) {
-            return 'PII';
-        }
-        if (str_contains($b, 'mitra') || str_contains($b, 'elektro')) {
-            return 'MEP';
-        }
-        return 'MSI';
-    }
-
-    private function appendNote(?string $existing, string $line): string
-    {
-        return ($existing ? $existing . "\n" : '') . $line;
-    }
-
     private function generateEvalId(\Illuminate\Support\Carbon $now): string
     {
         return 'EVAL-' . $now->format('Ymd') . '-' . str_pad((string) $this->nextCounter('EVAL', $now), 4, '0', STR_PAD_LEFT);
@@ -858,20 +878,6 @@ class ProbationService
     private function generateProbationId(\Illuminate\Support\Carbon $now): string
     {
         return 'PROB-' . $now->format('Ymd') . '-' . str_pad((string) $this->nextCounter('PROB', $now), 4, '0', STR_PAD_LEFT);
-    }
-
-    private function generateSuratNumber(string $code, string $branchName, \Illuminate\Support\Carbon $now): string
-    {
-        $entity = $this->getEntityCode($branchName);
-        $roman  = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][$now->month - 1];
-        $seq    = $this->nextCounter('SK', $now);
-        return sprintf('%03d/%s/%s/%s/%d', $seq, $code, $entity, $roman, $now->year);
-    }
-
-    private function generatePaklaringNumber(string $branchName, string $evalId, \Illuminate\Support\Carbon $now): string
-    {
-        $entity = $this->getEntityCode($branchName);
-        return sprintf('SKK/HRD/%s/%d/%s', $entity, $now->year, $evalId);
     }
 
     private function nextCounter(string $prefix, \Illuminate\Support\Carbon $now): int
