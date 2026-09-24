@@ -117,7 +117,14 @@ class PhoneCityMappingTest extends TestCase
         $idGenerator = Mockery::mock(EmployeeIdGenerator::class);
         $idGenerator->shouldReceive('generate')->andReturn('EMP-TEST-0001');
 
-        return new RecruitmentService($candidateRepo, $employeeRepo, $drive, $auditRepo, $idGenerator);
+        return new RecruitmentService(
+            $candidateRepo,
+            $employeeRepo,
+            $drive,
+            $auditRepo,
+            $idGenerator,
+            $this->app->make(\App\Services\SkNumberService::class)
+        );
     }
 
     private function basePayload(array $overrides = []): array

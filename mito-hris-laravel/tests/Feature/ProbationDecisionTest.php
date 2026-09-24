@@ -248,12 +248,11 @@ class ProbationDecisionTest extends TestCase
     // =========================================================================
 
     /**
-     * Since architecture refactor (Sept 2026), extension duration is NO LONGER
-     * selected by HR. The backend derives it from the employee's current contract
-     * dates (joinDate → endDateContract) via ProbationService::resolveExtensionDuration().
+     * Since architecture refactor, extension duration is derived from the
+     * manually entered New Contract Start / End dates (not from the previous
+     * Employee contract window, and not from a client duration string).
      *
      * Any positive integer month count is a valid extension duration.
-     * The old restriction to only 3 / 6 / 12 Bulan has been removed.
      */
     #[Test]
     public function extension_duration_is_any_positive_month_count_derived_from_contract(): void
@@ -283,31 +282,27 @@ class ProbationDecisionTest extends TestCase
     // =========================================================================
     // I. Extension fields required ONLY when isPerpanjang
     //
-    // New architecture: HR provides only extension_start.
-    // The backend derives extension_duration from the employee contract.
+    // Manual architecture: HR provides extension_start + extension_end.
     // =========================================================================
 
     #[Test]
     public function perpanjang_requires_only_start_date_not_manual_duration(): void
     {
         $cases = [
-            // [decision, extStart, shouldPass]
-            // Extend with a start date → valid (backend derives duration)
-            ['Perpanjang Kontrak', '2026-08-01', true],
-            // Extend without a start date → invalid (start is the only required field)
-            ['Perpanjang Kontrak', '',            false],
-            // Non-perpanjang decisions don't need any extension fields
-            ['Tidak Lulus',                    '', true],
-            ['Diangkat sebagai Karyawan Tetap','', true],
+            // [decision, extStart, extEnd, shouldPass]
+            ['Perpanjang Kontrak', '2026-08-01', '2027-01-31', true],
+            ['Perpanjang Kontrak', '',            '2027-01-31', false],
+            ['Perpanjang Kontrak', '2026-08-01', '',            false],
+            ['Tidak Lulus',                    '', '', true],
+            ['Diangkat sebagai Karyawan Tetap','', '', true],
         ];
 
-        foreach ($cases as [$decision, $extStart, $shouldPass]) {
+        foreach ($cases as [$decision, $extStart, $extEnd, $shouldPass]) {
             $c = $this->classify($decision);
-            // New rule: only extStart is required (duration comes from contract server-side).
-            $valid = !$c['isPerpanjang'] || !empty($extStart);
+            $valid = !$c['isPerpanjang'] || (!empty($extStart) && !empty($extEnd));
 
             $this->assertSame($shouldPass, $valid,
-                "Decision=\"$decision\" start=\"$extStart\" expected "
+                "Decision=\"$decision\" start=\"$extStart\" end=\"$extEnd\" expected "
                 . ($shouldPass ? 'PASS' : 'FAIL'));
         }
     }

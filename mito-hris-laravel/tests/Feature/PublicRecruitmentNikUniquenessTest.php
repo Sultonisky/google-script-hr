@@ -159,7 +159,14 @@ class PublicRecruitmentNikUniquenessTest extends TestCase
         $drive = Mockery::mock(GoogleDriveService::class);
         $idGenerator = Mockery::mock(EmployeeIdGenerator::class);
 
-        return new RecruitmentService($candidateRepo, $employeeRepo, $drive, $auditRepo, $idGenerator);
+        return new RecruitmentService(
+            $candidateRepo,
+            $employeeRepo,
+            $drive,
+            $auditRepo,
+            $idGenerator,
+            $this->app->make(\App\Services\SkNumberService::class)
+        );
     }
 
     private function mockRepo(): CandidateRepositoryInterface
