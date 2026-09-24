@@ -3,24 +3,22 @@
 namespace App\Services;
 
 use App\DTOs\EmployeeData;
-use App\Repositories\Contracts\EmployeeRepositoryInterface;
-use Illuminate\Support\Facades\Cache;
+use App\Enums\SkDocumentType;
 use Illuminate\Support\Carbon;
 
 class OutsourceContractService
 {
     public function __construct(
-        protected EmployeeRepositoryInterface $employeeRepo
+        private SkNumberService $skNumbers
     ) {}
 
     /**
-     * Allocate next PKWT TAD contract number for an outsource employee.
-     * Format: 001/DM-PKWT/TAD/XI/2026
+     * Allocate PKWT TAD contract number — same fixed-seq family as other SK docs.
+     * Format: {seq}/PKTAD/{ENTITY}/{ROMAN}/{YEAR}
      *
-     * Sequence is per employeeId (1st contract → 001, 2nd → 002, …).
-     * Roman month + year come from generation time ($now).
+     * @return array{seq:int, contract_number:string, roman_month:string, year:int, generated_at:string}
      */
-    public function allocateContractNumber(EmployeeData $employee, ?Carbon $now = null): array
+    public function allocateContractNumber(EmployeeData $employee, ?Carbon $now = null, ?string $issuedBy = null): array
     {
         $now = $now ?? now()->timezone('Asia/Jakarta');
         $employeeId = trim((string) ($employee->employeeId ?? ''));
@@ -28,40 +26,25 @@ class OutsourceContractService
             throw new \InvalidArgumentException('Employee ID kosong.');
         }
 
-        $cacheKey = 'OUTSOURCE_PKWT_TAD_SEQ_' . $employeeId;
-        $lock = Cache::lock('lock_' . $cacheKey, 15);
+        $issued = $this->skNumbers->issue(
+            employeeId: $employeeId,
+            type: SkDocumentType::PKTAD,
+            branchName: (string) ($employee->branchName ?? ''),
+            issuedBy: $issuedBy ?: 'HR Administrator',
+            reference: 'Outsource PKWT TAD',
+            notes: 'Kontrak PKWT TAD',
+            issuedAt: $now,
+        );
 
-        try {
-            $lock->block(10);
+        $roman = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][$now->month - 1];
 
-            $fromSheet = (int) ($employee->outsourceContractSeq ?? 0);
-            $fromCache = (int) Cache::get($cacheKey, 0);
-            $next = max($fromSheet, $fromCache) + 1;
-
-            Cache::forever($cacheKey, $next);
-
-            // Persist to sheet when column exists; ignore failure if header belum ada.
-            try {
-                $this->employeeRepo->update($employeeId, [
-                    'Outsource Contract Seq' => (string) $next,
-                ]);
-            } catch (\Throwable) {
-                // Sequence tetap aman di cache.
-            }
-
-            $roman = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][$now->month - 1];
-            $contractNumber = sprintf('%03d/DM-PKWT/TAD/%s/%d', $next, $roman, $now->year);
-
-            return [
-                'seq'             => $next,
-                'contract_number' => $contractNumber,
-                'roman_month'     => $roman,
-                'year'            => $now->year,
-                'generated_at'    => $now->format('Y-m-d H:i:s'),
-            ];
-        } finally {
-            optional($lock)->release();
-        }
+        return [
+            'seq'             => $issued['sequence'],
+            'contract_number' => $issued['nomor'],
+            'roman_month'     => $roman,
+            'year'            => $now->year,
+            'generated_at'    => $now->format('Y-m-d H:i:s'),
+        ];
     }
 
     public function isOutsource(EmployeeData $employee): bool

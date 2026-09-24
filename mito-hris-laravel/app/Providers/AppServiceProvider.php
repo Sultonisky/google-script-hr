@@ -19,6 +19,7 @@ use App\Repositories\Contracts\UserRepositoryInterface;
 use App\Repositories\Contracts\CandidateRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
+use App\Repositories\Contracts\EmployeeDocumentRepositoryInterface;
 use App\Repositories\Contracts\MprRepositoryInterface;
 use App\Repositories\Contracts\MprRequestorRepositoryInterface;
 use App\Repositories\Contracts\UserPermissionRepositoryInterface;
@@ -27,11 +28,13 @@ use App\Repositories\GoogleSheets\UserSheetsRepository;
 use App\Repositories\GoogleSheets\UserPermissionSheetsRepository;
 use App\Repositories\GoogleSheets\PermissionCatalogSheetsRepository;
 use App\Repositories\Database\UserDatabaseRepository;
+use App\Repositories\Local\ArrayEmployeeDocumentRepository;
 use App\Repositories\Local\ArrayUserPermissionRepository;
 use App\Repositories\Local\StaticPermissionCatalogRepository;
 use App\Repositories\Local\LocalEmployeeRepository;
 use App\Repositories\Sheets\AuditLogSheetsRepository;
 use App\Repositories\Sheets\CandidateSheetsRepository;
+use App\Repositories\Sheets\EmployeeDocumentSheetsRepository;
 use App\Repositories\Sheets\EmployeeSheetsRepository;
 use App\Repositories\Sheets\MprSheetsRepository;
 use App\Repositories\Sheets\MprRequestorSheetsRepository;
@@ -52,11 +55,13 @@ class AppServiceProvider extends ServiceProvider
             $this->app->singleton(UserPermissionRepositoryInterface::class, UserPermissionSheetsRepository::class);
             $this->app->singleton(PermissionCatalogRepositoryInterface::class, PermissionCatalogSheetsRepository::class);
             $this->app->bind(EmployeeRepositoryInterface::class, EmployeeSheetsRepository::class);
+            $this->app->bind(EmployeeDocumentRepositoryInterface::class, EmployeeDocumentSheetsRepository::class);
         } else {
             $this->app->bind(UserRepositoryInterface::class, UserDatabaseRepository::class);
             $this->app->singleton(UserPermissionRepositoryInterface::class, ArrayUserPermissionRepository::class);
             $this->app->singleton(PermissionCatalogRepositoryInterface::class, StaticPermissionCatalogRepository::class);
             $this->app->bind(EmployeeRepositoryInterface::class, LocalEmployeeRepository::class);
+            $this->app->singleton(EmployeeDocumentRepositoryInterface::class, ArrayEmployeeDocumentRepository::class);
         }
         $this->app->singleton(PermissionResolver::class);
         $this->app->bind(CandidateRepositoryInterface::class, CandidateSheetsRepository::class);

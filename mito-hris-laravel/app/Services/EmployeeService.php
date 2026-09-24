@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\DTOs\EmployeeData;
+use App\Enums\SkDocumentType;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Services\EmployeeIdGenerator;
@@ -26,7 +27,8 @@ class EmployeeService
         EmployeeIdGenerator $idGenerator,
         private GoogleDriveService $driveService,
         private PdfGeneratorService $pdfService,
-        private GoogleSheetsService $sheets
+        private GoogleSheetsService $sheets,
+        private SkNumberService $skNumbers
     ) {
         $this->employeeRepo = $employeeRepo;
         $this->auditRepo    = $auditRepo;
@@ -82,6 +84,15 @@ class EmployeeService
         }
 
         // --- Bangun EmployeeData DTO ---
+        $joinDate = trim($data['joinDate'] ?? '');
+        $endDateContract = trim($data['endDateContract'] ?? '');
+        $contractStart = trim($data['contractStart'] ?? $joinDate);
+        $contractDuration = trim($data['contractDuration'] ?? '');
+        if ($contractDuration === '' && $contractStart !== '' && $endDateContract !== '') {
+            $months = $this->deriveContractDurationMonths($contractStart, $endDateContract);
+            $contractDuration = $months > 0 ? $this->durationToLabel($months) : '';
+        }
+
         $employee = new EmployeeData(
             employeeId: $empId,
             fullName: $fullName,
@@ -94,13 +105,16 @@ class EmployeeService
             lokasiKerja: trim($data['lokasiKerja'] ?? ''),
             jobLevel: trim($data['jobLevel'] ?? ''),
             grade: trim($data['grade'] ?? ''),
-            joinDate: trim($data['joinDate'] ?? ''),
+            joinDate: $joinDate,
             statusEmployee: trim($data['statusEmployee'] ?? 'Contract'),
             directSuperior: trim($data['directSuperior'] ?? ''),
             indirectSuperior: trim($data['indirectSuperior'] ?? ''),
             personalEmail: trim($data['personalEmail'] ?? ''),
             workingEmail: trim($data['workingEmail'] ?? ''),
-            endDateContract: trim($data['endDateContract'] ?? ''),
+            endDateContract: $endDateContract,
+            contractStart: $contractStart,
+            contractDuration: $contractDuration,
+            contractNumber: trim($data['contractNumber'] ?? ''),
             birthPlace: trim($data['birthPlace'] ?? ''),
             birthDate: trim($data['birthDate'] ?? ''),
             citizenIdAddress: trim($data['citizenIdAddress'] ?? ''),
@@ -507,33 +521,18 @@ class EmployeeService
         $effectiveDate = $data['effective_date'] ?? $now->format('Y-m-d');
         $notesRaw      = $data['notes'] ?? '';
 
-        // Nomor SK selalu di-generate server-side — tidak boleh menerima dari input request
-        $skNumber = ''; {
-            // Resolusi entity abbreviation dari branch name (1:1 dengan kop-surat.blade.php entity resolver)
-            $branchForEntity = strtolower($newBranch ?: $oldBranch ?: '');
-            if (str_contains($branchForEntity, 'stein')) {
-                $entityCode = 'SPI';
-            } elseif (str_contains($branchForEntity, 'injeksi')) {
-                $entityCode = 'PII';
-            } elseif (str_contains($branchForEntity, 'mitra') || str_contains($branchForEntity, 'elektro')) {
-                $entityCode = 'MEP';
-            } else {
-                $entityCode = 'MSI';
-            }
-
-            $romanMonth = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
-            $datePart   = $now->format('Ym');
-            $cacheKey   = "SK_ROT_COUNTER_{$datePart}";
-            $lock       = \Illuminate\Support\Facades\Cache::lock("lock_{$cacheKey}", 10);
-            try {
-                $lock->block(10);
-                $seq = (int) \Illuminate\Support\Facades\Cache::get($cacheKey, 0) + 1;
-                \Illuminate\Support\Facades\Cache::put($cacheKey, $seq, $now->endOfMonth());
-            } finally {
-                $lock->release();
-            }
-            $skNumber = sprintf('%03d/HRD-PK/%s/%s/%d', $seq, $entityCode, $romanMonth[$now->month - 1], $now->year);
-        }
+        // Nomor SK selalu di-generate server-side — tidak boleh menerima dari input request.
+        // Fixed per-employee sequence; code follows rotation type (SKM/SKD/SKPR).
+        $issued = $this->skNumbers->issue(
+            employeeId: $employeeId,
+            type: SkDocumentType::fromRotationType($rotationType),
+            branchName: $newBranch ?: $oldBranch ?: '',
+            issuedBy: $user,
+            reference: $effectiveDate,
+            notes: trim($notesRaw),
+            issuedAt: $now,
+        );
+        $skNumber = $issued['nomor'];
 
         $attributes = [
             'Job Position (Former)'        => $oldPosition,
@@ -544,7 +543,6 @@ class EmployeeService
             'Department'                   => $newDepartment,
             'Type of Rotation'             => $rotationType,
             'Tanggal Mutasi/Demosi/Promosi' => $effectiveDate,
-            'Nomor SK'                     => $skNumber,
             'Updated At'                   => $nowStr,
         ];
 
@@ -624,42 +622,40 @@ class EmployeeService
         $newStatus = $statusMap[$offboardingType] ?? 'Resigned';
         $oldStatus = $employee->statusEmployee ?? 'Active';
 
-        // Generate SK number server-side (1:1 GAS generateSkOffNumber_)
-        $branchForEntity = strtolower($employee->branchName ?? '');
-        if (str_contains($branchForEntity, 'stein')) {
-            $entityCode = 'SPI';
-        } elseif (str_contains($branchForEntity, 'injeksi')) {
-            $entityCode = 'PII';
-        } elseif (str_contains($branchForEntity, 'mitra') || str_contains($branchForEntity, 'elektro')) {
-            $entityCode = 'MEP';
-        } else {
-            $entityCode = 'MSI';
-        }
-        $romanMonth = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
-        $datePart   = $now->format('Ym');
-        $cacheKey   = "SK_OFF_COUNTER_{$datePart}";
-        $lock       = \Illuminate\Support\Facades\Cache::lock("lock_{$cacheKey}", 10);
-        try {
-            $lock->block(10);
-            $seq = (int) \Illuminate\Support\Facades\Cache::get($cacheKey, 0) + 1;
-            \Illuminate\Support\Facades\Cache::put($cacheKey, $seq, $now->endOfMonth());
-        } finally {
-            $lock->release();
-        }
-        $skNumber = sprintf('%03d/HRD-SKK/%s/%s/%d', $seq, $entityCode, $romanMonth[$now->month - 1], $now->year);
+        // Issue SK Offboarding (SKO) then Paklaring (SPAK). Same fixed seq; Nomor SK = latest (SPAK).
+        $branchName = $employee->branchName ?? '';
+        $skoIssued = $this->skNumbers->issue(
+            employeeId: $employeeId,
+            type: SkDocumentType::OFFBOARDING,
+            branchName: $branchName,
+            issuedBy: $user,
+            reference: $offboardingType,
+            notes: $notes,
+            issuedAt: $now,
+        );
+        $spakIssued = $this->skNumbers->issue(
+            employeeId: $employeeId,
+            type: SkDocumentType::PAKLARING,
+            branchName: $branchName,
+            issuedBy: $user,
+            reference: $offboardingType,
+            notes: $notes,
+            issuedAt: $now,
+        );
+        $skNumber = $skoIssued['nomor'];
+        $paklaringNumber = $spakIssued['nomor'];
 
         // Preserve last position to Job Position (Former) if not already set
         $currentPosition = $employee->jobPositionLocation ?? $employee->jobPosition ?? '';
         $formerPosition  = $employee->jobPositionFormer ?? '';
 
-        // Step 1: Update Employee Sheet
+        // Step 1: Update Employee Sheet (Nomor SK already set by SkNumberService to latest SPAK)
         $attributes = [
             'Status Employee'          => $newStatus,
             'Resign Date'              => $effectiveDate,
             'Offboarding Type'         => $offboardingType,
             'Offboarding Reason'       => $reason,
             'Offboarding Approved By'  => $approvedBy,
-            'Nomor SK'                 => $skNumber,
             'Updated At'               => $nowStr,
         ];
         if ($currentPosition && !$formerPosition) {
@@ -737,22 +733,24 @@ class EmployeeService
             }
         }
 
-        // Step 3: Build PDF download URLs (same pattern as processOffContract)
-        // PDFs are NOT generated server-side here — they are downloaded via existing export routes
-        // using the employee data that was just written to the sheet.
-        $extraQ = http_build_query([
+        // Step 3: Build PDF download URLs (same pattern as processOffContract).
+        // ExportController resolves stored numbers by doc type; query values are hints only.
+        $baseQ = [
             'effective_date'    => $effectiveDate,
             'last_working_date' => $effectiveDate,
-            'sk_number'         => $skNumber,
             'offboarding_type'  => $offboardingType,
             'notes'             => $notes,
             'approved_by'       => $approvedBy,
-        ]);
+        ];
+        $skOffQ = http_build_query($baseQ + ['sk_number' => $skNumber]);
+        $pakQ   = http_build_query($baseQ + ['sk_number' => $paklaringNumber, 'letter_number' => $paklaringNumber]);
+        // Surat BPJS: numbering disabled — do not pass sk_number / letter_number.
+        $bpjsQ  = http_build_query($baseQ);
         $pdfUrls = [
-            'sk_off'     => route('hr.export.sk-off',     ['id' => $employeeId]) . '?' . $extraQ,
-            'surat_bpjs' => route('hr.export.surat-bpjs', ['id' => $employeeId]) . '?' . $extraQ,
-            'paklaring'  => route('hr.export.paklaring',  ['id' => $employeeId]) . '?' . $extraQ,
-            'bundle'     => route('hr.export.offboarding-bundle', ['id' => $employeeId]) . '?' . $extraQ,
+            'sk_off'     => route('hr.export.sk-off',     ['id' => $employeeId]) . '?' . $skOffQ,
+            'surat_bpjs' => route('hr.export.surat-bpjs', ['id' => $employeeId]) . '?' . $bpjsQ,
+            'paklaring'  => route('hr.export.paklaring',  ['id' => $employeeId]) . '?' . $pakQ,
+            'bundle'     => route('hr.export.offboarding-bundle', ['id' => $employeeId]) . '?' . $skOffQ,
         ];
 
         return [
@@ -761,6 +759,7 @@ class EmployeeService
             'employeeId'        => $employeeId,
             'newStatus'         => $newStatus,
             'skNumber'          => $skNumber,
+            'paklaringNumber'   => $paklaringNumber,
             'pdf_urls'          => $pdfUrls,
             'drive_folder_url'  => $driveResult['folder_url'] ?? null,
             'docs_uploaded'     => count($driveResult['uploaded'] ?? []),
