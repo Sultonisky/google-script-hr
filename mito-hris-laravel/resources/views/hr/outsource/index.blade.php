@@ -34,7 +34,7 @@
                         @endif
                     </div>
                 </div>
-                @can('manage_employees')
+                @can('manage_outsource')
                     <div class="export-btns d-flex flex-wrap gap-2">
                         <button class="btn btn-sm fw-semibold text-white"
                             style="background:#0d6efd;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
@@ -149,7 +149,7 @@
 
     </section>
 
-    @can('manage_employees')
+    @can('manage_outsource')
         @include('hr.partials.outsource-contract-modal')
     @endcan
 @endsection

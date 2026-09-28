@@ -27,6 +27,14 @@
             margin-bottom: 12px;
         }
 
+        .doc-no {
+            font-size: 9pt;
+            text-align: center;
+            color: #374151;
+            margin-top: -8px;
+            margin-bottom: 12px;
+        }
+
         .kv-table {
             width: 100%;
             border-collapse: collapse;
@@ -134,15 +142,26 @@
         $companyName = $company['name'] ?? 'PT MAHAKARYA SUKSES INDONESIA';
 
         // todayStr: 1:1 GAS — format "d Bulan YYYY"
-        $todayStr = date('j') . ' ' . $bulanId[(int) date('n') - 1] . ' ' . date('Y');
+        $docTs = strtotime((string) ($extraData['doc_date'] ?? '')) ?: time();
+        $todayStr = date('j', $docTs) . ' ' . $bulanId[(int) date('n', $docTs) - 1] . ' ' . date('Y', $docTs);
 
         // city: 1:1 GAS — HARDCODED 'Jakarta' in exportPaklaringPDF
         // GAS: doc.text('Jakarta, ' + todayStr, sigX, yPos)
         $sigCity = 'Jakarta';
+
+        // Nomor Paklaring: {seq}/SPAK/{ENTITY}/{ROMAN}/{YEAR}. Numbers of other
+        // document types (legacy Nomor SK fallback) must not be printed here.
+        $pakNumber = trim((string) ($extraData['sk_number'] ?? ($extraData['letter_number'] ?? ($extraData['skNumber'] ?? ''))));
+        if (!preg_match('#^\d+/SPAK/#i', $pakNumber)) {
+            $pakNumber = '';
+        }
     @endphp
 
-    {{-- ── JUDUL (1:1 GAS: 'SURAT KETERANGAN KERJA', no nomor line) --}}
+    {{-- ── JUDUL ─────────────────────────────────────────────── --}}
     <div class="doc-title">SURAT KETERANGAN KERJA</div>
+    @if ($pakNumber !== '')
+        <div class="doc-no">Nomor: {{ $pakNumber }}</div>
+    @endif
 
     {{-- ── PEMBUKA (1:1 GAS: 'Yang bertandatangan di bawah ini:') --}}
     <p style="font-size:9pt;">Yang bertandatangan di bawah ini:</p>

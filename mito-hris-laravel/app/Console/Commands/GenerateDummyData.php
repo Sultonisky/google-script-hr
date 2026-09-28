@@ -2,20 +2,27 @@
 
 namespace App\Console\Commands;
 
-use App\Services\DummyDataService;
+use App\Console\Commands\Concerns\SoftDeprecatesSheetsEraCommand;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
+use App\Services\DummyDataService;
 use Illuminate\Console\Command;
 
 class GenerateDummyData extends Command
 {
+    use SoftDeprecatesSheetsEraCommand;
+
     protected $signature = 'mito:dummy
                             {--count=50 : Jumlah kandidat yang dihasilkan (default: 50)}
-                            {--force : Skip konfirmasi prompt}';
+                            {--force : Skip konfirmasi / izinkan saat SoT=pgsql}';
 
-    protected $description = 'Generate dummy/demo data ke Google Sheets (kandidat, employee, probation, audit log)';
+    protected $description = '[Sheets-era] Generate dummy data ke Google Sheets (disabled saat SoT=pgsql kecuali --force)';
 
     public function handle(DummyDataService $dummyDataService, AuditLogRepositoryInterface $auditRepo): int
     {
+        if ($this->refuseSheetsEraUnlessForced('Jangan isi Sheets saat SoT=pgsql. Seed ke DB atau pakai factory/tests.')) {
+            return Command::SUCCESS;
+        }
+
         $count = (int) $this->option('count');
         $count = max(10, min(200, $count));
 

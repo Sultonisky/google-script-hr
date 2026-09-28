@@ -590,7 +590,7 @@
   3. User clicks Import → POST /hr/employees/import (JSON: {employees:[new rows only]})
   4. Show step3 result with counts and per-row errors
 
-  NO write to Google Sheets happens in steps 1–2.
+  NO write to the data store happens in steps 1–2.
   Backend always re-validates in step 3.
   RBAC: can:manage_employees (enforced in route + backend).
 --}}

@@ -224,23 +224,9 @@ class MprFlowTest extends TestCase
     {
         $this->actingAsRole('Manpower', 'manager.refresh@mito.id', 'Rina Manpower', ['MSI'], 'Bandung');
 
+        // Default CI driver is local (GOOGLE_SHEETS_ENABLED=false) → refresh via repositories.
         $mockSheets = Mockery::mock(GoogleSheetsService::class);
-        $mockSheets->shouldReceive('healthCheck')
-            ->once()
-            ->with(['Employee', 'data_kandidat', 'MPR'])
-            ->andReturn([
-                'success' => true,
-                'sheets' => ['Employee', 'data_kandidat', 'MPR'],
-            ]);
-
-        foreach (['Employee', 'data_kandidat', 'MPR'] as $sheetName) {
-            $mockSheets->shouldReceive('clearCache')->once()->with($sheetName);
-            $mockSheets->shouldReceive('getRange')->once()->with($sheetName, 'A:ZZ', false)->andReturn([
-                ['Employee ID', 'Name'],
-                ['E-001', 'Contoh'],
-            ]);
-        }
-
+        $mockSheets->shouldReceive('healthCheck')->never();
         $this->app->instance(GoogleSheetsService::class, $mockSheets);
 
         $response = $this->postJson('/hr/refresh-data');

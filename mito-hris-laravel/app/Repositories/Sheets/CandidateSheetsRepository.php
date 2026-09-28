@@ -204,14 +204,21 @@ class CandidateSheetsRepository implements CandidateRepositoryInterface
 
     public function getAllFromSheets(array $sheetKeys = []): Collection
     {
-        if (empty($sheetKeys)) {
-            $sheetKeys = ['candidates', 'candidates_hold', 'candidates_blacklist', 'candidates_accepted', 'candidates_probation'];
+        return $this->listByLifecycle($sheetKeys);
+    }
+
+    public function listByLifecycle(array $buckets = []): Collection
+    {
+        if (empty($buckets)) {
+            $buckets = ['candidates', 'candidates_hold', 'candidates_blacklist', 'candidates_accepted', 'candidates_probation'];
         }
 
         $all = collect();
-        foreach ($sheetKeys as $key) {
+        foreach ($buckets as $key) {
             $sheetName = config("google.sheets.{$key}");
-            if (!$sheetName) continue;
+            if (!$sheetName) {
+                continue;
+            }
             $rows = $this->sheets->getRowsAsAssoc($sheetName);
             foreach ($rows as $row) {
                 $all->push(CandidateData::fromSheetRow($row));
@@ -219,6 +226,21 @@ class CandidateSheetsRepository implements CandidateRepositoryInterface
         }
 
         return $all;
+    }
+
+    public function moveToHold(string $recruitmentId, array $extraData = []): bool
+    {
+        return $this->moveToSheet($recruitmentId, 'candidates_hold', $extraData);
+    }
+
+    public function moveToBlacklist(string $recruitmentId, array $extraData = []): bool
+    {
+        return $this->moveToSheet($recruitmentId, 'candidates_blacklist', $extraData);
+    }
+
+    public function moveToAccepted(string $recruitmentId, array $extraData = []): bool
+    {
+        return $this->moveToSheet($recruitmentId, 'candidates_accepted', $extraData);
     }
 
     public function moveToSheet(string $recruitmentId, string $targetSheetKey, array $extraData = []): bool

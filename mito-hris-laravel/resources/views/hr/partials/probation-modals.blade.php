@@ -465,20 +465,6 @@
                                 <i class="bi bi-calendar-range"></i>
                                 Detail Perpanjangan <span class="text-danger">*</span>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold" style="font-size:12px">
-                                    Durasi Kontrak Saat Ini
-                                </label>
-                                <div id="evalExtDurationDisplay" class="form-control form-control-sm"
-                                    style="background:#f9fafb;font-weight:600;color:#92400e">Belum tersedia</div>
-                                <div class="form-text" style="font-size:11px">
-                                    Masa probation diperpanjang mengikuti durasi kontrak yang berlaku.
-                                </div>
-                                <div id="evalExtDurError"
-                                    style="display:none;font-size:12px;color:#dc2626;margin-top:4px">
-                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Durasi kontrak tidak tersedia.
-                                </div>
-                            </div>
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold" style="font-size:12px">
@@ -491,13 +477,24 @@
                                     </div>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold" style="font-size:12px">Tanggal Akhir Kontrak
-                                        Baru</label>
-                                    <input type="date" class="form-control form-control-sm" id="evalExtEnd"
-                                        readonly style="background:#f9fafb" />
-                                    <div class="form-text" id="evalExtEndHint" style="font-size:11px">
-                                        Auto-dihitung dari durasi kontrak saat ini.
+                                    <label class="form-label fw-semibold" style="font-size:12px">
+                                        Tanggal Akhir Kontrak Baru <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="date" class="form-control form-control-sm" id="evalExtEnd" />
+                                    <div id="evalExtEndError"
+                                        style="display:none;font-size:12px;color:#dc2626;margin-top:4px">
+                                        <i class="bi bi-exclamation-triangle-fill me-1"></i>Tanggal akhir wajib diisi dan harus setelah tanggal mulai.
                                     </div>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <label class="form-label fw-semibold" style="font-size:12px">
+                                    Durasi Kontrak Baru
+                                </label>
+                                <div id="evalExtDurationDisplay" class="form-control form-control-sm"
+                                    style="background:#f9fafb;font-weight:600;color:#92400e">Isi kedua tanggal di atas</div>
+                                <div class="form-text" id="evalExtEndHint" style="font-size:11px">
+                                    Durasi dihitung otomatis dari tanggal mulai dan akhir yang Anda isi.
                                 </div>
                             </div>
                         </div>
@@ -697,16 +694,18 @@
             });
 
             var extStart = document.getElementById('evalExtStart');
-            if (extStart) {
-                extStart.addEventListener('change', function () {
-                    if (typeof window.calcExtendEnd === 'function') {
-                        window.calcExtendEnd();
+            var extEnd = document.getElementById('evalExtEnd');
+            [extStart, extEnd].forEach(function(el) {
+                if (!el) return;
+                el.addEventListener('change', function() {
+                    if (typeof window.updateExtendDurationFromDates === 'function') {
+                        window.updateExtendDurationFromDates();
                     }
                     if (typeof window.updateConfirmBtn === 'function') {
                         window.updateConfirmBtn();
                     }
                 });
-            }
+            });
 
             approvalButtons.forEach(function (button) {
                 button.addEventListener('click', function () {
@@ -997,15 +996,6 @@
             var extSec = document.getElementById('evalExtendSection');
             if (extSec) extSec.style.display = cls.isPerp ? 'block' : 'none';
 
-            // Auto-fill today as extension start if not set
-            if (cls.isPerp) {
-                var startEl = document.getElementById('evalExtStart');
-                if (startEl && !startEl.value) {
-                    startEl.value = new Date().toISOString().split('T')[0];
-                    calcExtendEnd();
-                }
-            }
-
             // Clear decision error
             hideInlineError('evalDecisionError');
 
@@ -1045,23 +1035,52 @@
             });
         };
 
-        // ── Auto-calculate extension end date ────────────────────────────
-        window.calcExtendEnd = function() {
-            var dur = document.getElementById('evalExtDuration').value;
+        // ── Derive duration label from manual start/end dates ─────────────
+        window.updateExtendDurationFromDates = function() {
             var startEl = document.getElementById('evalExtStart');
             var endEl = document.getElementById('evalExtEnd');
+            var durHidden = document.getElementById('evalExtDuration');
+            var durDisplay = document.getElementById('evalExtDurationDisplay');
             var hintEl = document.getElementById('evalExtEndHint');
-            if (!dur || !startEl || !endEl || !startEl.value) return;
-            var m = dur.match(/^(\d+)\s*Bulan/i);
-            if (!m) return;
-            var d = new Date(startEl.value);
-            d.setMonth(d.getMonth() + parseInt(m[1], 10));
-            d.setDate(d.getDate() - 1);
-            endEl.value = d.toISOString().split('T')[0];
-            if (hintEl) hintEl.textContent = 'Kontrak baru berakhir ' + endEl.value + ' (' + dur + ').';
+            if (!startEl || !endEl) return;
+
+            var start = startEl.value;
+            var end = endEl.value;
+            var label = '';
+
+            if (start && end) {
+                label = contractDurationLabel(start, end);
+            }
+
+            if (durHidden) durHidden.value = label || '';
+            if (durDisplay) {
+                if (!start || !end) {
+                    durDisplay.textContent = 'Isi kedua tanggal di atas';
+                    durDisplay.style.color = '#92400e';
+                } else if (label) {
+                    durDisplay.textContent = label;
+                    durDisplay.style.color = '#92400e';
+                } else {
+                    durDisplay.textContent = 'Rentang tanggal tidak valid';
+                    durDisplay.style.color = '#991b1b';
+                }
+            }
+            if (hintEl) {
+                if (label) {
+                    hintEl.textContent = 'Kontrak baru: ' + start + ' s/d ' + end + ' (' + label + ').';
+                } else {
+                    hintEl.textContent = 'Durasi dihitung otomatis dari tanggal mulai dan akhir yang Anda isi.';
+                }
+            }
+
+            hideInlineError('evalExtStartError');
+            hideInlineError('evalExtEndError');
             updateConfirmBtn();
             updateSummary();
         };
+
+        // Backward-compatible alias (older inline handlers)
+        window.calcExtendEnd = window.updateExtendDurationFromDates;
 
         // ── Button state ────────────────────────────────────────────────
         window.updateConfirmBtn = function() {
@@ -1086,8 +1105,10 @@
 
             var extValid = true;
             if (cls.isPerp) {
-                extValid = !!(document.getElementById('evalExtDuration').value) &&
-                    !!(document.getElementById('evalExtStart').value);
+                var start = document.getElementById('evalExtStart').value;
+                var end = document.getElementById('evalExtEnd').value;
+                var dur = document.getElementById('evalExtDuration').value;
+                extValid = !!(start && end && dur && end > start);
             }
 
             var lulusOk = !cls.isLulus || (allRated && total >= 8);
@@ -1269,15 +1290,16 @@
             }
 
             if (cls.isPerp) {
-                var dur = document.getElementById('evalExtDuration').value;
                 var start = document.getElementById('evalExtStart').value;
+                var end = document.getElementById('evalExtEnd').value;
+                var dur = document.getElementById('evalExtDuration').value;
                 var hasError = false;
-                if (!dur) {
-                    showInlineError('evalExtDurError');
-                    hasError = true;
-                }
                 if (!start) {
                     showInlineError('evalExtStartError');
+                    hasError = true;
+                }
+                if (!end || (start && end <= start) || !dur) {
+                    showInlineError('evalExtEndError');
                     hasError = true;
                 }
                 if (hasError) {
@@ -1547,15 +1569,6 @@
             tn('evalEmpContractEnd', emp.endDateContract);
             tn('evalEmpReviewer', emp.directSuperior);
 
-            var contractDuration = contractDurationLabel(emp.joinDate, emp.endDateContract);
-            var durationDisplay = document.getElementById('evalExtDurationDisplay');
-            var durationHidden = document.getElementById('evalExtDuration');
-            if (durationHidden) durationHidden.value = contractDuration;
-            if (durationDisplay) {
-                durationDisplay.textContent = contractDuration || 'Tidak tersedia';
-                durationDisplay.style.color = contractDuration ? '#92400e' : '#991b1b';
-            }
-
             var avatar = document.getElementById('evalEmpAvatar');
             if (avatar) {
                 avatar.textContent = (emp.fullName || 'E').replace(/\s+/g, ' ').trim().split(' ')
@@ -1565,17 +1578,7 @@
             }
 
             document.getElementById('evalEmpPreview').style.display = 'block';
-            // Reset form state FIRST, then re-apply employee-specific values.
-            // Previously resetEvalFormState() was called AFTER setting the duration
-            // display, which wiped evalExtDuration and showed "Belum tersedia".
             resetEvalFormState();
-
-            // Re-apply contract duration after reset so Section D shows correctly.
-            if (durationHidden) durationHidden.value = contractDuration;
-            if (durationDisplay) {
-                durationDisplay.textContent = contractDuration || 'Tidak tersedia';
-                durationDisplay.style.color = contractDuration ? '#92400e' : '#991b1b';
-            }
 
             loadPreviousEvaluation(emp.employeeId || '');
         };
@@ -1759,7 +1762,7 @@
             document.getElementById('evalExtDuration').value = '';
             var durationDisplay = document.getElementById('evalExtDurationDisplay');
             if (durationDisplay) {
-                durationDisplay.textContent = 'Belum tersedia';
+                durationDisplay.textContent = 'Isi kedua tanggal di atas';
                 durationDisplay.style.color = '#92400e';
             }
             setPreviousDecisionOptions(true);
@@ -1815,7 +1818,7 @@
             if (sumEl) sumEl.style.display = 'none';
 
             // Reset errors
-            ['evalDecisionError', 'evalExtDurError', 'evalExtStartError'].forEach(hideInlineError);
+            ['evalDecisionError', 'evalExtStartError', 'evalExtEndError'].forEach(hideInlineError);
             var indErrElB = document.getElementById('evalIndicatorError');
             if (indErrElB) indErrElB.style.display = 'none';
             hideServerError();

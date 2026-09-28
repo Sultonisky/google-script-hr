@@ -2,17 +2,25 @@
 
 namespace App\Console\Commands;
 
-use App\Services\SchemaValidationService;
+use App\Console\Commands\Concerns\SoftDeprecatesSheetsEraCommand;
 use App\Services\Google\GoogleSheetsService;
+use App\Services\SchemaValidationService;
 use Illuminate\Console\Command;
 
 class SetupSheetsCommand extends Command
 {
-    protected $signature = 'mito:setup-sheets {--fix : Automatically fix header mismatches}';
-    protected $description = 'Validate and optionally fix Google Sheets schemas';
+    use SoftDeprecatesSheetsEraCommand;
+
+    protected $signature = 'mito:setup-sheets {--fix : Automatically fix header mismatches} {--force : Jalankan meski SoT sudah pgsql (backup archive)}';
+
+    protected $description = '[Sheets-era / archive] Validate and optionally fix Google Sheets schemas';
 
     public function handle(SchemaValidationService $validator, GoogleSheetsService $sheets): int
     {
+        if ($this->refuseSheetsEraUnlessForced('Prefer mirror: mito:etl-db-to-sheets setelah data di DB.')) {
+            return Command::SUCCESS;
+        }
+
         $this->info('Validating Google Sheets schemas...');
 
         $results = $validator->validateAllSheets();

@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers\HR;
 
+use App\DTOs\EmployeeData;
+use App\Enums\SkDocumentType;
 use App\Http\Controllers\Controller;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
+use App\Services\EmployeeDocumentArchiveService;
 use App\Services\EmployeeService;
 use App\Services\OutsourceContractService;
 use App\Services\PdfGeneratorService;
@@ -22,19 +25,22 @@ class OutsourceController extends Controller
     protected OutsourceContractService $contractService;
     protected PdfGeneratorService $pdfService;
     protected AuditLogRepositoryInterface $auditRepo;
+    protected EmployeeDocumentArchiveService $documentArchive;
 
     public function __construct(
         EmployeeRepositoryInterface $employeeRepo,
         EmployeeService $employeeService,
         OutsourceContractService $contractService,
         PdfGeneratorService $pdfService,
-        AuditLogRepositoryInterface $auditRepo
+        AuditLogRepositoryInterface $auditRepo,
+        EmployeeDocumentArchiveService $documentArchive
     ) {
         $this->employeeRepo    = $employeeRepo;
         $this->employeeService = $employeeService;
         $this->contractService = $contractService;
         $this->pdfService      = $pdfService;
         $this->auditRepo       = $auditRepo;
+        $this->documentArchive = $documentArchive;
     }
 
     public function index(Request $request): View
@@ -112,7 +118,7 @@ class OutsourceController extends Controller
      * Status Employee di-force ke 'Outsource' — tidak bisa diubah dari request.
      *
      * POST /hr/outsource
-     * Requires: can:manage_employees
+     * Requires: can:manage_outsource
      */
     public function store(Request $request): JsonResponse
     {
@@ -151,6 +157,53 @@ class OutsourceController extends Controller
         );
 
         return response()->json($result, $result['success'] ? 201 : 422);
+    }
+
+    /**
+     * Detail karyawan outsource untuk drawer.
+     *
+     * GET /hr/outsource/{id}/json
+     * Requires: can:view_outsource
+     */
+    public function getJson(string $id): JsonResponse
+    {
+        if (!$this->findOutsource($id)) {
+            return response()->json(['success' => false, 'error' => 'Karyawan outsource tidak ditemukan.'], 404);
+        }
+
+        return app(EmployeeController::class)->getJson($id);
+    }
+
+    /**
+     * Edit karyawan outsource. Status tetap Outsource — perubahan status
+     * (mis. menjadi karyawan internal) hanya lewat menu Master Data.
+     *
+     * PUT /hr/outsource/{id}
+     * Requires: can:manage_outsource
+     */
+    public function update(Request $request, string $id): JsonResponse
+    {
+        if (!$this->findOutsource($id)) {
+            return response()->json(['success' => false, 'message' => 'Karyawan outsource tidak ditemukan.'], 404);
+        }
+
+        $requestedStatus = strtolower(trim((string) $request->input('statusEmployee', '')));
+        if ($requestedStatus !== '' && $requestedStatus !== 'outsource') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Status karyawan outsource tidak dapat diubah dari menu Outsource.',
+            ], 422);
+        }
+        $request->merge(['statusEmployee' => 'Outsource']);
+
+        return app(EmployeeController::class)->update($request, $id);
+    }
+
+    private function findOutsource(string $id): ?EmployeeData
+    {
+        $employee = $this->employeeRepo->findById($id);
+
+        return $employee && $this->contractService->isOutsource($employee) ? $employee : null;
     }
 
     /**
@@ -198,11 +251,22 @@ class OutsourceController extends Controller
         ];
 
         $token = (string) Str::uuid();
+        $safeName = preg_replace('/[^a-zA-Z0-9_-]+/', '_', $employee->fullName ?? 'Outsource');
         Cache::put('osc_pkwt_tad_' . $token, [
             'employee_id' => $employee->employeeId,
             'extra_data'  => $extraData,
-            'safe_name'   => preg_replace('/[^a-zA-Z0-9_-]+/', '_', $employee->fullName ?? 'Outsource'),
+            'safe_name'   => $safeName,
         ], now()->addMinutes(15));
+
+        // Archive now: the download token expires after 15 minutes.
+        $this->documentArchive->capture(
+            $employee->employeeId,
+            SkDocumentType::PKWT,
+            $alloc['contract_number'],
+            fn () => $this->pdfService->generateKontrakPkwtTadPdf($employee, $extraData)->output(),
+            "PKWT_TAD_{$safeName}_{$employee->employeeId}.pdf",
+            $this->hrUserName()
+        );
 
         $this->auditRepo->log(
             'Outsource',

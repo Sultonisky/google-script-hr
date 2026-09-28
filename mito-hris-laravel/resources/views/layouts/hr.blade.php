@@ -348,6 +348,21 @@
             el.innerHTML = sections.length ? sections.join('\n\n') : 'Belum ada catatan.';
         }
 
+        function renderSkDocumentHistory(elementId, docs) {
+            var el = document.getElementById(elementId);
+            if (!el) return;
+            if (!Array.isArray(docs) || !docs.length) {
+                el.textContent = 'Belum ada riwayat dokumen SK.';
+                return;
+            }
+            el.innerHTML = '<ul class="mb-0 ps-3" style="font-size:12.5px;line-height:1.55">' + docs.map(function(d) {
+                var nomor = escapeDrawerHtml(d.nomor || '-');
+                var tipe = escapeDrawerHtml(d.docType || d.docCode || 'Dokumen');
+                var when = escapeDrawerHtml(d.issuedAt || '');
+                return '<li><strong>' + tipe + '</strong>: ' + nomor + (when ? ' <span class="text-muted">(' + when + ')</span>' : '') + '</li>';
+            }).join('') + '</ul>';
+        }
+
         function renderEntityTimeline(elementId, auditLogs) {
             var wrap = document.getElementById(elementId);
             if (!wrap) return;
@@ -361,7 +376,10 @@
                 'Update Status': 'bi-arrow-repeat',
                 Hold: 'bi-pause-fill',
                 Blacklist: 'bi-slash-circle-fill',
-                Accepted: 'bi-check-lg'
+                Accepted: 'bi-check-lg',
+                'Probation Lulus': 'bi-award-fill',
+                'Probation Putus Kontrak': 'bi-x-circle-fill',
+                'Probation Diperpanjang': 'bi-calendar-plus-fill'
             };
             wrap.innerHTML = auditLogs.map(function(ev) {
                 var action = ev.Action || ev.action || 'Perubahan data';
@@ -448,11 +466,15 @@
                     setDrawerText('empDrJoinDate', e.joinDate);
                     setDrawerText('empDrDirectSup', e.directSuperior);
                     setDrawerText('empDrIndirectSup', e.indirectSuperior);
+                    setDrawerText('empDrContractStart', e.contractStart || e.startDateContract || e.joinDate);
                     setDrawerText('empDrContractEnd', e.endDateContract);
+                    setDrawerText('empDrContractDuration', e.contractDuration);
+                    setDrawerText('empDrContractNumber', e.contractNumber);
                     setDrawerText('empDrFormerPos', e.jobPositionFormer);
                     setDrawerText('empDrRotationType', e.typeOfRotation);
                     setDrawerText('empDrMutasiDate', e.rotationDate);
                     setDrawerText('empDrNoSk', e.nomorSk);
+                    renderSkDocumentHistory('empDrSkHistory', data.skDocuments);
                     setDrawerText('empDrResignDate', e.resignDate);
                     setDrawerText('empDrOffbType', e.offboardingType);
                     setDrawerText('empDrOffbReason', e.offboardingReason);
@@ -497,9 +519,10 @@
         // EDIT EMPLOYEE — populate modal dari data drawer aktif
         // 1:1 dengan GAS empOpenEdit() di js/employee.html
         // ===========================================================
-        function empOpenEdit(emp) {
+        function empOpenEdit(emp, mode) {
             if (!emp) emp = window._activeDrawerEmployee;
             if (!emp) return;
+            window._empEditMode = mode === 'outsource' ? 'outsource' : 'employee';
 
             // Update judul modal
             var titleEl = document.getElementById('empFormTitle');
@@ -552,6 +575,37 @@
                 el.value = isNaN(d.getTime()) ? '' : d.toISOString().substring(0, 10);
             }
 
+            function setContractDurationSelect(val) {
+                var el = document.getElementById('efContractDuration');
+                if (!el) return;
+                var value = (val === null || val === undefined) ? '' : String(val).trim();
+                if (!value) {
+                    el.value = '';
+                    return;
+                }
+                // Map Tahun aliases ↔ "N Bulan" for older form options.
+                var aliases = {
+                    '12 Bulan': '1 Tahun',
+                    '24 Bulan': '2 Tahun',
+                    '36 Bulan': '3 Tahun',
+                    '1 Tahun': '12 Bulan',
+                    '2 Tahun': '24 Bulan',
+                    '3 Tahun': '36 Bulan',
+                };
+                var match = value;
+                if (!Array.from(el.options).some(function(o) { return o.value === match; })) {
+                    if (aliases[value] && Array.from(el.options).some(function(o) { return o.value === aliases[value]; })) {
+                        match = aliases[value];
+                    } else {
+                        var opt = document.createElement('option');
+                        opt.value = value;
+                        opt.textContent = value;
+                        el.appendChild(opt);
+                    }
+                }
+                el.value = match;
+            }
+
             // Seksi 1: Identitas
             setVal('efName', emp.fullName);
             setVal('efNik', emp.nikNpwp);
@@ -592,11 +646,12 @@
             setVal('efIndirectSup', emp.indirectSuperior);
             setVal('efOutsourceVendor', emp.outsourceVendor);
 
-            // Seksi 4: Kontrak
-            setDate('efContractStart', emp.contractStart || emp.startDateContract);
+            // Seksi 4: Kontrak — fall back to Join Date / derived duration when
+            // optional contract columns are still empty on the Employee sheet.
+            setDate('efContractStart', emp.contractStart || emp.startDateContract || emp.joinDate || '');
             setDate('efContractEnd', emp.endDateContract);
-            setVal('efContractDuration', emp.contractDuration);
-            setVal('efContractNumber', emp.contractNumber);
+            setContractDurationSelect(emp.contractDuration || '');
+            setVal('efContractNumber', emp.contractNumber || '');
 
             // Seksi 5: Mutasi
             var hasMutasi = !!(emp.jobPositionFormer || emp.typeOfRotation);
@@ -690,7 +745,8 @@
                 btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Menyimpan...';
             }
 
-            fetch('/hr/employees/' + empId, {
+            var isOutsourceEdit = window._empEditMode === 'outsource';
+            fetch((isOutsourceEdit ? '/hr/outsource/' : '/hr/employees/') + empId, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -716,8 +772,12 @@
                         if (modal) modal.hide();
                         // Refresh drawer dengan data terbaru dari response
                         if (result.employee) {
-                            window._activeDrawerEmployee = result.employee;
-                            window.openEmployeeDrawer(empId);
+                            if (isOutsourceEdit) {
+                                window.openOutsourceDrawer(empId);
+                            } else {
+                                window._activeDrawerEmployee = result.employee;
+                                window.openEmployeeDrawer(empId);
+                            }
                         }
                         showToast(result.message || 'Data karyawan berhasil diperbarui.', 'success');
                     } else {
@@ -742,7 +802,7 @@
             document.getElementById('drawerCandidateName').innerText = 'Memuat...';
             openDrawer();
 
-            fetch('/hr/employees/' + id + '/json', {
+            fetch('/hr/outsource/' + id + '/json', {
                     headers: {
                         'X-CSRF-TOKEN': getCsrfToken(),
                         'Accept': 'application/json'
@@ -804,13 +864,13 @@
                     // Tombol Edit di footer — reuse modal edit employee karena outsource disimpan di sheet yang sama
                     var btnEdit = document.getElementById('btnDrawerEntityEdit');
                     if (btnEdit) btnEdit.onclick = function() {
-                        empOpenEdit(e);
+                        empOpenEdit(e, 'outsource');
                     };
 
                     // Tombol Edit di header
                     var btnEditHeader = document.getElementById('btnDrawerEdit');
                     if (btnEditHeader) btnEditHeader.onclick = function() {
-                        empOpenEdit(e);
+                        empOpenEdit(e, 'outsource');
                     };
                 })
                 .catch(function() {

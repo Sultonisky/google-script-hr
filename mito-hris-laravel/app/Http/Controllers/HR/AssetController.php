@@ -51,7 +51,7 @@ class AssetController extends Controller
             ->pluck('location');
 
         $assetIndexPath = route('assets.portal.index');
-        $assetBasePath  = '/assets';
+        $assetBasePath  = rtrim((string) parse_url($assetIndexPath, PHP_URL_PATH), '/') ?: '/assets';
 
         return view('hr.assets.index', compact(
             'assets', 'stats', 'total', 'currentPage', 'perPage', 'locations',

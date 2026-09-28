@@ -36,7 +36,7 @@ class AssetCertificateDedicatedPortalTest extends TestCase
     {
         $this->mockUser('Admin', 'asset@mito.id', 'asset-password');
         Session::put('hr_user', ['auth_domain' => 'users']);
-        $loginPath = app()->environment('local') ? '/assets/login' : '/login';
+        $loginPath = app()->environment('local') ? '/assets-portal/login' : '/login';
 
         $response = $this->withoutMiddleware(ValidateCsrfToken::class)
             ->onDomain('assets')
@@ -71,7 +71,7 @@ class AssetCertificateDedicatedPortalTest extends TestCase
     public function test_super_admin_can_login_to_both_dedicated_portals(): void
     {
         $this->mockUser('Super Admin', 'superadmin@mito.id', 'portal-password');
-        $assetLoginPath = app()->environment('local') ? '/assets/login' : '/login';
+        $assetLoginPath = app()->environment('local') ? '/assets-portal/login' : '/login';
 
         $assetResponse = $this->withoutMiddleware(ValidateCsrfToken::class)
             ->onDomain('assets')
@@ -101,7 +101,7 @@ class AssetCertificateDedicatedPortalTest extends TestCase
     {
         $identifier = strtolower(str_replace(' ', '.', $role)) . '@mito.id';
         $this->mockUser($role, $identifier, 'portal-password');
-        $loginPath = app()->environment('local') ? '/assets/login' : '/login';
+        $loginPath = app()->environment('local') ? '/assets-portal/login' : '/login';
 
         $response = $this->withoutMiddleware(ValidateCsrfToken::class)
             ->onDomain('assets')

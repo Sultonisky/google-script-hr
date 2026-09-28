@@ -439,24 +439,61 @@ class GoogleSheetsService
 
     public function clearAllSheets(): void
     {
-        $spreadsheetId = config('google.spreadsheet_id');
-        $sheetsConfig  = config('google.sheets', []);
-        $service       = $this->factory->getSheetsService();
+        $sheetsConfig = config('google.sheets', []);
 
-        foreach ($sheetsConfig as $key => $sheetName) {
-            if (empty($sheetName)) continue;
-            try {
-                // Read total rows to know how far to clear
-                $response = $service->spreadsheets_values->get($spreadsheetId, "{$sheetName}!A:A");
-                $totalRows = count($response->getValues() ?? []);
-                if ($totalRows <= 1) continue; // Only header, nothing to clear
+        foreach ($sheetsConfig as $sheetName) {
+            if (empty($sheetName)) {
+                continue;
+            }
+            $this->clearSheetDataRows((string) $sheetName);
+        }
+    }
 
-                $range     = "{$sheetName}!A2:ZZ{$totalRows}";
-                $clearBody = new \Google\Service\Sheets\ClearValuesRequest();
-                $service->spreadsheets_values->clear($spreadsheetId, $range, $clearBody);
-                $this->clearCache($sheetName);
-            } catch (\Throwable $e) {
-                Log::warning("GoogleSheetsService::clearAllSheets({$sheetName}): " . $e->getMessage());
+    /**
+     * Clear data rows (A2:end) while keeping the header row.
+     * Used by DB → Sheets mirror; does not delete the tab.
+     */
+    public function clearSheetDataRows(string $sheetName): void
+    {
+        try {
+            $service = $this->factory->getSheetsService();
+            $response = $service->spreadsheets_values->get($this->spreadsheetId, "{$sheetName}!A:A");
+            $totalRows = count($response->getValues() ?? []);
+            if ($totalRows <= 1) {
+                return;
+            }
+
+            $range = "{$sheetName}!A2:ZZ{$totalRows}";
+            $clearBody = new \Google\Service\Sheets\ClearValuesRequest();
+            $service->spreadsheets_values->clear($this->spreadsheetId, $range, $clearBody);
+            $this->clearCache($sheetName);
+        } catch (\Throwable $e) {
+            Log::warning("GoogleSheetsService::clearSheetDataRows({$sheetName}): " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Replace sheet body with canonical headers + rows (mirror from DB).
+     * Keeps SoT semantics outside this method — caller decides when to write.
+     *
+     * @param  list<string>  $headers
+     * @param  list<list<string|int|float|null>>  $rows  Positional values aligned to $headers
+     */
+    public function replaceSheetData(string $sheetName, array $headers, array $rows): void
+    {
+        $this->createSheetIfNotExists($sheetName);
+        $this->ensureSheetHeaders($sheetName, $headers);
+        $this->clearSheetDataRows($sheetName);
+
+        if ($rows === []) {
+            return;
+        }
+
+        // Chunk to stay under Sheets API payload limits.
+        foreach (array_chunk($rows, 500) as $chunk) {
+            if (! $this->appendRows($sheetName, $chunk)) {
+                throw new \RuntimeException("Gagal append rows ke sheet '{$sheetName}'.");
             }
         }
     }

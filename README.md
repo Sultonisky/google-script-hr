@@ -123,7 +123,7 @@ Copy-Item .env.example .env
 php artisan key:generate
 ```
 
-Configure `.env` before using Google integrations:
+Configure `.env` before using Google integrations and Postgres SoT:
 
 ```dotenv
 APP_ENV=local
@@ -132,11 +132,15 @@ APP_URL=http://localhost
 APP_TIMEZONE=Asia/Jakarta
 APP_LOCALE=id
 
+DB_CONNECTION=pgsql
+HRIS_DATA_DRIVER=pgsql
+
 GOOGLE_APPLICATION_CREDENTIALS="${APP_BASE_PATH}/storage/app/google/service-account.json"
 GOOGLE_SPREADSHEET_ID=your-spreadsheet-id
 GOOGLE_DRIVE_DOCS_FOLDER_ID=your-docs-folder-id
 GOOGLE_DRIVE_OFFBOARDING_FOLDER_ID=your-offboarding-folder-id
 GOOGLE_SHEETS_TIMEZONE=Asia/Jakarta
+GOOGLE_SHEETS_ENABLED=true
 ```
 
 Place credentials only in the protected local storage path. Never commit

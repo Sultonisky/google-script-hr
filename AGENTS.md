@@ -91,9 +91,20 @@ against production Sheets or Drive.
 ## Important Commands
 
 CI runs from `mito-hris-laravel/` and installs Composer/NPM dependencies, checks
-PHP syntax, builds Vite assets, and runs Laravel tests. Deployment runs from the
-same application directory over SSH and executes Laravel Artisan diagnostics,
-Google Sheets health/schema checks, sync, caching, and PHP-FPM reload.
+PHP syntax, builds Vite assets, and runs Laravel tests (including pgsql-driver
+repository bindings and Sheets↔DB ETL tests on sqlite).
+
+Deployment runs over SSH against the Dockerized app and executes:
+
+1. `migrate --force` (Postgres/schema SoT)
+2. `mito:health-check` + `mito:diagnose` (DB-first when `HRIS_DATA_DRIVER=pgsql`)
+3. `mito:sync` (warm-cache from the active data driver)
+4. `mito:setup-sheets` / `mito:validate-schema` as **archive helpers** — soft no-op
+   when SoT is pgsql (do not pass `--force` on deploy)
+5. Laravel config/route/view cache
+
+ETL import (`mito:etl-sheets-to-db`) and archive mirror (`mito:etl-db-to-sheets`)
+are **manual** cutover/ops steps — not auto-run on every deploy.
 
 Do not add `clasp`, Apps Script deployment, or GAS-specific CI tasks.
 
@@ -112,4 +123,4 @@ were actually executed.
 
 ## Last Updated
 
-2026-09-05 - Updated for the Laravel application after legacy GAS cleanup.
+2026-09-24 - Deploy/CI aligned with Postgres SoT; Sheets steps are archive helpers.

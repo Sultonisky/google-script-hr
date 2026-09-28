@@ -301,8 +301,20 @@
                 <h6><i class="bi bi-file-earmark-text-fill"></i> Kontrak &amp; Riwayat Karier</h6>
                 <div class="cv-grid-2">
                     <div class="cv-field">
+                        <div class="cv-label">Tanggal Mulai Kontrak</div>
+                        <div class="cv-value" id="empDrContractStart">-</div>
+                    </div>
+                    <div class="cv-field">
                         <div class="cv-label">Tanggal Berakhir Kontrak</div>
                         <div class="cv-value" id="empDrContractEnd">-</div>
+                    </div>
+                    <div class="cv-field">
+                        <div class="cv-label">Durasi Kontrak</div>
+                        <div class="cv-value" id="empDrContractDuration">-</div>
+                    </div>
+                    <div class="cv-field">
+                        <div class="cv-label">Nomor Kontrak</div>
+                        <div class="cv-value" id="empDrContractNumber">-</div>
                     </div>
                     <div class="cv-field">
                         <div class="cv-label">Jabatan Sebelumnya</div>
@@ -317,8 +329,12 @@
                         <div class="cv-value" id="empDrMutasiDate">-</div>
                     </div>
                     <div class="cv-field">
-                        <div class="cv-label">Nomor SK</div>
+                        <div class="cv-label">Nomor SK Terakhir</div>
                         <div class="cv-value" id="empDrNoSk">-</div>
+                    </div>
+                    <div class="cv-field cv-field-full">
+                        <div class="cv-label">Riwayat Dokumen SK</div>
+                        <div class="cv-value" id="empDrSkHistory">-</div>
                     </div>
                     <div class="cv-field">
                         <div class="cv-label">Tanggal Resign</div>

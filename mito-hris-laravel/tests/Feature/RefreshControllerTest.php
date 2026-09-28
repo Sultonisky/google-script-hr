@@ -3,6 +3,9 @@
 namespace Tests\Feature;
 
 use App\Http\Controllers\HR\RefreshController;
+use App\Repositories\Contracts\CandidateRepositoryInterface;
+use App\Repositories\Contracts\EmployeeRepositoryInterface;
+use App\Repositories\Contracts\MprRepositoryInterface;
 use App\Services\Google\GoogleSheetsService;
 use Mockery;
 use Tests\TestCase;
@@ -11,6 +14,8 @@ class RefreshControllerTest extends TestCase
 {
     public function test_refresh_invalidates_cache_without_clearing_sheet_data(): void
     {
+        config(['hris.data_driver' => 'sheets']);
+
         $service = Mockery::mock(GoogleSheetsService::class);
         $service->shouldReceive('healthCheck')
             ->once()
@@ -39,7 +44,12 @@ class RefreshControllerTest extends TestCase
 
         $service->shouldNotReceive('clearAllSheets');
 
-        $controller = new RefreshController($service);
+        $controller = new RefreshController(
+            $service,
+            Mockery::mock(EmployeeRepositoryInterface::class),
+            Mockery::mock(CandidateRepositoryInterface::class),
+            Mockery::mock(MprRepositoryInterface::class),
+        );
         $response = $controller->refreshData();
 
         $this->assertSame(200, $response->getStatusCode());
