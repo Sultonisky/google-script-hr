@@ -222,6 +222,28 @@ class DocumentDownloadTest extends TestCase
         $this->assertStringNotContainsString('Nomor:', $legacy);
     }
 
+    public function test_surat_bpjs_never_prints_a_letter_number(): void
+    {
+        $employee = EmployeeData::fromSheetRow([
+            'Employee ID' => 'EMP-DL-1',
+            'Full Name' => 'Rina Kartika',
+            'Branch Name' => 'PT Mahakarya Sukses Indonesia',
+            'Join Date' => '2025-01-06',
+            'Resign Date' => '2026-03-31',
+        ]);
+
+        $html = view('pdf.surat-bpjs', [
+            'employee' => $employee,
+            'extraData' => ['sk_number' => '007/SKO/MSI/III/2026', 'letter_number' => '007/SPAK/MSI/III/2026'],
+            'company' => [],
+        ])->render();
+
+        $this->assertStringContainsString('SURAT KETERANGAN', $html);
+        $this->assertStringNotContainsString('Nomor:', $html);
+        $this->assertStringNotContainsString('007/SKO/MSI/III/2026', $html);
+        $this->assertStringNotContainsString('007/SPAK/MSI/III/2026', $html);
+    }
+
     public function test_regeneration_failure_redirects_back_with_message(): void
     {
         $this->actingAsRole('Admin');

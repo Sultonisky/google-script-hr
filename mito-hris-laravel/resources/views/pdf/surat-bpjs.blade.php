@@ -26,13 +26,6 @@
             margin-top: 10px;
         }
 
-        .doc-no {
-            font-size: 10pt;
-            text-align: center;
-            color: #6b7280;
-            margin-bottom: 16px;
-        }
-
         .data-table {
             width: 100%;
             border-collapse: collapse;
@@ -88,16 +81,7 @@
     @include('pdf.components.kop-surat')
 
     @php
-        // Nomor surat BPJS dinonaktifkan (kode generate tetap ada di bawah untuk referensi).
-        // $romanMonth = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
-        // $letterNumber =
-        //     $extraData['letter_number'] ??
-        //     ($extraData['sk_number'] ??
-        //         '001/HRD-SKK/' . ($company['code'] ?? 'MSI') . '/' . $romanMonth[date('n') - 1] . '/' . date('Y'));
-        $letterNumber = trim((string) (
-            $extraData['letter_number'] ?? $extraData['sk_number'] ?? $extraData['skNumber'] ?? ''
-        ));
-
+        // Surat Keterangan BPJS tidak memakai nomor surat.
         $endDate =
             $extraData['effective_date'] ??
             ($extraData['last_working_date'] ?? ($employee->resignDate ?? ($employee->endDateContract ?? null)));
@@ -117,9 +101,6 @@
     @endphp
 
     <div class="doc-title">SURAT KETERANGAN</div>
-    @if ($letterNumber !== '')
-        <div class="doc-no">Nomor: {{ $letterNumber }}</div>
-    @endif
 
     <p>Yang bertandatangan di bawah ini:</p>
 
