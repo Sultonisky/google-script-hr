@@ -16,6 +16,7 @@ use App\Support\OutsourceEmployeeAttributeMap;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -112,7 +113,7 @@ class OutsourceController extends Controller
             ], 422);
         }
 
-        $data = new OutsourceEmployeeData(...$validated);
+        $data = new OutsourceEmployeeData(...$this->withoutUnmanageableCompensation($validated));
         $data->createdBy = $this->hrUserName();
 
         try {
@@ -128,7 +129,7 @@ class OutsourceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Karyawan outsource berhasil ditambahkan.',
-            'employee' => $created->toArray(),
+            'employee' => $this->present($created),
         ], 201);
     }
 
@@ -162,7 +163,14 @@ class OutsourceController extends Controller
         @set_time_limit(300);
 
         try {
-            $result = $importer->import($request->file('file')->getRealPath(), $sheet, $validated['vendor'], $dryRun, $user);
+            $result = $importer->import(
+                $request->file('file')->getRealPath(),
+                $sheet,
+                $validated['vendor'],
+                $dryRun,
+                $user,
+                Gate::allows('manage_outsource_compensation')
+            );
         } catch (\PhpOffice\PhpSpreadsheet\Exception $e) {
             report($e);
 
@@ -223,8 +231,10 @@ class OutsourceController extends Controller
         }
 
         try {
+            $hiddenFields = Gate::allows('view_outsource_compensation') ? [] : $this->compensationHeaders();
             $auditLogs = $this->auditRepo->getLogs((string) $outsource->outsourceId)
                 ->filter(fn ($log) => strtolower(trim($log['Entity Type'] ?? $log['entityType'] ?? '')) === 'outsource')
+                ->reject(fn ($log) => in_array(trim((string) ($log['Field'] ?? $log['field'] ?? '')), $hiddenFields, true))
                 ->take(20)
                 ->values();
         } catch (\Throwable $e) {
@@ -234,7 +244,7 @@ class OutsourceController extends Controller
 
         return response()->json([
             'success' => true,
-            'employee' => $outsource->toArray(),
+            'employee' => $this->present($outsource),
             'auditLogs' => $auditLogs,
         ]);
     }
@@ -252,7 +262,7 @@ class OutsourceController extends Controller
             return response()->json(['success' => false, 'message' => 'Karyawan outsource tidak ditemukan.'], 404);
         }
 
-        $validated = $this->validatePayload($request, true);
+        $validated = $this->withoutUnmanageableCompensation($this->validatePayload($request, true));
 
         $duplicate = $this->outsourceRepo->findByContact($validated['whatsappNumber'] ?? null, $validated['email'] ?? null);
         if ($duplicate && $duplicate->outsourceId !== $existing->outsourceId) {
@@ -273,7 +283,7 @@ class OutsourceController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Tidak ada perubahan data.',
-                'employee' => $existing->toArray(),
+                'employee' => $this->present($existing),
             ]);
         }
 
@@ -297,7 +307,7 @@ class OutsourceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data karyawan outsource berhasil diperbarui.',
-            'employee' => $this->outsourceRepo->findById($id)?->toArray(),
+            'employee' => ($fresh = $this->outsourceRepo->findById($id)) ? $this->present($fresh) : null,
         ]);
     }
 
@@ -427,6 +437,43 @@ class OutsourceController extends Controller
      *
      * @return array<string, mixed>
      */
+    /**
+     * @return array<string, mixed>
+     */
+    private function present(OutsourceEmployeeData $outsource): array
+    {
+        $data = $outsource->toArray();
+        if (Gate::denies('view_outsource_compensation')) {
+            foreach (OutsourceEmployeeAttributeMap::COMPENSATION_FIELDS as $property) {
+                unset($data[$property]);
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * @param  array<string, mixed>  $values
+     * @return array<string, mixed>
+     */
+    private function withoutUnmanageableCompensation(array $values): array
+    {
+        return Gate::allows('manage_outsource_compensation')
+            ? $values
+            : array_diff_key($values, array_flip(OutsourceEmployeeAttributeMap::COMPENSATION_FIELDS));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function compensationHeaders(): array
+    {
+        return array_map(
+            fn (string $property) => OutsourceEmployeeAttributeMap::FIELDS[$property][1],
+            OutsourceEmployeeAttributeMap::COMPENSATION_FIELDS
+        );
+    }
+
     private function validatePayload(Request $request, bool $partial): array
     {
         $request->merge($this->sanitizeInput($request->all()));
