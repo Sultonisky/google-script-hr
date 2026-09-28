@@ -140,15 +140,23 @@ jobs:
             echo "== Applying database migrations =="
             docker exec hris-app php artisan migrate --force
 
-            echo "== Running MITO diagnostics =="
+            echo "== SoT health & diagnostics =="
             docker exec hris-app php artisan optimize:clear
-            docker exec hris-app php artisan mito:diagnose
-
-            echo "== Checking Google Sheets =="
             docker exec hris-app php artisan mito:health-check
+            docker exec hris-app php artisan mito:diagnose
+            # Warm-cache dari SoT aktif (DB jika HRIS_DATA_DRIVER=pgsql, Sheets jika sheets)
+            docker exec hris-app php artisan mito:sync
+
+            echo "== Sheets archive helpers =="
+            # Soft-disabled (SUCCESS no-op) when HRIS_DATA_DRIVER=pgsql.
+            # Still runs for real when SoT is still sheets. Never pass --force here
+            # so deploy cannot mutate archive Sheets while Postgres is SoT.
             docker exec hris-app php artisan mito:setup-sheets --fix --no-interaction
             docker exec hris-app php artisan mito:validate-schema
-            docker exec hris-app php artisan mito:sync
+
+            echo "== ETL / mirror (manual only; not auto-run on deploy) =="
+            echo "Import once:  php artisan mito:etl-sheets-to-db --dry-run"
+            echo "Mirror archive: php artisan mito:etl-db-to-sheets --dry-run"
 
             echo "== Laravel optimization =="
             docker exec hris-app php artisan config:cache
