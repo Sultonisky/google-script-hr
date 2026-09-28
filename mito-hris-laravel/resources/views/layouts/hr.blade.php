@@ -176,6 +176,9 @@
             var btnEdit = document.getElementById('btnDrawerEdit');
             if (btnPrint) btnPrint.style.display = (mode === 'candidate') ? '' : 'none';
             if (btnEdit) btnEdit.style.display = (mode !== 'candidate') ? '' : 'none';
+            if (btnEdit) btnEdit.classList.remove('d-none');
+            var btnEntityEdit = document.getElementById('btnDrawerEntityEdit');
+            if (btnEntityEdit) btnEntityEdit.classList.remove('d-none');
 
             // Reset badge & tombol khusus kandidat saat pindah mode (hindari state basi)
             var badgeWrap = document.getElementById('drawerStatusBadgeWrap');
@@ -519,10 +522,9 @@
         // EDIT EMPLOYEE — populate modal dari data drawer aktif
         // 1:1 dengan GAS empOpenEdit() di js/employee.html
         // ===========================================================
-        function empOpenEdit(emp, mode) {
+        function empOpenEdit(emp) {
             if (!emp) emp = window._activeDrawerEmployee;
             if (!emp) return;
-            window._empEditMode = mode === 'outsource' ? 'outsource' : 'employee';
 
             // Update judul modal
             var titleEl = document.getElementById('empFormTitle');
@@ -745,8 +747,7 @@
                 btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Menyimpan...';
             }
 
-            var isOutsourceEdit = window._empEditMode === 'outsource';
-            fetch((isOutsourceEdit ? '/hr/outsource/' : '/hr/employees/') + empId, {
+            fetch('/hr/employees/' + empId, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -772,12 +773,8 @@
                         if (modal) modal.hide();
                         // Refresh drawer dengan data terbaru dari response
                         if (result.employee) {
-                            if (isOutsourceEdit) {
-                                window.openOutsourceDrawer(empId);
-                            } else {
-                                window._activeDrawerEmployee = result.employee;
-                                window.openEmployeeDrawer(empId);
-                            }
+                            window._activeDrawerEmployee = result.employee;
+                            window.openEmployeeDrawer(empId);
                         }
                         showToast(result.message || 'Data karyawan berhasil diperbarui.', 'success');
                     } else {
@@ -821,57 +818,57 @@
                     // Simpan data outsource aktif untuk keperluan Edit
                     window._activeDrawerOutsource = e;
 
+                    var rupiah = function(v) {
+                        if (v === null || v === undefined || v === '') return null;
+                        var n = Number(v);
+                        return isNaN(n) ? String(v) : 'Rp ' + n.toLocaleString('id-ID');
+                    };
+
                     document.getElementById('drawerCandidateName').innerText = e.fullName || '-';
-                    document.getElementById('drawerPosition').innerText = (e.jobPosition || '-') + (e
-                        .outsourceVendor ? ' · ' + e.outsourceVendor : '');
+                    document.getElementById('drawerPosition').innerText = (e.jobTitle || '-') + (e.vendor ?
+                        ' · ' + e.vendor : '');
                     document.getElementById('drawerAvatar').innerText = initials(e.fullName);
-                    setDrawerText('osDrEmployeeId', e.employeeId);
-                    setDrawerText('osDrNik', e.nikNpwp);
+                    setDrawerText('osDrOutsourceId', e.outsourceId);
                     setDrawerText('osDrFullName', e.fullName);
                     setDrawerText('osDrBirthPlace', e.birthPlace);
                     setDrawerText('osDrBirthDate', e.birthDate);
-                    setDrawerText('osDrGender', e.gender === 'Male' ? 'Laki-laki' : (e.gender === 'Female' ?
-                        'Perempuan' : e.gender));
-                    setDrawerText('osDrMarital', e.maritalStatus);
-                    setDrawerText('osDrStatusEmployee', e.statusEmployee);
-                    setDrawerText('osDrEmail', e.personalEmail);
-                    setDrawerText('osDrPhone', e.mobilePhone);
-                    setDrawerText('osDrCity', e.lokasiKerja || e.areaKerja);
+                    setDrawerText('osDrEducation', e.lastEducation);
+                    setDrawerText('osDrPhone', e.whatsappNumber);
+                    setDrawerText('osDrEmail', e.email);
                     setDrawerText('osDrAddress', e.citizenIdAddress);
-                    setDrawerText('osDrResidentialAddress', e.residentialAddress);
-                    setDrawerText('osDrBankName', e.bankName);
+                    setDrawerText('osDrVendor', e.vendor);
+                    setDrawerText('osDrEntity', e.entity);
+                    setDrawerText('osDrJobTitle', e.jobTitle);
+                    setDrawerText('osDrCostCenter', e.costCenter);
+                    setDrawerText('osDrWorkLocation', e.workLocation);
+                    setDrawerText('osDrWorkCity', e.workCity);
+                    setDrawerText('osDrMitoJoinDate', e.mitoJoinDate);
+                    setDrawerText('osDrContractStart', e.contractStartDate);
+                    setDrawerText('osDrContractEnd', e.contractEndDate);
                     setDrawerText('osDrBankAccount', e.bankAccount);
-                    setDrawerText('osDrBpjsTk', e.bpjsKetenagakerjaan);
-                    setDrawerText('osDrBpjsKes', e.bpjsKesehatan);
-                    setDrawerText('osDrVendor', e.outsourceVendor);
-                    setDrawerText('osDrBranch', e.branchName);
-                    setDrawerText('osDrDivision', e.division);
-                    setDrawerText('osDrDept', e.department);
-                    setDrawerText('osDrPosition', e.jobPositionLocation || e.jobPosition);
-                    setDrawerText('osDrJobLevel', e.jobLevel);
-                    setDrawerText('osDrJoinDate', e.joinDate);
-                    setDrawerText('osDrDirectSup', e.directSuperior);
-                    setDrawerText('osDrIndirectSup', e.indirectSuperior);
+                    setDrawerText('osDrPayrollScheme', e.payrollScheme);
+                    setDrawerText('osDrUmk', rupiah(e.umkAmount));
+                    setDrawerText('osDrBasicSalary', rupiah(e.basicSalary));
+                    setDrawerText('osDrIncentive', rupiah(e.incentiveAmount));
                     setDrawerText('osDrCreatedBy', e.createdBy);
                     setDrawerText('osDrCreated', e.createdAt);
                     setDrawerText('osDrUpdated', e.updatedAt);
-                    renderEntityNotes('osDrUnifiedNotes', e.notes, e.hrNotes);
+                    setDrawerText('osDrRemarks', e.remarks);
                     renderEntityTimeline('osDrTimeline', data.auditLogs);
                     var metaEl = document.getElementById('drawerIdMeta');
-                    if (metaEl) metaEl.innerHTML = '<span>Employee ID<strong>' + (e.employeeId || '-') +
-                        '</strong></span><span>Tanggal Masuk<strong>' + (e.joinDate || '-') + '</strong></span>';
+                    if (metaEl) metaEl.innerHTML = '<span>Outsource ID<strong>' + (e.outsourceId || '-') +
+                        '</strong></span><span>Tgl Join Mito<strong>' + (e.mitoJoinDate || '-') + '</strong></span>';
 
-                    // Tombol Edit di footer — reuse modal edit employee karena outsource disimpan di sheet yang sama
-                    var btnEdit = document.getElementById('btnDrawerEntityEdit');
-                    if (btnEdit) btnEdit.onclick = function() {
-                        empOpenEdit(e, 'outsource');
+                    var canEdit = typeof window.openOutsourceForm === 'function';
+                    var openEdit = function() {
+                        window.openOutsourceForm(e);
                     };
-
-                    // Tombol Edit di header
-                    var btnEditHeader = document.getElementById('btnDrawerEdit');
-                    if (btnEditHeader) btnEditHeader.onclick = function() {
-                        empOpenEdit(e, 'outsource');
-                    };
+                    ['btnDrawerEntityEdit', 'btnDrawerEdit'].forEach(function(btnId) {
+                        var btn = document.getElementById(btnId);
+                        if (!btn) return;
+                        btn.onclick = canEdit ? openEdit : null;
+                        btn.classList.toggle('d-none', !canEdit);
+                    });
                 })
                 .catch(function() {
                     document.getElementById('drawerCandidateName').innerText = 'Gagal memuat data.';

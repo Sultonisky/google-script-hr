@@ -22,6 +22,7 @@ use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\EmployeeDocumentRepositoryInterface;
 use App\Repositories\Contracts\MprRepositoryInterface;
 use App\Repositories\Contracts\MprRequestorRepositoryInterface;
+use App\Repositories\Contracts\OutsourceEmployeeRepositoryInterface;
 use App\Repositories\Contracts\ProbationRepositoryInterface;
 use App\Repositories\Contracts\UserPermissionRepositoryInterface;
 use App\Repositories\Contracts\PermissionCatalogRepositoryInterface;
@@ -36,9 +37,11 @@ use App\Repositories\Database\CandidateDatabaseRepository;
 use App\Repositories\Database\AuditLogDatabaseRepository;
 use App\Repositories\Database\MprDatabaseRepository;
 use App\Repositories\Database\MprRequestorDatabaseRepository;
+use App\Repositories\Database\OutsourceEmployeeDatabaseRepository;
 use App\Repositories\Database\PermissionCatalogDatabaseRepository;
 use App\Repositories\Database\UserPermissionDatabaseRepository;
 use App\Repositories\Local\ArrayEmployeeDocumentRepository;
+use App\Repositories\Local\ArrayOutsourceEmployeeRepository;
 use App\Repositories\Local\ArrayProbationRepository;
 use App\Repositories\Local\ArrayUserPermissionRepository;
 use App\Repositories\Local\StaticPermissionCatalogRepository;
@@ -49,6 +52,7 @@ use App\Repositories\Sheets\EmployeeDocumentSheetsRepository;
 use App\Repositories\Sheets\EmployeeSheetsRepository;
 use App\Repositories\Sheets\MprSheetsRepository;
 use App\Repositories\Sheets\MprRequestorSheetsRepository;
+use App\Repositories\Sheets\OutsourceEmployeeSheetsRepository;
 use App\Repositories\Sheets\ProbationSheetsRepository;
 use App\Support\HrisDataDriver;
 use App\Support\PermissionCatalog;
@@ -67,6 +71,7 @@ class AppServiceProvider extends ServiceProvider
             $this->app->singleton(UserPermissionRepositoryInterface::class, UserPermissionSheetsRepository::class);
             $this->app->singleton(PermissionCatalogRepositoryInterface::class, PermissionCatalogSheetsRepository::class);
             $this->app->bind(EmployeeRepositoryInterface::class, EmployeeSheetsRepository::class);
+            $this->app->bind(OutsourceEmployeeRepositoryInterface::class, OutsourceEmployeeSheetsRepository::class);
             $this->app->bind(EmployeeDocumentRepositoryInterface::class, EmployeeDocumentSheetsRepository::class);
             $this->app->bind(ProbationRepositoryInterface::class, ProbationSheetsRepository::class);
             $this->app->bind(CandidateRepositoryInterface::class, CandidateSheetsRepository::class);
@@ -78,6 +83,7 @@ class AppServiceProvider extends ServiceProvider
             $this->app->singleton(UserPermissionRepositoryInterface::class, UserPermissionDatabaseRepository::class);
             $this->app->singleton(PermissionCatalogRepositoryInterface::class, PermissionCatalogDatabaseRepository::class);
             $this->app->bind(EmployeeRepositoryInterface::class, EmployeeDatabaseRepository::class);
+            $this->app->bind(OutsourceEmployeeRepositoryInterface::class, OutsourceEmployeeDatabaseRepository::class);
             $this->app->bind(EmployeeDocumentRepositoryInterface::class, EmployeeDocumentDatabaseRepository::class);
             $this->app->bind(ProbationRepositoryInterface::class, ProbationDatabaseRepository::class);
             $this->app->bind(CandidateRepositoryInterface::class, CandidateDatabaseRepository::class);
@@ -89,6 +95,7 @@ class AppServiceProvider extends ServiceProvider
             $this->app->singleton(UserPermissionRepositoryInterface::class, ArrayUserPermissionRepository::class);
             $this->app->singleton(PermissionCatalogRepositoryInterface::class, StaticPermissionCatalogRepository::class);
             $this->app->bind(EmployeeRepositoryInterface::class, LocalEmployeeRepository::class);
+            $this->app->singleton(OutsourceEmployeeRepositoryInterface::class, ArrayOutsourceEmployeeRepository::class);
             $this->app->singleton(EmployeeDocumentRepositoryInterface::class, ArrayEmployeeDocumentRepository::class);
             $this->app->singleton(ProbationRepositoryInterface::class, ArrayProbationRepository::class);
             // Offline/local keeps Sheets-shaped bindings for domains tests commonly mock.
@@ -117,10 +124,9 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(8)->by(($nik !== '' ? $nik : 'anon') . '|' . $request->ip());
         });
 
+        // Keyed by IP only so rotating phone/email values cannot bypass the limit to enumerate contacts.
         RateLimiter::for('outsource-apply', function (Request $request) {
-            $nik = preg_replace('/\D+/', '', (string) $request->input('nik', ''));
-
-            return Limit::perMinute(8)->by(($nik !== '' ? $nik : 'anon') . '|' . $request->ip());
+            return Limit::perMinute(20)->by('outsource-apply|' . $request->ip());
         });
 
         // ==============================================================

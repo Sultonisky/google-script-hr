@@ -6,6 +6,7 @@ use App\Enums\SkDocumentType;
 use App\Http\Controllers\Controller;
 use App\Repositories\Contracts\EmployeeDocumentRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
+use App\Repositories\Contracts\OutsourceEmployeeRepositoryInterface;
 use App\Services\EmployeeDocumentArchiveService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -31,6 +32,7 @@ class DocumentTrackingController extends Controller
         protected EmployeeDocumentRepositoryInterface $documentRepo,
         protected EmployeeRepositoryInterface $employeeRepo,
         protected EmployeeDocumentArchiveService $documentArchive,
+        protected OutsourceEmployeeRepositoryInterface $outsourceRepo,
     ) {}
 
     /**
@@ -159,7 +161,9 @@ class DocumentTrackingController extends Controller
      */
     private function loadDocuments(): Collection
     {
-        $employees = $this->employeeRepo->getAll()
+        $employees = $this->outsourceRepo->getAll()
+            ->map(fn ($outsource) => $outsource->toEmployeeData())
+            ->concat($this->employeeRepo->getAll())
             ->keyBy(fn ($employee) => ltrim(trim((string) ($employee->employeeId ?? '')), "'"));
 
         return $this->documentRepo->getAll()

@@ -9,6 +9,7 @@ use App\Models\Employee;
 use App\Models\EmployeeDocument;
 use App\Models\MprRequest;
 use App\Models\MprRequestor;
+use App\Models\OutsourceEmployee;
 use App\Models\Permission;
 use App\Models\ProbationEvaluation;
 use App\Models\UserPermission;
@@ -16,6 +17,7 @@ use App\Services\Google\GoogleSheetsService;
 use App\Support\CandidateAttributeMap;
 use App\Support\EmployeeAttributeMap;
 use App\Support\HrisDataDriver;
+use App\Support\OutsourceEmployeeAttributeMap;
 use App\Support\ProbationAttributeMap;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -40,6 +42,7 @@ class DatabaseToSheetsEtlService
         'audit',
         'mpr',
         'mpr_requestors',
+        'outsource_employees',
     ];
 
     public function __construct(
@@ -74,6 +77,7 @@ class DatabaseToSheetsEtlService
                 'audit' => $this->exportAudit($dryRun),
                 'mpr' => $this->exportMpr($dryRun),
                 'mpr_requestors' => $this->exportMprRequestors($dryRun),
+                'outsource_employees' => $this->exportOutsourceEmployees($dryRun),
                 default => throw new RuntimeException("Domain ETL tidak dikenal: {$domain}"),
             };
         }
@@ -188,6 +192,22 @@ class DatabaseToSheetsEtlService
         }
 
         return $this->writeDomain('employees', $sheet, $headers, $rows, $dryRun);
+    }
+
+    /** @return array{read:int, written:int, skipped:int, errors:list<string>} */
+    private function exportOutsourceEmployees(bool $dryRun): array
+    {
+        $sheet = (string) config('google.sheets.outsource_employees', 'Outsource_Employees');
+        $headers = config('hris.schemas.Outsource_Employees', []);
+        $rows = [];
+
+        foreach (OutsourceEmployee::query()->orderBy('outsource_id')->get() as $model) {
+            $pos = OutsourceEmployeeAttributeMap::toData($model)->toSheetRow();
+            $byHeader = array_combine(OutsourceEmployeeAttributeMap::headers(), $pos);
+            $rows[] = $this->valuesForHeaders($headers, $byHeader);
+        }
+
+        return $this->writeDomain('outsource_employees', $sheet, $headers, $rows, $dryRun);
     }
 
     /** @return array{read:int, written:int, skipped:int, errors:list<string>} */

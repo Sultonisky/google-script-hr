@@ -77,17 +77,17 @@ class EmployeeDashboardValidationTest extends TestCase
     }
 
     #[Test]
-    public function outsource_store_rejects_numeric_org_titles(): void
+    public function outsource_store_rejects_unknown_vendor_and_malformed_fields(): void
     {
         $this->actingAsAdmin();
 
         $this->postJson('/hr/outsource', [
-            'fullName'            => 'Andi Wijaya',
-            'outsourceVendor'     => 'PT Vendor Dummy',
-            'division'            => 'Ops 9',
-            'jobPosition'         => 'Operator 2',
-            'jobPositionLocation' => 'Operator 2 - Bekasi',
-        ])->assertStatus(422)->assertJsonValidationErrors(['division', 'jobPosition', 'jobPositionLocation']);
+            'fullName'       => 'Andi Wijaya',
+            'vendor'         => 'PT Vendor Dummy',
+            'jobTitle'       => 'Operator <b>',
+            'whatsappNumber' => '12',
+            'email'          => 'bukan-email',
+        ])->assertStatus(422)->assertJsonValidationErrors(['vendor', 'jobTitle', 'whatsappNumber', 'email']);
     }
 
     #[Test]

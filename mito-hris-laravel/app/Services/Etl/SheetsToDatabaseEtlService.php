@@ -5,18 +5,21 @@ namespace App\Services\Etl;
 use App\DTOs\CandidateData;
 use App\DTOs\EmployeeData;
 use App\DTOs\MprData;
+use App\DTOs\OutsourceEmployeeData;
 use App\Models\AuditLog;
 use App\Models\Candidate;
 use App\Models\Employee;
 use App\Models\EmployeeDocument;
 use App\Models\MprRequest;
 use App\Models\MprRequestor;
+use App\Models\OutsourceEmployee;
 use App\Models\Permission;
 use App\Models\ProbationEvaluation;
 use App\Models\UserPermission;
 use App\Services\Google\GoogleSheetsService;
 use App\Support\CandidateAttributeMap;
 use App\Support\EmployeeAttributeMap;
+use App\Support\OutsourceEmployeeAttributeMap;
 use App\Support\ProbationAttributeMap;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -40,6 +43,7 @@ class SheetsToDatabaseEtlService
         'audit',
         'mpr',
         'mpr_requestors',
+        'outsource_employees',
     ];
 
     public function __construct(
@@ -71,6 +75,7 @@ class SheetsToDatabaseEtlService
                 'audit' => $this->importAudit($dryRun),
                 'mpr' => $this->importMpr($dryRun),
                 'mpr_requestors' => $this->importMprRequestors($dryRun),
+                'outsource_employees' => $this->importOutsourceEmployees($dryRun),
                 default => throw new RuntimeException("Domain ETL tidak dikenal: {$domain}"),
             };
         }
@@ -117,6 +122,7 @@ class SheetsToDatabaseEtlService
             'audit' => 'audit_logs',
             'mpr' => 'mpr_requests',
             'mpr_requestors' => 'mpr_requestors',
+            'outsource_employees' => 'outsource_employees',
         ];
 
         \Schema::disableForeignKeyConstraints();
@@ -278,6 +284,38 @@ class SheetsToDatabaseEtlService
                 $written++;
             } catch (\Throwable $e) {
                 $errors[] = "employees:{$id}: {$e->getMessage()}";
+            }
+        }
+
+        return $this->result(count($rows), $written, $skipped, $errors);
+    }
+
+    /** @return array{read:int, written:int, skipped:int, errors:list<string>} */
+    private function importOutsourceEmployees(bool $dryRun): array
+    {
+        $rows = $this->readSheet(config('google.sheets.outsource_employees', 'Outsource_Employees'));
+        $written = 0;
+        $skipped = 0;
+        $errors = [];
+
+        foreach ($rows as $row) {
+            $data = OutsourceEmployeeData::fromSheetRow($row);
+            $id = strtoupper(trim((string) ($data->outsourceId ?? '')));
+            if ($id === '') {
+                $skipped++;
+                continue;
+            }
+            if ($dryRun) {
+                $written++;
+                continue;
+            }
+            try {
+                $payload = OutsourceEmployeeAttributeMap::toFillable($data);
+                $payload['outsource_id'] = $id;
+                OutsourceEmployee::query()->updateOrCreate(['outsource_id' => $id], $payload);
+                $written++;
+            } catch (\Throwable $e) {
+                $errors[] = "outsource_employees:{$id}: {$e->getMessage()}";
             }
         }
 

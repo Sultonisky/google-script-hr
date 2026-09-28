@@ -7,6 +7,7 @@ use App\Enums\SkDocumentType;
 use App\Models\EmployeeDocumentFile;
 use App\Repositories\Contracts\EmployeeDocumentRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
+use App\Repositories\Contracts\OutsourceEmployeeRepositoryInterface;
 use Closure;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Carbon;
@@ -23,6 +24,7 @@ class EmployeeDocumentArchiveService
         private EmployeeDocumentRepositoryInterface $documents,
         private EmployeeRepositoryInterface $employees,
         private PdfGeneratorService $pdfService,
+        private OutsourceEmployeeRepositoryInterface $outsourceEmployees,
     ) {}
 
     /**
@@ -191,7 +193,9 @@ class EmployeeDocumentArchiveService
         }
 
         $employeeId = ltrim(trim((string) ($document['Employee ID'] ?? '')), "'");
-        $employee = $employeeId !== '' ? $this->employees->findById($employeeId) : null;
+        $employee = $employeeId !== ''
+            ? ($this->employees->findById($employeeId) ?? $this->outsourceEmployees->findById($employeeId)?->toEmployeeData())
+            : null;
         if (!$employee) {
             throw new RuntimeException('Data karyawan untuk dokumen ini tidak ditemukan, PDF tidak dapat dibuat ulang.');
         }

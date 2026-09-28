@@ -2,15 +2,17 @@
 
 namespace App\Http\Requests\Public;
 
+use App\Support\OutsourceEmployeeAttributeMap;
 use Carbon\Carbon;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class OutsourceApplyRequest extends FormRequest
 {
-    private const NAME_REGEX = '/^[\p{L}]+(?:[ ]+[\p{L}]+)*$/u';
+    private const NAME_REGEX = '/^[\p{L}\'.]+(?:[ ]+[\p{L}\'.]+)*$/u';
 
-    private const MODERATE_REGEX = '/^[\p{L}0-9 .,&\-\/]+$/u';
+    private const MODERATE_REGEX = '/^[\p{L}0-9 .,&()\-\/]+$/u';
 
     public function authorize(): bool
     {
@@ -19,59 +21,50 @@ class OutsourceApplyRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $digitKeys = [
-            'nik',
-            'nomor_telepon',
-            'nomor_rekening',
-            'npwp',
-            'bpjs_ketenagakerjaan',
-            'bpjs_kesehatan',
-        ];
-        $nameKeys = [
-            'nama_lengkap',
-            'tempat_lahir',
-            'atasan_langsung',
-            'atasan_tidak_langsung',
-            'nama_pemilik_rekening',
-        ];
-        $textKeys = [
-            'vendor_outsource',
-            'divisi',
-            'departemen',
-            'cost_center',
-            'lokasi_kerja',
-            'kecamatan',
-            'kecamatan_manual',
-            'alamat_ktp',
-            'alamat_domisili',
-            'kota_nama',
-        ];
-        $emailKeys = ['email_pribadi', 'email_kantor'];
-
         $merged = [];
 
-        foreach ($digitKeys as $key) {
+        foreach (['whatsapp_number', 'bank_account'] as $key) {
             $value = $this->input($key);
             if (is_string($value)) {
                 $merged[$key] = preg_replace('/\D+/', '', $value);
             }
         }
 
-        foreach (array_merge($nameKeys, $textKeys) as $key) {
+        if (isset($merged['whatsapp_number'])) {
+            $digits = $merged['whatsapp_number'];
+            if (str_starts_with($digits, '62')) {
+                $digits = substr($digits, 2);
+            } elseif (str_starts_with($digits, '0')) {
+                $digits = substr($digits, 1);
+            }
+            $merged['whatsapp_number'] = $digits;
+        }
+
+        foreach ([
+            'full_name', 'birth_place', 'last_education', 'vendor', 'job_title', 'work_location',
+            'work_city', 'cost_center', 'entity', 'payroll_scheme',
+        ] as $key) {
             $value = $this->input($key);
             if (is_string($value)) {
                 $merged[$key] = trim(preg_replace('/\s+/u', ' ', $value) ?? '');
             }
         }
 
-        foreach ($emailKeys as $key) {
-            $value = $this->input($key);
-            if (is_string($value)) {
-                $merged[$key] = strtolower(trim($value));
-            }
+        $address = $this->input('citizen_id_address');
+        if (is_string($address)) {
+            $merged['citizen_id_address'] = trim($address);
         }
 
-        $merged['status_karyawan'] = 'Outsource';
+        $email = $this->input('email');
+        if (is_string($email)) {
+            $merged['email'] = strtolower(trim($email));
+        }
+
+        $umk = $this->input('umk_amount');
+        if (is_string($umk) || is_numeric($umk)) {
+            $parsed = OutsourceEmployeeAttributeMap::parseAmount($umk);
+            $merged['umk_amount'] = $parsed ?? $umk;
+        }
 
         if ($merged !== []) {
             $this->merge($merged);
@@ -80,52 +73,33 @@ class OutsourceApplyRequest extends FormRequest
 
     public function rules(): array
     {
+        $config = config('hris.outsource', []);
+
         return [
-            'nama_lengkap' => ['required', 'string', 'min:3', 'max:255', 'regex:' . self::NAME_REGEX],
-            'nik' => ['required', 'digits:16'],
+            'full_name' => ['required', 'string', 'min:3', 'max:255', 'regex:' . self::NAME_REGEX],
+            'citizen_id_address' => ['required', 'string', 'min:5', 'max:500'],
             'birth_date' => [
                 'required',
                 'date_format:Y-m-d',
                 'after_or_equal:1900-01-01',
                 'before_or_equal:today',
             ],
-            'tempat_lahir' => ['required', 'string', 'min:3', 'max:120', 'regex:' . self::NAME_REGEX],
-            'usia' => ['nullable', 'integer', 'min:17', 'max:100'],
-            'jenis_kelamin' => ['required', 'in:Laki-laki,Perempuan'],
-            'agama' => ['required', 'in:Islam,Kristen,Katolik,Hindu,Buddha,Khonghucu'],
-            'golongan_darah' => ['required', 'in:A,B,AB,O'],
-            'status_pernikahan' => ['required', 'in:Belum Menikah,Menikah,Cerai'],
-            'email_pribadi' => ['required', 'email:filter', 'max:255'],
-            'email_kantor' => ['required', 'email:filter', 'max:255'],
-            'nomor_telepon' => ['required', 'digits_between:9,13', 'regex:/^8[0-9]{6,12}$/'],
-            'provinsi' => ['required', 'string', 'max:80'],
-            'kota' => ['required', 'string', 'max:80'],
-            'kota_nama' => ['nullable', 'string', 'max:120'],
-            'kecamatan' => ['required_without:kecamatan_manual', 'nullable', 'string', 'max:120'],
-            'kecamatan_manual' => ['required_without:kecamatan', 'nullable', 'string', 'min:3', 'max:120', 'regex:' . self::MODERATE_REGEX],
-            'alamat_ktp' => ['required', 'string', 'min:5', 'max:500'],
-            'alamat_domisili' => ['required', 'string', 'min:5', 'max:500'],
-            'cabang_penempatan' => ['required', 'in:PT Mahakarya Sukses Indonesia,PT Stein Perkasa Internasional,PT Perkasa Injeksi Indonesia,PT Mitra Elektro Perkasa'],
-            'vendor_outsource' => ['required', 'string', 'min:3', 'max:120', 'regex:' . self::MODERATE_REGEX],
-            'divisi' => ['required', 'string', 'min:2', 'max:80', 'regex:' . self::MODERATE_REGEX],
-            'departemen' => ['required', 'string', 'min:2', 'max:80', 'regex:' . self::MODERATE_REGEX],
-            'area_kerja' => ['required', 'in:Head Office,Cabang,Pabrik'],
-            'cost_center' => ['required', 'string', 'min:2', 'max:80', 'regex:' . self::MODERATE_REGEX],
-            'lokasi_kerja' => ['required', 'string', 'min:3', 'max:120', 'regex:' . self::MODERATE_REGEX],
-            'posisi_jabatan' => ['required', 'string', 'max:255'],
-            'job_level' => ['required', 'in:Associate,Supervisor,Manager'],
-            'status_karyawan' => ['required', 'in:Outsource'],
-            'tanggal_masuk' => ['required', 'date', 'after_or_equal:1900-01-01'],
-            'tanggal_berakhir_kontrak' => ['required', 'date', 'after:tanggal_masuk'],
-            'atasan_langsung' => ['required', 'string', 'min:3', 'max:255', 'regex:' . self::NAME_REGEX],
-            'atasan_tidak_langsung' => ['required', 'string', 'min:3', 'max:255', 'regex:' . self::NAME_REGEX],
-            'nama_bank' => ['nullable', 'string', 'max:40'],
-            'nomor_rekening' => ['required', 'digits_between:8,20'],
-            'nama_pemilik_rekening' => ['required', 'string', 'min:3', 'max:255', 'regex:' . self::NAME_REGEX],
-            'npwp' => ['required', 'digits_between:15,16'],
-            'status_ptkp' => ['required', 'in:TK/0,TK/1,TK/2,TK/3,K/0,K/1,K/2,K/3'],
-            'bpjs_ketenagakerjaan' => ['required', 'digits_between:11,16'],
-            'bpjs_kesehatan' => ['required', 'digits_between:13,16'],
+            'birth_place' => ['required', 'string', 'min:3', 'max:120', 'regex:' . self::NAME_REGEX],
+            'last_education' => ['required', Rule::in($config['education_levels'] ?? [])],
+            'whatsapp_number' => ['required', 'regex:/^8[0-9]{7,12}$/'],
+            'email' => ['required', 'email:filter', 'max:255'],
+            'vendor' => ['required', Rule::in($config['vendors'] ?? [])],
+            'job_title' => ['required', 'string', 'min:2', 'max:120', 'regex:' . self::MODERATE_REGEX],
+            'work_location' => ['required', 'string', 'min:2', 'max:255', 'regex:' . self::MODERATE_REGEX],
+            'work_city' => ['required', 'string', 'min:2', 'max:120', 'regex:' . self::MODERATE_REGEX],
+            'cost_center' => ['required', 'string', 'min:2', 'max:120', 'regex:' . self::MODERATE_REGEX],
+            'entity' => ['required', Rule::in($config['entities'] ?? [])],
+            'mito_join_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:1900-01-01'],
+            'contract_start_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:1900-01-01'],
+            'contract_end_date' => ['required', 'date_format:Y-m-d', 'after:contract_start_date'],
+            'payroll_scheme' => ['required', Rule::in($config['payroll_schemes'] ?? [])],
+            'umk_amount' => ['required', 'numeric', 'min:0', 'max:1000000000'],
+            'bank_account' => ['required', 'digits_between:8,20'],
             'agreement' => ['required', 'in:1'],
             'consent_timestamp' => ['nullable', 'string', 'max:80'],
             'consent_device' => ['nullable', 'string', 'max:120'],
@@ -161,46 +135,52 @@ class OutsourceApplyRequest extends FormRequest
 
     public function messages(): array
     {
-        $nameOnly = 'Hanya boleh berisi huruf dan spasi.';
-        $moderate = 'Hanya boleh berisi huruf, angka, spasi, dan tanda . , & - /';
+        $nameOnly = 'hanya boleh berisi huruf, spasi, titik, dan apostrof.';
+        $moderate = 'hanya boleh berisi huruf, angka, spasi, dan tanda . , & ( ) - /';
 
         return [
-            'nama_lengkap.regex' => 'Nama lengkap ' . lcfirst($nameOnly),
-            'tempat_lahir.regex' => 'Tempat lahir ' . lcfirst($nameOnly),
-            'atasan_langsung.regex' => 'Nama atasan langsung ' . lcfirst($nameOnly),
-            'atasan_tidak_langsung.regex' => 'Nama atasan tidak langsung ' . lcfirst($nameOnly),
-            'nama_pemilik_rekening.regex' => 'Nama pemilik rekening ' . lcfirst($nameOnly),
-            'nik.digits' => 'NIK harus berupa 16 digit angka.',
-            'nomor_telepon.regex' => 'Nomor HP tidak valid. Gunakan format 8xxxxxxxxxx.',
-            'nomor_telepon.digits_between' => 'Nomor HP hanya boleh berisi angka.',
-            'nomor_rekening.digits_between' => 'Nomor rekening hanya boleh berisi angka.',
-            'npwp.digits_between' => 'NPWP harus 15 atau 16 digit angka.',
-            'bpjs_ketenagakerjaan.digits_between' => 'Nomor BPJS Ketenagakerjaan hanya boleh berisi angka.',
-            'bpjs_kesehatan.digits_between' => 'Nomor BPJS Kesehatan hanya boleh berisi angka.',
-            'vendor_outsource.regex' => 'Nama vendor ' . lcfirst($moderate),
-            'divisi.regex' => 'Divisi ' . lcfirst($moderate),
-            'departemen.regex' => 'Departemen ' . lcfirst($moderate),
-            'cost_center.regex' => 'Cost center ' . lcfirst($moderate),
-            'lokasi_kerja.regex' => 'Lokasi kerja ' . lcfirst($moderate),
-            'kecamatan_manual.regex' => 'Kecamatan ' . lcfirst($moderate),
-            'jenis_kelamin.in' => 'Jenis kelamin tidak valid.',
-            'agama.in' => 'Agama tidak valid.',
-            'golongan_darah.in' => 'Golongan darah harus A, B, AB, atau O.',
-            'status_pernikahan.in' => 'Status pernikahan tidak valid.',
-            'cabang_penempatan.in' => 'Entitas perusahaan tidak valid.',
-            'area_kerja.in' => 'Area kerja tidak valid.',
-            'job_level.in' => 'Job level tidak valid.',
-            'status_karyawan.in' => 'Status karyawan harus Outsource.',
-            'status_ptkp.in' => 'Status PTKP tidak valid.',
-            'tanggal_berakhir_kontrak.after' => 'Tanggal berakhir kontrak harus setelah tanggal masuk.',
+            'full_name.required' => 'Nama sesuai KTP wajib diisi.',
+            'full_name.regex' => 'Nama ' . $nameOnly,
+            'citizen_id_address.required' => 'Alamat sesuai KTP wajib diisi.',
+            'citizen_id_address.min' => 'Alamat sesuai KTP minimal 5 karakter.',
             'birth_date.required' => 'Tanggal lahir wajib diisi.',
             'birth_date.date_format' => 'Tanggal lahir harus berformat YYYY-MM-DD.',
             'birth_date.after_or_equal' => 'Tahun lahir tidak valid (minimal 1900).',
             'birth_date.before_or_equal' => 'Tanggal lahir tidak boleh tanggal yang akan datang.',
-            'email_pribadi.email' => 'Format alamat email pribadi tidak valid.',
-            'email_kantor.email' => 'Format alamat email kantor tidak valid.',
-            'kecamatan.required_without' => 'Kecamatan wajib diisi.',
-            'kecamatan_manual.required_without' => 'Kecamatan wajib diisi.',
+            'birth_place.required' => 'Kota kelahiran wajib diisi.',
+            'birth_place.regex' => 'Kota kelahiran ' . $nameOnly,
+            'last_education.required' => 'Pendidikan terakhir wajib dipilih.',
+            'last_education.in' => 'Pendidikan terakhir tidak valid.',
+            'whatsapp_number.required' => 'Nomor WhatsApp wajib diisi.',
+            'whatsapp_number.regex' => 'Nomor WhatsApp tidak valid. Gunakan format 8xxxxxxxxxx.',
+            'email.required' => 'Email wajib diisi.',
+            'email.email' => 'Format alamat email tidak valid.',
+            'vendor.required' => 'Vendor wajib dipilih.',
+            'vendor.in' => 'Vendor tidak valid.',
+            'job_title.required' => 'Nama jabatan wajib diisi.',
+            'job_title.regex' => 'Nama jabatan ' . $moderate,
+            'work_location.required' => 'Lokasi kerja wajib diisi.',
+            'work_location.regex' => 'Lokasi kerja ' . $moderate,
+            'work_city.required' => 'Kota lokasi kerja wajib diisi.',
+            'work_city.regex' => 'Kota lokasi kerja ' . $moderate,
+            'cost_center.required' => 'Cabang (cost center) wajib diisi.',
+            'cost_center.regex' => 'Cabang (cost center) ' . $moderate,
+            'entity.required' => 'Entity wajib dipilih.',
+            'entity.in' => 'Entity tidak valid.',
+            'mito_join_date.required' => 'Tanggal join di Mito wajib diisi.',
+            'mito_join_date.date_format' => 'Tanggal join di Mito harus berformat YYYY-MM-DD.',
+            'contract_start_date.required' => 'Tanggal awal kontrak wajib diisi.',
+            'contract_start_date.date_format' => 'Tanggal awal kontrak harus berformat YYYY-MM-DD.',
+            'contract_end_date.required' => 'Tanggal akhir kontrak wajib diisi.',
+            'contract_end_date.date_format' => 'Tanggal akhir kontrak harus berformat YYYY-MM-DD.',
+            'contract_end_date.after' => 'Tanggal akhir kontrak harus setelah tanggal awal kontrak.',
+            'payroll_scheme.required' => 'Skema penggajian wajib dipilih.',
+            'payroll_scheme.in' => 'Skema penggajian tidak valid.',
+            'umk_amount.required' => 'Nominal UMK wajib diisi.',
+            'umk_amount.numeric' => 'Nominal UMK harus berupa angka.',
+            'umk_amount.min' => 'Nominal UMK tidak boleh negatif.',
+            'bank_account.required' => 'Nomor rekening BCA wajib diisi.',
+            'bank_account.digits_between' => 'Nomor rekening BCA harus 8–20 digit angka.',
             'agreement.required' => 'Anda harus menyetujui pernyataan keabsahan data untuk melanjutkan.',
             'agreement.in' => 'Anda harus menyetujui pernyataan keabsahan data untuk melanjutkan.',
         ];

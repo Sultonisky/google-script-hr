@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\Public;
 
-use App\DTOs\EmployeeData;
+use App\DTOs\OutsourceEmployeeData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Public\OutsourceApplyRequest;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
-use App\Repositories\Contracts\EmployeeRepositoryInterface;
-use App\Services\EmployeeIdGenerator;
+use App\Repositories\Contracts\OutsourceEmployeeRepositoryInterface;
 use App\Services\RecruitmentService;
+use App\Support\OutsourceEmployeeFilter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,20 +18,12 @@ use Illuminate\View\View;
 class OutsourceApplyController extends Controller
 {
     private const SUBMISSION_COMPLETED = 'public_outsource_submission_completed';
-    private const NIK_DUPLICATE_MESSAGE = 'NIK ini sudah terdaftar. Setiap NIK hanya dapat digunakan untuk satu kali pendaftaran.';
-
-    protected EmployeeRepositoryInterface $employeeRepo;
-    protected AuditLogRepositoryInterface $auditRepo;
-    protected EmployeeIdGenerator $idGenerator;
+    private const CONTACT_DUPLICATE_MESSAGE = 'Nomor WhatsApp atau email ini sudah terdaftar. Setiap nomor WhatsApp dan email hanya dapat digunakan untuk satu kali pendaftaran.';
 
     public function __construct(
-        EmployeeRepositoryInterface $employeeRepo,
-        AuditLogRepositoryInterface $auditRepo,
-        EmployeeIdGenerator $idGenerator
+        protected OutsourceEmployeeRepositoryInterface $outsourceRepo,
+        protected AuditLogRepositoryInterface $auditRepo,
     ) {
-        $this->employeeRepo = $employeeRepo;
-        $this->auditRepo = $auditRepo;
-        $this->idGenerator = $idGenerator;
     }
 
     public function index(): View|RedirectResponse
@@ -40,23 +32,23 @@ class OutsourceApplyController extends Controller
             return redirect()->route('public.outsource.success');
         }
 
-        $positions = app(\App\Services\JobPositionService::class)->getPositionNames();
-        return view('public.outsource.apply', compact('positions'));
+        return view('public.outsource.apply');
     }
 
     /**
-     * Probe whether a NIK already exists on the employee sheet.
+     * Probe whether a WhatsApp number / email is already registered (does not create a lock).
      */
-    public function checkNik(Request $request): JsonResponse
+    public function checkContact(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'nik' => ['required', 'digits:16'],
-        ], [
-            'nik.required' => 'NIK wajib diisi.',
-            'nik.digits' => 'NIK harus berupa 16 digit angka.',
+            'whatsapp_number' => ['nullable', 'string', 'max:20'],
+            'email' => ['nullable', 'string', 'max:255'],
         ]);
 
-        return response()->json($this->nikRegistrationStatus($validated['nik']));
+        return response()->json($this->contactRegistrationStatus(
+            $this->canonicalPhone($validated['whatsapp_number'] ?? null),
+            $validated['email'] ?? null,
+        ));
     }
 
     public function success(): View|RedirectResponse
@@ -79,29 +71,25 @@ class OutsourceApplyController extends Controller
         }
 
         $validated = $request->validated();
-        $nik = preg_replace('/\D+/', '', (string) ($validated['nik'] ?? ''));
-        $lockAcquired = false;
+        $phone = $this->canonicalPhone($validated['whatsapp_number']);
+        $email = strtolower(trim((string) $validated['email']));
+        $lockKeys = $this->contactLockKeys($phone, $email);
+        $acquired = [];
 
         try {
-            $employees = $this->employeeRepo->getAll();
+            foreach ($lockKeys as $key) {
+                if (!Cache::add($key, 1, 90)) {
+                    $this->releaseLocks($acquired);
 
-            if (strlen($nik) === 16) {
-                $lockAcquired = Cache::add($this->nikLockKey($nik), 1, 90);
-                if (!$lockAcquired) {
-                    return back()->withInput()->with('error', 'NIK ini sudah terdaftar atau sedang diproses. Setiap NIK hanya dapat digunakan untuk satu kali pendaftaran.');
+                    return back()->withInput()->with('error', self::CONTACT_DUPLICATE_MESSAGE);
                 }
+                $acquired[] = $key;
+            }
 
-                $alreadyRegistered = $employees->contains(function ($employee) use ($nik) {
-                    $rowNik = preg_replace('/\D+/', '', (string) ($employee->nikNpwp ?? ''));
+            if ($this->outsourceRepo->findByContact($phone, $email) !== null) {
+                $this->releaseLocks($acquired);
 
-                    return $rowNik === $nik;
-                });
-
-                if ($alreadyRegistered) {
-                    Cache::forget($this->nikLockKey($nik));
-
-                    return back()->withInput()->with('error', self::NIK_DUPLICATE_MESSAGE);
-                }
+                return back()->withInput()->with('error', self::CONTACT_DUPLICATE_MESSAGE);
             }
 
             $consentEvidence = [
@@ -117,102 +105,39 @@ class OutsourceApplyController extends Controller
                 'location' => $request->input('consent_location', $request->input('location')),
             ];
 
-            $existingIds = $employees
-                ->pluck('employeeId')
-                ->filter()
-                ->map(fn ($id) => strtoupper(trim((string) $id)))
-                ->all();
-
-            $joinDate = $validated['tanggal_masuk'] ?? null;
-            $employeeId = $this->idGenerator->generate($joinDate, $existingIds);
-            $attempts = 0;
-            while (in_array(strtoupper($employeeId), $existingIds, true) && $attempts < 10) {
-                $employeeId = $this->idGenerator->generate($joinDate, $existingIds);
-                $attempts++;
-            }
-
-            // Resolve kecamatan: dropdown first, fallback manual
-            $kecamatan = $validated['kecamatan'] ?? null;
-            if (empty($kecamatan)) {
-                $kecamatan = $validated['kecamatan_manual'] ?? null;
-            }
-            $alamatKtp = $validated['alamat_ktp'] ?? '';
-            if (!empty($kecamatan) && !empty($alamatKtp)) {
-                $alamatKtp = $kecamatan . ', ' . $alamatKtp;
-            }
-
-            // BUG FIX #1 — Canonical phone: prepend +62 (visual prefix was display-only).
-            $canonicalPhone = RecruitmentService::normalizePhone($validated['nomor_telepon'] ?? null);
-
-            // BUG FIX #2 — City name: kota_nama is a hidden input populated by JS with the
-            // human-readable city name (e.g. "KAB. PEMALANG") before submit.  The kota field
-            // itself carries only the numeric region code (e.g. "3327").
-            $cityRaw  = $validated['kota_nama'] ?? ($validated['kota'] ?? null);
-            $cityName = (is_string($cityRaw) && !ctype_digit(trim((string) $cityRaw))) ? $cityRaw : null;
-
-            $jobPosition = trim((string) ($validated['posisi_jabatan'] ?? ''));
-            $lokasiKerja = trim((string) ($validated['lokasi_kerja'] ?? ''));
-            // Job Position (Location) = posisi + lokasi, same separator as hired employees.
-            $jobPositionLocation = $jobPosition;
-            if ($lokasiKerja !== '' && $jobPosition !== '' && !str_contains($jobPosition, "({$lokasiKerja})")) {
-                $jobPositionLocation = $jobPosition . " ({$lokasiKerja})";
-            } elseif ($jobPosition === '' && $lokasiKerja !== '') {
-                $jobPositionLocation = $lokasiKerja;
-            }
-
-            $employee = new EmployeeData(
-                employeeId: $employeeId,
-                fullName: $validated['nama_lengkap'],
-                nikNpwp: $validated['nik'],
-                personalEmail: $validated['email_pribadi'],
-                workingEmail: $validated['email_kantor'],
-                mobilePhone: $canonicalPhone,
-                branchName: $validated['cabang_penempatan'],
-                division: $validated['divisi'],
-                department: $validated['departemen'],
-                jobPositionLocation: $jobPositionLocation !== '' ? $jobPositionLocation : null,
-                areaKerja: $validated['area_kerja'],
-                costCenter: $validated['cost_center'],
-                lokasiKerja: $validated['lokasi_kerja'],
-                jobPosition: $jobPosition !== '' ? $jobPosition : null,
-                jobLevel: $validated['job_level'],
-                statusEmployee: $validated['status_karyawan'],
-                joinDate: $validated['tanggal_masuk'],
-                endDateContract: $validated['tanggal_berakhir_kontrak'],
-                directSuperior: $validated['atasan_langsung'],
-                indirectSuperior: $validated['atasan_tidak_langsung'],
-                outsourceVendor: $validated['vendor_outsource'],
-                outsourceContractSeq: 0,
+            $created = $this->outsourceRepo->create(new OutsourceEmployeeData(
+                fullName: $validated['full_name'],
+                citizenIdAddress: $validated['citizen_id_address'],
                 birthDate: $validated['birth_date'],
-                birthPlace: $validated['tempat_lahir'],
-                citizenIdAddress: $alamatKtp,
-                residentialAddress: $validated['alamat_domisili'],
-                npwp: $validated['npwp'],
-                ptkpStatus: $validated['status_ptkp'],
-                bankName: $validated['nama_bank'] ?? 'BCA',
-                bankAccount: $validated['nomor_rekening'],
-                bankAccountHolder: $validated['nama_pemilik_rekening'],
-                bpjsKetenagakerjaan: $validated['bpjs_ketenagakerjaan'],
-                bpjsKesehatan: $validated['bpjs_kesehatan'],
-                gender: $validated['jenis_kelamin'],
-                religion: $validated['agama'],
-                bloodType: $validated['golongan_darah'],
-                maritalStatus: $validated['status_pernikahan'],
-                createdBy: 'Portal Outsource'
-            );
-
-            $this->employeeRepo->create($employee);
+                birthPlace: $validated['birth_place'],
+                lastEducation: $validated['last_education'],
+                whatsappNumber: $phone,
+                email: $email,
+                jobTitle: $validated['job_title'],
+                workLocation: $validated['work_location'],
+                workCity: $validated['work_city'],
+                bankAccount: $validated['bank_account'],
+                mitoJoinDate: $validated['mito_join_date'],
+                contractStartDate: $validated['contract_start_date'],
+                contractEndDate: $validated['contract_end_date'],
+                costCenter: $validated['cost_center'],
+                entity: $validated['entity'],
+                payrollScheme: $validated['payroll_scheme'],
+                umkAmount: (float) $validated['umk_amount'],
+                vendor: $validated['vendor'],
+                createdBy: 'Portal Outsource',
+            ));
 
             try {
                 $this->auditRepo->log(
                     entityType: 'Outsource',
-                    entityId: $employeeId,
+                    entityId: (string) $created->outsourceId,
                     action: 'created',
-                    field: 'Employee ID',
+                    field: 'Outsource ID',
                     oldValue: '-',
                     newValue: [
-                        'employee_id' => $employeeId,
-                        'vendor' => $validated['vendor_outsource'],
+                        'outsource_id' => $created->outsourceId,
+                        'vendor' => $validated['vendor'],
                         'agreement_evidence' => $consentEvidence,
                     ],
                     user: 'Public Applicant',
@@ -226,51 +151,68 @@ class OutsourceApplyController extends Controller
 
             return redirect()->route('public.outsource.success');
         } catch (\Throwable $e) {
-            if ($lockAcquired && $nik !== '') {
-                Cache::forget($this->nikLockKey($nik));
-            }
+            $this->releaseLocks($acquired);
+            report($e);
 
-            return back()->withInput()->with('error', 'Pendaftaran gagal disimpan. ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Pendaftaran gagal disimpan. Silakan coba lagi beberapa saat lagi.');
         }
     }
 
     /**
-     * Public uniqueness probe for the outsource apply form (does not create a lock).
-     *
      * @return array{available: bool, message: ?string}
      */
-    public function nikRegistrationStatus(string $nik): array
+    public function contactRegistrationStatus(?string $phone, ?string $email): array
     {
-        $nik = preg_replace('/\D+/', '', $nik);
-        if (strlen($nik) !== 16) {
-            return [
-                'available' => false,
-                'message' => 'NIK harus terdiri dari 16 digit angka.',
-            ];
+        $email = strtolower(trim((string) $email));
+        if (($phone ?? '') === '' && $email === '') {
+            return ['available' => true, 'message' => null];
         }
 
-        if (Cache::has($this->nikLockKey($nik))) {
-            return [
-                'available' => false,
-                'message' => self::NIK_DUPLICATE_MESSAGE,
-            ];
+        foreach ($this->contactLockKeys($phone, $email) as $key) {
+            if (Cache::has($key)) {
+                return ['available' => false, 'message' => self::CONTACT_DUPLICATE_MESSAGE];
+            }
         }
 
-        if ($this->employeeRepo->findByNik($nik) !== null) {
-            return [
-                'available' => false,
-                'message' => self::NIK_DUPLICATE_MESSAGE,
-            ];
+        if ($this->outsourceRepo->findByContact($phone, $email) !== null) {
+            return ['available' => false, 'message' => self::CONTACT_DUPLICATE_MESSAGE];
         }
 
-        return [
-            'available' => true,
-            'message' => null,
-        ];
+        return ['available' => true, 'message' => null];
     }
 
-    private function nikLockKey(string $nik): string
+    private function canonicalPhone(?string $raw): ?string
     {
-        return 'outsource-apply-nik:' . $nik;
+        $digits = preg_replace('/\D+/', '', (string) $raw) ?? '';
+
+        return $digits === '' ? null : RecruitmentService::normalizePhone($digits);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function contactLockKeys(?string $phone, ?string $email): array
+    {
+        $keys = [];
+        $phoneKey = OutsourceEmployeeFilter::phoneKey($phone);
+        if ($phoneKey !== '') {
+            $keys[] = 'outsource-apply-phone:' . $phoneKey;
+        }
+        $email = strtolower(trim((string) $email));
+        if ($email !== '') {
+            $keys[] = 'outsource-apply-email:' . sha1($email);
+        }
+
+        return $keys;
+    }
+
+    /**
+     * @param  list<string>  $keys
+     */
+    private function releaseLocks(array $keys): void
+    {
+        foreach ($keys as $key) {
+            Cache::forget($key);
+        }
     }
 }

@@ -2,20 +2,25 @@
 
 namespace Tests\Feature;
 
-use App\DTOs\EmployeeData;
+use App\DTOs\OutsourceEmployeeData;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
-use App\Repositories\Contracts\EmployeeRepositoryInterface;
+use App\Repositories\Contracts\OutsourceEmployeeRepositoryInterface;
+use App\Repositories\Local\ArrayOutsourceEmployeeRepository;
+use Illuminate\Support\Facades\Cache;
 use Mockery;
 use Tests\TestCase;
 
 class PublicOutsourceApplyValidationTest extends TestCase
 {
-    private ?EmployeeData $capturedEmployee = null;
+    private ArrayOutsourceEmployeeRepository $outsourceRepo;
 
     protected function setUp(): void
     {
         parent::setUp();
-        \Illuminate\Support\Facades\Cache::flush();
+        Cache::flush();
+
+        $this->outsourceRepo = $this->app->make(ArrayOutsourceEmployeeRepository::class);
+        $this->app->instance(OutsourceEmployeeRepositoryInterface::class, $this->outsourceRepo);
     }
 
     protected function tearDown(): void
@@ -24,471 +29,215 @@ class PublicOutsourceApplyValidationTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_form_drops_probation_and_keeps_flexible_office_email(): void
+    public function test_form_collects_outsource_columns_without_hr_only_fields(): void
     {
         $response = $this->onDomain('outsource')->get(route('public.outsource.apply'));
 
         $response->assertOk();
-        $response->assertDontSee('value="Probation"', false);
-        $response->assertDontSee('value="Contract"', false);
-        $response->assertDontSee('value="Permanent"', false);
-        $response->assertSee('value="Outsource"', false);
-        $response->assertSee('Status dikunci Outsource karena pendaftaran melalui portal outsource.');
-        $response->assertSee('name="email_kantor"', false);
-        $response->assertSee('Gunakan email kerja yang aktif. Email MITO tidak wajib.');
-        $response->assertDontSee('placeholder="nama@mitogroup.co.id"', false);
-        $response->assertSee('data-sanitize-name="true"', false);
-        $response->assertSee('data-sanitize-digits="true"', false);
-        $response->assertSee('data-sanitize-npwp="true"', false);
-        $response->assertSee('sanitizeNpwpField', false);
-        $response->assertSee('pattern="[0-9]{15,16}"', false);
-        $response->assertSee('maxlength="16"', false);
-        $response->assertSee('data-sanitize-moderate="true"', false);
+        foreach ([
+            'full_name', 'citizen_id_address', 'birth_date', 'birth_place', 'last_education', 'whatsapp_number',
+            'email', 'vendor', 'job_title', 'work_location', 'work_city', 'cost_center', 'entity',
+            'mito_join_date', 'contract_start_date', 'contract_end_date', 'payroll_scheme', 'umk_amount', 'bank_account',
+        ] as $field) {
+            $response->assertSee('name="' . $field . '"', false);
+        }
+        foreach (['basic_salary', 'incentive_amount', 'remarks', 'nik', 'npwp', 'bpjs_kesehatan'] as $field) {
+            $response->assertDontSee('name="' . $field . '"', false);
+        }
+        $response->assertSee('value="Damarindo"', false);
+        $response->assertSee('value="StaffInc"', false);
         $response->assertSee('validateContractDates', false);
+        $response->assertSee(json_encode(route('public.outsource.contact-check')), false);
     }
 
-    public function test_form_exposes_strict_duplicate_nik_ui_lock(): void
-    {
-        $response = $this->onDomain('outsource')->get(route('public.outsource.apply'));
-
-        $response->assertOk();
-        $response->assertSee('id="nikDuplicateWarning"', false);
-        $response->assertSee('id="nikLockBanner"', false);
-        $response->assertSee('lockFormExceptNik', false);
-        $response->assertSee('clearNikAutofill', false);
-        $response->assertSee('applyNikAutofill', false);
-        $response->assertSee('nik-duplicate-locked', false);
-        $response->assertSee('submitBtn.disabled = nikIsBlocked || nikCheckPending', false);
-        $response->assertSee('if (result.data && result.data.available === false)', false);
-        $response->assertSee('Ubah NIK di kolom identitas untuk membuka kembali formulir', false);
-        $response->assertSee(route('public.outsource.nik-check'), false);
-        $response->assertDontSee('processNIK(', false);
-    }
-
-    public function test_form_locks_from_server_duplicate_error_without_autofill(): void
+    public function test_form_locks_from_server_duplicate_contact_error(): void
     {
         $response = $this->onDomain('outsource')
-            ->withSession([
-                'error' => 'NIK ini sudah terdaftar. Setiap NIK hanya dapat digunakan untuk satu kali pendaftaran.',
-            ])
+            ->withSession(['error' => 'Nomor WhatsApp atau email ini sudah terdaftar.'])
             ->get(route('public.outsource.apply'));
 
         $response->assertOk();
-        $response->assertSee('setNikBlocked(true, serverError)', false);
-        $response->assertSee('showNikChecking()', false);
-        $response->assertSee('scheduleNikAvailabilityCheck', false);
+        $response->assertSee('setContactBlocked(true, serverError)', false);
+        $response->assertSee('id="contactLockBanner"', false);
     }
 
-    public function test_nik_check_endpoint_reports_duplicate(): void
+    public function test_contact_check_reports_duplicate_phone_in_any_format(): void
     {
-        $employeeRepo = Mockery::mock(EmployeeRepositoryInterface::class);
-        $employeeRepo->shouldReceive('findByNik')
-            ->once()
-            ->with('3273010101900001')
-            ->andReturn(new EmployeeData(
-                employeeId: '2026011501',
-                fullName: 'Karyawan Lama',
-                nikNpwp: '3273010101900001',
-            ));
-        $this->app->instance(EmployeeRepositoryInterface::class, $employeeRepo);
+        $this->seedExisting();
 
-        $response = $this->onDomain('outsource')
-            ->postJson(route('public.outsource.nik-check'), [
-                'nik' => '3273010101900001',
-            ]);
+        $this->onDomain('outsource')
+            ->postJson(route('public.outsource.contact-check'), ['whatsapp_number' => '0812-3456-7890'])
+            ->assertOk()
+            ->assertJsonPath('available', false);
 
-        $response->assertOk()
-            ->assertJsonPath('available', false)
-            ->assertJsonPath('message', 'NIK ini sudah terdaftar. Setiap NIK hanya dapat digunakan untuk satu kali pendaftaran.');
+        $this->onDomain('outsource')
+            ->postJson(route('public.outsource.contact-check'), ['email' => 'LAMA@example.com'])
+            ->assertOk()
+            ->assertJsonPath('available', false);
+
+        $this->onDomain('outsource')
+            ->postJson(route('public.outsource.contact-check'), ['whatsapp_number' => '81111111111', 'email' => 'baru@example.com'])
+            ->assertOk()
+            ->assertJsonPath('available', true);
     }
 
-    public function test_existing_employee_nik_cannot_apply_again(): void
+    public function test_valid_submission_creates_outsource_record(): void
     {
-        $employeeRepo = Mockery::mock(EmployeeRepositoryInterface::class);
-        $employeeRepo->shouldReceive('getAll')->andReturn(collect([
-            new EmployeeData(
-                employeeId: '2026011501',
-                fullName: 'Karyawan Lama',
-                nikNpwp: '3273010101900001',
-            ),
-        ]));
-        $employeeRepo->shouldNotReceive('create');
+        $this->expectAudit();
 
-        $auditRepo = Mockery::mock(AuditLogRepositoryInterface::class);
-        $auditRepo->shouldNotReceive('log');
-
-        $this->app->instance(EmployeeRepositoryInterface::class, $employeeRepo);
-        $this->app->instance(AuditLogRepositoryInterface::class, $auditRepo);
-
-        $response = $this->onDomain('outsource')
-            ->from(route('public.outsource.apply'))
-            ->post(route('public.outsource.store'), $this->validPayload());
-
-        $response->assertRedirect(route('public.outsource.apply'));
-        $response->assertSessionHas('error', 'NIK ini sudah terdaftar. Setiap NIK hanya dapat digunakan untuk satu kali pendaftaran.');
-        $response->assertSessionMissing('public_outsource_submission_completed');
-    }
-
-    public function test_invalid_submission_shows_errors_and_keeps_the_form_retryable(): void
-    {
-        $this->bindReposExpectingNoCreate();
-
-        $response = $this->postInvalid([
-            'nama_lengkap' => 'Budi123',
-            'email_pribadi' => 'bukan-email',
-        ]);
-
-        $response->assertRedirect(route('public.outsource.apply'));
-        $response->assertSessionHasErrors(['nama_lengkap', 'email_pribadi']);
-
-        $form = $this->onDomain('outsource')->get(route('public.outsource.apply'));
-        $form->assertOk();
-        $form->assertSee('Form belum bisa dikirim.', false);
-        $form->assertSee('sessionStorage.removeItem(SUBMISSION_FLAG)', false);
-        $form->assertSee('prepareFormForSubmit', false);
-        $form->assertSee('name="nama_bank"', false);
-    }
-
-    public function test_sheet_write_failure_returns_to_form_with_error(): void
-    {
-        $employeeRepo = Mockery::mock(EmployeeRepositoryInterface::class);
-        $employeeRepo->shouldReceive('getAll')->andReturn(collect());
-        $employeeRepo->shouldReceive('create')->once()->andThrow(new \RuntimeException('Google Sheets timeout'));
-
-        $auditRepo = Mockery::mock(AuditLogRepositoryInterface::class);
-        $auditRepo->shouldNotReceive('log');
-
-        $this->app->instance(EmployeeRepositoryInterface::class, $employeeRepo);
-        $this->app->instance(AuditLogRepositoryInterface::class, $auditRepo);
-
-        $response = $this->onDomain('outsource')
-            ->from(route('public.outsource.apply'))
-            ->post(route('public.outsource.store'), $this->validPayload());
-
-        $response->assertRedirect(route('public.outsource.apply'));
-        $response->assertSessionHas('error');
-        $this->assertStringContainsString('Google Sheets timeout', (string) session('error'));
-        $response->assertSessionMissing('public_outsource_submission_completed');
-    }
-
-    public function test_audit_failure_does_not_block_success_page(): void
-    {
-        $this->capturedEmployee = null;
-
-        $employeeRepo = Mockery::mock(EmployeeRepositoryInterface::class);
-        $employeeRepo->shouldReceive('getAll')->andReturn(collect());
-        $employeeRepo->shouldReceive('create')
-            ->once()
-            ->andReturnUsing(function (EmployeeData $data) {
-                $this->capturedEmployee = $data;
-
-                return $data;
-            });
-
-        $auditRepo = Mockery::mock(AuditLogRepositoryInterface::class);
-        $auditRepo->shouldReceive('log')->once()->andThrow(new \RuntimeException('Audit sheet unavailable'));
-
-        $this->app->instance(EmployeeRepositoryInterface::class, $employeeRepo);
-        $this->app->instance(AuditLogRepositoryInterface::class, $auditRepo);
-
-        $response = $this->onDomain('outsource')
-            ->from(route('public.outsource.apply'))
-            ->post(route('public.outsource.store'), $this->validPayload());
+        $response = $this->submit();
 
         $response->assertRedirect(route('public.outsource.success'));
         $response->assertSessionHas('public_outsource_submission_completed', true);
-        $this->assertNotNull($this->capturedEmployee);
+
+        $saved = $this->outsourceRepo->getAll()->first();
+        $this->assertNotNull($saved);
+        $this->assertMatchesRegularExpression('/^DM\d{8}$/', (string) $saved->outsourceId);
+        $this->assertSame('Budi Santoso', $saved->fullName);
+        $this->assertSame('+6281234567890', $saved->whatsappNumber);
+        $this->assertSame('budi@example.com', $saved->email);
+        $this->assertSame('Damarindo', $saved->vendor);
+        $this->assertSame('PT. Mahakarya Sukses Indonesia', $saved->entity);
+        $this->assertSame(5396761.0, $saved->umkAmount);
+        $this->assertSame('Portal Outsource', $saved->createdBy);
+        $this->assertNull($saved->basicSalary);
+        $this->assertNull($saved->incentiveAmount);
+        $this->assertNull($saved->remarks);
     }
 
-    public function test_accepts_non_mito_office_email_and_persists(): void
+    public function test_hr_only_fields_are_ignored_when_tampered(): void
     {
-        $this->bindReposExpectingCreate();
+        $this->expectAudit();
 
-        $response = $this->onDomain('outsource')
-            ->from(route('public.outsource.apply'))
-            ->post(route('public.outsource.store'), $this->validPayload([
-                'email_kantor' => 'Vendor.Staff@gmail.com',
-            ]));
+        $this->submit([
+            'basic_salary' => '9999999',
+            'incentive_amount' => '9999999',
+            'remarks' => 'diisi pelamar',
+        ])->assertRedirect(route('public.outsource.success'));
 
-        $response->assertRedirect(route('public.outsource.success'));
-        $response->assertSessionHas('public_outsource_submission_completed', true);
-        $this->assertSame('vendor.staff@gmail.com', $this->capturedEmployee?->workingEmail);
-        $this->assertSame('Outsource', $this->capturedEmployee?->statusEmployee);
-        $this->assertSame('Staff', $this->capturedEmployee?->jobPosition);
-        $this->assertSame('Staff (Jakarta)', $this->capturedEmployee?->jobPositionLocation);
-        $this->assertMatchesRegularExpression('/^20260115\d{2,}$/', (string) $this->capturedEmployee?->employeeId);
-        $this->assertStringStartsNotWith('EMP-OS-', (string) $this->capturedEmployee?->employeeId);
+        $saved = $this->outsourceRepo->getAll()->first();
+        $this->assertNull($saved->basicSalary);
+        $this->assertNull($saved->incentiveAmount);
+        $this->assertNull($saved->remarks);
     }
 
-    public function test_job_position_location_combines_position_and_work_location(): void
+    public function test_duplicate_phone_or_email_cannot_apply_again(): void
     {
-        $this->bindReposExpectingCreate();
+        $this->seedExisting();
+        $this->expectNoAudit();
 
-        $response = $this->onDomain('outsource')
-            ->from(route('public.outsource.apply'))
-            ->post(route('public.outsource.store'), $this->validPayload([
-                'posisi_jabatan' => 'Engineering Manager',
-                'job_level' => 'Supervisor',
-                'lokasi_kerja' => 'Jakarta',
-            ]));
+        foreach ([
+            ['whatsapp_number' => '6281234567890', 'email' => 'lain@example.com'],
+            ['whatsapp_number' => '81111111111', 'email' => 'lama@example.com'],
+        ] as $overrides) {
+            $response = $this->submit($overrides);
+            $response->assertRedirect(route('public.outsource.apply'));
+            $response->assertSessionHas('error');
+            $response->assertSessionMissing('public_outsource_submission_completed');
+        }
 
-        $response->assertRedirect(route('public.outsource.success'));
-        $this->assertSame('Engineering Manager', $this->capturedEmployee?->jobPosition);
-        $this->assertSame('Engineering Manager (Jakarta)', $this->capturedEmployee?->jobPositionLocation);
-        $this->assertSame('Jakarta', $this->capturedEmployee?->lokasiKerja);
-        $this->assertSame('Supervisor', $this->capturedEmployee?->jobLevel);
+        $this->assertCount(1, $this->outsourceRepo->getAll());
     }
 
-    public function test_employee_id_uses_join_date_and_next_sequence(): void
+    public function test_rejects_vendor_entity_and_scheme_outside_the_lists(): void
     {
-        \Illuminate\Support\Facades\Cache::flush();
+        $this->expectNoAudit();
 
-        $this->bindReposExpectingCreate(collect([
-            new EmployeeData(employeeId: '2026011503', fullName: 'Karyawan Lama'),
-            new EmployeeData(employeeId: 'EMP-OS-2026-1111', fullName: 'Prefix Lama'),
-        ]));
+        $this->submit([
+            'vendor' => 'PT Vendor Lain',
+            'entity' => 'PT Tidak Dikenal',
+            'payroll_scheme' => '50/50',
+            'last_education' => 'SMA',
+        ])->assertSessionHasErrors(['vendor', 'entity', 'payroll_scheme', 'last_education']);
 
-        $response = $this->onDomain('outsource')
-            ->from(route('public.outsource.apply'))
-            ->post(route('public.outsource.store'), $this->validPayload([
-                'tanggal_masuk' => '2026-01-15',
-            ]));
-
-        $response->assertRedirect(route('public.outsource.success'));
-        $this->assertSame('2026011504', $this->capturedEmployee?->employeeId);
+        $this->assertCount(0, $this->outsourceRepo->getAll());
     }
 
-    public function test_rejects_name_fields_with_digits_or_symbols(): void
+    public function test_rejects_contract_end_on_or_before_start(): void
     {
-        $this->bindReposExpectingNoCreate();
+        $this->expectNoAudit();
 
-        $response = $this->postInvalid([
-            'nama_lengkap' => 'Budi123',
-            'tempat_lahir' => 'Jakarta-Barat',
-            'atasan_langsung' => 'Andi@HR',
-            'nama_pemilik_rekening' => 'Budi_Santoso',
-        ]);
-
-        $response->assertRedirect(route('public.outsource.apply'));
-        $response->assertSessionHasErrors([
-            'nama_lengkap',
-            'tempat_lahir',
-            'atasan_langsung',
-            'nama_pemilik_rekening',
-        ]);
-        $response->assertSessionMissing('public_outsource_submission_completed');
-    }
-
-    public function test_strips_digit_noise_from_numeric_fields(): void
-    {
-        $this->bindReposExpectingCreate();
-
-        $response = $this->onDomain('outsource')
-            ->from(route('public.outsource.apply'))
-            ->post(route('public.outsource.store'), $this->validPayload([
-                'nik' => '3273-0101-0190-0001',
-                'nomor_telepon' => '812-3456-7890',
-                'npwp' => '01.123.456.7-123.000',
-                'nomor_rekening' => '1234 5678 90',
-                'bpjs_ketenagakerjaan' => '1234-5678-9012',
-                'bpjs_kesehatan' => '1234-5678-901234',
-            ]));
-
-        $response->assertRedirect(route('public.outsource.success'));
-        $this->assertSame('3273010101900001', $this->capturedEmployee?->nikNpwp);
-        $this->assertSame('+6281234567890', $this->capturedEmployee?->mobilePhone);
-        $this->assertSame('011234567123000', $this->capturedEmployee?->npwp);
-        $this->assertSame('1234567890', $this->capturedEmployee?->bankAccount);
-        $this->assertSame('123456789012', $this->capturedEmployee?->bpjsKetenagakerjaan);
-        $this->assertSame('12345678901234', $this->capturedEmployee?->bpjsKesehatan);
-    }
-
-    public function test_rejects_npwp_outside_fifteen_or_sixteen_digits(): void
-    {
-        $this->bindReposExpectingNoCreate();
-
-        $tooLong = $this->postInvalid([
-            'npwp' => '12345678910111213',
-        ]);
-        $tooLong->assertRedirect(route('public.outsource.apply'));
-        $tooLong->assertSessionHasErrors(['npwp']);
-
-        $tooShort = $this->postInvalid([
-            'npwp' => '12345678901234',
-        ]);
-        $tooShort->assertRedirect(route('public.outsource.apply'));
-        $tooShort->assertSessionHasErrors(['npwp']);
-    }
-
-    public function test_accepts_sixteen_digit_npwp(): void
-    {
-        $this->bindReposExpectingCreate();
-
-        $response = $this->onDomain('outsource')
-            ->from(route('public.outsource.apply'))
-            ->post(route('public.outsource.store'), $this->validPayload([
-                'npwp' => '1234567891011121',
-            ]));
-
-        $response->assertRedirect(route('public.outsource.success'));
-        $this->assertSame('1234567891011121', $this->capturedEmployee?->npwp);
-    }
-
-    public function test_rejects_moderate_fields_with_disallowed_characters(): void
-    {
-        $this->bindReposExpectingNoCreate();
-
-        $response = $this->postInvalid([
-            'vendor_outsource' => 'PT Vendor<script>',
-            'divisi' => 'IT @ HQ',
-            'cost_center' => 'CC#1',
-            'lokasi_kerja' => 'Jakarta!',
-        ]);
-
-        $response->assertRedirect(route('public.outsource.apply'));
-        $response->assertSessionHasErrors([
-            'vendor_outsource',
-            'divisi',
-            'cost_center',
-            'lokasi_kerja',
-        ]);
-    }
-
-    public function test_forces_employee_status_to_outsource_when_tampered(): void
-    {
-        $this->bindReposExpectingCreate();
-
-        $response = $this->onDomain('outsource')
-            ->from(route('public.outsource.apply'))
-            ->post(route('public.outsource.store'), $this->validPayload([
-                'status_karyawan' => 'Contract',
-            ]));
-
-        $response->assertRedirect(route('public.outsource.success'));
-        $this->assertSame('Outsource', $this->capturedEmployee?->statusEmployee);
-    }
-
-    public function test_rejects_contract_end_on_or_before_join_date(): void
-    {
-        $this->bindReposExpectingNoCreate();
-
-        $response = $this->postInvalid([
-            'tanggal_masuk' => '2026-01-15',
-            'tanggal_berakhir_kontrak' => '2026-01-15',
-        ]);
-
-        $response->assertRedirect(route('public.outsource.apply'));
-        $response->assertSessionHasErrors(['tanggal_berakhir_kontrak']);
+        $this->submit([
+            'contract_start_date' => '2026-01-15',
+            'contract_end_date' => '2026-01-15',
+        ])->assertSessionHasErrors(['contract_end_date']);
     }
 
     public function test_rejects_applicant_younger_than_seventeen(): void
     {
-        $this->bindReposExpectingNoCreate();
+        $this->expectNoAudit();
 
-        $response = $this->postInvalid([
+        $this->submit([
             'birth_date' => now()->timezone('Asia/Jakarta')->subYears(16)->toDateString(),
-        ]);
-
-        $response->assertRedirect(route('public.outsource.apply'));
-        $response->assertSessionHasErrors(['birth_date']);
+        ])->assertSessionHasErrors(['birth_date']);
     }
 
-    public function test_rejects_invalid_email_formats(): void
+    public function test_rejects_invalid_contact_and_bank_formats(): void
     {
-        $this->bindReposExpectingNoCreate();
+        $this->expectNoAudit();
 
-        $response = $this->postInvalid([
-            'email_pribadi' => 'bukan-email',
-            'email_kantor' => 'juga-bukan',
-        ]);
-
-        $response->assertRedirect(route('public.outsource.apply'));
-        $response->assertSessionHasErrors(['email_pribadi', 'email_kantor']);
+        $this->submit([
+            'email' => 'bukan-email',
+            'whatsapp_number' => '12345',
+            'bank_account' => '123',
+            'full_name' => 'Budi<script>',
+        ])->assertSessionHasErrors(['email', 'whatsapp_number', 'bank_account', 'full_name']);
     }
 
-    private function postInvalid(array $overrides)
+    private function submit(array $overrides = [])
     {
         return $this->onDomain('outsource')
             ->from(route('public.outsource.apply'))
             ->post(route('public.outsource.store'), $this->validPayload($overrides));
     }
 
-    private function bindReposExpectingCreate($existingEmployees = null): void
+    private function seedExisting(): void
     {
-        $this->capturedEmployee = null;
+        $this->outsourceRepo->create(new OutsourceEmployeeData(
+            outsourceId: 'DM20260001',
+            fullName: 'Karyawan Lama',
+            whatsappNumber: '+6281234567890',
+            email: 'lama@example.com',
+            vendor: 'Damarindo',
+        ));
+    }
 
-        $employeeRepo = Mockery::mock(EmployeeRepositoryInterface::class);
-        $employeeRepo->shouldReceive('getAll')->andReturn($existingEmployees ?? collect());
-        $employeeRepo->shouldReceive('findByNik')->andReturn(null);
-        $employeeRepo->shouldReceive('create')
-            ->once()
-            ->withArgs(function (EmployeeData $data) {
-                $this->capturedEmployee = $data;
-
-                return true;
-            })
-            ->andReturnUsing(fn (EmployeeData $data) => $data);
-
+    private function expectAudit(): void
+    {
         $auditRepo = Mockery::mock(AuditLogRepositoryInterface::class);
         $auditRepo->shouldReceive('log')->once()->andReturn(true);
-
-        $this->app->instance(EmployeeRepositoryInterface::class, $employeeRepo);
         $this->app->instance(AuditLogRepositoryInterface::class, $auditRepo);
     }
 
-    private function bindReposExpectingNoCreate(): void
+    private function expectNoAudit(): void
     {
-        $employeeRepo = Mockery::mock(EmployeeRepositoryInterface::class);
-        $employeeRepo->shouldNotReceive('create');
-
         $auditRepo = Mockery::mock(AuditLogRepositoryInterface::class);
         $auditRepo->shouldNotReceive('log');
-
-        $this->app->instance(EmployeeRepositoryInterface::class, $employeeRepo);
         $this->app->instance(AuditLogRepositoryInterface::class, $auditRepo);
     }
 
     private function validPayload(array $overrides = []): array
     {
         return array_merge([
-            'nama_lengkap' => 'Budi Santoso',
-            'nik' => '3273010101900001',
+            'full_name' => 'Budi Santoso',
+            'citizen_id_address' => 'Jl. Merdeka No. 1, RT 01/RW 02, Bandung',
             'birth_date' => '1990-01-01',
-            'tempat_lahir' => 'Jakarta',
-            'usia' => 36,
-            'jenis_kelamin' => 'Laki-laki',
-            'agama' => 'Islam',
-            'golongan_darah' => 'O',
-            'status_pernikahan' => 'Belum Menikah',
-            'email_pribadi' => 'budi.pribadi@example.com',
-            'email_kantor' => 'budi.kantor@vendor.co.id',
-            'nomor_telepon' => '81234567890',
-            'provinsi' => '32',
-            'kota' => '3273',
-            'kota_nama' => 'KOTA BANDUNG',
-            'kecamatan' => 'Coblong',
-            'alamat_ktp' => 'Jl. Merdeka No. 1',
-            'alamat_domisili' => 'Jl. Sudirman No. 2',
-            'cabang_penempatan' => 'PT Mahakarya Sukses Indonesia',
-            'vendor_outsource' => 'PT Karya Mitra Sejahtera',
-            'divisi' => 'Human Resources',
-            'departemen' => 'Recruitment',
-            'area_kerja' => 'Head Office',
-            'cost_center' => 'HR-01',
-            'lokasi_kerja' => 'Jakarta',
-            'posisi_jabatan' => 'Staff',
-            'job_level' => 'Associate',
-            'status_karyawan' => 'Outsource',
-            'tanggal_masuk' => '2026-01-15',
-            'tanggal_berakhir_kontrak' => '2026-12-31',
-            'atasan_langsung' => 'Siti Rahma',
-            'atasan_tidak_langsung' => 'Andi Wijaya',
-            'nomor_rekening' => '1234567890',
-            'nama_pemilik_rekening' => 'Budi Santoso',
-            'npwp' => '011234567123000',
-            'status_ptkp' => 'TK/0',
-            'bpjs_ketenagakerjaan' => '123456789012',
-            'bpjs_kesehatan' => '12345678901234',
+            'birth_place' => 'Bandung',
+            'last_education' => 'SLTA',
+            'whatsapp_number' => '81234567890',
+            'email' => 'Budi@Example.com',
+            'vendor' => 'Damarindo',
+            'job_title' => 'SPB/SPG Toko',
+            'work_location' => 'Toko Sinar Jaya (Pasar Baru)',
+            'work_city' => 'Kota Bandung',
+            'cost_center' => 'Bandung',
+            'entity' => 'PT. Mahakarya Sukses Indonesia',
+            'mito_join_date' => '2026-01-15',
+            'contract_start_date' => '2026-01-15',
+            'contract_end_date' => '2026-12-31',
+            'payroll_scheme' => '70/30',
+            'umk_amount' => '5396761',
+            'bank_account' => '1234567890',
             'agreement' => '1',
         ], $overrides);
     }

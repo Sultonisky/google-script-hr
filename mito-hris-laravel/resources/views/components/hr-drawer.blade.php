@@ -389,19 +389,15 @@
                 <h6><i class="bi bi-person-badge-fill"></i> Identitas &amp; Data Pribadi</h6>
                 <div class="cv-grid-2">
                     <div class="cv-field">
-                        <div class="cv-label">Employee ID</div>
-                        <div class="cv-value" id="osDrEmployeeId">-</div>
+                        <div class="cv-label">Outsource ID</div>
+                        <div class="cv-value" id="osDrOutsourceId">-</div>
                     </div>
                     <div class="cv-field">
-                        <div class="cv-label">NIK (16 Digit)</div>
-                        <div class="cv-value" id="osDrNik">-</div>
-                    </div>
-                    <div class="cv-field">
-                        <div class="cv-label">Nama Lengkap</div>
+                        <div class="cv-label">Nama (sesuai KTP)</div>
                         <div class="cv-value" id="osDrFullName">-</div>
                     </div>
                     <div class="cv-field">
-                        <div class="cv-label">Tempat Lahir</div>
+                        <div class="cv-label">Kota Kelahiran</div>
                         <div class="cv-value" id="osDrBirthPlace">-</div>
                     </div>
                     <div class="cv-field">
@@ -409,100 +405,88 @@
                         <div class="cv-value" id="osDrBirthDate">-</div>
                     </div>
                     <div class="cv-field">
-                        <div class="cv-label">Jenis Kelamin</div>
-                        <div class="cv-value" id="osDrGender">-</div>
+                        <div class="cv-label">Pendidikan Terakhir</div>
+                        <div class="cv-value" id="osDrEducation">-</div>
                     </div>
                     <div class="cv-field">
-                        <div class="cv-label">Status Pernikahan</div>
-                        <div class="cv-value" id="osDrMarital">-</div>
-                    </div>
-                    <div class="cv-field">
-                        <div class="cv-label">Status Karyawan</div>
-                        <div class="cv-value" id="osDrStatusEmployee">-</div>
-                    </div>
-                    <div class="cv-field">
-                        <div class="cv-label">Email Pribadi</div>
-                        <div class="cv-value" id="osDrEmail">-</div>
-                    </div>
-                    <div class="cv-field">
-                        <div class="cv-label">No. Handphone</div>
+                        <div class="cv-label">No WA</div>
                         <div class="cv-value" id="osDrPhone">-</div>
                     </div>
                     <div class="cv-field">
-                        <div class="cv-label">Lokasi Kerja</div>
-                        <div class="cv-value" id="osDrCity">-</div>
+                        <div class="cv-label">Email</div>
+                        <div class="cv-value" id="osDrEmail">-</div>
                     </div>
                 </div>
-                <div class="cv-field">
-                    <div class="cv-label">Alamat KTP</div>
-                    <div class="cv-value" id="osDrAddress">-</div>
-                </div>
                 <div class="cv-field mb-0">
-                    <div class="cv-label">Alamat Domisili</div>
-                    <div class="cv-value" id="osDrResidentialAddress">-</div>
+                    <div class="cv-label">Alamat sesuai KTP</div>
+                    <div class="cv-value" id="osDrAddress">-</div>
                 </div>
             </div>
 
             <div class="cv-section-card">
-                <h6><i class="bi bi-wallet2"></i> Bank &amp; BPJS</h6>
+                <h6><i class="bi bi-briefcase-fill"></i> Penempatan &amp; Kontrak</h6>
                 <div class="cv-grid-2">
                     <div class="cv-field">
-                        <div class="cv-label">Nama Bank</div>
-                        <div class="cv-value" id="osDrBankName">-</div>
+                        <div class="cv-label">Vendor</div>
+                        <div class="cv-value" id="osDrVendor">-</div>
                     </div>
                     <div class="cv-field">
-                        <div class="cv-label">Nomor Rekening</div>
+                        <div class="cv-label">Entity</div>
+                        <div class="cv-value" id="osDrEntity">-</div>
+                    </div>
+                    <div class="cv-field">
+                        <div class="cv-label">Nama Jabatan</div>
+                        <div class="cv-value" id="osDrJobTitle">-</div>
+                    </div>
+                    <div class="cv-field">
+                        <div class="cv-label">Cabang (Cost Center)</div>
+                        <div class="cv-value" id="osDrCostCenter">-</div>
+                    </div>
+                    <div class="cv-field">
+                        <div class="cv-label">Lokasi Kerja</div>
+                        <div class="cv-value" id="osDrWorkLocation">-</div>
+                    </div>
+                    <div class="cv-field">
+                        <div class="cv-label">Kota Lokasi Kerja</div>
+                        <div class="cv-value" id="osDrWorkCity">-</div>
+                    </div>
+                    <div class="cv-field">
+                        <div class="cv-label">Tgl Join di Mito</div>
+                        <div class="cv-value" id="osDrMitoJoinDate">-</div>
+                    </div>
+                    <div class="cv-field">
+                        <div class="cv-label">Tgl Awal Kontrak (Damarindo)</div>
+                        <div class="cv-value" id="osDrContractStart">-</div>
+                    </div>
+                    <div class="cv-field">
+                        <div class="cv-label">Tgl Akhir Kontrak (StaffInc)</div>
+                        <div class="cv-value" id="osDrContractEnd">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cv-section-card">
+                <h6><i class="bi bi-wallet2"></i> Payroll</h6>
+                <div class="cv-grid-2">
+                    <div class="cv-field">
+                        <div class="cv-label">No Rekening BCA</div>
                         <div class="cv-value" id="osDrBankAccount">-</div>
                     </div>
                     <div class="cv-field">
-                        <div class="cv-label">BPJS Ketenagakerjaan</div>
-                        <div class="cv-value" id="osDrBpjsTk">-</div>
+                        <div class="cv-label">Skema Penggajian</div>
+                        <div class="cv-value" id="osDrPayrollScheme">-</div>
                     </div>
                     <div class="cv-field">
-                        <div class="cv-label">BPJS Kesehatan</div>
-                        <div class="cv-value" id="osDrBpjsKes">-</div>
+                        <div class="cv-label">Nominal UMK</div>
+                        <div class="cv-value" id="osDrUmk">-</div>
                     </div>
                     <div class="cv-field">
-                        <div class="cv-label">Vendor Outsource</div>
-                        <div class="cv-value" id="osDrVendor">-</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="cv-section-card">
-                <h6><i class="bi bi-briefcase-fill"></i> Struktur Organisasi &amp; Pekerjaan</h6>
-                <div class="cv-grid-2">
-                    <div class="cv-field">
-                        <div class="cv-label">Entitas Perusahaan</div>
-                        <div class="cv-value" id="osDrBranch">-</div>
+                        <div class="cv-label">Gaji Pokok</div>
+                        <div class="cv-value" id="osDrBasicSalary">-</div>
                     </div>
                     <div class="cv-field">
-                        <div class="cv-label">Divisi</div>
-                        <div class="cv-value" id="osDrDivision">-</div>
-                    </div>
-                    <div class="cv-field">
-                        <div class="cv-label">Departemen</div>
-                        <div class="cv-value" id="osDrDept">-</div>
-                    </div>
-                    <div class="cv-field">
-                        <div class="cv-label">Jabatan</div>
-                        <div class="cv-value" id="osDrPosition">-</div>
-                    </div>
-                    <div class="cv-field">
-                        <div class="cv-label">Job Level</div>
-                        <div class="cv-value" id="osDrJobLevel">-</div>
-                    </div>
-                    <div class="cv-field">
-                        <div class="cv-label">Tanggal Masuk</div>
-                        <div class="cv-value" id="osDrJoinDate">-</div>
-                    </div>
-                    <div class="cv-field">
-                        <div class="cv-label">Atasan Langsung</div>
-                        <div class="cv-value" id="osDrDirectSup">-</div>
-                    </div>
-                    <div class="cv-field">
-                        <div class="cv-label">Atasan Tidak Langsung</div>
-                        <div class="cv-value" id="osDrIndirectSup">-</div>
+                        <div class="cv-label">Insentif 30%</div>
+                        <div class="cv-value" id="osDrIncentive">-</div>
                     </div>
                 </div>
             </div>
@@ -523,9 +507,10 @@
                         <div class="cv-value" id="osDrUpdated">-</div>
                     </div>
                 </div>
-                <div class="cv-value" id="osDrUnifiedNotes"
+                <div class="cv-label mt-2">Remarks</div>
+                <div class="cv-value" id="osDrRemarks"
                     style="white-space:pre-wrap;min-height:40px;padding:10px;background:var(--color-surface);color:var(--color-text);border-radius:8px;border:1px solid var(--color-border);">
-                    Belum ada catatan.</div>
+                    -</div>
             </div>
             <div class="cv-section-card mb-0">
                 <h6><i class="bi bi-clock-history"></i> Riwayat Aktivitas</h6>
