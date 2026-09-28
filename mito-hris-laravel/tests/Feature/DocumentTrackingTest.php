@@ -100,7 +100,7 @@ class DocumentTrackingTest extends TestCase
             ->assertDontSee('001/PKWT/MSI/IX/2026');
     }
 
-    public function test_user_without_view_employees_is_forbidden(): void
+    public function test_user_without_view_documents_is_forbidden(): void
     {
         $this->actingAsRole('User');
 

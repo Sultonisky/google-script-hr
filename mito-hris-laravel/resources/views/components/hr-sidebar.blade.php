@@ -115,7 +115,7 @@
             @endcan
 
             <!-- Employee Lifecycle Section -->
-            @canany(['manage_probation', 'view_employees', 'view_contracts'])
+            @canany(['manage_probation', 'view_employees', 'view_contracts', 'view_documents'])
                 <div class="nav-section-label">Employee Lifecycle</div>
                 @can('manage_probation')
                     <a href="{{ route('hr.probation.index') }}"
@@ -135,7 +135,7 @@
                         <i class="bi bi-calendar2-range"></i> Contract Tracking
                     </a>
                 @endcan
-                @can('view_employees')
+                @can('view_documents')
                     <a href="{{ route('hr.documents.index') }}"
                         class="nav-item {{ request()->routeIs('hr.documents.*') ? 'active' : '' }}">
                         <i class="bi bi-file-earmark-ruled"></i> Document Tracking

@@ -124,7 +124,7 @@
             @endif
 
             @php
-                $canDownloadDocuments = Gate::allows('manage_employees');
+                $canDownloadDocuments = Gate::allows('download_documents');
             @endphp
 
             <div class="table-responsive">

@@ -121,11 +121,11 @@ if (!app()->environment('local')) {
             Route::prefix('contracts')->name('contracts.')->middleware('can:view_contracts')->group(function () {
                 Route::get('/', [ContractTrackingController::class, 'index'])->name('index');
             });
-            Route::prefix('documents')->name('documents.')->middleware('can:view_employees')->group(function () {
+            Route::prefix('documents')->name('documents.')->middleware('can:view_documents')->group(function () {
                 Route::get('/', [DocumentTrackingController::class, 'index'])->name('index');
                 Route::get('/{documentId}/download', [DocumentTrackingController::class, 'download'])
                     ->name('download')
-                    ->middleware('can:manage_employees');
+                    ->middleware('can:download_documents');
             });
             Route::prefix('audit-logs')->name('audit-logs.')->middleware('can:view_reports')->group(function () {
                 Route::get('/', [AuditLogController::class, 'index'])->name('index');
@@ -361,11 +361,11 @@ if (app()->environment('local')) {
                 Route::get('/', [ContractTrackingController::class, 'index'])->name('index');
             });
 
-            Route::prefix('documents')->name('documents.')->middleware('can:view_employees')->group(function () {
+            Route::prefix('documents')->name('documents.')->middleware('can:view_documents')->group(function () {
                 Route::get('/', [DocumentTrackingController::class, 'index'])->name('index');
                 Route::get('/{documentId}/download', [DocumentTrackingController::class, 'download'])
                     ->name('download')
-                    ->middleware('can:manage_employees');
+                    ->middleware('can:download_documents');
             });
 
             Route::prefix('audit-logs')->name('audit-logs.')->middleware('can:view_reports')->group(function () {

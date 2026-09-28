@@ -114,6 +114,8 @@ class PermissionResolver
 
             'certificates.generate_code' => ['certificates.access'],
 
+            'download_documents' => ['view_documents'],
+
             default => [],
         };
     }
@@ -195,6 +197,8 @@ class PermissionResolver
             'manage_employees',
             'view_employees',
             'view_contracts',
+            'view_documents',
+            'download_documents',
             'view_mpr',
             'create_mpr',
             'update_mpr',
