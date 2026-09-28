@@ -61,7 +61,7 @@
             <div class="panel-header">
                 <div>
                     <h6>Daftar Karyawan</h6>
-                    <div class="panel-subtitle">Klik baris atau nama untuk melihat detail lengkap dari spreadsheet.</div>
+                    <div class="panel-subtitle">Klik baris atau nama untuk melihat detail lengkap karyawan.</div>
                 </div>
                 {{-- Export XLSX — server-side dilindungi can:view_employees di route --}}
                 @can('view_employees')

@@ -49,7 +49,7 @@
             <div class="panel-header">
                 <div>
                     <h6><i class="bi bi-person-lines-fill text-primary me-2"></i>Daftar MPR Requestors</h6>
-                    <div class="panel-subtitle">Data akun diambil langsung dari sheet <strong>mpr_requestor</strong>.</div>
+                    <div class="panel-subtitle">@if (\App\Support\HrisDataDriver::usesSheets())Data akun diambil langsung dari sheet <strong>mpr_requestor</strong>.@else Data akun diambil dari database HRIS.@endif</div>
                 </div>
                 <div class="export-btns ms-auto">
                     <button class="btn btn-primary" type="button" data-bs-toggle="modal"
@@ -167,7 +167,7 @@
                     @endif
                 </span>
                 <div class="d-flex align-items-center gap-3">
-                    <span class="small text-muted">Sumber: sheet mpr_requestor</span>
+                    <span class="small text-muted">Sumber: {{ \App\Support\HrisDataDriver::usesSheets() ? 'sheet mpr_requestor' : 'database HRIS' }}</span>
                     @if ($total > $perPage)
                         <x-pagination :currentPage="$currentPage" :total="$total" :perPage="$perPage" :route="'hr.mpr-requestors.index'" />
                     @endif
