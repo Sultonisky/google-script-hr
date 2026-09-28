@@ -101,7 +101,7 @@
         $skNumber =
             $extraData['sk_number'] ??
             ($extraData['skNumber'] ??
-                '001/HRD-SKK/' . ($company['code'] ?? 'MSI') . '/' . $romanMonth[date('n') - 1] . '/' . date('Y'));
+                '001/SKO/' . ($company['code'] ?? 'MSI') . '/' . $romanMonth[date('n') - 1] . '/' . date('Y'));
 
         $resignDate =
             $extraData['effective_date'] ?? ($extraData['last_working_date'] ?? ($employee->resignDate ?? null));

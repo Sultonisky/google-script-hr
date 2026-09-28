@@ -320,7 +320,7 @@ class EmployeeController extends Controller
                 '',
                 '',
                 '',
-                'SK/HRD/2024/001',
+                '001/SKP/MSI/I/2024',
                 '',
                 'Karyawan teladan',
             ],
