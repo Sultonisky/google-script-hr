@@ -12,6 +12,7 @@ use App\Services\PdfGeneratorService;
 use App\Services\ProbationService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 class EmployeeService
@@ -630,6 +631,24 @@ class EmployeeService
         );
         $skNumber = $skoIssued['nomor'];
         $paklaringNumber = $spakIssued['nomor'];
+
+        // Surat BPJS is part of the offboarding set but has no number; track it for Document Tracking.
+        try {
+            $this->skNumbers->record(
+                employeeId: $employeeId,
+                type: SkDocumentType::SURAT_BPJS,
+                branchName: $branchName,
+                issuedBy: $user,
+                reference: $offboardingType,
+                notes: $notes,
+                issuedAt: $now,
+            );
+        } catch (\Throwable $e) {
+            Log::warning('EmployeeService: gagal mencatat Surat BPJS di Employee_Documents', [
+                'employee_id' => $employeeId,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         // Preserve last position to Job Position (Former) if not already set
         $currentPosition = $employee->jobPositionLocation ?? $employee->jobPosition ?? '';

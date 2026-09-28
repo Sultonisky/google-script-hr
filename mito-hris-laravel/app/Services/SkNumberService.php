@@ -42,41 +42,20 @@ class SkNumberService
         ?Carbon $issuedAt = null,
         ?string $docTypeLabel = null,
     ): array {
+        if (!$type->isNumbered()) {
+            throw new RuntimeException("{$type->label()} tidak memakai nomor; gunakan record().");
+        }
+
         $employeeId = ltrim(trim($employeeId), "'");
         if ($employeeId === '') {
             throw new RuntimeException('Employee ID wajib diisi untuk penerbitan nomor SK.');
         }
 
         $now = ($issuedAt ?? now())->timezone('Asia/Jakarta');
-        $issuedBy = $issuedBy ?: 'HR Administrator';
         $entity = $this->resolveEntityCode($branchName);
         $sequence = $this->resolveFixedSequence($employeeId);
         $nomor = $this->format($sequence, $type->value, $entity, $now);
-        $documentId = sprintf(
-            'DOC-%s-%03d-%s',
-            $now->format('Ymd'),
-            $sequence,
-            $type->value
-        );
-
-        $row = [
-            'Document ID' => $documentId,
-            'Employee ID' => $employeeId,
-            'Sequence' => (string) $sequence,
-            'Doc Type' => $docTypeLabel ?: $type->label(),
-            'Doc Code' => $type->value,
-            'Nomor' => $nomor,
-            'Entity' => $entity,
-            'Issued At' => $now->format('Y-m-d H:i:s'),
-            'Issued By' => $issuedBy,
-            'Reference' => $reference,
-            'Notes' => $notes,
-            'Created At' => $now->format('Y-m-d H:i:s'),
-        ];
-
-        if (!$this->documents->append($row)) {
-            throw new RuntimeException('Gagal menyimpan riwayat dokumen SK ke Employee_Documents.');
-        }
+        $documentId = $this->appendHistory($employeeId, $type, $sequence, $nomor, $entity, $now, $issuedBy, $reference, $notes, $docTypeLabel);
 
         $updated = $this->employees->update($employeeId, [
             'Nomor SK' => $nomor,
@@ -100,6 +79,80 @@ class SkNumberService
             'entity' => $entity,
             'document_id' => $documentId,
         ];
+    }
+
+    /**
+     * Track an unnumbered document (e.g. Surat BPJS) in Employee_Documents.
+     * Nomor stays empty and Employee.Nomor SK is not touched.
+     *
+     * @return array{document_id:string, sequence:int, doc_code:string, entity:string}
+     */
+    public function record(
+        string $employeeId,
+        SkDocumentType $type,
+        string $branchName = '',
+        ?string $issuedBy = null,
+        string $reference = '',
+        string $notes = '',
+        ?Carbon $issuedAt = null,
+    ): array {
+        $employeeId = ltrim(trim($employeeId), "'");
+        if ($employeeId === '') {
+            throw new RuntimeException('Employee ID wajib diisi untuk pencatatan dokumen.');
+        }
+
+        $now = ($issuedAt ?? now())->timezone('Asia/Jakarta');
+        $entity = $this->resolveEntityCode($branchName);
+        $sequence = $this->resolveFixedSequence($employeeId);
+        $documentId = $this->appendHistory($employeeId, $type, $sequence, '', $entity, $now, $issuedBy, $reference, $notes);
+
+        return [
+            'document_id' => $documentId,
+            'sequence' => $sequence,
+            'doc_code' => $type->value,
+            'entity' => $entity,
+        ];
+    }
+
+    private function appendHistory(
+        string $employeeId,
+        SkDocumentType $type,
+        int $sequence,
+        string $nomor,
+        string $entity,
+        Carbon $now,
+        ?string $issuedBy,
+        string $reference,
+        string $notes,
+        ?string $docTypeLabel = null,
+    ): string {
+        $documentId = sprintf(
+            'DOC-%s-%03d-%s',
+            $now->format('Ymd'),
+            $sequence,
+            $type->value
+        );
+
+        $row = [
+            'Document ID' => $documentId,
+            'Employee ID' => $employeeId,
+            'Sequence' => (string) $sequence,
+            'Doc Type' => $docTypeLabel ?: $type->label(),
+            'Doc Code' => $type->value,
+            'Nomor' => $nomor,
+            'Entity' => $entity,
+            'Issued At' => $now->format('Y-m-d H:i:s'),
+            'Issued By' => $issuedBy ?: 'HR Administrator',
+            'Reference' => $reference,
+            'Notes' => $notes,
+            'Created At' => $now->format('Y-m-d H:i:s'),
+        ];
+
+        if (!$this->documents->append($row)) {
+            throw new RuntimeException('Gagal menyimpan riwayat dokumen SK ke Employee_Documents.');
+        }
+
+        return $documentId;
     }
 
     /**

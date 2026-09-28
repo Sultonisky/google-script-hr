@@ -165,6 +165,33 @@ class SkNumberServiceTest extends TestCase
         $this->assertFalse(SkDocumentType::PENGANGKATAN->isContract());
     }
 
+    public function test_surat_bpjs_is_recorded_without_number_and_keeps_nomor_sk(): void
+    {
+        $at = Carbon::parse('2026-09-28 11:15:20', 'Asia/Jakarta');
+        $this->service->issue('EMP-A', SkDocumentType::OFFBOARDING, 'Head Office MSI', 'HR', issuedAt: $at);
+        $spak = $this->service->issue('EMP-A', SkDocumentType::PAKLARING, 'Head Office MSI', 'HR', issuedAt: $at);
+
+        $bpjs = $this->service->record('EMP-A', SkDocumentType::SURAT_BPJS, 'Head Office MSI', 'HR', 'Resignation', issuedAt: $at);
+
+        $this->assertSame('DOC-20260928-001-BPJS', $bpjs['document_id']);
+        $this->assertSame(1, $bpjs['sequence']);
+        $row = $this->documents->getLatestByEmployeeAndType('EMP-A', 'BPJS');
+        $this->assertSame('', $row['Nomor']);
+        $this->assertSame('Surat Keterangan BPJS', $row['Doc Type']);
+        $this->assertSame('Resignation', $row['Reference']);
+        // Nomor SK tetap nomor Paklaring terakhir.
+        $this->assertSame($spak['nomor'], $this->nomorByEmployee['EMP-A']);
+        $this->assertFalse(SkDocumentType::SURAT_BPJS->isNumbered());
+        $this->assertTrue(SkDocumentType::PAKLARING->isNumbered());
+    }
+
+    public function test_issue_rejects_unnumbered_document_type(): void
+    {
+        $this->expectException(\RuntimeException::class);
+
+        $this->service->issue('EMP-A', SkDocumentType::SURAT_BPJS, 'Head Office MSI', 'HR');
+    }
+
     public function test_document_codes_follow_hris_format(): void
     {
         $this->assertSame(
@@ -176,6 +203,7 @@ class SkNumberServiceTest extends TestCase
                 'SKPR' => 'SK Promosi',
                 'SKO' => 'SK Offboarding',
                 'SPAK' => 'Paklaring',
+                'BPJS' => 'Surat Keterangan BPJS',
             ],
             collect(SkDocumentType::cases())->mapWithKeys(fn (SkDocumentType $t) => [$t->value => $t->label()])->all()
         );
