@@ -47,6 +47,7 @@ return [
         'mpr'        => env('GOOGLE_SHEET_MPR', 'MPR'),
         'mpr_requestor' => env('GOOGLE_SHEET_MPR_REQUESTOR', 'mpr_requestor'),
         'employee_documents' => env('GOOGLE_SHEET_EMPLOYEE_DOCUMENTS', 'Employee_Documents'),
+        'outsource_employees' => env('GOOGLE_SHEET_OUTSOURCE_EMPLOYEES', 'Outsource_Employees'),
     ],
 
     /*
