@@ -13,10 +13,12 @@ use App\Services\ProbationService;
 use Illuminate\Support\Facades\Session;
 use Mockery;
 use RuntimeException;
+use Tests\Support\BindsProbationSheetsRepository;
 use Tests\TestCase;
 
 class ProbationFlowEnhancementTest extends TestCase
 {
+    use BindsProbationSheetsRepository;
     protected function tearDown(): void
     {
         Mockery::close();
@@ -99,7 +101,7 @@ class ProbationFlowEnhancementTest extends TestCase
     {
         $this->app->instance(EmployeeRepositoryInterface::class, $this->employeeRepo($employees));
         $this->app->instance(AuditLogRepositoryInterface::class, $this->auditRepo());
-        $this->app->instance(GoogleSheetsService::class, $this->sheets($rows, $appended));
+        $this->bindProbationSheetsFromMock($this->sheets($rows, $appended));
         $this->app->instance(EmployeeDocumentRepositoryInterface::class, new ArrayEmployeeDocumentRepository());
     }
 
@@ -300,7 +302,7 @@ class ProbationFlowEnhancementTest extends TestCase
         $this->app->instance(EmployeeRepositoryInterface::class, $repo);
         $this->app->instance(AuditLogRepositoryInterface::class, $this->auditRepo());
         $appended = [];
-        $this->app->instance(GoogleSheetsService::class, $this->sheets([], $appended));
+        $this->bindProbationSheetsFromMock($this->sheets([], $appended));
         $this->app->instance(EmployeeDocumentRepositoryInterface::class, new ArrayEmployeeDocumentRepository());
 
         $result = $this->app->make(ProbationService::class)->evaluateProbation('EMP-LULUS', [
@@ -354,7 +356,7 @@ class ProbationFlowEnhancementTest extends TestCase
         $repo = $this->employeeRepo([$employee]);
         $this->app->instance(EmployeeRepositoryInterface::class, $repo);
         $this->app->instance(AuditLogRepositoryInterface::class, $this->auditRepo());
-        $this->app->instance(GoogleSheetsService::class, $this->sheets([
+        $this->bindProbationSheetsFromMock($this->sheets([
             $this->probationRow('EMP-EDIT', 'Lulus'),
         ]));
 

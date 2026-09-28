@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Session;
 use Mockery;
 use ReflectionClass;
+use Tests\Support\BindsProbationSheetsRepository;
 use Tests\TestCase;
 
 /**
@@ -29,6 +30,7 @@ use Tests\TestCase;
  */
 class ProbationEvaluationFlowTest extends TestCase
 {
+    use BindsProbationSheetsRepository;
     protected function setUp(): void
     {
         parent::setUp();
@@ -145,7 +147,7 @@ class ProbationEvaluationFlowTest extends TestCase
 
         $this->app->instance(EmployeeRepositoryInterface::class, $employeeRepo);
         $this->app->instance(AuditLogRepositoryInterface::class, $auditRepo);
-        $this->app->instance(GoogleSheetsService::class, $sheets);
+        $this->bindProbationSheetsFromMock($sheets);
         $this->app->instance(
             \App\Repositories\Contracts\EmployeeDocumentRepositoryInterface::class,
             new \App\Repositories\Local\ArrayEmployeeDocumentRepository()
@@ -362,7 +364,7 @@ class ProbationEvaluationFlowTest extends TestCase
 
         $this->app->instance(EmployeeRepositoryInterface::class, $employeeRepo);
         $this->app->instance(AuditLogRepositoryInterface::class, $auditRepo);
-        $this->app->instance(GoogleSheetsService::class, $sheets);
+        $this->bindProbationSheetsFromMock($sheets);
 
         $payload = array_merge([
             'decision' => 'Perpanjang Kontrak',
@@ -514,7 +516,7 @@ class ProbationEvaluationFlowTest extends TestCase
         $sheets->shouldReceive('getRowsAsAssoc')
             ->with('kandidat_probation')
             ->andReturn([$sheetRow]);
-        $this->app->instance(GoogleSheetsService::class, $sheets);
+        $this->bindProbationSheetsFromMock($sheets);
 
         $response = $this->get('/hr/probation/EMP001/preview?eval_id=EVAL-1');
 
@@ -545,7 +547,7 @@ class ProbationEvaluationFlowTest extends TestCase
         $sheets = Mockery::mock(GoogleSheetsService::class);
         $sheets->shouldReceive('clearCache')->andReturn(null)->byDefault();
         $sheets->shouldReceive('getRowsAsAssoc')->andReturn([$sheetRow]);
-        $this->app->instance(GoogleSheetsService::class, $sheets);
+        $this->bindProbationSheetsFromMock($sheets);
 
         $response = $this->get('/hr/export/performance-review/EMP001?eval_id=EVAL-1');
 
@@ -872,7 +874,7 @@ class ProbationEvaluationFlowTest extends TestCase
                 $captured[] = array_combine($headers, $r);
                 return true;
             })->andReturn(true)->byDefault();
-        $this->app->instance(GoogleSheetsService::class, $sheets);
+        $this->bindProbationSheetsFromMock($sheets);
 
         $payload = array_merge([
             'decision' => 'Perpanjang Kontrak',
@@ -1002,7 +1004,7 @@ class ProbationEvaluationFlowTest extends TestCase
 
         $this->app->instance(EmployeeRepositoryInterface::class, $employeeRepo);
         $this->app->instance(AuditLogRepositoryInterface::class, $auditRepo);
-        $this->app->instance(GoogleSheetsService::class, $sheets);
+        $this->bindProbationSheetsFromMock($sheets);
 
         $payload = array_merge([
             'decision'           => 'Perpanjang Kontrak',
@@ -1079,7 +1081,7 @@ class ProbationEvaluationFlowTest extends TestCase
 
         $this->app->instance(EmployeeRepositoryInterface::class, $employeeRepo);
         $this->app->instance(AuditLogRepositoryInterface::class, $auditRepo);
-        $this->app->instance(GoogleSheetsService::class, $sheets);
+        $this->bindProbationSheetsFromMock($sheets);
 
         $payload = array_merge([
             'decision' => 'Perpanjang Kontrak',
@@ -1130,7 +1132,7 @@ class ProbationEvaluationFlowTest extends TestCase
 
         $this->app->instance(EmployeeRepositoryInterface::class, $employeeRepo);
         $this->app->instance(AuditLogRepositoryInterface::class, $auditRepo);
-        $this->app->instance(GoogleSheetsService::class, $sheets);
+        $this->bindProbationSheetsFromMock($sheets);
 
         $payload = array_merge([
             'decision' => 'Perpanjang Kontrak',
@@ -1203,7 +1205,7 @@ class ProbationEvaluationFlowTest extends TestCase
 
         $sheets = Mockery::mock(GoogleSheetsService::class);
         $sheets->shouldReceive('getRowsAsAssoc')->andReturn([$extendRow])->byDefault();
-        $this->app->instance(GoogleSheetsService::class, $sheets);
+        $this->bindProbationSheetsFromMock($sheets);
 
         $employeeRepo = Mockery::mock(EmployeeRepositoryInterface::class);
         $this->app->instance(EmployeeRepositoryInterface::class, $employeeRepo);

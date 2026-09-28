@@ -251,7 +251,7 @@ class OfferingContractFlowTest extends TestCase
         ]);
 
         $candidateRepo = Mockery::mock(CandidateRepositoryInterface::class);
-        $candidateRepo->shouldReceive('getAllFromSheets')
+        $candidateRepo->shouldReceive('listByLifecycle')
             ->with(['candidates_accepted'])
             ->andReturn($acceptedCandidates);
 
@@ -324,7 +324,7 @@ class OfferingContractFlowTest extends TestCase
         $all = collect([$eligible]);
 
         $candidateRepo = Mockery::mock(CandidateRepositoryInterface::class);
-        $candidateRepo->shouldReceive('getAllFromSheets')
+        $candidateRepo->shouldReceive('listByLifecycle')
             ->with(['candidates_accepted'])
             ->andReturn($all);
 
@@ -452,7 +452,7 @@ class OfferingContractFlowTest extends TestCase
         $this->loginAsHrAdmin();
 
         $candidateRepo = Mockery::mock(CandidateRepositoryInterface::class);
-        $candidateRepo->shouldReceive('getAllFromSheets')
+        $candidateRepo->shouldReceive('listByLifecycle')
             ->with(['candidates_accepted'])
             ->andReturn(collect());
 

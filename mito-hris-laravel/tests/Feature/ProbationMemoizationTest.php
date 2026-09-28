@@ -10,6 +10,7 @@ use App\Services\ProbationService;
 use Illuminate\Support\Facades\Session;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Support\BindsProbationSheetsRepository;
 use Tests\TestCase;
 
 /**
@@ -24,14 +25,16 @@ use Tests\TestCase;
  * The fix: ProbationService memoizes the kandidat_probation rows for the
  * lifetime of a single request. Read methods reuse one in-memory dataset.
  * Writes invalidate BOTH the request-local memo AND the persistent
- * GoogleSheetsService cache, so the next read fetches fresh.
+ * store cache (via ProbationRepositoryInterface), so the next read fetches fresh.
  *
  * These tests assert the contract: getRowsAsAssoc() is called exactly once
  * per request for repeated reads, and is called again after a write that
- * routes through invalidateProbationRowsCache().
+ * routes through appendEvalRow / invalidateCache.
  */
 class ProbationMemoizationTest extends TestCase
 {
+    use BindsProbationSheetsRepository;
+
     private const SHEET = 'kandidat_probation';
 
     /** @var array<int,string> */
@@ -77,7 +80,7 @@ class ProbationMemoizationTest extends TestCase
             ->once()
             ->andReturn($rows);
 
-        $this->app->instance(GoogleSheetsService::class, $sheets);
+        $this->bindProbationSheetsFromMock($sheets);
         $employees = Mockery::mock(EmployeeRepositoryInterface::class);
         $employees->shouldReceive('findById')
             ->andReturnUsing(fn(string $employeeId) => new EmployeeData(
@@ -218,7 +221,7 @@ class ProbationMemoizationTest extends TestCase
             ->twice()
             ->andReturn(new EmployeeData(employeeId: 'EMP001', statusEmployee: 'Contract'));
 
-        $this->app->instance(GoogleSheetsService::class, $sheets);
+        $this->bindProbationSheetsFromMock($sheets);
         $this->app->instance(EmployeeRepositoryInterface::class, $employees);
         $this->app->instance(AuditLogRepositoryInterface::class, Mockery::mock(AuditLogRepositoryInterface::class));
 
@@ -276,7 +279,7 @@ class ProbationMemoizationTest extends TestCase
             ->andReturn([$this->probationHeaders]);
         $sheets->shouldReceive('appendRow')->andReturn(true);
 
-        $this->app->instance(GoogleSheetsService::class, $sheets);
+        $this->bindProbationSheetsFromMock($sheets);
         $this->app->instance(EmployeeRepositoryInterface::class, Mockery::mock(EmployeeRepositoryInterface::class));
         $this->app->instance(AuditLogRepositoryInterface::class, Mockery::mock(AuditLogRepositoryInterface::class));
 
@@ -289,8 +292,7 @@ class ProbationMemoizationTest extends TestCase
         $this->assertSame('EVAL-1', $before[0]['evalId']);
 
         // Drive the write path directly (private helper). After this returns,
-        // invalidateProbationRowsCache() must have reset the memo AND cleared
-        // the persistent GoogleSheetsService cache.
+        // the request memo is cleared and the store cache is invalidated.
         $writeRef = new \ReflectionMethod(ProbationService::class, 'appendProbationEvalRow');
         $writeRef->setAccessible(true);
         $writeRef->invoke($svc, [

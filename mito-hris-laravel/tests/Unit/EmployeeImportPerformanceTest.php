@@ -2,40 +2,48 @@
 
 namespace Tests\Unit;
 
+use App\DTOs\EmployeeData;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Services\EmployeeIdGenerator;
 use App\Services\EmployeeService;
 use App\Services\Google\GoogleDriveService;
-use App\Services\Google\GoogleSheetsService;
 use App\Services\PdfGeneratorService;
+use App\Services\SkNumberService;
 use Illuminate\Support\Collection;
 use PHPUnit\Framework\Attributes\Test;
 
 class EmployeeImportPerformanceTest extends \Tests\TestCase
 {
     #[Test]
-    public function it_batches_employee_rows_and_logs_once_for_import(): void
+    public function it_creates_employees_via_repository_and_logs_once_for_import(): void
     {
         $employeeRepo = $this->createMock(EmployeeRepositoryInterface::class);
         $auditRepo = $this->createMock(AuditLogRepositoryInterface::class);
         $idGenerator = $this->createMock(EmployeeIdGenerator::class);
         $driveService = $this->createMock(GoogleDriveService::class);
         $pdfService = $this->createMock(PdfGeneratorService::class);
-        $sheets = $this->createMock(GoogleSheetsService::class);
+        $skNumbers = $this->createMock(SkNumberService::class);
 
         $employeeRepo->method('getAll')->willReturn(new Collection());
         $idGenerator->method('generateBatch')->willReturn(['2026010101', '2026010102']);
 
-        $sheets->expects($this->once())
-            ->method('appendRows')
-            ->with('Employee', $this->callback(function ($rows) {
-                return is_array($rows)
-                    && count($rows) === 2
-                    && trim((string) $rows[0][6]) === 'Staff IT'
-                    && trim((string) $rows[0][35]) === 'CC-100';
-            }))
-            ->willReturn(true);
+        $createCalls = [];
+        $employeeRepo->expects($this->exactly(2))
+            ->method('create')
+            ->willReturnCallback(function (EmployeeData $data) use (&$createCalls) {
+                $createCalls[] = $data;
+                $this->assertSame(
+                    $data->employeeId === 'EMP-001' ? 'Staff IT' : 'Senior Analyst',
+                    trim((string) $data->jobPositionLocation)
+                );
+                $this->assertSame(
+                    $data->employeeId === 'EMP-001' ? 'CC-100' : 'CC-200',
+                    trim((string) $data->costCenter)
+                );
+
+                return $data;
+            });
 
         $auditRepo->expects($this->once())
             ->method('log')
@@ -56,7 +64,7 @@ class EmployeeImportPerformanceTest extends \Tests\TestCase
             $idGenerator,
             $driveService,
             $pdfService,
-            $sheets
+            $skNumbers
         );
 
         $result = $service->importEmployees([
@@ -80,5 +88,6 @@ class EmployeeImportPerformanceTest extends \Tests\TestCase
 
         $this->assertTrue($result['success']);
         $this->assertSame(2, $result['imported']);
+        $this->assertCount(2, $createCalls);
     }
 }
