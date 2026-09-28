@@ -10,7 +10,7 @@
 
 Laravel is the active runtime application. The former Google Apps Script source and its local deployment configuration have been removed from the working tree.
 
-Google Sheets and Google Drive remain data and document services accessed through Google APIs from Laravel. They are not Apps Script dependencies.
+Google Sheets and Google Drive remain integrations accessed through Google APIs from Laravel. Structured HR data SoT is PostgreSQL (`HRIS_DATA_DRIVER=pgsql`); Sheets are archive/mirror. They are not Apps Script dependencies.
 
 The repository intentionally remains one Git repository. Git history, remotes, branches, and deployment history are preserved.
 
@@ -197,7 +197,7 @@ PDF services render Blade templates for offering letters, contracts, BPJS letter
 
 ### Production Deployment
 
-`.github/workflows/deploy.yml` deploys over SSH to `/home/ubuntu/hris/mito-hris-laravel`. It verifies the workflow commit, installs production dependencies, builds assets, prepares writable directories, runs Laravel diagnostics and Google Sheets checks, clears and caches Laravel, and reloads PHP-FPM.
+`.github/workflows/deploy.yml` deploys over SSH to the Dockerized app. It migrates DB, runs DB-first diagnostics, warms the active data driver, treats Sheets schema helpers as archive (soft no-op when pgsql), caches Laravel, and publishes Vite assets.
 
 There is no Apps Script or `clasp` deployment in the active CI/CD architecture.
 
