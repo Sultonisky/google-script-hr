@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Candidate;
 use App\Models\Employee;
+use App\Models\EmployeeDocument;
 use App\Models\MprRequestor;
 use App\Models\Permission;
 use App\Models\User;
@@ -180,6 +181,40 @@ class SheetsToDatabaseEtlTest extends TestCase
         $this->assertSame('MPR-REQ-002', MprRequestor::where('email', 'bob@mito.co.id')->value('requestor_id'));
         $this->assertSame('MPR-REQ-003', MprRequestor::where('email', 'cara@mito.co.id')->value('requestor_id'));
         $this->assertCount(3, MprRequestor::query()->pluck('requestor_id')->unique());
+    }
+
+    public function test_documents_keep_duplicate_ids_and_original_created_at(): void
+    {
+        $doc = fn (string $nomor, string $createdAt) => [
+            'Document ID' => 'DOC-20260901-007-PKTAD',
+            'Employee ID' => "'EMP-7",
+            'Sequence' => '7',
+            'Doc Type' => 'Kontrak PKWT TAD',
+            'Doc Code' => 'PKTAD',
+            'Nomor' => $nomor,
+            'Entity' => 'MSI',
+            'Issued At' => $createdAt,
+            'Issued By' => 'HR',
+            'Created At' => $createdAt,
+        ];
+        $this->bindSheets([
+            'Employee_Documents' => [
+                $doc('007/PKTAD/MSI/IX/2026', '2026-09-01 09:00:00'),
+                $doc('007/PKTAD/MSI/IX/2026', '2026-09-01 14:30:00'),
+            ],
+        ]);
+
+        $this->artisan('mito:etl-sheets-to-db', ['--only' => 'documents'])->assertSuccessful();
+        $this->artisan('mito:etl-sheets-to-db', ['--only' => 'documents'])->assertSuccessful();
+
+        $ids = EmployeeDocument::query()->orderBy('id')->pluck('document_id')->all();
+        $this->assertSame(['DOC-20260901-007-PKTAD', 'DOC-20260901-007-PKTAD-2'], $ids);
+        $this->assertSame('EMP-7', EmployeeDocument::query()->value('employee_id'));
+        $this->assertSame(
+            '2026-09-01 14:30:00',
+            EmployeeDocument::query()->where('document_id', 'DOC-20260901-007-PKTAD-2')
+                ->first()->created_at->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
+        );
     }
 
     public function test_service_rejects_unknown_domain(): void

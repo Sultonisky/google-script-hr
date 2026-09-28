@@ -4,11 +4,14 @@ namespace App\Repositories\Database;
 
 use App\Models\EmployeeDocument;
 use App\Repositories\Contracts\EmployeeDocumentRepositoryInterface;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
 class EmployeeDocumentDatabaseRepository implements EmployeeDocumentRepositoryInterface
 {
+    private const MAX_ID_ATTEMPTS = 50;
+
     public function getAll(): Collection
     {
         return EmployeeDocument::query()
@@ -45,29 +48,51 @@ class EmployeeDocumentDatabaseRepository implements EmployeeDocumentRepositoryIn
         return $row ? $this->toSheetFormat($row) : null;
     }
 
+    /**
+     * Document ID is DOC-{Ymd}-{seq}-{CODE}, so re-issuing the same type for the same
+     * employee on the same day repeats it. Sheets accepted duplicates; the DB column is
+     * unique, so later rows get a -2, -3, ... suffix to keep every history entry.
+     */
     public function append(array $row): bool
     {
-        try {
-            EmployeeDocument::create([
-                'document_id' => (string) ($row['Document ID'] ?? ''),
-                'employee_id' => ltrim(trim((string) ($row['Employee ID'] ?? '')), "'"),
-                'sequence' => (int) ($row['Sequence'] ?? 0),
-                'doc_type' => (string) ($row['Doc Type'] ?? ''),
-                'doc_code' => strtoupper(trim((string) ($row['Doc Code'] ?? ''))),
-                'nomor' => (string) ($row['Nomor'] ?? ''),
-                'entity' => (string) ($row['Entity'] ?? ''),
-                'issued_at' => (string) ($row['Issued At'] ?? ''),
-                'issued_by' => (string) ($row['Issued By'] ?? ''),
-                'reference' => (string) ($row['Reference'] ?? ''),
-                'notes' => (string) ($row['Notes'] ?? ''),
-            ]);
+        $baseId = trim((string) ($row['Document ID'] ?? ''));
+        $attributes = [
+            'employee_id' => ltrim(trim((string) ($row['Employee ID'] ?? '')), "'"),
+            'sequence' => (int) ($row['Sequence'] ?? 0),
+            'doc_type' => (string) ($row['Doc Type'] ?? ''),
+            'doc_code' => strtoupper(trim((string) ($row['Doc Code'] ?? ''))),
+            'nomor' => (string) ($row['Nomor'] ?? ''),
+            'entity' => (string) ($row['Entity'] ?? ''),
+            'issued_at' => (string) ($row['Issued At'] ?? ''),
+            'issued_by' => (string) ($row['Issued By'] ?? ''),
+            'reference' => (string) ($row['Reference'] ?? ''),
+            'notes' => (string) ($row['Notes'] ?? ''),
+        ];
 
-            return true;
-        } catch (\Throwable $e) {
-            Log::error('EmployeeDocumentDatabaseRepository::append failed: ' . $e->getMessage());
+        for ($attempt = 1; $attempt <= self::MAX_ID_ATTEMPTS; $attempt++) {
+            $documentId = $attempt === 1 ? $baseId : "{$baseId}-{$attempt}";
+            if (EmployeeDocument::query()->where('document_id', $documentId)->exists()) {
+                continue;
+            }
 
-            return false;
+            try {
+                EmployeeDocument::create(['document_id' => $documentId] + $attributes);
+
+                return true;
+            } catch (UniqueConstraintViolationException) {
+                continue;
+            } catch (\Throwable $e) {
+                Log::error('EmployeeDocumentDatabaseRepository::append failed: ' . $e->getMessage());
+
+                return false;
+            }
         }
+
+        Log::error('EmployeeDocumentDatabaseRepository::append failed: no free Document ID', [
+            'document_id' => $baseId,
+        ]);
+
+        return false;
     }
 
     public function maxSequence(): int

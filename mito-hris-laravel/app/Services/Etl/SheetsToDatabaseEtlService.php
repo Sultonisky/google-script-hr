@@ -18,6 +18,7 @@ use App\Services\Google\GoogleSheetsService;
 use App\Support\CandidateAttributeMap;
 use App\Support\EmployeeAttributeMap;
 use App\Support\ProbationAttributeMap;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -290,6 +291,7 @@ class SheetsToDatabaseEtlService
         $written = 0;
         $skipped = 0;
         $errors = [];
+        $seenIds = [];
 
         foreach ($rows as $row) {
             $docId = trim((string) ($row['Document ID'] ?? ''));
@@ -301,26 +303,35 @@ class SheetsToDatabaseEtlService
             if ($docId === '') {
                 $docId = 'DOC-' . $empId . '-' . md5(json_encode($row));
             }
+            // Sheets allowed repeated Document IDs (same type re-issued same day); keep each
+            // row with a deterministic -N suffix by sheet order so re-runs stay idempotent.
+            $occurrence = $seenIds[$docId] = ($seenIds[$docId] ?? 0) + 1;
+            if ($occurrence > 1) {
+                $docId .= '-' . $occurrence;
+            }
             if ($dryRun) {
                 $written++;
                 continue;
             }
             try {
-                EmployeeDocument::query()->updateOrCreate(
-                    ['document_id' => $docId],
-                    [
-                        'employee_id' => $empId,
-                        'sequence' => (int) ($row['Sequence'] ?? 0),
-                        'doc_type' => (string) ($row['Doc Type'] ?? ''),
-                        'doc_code' => strtoupper(trim((string) ($row['Doc Code'] ?? ''))),
-                        'nomor' => (string) ($row['Nomor'] ?? ''),
-                        'entity' => (string) ($row['Entity'] ?? ''),
-                        'issued_at' => (string) ($row['Issued At'] ?? ''),
-                        'issued_by' => (string) ($row['Issued By'] ?? ''),
-                        'reference' => (string) ($row['Reference'] ?? ''),
-                        'notes' => (string) ($row['Notes'] ?? ''),
-                    ]
-                );
+                $document = EmployeeDocument::query()->firstOrNew(['document_id' => $docId]);
+                $document->fill([
+                    'employee_id' => $empId,
+                    'sequence' => (int) ($row['Sequence'] ?? 0),
+                    'doc_type' => (string) ($row['Doc Type'] ?? ''),
+                    'doc_code' => strtoupper(trim((string) ($row['Doc Code'] ?? ''))),
+                    'nomor' => (string) ($row['Nomor'] ?? ''),
+                    'entity' => (string) ($row['Entity'] ?? ''),
+                    'issued_at' => (string) ($row['Issued At'] ?? ''),
+                    'issued_by' => (string) ($row['Issued By'] ?? ''),
+                    'reference' => (string) ($row['Reference'] ?? ''),
+                    'notes' => (string) ($row['Notes'] ?? ''),
+                ]);
+                $createdAt = $this->parseSheetTimestamp($row['Created At'] ?? null);
+                if ($createdAt !== null) {
+                    $document->created_at = $createdAt;
+                }
+                $document->save();
                 $written++;
             } catch (\Throwable $e) {
                 $errors[] = "documents:{$docId}: {$e->getMessage()}";
@@ -639,6 +650,20 @@ class SheetsToDatabaseEtlService
         $normalized = strtolower(trim((string) $value));
 
         return in_array($normalized, ['1', 'true', 'yes', 'y', 'on'], true);
+    }
+
+    private function parseSheetTimestamp(mixed $value): ?Carbon
+    {
+        $raw = trim((string) $value);
+        if ($raw === '') {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($raw, 'Asia/Jakarta');
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**

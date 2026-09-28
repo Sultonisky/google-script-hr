@@ -128,4 +128,39 @@ class EmployeeDocumentDatabaseRepositoryTest extends TestCase
         $this->assertSame($issued['nomor'], $latest['Nomor']);
         $this->assertSame('SKP', $latest['Doc Code']);
     }
+
+    public function test_reissuing_same_type_same_day_keeps_every_history_row(): void
+    {
+        /** @var EmployeeRepositoryInterface $employees */
+        $employees = $this->app->make(EmployeeRepositoryInterface::class);
+        /** @var EmployeeDocumentRepositoryInterface $docs */
+        $docs = $this->app->make(EmployeeDocumentRepositoryInterface::class);
+
+        $emp = $employees->create(new EmployeeData(
+            employeeId: 'EMP-DOC-2',
+            fullName: 'Dewi',
+            branchName: 'HO',
+            statusEmployee: 'Contract',
+        ));
+
+        $sk = $this->app->make(SkNumberService::class);
+        $at = \Illuminate\Support\Carbon::parse('2026-09-28 09:00:00', 'Asia/Jakarta');
+        foreach (range(1, 3) as $i) {
+            $sk->issue(
+                employeeId: $emp->employeeId,
+                type: SkDocumentType::PKTAD,
+                branchName: 'HO',
+                issuedBy: 'HR Admin',
+                issuedAt: $at->copy()->addMinutes($i),
+            );
+        }
+
+        $history = $docs->getByEmployeeId($emp->employeeId);
+        $this->assertCount(3, $history);
+        $this->assertSame(
+            ['DOC-20260928-001-PKTAD', 'DOC-20260928-001-PKTAD-2', 'DOC-20260928-001-PKTAD-3'],
+            $history->pluck('Document ID')->all()
+        );
+        $this->assertSame(1, $docs->sequenceForEmployee($emp->employeeId));
+    }
 }
