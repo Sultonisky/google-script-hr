@@ -8,7 +8,8 @@ use Illuminate\Console\Command;
 class MigrateSuperUserRoleCommand extends Command
 {
     protected $signature = 'mito:migrate-super-user-role {--dry-run : Report changes without writing to the Users sheet}';
-    protected $description = 'Rename existing Users sheet roles from Super User to User';
+    protected $description = 'One-shot migrate Super User → User via data driver (legacy Sheets-era rename)';
+
 
     public function handle(UserRepositoryInterface $userRepository): int
     {
