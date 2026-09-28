@@ -128,6 +128,54 @@ class DocumentDownloadTest extends TestCase
             ->assertHeader('X-Document-Source', 'regenerated');
     }
 
+    public function test_regenerated_tad_contract_uses_tad_template(): void
+    {
+        $this->actingAsRole('Admin');
+        EmployeeDocument::query()->create([
+            'document_id' => 'DOC-20260901-007-PKWT',
+            'employee_id' => 'EMP-DL-1',
+            'sequence' => 7,
+            'doc_type' => 'Kontrak PKWT TAD',
+            'doc_code' => 'PKWT',
+            'nomor' => '007/PKWT/MSI/IX/2026',
+            'entity' => 'MSI',
+            'issued_at' => '2026-09-01 09:00:00',
+            'reference' => \App\Services\OutsourceContractService::TAD_REFERENCE,
+        ]);
+
+        $pdfService = Mockery::mock(PdfGeneratorService::class);
+        $pdfService->shouldReceive('generateKontrakPkwtTadPdf')
+            ->once()
+            ->withArgs(fn (EmployeeData $employee, array $extraData) => $extraData['contract_number'] === '007/PKWT/MSI/IX/2026'
+                && $extraData['doc_date'] === '2026-09-01')
+            ->andReturn(Pdf::loadHTML('<p>PKWT TAD</p>'));
+        $pdfService->shouldNotReceive('generateKontrakPkwtPdf');
+        $this->app->instance(PdfGeneratorService::class, $pdfService);
+
+        $download = $this->get('/hr/documents/DOC-20260901-007-PKWT/download')->assertOk();
+        $this->assertStringContainsString('PKWT_TAD_Rina_Kartika_EMP-DL-1.pdf', (string) $download->headers->get('Content-Disposition'));
+    }
+
+    public function test_sk_rotation_prints_type_aware_codes(): void
+    {
+        $employee = EmployeeData::fromSheetRow([
+            'Employee ID' => 'EMP-DL-1',
+            'Full Name' => 'Rina Kartika',
+            'Branch Name' => 'PT Mahakarya Sukses Indonesia',
+        ]);
+        $render = fn (array $extraData) => view('pdf.sk-rotation', [
+            'employee' => $employee,
+            'extraData' => $extraData,
+            'company' => [],
+        ])->render();
+
+        $this->assertStringContainsString('Nomor: 007/SKPR/MSI/IX/2026', $render(['rotation_type' => 'Promosi', 'sk_number' => '007/SKPR/MSI/IX/2026']));
+        $this->assertStringContainsString('Nomor: 007/SKD/MSI/IX/2026', $render(['rotation_type' => 'Demosi', 'sk_number' => '007/SKD/MSI/IX/2026']));
+        $this->assertStringContainsString('Nomor: 007/SKM/MSI/IX/2026', $render(['rotation_type' => 'Mutasi', 'sk_number' => '007/SKM/MSI/IX/2026']));
+        // Legacy HR-SK* numbers are normalized to the current code.
+        $this->assertStringContainsString('Nomor: 007/SKPR/MSI/IX/2026', $render(['rotation_type' => 'Promosi', 'sk_number' => '007/HR-SKP/MSI/IX/2026']));
+    }
+
     public function test_sk_templates_sign_with_doc_date_when_given(): void
     {
         $employee = EmployeeData::fromSheetRow([
@@ -144,6 +192,34 @@ class DocumentDownloadTest extends TestCase
 
         $this->assertStringContainsString('10 Maret 2026', $html);
         $this->assertStringContainsString('007/SKP/MSI/III/2026', $html);
+    }
+
+    public function test_paklaring_prints_only_spak_number(): void
+    {
+        $employee = EmployeeData::fromSheetRow([
+            'Employee ID' => 'EMP-DL-1',
+            'Full Name' => 'Rina Kartika',
+            'Branch Name' => 'PT Mahakarya Sukses Indonesia',
+            'Join Date' => '2025-01-06',
+            'Resign Date' => '2026-03-31',
+        ]);
+        $company = ['name' => 'PT MAHAKARYA SUKSES INDONESIA', 'address' => 'Kota Tangerang', 'city' => 'Tangerang', 'code' => 'MSI'];
+
+        $html = view('pdf.paklaring', [
+            'employee' => $employee,
+            'extraData' => ['sk_number' => '007/SPAK/MSI/III/2026', 'doc_date' => '2026-03-31'],
+            'company' => $company,
+        ])->render();
+        $this->assertStringContainsString('Nomor: 007/SPAK/MSI/III/2026', $html);
+        $this->assertStringContainsString('31 Maret 2026', $html);
+
+        $legacy = view('pdf.paklaring', [
+            'employee' => $employee,
+            'extraData' => ['sk_number' => '007/SKO/MSI/III/2026'],
+            'company' => $company,
+        ])->render();
+        $this->assertStringNotContainsString('007/SKO/MSI/III/2026', $legacy);
+        $this->assertStringNotContainsString('Nomor:', $legacy);
     }
 
     public function test_regeneration_failure_redirects_back_with_message(): void
@@ -192,8 +268,10 @@ class DocumentDownloadTest extends TestCase
             'pendidikan' => 'SMA',
         ])->assertOk();
 
-        $document = EmployeeDocument::query()->where('employee_id', 'EMP-OS-1')->where('doc_code', 'PKTAD')->firstOrFail();
+        $document = EmployeeDocument::query()->where('employee_id', 'EMP-OS-1')->where('doc_code', 'PKWT')->firstOrFail();
         $this->assertSame($response->json('contract_number'), $document->nomor);
+        $this->assertMatchesRegularExpression('#^\d{3}/PKWT/MSI/[IVX]+/\d{4}$#', $document->nomor);
+        $this->assertSame('Kontrak PKWT TAD', $document->doc_type);
 
         $archive = EmployeeDocumentFile::query()->where('document_id', $document->document_id)->firstOrFail();
         $this->assertSame('export', $archive->source);

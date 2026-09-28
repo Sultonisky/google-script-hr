@@ -202,18 +202,35 @@ class EmployeeDocumentArchiveService
             'doc_date' => $issuedAt->format('Y-m-d'),
         ];
         $empId = $employee->employeeId;
-        $stem = $this->employeeDocumentStem($employee);
 
-        [$pdf, $fileName] = match ($type) {
-            SkDocumentType::PKWT => [
-                $this->pdfService->generateKontrakPkwtPdf($employee, $this->contractData($employee, $extraData, $nomor)),
-                "Kontrak_PKWT_{$empId}.pdf",
-            ],
-            SkDocumentType::PKTAD => [
+        $isTadContract = $type === SkDocumentType::PKWT
+            && trim((string) ($document['Reference'] ?? '')) === OutsourceContractService::TAD_REFERENCE;
+
+        [$pdf, $fileName] = match (true) {
+            $isTadContract => [
                 $this->pdfService->generateKontrakPkwtTadPdf($employee, $this->contractData($employee, $extraData, $nomor) + [
                     'mulai_tanggal' => $employee->joinDate,
                 ]),
                 'PKWT_TAD_' . preg_replace('/[^a-zA-Z0-9_-]+/', '_', $employee->fullName ?? 'Outsource') . "_{$empId}.pdf",
+            ],
+            default => $this->typePdf($employee, $type, $extraData, $nomor, $issuedAt),
+        };
+
+        return ['content' => $pdf->output(), 'file_name' => $fileName];
+    }
+
+    /**
+     * @return array{0:\Barryvdh\DomPDF\PDF, 1:string}
+     */
+    private function typePdf(EmployeeData $employee, SkDocumentType $type, array $extraData, string $nomor, Carbon $issuedAt): array
+    {
+        $empId = $employee->employeeId;
+        $stem = $this->employeeDocumentStem($employee);
+
+        return match ($type) {
+            SkDocumentType::PKWT => [
+                $this->pdfService->generateKontrakPkwtPdf($employee, $this->contractData($employee, $extraData, $nomor)),
+                "Kontrak_PKWT_{$empId}.pdf",
             ],
             SkDocumentType::PENGANGKATAN => [
                 $this->pdfService->generateSkPengangkatanPdf($employee, $extraData),
@@ -231,8 +248,6 @@ class EmployeeDocumentArchiveService
                 "Paklaring_{$stem}.pdf",
             ],
         };
-
-        return ['content' => $pdf->output(), 'file_name' => $fileName];
     }
 
     private function contractData(EmployeeData $employee, array $extraData, string $nomor): array

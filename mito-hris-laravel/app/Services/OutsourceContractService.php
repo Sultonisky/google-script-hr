@@ -8,13 +8,16 @@ use Illuminate\Support\Carbon;
 
 class OutsourceContractService
 {
+    /** Employee_Documents.Reference marking a PKWT row as a TAD (outsource) contract. */
+    public const TAD_REFERENCE = 'Outsource PKWT TAD';
+
     public function __construct(
         private SkNumberService $skNumbers
     ) {}
 
     /**
      * Allocate PKWT TAD contract number — same fixed-seq family as other SK docs.
-     * Format: {seq}/PKTAD/{ENTITY}/{ROMAN}/{YEAR}
+     * Format: {seq}/PKWT/{ENTITY}/{ROMAN}/{YEAR}
      *
      * @return array{seq:int, contract_number:string, roman_month:string, year:int, generated_at:string}
      */
@@ -28,12 +31,13 @@ class OutsourceContractService
 
         $issued = $this->skNumbers->issue(
             employeeId: $employeeId,
-            type: SkDocumentType::PKTAD,
+            type: SkDocumentType::PKWT,
             branchName: (string) ($employee->branchName ?? ''),
             issuedBy: $issuedBy ?: 'HR Administrator',
-            reference: 'Outsource PKWT TAD',
+            reference: self::TAD_REFERENCE,
             notes: 'Kontrak PKWT TAD',
             issuedAt: $now,
+            docTypeLabel: 'Kontrak PKWT TAD',
         );
 
         $roman = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][$now->month - 1];

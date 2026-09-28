@@ -40,6 +40,7 @@ class SkNumberService
         string $reference = '',
         string $notes = '',
         ?Carbon $issuedAt = null,
+        ?string $docTypeLabel = null,
     ): array {
         $employeeId = ltrim(trim($employeeId), "'");
         if ($employeeId === '') {
@@ -62,7 +63,7 @@ class SkNumberService
             'Document ID' => $documentId,
             'Employee ID' => $employeeId,
             'Sequence' => (string) $sequence,
-            'Doc Type' => $type->label(),
+            'Doc Type' => $docTypeLabel ?: $type->label(),
             'Doc Code' => $type->value,
             'Nomor' => $nomor,
             'Entity' => $entity,
@@ -79,7 +80,7 @@ class SkNumberService
 
         $updated = $this->employees->update($employeeId, [
             'Nomor SK' => $nomor,
-            // Kontrak PKWT/TAD: keep Contract Number in sync with the issued nomor
+            // Kontrak PKWT (incl. TAD): keep Contract Number in sync with the issued nomor
             // (same fixed seq family as SK documents).
             ...($type->isContract() ? ['Contract Number' => $nomor] : []),
             'Updated At' => $now->format('Y-m-d H:i:s'),

@@ -148,7 +148,7 @@
                         @forelse ($rows as $row)
                             @php
                                 $typeBadgeClass = match ($row->docCode) {
-                                    'PKWT', 'PKTAD' => 'hold',
+                                    'PKWT' => 'hold',
                                     'SKP' => 'accepted',
                                     'SKO', 'SPAK' => 'blacklist',
                                     default => 'pending',

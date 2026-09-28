@@ -186,11 +186,11 @@ class SheetsToDatabaseEtlTest extends TestCase
     public function test_documents_keep_duplicate_ids_and_original_created_at(): void
     {
         $doc = fn (string $nomor, string $createdAt) => [
-            'Document ID' => 'DOC-20260901-007-PKTAD',
+            'Document ID' => 'DOC-20260901-007-PKWT',
             'Employee ID' => "'EMP-7",
             'Sequence' => '7',
-            'Doc Type' => 'Kontrak PKWT TAD',
-            'Doc Code' => 'PKTAD',
+            'Doc Type' => 'Kontrak PKWT',
+            'Doc Code' => 'PKWT',
             'Nomor' => $nomor,
             'Entity' => 'MSI',
             'Issued At' => $createdAt,
@@ -199,8 +199,8 @@ class SheetsToDatabaseEtlTest extends TestCase
         ];
         $this->bindSheets([
             'Employee_Documents' => [
-                $doc('007/PKTAD/MSI/IX/2026', '2026-09-01 09:00:00'),
-                $doc('007/PKTAD/MSI/IX/2026', '2026-09-01 14:30:00'),
+                $doc('007/PKWT/MSI/IX/2026', '2026-09-01 09:00:00'),
+                $doc('007/PKWT/MSI/IX/2026', '2026-09-01 14:30:00'),
             ],
         ]);
 
@@ -208,11 +208,11 @@ class SheetsToDatabaseEtlTest extends TestCase
         $this->artisan('mito:etl-sheets-to-db', ['--only' => 'documents'])->assertSuccessful();
 
         $ids = EmployeeDocument::query()->orderBy('id')->pluck('document_id')->all();
-        $this->assertSame(['DOC-20260901-007-PKTAD', 'DOC-20260901-007-PKTAD-2'], $ids);
+        $this->assertSame(['DOC-20260901-007-PKWT', 'DOC-20260901-007-PKWT-2'], $ids);
         $this->assertSame('EMP-7', EmployeeDocument::query()->value('employee_id'));
         $this->assertSame(
             '2026-09-01 14:30:00',
-            EmployeeDocument::query()->where('document_id', 'DOC-20260901-007-PKTAD-2')
+            EmployeeDocument::query()->where('document_id', 'DOC-20260901-007-PKWT-2')
                 ->first()->created_at->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
         );
     }

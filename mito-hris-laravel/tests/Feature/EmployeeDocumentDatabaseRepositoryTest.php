@@ -148,7 +148,7 @@ class EmployeeDocumentDatabaseRepositoryTest extends TestCase
         foreach (range(1, 3) as $i) {
             $sk->issue(
                 employeeId: $emp->employeeId,
-                type: SkDocumentType::PKTAD,
+                type: SkDocumentType::PKWT,
                 branchName: 'HO',
                 issuedBy: 'HR Admin',
                 issuedAt: $at->copy()->addMinutes($i),
@@ -158,7 +158,7 @@ class EmployeeDocumentDatabaseRepositoryTest extends TestCase
         $history = $docs->getByEmployeeId($emp->employeeId);
         $this->assertCount(3, $history);
         $this->assertSame(
-            ['DOC-20260928-001-PKTAD', 'DOC-20260928-001-PKTAD-2', 'DOC-20260928-001-PKTAD-3'],
+            ['DOC-20260928-001-PKWT', 'DOC-20260928-001-PKWT-2', 'DOC-20260928-001-PKWT-3'],
             $history->pluck('Document ID')->all()
         );
         $this->assertSame(1, $docs->sequenceForEmployee($emp->employeeId));

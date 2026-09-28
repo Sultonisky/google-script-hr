@@ -146,19 +146,41 @@ class SkNumberServiceTest extends TestCase
         $this->assertSame('SKP', $history[1]['Doc Code']);
     }
 
-    public function test_pktad_uses_pktad_code(): void
+    public function test_pkwt_tad_uses_pkwt_code_with_tad_label(): void
     {
         $issued = $this->service->issue(
             'EMP-B',
-            SkDocumentType::PKTAD,
+            SkDocumentType::PKWT,
             'Stein Packing',
             'HR',
-            issuedAt: Carbon::parse('2026-09-10', 'Asia/Jakarta')
+            issuedAt: Carbon::parse('2026-09-10', 'Asia/Jakarta'),
+            docTypeLabel: 'Kontrak PKWT TAD',
         );
 
-        $this->assertSame('001/PKTAD/SPI/IX/2026', $issued['nomor']);
-        $this->assertTrue(SkDocumentType::PKTAD->isContract());
+        $this->assertSame('001/PKWT/SPI/IX/2026', $issued['nomor']);
+        $history = $this->documents->getByEmployeeId('EMP-B');
+        $this->assertSame('PKWT', $history[0]['Doc Code']);
+        $this->assertSame('Kontrak PKWT TAD', $history[0]['Doc Type']);
         $this->assertTrue(SkDocumentType::PKWT->isContract());
         $this->assertFalse(SkDocumentType::PENGANGKATAN->isContract());
+    }
+
+    public function test_document_codes_follow_hris_format(): void
+    {
+        $this->assertSame(
+            [
+                'PKWT' => 'Kontrak PKWT',
+                'SKP' => 'SK Pengangkatan',
+                'SKM' => 'SK Mutasi',
+                'SKD' => 'SK Demosi',
+                'SKPR' => 'SK Promosi',
+                'SKO' => 'SK Offboarding',
+                'SPAK' => 'Paklaring',
+            ],
+            collect(SkDocumentType::cases())->mapWithKeys(fn (SkDocumentType $t) => [$t->value => $t->label()])->all()
+        );
+        $this->assertSame(SkDocumentType::MUTASI, SkDocumentType::fromRotationType('Rotasi'));
+        $this->assertSame(SkDocumentType::PROMOSI, SkDocumentType::fromRotationType('promosi'));
+        $this->assertSame(SkDocumentType::DEMOSI, SkDocumentType::fromRotationType('Demosi'));
     }
 }

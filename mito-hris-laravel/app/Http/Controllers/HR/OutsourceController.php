@@ -213,7 +213,7 @@ class OutsourceController extends Controller
         // Archive now: the download token expires after 15 minutes.
         $this->documentArchive->capture(
             $employee->employeeId,
-            SkDocumentType::PKTAD,
+            SkDocumentType::PKWT,
             $alloc['contract_number'],
             fn () => $this->pdfService->generateKontrakPkwtTadPdf($employee, $extraData)->output(),
             "PKWT_TAD_{$safeName}_{$employee->employeeId}.pdf",
