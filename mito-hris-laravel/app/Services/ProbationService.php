@@ -7,7 +7,7 @@ use App\Enums\ProbationDecisionType;
 use App\Enums\SkDocumentType;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
-use App\Services\Google\GoogleSheetsService;
+use App\Repositories\Contracts\ProbationRepositoryInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use RuntimeException;
@@ -16,7 +16,7 @@ class ProbationService
 {
     protected EmployeeRepositoryInterface $employeeRepo;
     protected AuditLogRepositoryInterface $auditRepo;
-    protected GoogleSheetsService $sheets;
+    protected ProbationRepositoryInterface $probationRepo;
     protected SkNumberService $skNumbers;
 
     /** @var array<int, array<string,string>>|null Request-scoped memo of kandidat_probation rows. */
@@ -42,33 +42,17 @@ class ProbationService
     public function __construct(
         EmployeeRepositoryInterface $employeeRepo,
         AuditLogRepositoryInterface $auditRepo,
-        GoogleSheetsService $sheets,
+        ProbationRepositoryInterface $probationRepo,
         SkNumberService $skNumbers
     ) {
         $this->employeeRepo = $employeeRepo;
         $this->auditRepo    = $auditRepo;
-        $this->sheets       = $sheets;
+        $this->probationRepo = $probationRepo;
         $this->skNumbers    = $skNumbers;
     }
 
-    private function probationSheet(): string
-    {
-        return config('google.sheets.candidates_probation', 'kandidat_probation');
-    }
-
-    /** Return the single canonical header definition used by config and writers. */
-    private function probationHeaders(): array
-    {
-        $headers = config('hris.schemas.kandidat_probation', []);
-        if (!is_array($headers) || $headers === [] || count($headers) !== count(array_unique($headers))) {
-            throw new RuntimeException('Schema kandidat_probation tidak valid atau memiliki header duplikat.');
-        }
-
-        return array_values($headers);
-    }
-
     /**
-     * Request-scoped memoization of the kandidat_probation sheet rows.
+     * Request-scoped memoization of the kandidat_probation rows.
      *
      * Production issue: EmployeeController/ProbationController loops called
      * getEvalHistory()/getAllProbationRecords()/latestEvalByEmployee() per
@@ -77,8 +61,8 @@ class ProbationService
      * (Read requests per minute per user = 60) -> nginx 504.
      *
      * This memo loads the sheet ONCE per request; all read methods reuse it.
-     * Persistent GoogleSheetsService cache semantics are unchanged -- writes
-     * still bump the version stamp via invalidateProbationRowsCache().
+     * Persistent store cache semantics are unchanged -- writes still bump the
+     * version stamp via invalidateProbationRowsCache().
      */
     private function getProbationRows(): array
     {
@@ -86,22 +70,21 @@ class ProbationService
             return $this->probationRowsCache;
         }
 
-        $this->probationRowsCache = $this->sheets->getRowsAsAssoc($this->probationSheet());
+        $this->probationRowsCache = $this->probationRepo->getAllRows();
 
         return $this->probationRowsCache;
     }
 
     /**
-     * Invalidate BOTH the request-local memo AND the persistent
-     * GoogleSheetsService cache for kandidat_probation.
+     * Invalidate BOTH the request-local memo AND the persistent store cache.
      *
-     * Call ONLY after an actual write/update/delete to the probation sheet
+     * Call ONLY after an actual write/update/delete to probation rows
      * (appendProbationEvalRow). Never call on the read path.
      */
     private function invalidateProbationRowsCache(): void
     {
         $this->probationRowsCache = null;
-        $this->sheets->clearCache($this->probationSheet());
+        $this->probationRepo->invalidateCache();
     }
 
     // ==========================================================
@@ -836,38 +819,10 @@ class ProbationService
 
     private function appendProbationEvalRow(array $data): void
     {
-        $sheetName = $this->probationSheet();
-        $canonicalHeaders = $this->probationHeaders();
-
-        // Ensure all headers exist — adds missing new columns to the sheet
-        // if the sheet was created by GAS with only 29 columns.
-        // ensureSheetHeaders is idempotent: only writes row 1 if it is empty.
-        // For an existing GAS sheet we use ensureExtraColumns_ logic:
-        // read current headers, append any missing ones at the end.
-        $headerRow = $this->sheets->getRange($sheetName, '1:1', false)[0] ?? [];
-        if (empty($headerRow) || empty(array_filter($headerRow))) {
-            // Sheet is empty — write full header set
-            $this->sheets->ensureSheetHeaders($sheetName, $canonicalHeaders);
-            $headers = $canonicalHeaders;
-        } else {
-            $existingHeaders = array_map('trim', $headerRow);
-            if ($existingHeaders !== $canonicalHeaders) {
-                throw new RuntimeException(
-                    'Header kandidat_probation tidak sesuai schema canonical. Migrasikan header Sheet sebelum menulis evaluation.'
-                );
-            }
-            $headers = $existingHeaders;
-        }
-
-        $row = [];
-        foreach ($headers as $h) {
-            $row[] = $data[$h] ?? '';
-        }
-        if (count($row) !== count($headers)) {
-            throw new RuntimeException('Jumlah nilai row kandidat_probation tidak sama dengan jumlah header sheet.');
-        }
-        $this->sheets->appendRow($sheetName, $row);
-        $this->invalidateProbationRowsCache();
+        $this->probationRepo->appendEvalRow($data);
+        // Repo implementations invalidate their own store cache; clear the
+        // request-local memo so subsequent reads in this request see the write.
+        $this->probationRowsCache = null;
     }
 
     private function generateEvalId(\Illuminate\Support\Carbon $now): string
