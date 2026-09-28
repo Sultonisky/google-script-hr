@@ -78,6 +78,7 @@ class OutsourceImportDashboardTest extends TestCase
         // No ID, placed before an explicit ID: must get the next number after every explicit one.
         $raw->fromArray(['-', 'Rina Tanpa ID', null, null, null, null, '081311112222', 'rina@example.com'], null, 'A3', true);
         $raw->fromArray(['DM20260002', 'Tono Prasetyo', null, null, null, null, '081333334444', 'tono@example.com'], null, 'A4', true);
+        $raw->fromArray([2788800, 1195200, 'Remarks dari Excel'], null, 'T2', true);
 
         $path = tempnam(sys_get_temp_dir(), 'osimp') . '.xlsx';
         (new Xlsx($spreadsheet))->save($path);
@@ -103,7 +104,8 @@ class OutsourceImportDashboardTest extends TestCase
 
         $this->get('/hr/outsource')->assertOk()
             ->assertSee('id="btnImportOutsource"', false)
-            ->assertSee('id="outsourceImportModal"', false);
+            ->assertSee('id="outsourceImportModal"', false)
+            ->assertSee('akan diabaikan karena Anda tidak memiliki izin');
 
         $this->post('/hr/outsource/import', ['file' => $this->workbook(), 'vendor' => 'StaffInc', 'dry_run' => '1'], ['Accept' => 'application/json'])
             ->assertOk()
@@ -116,12 +118,14 @@ class OutsourceImportDashboardTest extends TestCase
         $this->post('/hr/outsource/import', ['file' => $this->workbook(), 'vendor' => 'StaffInc'], ['Accept' => 'application/json'])
             ->assertOk()
             ->assertJsonPath('dry_run', false)
-            ->assertJsonPath('summary', ['read' => 3, 'created' => 2, 'updated' => 1]);
+            ->assertJsonPath('summary', ['read' => 3, 'created' => 2, 'updated' => 1])
+            ->assertJsonFragment(['Kolom Gaji Pokok, Insentif 30%, dan Remarks diabaikan karena Anda tidak memiliki izin mengelola kolom tersebut.']);
 
         $this->assertSame(3, OutsourceEmployee::count());
         $bayu = OutsourceEmployee::query()->where('outsource_id', 'DM20260001')->firstOrFail();
         $this->assertSame('Bayu Saputra Update', $bayu->full_name);
         $this->assertSame('Catatan HR', $bayu->remarks);
+        $this->assertNull($bayu->basic_salary);
         $this->assertSame('+6281234567890', $bayu->whatsapp_number);
         $this->assertSame('Tono Prasetyo', OutsourceEmployee::query()->where('outsource_id', 'DM20260002')->value('full_name'));
         $rina = OutsourceEmployee::query()->where('outsource_id', 'DM20260003')->firstOrFail();
@@ -134,6 +138,25 @@ class OutsourceImportDashboardTest extends TestCase
             ->assertOk()
             ->assertJsonPath('summary', ['read' => 3, 'created' => 0, 'updated' => 3]);
         $this->assertSame(3, OutsourceEmployee::count());
+    }
+
+    public function test_import_writes_compensation_columns_only_with_permission(): void
+    {
+        $this->actingWithPermissions(['view_outsource', 'manage_outsource', 'view_outsource_compensation', 'manage_outsource_compensation']);
+
+        $this->get('/hr/outsource')->assertOk()->assertDontSee('akan diabaikan karena Anda tidak memiliki izin');
+
+        $response = $this->post('/hr/outsource/import', ['file' => $this->workbook(), 'vendor' => 'Damarindo'], ['Accept' => 'application/json'])
+            ->assertOk();
+        $this->assertNotContains(
+            'Kolom Gaji Pokok, Insentif 30%, dan Remarks diabaikan karena Anda tidak memiliki izin mengelola kolom tersebut.',
+            $response->json('warnings')
+        );
+
+        $bayu = OutsourceEmployee::query()->where('outsource_id', 'DM20260001')->firstOrFail();
+        $this->assertEquals(2788800, (float) $bayu->basic_salary);
+        $this->assertEquals(1195200, (float) $bayu->incentive_amount);
+        $this->assertSame('Remarks dari Excel', $bayu->remarks);
     }
 
     public function test_invalid_upload_is_rejected(): void

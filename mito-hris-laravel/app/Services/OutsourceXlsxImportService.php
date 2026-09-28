@@ -57,13 +57,33 @@ class OutsourceXlsxImportService
      * `mito:outsource:import-xlsx` and the HR dashboard import so both behave identically:
      * match by Outsource ID (or WA/email when the row has no ID), blank cells never
      * overwrite existing values, and rows without an ID get the next sequence number.
+     * With $includeCompensation = false, columns T–V (Basic Salary, Incentive, Remarks) are skipped.
      *
      * @return array{read: int, created: int, updated: int, warnings: list<string>, errors: list<string>}
      */
-    public function import(string $path, string $sheetName, string $vendor, bool $dryRun = false, ?string $createdBy = null): array
-    {
+    public function import(
+        string $path,
+        string $sheetName,
+        string $vendor,
+        bool $dryRun = false,
+        ?string $createdBy = null,
+        bool $includeCompensation = true
+    ): array {
         $result = $this->read($path, $sheetName, $vendor);
         $warnings = $result['warnings'];
+
+        if (!$includeCompensation) {
+            $skipped = false;
+            foreach ($result['rows'] as $row) {
+                foreach (OutsourceEmployeeAttributeMap::COMPENSATION_FIELDS as $property) {
+                    $skipped = $skipped || $row->{$property} !== null;
+                    $row->{$property} = null;
+                }
+            }
+            if ($skipped) {
+                $warnings[] = 'Kolom Gaji Pokok, Insentif 30%, dan Remarks diabaikan karena Anda tidak memiliki izin mengelola kolom tersebut.';
+            }
+        }
         $existing = $this->repository->getAll()->keyBy(fn (OutsourceEmployeeData $e) => strtoupper((string) $e->outsourceId));
         $created = 0;
         $updated = 0;

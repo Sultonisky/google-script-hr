@@ -115,6 +115,8 @@ class PermissionResolver
             'certificates.generate_code' => ['certificates.access'],
 
             'manage_outsource' => ['view_outsource'],
+            'view_outsource_compensation' => ['view_outsource'],
+            'manage_outsource_compensation' => ['view_outsource', 'manage_outsource', 'view_outsource_compensation'],
             'download_documents' => ['view_documents'],
 
             default => [],

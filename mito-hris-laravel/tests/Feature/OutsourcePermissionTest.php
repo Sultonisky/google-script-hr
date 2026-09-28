@@ -5,8 +5,10 @@ namespace Tests\Feature;
 use App\Models\Employee;
 use App\Models\OutsourceEmployee;
 use App\Models\User;
+use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\UserPermissionRepositoryInterface;
 use App\Services\PermissionResolver;
+use App\Support\PermissionCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Session;
 use Tests\TestCase;
@@ -125,7 +127,7 @@ class OutsourcePermissionTest extends TestCase
 
     public function test_manage_outsource_creates_and_edits_only_outsource_records(): void
     {
-        $this->actingWithPermissions(['view_outsource', 'manage_outsource']);
+        $this->actingWithPermissions(['view_outsource', 'manage_outsource', 'view_outsource_compensation', 'manage_outsource_compensation']);
 
         $this->get('/hr/outsource')
             ->assertOk()
@@ -174,6 +176,128 @@ class OutsourcePermissionTest extends TestCase
         $this->putJson('/hr/employees/EMP-IN-1', ['fullName' => 'Diubah'])->assertForbidden();
         $this->assertSame('Rina Kartika', Employee::query()->where('employee_id', 'EMP-IN-1')->first()->full_name);
         $this->assertSame('Legacy Outsource', Employee::query()->where('employee_id', 'EMP-OS-1')->first()->full_name);
+    }
+
+    public function test_compensation_columns_need_their_own_view_permission(): void
+    {
+        OutsourceEmployee::query()->where('outsource_id', 'DM20260001')->update([
+            'basic_salary' => 2788800,
+            'incentive_amount' => 1195200,
+            'remarks' => 'Resign per 20/9',
+        ]);
+        $audit = app(AuditLogRepositoryInterface::class);
+        $audit->log('Outsource', 'DM20260001', 'updated', 'Remarks', '-', 'Resign per 20/9', 'HR', 'HR Dashboard');
+        $audit->log('Outsource', 'DM20260001', 'updated', 'Basic Salary', '0', '2788800', 'HR', 'HR Dashboard');
+        $audit->log('Outsource', 'DM20260001', 'updated', 'Job Title', '-', 'SPB/SPG Toko', 'HR', 'HR Dashboard');
+
+        $this->actingWithPermissions(['view_outsource']);
+        $this->get('/hr/outsource')->assertOk()
+            ->assertDontSee('id="osDrBasicSalary"', false)
+            ->assertDontSee('id="osDrIncentive"', false)
+            ->assertDontSee('id="osDrRemarks"', false);
+        $hidden = $this->getJson('/hr/outsource/DM20260001/json')->assertOk()
+            ->assertJsonPath('employee.fullName', 'Bayu Saputra')
+            ->assertJsonMissingPath('employee.basicSalary')
+            ->assertJsonMissingPath('employee.incentiveAmount')
+            ->assertJsonMissingPath('employee.remarks');
+        $this->assertSame(['Job Title'], collect($hidden->json('auditLogs'))->pluck('Field')->all());
+
+        $this->actingWithPermissions(['view_outsource', 'view_outsource_compensation']);
+        $this->get('/hr/outsource')->assertOk()
+            ->assertSee('id="osDrBasicSalary"', false)
+            ->assertSee('id="osDrRemarks"', false);
+        $visible = $this->getJson('/hr/outsource/DM20260001/json')->assertOk()
+            ->assertJsonPath('employee.basicSalary', 2788800)
+            ->assertJsonPath('employee.incentiveAmount', 1195200)
+            ->assertJsonPath('employee.remarks', 'Resign per 20/9');
+        $this->assertCount(3, $visible->json('auditLogs'));
+    }
+
+    public function test_manage_without_compensation_permission_cannot_change_the_three_columns(): void
+    {
+        OutsourceEmployee::query()->where('outsource_id', 'DM20260001')->update(['basic_salary' => 2788800, 'remarks' => 'Asli']);
+        $this->actingWithPermissions(['view_outsource', 'manage_outsource', 'view_outsource_compensation']);
+
+        $this->get('/hr/outsource')->assertOk()
+            ->assertSee('id="osfUmk"', false)
+            ->assertDontSee('id="osfBasicSalary"', false)
+            ->assertDontSee('id="osfIncentive"', false)
+            ->assertDontSee('id="osfRemarks"', false);
+
+        $this->putJson('/hr/outsource/DM20260001', [
+            'jobTitle' => 'GTM',
+            'basicSalary' => '9999999',
+            'incentiveAmount' => '5000000',
+            'remarks' => 'Diubah',
+        ])->assertOk()->assertJsonPath('success', true);
+        $row = OutsourceEmployee::query()->where('outsource_id', 'DM20260001')->first();
+        $this->assertSame('GTM', $row->job_title);
+        $this->assertEquals(2788800, (float) $row->basic_salary);
+        $this->assertNull($row->incentive_amount);
+        $this->assertSame('Asli', $row->remarks);
+
+        $newId = $this->postJson('/hr/outsource', [
+            'fullName' => 'Dewi Lestari',
+            'vendor' => 'Damarindo',
+            'basicSalary' => '3777733',
+            'remarks' => 'Titipan',
+        ])->assertCreated()->json('employee.outsourceId');
+        $saved = OutsourceEmployee::query()->where('outsource_id', $newId)->first();
+        $this->assertNull($saved->basic_salary);
+        $this->assertNull($saved->remarks);
+
+        $this->actingWithPermissions(['view_outsource', 'manage_outsource', 'view_outsource_compensation', 'manage_outsource_compensation']);
+        $this->get('/hr/outsource')->assertOk()->assertSee('id="osfBasicSalary"', false)->assertSee('id="osfRemarks"', false);
+        $this->putJson('/hr/outsource/DM20260001', ['basicSalary' => '3000000', 'remarks' => 'Diubah'])->assertOk();
+        $row->refresh();
+        $this->assertEquals(3000000, (float) $row->basic_salary);
+        $this->assertSame('Diubah', $row->remarks);
+    }
+
+    public function test_compensation_permissions_are_in_catalog_with_dependencies(): void
+    {
+        $this->assertNotNull(PermissionCatalog::find('view_outsource_compensation'));
+        $this->assertNotNull(PermissionCatalog::find('manage_outsource_compensation'));
+
+        $normalized = app(PermissionResolver::class)->normalizeDependencies(['manage_outsource_compensation' => true]);
+        foreach (['view_outsource', 'manage_outsource', 'view_outsource_compensation'] as $dependency) {
+            $this->assertTrue($normalized[$dependency] ?? false, $dependency);
+        }
+    }
+
+    public function test_grant_outsource_compensation_keeps_existing_access_and_respects_revokes(): void
+    {
+        foreach (['viewer@mito.id', 'manager@mito.id', 'revoked@mito.id'] as $email) {
+            User::query()->create([
+                'name' => $email, 'email' => $email, 'password' => 'x', 'role' => 'Admin', 'status' => 'Active',
+            ]);
+        }
+        $repository = app(UserPermissionRepositoryInterface::class);
+        $repository->upsert('viewer@mito.id', 'view_outsource', true, 'seed');
+        $repository->upsert('manager@mito.id', 'view_outsource', true, 'seed');
+        $repository->upsert('manager@mito.id', 'manage_outsource', true, 'seed');
+        $repository->upsert('revoked@mito.id', 'view_outsource', true, 'seed');
+        $repository->upsert('revoked@mito.id', 'manage_outsource', true, 'seed');
+        $repository->upsert('revoked@mito.id', 'view_outsource_compensation', false, 'admin');
+
+        $granted = fn (string $email): array => collect($repository->mappingsForUser($email))
+            ->filter(fn (array $row): bool => $row['Granted'] === 'TRUE')
+            ->pluck('Permission Key')
+            ->intersect(['view_outsource_compensation', 'manage_outsource_compensation'])
+            ->values()
+            ->all();
+
+        $this->artisan('mito:permissions:grant-outsource-compensation', ['--dry-run' => true])->assertSuccessful();
+        $this->assertSame([], $granted('manager@mito.id'));
+
+        $this->artisan('mito:permissions:grant-outsource-compensation')->assertSuccessful();
+        $this->assertSame(['view_outsource_compensation'], $granted('viewer@mito.id'));
+        $this->assertEqualsCanonicalizing(['view_outsource_compensation', 'manage_outsource_compensation'], $granted('manager@mito.id'));
+        $this->assertSame([], $granted('revoked@mito.id'));
+
+        $this->artisan('mito:permissions:grant-outsource-compensation')
+            ->expectsOutputToContain('Mappings created: 0')
+            ->assertSuccessful();
     }
 
     public function test_grant_outsource_access_carries_over_legacy_access_and_respects_revokes(): void

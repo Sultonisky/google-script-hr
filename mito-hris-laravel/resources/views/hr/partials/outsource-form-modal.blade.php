@@ -147,6 +147,7 @@
                             </div>
                             <div class="form-text amount-hint" style="font-size:11.5px"></div>
                         </div>
+                        @can('manage_outsource_compensation')
                         <div class="col-md-4">
                             <label class="form-label fw-semibold" for="osfBasicSalary" style="font-size:12.5px">Amount Gaji Pokok</label>
                             <div class="input-group input-group-sm">
@@ -167,6 +168,7 @@
                             <label class="form-label fw-semibold" for="osfRemarks" style="font-size:12.5px">Remarks</label>
                             <textarea class="form-control form-control-sm" id="osfRemarks" data-field="remarks" rows="2" maxlength="1000" placeholder="Contoh: Resign per 20/9"></textarea>
                         </div>
+                        @endcan
                     </div>
                 </div>
 

@@ -480,14 +480,16 @@
                         <div class="cv-label">Nominal UMK</div>
                         <div class="cv-value" id="osDrUmk">-</div>
                     </div>
-                    <div class="cv-field">
-                        <div class="cv-label">Gaji Pokok</div>
-                        <div class="cv-value" id="osDrBasicSalary">-</div>
-                    </div>
-                    <div class="cv-field">
-                        <div class="cv-label">Insentif 30%</div>
-                        <div class="cv-value" id="osDrIncentive">-</div>
-                    </div>
+                    @can('view_outsource_compensation')
+                        <div class="cv-field">
+                            <div class="cv-label">Gaji Pokok</div>
+                            <div class="cv-value" id="osDrBasicSalary">-</div>
+                        </div>
+                        <div class="cv-field">
+                            <div class="cv-label">Insentif 30%</div>
+                            <div class="cv-value" id="osDrIncentive">-</div>
+                        </div>
+                    @endcan
                 </div>
             </div>
 
@@ -507,10 +509,12 @@
                         <div class="cv-value" id="osDrUpdated">-</div>
                     </div>
                 </div>
-                <div class="cv-label mt-2">Remarks</div>
-                <div class="cv-value" id="osDrRemarks"
-                    style="white-space:pre-wrap;min-height:40px;padding:10px;background:var(--color-surface);color:var(--color-text);border-radius:8px;border:1px solid var(--color-border);">
-                    -</div>
+                @can('view_outsource_compensation')
+                    <div class="cv-label mt-2">Remarks</div>
+                    <div class="cv-value" id="osDrRemarks"
+                        style="white-space:pre-wrap;min-height:40px;padding:10px;background:var(--color-surface);color:var(--color-text);border-radius:8px;border:1px solid var(--color-border);">
+                        -</div>
+                @endcan
             </div>
             <div class="cv-section-card mb-0">
                 <h6><i class="bi bi-clock-history"></i> Riwayat Aktivitas</h6>
