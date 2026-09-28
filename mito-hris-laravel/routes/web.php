@@ -41,6 +41,9 @@ if (!app()->environment('local')) {
 
         Route::prefix('hr')->name('hr.')->middleware(['portal.access', 'hr.auth', 'mpr.auth'])->group(function () {
             Route::post('/refresh-data', [\App\Http\Controllers\HR\RefreshController::class, 'refreshData'])->name('refresh-data');
+            Route::post('/sync-to-sheets', [\App\Http\Controllers\HR\SheetsMirrorController::class, 'sync'])
+                ->middleware(['can:manage_settings', 'role:Super Admin'])
+                ->name('sync-to-sheets');
             Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
             Route::prefix('recruitment')->name('recruitment.')->middleware('can:view_recruitment')->group(function () {
                 Route::get('/', [RecruitmentController::class, 'index'])->name('index');
@@ -267,6 +270,9 @@ if (app()->environment('local')) {
 
         Route::prefix('hr')->name('hr.')->middleware(['portal.access', 'hr.auth', 'mpr.auth'])->group(function () {
             Route::post('/refresh-data', [\App\Http\Controllers\HR\RefreshController::class, 'refreshData'])->name('refresh-data');
+            Route::post('/sync-to-sheets', [\App\Http\Controllers\HR\SheetsMirrorController::class, 'sync'])
+                ->middleware(['can:manage_settings', 'role:Super Admin'])
+                ->name('sync-to-sheets');
             Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
             Route::prefix('recruitment')->name('recruitment.')->middleware('can:view_recruitment')->group(function () {
