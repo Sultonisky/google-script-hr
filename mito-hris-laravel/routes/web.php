@@ -478,10 +478,11 @@ if (app()->environment('local')) {
         Route::get('/outsource/success', [OutsourceApplyController::class, 'success'])->name('public.outsource.success');
 
         Route::middleware(['domain'])->group(function () {
-            Route::get('/assets/login', [AssetAuthController::class, 'showLoginForm'])->name('assets.login');
-            Route::post('/assets/login', [AssetAuthController::class, 'login'])->middleware('throttle:login')->name('assets.login.post');
-            Route::post('/assets/logout', [AssetAuthController::class, 'logout'])->name('assets.logout');
-            Route::prefix('assets')->name('assets.portal.')->group(function () {
+            // public/assets holds static files, so a bare /assets path never reaches Laravel.
+            Route::get('/assets-portal/login', [AssetAuthController::class, 'showLoginForm'])->name('assets.login');
+            Route::post('/assets-portal/login', [AssetAuthController::class, 'login'])->middleware('throttle:login')->name('assets.login.post');
+            Route::post('/assets-portal/logout', [AssetAuthController::class, 'logout'])->name('assets.logout');
+            Route::prefix('assets-portal')->name('assets.portal.')->group(function () {
                 Route::get('/', [AssetController::class, 'index'])->name('index');
                 Route::get('/missing-code-summary', [AssetController::class, 'missingCodeSummary'])->name('missing-code-summary')->middleware('can:assets.view');
                 Route::get('/preview-next-code/{prefix}', [AssetController::class, 'previewNextCode'])->name('preview-next-code')->middleware('can:assets.generate_code');

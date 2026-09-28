@@ -47,6 +47,12 @@ class PortalAccessMiddleware
             } elseif (str_starts_with($path, 'mpr')) {
                 $portal = 'mpr';
                 $portalAccess = 'private';
+            } elseif (str_starts_with($path, 'assets')) {
+                $portal = 'assets';
+                $portalAccess = 'private';
+            } elseif (str_starts_with($path, 'certifications') || str_starts_with($path, 'cert')) {
+                $portal = 'certificates';
+                $portalAccess = 'private';
             }
         }
 
