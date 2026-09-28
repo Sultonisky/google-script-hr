@@ -194,18 +194,18 @@ class OutsourcePermissionTest extends TestCase
         $this->get('/hr/outsource')->assertOk()
             ->assertDontSee('id="osDrBasicSalary"', false)
             ->assertDontSee('id="osDrIncentive"', false)
-            ->assertDontSee('id="osDrRemarks"', false);
+            ->assertSee('id="osDrRemarks"', false);
         $hidden = $this->getJson('/hr/outsource/DM20260001/json')->assertOk()
             ->assertJsonPath('employee.fullName', 'Bayu Saputra')
             ->assertJsonMissingPath('employee.basicSalary')
             ->assertJsonMissingPath('employee.incentiveAmount')
-            ->assertJsonMissingPath('employee.remarks');
-        $this->assertSame(['Job Title'], collect($hidden->json('auditLogs'))->pluck('Field')->all());
+            ->assertJsonPath('employee.remarks', 'Resign per 20/9');
+        $this->assertEqualsCanonicalizing(['Remarks', 'Job Title'], collect($hidden->json('auditLogs'))->pluck('Field')->all());
 
         $this->actingWithPermissions(['view_outsource', 'view_outsource_compensation']);
         $this->get('/hr/outsource')->assertOk()
             ->assertSee('id="osDrBasicSalary"', false)
-            ->assertSee('id="osDrRemarks"', false);
+            ->assertSee('id="osDrIncentive"', false);
         $visible = $this->getJson('/hr/outsource/DM20260001/json')->assertOk()
             ->assertJsonPath('employee.basicSalary', 2788800)
             ->assertJsonPath('employee.incentiveAmount', 1195200)
@@ -213,7 +213,7 @@ class OutsourcePermissionTest extends TestCase
         $this->assertCount(3, $visible->json('auditLogs'));
     }
 
-    public function test_manage_without_compensation_permission_cannot_change_the_three_columns(): void
+    public function test_manage_without_compensation_permission_cannot_change_salary_columns(): void
     {
         OutsourceEmployee::query()->where('outsource_id', 'DM20260001')->update(['basic_salary' => 2788800, 'remarks' => 'Asli']);
         $this->actingWithPermissions(['view_outsource', 'manage_outsource', 'view_outsource_compensation']);
@@ -222,7 +222,8 @@ class OutsourcePermissionTest extends TestCase
             ->assertSee('id="osfUmk"', false)
             ->assertDontSee('id="osfBasicSalary"', false)
             ->assertDontSee('id="osfIncentive"', false)
-            ->assertDontSee('id="osfRemarks"', false);
+            ->assertSee('id="osfRemarks"', false)
+            ->assertDontSee('30%');
 
         $this->putJson('/hr/outsource/DM20260001', [
             'jobTitle' => 'GTM',
@@ -234,7 +235,7 @@ class OutsourcePermissionTest extends TestCase
         $this->assertSame('GTM', $row->job_title);
         $this->assertEquals(2788800, (float) $row->basic_salary);
         $this->assertNull($row->incentive_amount);
-        $this->assertSame('Asli', $row->remarks);
+        $this->assertSame('Diubah', $row->remarks);
 
         $newId = $this->postJson('/hr/outsource', [
             'fullName' => 'Dewi Lestari',
@@ -244,14 +245,14 @@ class OutsourcePermissionTest extends TestCase
         ])->assertCreated()->json('employee.outsourceId');
         $saved = OutsourceEmployee::query()->where('outsource_id', $newId)->first();
         $this->assertNull($saved->basic_salary);
-        $this->assertNull($saved->remarks);
+        $this->assertSame('Titipan', $saved->remarks);
 
         $this->actingWithPermissions(['view_outsource', 'manage_outsource', 'view_outsource_compensation', 'manage_outsource_compensation']);
-        $this->get('/hr/outsource')->assertOk()->assertSee('id="osfBasicSalary"', false)->assertSee('id="osfRemarks"', false);
-        $this->putJson('/hr/outsource/DM20260001', ['basicSalary' => '3000000', 'remarks' => 'Diubah'])->assertOk();
+        $this->get('/hr/outsource')->assertOk()->assertSee('id="osfBasicSalary"', false)->assertSee('id="osfIncentive"', false);
+        $this->putJson('/hr/outsource/DM20260001', ['basicSalary' => '3000000', 'incentiveAmount' => '900000'])->assertOk();
         $row->refresh();
         $this->assertEquals(3000000, (float) $row->basic_salary);
-        $this->assertSame('Diubah', $row->remarks);
+        $this->assertEquals(900000, (float) $row->incentive_amount);
     }
 
     public function test_compensation_permissions_are_in_catalog_with_dependencies(): void

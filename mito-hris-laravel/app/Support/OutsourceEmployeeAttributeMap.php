@@ -44,7 +44,7 @@ final class OutsourceEmployeeAttributeMap
     public const AMOUNT_FIELDS = ['umkAmount', 'basicSalary', 'incentiveAmount'];
 
     /** Guarded by view_outsource_compensation / manage_outsource_compensation. */
-    public const COMPENSATION_FIELDS = ['basicSalary', 'incentiveAmount', 'remarks'];
+    public const COMPENSATION_FIELDS = ['basicSalary', 'incentiveAmount'];
 
     public const IDENTIFIER_FIELDS = ['whatsappNumber', 'bankAccount'];
 

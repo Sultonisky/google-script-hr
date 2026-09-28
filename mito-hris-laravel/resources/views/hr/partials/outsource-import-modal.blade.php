@@ -21,11 +21,11 @@
                         <li>Urutan kolom A–V: ID Karyawan, Nama, Alamat KTP, Tgl Lahir, Kota Kelahiran, Pendidikan, No WA, Email,
                             Jabatan, Lokasi Kerja, Kota Lokasi Kerja, No Rekening BCA, Tgl Join Mito, Tgl Awal Kontrak (Damarindo),
                             Tgl Akhir Kontrak (StaffInc), Cabang (Cost Center), Entity, Skema Penggajian, Nominal UMK,
-                            Gaji Pokok, Insentif 30%, Remarks.</li>
+                            Gaji Pokok, Insentif, Remarks.</li>
                         <li>Data dengan ID yang sudah ada akan <strong>diperbarui</strong>; sel kosong tidak menimpa data lama.</li>
                         <li>Baris tanpa ID dicocokkan lewat No WA/email; jika tidak ada, dibuat baru dengan ID berikutnya.</li>
                         @cannot('manage_outsource_compensation')
-                            <li class="text-danger">Kolom Gaji Pokok, Insentif 30%, dan Remarks (T–V) akan diabaikan karena Anda tidak memiliki izin mengelola kolom tersebut.</li>
+                            <li class="text-danger">Kolom Gaji Pokok dan Insentif (T–U) akan diabaikan karena Anda tidak memiliki izin mengelola kolom tersebut.</li>
                         @endcannot
                     </ul>
                 </div>

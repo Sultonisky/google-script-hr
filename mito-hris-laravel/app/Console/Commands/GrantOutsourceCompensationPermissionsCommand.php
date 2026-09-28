@@ -6,7 +6,7 @@ class GrantOutsourceCompensationPermissionsCommand extends AbstractGrantSplitPer
 {
     protected $signature = 'mito:permissions:grant-outsource-compensation {--dry-run : Report changes without writing User_Permissions}';
 
-    protected $description = 'Grant view/manage_outsource_compensation to users who previously saw Basic Salary, Incentive 30%, and Remarks via view_outsource/manage_outsource';
+    protected $description = 'Grant view/manage_outsource_compensation to users who previously saw Basic Salary and Incentive via view_outsource/manage_outsource';
 
     protected function legacySources(): array
     {
