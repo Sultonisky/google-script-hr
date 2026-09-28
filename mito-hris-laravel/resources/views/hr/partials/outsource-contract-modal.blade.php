@@ -22,7 +22,7 @@
                         </label>
                         <div class="position-relative">
                             <input type="text" class="form-control" id="oscEmpSearch"
-                                placeholder="Ketik nama atau Employee ID..." autocomplete="off"
+                                placeholder="Ketik nama atau Outsource ID..." autocomplete="off"
                                 style="font-size:13px;padding-right:36px" />
                             <i class="bi bi-x-circle-fill position-absolute" id="oscEmpSearchClear"
                                 style="right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;display:none"></i>
@@ -47,7 +47,7 @@
                                     </div>
                                 </div>
                                 <div class="text-end flex-shrink-0" style="font-size:11.5px">
-                                    <div class="text-muted">Employee ID</div>
+                                    <div class="text-muted">Outsource ID</div>
                                     <div class="fw-semibold text-primary" id="oscEmpIdDisp">-</div>
                                 </div>
                             </div>
@@ -142,17 +142,18 @@
                 }
             }
             return [
-                'employeeId' => $e->employeeId ?? null,
+                'employeeId' => $e->outsourceId ?? null,
                 'fullName' => $e->fullName ?? null,
-                'jobPosition' => $e->jobPosition ?? null,
-                'department' => $e->department ?? null,
-                'outsourceVendor' => $e->outsourceVendor ?? null,
+                'jobPosition' => $e->jobTitle ?? null,
+                'outsourceVendor' => $e->vendor ?? null,
                 'birthPlace' => $e->birthPlace ?? null,
                 'birthDate' => $e->birthDate ?? null,
                 'ttl' => $ttl ?: '-',
-                'mobilePhone' => ltrim((string) ($e->mobilePhone ?? ''), "'"),
-                'email' => $e->personalEmail ?: ($e->workingEmail ?? ''),
-                'joinDate' => $e->joinDate ?? null,
+                'mobilePhone' => (string) ($e->whatsappNumber ?? ''),
+                'email' => $e->email ?? '',
+                'joinDate' => $e->contractStartDate ?: ($e->mitoJoinDate ?? null),
+                'workLocation' => $e->workLocation ?? null,
+                'lastEducation' => $e->lastEducation ?? null,
             ];
         })
         ->values()
@@ -235,6 +236,12 @@
                     document.getElementById('oscMulaiTanggal').value = d.toISOString().slice(0, 10);
                 }
             } catch (e) {}
+        }
+        if (emp.workLocation && !document.getElementById('oscPerusahaan').value) {
+            document.getElementById('oscPerusahaan').value = emp.workLocation;
+        }
+        if (emp.lastEducation && !document.getElementById('oscPendidikan').value) {
+            document.getElementById('oscPendidikan').value = emp.lastEducation;
         }
 
         document.getElementById('oscEmpPreview').style.display = 'block';
