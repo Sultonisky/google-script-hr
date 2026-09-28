@@ -2,19 +2,27 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Concerns\SoftDeprecatesSheetsEraCommand;
 use App\Services\Google\GoogleSheetsService;
 use Illuminate\Console\Command;
 
 class AuditNikIntegrityCommand extends Command
 {
+    use SoftDeprecatesSheetsEraCommand;
+
     protected $signature = 'hris:audit-nik
                             {--export : Export hasil audit ke CSV}
-                            {--fix-trailing-zeros : Tandai NIK yang berakhir dengan banyak angka 0 (suspect precision loss)}';
+                            {--fix-trailing-zeros : Tandai NIK yang berakhir dengan banyak angka 0 (suspect precision loss)}
+                            {--force : Jalankan meski SoT sudah pgsql (audit archive Sheets)}';
 
-    protected $description = 'Audit integritas NIK di Google Sheets untuk mendeteksi data corrupt akibat float precision loss';
+    protected $description = '[Sheets-era] Audit NIK di Google Sheets (disabled saat pgsql kecuali --force; NIK hidup di DB)';
 
     public function handle(GoogleSheetsService $sheets): int
     {
+        if ($this->refuseSheetsEraUnlessForced('Audit NIK di DB (employees/candidates) lebih relevan saat SoT=pgsql.')) {
+            return Command::SUCCESS;
+        }
+
         $this->info('🔍 Memulai audit integritas NIK...');
         $this->newLine();
 

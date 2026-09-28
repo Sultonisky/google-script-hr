@@ -2,20 +2,29 @@
 
 namespace App\Console\Commands;
 
-use App\Services\DummyDataService;
+use App\Console\Commands\Concerns\SoftDeprecatesSheetsEraCommand;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
+use App\Services\DummyDataService;
 use Illuminate\Console\Command;
 
 class SeedDummyCommand extends Command
 {
-    protected $signature = 'mito:seed-dummy {--count=50 : Number of candidates to generate per status} {--force : Skip confirmation for destructive operations}';
-    protected $description = 'Generate dummy data for development (candidates, employees, probation, audit logs)';
+    use SoftDeprecatesSheetsEraCommand;
+
+    protected $signature = 'mito:seed-dummy {--count=50 : Number of candidates to generate per status} {--force : Skip confirmation / izinkan saat SoT=pgsql}';
+
+    protected $description = '[Sheets-era] Dummy data ke Google Sheets (disabled saat SoT=pgsql kecuali --force)';
 
     public function handle(DummyDataService $dummyService, AuditLogRepositoryInterface $auditRepo): int
     {
+        if ($this->refuseSheetsEraUnlessForced('SoT=pgsql: jangan seed dummy ke Sheets.')) {
+            return Command::SUCCESS;
+        }
+
         $env = config('app.env');
-        if ($env !== 'local' && !$this->option('force')) {
+        if ($env !== 'local' && ! $this->option('force')) {
             $this->error('Dummy data generation is only allowed in local environment. Use --force to override.');
+
             return Command::FAILURE;
         }
 

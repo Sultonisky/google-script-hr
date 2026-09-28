@@ -2,16 +2,24 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Concerns\SoftDeprecatesSheetsEraCommand;
 use App\Services\SchemaValidationService;
 use Illuminate\Console\Command;
 
 class ValidateSchemaCommand extends Command
 {
-    protected $signature = 'mito:validate-schema {--sheet= : Specific sheet to validate}';
-    protected $description = 'Validate the schema of Google Sheets against expected headers';
+    use SoftDeprecatesSheetsEraCommand;
+
+    protected $signature = 'mito:validate-schema {--sheet= : Specific sheet to validate} {--force : Jalankan meski SoT sudah pgsql}';
+
+    protected $description = '[Sheets-era / archive] Validate Google Sheets headers vs expected schemas';
 
     public function handle(SchemaValidationService $validator): int
     {
+        if ($this->refuseSheetsEraUnlessForced('Archive schema check only. SoT headers live in DB migrations.')) {
+            return Command::SUCCESS;
+        }
+
         $this->info('MITO HRIS Schema Validation');
         $this->line('');
 
