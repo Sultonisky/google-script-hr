@@ -6,14 +6,18 @@ use App\Enums\SkDocumentType;
 use App\Http\Controllers\Controller;
 use App\Repositories\Contracts\EmployeeDocumentRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
+use App\Services\EmployeeDocumentArchiveService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 
 /**
- * Read-only register of issued employee documents (SK, kontrak, paklaring)
- * from Employee_Documents, joined with employee master data.
+ * Register of issued employee documents (SK, kontrak, paklaring) from
+ * Employee_Documents, joined with employee master data, with PDF re-download.
  */
 class DocumentTrackingController extends Controller
 {
@@ -26,7 +30,35 @@ class DocumentTrackingController extends Controller
     public function __construct(
         protected EmployeeDocumentRepositoryInterface $documentRepo,
         protected EmployeeRepositoryInterface $employeeRepo,
+        protected EmployeeDocumentArchiveService $documentArchive,
     ) {}
+
+    /**
+     * Re-download the archived PDF of an issued document; documents issued before
+     * archiving existed are regenerated from their own nomor + issue date.
+     */
+    public function download(string $documentId): Response|RedirectResponse
+    {
+        try {
+            $file = $this->documentArchive->download($documentId, session('hr_user.email', 'HR Administrator'));
+        } catch (\RuntimeException $e) {
+            return redirect()->route('hr.documents.index')->with('document_download_error', $e->getMessage());
+        }
+
+        if (!$file) {
+            abort(404, 'Dokumen tidak ditemukan.');
+        }
+
+        $fallbackName = preg_replace('/[^A-Za-z0-9._-]+/', '_', $file['file_name']) ?: 'dokumen.pdf';
+
+        return new Response($file['content'], 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => HeaderUtils::makeDisposition('attachment', $file['file_name'], $fallbackName),
+            'Content-Length' => strlen($file['content']),
+            'Cache-Control' => 'private, no-store',
+            'X-Document-Source' => $file['source'],
+        ]);
+    }
 
     public function index(Request $request): View
     {
@@ -98,6 +130,7 @@ class DocumentTrackingController extends Controller
         $total = $filtered->count();
         $offset = ($currentPage - 1) * $perPage;
         $rows = $filtered->slice($offset, $perPage)->values();
+        $archiveSources = $this->documentArchive->archiveSources($rows->pluck('documentId')->all());
 
         $documentTypes = collect(SkDocumentType::cases())
             ->mapWithKeys(fn (SkDocumentType $type) => [$type->value => $type->label()])
@@ -116,7 +149,8 @@ class DocumentTrackingController extends Controller
             'periodFilter',
             'sortFilter',
             'documentTypes',
-            'entities'
+            'entities',
+            'archiveSources'
         ));
     }
 

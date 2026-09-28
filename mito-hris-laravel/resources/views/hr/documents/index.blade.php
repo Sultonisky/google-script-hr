@@ -117,6 +117,16 @@
                 </div>
             </form>
 
+            @if (session('document_download_error'))
+                <div class="alert alert-danger mx-3 mt-3 mb-0" role="alert" id="docDownloadError">
+                    <i class="bi bi-exclamation-triangle me-1"></i>{{ session('document_download_error') }}
+                </div>
+            @endif
+
+            @php
+                $canDownloadDocuments = Gate::allows('manage_employees');
+            @endphp
+
             <div class="table-responsive">
                 <table class="table hr-table">
                     <thead>
@@ -129,6 +139,9 @@
                             <th>Entitas</th>
                             <th>Diterbitkan Oleh</th>
                             <th>Referensi</th>
+                            @if ($canDownloadDocuments)
+                                <th>Dokumen</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody id="docTableBody">
@@ -181,10 +194,35 @@
                                             title="{{ $row->notes }}">{{ $row->notes }}</small>
                                     @endif
                                 </td>
+                                @if ($canDownloadDocuments)
+                                    <td class="text-nowrap">
+                                        @php
+                                            $archiveSource = $archiveSources[$row->documentId] ?? null;
+                                        @endphp
+                                        @if ($row->documentId !== '')
+                                            <a href="{{ route('hr.documents.download', ['documentId' => $row->documentId]) }}"
+                                                class="btn btn-sm btn-outline-danger"
+                                                title="{{ $archiveSource ? 'Unduh PDF arsip' : 'Belum ada arsip — PDF dibuat ulang dari nomor & tanggal terbit, lalu diarsipkan' }}">
+                                                <i class="bi bi-file-earmark-pdf me-1"></i>Unduh
+                                            </a>
+                                            <small class="text-muted d-block mt-1">
+                                                @if ($archiveSource === 'export')
+                                                    <i class="bi bi-check-circle text-success"></i> Arsip asli
+                                                @elseif ($archiveSource === 'regenerated')
+                                                    <i class="bi bi-arrow-repeat"></i> Arsip generate ulang
+                                                @else
+                                                    <i class="bi bi-hourglass"></i> Belum diarsipkan
+                                                @endif
+                                            </small>
+                                        @else
+                                            -
+                                        @endif
+                                    </td>
+                                @endif
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8">
+                                <td colspan="{{ $canDownloadDocuments ? 9 : 8 }}">
                                     <div class="table-empty">
                                         <i class="bi bi-inbox"></i>
                                         <p>Belum ada dokumen karyawan yang sesuai filter.</p>

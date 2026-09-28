@@ -123,6 +123,9 @@ if (!app()->environment('local')) {
             });
             Route::prefix('documents')->name('documents.')->middleware('can:view_employees')->group(function () {
                 Route::get('/', [DocumentTrackingController::class, 'index'])->name('index');
+                Route::get('/{documentId}/download', [DocumentTrackingController::class, 'download'])
+                    ->name('download')
+                    ->middleware('can:manage_employees');
             });
             Route::prefix('audit-logs')->name('audit-logs.')->middleware('can:view_reports')->group(function () {
                 Route::get('/', [AuditLogController::class, 'index'])->name('index');
@@ -360,6 +363,9 @@ if (app()->environment('local')) {
 
             Route::prefix('documents')->name('documents.')->middleware('can:view_employees')->group(function () {
                 Route::get('/', [DocumentTrackingController::class, 'index'])->name('index');
+                Route::get('/{documentId}/download', [DocumentTrackingController::class, 'download'])
+                    ->name('download')
+                    ->middleware('can:manage_employees');
             });
 
             Route::prefix('audit-logs')->name('audit-logs.')->middleware('can:view_reports')->group(function () {
