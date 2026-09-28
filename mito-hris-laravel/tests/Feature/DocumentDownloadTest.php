@@ -6,6 +6,7 @@ use App\DTOs\EmployeeData;
 use App\Models\Employee;
 use App\Models\EmployeeDocument;
 use App\Models\EmployeeDocumentFile;
+use App\Models\OutsourceEmployee;
 use App\Services\PdfGeneratorService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -365,34 +366,40 @@ class DocumentDownloadTest extends TestCase
     public function test_outsource_pkwt_tad_is_archived_at_generation(): void
     {
         $this->actingAsRole('Admin');
-        Employee::query()->create([
-            'employee_id' => 'EMP-OS-1',
+        OutsourceEmployee::query()->create([
+            'outsource_id' => 'DM20260001',
             'full_name' => 'Bayu Saputra',
-            'branch_name' => 'PT Mahakarya Sukses Indonesia',
-            'job_position' => 'Operator',
-            'status_employee' => 'Outsource',
+            'entity' => 'PT. Mahakarya Sukses Indonesia',
+            'job_title' => 'SPB/SPG Toko',
+            'vendor' => 'Damarindo',
+            'created_by' => 'test',
         ]);
 
         $response = $this->postJson('/hr/outsource/kontrak-pkwt-tad', [
-            'employee_id' => 'EMP-OS-1',
+            'employee_id' => 'DM20260001',
             'perusahaan' => 'PT Mitra Penempatan',
             'beralamat_di' => 'Jl. Industri No. 1, Tangerang',
             'mulai_tanggal' => '2026-09-01',
             'pendidikan' => 'SMA',
         ])->assertOk();
 
-        $document = EmployeeDocument::query()->where('employee_id', 'EMP-OS-1')->where('doc_code', 'PKWT')->firstOrFail();
+        $document = EmployeeDocument::query()->where('employee_id', 'DM20260001')->where('doc_code', 'PKWT')->firstOrFail();
         $this->assertSame($response->json('contract_number'), $document->nomor);
         $this->assertMatchesRegularExpression('#^\d{3}/PKWT/MSI/[IVX]+/\d{4}$#', $document->nomor);
         $this->assertSame('Kontrak PKWT TAD', $document->doc_type);
 
         $archive = EmployeeDocumentFile::query()->where('document_id', $document->document_id)->firstOrFail();
         $this->assertSame('export', $archive->source);
-        $this->assertSame('PKWT_TAD_Bayu_Saputra_EMP-OS-1.pdf', $archive->file_name);
+        $this->assertSame('PKWT_TAD_Bayu_Saputra_DM20260001.pdf', $archive->file_name);
 
         $this->get('/hr/documents/' . $document->document_id . '/download')
             ->assertOk()
             ->assertHeader('X-Document-Source', 'export');
+
+        EmployeeDocumentFile::query()->where('document_id', $document->document_id)->delete();
+        $this->get('/hr/documents/' . $document->document_id . '/download')
+            ->assertOk()
+            ->assertHeader('X-Document-Source', 'regenerated');
     }
 
     public function test_offboarding_tracks_sko_paklaring_and_surat_bpjs(): void
