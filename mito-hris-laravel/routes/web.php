@@ -111,6 +111,7 @@ if (!app()->environment('local')) {
             Route::prefix('outsource')->name('outsource.')->middleware('can:view_outsource')->group(function () {
                 Route::get('/', [OutsourceController::class, 'index'])->name('index');
                 Route::post('/', [OutsourceController::class, 'store'])->name('store')->middleware('can:manage_outsource');
+                Route::post('/import', [OutsourceController::class, 'import'])->name('import')->middleware('can:manage_outsource');
                 Route::post('/kontrak-pkwt-tad', [OutsourceController::class, 'generateKontrakPkwtTad'])
                     ->name('kontrak-pkwt-tad')
                     ->middleware('can:manage_outsource');
@@ -224,7 +225,7 @@ if (!app()->environment('local')) {
     Route::domain(config('hris.domains.outsource'))->middleware(['web', 'domain'])->group(function () {
         Route::get('/', [OutsourceApplyController::class, 'index'])->name('public.outsource.index');
         Route::get('/apply', [OutsourceApplyController::class, 'index'])->name('public.outsource.apply');
-        Route::post('/apply/nik-check', [OutsourceApplyController::class, 'checkNik'])->middleware('throttle:outsource-apply')->name('public.outsource.nik-check');
+        Route::post('/apply/contact-check', [OutsourceApplyController::class, 'checkContact'])->middleware('throttle:outsource-apply')->name('public.outsource.contact-check');
         Route::post('/apply', [OutsourceApplyController::class, 'store'])->name('public.outsource.store');
         Route::get('/success', [OutsourceApplyController::class, 'success'])->name('public.outsource.success');
     });
@@ -351,6 +352,7 @@ if (app()->environment('local')) {
             Route::prefix('outsource')->name('outsource.')->middleware('can:view_outsource')->group(function () {
                 Route::get('/', [OutsourceController::class, 'index'])->name('index');
                 Route::post('/', [OutsourceController::class, 'store'])->name('store')->middleware('can:manage_outsource');
+                Route::post('/import', [OutsourceController::class, 'import'])->name('import')->middleware('can:manage_outsource');
                 Route::post('/kontrak-pkwt-tad', [OutsourceController::class, 'generateKontrakPkwtTad'])
                     ->name('kontrak-pkwt-tad')
                     ->middleware('can:manage_outsource');
@@ -473,7 +475,7 @@ if (app()->environment('local')) {
 
         Route::get('/outsource', [OutsourceApplyController::class, 'index'])->name('public.outsource.index');
         Route::get('/outsource/apply', [OutsourceApplyController::class, 'index'])->name('public.outsource.apply');
-        Route::post('/outsource/apply/nik-check', [OutsourceApplyController::class, 'checkNik'])->middleware('throttle:outsource-apply')->name('public.outsource.nik-check');
+        Route::post('/outsource/apply/contact-check', [OutsourceApplyController::class, 'checkContact'])->middleware('throttle:outsource-apply')->name('public.outsource.contact-check');
         Route::post('/outsource/apply', [OutsourceApplyController::class, 'store'])->name('public.outsource.store');
         Route::get('/outsource/success', [OutsourceApplyController::class, 'success'])->name('public.outsource.success');
 
