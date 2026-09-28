@@ -135,6 +135,12 @@
                         <i class="bi bi-calendar2-range"></i> Contract Tracking
                     </a>
                 @endcan
+                @can('view_employees')
+                    <a href="{{ route('hr.documents.index') }}"
+                        class="nav-item {{ request()->routeIs('hr.documents.*') ? 'active' : '' }}">
+                        <i class="bi bi-file-earmark-ruled"></i> Document Tracking
+                    </a>
+                @endcan
             @endcanany
 
             <!-- System Section -->
