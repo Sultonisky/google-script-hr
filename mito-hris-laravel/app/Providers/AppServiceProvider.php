@@ -22,13 +22,24 @@ use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\EmployeeDocumentRepositoryInterface;
 use App\Repositories\Contracts\MprRepositoryInterface;
 use App\Repositories\Contracts\MprRequestorRepositoryInterface;
+use App\Repositories\Contracts\ProbationRepositoryInterface;
 use App\Repositories\Contracts\UserPermissionRepositoryInterface;
 use App\Repositories\Contracts\PermissionCatalogRepositoryInterface;
 use App\Repositories\GoogleSheets\UserSheetsRepository;
 use App\Repositories\GoogleSheets\UserPermissionSheetsRepository;
 use App\Repositories\GoogleSheets\PermissionCatalogSheetsRepository;
 use App\Repositories\Database\UserDatabaseRepository;
+use App\Repositories\Database\EmployeeDatabaseRepository;
+use App\Repositories\Database\EmployeeDocumentDatabaseRepository;
+use App\Repositories\Database\ProbationDatabaseRepository;
+use App\Repositories\Database\CandidateDatabaseRepository;
+use App\Repositories\Database\AuditLogDatabaseRepository;
+use App\Repositories\Database\MprDatabaseRepository;
+use App\Repositories\Database\MprRequestorDatabaseRepository;
+use App\Repositories\Database\PermissionCatalogDatabaseRepository;
+use App\Repositories\Database\UserPermissionDatabaseRepository;
 use App\Repositories\Local\ArrayEmployeeDocumentRepository;
+use App\Repositories\Local\ArrayProbationRepository;
 use App\Repositories\Local\ArrayUserPermissionRepository;
 use App\Repositories\Local\StaticPermissionCatalogRepository;
 use App\Repositories\Local\LocalEmployeeRepository;
@@ -38,6 +49,8 @@ use App\Repositories\Sheets\EmployeeDocumentSheetsRepository;
 use App\Repositories\Sheets\EmployeeSheetsRepository;
 use App\Repositories\Sheets\MprSheetsRepository;
 use App\Repositories\Sheets\MprRequestorSheetsRepository;
+use App\Repositories\Sheets\ProbationSheetsRepository;
+use App\Support\HrisDataDriver;
 use App\Support\PermissionCatalog;
 use App\Services\PermissionResolver;
 
@@ -45,29 +58,46 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        // Data source selection is driven by google.enabled config, not APP_ENV.
-        // This decouples data source from environment:
-        // - Local dev with Google Sheets configured → use Sheets repositories
-        // - Testing/CI without Google Sheets → use local/mock repositories
-        // - Production with Google Sheets → use Sheets repositories
-        if (config('google.enabled', false)) {
+        // Structured SoT: HRIS_DATA_DRIVER (sheets|pgsql|local), else GOOGLE_SHEETS_ENABLED.
+        // pgsql binds all core HR domains to Eloquent. Sheets are never overwritten by ETL.
+        $driver = HrisDataDriver::current();
+
+        if ($driver === HrisDataDriver::SHEETS) {
             $this->app->bind(UserRepositoryInterface::class, UserSheetsRepository::class);
             $this->app->singleton(UserPermissionRepositoryInterface::class, UserPermissionSheetsRepository::class);
             $this->app->singleton(PermissionCatalogRepositoryInterface::class, PermissionCatalogSheetsRepository::class);
             $this->app->bind(EmployeeRepositoryInterface::class, EmployeeSheetsRepository::class);
             $this->app->bind(EmployeeDocumentRepositoryInterface::class, EmployeeDocumentSheetsRepository::class);
+            $this->app->bind(ProbationRepositoryInterface::class, ProbationSheetsRepository::class);
+            $this->app->bind(CandidateRepositoryInterface::class, CandidateSheetsRepository::class);
+            $this->app->bind(AuditLogRepositoryInterface::class, AuditLogSheetsRepository::class);
+            $this->app->bind(MprRepositoryInterface::class, MprSheetsRepository::class);
+            $this->app->bind(MprRequestorRepositoryInterface::class, MprRequestorSheetsRepository::class);
+        } elseif ($driver === HrisDataDriver::PGSQL) {
+            $this->app->bind(UserRepositoryInterface::class, UserDatabaseRepository::class);
+            $this->app->singleton(UserPermissionRepositoryInterface::class, UserPermissionDatabaseRepository::class);
+            $this->app->singleton(PermissionCatalogRepositoryInterface::class, PermissionCatalogDatabaseRepository::class);
+            $this->app->bind(EmployeeRepositoryInterface::class, EmployeeDatabaseRepository::class);
+            $this->app->bind(EmployeeDocumentRepositoryInterface::class, EmployeeDocumentDatabaseRepository::class);
+            $this->app->bind(ProbationRepositoryInterface::class, ProbationDatabaseRepository::class);
+            $this->app->bind(CandidateRepositoryInterface::class, CandidateDatabaseRepository::class);
+            $this->app->bind(AuditLogRepositoryInterface::class, AuditLogDatabaseRepository::class);
+            $this->app->bind(MprRepositoryInterface::class, MprDatabaseRepository::class);
+            $this->app->bind(MprRequestorRepositoryInterface::class, MprRequestorDatabaseRepository::class);
         } else {
             $this->app->bind(UserRepositoryInterface::class, UserDatabaseRepository::class);
             $this->app->singleton(UserPermissionRepositoryInterface::class, ArrayUserPermissionRepository::class);
             $this->app->singleton(PermissionCatalogRepositoryInterface::class, StaticPermissionCatalogRepository::class);
             $this->app->bind(EmployeeRepositoryInterface::class, LocalEmployeeRepository::class);
             $this->app->singleton(EmployeeDocumentRepositoryInterface::class, ArrayEmployeeDocumentRepository::class);
+            $this->app->singleton(ProbationRepositoryInterface::class, ArrayProbationRepository::class);
+            // Offline/local keeps Sheets-shaped bindings for domains tests commonly mock.
+            $this->app->bind(CandidateRepositoryInterface::class, CandidateSheetsRepository::class);
+            $this->app->bind(AuditLogRepositoryInterface::class, AuditLogSheetsRepository::class);
+            $this->app->bind(MprRepositoryInterface::class, MprSheetsRepository::class);
+            $this->app->bind(MprRequestorRepositoryInterface::class, MprRequestorSheetsRepository::class);
         }
         $this->app->singleton(PermissionResolver::class);
-        $this->app->bind(CandidateRepositoryInterface::class, CandidateSheetsRepository::class);
-        $this->app->bind(AuditLogRepositoryInterface::class, AuditLogSheetsRepository::class);
-        $this->app->bind(MprRepositoryInterface::class, MprSheetsRepository::class);
-        $this->app->bind(MprRequestorRepositoryInterface::class, MprRequestorSheetsRepository::class);
     }
 
     public function boot(): void
