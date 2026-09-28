@@ -24,6 +24,9 @@
                             Gaji Pokok, Insentif 30%, Remarks.</li>
                         <li>Data dengan ID yang sudah ada akan <strong>diperbarui</strong>; sel kosong tidak menimpa data lama.</li>
                         <li>Baris tanpa ID dicocokkan lewat No WA/email; jika tidak ada, dibuat baru dengan ID berikutnya.</li>
+                        @cannot('manage_outsource_compensation')
+                            <li class="text-danger">Kolom Gaji Pokok, Insentif 30%, dan Remarks (T–V) akan diabaikan karena Anda tidak memiliki izin mengelola kolom tersebut.</li>
+                        @endcannot
                     </ul>
                 </div>
 
