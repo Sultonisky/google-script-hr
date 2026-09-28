@@ -8,7 +8,6 @@ use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Services\EmployeeIdGenerator;
 use App\Services\Google\GoogleDriveService;
-use App\Services\Google\GoogleSheetsService;
 use App\Services\PdfGeneratorService;
 use App\Services\ProbationService;
 use Illuminate\Support\Carbon;
@@ -27,7 +26,6 @@ class EmployeeService
         EmployeeIdGenerator $idGenerator,
         private GoogleDriveService $driveService,
         private PdfGeneratorService $pdfService,
-        private GoogleSheetsService $sheets,
         private SkNumberService $skNumbers
     ) {
         $this->employeeRepo = $employeeRepo;
@@ -151,14 +149,13 @@ class EmployeeService
             updatedAt: $nowStr,
         );
 
-        // --- Tulis ke Google Sheets ---
-        $sheetName = config('google.sheets.employees', 'Employee');
-        $wrote = $this->sheets->appendRow($sheetName, $employee->toSheetRow());
-
-        if (!$wrote) {
+        // Persist via active data driver (DB when HRIS_DATA_DRIVER=pgsql).
+        try {
+            $this->employeeRepo->create($employee);
+        } catch (\Throwable $e) {
             return [
                 'success'    => false,
-                'message'    => 'Gagal menyimpan data karyawan ke Google Sheets. Silakan coba kembali.',
+                'message'    => 'Gagal menyimpan data karyawan. Silakan coba kembali.',
                 'employeeId' => null,
             ];
         }
@@ -183,7 +180,7 @@ class EmployeeService
     }
 
     /**
-     * Preview import — validate rows and check duplicates WITHOUT writing to Google Sheets.
+     * Preview import — validate rows and check duplicates WITHOUT writing.
      * 1:1 with GAS importEmployees() validation logic, minus the batch write.
      *
      * Returns per-row classification: new | duplicate_existing | duplicate_internal | invalid
@@ -345,7 +342,6 @@ class EmployeeService
         $errors = [];
         $warnings = [];
         $imported = 0;
-        $sheetRows = [];
 
         $existingEmployees = $this->employeeRepo->getAll();
         $existingIds = $existingEmployees->pluck('employeeId')->filter()->map('strtoupper')->toArray();
@@ -375,7 +371,7 @@ class EmployeeService
             $rawId = trim($row['employeeId'] ?? $row['empId'] ?? $row['idKaryawan'] ?? '');
             if ($rawId) {
                 if (in_array(strtoupper($rawId), $existingIds)) {
-                    $errors[] = "Baris {$rowNum}: Employee ID '{$rawId}' sudah ada di sheet.";
+                    $errors[] = "Baris {$rowNum}: Employee ID '{$rawId}' sudah ada.";
                     continue;
                 }
                 $empId = $rawId;
@@ -447,22 +443,12 @@ class EmployeeService
                 updatedAt: now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
             );
 
-            $sheetRows[] = $employee->toSheetRow();
-            $imported++;
-        }
-
-        if (!empty($sheetRows)) {
-            $sheetName = config('google.sheets.employees', 'Employee');
-            $wrote = $this->sheets->appendRows($sheetName, $sheetRows);
-
-            if (!$wrote) {
-                return [
-                    'success' => false,
-                    'imported' => 0,
-                    'errors' => ['Gagal menulis data karyawan ke Google Sheets.'],
-                    'warnings' => $warnings,
-                    'message' => 'Gagal menulis data karyawan ke Google Sheets.'
-                ];
+            try {
+                $this->employeeRepo->create($employee);
+                $existingIds[] = strtoupper($empId);
+                $imported++;
+            } catch (\Throwable $e) {
+                $errors[] = "Baris {$rowNum}: Gagal menyimpan karyawan ({$fullName}).";
             }
         }
 
