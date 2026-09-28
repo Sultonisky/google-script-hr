@@ -54,9 +54,11 @@ class ExportController extends Controller
      */
     private function archiveIssuedPdf(string $employeeId, SkDocumentType $type, array $extraData, string $content, string $filename): void
     {
-        $nomor = (string) ($type->isContract()
-            ? ($extraData['contract_number'] ?? $extraData['contractNumber'] ?? $extraData['sk_number'] ?? '')
-            : ($extraData['sk_number'] ?? $extraData['skNumber'] ?? ''));
+        $nomor = (string) match (true) {
+            !$type->isNumbered() => '',
+            $type->isContract() => $extraData['contract_number'] ?? $extraData['contractNumber'] ?? $extraData['sk_number'] ?? '',
+            default => $extraData['sk_number'] ?? $extraData['skNumber'] ?? '',
+        };
 
         $this->documentArchive->capture(
             $employeeId,
@@ -254,7 +256,9 @@ class ExportController extends Controller
         $extraData = $request->except(['sk_number', 'skNumber', 'letter_number']);
         $pdf = $this->pdfService->generateSuratBpjsPdf($employee, $extraData);
         $this->auditRepo->log('Employee', $employee->employeeId, 'generated', 'surat_bpjs', null, 'PDF', session('hr_user.email', 'HR Administrator'), 'Export');
-        return $pdf->download("Surat_BPJS_{$this->employeeDocumentStem($employee)}.pdf");
+        $filename = "Surat_BPJS_{$this->employeeDocumentStem($employee)}.pdf";
+        $this->archiveIssuedPdf($employee->employeeId, SkDocumentType::SURAT_BPJS, $extraData, $pdf->output(), $filename);
+        return $pdf->download($filename);
     }
 
     /**
@@ -290,6 +294,7 @@ class ExportController extends Controller
         ];
         $this->archiveIssuedPdf($employee->employeeId, SkDocumentType::OFFBOARDING, $skOffData, $documents["SK_Offboarding_{$fileStem}.pdf"], "SK_Offboarding_{$fileStem}.pdf");
         $this->archiveIssuedPdf($employee->employeeId, SkDocumentType::PAKLARING, $pakData, $documents["Paklaring_{$fileStem}.pdf"], "Paklaring_{$fileStem}.pdf");
+        $this->archiveIssuedPdf($employee->employeeId, SkDocumentType::SURAT_BPJS, $bpjsData, $documents["Surat_BPJS_{$fileStem}.pdf"], "Surat_BPJS_{$fileStem}.pdf");
 
         $zipPath = tempnam(storage_path('app'), 'offboarding_');
         $zip = new \ZipArchive();

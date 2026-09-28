@@ -150,7 +150,7 @@
                                 $typeBadgeClass = match ($row->docCode) {
                                     'PKWT' => 'hold',
                                     'SKP' => 'accepted',
-                                    'SKO', 'SPAK' => 'blacklist',
+                                    'SKO', 'SPAK', 'BPJS' => 'blacklist',
                                     default => 'pending',
                                 };
                             @endphp

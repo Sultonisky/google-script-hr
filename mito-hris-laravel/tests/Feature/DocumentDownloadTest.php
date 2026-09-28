@@ -304,6 +304,70 @@ class DocumentDownloadTest extends TestCase
             ->assertHeader('X-Document-Source', 'export');
     }
 
+    public function test_offboarding_tracks_sko_paklaring_and_surat_bpjs(): void
+    {
+        $this->actingAsRole('Admin');
+        Employee::query()->create([
+            'employee_id' => 'EMP-OFF-1',
+            'full_name' => 'Yuri Ismawan',
+            'branch_name' => 'PT Mahakarya Sukses Indonesia',
+            'job_position' => 'Staff Gudang',
+            'status_employee' => 'PKWTT',
+            'join_date' => '2024-02-01',
+        ]);
+
+        $this->postJson('/hr/employees/EMP-OFF-1/offboard', [
+            'offboarding_type' => 'Resignation',
+            'reason' => 'Melanjutkan studi',
+            'last_working_date' => '2026-09-30',
+        ])->assertOk()->assertJson(['success' => true]);
+
+        $docs = EmployeeDocument::query()->where('employee_id', 'EMP-OFF-1')->orderBy('id')->get();
+        $this->assertSame(['SKO', 'SPAK', 'BPJS'], $docs->pluck('doc_code')->all());
+        $bpjs = $docs->firstWhere('doc_code', 'BPJS');
+        $this->assertSame('', (string) $bpjs->nomor);
+        $this->assertSame('Surat Keterangan BPJS', $bpjs->doc_type);
+        $this->assertStringContainsString('/SPAK/', (string) Employee::query()->where('employee_id', 'EMP-OFF-1')->value('nomor_sk'));
+
+        $this->get('/hr/export/offboarding-bundle/EMP-OFF-1')->assertOk();
+        $this->assertEqualsCanonicalizing(
+            $docs->pluck('document_id')->all(),
+            EmployeeDocumentFile::query()->where('employee_id', 'EMP-OFF-1')->where('source', 'export')->pluck('document_id')->all()
+        );
+
+        $this->get('/hr/documents?search=EMP-OFF-1')
+            ->assertOk()
+            ->assertSee('SK Offboarding')
+            ->assertSee('Paklaring')
+            ->assertSee('Surat Keterangan BPJS')
+            ->assertSee(route('hr.documents.download', ['documentId' => $bpjs->document_id]), false);
+
+        $this->get('/hr/documents/' . $bpjs->document_id . '/download')
+            ->assertOk()
+            ->assertHeader('X-Document-Source', 'export')
+            ->assertHeader('Content-Type', 'application/pdf');
+    }
+
+    public function test_backfill_records_surat_bpjs_for_past_offboarding_once(): void
+    {
+        $this->document('DOC-20260928-001-SKO', 'SKO', 'SK Offboarding', '001/SKO/MSI/IX/2026', '2026-09-28 11:15:20');
+        $this->document('DOC-20260928-001-SPAK', 'SPAK', 'Paklaring', '001/SPAK/MSI/IX/2026', '2026-09-28 11:15:20');
+        $this->document('DOC-20260310-007-SKP', 'SKP', 'SK Pengangkatan', '007/SKP/MSI/III/2026', '2026-03-10 09:00:00', 'EMP-OTHER');
+
+        $this->artisan('mito:backfill-offboarding-bpjs', ['--dry-run' => true])->assertSuccessful();
+        $this->assertSame(0, EmployeeDocument::query()->where('doc_code', 'BPJS')->count());
+
+        $this->artisan('mito:backfill-offboarding-bpjs')->assertSuccessful();
+        $this->artisan('mito:backfill-offboarding-bpjs')->assertSuccessful();
+
+        $bpjs = EmployeeDocument::query()->where('doc_code', 'BPJS')->get();
+        $this->assertCount(1, $bpjs);
+        $this->assertSame('EMP-DL-1', $bpjs[0]->employee_id);
+        $this->assertSame('DOC-20260928-007-BPJS', $bpjs[0]->document_id);
+        $this->assertSame('2026-09-28 11:15:20', $bpjs[0]->issued_at);
+        $this->assertSame('', (string) $bpjs[0]->nomor);
+    }
+
     public function test_tracking_page_shows_download_button_and_archive_status(): void
     {
         $this->actingAsRole('Admin');

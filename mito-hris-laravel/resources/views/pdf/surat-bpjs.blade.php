@@ -97,7 +97,7 @@
         $companyName = $company['name'] ?? 'PT MAHAKARYA SUKSES INDONESIA';
         $companyAddr = $company['address'] ?? '-';
         $companyCity = $company['city'] ?? 'Jakarta';
-        $todayFmt = date('d F Y');
+        $todayFmt = date('d F Y', strtotime((string) ($extraData['doc_date'] ?? '')) ?: time());
     @endphp
 
     <div class="doc-title">SURAT KETERANGAN</div>

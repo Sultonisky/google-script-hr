@@ -42,12 +42,15 @@ class EmployeeDocumentArchiveService
         try {
             $employeeId = ltrim(trim($employeeId), "'");
             $nomor = trim($nomor);
-            if ($employeeId === '' || $nomor === '') {
+            if ($employeeId === '' || ($type->isNumbered() && $nomor === '')) {
                 return null;
             }
 
             $document = $this->documents->getLatestByEmployeeAndType($employeeId, $type->value);
-            if (!$document || trim((string) ($document['Nomor'] ?? '')) !== $nomor) {
+            if (!$document) {
+                return null;
+            }
+            if ($type->isNumbered() && trim((string) ($document['Nomor'] ?? '')) !== $nomor) {
                 return null;
             }
 
@@ -246,6 +249,13 @@ class EmployeeDocumentArchiveService
                     'last_working_date' => $employee->resignDate ?: $issuedAt->format('Y-m-d'),
                 ]),
                 "Paklaring_{$stem}.pdf",
+            ],
+            SkDocumentType::SURAT_BPJS => [
+                $this->pdfService->generateSuratBpjsPdf($employee, [
+                    'doc_date' => $extraData['doc_date'],
+                    'last_working_date' => $employee->resignDate ?: $issuedAt->format('Y-m-d'),
+                ]),
+                "Surat_BPJS_{$stem}.pdf",
             ],
         };
     }
