@@ -25,6 +25,7 @@
         <env name="DB_CONNECTION" value="sqlite"/>
         <env name="DB_DATABASE" value=":memory:"/>
         <env name="GOOGLE_SHEETS_ENABLED" value="false"/>
+        <env name="HRIS_DATA_DRIVER" value=""/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="QUEUE_CONNECTION" value="sync"/>

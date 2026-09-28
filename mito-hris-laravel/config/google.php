@@ -5,9 +5,9 @@ return [
     |--------------------------------------------------------------------------
     | Google Sheets Integration Enabled
     |--------------------------------------------------------------------------
-    | When true, the application uses Google Sheets repositories for data
-    | access. When false, local/database repositories are used.
-    | This decouples data source selection from APP_ENV.
+    | Legacy switch used when HRIS_DATA_DRIVER is empty: true→sheets, false→local.
+    | Preferred cutover: set HRIS_DATA_DRIVER=pgsql. Sheets then act as archive/mirror
+    | (Drive still used for files). GOOGLE_SHEETS_ENABLED may stay true for API access.
     */
     'enabled' => env('GOOGLE_SHEETS_ENABLED', false),
 

@@ -1,6 +1,21 @@
 <?php
 
 return [
+    /*
+    |--------------------------------------------------------------------------
+    | HRIS structured-data driver
+    |--------------------------------------------------------------------------
+    | Source of truth for employees, candidates, MPR, audit, documents, etc.
+    | - pgsql  : PostgreSQL (preferred SoT after cutover; never overwrites Spreadsheet)
+    | - sheets : Google Sheets (legacy SoT / archive when GOOGLE_SHEETS_ENABLED)
+    | - local  : in-memory / SQLite Eloquent fallbacks for tests & offline
+    |
+    | When null/empty, derived from GOOGLE_SHEETS_ENABLED (true→sheets, false→local).
+    | Cutover = set HRIS_DATA_DRIVER=pgsql after read-only ETL. Sheets stay as archive.
+    | Mirror archive back: php artisan mito:etl-db-to-sheets
+    */
+    'data_driver' => env('HRIS_DATA_DRIVER'),
+
     'domains' => [
         'hris' => env('HRIS_DOMAIN', 'hrismitogroup.web.id'),
         'mpr' => env('MPR_DOMAIN', 'mpr.hrismitogroup.web.id'),
