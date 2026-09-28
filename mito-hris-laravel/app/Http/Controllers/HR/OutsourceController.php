@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\HR;
 
+use App\Enums\SkDocumentType;
 use App\Http\Controllers\Controller;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
+use App\Services\EmployeeDocumentArchiveService;
 use App\Services\EmployeeService;
 use App\Services\OutsourceContractService;
 use App\Services\PdfGeneratorService;
@@ -22,19 +24,22 @@ class OutsourceController extends Controller
     protected OutsourceContractService $contractService;
     protected PdfGeneratorService $pdfService;
     protected AuditLogRepositoryInterface $auditRepo;
+    protected EmployeeDocumentArchiveService $documentArchive;
 
     public function __construct(
         EmployeeRepositoryInterface $employeeRepo,
         EmployeeService $employeeService,
         OutsourceContractService $contractService,
         PdfGeneratorService $pdfService,
-        AuditLogRepositoryInterface $auditRepo
+        AuditLogRepositoryInterface $auditRepo,
+        EmployeeDocumentArchiveService $documentArchive
     ) {
         $this->employeeRepo    = $employeeRepo;
         $this->employeeService = $employeeService;
         $this->contractService = $contractService;
         $this->pdfService      = $pdfService;
         $this->auditRepo       = $auditRepo;
+        $this->documentArchive = $documentArchive;
     }
 
     public function index(Request $request): View
@@ -198,11 +203,22 @@ class OutsourceController extends Controller
         ];
 
         $token = (string) Str::uuid();
+        $safeName = preg_replace('/[^a-zA-Z0-9_-]+/', '_', $employee->fullName ?? 'Outsource');
         Cache::put('osc_pkwt_tad_' . $token, [
             'employee_id' => $employee->employeeId,
             'extra_data'  => $extraData,
-            'safe_name'   => preg_replace('/[^a-zA-Z0-9_-]+/', '_', $employee->fullName ?? 'Outsource'),
+            'safe_name'   => $safeName,
         ], now()->addMinutes(15));
+
+        // Archive now: the download token expires after 15 minutes.
+        $this->documentArchive->capture(
+            $employee->employeeId,
+            SkDocumentType::PKTAD,
+            $alloc['contract_number'],
+            fn () => $this->pdfService->generateKontrakPkwtTadPdf($employee, $extraData)->output(),
+            "PKWT_TAD_{$safeName}_{$employee->employeeId}.pdf",
+            $this->hrUserName()
+        );
 
         $this->auditRepo->log(
             'Outsource',

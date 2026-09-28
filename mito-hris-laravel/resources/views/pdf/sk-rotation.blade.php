@@ -255,7 +255,8 @@
     $companyCity  = $company['city']    ?? 'Tangerang';
 
     // ── Issue Date ──
-    $issueDateFmt = date('j') . ' ' . $bulanId[(int)date('n') - 1] . ' ' . date('Y');
+    $docTs = strtotime((string) ($extraData['doc_date'] ?? '')) ?: time();
+    $issueDateFmt = date('j', $docTs) . ' ' . $bulanId[(int)date('n', $docTs) - 1] . ' ' . date('Y', $docTs);
 
     // ── Type-aware wording maps ──
     // Diperlukan agar MENIMBANG, DIKTUM KESATU, dan wording tabel berbeda per jenis

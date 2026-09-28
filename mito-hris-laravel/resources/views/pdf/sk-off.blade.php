@@ -112,7 +112,7 @@
         $statusEmp = $employee->statusEmployee ?? 'Karyawan';
         $companyName = $company['name'] ?? 'PT MAHAKARYA SUKSES INDONESIA';
         $companyCity = $company['city'] ?? 'Jakarta';
-        $todayFmt = date('d F Y');
+        $todayFmt = date('d F Y', strtotime((string) ($extraData['doc_date'] ?? '')) ?: time());
 
         // Deteksi apakah status Permanent untuk kalimat "Karyawan Tetap"
         $statusLabel = in_array(strtoupper($statusEmp), ['PKWTT', 'PERMANENT']) ? 'Karyawan Tetap' : 'Karyawan';

@@ -7,6 +7,7 @@ use App\Enums\SkDocumentType;
 use App\Repositories\Contracts\CandidateRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
+use App\Services\EmployeeDocumentArchiveService;
 use App\Services\PdfGeneratorService;
 use App\Services\ProbationService;
 use App\Services\SkNumberService;
@@ -28,6 +29,7 @@ class ExportController extends Controller
     protected ProbationService $probationService;
     protected AuditLogRepositoryInterface $auditRepo;
     protected SkNumberService $skNumbers;
+    protected EmployeeDocumentArchiveService $documentArchive;
 
     public function __construct(
         CandidateRepositoryInterface $candidateRepo,
@@ -35,7 +37,8 @@ class ExportController extends Controller
         PdfGeneratorService $pdfService,
         ProbationService $probationService,
         AuditLogRepositoryInterface $auditRepo,
-        SkNumberService $skNumbers
+        SkNumberService $skNumbers,
+        EmployeeDocumentArchiveService $documentArchive
     ) {
         $this->candidateRepo    = $candidateRepo;
         $this->employeeRepo     = $employeeRepo;
@@ -43,6 +46,26 @@ class ExportController extends Controller
         $this->probationService = $probationService;
         $this->auditRepo = $auditRepo;
         $this->skNumbers = $skNumbers;
+        $this->documentArchive = $documentArchive;
+    }
+
+    /**
+     * Keep the first rendered PDF of an issued document for re-download from Document Tracking.
+     */
+    private function archiveIssuedPdf(string $employeeId, SkDocumentType $type, array $extraData, string $content, string $filename): void
+    {
+        $nomor = (string) ($type->isContract()
+            ? ($extraData['contract_number'] ?? $extraData['contractNumber'] ?? $extraData['sk_number'] ?? '')
+            : ($extraData['sk_number'] ?? $extraData['skNumber'] ?? ''));
+
+        $this->documentArchive->capture(
+            $employeeId,
+            $type,
+            $nomor,
+            $content,
+            $filename,
+            session('hr_user.email', 'HR Administrator')
+        );
     }
 
     private function employeeDocumentStem($employee): string
@@ -166,6 +189,9 @@ class ExportController extends Controller
         // Gunakan download() agar browser menerima disposition attachment
         // dan Content-Type application/pdf — dibutuhkan oleh Fetch+Blob di frontend.
         $this->auditRepo->log($employee ? 'Employee' : 'Candidate', $nameId, 'generated', 'contract', null, 'PDF', session('hr_user.email', 'HR Administrator'), 'Export');
+        if ($employee) {
+            $this->archiveIssuedPdf($employee->employeeId, SkDocumentType::PKWT, $extraData, $pdf->output(), "Kontrak_PKWT_{$nameId}.pdf");
+        }
         return $pdf->download("Kontrak_PKWT_{$nameId}.pdf");
     }
 
@@ -187,6 +213,7 @@ class ExportController extends Controller
         );
         $pdf = $this->pdfService->generateSkPengangkatanPdf($employee, $extraData);
         $this->auditRepo->log('Employee', $employee->employeeId, 'generated', 'sk_pengangkatan', null, 'PDF', session('hr_user.email', 'HR Administrator'), 'Export');
+        $this->archiveIssuedPdf($employee->employeeId, SkDocumentType::PENGANGKATAN, $extraData, $pdf->output(), "SK_Pengangkatan_{$employee->employeeId}.pdf");
         return $pdf->download("SK_Pengangkatan_{$employee->employeeId}.pdf");
     }
 
@@ -208,7 +235,9 @@ class ExportController extends Controller
         );
         $pdf = $this->pdfService->generateSkOffPdf($employee, $extraData);
         $this->auditRepo->log('Employee', $employee->employeeId, 'generated', 'sk_offboarding', null, 'PDF', session('hr_user.email', 'HR Administrator'), 'Export');
-        return $pdf->download("SK_Offboarding_{$this->employeeDocumentStem($employee)}.pdf");
+        $filename = "SK_Offboarding_{$this->employeeDocumentStem($employee)}.pdf";
+        $this->archiveIssuedPdf($employee->employeeId, SkDocumentType::OFFBOARDING, $extraData, $pdf->output(), $filename);
+        return $pdf->download($filename);
     }
 
     /**
@@ -259,6 +288,8 @@ class ExportController extends Controller
             "Surat_BPJS_{$fileStem}.pdf" => $this->pdfService->generateSuratBpjsPdf($employee, $bpjsData)->output(),
             "Paklaring_{$fileStem}.pdf" => $this->pdfService->generatePaklaringPdf($employee, $pakData)->output(),
         ];
+        $this->archiveIssuedPdf($employee->employeeId, SkDocumentType::OFFBOARDING, $skOffData, $documents["SK_Offboarding_{$fileStem}.pdf"], "SK_Offboarding_{$fileStem}.pdf");
+        $this->archiveIssuedPdf($employee->employeeId, SkDocumentType::PAKLARING, $pakData, $documents["Paklaring_{$fileStem}.pdf"], "Paklaring_{$fileStem}.pdf");
 
         $zipPath = tempnam(storage_path('app'), 'offboarding_');
         $zip = new \ZipArchive();
@@ -312,6 +343,7 @@ class ExportController extends Controller
 
         $pdf = $this->pdfService->generateSkRotationPdf($employee, $extraData);
         $this->auditRepo->log('Employee', $employee->employeeId, 'generated', 'sk_rotation', null, 'PDF', session('hr_user.email', 'HR Administrator'), 'Export');
+        $this->archiveIssuedPdf($employee->employeeId, SkDocumentType::fromRotationType((string) $rotationType), $extraData, $pdf->output(), $filename);
         return $pdf->download($filename);
     }
 
@@ -346,7 +378,9 @@ class ExportController extends Controller
 
         $pdf = $this->pdfService->generatePaklaringPdf($employee, $extraData);
         $this->auditRepo->log('Employee', $employee->employeeId, 'generated', 'paklaring', null, 'PDF', session('hr_user.email', 'HR Administrator'), 'Export');
-        return $pdf->download("Paklaring_{$this->employeeDocumentStem($employee)}.pdf");
+        $filename = "Paklaring_{$this->employeeDocumentStem($employee)}.pdf";
+        $this->archiveIssuedPdf($employee->employeeId, SkDocumentType::PAKLARING, $extraData, $pdf->output(), $filename);
+        return $pdf->download($filename);
     }
 
     /**

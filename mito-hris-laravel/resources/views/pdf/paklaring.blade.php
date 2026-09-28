@@ -134,7 +134,8 @@
         $companyName = $company['name'] ?? 'PT MAHAKARYA SUKSES INDONESIA';
 
         // todayStr: 1:1 GAS — format "d Bulan YYYY"
-        $todayStr = date('j') . ' ' . $bulanId[(int) date('n') - 1] . ' ' . date('Y');
+        $docTs = strtotime((string) ($extraData['doc_date'] ?? '')) ?: time();
+        $todayStr = date('j', $docTs) . ' ' . $bulanId[(int) date('n', $docTs) - 1] . ' ' . date('Y', $docTs);
 
         // city: 1:1 GAS — HARDCODED 'Jakarta' in exportPaklaringPDF
         // GAS: doc.text('Jakarta, ' + todayStr, sigX, yPos)
