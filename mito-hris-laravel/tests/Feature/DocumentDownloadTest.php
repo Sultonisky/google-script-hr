@@ -263,12 +263,103 @@ class DocumentDownloadTest extends TestCase
         $this->get('/hr/documents/DOC-UNKNOWN/download')->assertNotFound();
     }
 
-    public function test_user_without_manage_employees_cannot_download(): void
+    public function test_user_without_document_permissions_cannot_download(): void
     {
         $this->document('DOC-20260310-007-SKP', 'SKP', 'SK Pengangkatan', '007/SKP/MSI/III/2026', '2026-03-10 09:00:00');
         $this->actingAsRole('User');
 
         $this->get('/hr/documents/DOC-20260310-007-SKP/download')->assertForbidden();
+    }
+
+    private function actingWithPermissions(array $permissions): void
+    {
+        $email = 'custom.user@mito.id';
+        $repository = app(\App\Repositories\Contracts\UserPermissionRepositoryInterface::class);
+        foreach ($permissions as $permission) {
+            $repository->upsert($email, $permission, true, 'test');
+        }
+        app(\App\Services\PermissionResolver::class)->forget($email);
+
+        Session::put('hr_user', [
+            'email' => $email,
+            'fullName' => 'Custom User',
+            'role' => 'User',
+            'permissions' => $permissions,
+            'auth_domain' => 'users',
+            'entities' => [],
+            'branch' => '',
+        ]);
+    }
+
+    public function test_employee_permissions_alone_no_longer_open_document_tracking(): void
+    {
+        $this->document('DOC-20260310-007-SKP', 'SKP', 'SK Pengangkatan', '007/SKP/MSI/III/2026', '2026-03-10 09:00:00');
+        $this->actingWithPermissions(['view_employees', 'manage_employees']);
+
+        $this->get('/hr/documents')->assertForbidden();
+        $this->get('/hr/documents/DOC-20260310-007-SKP/download')->assertForbidden();
+    }
+
+    public function test_view_documents_without_download_hides_button_and_forbids_download(): void
+    {
+        $this->document('DOC-20260310-007-SKP', 'SKP', 'SK Pengangkatan', '007/SKP/MSI/III/2026', '2026-03-10 09:00:00');
+        $this->actingWithPermissions(['view_documents']);
+
+        $this->get('/hr/documents')
+            ->assertOk()
+            ->assertSee('007/SKP/MSI/III/2026')
+            ->assertDontSee(route('hr.documents.download', ['documentId' => 'DOC-20260310-007-SKP']), false);
+        $this->get('/hr/documents/DOC-20260310-007-SKP/download')->assertForbidden();
+    }
+
+    public function test_download_documents_permission_allows_download(): void
+    {
+        $this->document('DOC-20260310-007-SKP', 'SKP', 'SK Pengangkatan', '007/SKP/MSI/III/2026', '2026-03-10 09:00:00');
+        $this->actingWithPermissions(['view_documents', 'download_documents']);
+
+        $this->get('/hr/documents')
+            ->assertOk()
+            ->assertSee(route('hr.documents.download', ['documentId' => 'DOC-20260310-007-SKP']), false);
+        $this->get('/hr/documents/DOC-20260310-007-SKP/download')
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
+    }
+
+    public function test_grant_document_access_carries_over_legacy_access_and_respects_revokes(): void
+    {
+        foreach (['viewer@mito.id', 'manager@mito.id', 'revoked@mito.id', 'plain@mito.id'] as $email) {
+            \App\Models\User::query()->create([
+                'name' => $email, 'email' => $email, 'password' => 'x', 'role' => 'Admin', 'status' => 'Active',
+            ]);
+        }
+        $repository = app(\App\Repositories\Contracts\UserPermissionRepositoryInterface::class);
+        $repository->upsert('viewer@mito.id', 'view_employees', true, 'seed');
+        $repository->upsert('manager@mito.id', 'view_employees', true, 'seed');
+        $repository->upsert('manager@mito.id', 'manage_employees', true, 'seed');
+        $repository->upsert('revoked@mito.id', 'view_employees', true, 'seed');
+        $repository->upsert('revoked@mito.id', 'manage_employees', true, 'seed');
+        $repository->upsert('revoked@mito.id', 'view_documents', false, 'admin');
+        $repository->upsert('plain@mito.id', 'view_contracts', true, 'seed');
+
+        $granted = fn (string $email): array => collect($repository->mappingsForUser($email))
+            ->filter(fn (array $row): bool => $row['Granted'] === 'TRUE')
+            ->pluck('Permission Key')
+            ->intersect(['view_documents', 'download_documents'])
+            ->values()
+            ->all();
+
+        $this->artisan('mito:permissions:grant-document-access', ['--dry-run' => true])->assertSuccessful();
+        $this->assertSame([], $granted('manager@mito.id'));
+
+        $this->artisan('mito:permissions:grant-document-access')->assertSuccessful();
+        $this->assertSame(['view_documents'], $granted('viewer@mito.id'));
+        $this->assertEqualsCanonicalizing(['view_documents', 'download_documents'], $granted('manager@mito.id'));
+        $this->assertSame([], $granted('revoked@mito.id'));
+        $this->assertSame([], $granted('plain@mito.id'));
+
+        $this->artisan('mito:permissions:grant-document-access')
+            ->expectsOutputToContain('Mappings created: 0')
+            ->assertSuccessful();
     }
 
     public function test_outsource_pkwt_tad_is_archived_at_generation(): void
