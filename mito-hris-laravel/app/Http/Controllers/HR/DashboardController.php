@@ -23,13 +23,13 @@ class DashboardController extends Controller
             return redirect()->route('hr.mpr.create');
         }
 
-        $allCandidates = $this->candidateRepo->getAllFromSheets();
+        $allCandidates = $this->candidateRepo->listByLifecycle();
 
-        $pendingCandidates = $this->candidateRepo->getAllFromSheets(['candidates']);
-        $holdCandidates = $this->candidateRepo->getAllFromSheets(['candidates_hold']);
-        $blacklistCandidates = $this->candidateRepo->getAllFromSheets(['candidates_blacklist']);
-        $acceptedCandidates = $this->candidateRepo->getAllFromSheets(['candidates_accepted']);
-        $probationCandidates = $this->candidateRepo->getAllFromSheets(['candidates_probation']);
+        $pendingCandidates = $this->candidateRepo->listByLifecycle(['candidates']);
+        $holdCandidates = $this->candidateRepo->listByLifecycle(['candidates_hold']);
+        $blacklistCandidates = $this->candidateRepo->listByLifecycle(['candidates_blacklist']);
+        $acceptedCandidates = $this->candidateRepo->listByLifecycle(['candidates_accepted']);
+        $probationCandidates = $this->candidateRepo->listByLifecycle(['candidates_probation']);
 
         $stats = [
             'total'     => $allCandidates->count(),

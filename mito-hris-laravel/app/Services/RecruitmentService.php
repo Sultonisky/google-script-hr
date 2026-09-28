@@ -264,7 +264,7 @@ class RecruitmentService
             $extraData['HR Notes'] = $notes;
         }
 
-        $success = $this->candidateRepo->moveToSheet($recruitmentId, 'candidates_hold', $extraData);
+        $success = $this->candidateRepo->moveToHold($recruitmentId, $extraData);
         if ($success) {
             event(new CandidateStatusChanged($recruitmentId, $oldStatus, CandidateStatus::HOLD->value, "Hold: {$reason}", $user));
         }
@@ -295,7 +295,7 @@ class RecruitmentService
             $extraData['HR Notes'] = $notes;
         }
 
-        $success = $this->candidateRepo->moveToSheet($recruitmentId, 'candidates_blacklist', $extraData);
+        $success = $this->candidateRepo->moveToBlacklist($recruitmentId, $extraData);
         if ($success) {
             event(new CandidateStatusChanged($recruitmentId, $oldStatus, CandidateStatus::BLACKLIST->value, "Blacklist: {$reason}", $user));
         }
@@ -328,7 +328,7 @@ class RecruitmentService
             'Processed By'   => $user,
         ];
 
-        $success = $this->candidateRepo->moveToSheet($recruitmentId, 'candidates_accepted', $extraData);
+        $success = $this->candidateRepo->moveToAccepted($recruitmentId, $extraData);
 
         if ($success) {
             event(new CandidateStatusChanged($recruitmentId, $oldStatus, CandidateStatus::ACCEPTED->value, 'Accepted', $user));
