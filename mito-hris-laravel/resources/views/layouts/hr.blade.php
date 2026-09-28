@@ -519,9 +519,10 @@
         // EDIT EMPLOYEE — populate modal dari data drawer aktif
         // 1:1 dengan GAS empOpenEdit() di js/employee.html
         // ===========================================================
-        function empOpenEdit(emp) {
+        function empOpenEdit(emp, mode) {
             if (!emp) emp = window._activeDrawerEmployee;
             if (!emp) return;
+            window._empEditMode = mode === 'outsource' ? 'outsource' : 'employee';
 
             // Update judul modal
             var titleEl = document.getElementById('empFormTitle');
@@ -744,7 +745,8 @@
                 btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Menyimpan...';
             }
 
-            fetch('/hr/employees/' + empId, {
+            var isOutsourceEdit = window._empEditMode === 'outsource';
+            fetch((isOutsourceEdit ? '/hr/outsource/' : '/hr/employees/') + empId, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -770,8 +772,12 @@
                         if (modal) modal.hide();
                         // Refresh drawer dengan data terbaru dari response
                         if (result.employee) {
-                            window._activeDrawerEmployee = result.employee;
-                            window.openEmployeeDrawer(empId);
+                            if (isOutsourceEdit) {
+                                window.openOutsourceDrawer(empId);
+                            } else {
+                                window._activeDrawerEmployee = result.employee;
+                                window.openEmployeeDrawer(empId);
+                            }
                         }
                         showToast(result.message || 'Data karyawan berhasil diperbarui.', 'success');
                     } else {
@@ -796,7 +802,7 @@
             document.getElementById('drawerCandidateName').innerText = 'Memuat...';
             openDrawer();
 
-            fetch('/hr/employees/' + id + '/json', {
+            fetch('/hr/outsource/' + id + '/json', {
                     headers: {
                         'X-CSRF-TOKEN': getCsrfToken(),
                         'Accept': 'application/json'
@@ -858,13 +864,13 @@
                     // Tombol Edit di footer — reuse modal edit employee karena outsource disimpan di sheet yang sama
                     var btnEdit = document.getElementById('btnDrawerEntityEdit');
                     if (btnEdit) btnEdit.onclick = function() {
-                        empOpenEdit(e);
+                        empOpenEdit(e, 'outsource');
                     };
 
                     // Tombol Edit di header
                     var btnEditHeader = document.getElementById('btnDrawerEdit');
                     if (btnEditHeader) btnEditHeader.onclick = function() {
-                        empOpenEdit(e);
+                        empOpenEdit(e, 'outsource');
                     };
                 })
                 .catch(function() {

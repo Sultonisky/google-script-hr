@@ -108,15 +108,17 @@ if (!app()->environment('local')) {
                 Route::get('/{id}/eval-history', [ProbationController::class, 'evalHistory'])->name('eval-history');
                 Route::get('/{id}/preview', [ProbationController::class, 'previewPerformanceReview'])->name('preview');
             });
-            Route::prefix('outsource')->name('outsource.')->middleware('can:view_employees')->group(function () {
+            Route::prefix('outsource')->name('outsource.')->middleware('can:view_outsource')->group(function () {
                 Route::get('/', [OutsourceController::class, 'index'])->name('index');
-                Route::post('/', [OutsourceController::class, 'store'])->name('store')->middleware('can:manage_employees');
+                Route::post('/', [OutsourceController::class, 'store'])->name('store')->middleware('can:manage_outsource');
                 Route::post('/kontrak-pkwt-tad', [OutsourceController::class, 'generateKontrakPkwtTad'])
                     ->name('kontrak-pkwt-tad')
-                    ->middleware('can:manage_employees');
+                    ->middleware('can:manage_outsource');
                 Route::get('/kontrak-pkwt-tad/download', [OutsourceController::class, 'downloadKontrakPkwtTad'])
                     ->name('kontrak-pkwt-tad.download')
-                    ->middleware('can:manage_employees');
+                    ->middleware('can:manage_outsource');
+                Route::put('/{id}', [OutsourceController::class, 'update'])->name('update')->middleware('can:manage_outsource');
+                Route::get('/{id}/json', [OutsourceController::class, 'getJson'])->name('json');
             });
             Route::prefix('contracts')->name('contracts.')->middleware('can:view_contracts')->group(function () {
                 Route::get('/', [ContractTrackingController::class, 'index'])->name('index');
@@ -346,15 +348,17 @@ if (app()->environment('local')) {
                 Route::get('/{id}/preview', [ProbationController::class, 'previewPerformanceReview'])->name('preview');
             });
 
-            Route::prefix('outsource')->name('outsource.')->middleware('can:view_employees')->group(function () {
+            Route::prefix('outsource')->name('outsource.')->middleware('can:view_outsource')->group(function () {
                 Route::get('/', [OutsourceController::class, 'index'])->name('index');
-                Route::post('/', [OutsourceController::class, 'store'])->name('store')->middleware('can:manage_employees');
+                Route::post('/', [OutsourceController::class, 'store'])->name('store')->middleware('can:manage_outsource');
                 Route::post('/kontrak-pkwt-tad', [OutsourceController::class, 'generateKontrakPkwtTad'])
                     ->name('kontrak-pkwt-tad')
-                    ->middleware('can:manage_employees');
+                    ->middleware('can:manage_outsource');
                 Route::get('/kontrak-pkwt-tad/download', [OutsourceController::class, 'downloadKontrakPkwtTad'])
                     ->name('kontrak-pkwt-tad.download')
-                    ->middleware('can:manage_employees');
+                    ->middleware('can:manage_outsource');
+                Route::put('/{id}', [OutsourceController::class, 'update'])->name('update')->middleware('can:manage_outsource');
+                Route::get('/{id}/json', [OutsourceController::class, 'getJson'])->name('json');
             });
 
             Route::prefix('contracts')->name('contracts.')->middleware('can:view_contracts')->group(function () {

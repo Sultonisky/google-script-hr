@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\HR;
 
+use App\DTOs\EmployeeData;
 use App\Enums\SkDocumentType;
 use App\Http\Controllers\Controller;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
@@ -117,7 +118,7 @@ class OutsourceController extends Controller
      * Status Employee di-force ke 'Outsource' — tidak bisa diubah dari request.
      *
      * POST /hr/outsource
-     * Requires: can:manage_employees
+     * Requires: can:manage_outsource
      */
     public function store(Request $request): JsonResponse
     {
@@ -156,6 +157,53 @@ class OutsourceController extends Controller
         );
 
         return response()->json($result, $result['success'] ? 201 : 422);
+    }
+
+    /**
+     * Detail karyawan outsource untuk drawer.
+     *
+     * GET /hr/outsource/{id}/json
+     * Requires: can:view_outsource
+     */
+    public function getJson(string $id): JsonResponse
+    {
+        if (!$this->findOutsource($id)) {
+            return response()->json(['success' => false, 'error' => 'Karyawan outsource tidak ditemukan.'], 404);
+        }
+
+        return app(EmployeeController::class)->getJson($id);
+    }
+
+    /**
+     * Edit karyawan outsource. Status tetap Outsource — perubahan status
+     * (mis. menjadi karyawan internal) hanya lewat menu Master Data.
+     *
+     * PUT /hr/outsource/{id}
+     * Requires: can:manage_outsource
+     */
+    public function update(Request $request, string $id): JsonResponse
+    {
+        if (!$this->findOutsource($id)) {
+            return response()->json(['success' => false, 'message' => 'Karyawan outsource tidak ditemukan.'], 404);
+        }
+
+        $requestedStatus = strtolower(trim((string) $request->input('statusEmployee', '')));
+        if ($requestedStatus !== '' && $requestedStatus !== 'outsource') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Status karyawan outsource tidak dapat diubah dari menu Outsource.',
+            ], 422);
+        }
+        $request->merge(['statusEmployee' => 'Outsource']);
+
+        return app(EmployeeController::class)->update($request, $id);
+    }
+
+    private function findOutsource(string $id): ?EmployeeData
+    {
+        $employee = $this->employeeRepo->findById($id);
+
+        return $employee && $this->contractService->isOutsource($employee) ? $employee : null;
     }
 
     /**
