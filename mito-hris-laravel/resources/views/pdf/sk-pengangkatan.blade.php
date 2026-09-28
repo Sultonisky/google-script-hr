@@ -35,8 +35,9 @@
   @php
     // ── 1:1 GAS exportSKTetapPDF() ─────────────────────────────
     // SK number: from service result or fallback
+    $romanMonth = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
     $skNumber = $extraData['sk_number'] ?? $extraData['skNumber'] ?? $extraData['evalId']
-                ?? ('001/HRD-PK/' . ($company['code'] ?? 'MSI') . '/I/' . date('Y'));
+                ?? ('001/SKP/' . ($company['code'] ?? 'MSI') . '/' . $romanMonth[date('n') - 1] . '/' . date('Y'));
 
     // Fields: 1:1 GAS emp.position || emp.positionCurrent || 'Jabatan'
     $position   = $extraData['job_position'] ?? $extraData['jobPosition']
@@ -62,7 +63,8 @@
     // todayStr: 1:1 GAS fmtDateId(today) = "d Bulan YYYY"
     $bulanId = ['Januari','Februari','Maret','April','Mei','Juni',
                 'Juli','Agustus','September','Oktober','November','Desember'];
-    $todayStr = date('j') . ' ' . $bulanId[(int)date('n') - 1] . ' ' . date('Y');
+    $docTs = strtotime((string) ($extraData['doc_date'] ?? '')) ?: time();
+    $todayStr = date('j', $docTs) . ' ' . $bulanId[(int)date('n', $docTs) - 1] . ' ' . date('Y', $docTs);
   @endphp
 
   {{-- ── JUDUL (1:1 GAS sequence) ──────────────────────────── --}}

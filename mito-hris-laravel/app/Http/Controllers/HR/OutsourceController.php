@@ -2,86 +2,73 @@
 
 namespace App\Http\Controllers\HR;
 
+use App\DTOs\OutsourceEmployeeData;
+use App\Enums\SkDocumentType;
 use App\Http\Controllers\Controller;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
-use App\Repositories\Contracts\EmployeeRepositoryInterface;
-use App\Services\EmployeeService;
+use App\Repositories\Contracts\OutsourceEmployeeRepositoryInterface;
+use App\Services\EmployeeDocumentArchiveService;
 use App\Services\OutsourceContractService;
+use App\Services\OutsourceXlsxImportService;
 use App\Services\PdfGeneratorService;
+use App\Services\RecruitmentService;
+use App\Support\OutsourceEmployeeAttributeMap;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
 
 class OutsourceController extends Controller
 {
-    protected EmployeeRepositoryInterface $employeeRepo;
-    protected EmployeeService $employeeService;
-    protected OutsourceContractService $contractService;
-    protected PdfGeneratorService $pdfService;
-    protected AuditLogRepositoryInterface $auditRepo;
+    private const TEXT_REGEX = '/^[\p{L}0-9 .,&()\-\/]+$/u';
 
     public function __construct(
-        EmployeeRepositoryInterface $employeeRepo,
-        EmployeeService $employeeService,
-        OutsourceContractService $contractService,
-        PdfGeneratorService $pdfService,
-        AuditLogRepositoryInterface $auditRepo
-    ) {
-        $this->employeeRepo    = $employeeRepo;
-        $this->employeeService = $employeeService;
-        $this->contractService = $contractService;
-        $this->pdfService      = $pdfService;
-        $this->auditRepo       = $auditRepo;
-    }
+        protected OutsourceEmployeeRepositoryInterface $outsourceRepo,
+        protected OutsourceContractService $contractService,
+        protected PdfGeneratorService $pdfService,
+        protected AuditLogRepositoryInterface $auditRepo,
+        protected EmployeeDocumentArchiveService $documentArchive
+    ) {}
 
     public function index(Request $request): View
     {
         $perPage     = max(1, (int) $request->query('per_page', 10));
         $currentPage = max(1, (int) $request->query('page', 1));
 
-        // Single source of truth: Employee sheet, filtered to Outsource only
-        $allEmployees = $this->employeeRepo->getAll();
-        $allOutsources = $allEmployees->filter(
-            fn($e) => strtolower(trim($e->statusEmployee ?? '')) === 'outsource'
-        );
+        // Single source of truth: dedicated Outsource_Employees store
+        $allOutsources = $this->outsourceRepo->getAll();
 
-        // Stats — always from full Outsource dataset (not current page)
-        $stats = [
-            'total'   => $allOutsources->count(),
-        ];
-
-        // Apply search
-        $filtered = $allOutsources;
-        $searchFilter = $request->query('search');
-        if ($searchFilter) {
-            $search = strtolower(trim($searchFilter));
-            $filtered = $filtered->filter(
-                fn($e) =>
-                str_contains(strtolower($e->fullName ?? ''), $search) ||
-                    str_contains(strtolower($e->employeeId ?? ''), $search) ||
-                    str_contains(strtolower($e->jobPosition ?? ''), $search) ||
-                    str_contains(strtolower($e->outsourceVendor ?? ''), $search)
-            );
+        // Stats — always from full dataset (not current page)
+        $stats = ['total' => $allOutsources->count()];
+        foreach (config('hris.outsource.vendors', []) as $vendor) {
+            $stats['vendors'][$vendor] = $allOutsources
+                ->filter(fn (OutsourceEmployeeData $e) => strcasecmp((string) $e->vendor, $vendor) === 0)
+                ->count();
         }
 
-        // Sort
+        $searchFilter = $request->query('search');
+        $vendorFilter = (string) $request->query('vendor', '');
+        $vendorFilter = in_array($vendorFilter, config('hris.outsource.vendors', []), true) ? $vendorFilter : '';
+        $filtered = $this->outsourceRepo->getAll(['search' => $searchFilter, 'vendor' => $vendorFilter]);
+
         $sortFilter = $request->query('sort', 'name_asc');
         $sortFilter = in_array($sortFilter, ['name_asc', 'name_desc'], true) ? $sortFilter : 'name_asc';
 
         $orderFilter = $request->query('order');
         $orderFilter = in_array($orderFilter, ['newest', 'oldest'], true) ? $orderFilter : '';
 
+        $joinTimestamp = fn (OutsourceEmployeeData $e) => strtotime((string) ($e->mitoJoinDate ?? $e->contractStartDate ?? $e->createdAt ?? '1970-01-01')) ?: 0;
         if ($orderFilter === 'newest') {
-            $filtered = $filtered->sortByDesc(fn($e) => strtotime((string) ($e->joinDate ?? $e->createdDate ?? '1970-01-01')) ?: 0);
+            $filtered = $filtered->sortByDesc($joinTimestamp);
         } elseif ($orderFilter === 'oldest') {
-            $filtered = $filtered->sortBy(fn($e) => strtotime((string) ($e->joinDate ?? $e->createdDate ?? '1970-01-01')) ?: 0);
-        } elseif ($sortFilter === 'name_asc') {
-            $filtered = $filtered->sortBy(fn($e) => strtolower(trim($e->fullName ?? '')));
+            $filtered = $filtered->sortBy($joinTimestamp);
         } elseif ($sortFilter === 'name_desc') {
-            $filtered = $filtered->sortByDesc(fn($e) => strtolower(trim($e->fullName ?? '')));
+            $filtered = $filtered->sortByDesc(fn (OutsourceEmployeeData $e) => strtolower(trim($e->fullName ?? '')));
+        } else {
+            $filtered = $filtered->sortBy(fn (OutsourceEmployeeData $e) => strtolower(trim($e->fullName ?? '')));
         }
 
         $filtered = $filtered->values();
@@ -102,6 +89,7 @@ class OutsourceController extends Controller
             'currentPage',
             'perPage',
             'searchFilter',
+            'vendorFilter',
             'sortFilter',
             'orderFilter'
         ));
@@ -109,48 +97,208 @@ class OutsourceController extends Controller
 
     /**
      * Tambah karyawan outsource baru secara manual dari dashboard HR.
-     * Status Employee di-force ke 'Outsource' — tidak bisa diubah dari request.
      *
      * POST /hr/outsource
-     * Requires: can:manage_employees
+     * Requires: can:manage_outsource
      */
     public function store(Request $request): JsonResponse
     {
-        $request->validate([
-            'fullName'            => 'required|string|max:255',
-            'outsourceVendor'     => 'required|string|max:255',
-            'employeeId'          => ['nullable', 'string', 'max:12', 'regex:/^\d{1,12}$/'],
-            'division'            => ['nullable', 'string', 'max:255', 'regex:/^[\p{L}]+(?:[ \-\/]+[\p{L}]+)*$/u'],
-            'jobPosition'         => ['nullable', 'string', 'max:255', 'regex:/^[\p{L}]+(?:[ \-\/]+[\p{L}]+)*$/u'],
-            'jobPositionLocation' => ['nullable', 'string', 'max:255', 'regex:/^[\p{L}]+(?:[ \-\/]+[\p{L}]+)*$/u'],
-            'joinDate'            => 'nullable|date',
-            'endDateContract'     => 'nullable|date',
-            'personalEmail'       => 'nullable|email|max:255',
-            'workingEmail'        => 'nullable|email|max:255',
-            'birthDate'           => 'nullable|date',
-            'nikNpwp'             => 'nullable|string|max:20',
-            'npwp'                => 'nullable|string|max:20',
-            'mobilePhone'         => 'nullable|string|max:20',
-            'bankAccount'         => 'nullable|string|max:30',
-            'bpjsKetenagakerjaan' => 'nullable|string|max:30',
-            'bpjsKesehatan'       => 'nullable|string|max:30',
+        $validated = $this->validatePayload($request, false);
+
+        if ($this->outsourceRepo->findByContact($validated['whatsappNumber'] ?? null, $validated['email'] ?? null)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No WA atau email sudah terdaftar pada data outsource lain.',
+            ], 422);
+        }
+
+        $data = new OutsourceEmployeeData(...$validated);
+        $data->createdBy = $this->hrUserName();
+
+        try {
+            $created = $this->outsourceRepo->create($data);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json(['success' => false, 'message' => 'Gagal menyimpan data outsource. ' . $e->getMessage()], 422);
+        }
+
+        $this->auditRepo->log('Outsource', $created->outsourceId, 'created', 'Outsource ID', '-', $created->outsourceId, $this->hrUserName(), 'HR Dashboard');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Karyawan outsource berhasil ditambahkan.',
+            'employee' => $created->toArray(),
+        ], 201);
+    }
+
+    /**
+     * Import data outsource dari file Excel (sheet RAW DATA, kolom A–V).
+     * Penanganan identik dengan `php artisan mito:outsource:import-xlsx`.
+     *
+     * POST /hr/outsource/import
+     * Requires: can:manage_outsource
+     */
+    public function import(Request $request, OutsourceXlsxImportService $importer): JsonResponse
+    {
+        $validated = $request->validate([
+            'file' => ['required', 'file', 'max:10240', 'extensions:xlsx', 'mimes:xlsx,zip'],
+            'vendor' => ['required', 'string', Rule::in(config('hris.outsource.vendors', []))],
+            'sheet' => ['nullable', 'string', 'max:100'],
+            'dry_run' => ['nullable', 'boolean'],
         ], [
-            'employeeId.regex' => 'Employee ID hanya boleh angka (maksimal 12 digit).',
-            'division.regex' => 'Divisi hanya boleh huruf, spasi, tanda hubung, dan garis miring.',
-            'jobPosition.regex' => 'Jabatan hanya boleh huruf, spasi, tanda hubung, dan garis miring.',
-            'jobPositionLocation.regex' => 'Jabatan (dengan lokasi) hanya boleh huruf, spasi, tanda hubung, dan garis miring.',
+            'file.required' => 'File Excel wajib dipilih.',
+            'file.max' => 'Ukuran file maksimal 10 MB.',
+            'file.extensions' => 'File harus berformat .xlsx.',
+            'file.mimes' => 'File harus berformat .xlsx.',
+            'vendor.required' => 'Vendor wajib dipilih.',
+            'vendor.in' => 'Vendor tidak valid.',
         ]);
 
-        // Force statusEmployee = Outsource — tidak boleh dioverride dari frontend
-        $data                  = $request->all();
-        $data['statusEmployee'] = 'Outsource';
+        $dryRun = $request->boolean('dry_run');
+        $sheet = trim((string) ($validated['sheet'] ?? '')) ?: 'RAW DATA';
+        $user = $this->hrUserName();
 
-        $result = $this->employeeService->createEmployee(
-            $data,
-            $this->hrUserName()
-        );
+        @set_time_limit(300);
 
-        return response()->json($result, $result['success'] ? 201 : 422);
+        try {
+            $result = $importer->import($request->file('file')->getRealPath(), $sheet, $validated['vendor'], $dryRun, $user);
+        } catch (\PhpOffice\PhpSpreadsheet\Exception $e) {
+            report($e);
+
+            return response()->json(['success' => false, 'message' => 'Gagal membaca file. Pastikan file .xlsx valid dan tidak terproteksi password.'], 422);
+        } catch (\RuntimeException $e) {
+            return response()->json(['success' => false, 'message' => 'Gagal membaca file: ' . $e->getMessage()], 422);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json(['success' => false, 'message' => 'Gagal membaca file. Pastikan file .xlsx valid dan tidak terproteksi password.'], 422);
+        }
+
+        if (!$dryRun) {
+            $this->auditRepo->log(
+                'Outsource',
+                'IMPORT_XLSX',
+                'imported',
+                'Import XLSX',
+                '-',
+                "Vendor {$validated['vendor']}: dibuat {$result['created']}, diperbarui {$result['updated']}, error " . count($result['errors']),
+                $user,
+                'HR Dashboard'
+            );
+        }
+
+        $ok = $result['errors'] === [];
+        $message = $dryRun
+            ? "Preview: {$result['read']} baris dibaca, {$result['created']} akan dibuat, {$result['updated']} akan diperbarui."
+            : ($ok
+                ? "Import selesai: {$result['created']} dibuat, {$result['updated']} diperbarui."
+                : 'Import selesai dengan ' . count($result['errors']) . ' error.');
+
+        return response()->json([
+            'success' => $ok,
+            'dry_run' => $dryRun,
+            'message' => $message,
+            'summary' => [
+                'read' => $result['read'],
+                'created' => $result['created'],
+                'updated' => $result['updated'],
+            ],
+            'warnings' => $result['warnings'],
+            'errors' => $result['errors'],
+        ], $ok ? 200 : 422);
+    }
+
+    /**
+     * Detail karyawan outsource untuk drawer.
+     *
+     * GET /hr/outsource/{id}/json
+     * Requires: can:view_outsource
+     */
+    public function getJson(string $id): JsonResponse
+    {
+        $outsource = $this->outsourceRepo->findById($id);
+        if (!$outsource) {
+            return response()->json(['success' => false, 'error' => 'Karyawan outsource tidak ditemukan.'], 404);
+        }
+
+        try {
+            $auditLogs = $this->auditRepo->getLogs((string) $outsource->outsourceId)
+                ->filter(fn ($log) => strtolower(trim($log['Entity Type'] ?? $log['entityType'] ?? '')) === 'outsource')
+                ->take(20)
+                ->values();
+        } catch (\Throwable $e) {
+            report($e);
+            $auditLogs = collect();
+        }
+
+        return response()->json([
+            'success' => true,
+            'employee' => $outsource->toArray(),
+            'auditLogs' => $auditLogs,
+        ]);
+    }
+
+    /**
+     * Edit karyawan outsource.
+     *
+     * PUT /hr/outsource/{id}
+     * Requires: can:manage_outsource
+     */
+    public function update(Request $request, string $id): JsonResponse
+    {
+        $existing = $this->outsourceRepo->findById($id);
+        if (!$existing) {
+            return response()->json(['success' => false, 'message' => 'Karyawan outsource tidak ditemukan.'], 404);
+        }
+
+        $validated = $this->validatePayload($request, true);
+
+        $duplicate = $this->outsourceRepo->findByContact($validated['whatsappNumber'] ?? null, $validated['email'] ?? null);
+        if ($duplicate && $duplicate->outsourceId !== $existing->outsourceId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No WA atau email sudah terdaftar pada data outsource lain.',
+            ], 422);
+        }
+
+        $changes = [];
+        foreach ($validated as $property => $value) {
+            if ($existing->{$property} != $value) {
+                $changes[$property] = ['old' => $existing->{$property}, 'new' => $value];
+            }
+        }
+
+        if ($changes === []) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Tidak ada perubahan data.',
+                'employee' => $existing->toArray(),
+            ]);
+        }
+
+        if (!$this->outsourceRepo->update($id, array_map(fn (array $c) => $c['new'], $changes))) {
+            return response()->json(['success' => false, 'message' => 'Gagal menyimpan perubahan data outsource.'], 422);
+        }
+
+        foreach ($changes as $property => $change) {
+            $this->auditRepo->log(
+                'Outsource',
+                $existing->outsourceId,
+                'updated',
+                OutsourceEmployeeAttributeMap::FIELDS[$property][1],
+                $change['old'],
+                $change['new'],
+                $this->hrUserName(),
+                'HR Dashboard'
+            );
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data karyawan outsource berhasil diperbarui.',
+            'employee' => $this->outsourceRepo->findById($id)?->toArray(),
+        ]);
     }
 
     /**
@@ -170,16 +318,13 @@ class OutsourceController extends Controller
             'contract_duration' => 'nullable|string|max:50',
         ]);
 
-        $employee = $this->employeeRepo->findById($validated['employee_id']);
-        if (!$employee) {
+        $outsource = $this->outsourceRepo->findById($validated['employee_id']);
+        if (!$outsource) {
             return response()->json(['success' => false, 'message' => 'Data karyawan outsource tidak ditemukan.'], 404);
         }
 
-        if (!$this->contractService->isOutsource($employee)) {
-            return response()->json(['success' => false, 'message' => 'Karyawan yang dipilih bukan status Outsource.'], 422);
-        }
-
-        $alloc = $this->contractService->allocateContractNumber($employee);
+        $employee = $outsource->toEmployeeData();
+        $alloc = $this->contractService->allocateContractNumber($employee, null, $this->hrUserName());
         $now   = now()->timezone('Asia/Jakarta');
 
         $extraData = [
@@ -191,22 +336,30 @@ class OutsourceController extends Controller
             'join_date'         => $validated['mulai_tanggal'],
             'doc_date'          => $now->format('Y-m-d'),
             'contract_duration' => $validated['contract_duration'] ?? '12 Bulan',
-            'position'          => $employee->jobPosition,
-            'department'        => $employee->department,
-            'division'          => $employee->division,
-            'direct_superior'   => $employee->directSuperior,
+            'position'          => $outsource->jobTitle,
         ];
 
         $token = (string) Str::uuid();
+        $safeName = preg_replace('/[^a-zA-Z0-9_-]+/', '_', $outsource->fullName ?? 'Outsource');
         Cache::put('osc_pkwt_tad_' . $token, [
-            'employee_id' => $employee->employeeId,
+            'employee_id' => $outsource->outsourceId,
             'extra_data'  => $extraData,
-            'safe_name'   => preg_replace('/[^a-zA-Z0-9_-]+/', '_', $employee->fullName ?? 'Outsource'),
+            'safe_name'   => $safeName,
         ], now()->addMinutes(15));
+
+        // Archive now: the download token expires after 15 minutes.
+        $this->documentArchive->capture(
+            $outsource->outsourceId,
+            SkDocumentType::PKWT,
+            $alloc['contract_number'],
+            fn () => $this->pdfService->generateKontrakPkwtTadPdf($employee, $extraData)->output(),
+            "PKWT_TAD_{$safeName}_{$outsource->outsourceId}.pdf",
+            $this->hrUserName()
+        );
 
         $this->auditRepo->log(
             'Outsource',
-            $employee->employeeId,
+            $outsource->outsourceId,
             'generated',
             'contract_pkwt_tad',
             null,
@@ -247,14 +400,15 @@ class OutsourceController extends Controller
             abort(410, 'Link download kedaluwarsa. Generate ulang dari form.');
         }
 
-        $employee = $this->employeeRepo->findById($payload['employee_id']);
-        if (!$employee) {
+        $outsource = $this->outsourceRepo->findById($payload['employee_id']);
+        if (!$outsource) {
             abort(404, 'Data karyawan tidak ditemukan.');
         }
 
+        $employee  = $outsource->toEmployeeData();
         $extraData = $payload['extra_data'] ?? [];
         $safeName  = $payload['safe_name'] ?? 'Outsource';
-        $empId     = $employee->employeeId;
+        $empId     = $outsource->outsourceId;
 
         if ($type === 'pernyataan') {
             $pdf = $this->pdfService->generateSuratPernyataanOutsourcePdf($employee, $extraData);
@@ -265,5 +419,92 @@ class OutsourceController extends Controller
         }
 
         return $pdf->download($filename);
+    }
+
+    /**
+     * Validate HR add/edit payload (keys = OutsourceEmployeeData properties).
+     * On update only the submitted keys are returned.
+     *
+     * @return array<string, mixed>
+     */
+    private function validatePayload(Request $request, bool $partial): array
+    {
+        $request->merge($this->sanitizeInput($request->all()));
+
+        $required = $partial ? ['sometimes', 'required'] : ['required'];
+        $rules = [
+            'fullName'          => [...$required, 'string', 'max:255', 'regex:/^[\p{L}\' .]+$/u'],
+            'vendor'            => [...$required, 'string', Rule::in(config('hris.outsource.vendors', []))],
+            'citizenIdAddress'  => ['nullable', 'string', 'max:500'],
+            'birthDate'         => ['nullable', 'date'],
+            'birthPlace'        => ['nullable', 'string', 'max:120'],
+            'lastEducation'     => ['nullable', 'string', 'max:64'],
+            'whatsappNumber'    => ['nullable', 'string', 'regex:/^\+62\d{8,13}$/'],
+            'email'             => ['nullable', 'email:filter', 'max:255'],
+            'jobTitle'          => ['nullable', 'string', 'max:255', 'regex:' . self::TEXT_REGEX],
+            'workLocation'      => ['nullable', 'string', 'max:255', 'regex:' . self::TEXT_REGEX],
+            'workCity'          => ['nullable', 'string', 'max:120', 'regex:' . self::TEXT_REGEX],
+            'bankAccount'       => ['nullable', 'digits_between:8,20'],
+            'mitoJoinDate'      => ['nullable', 'date'],
+            'contractStartDate' => ['nullable', 'date'],
+            'contractEndDate'   => ['nullable', 'date'],
+            'costCenter'        => ['nullable', 'string', 'max:120', 'regex:' . self::TEXT_REGEX],
+            'entity'            => ['nullable', 'string', 'max:255'],
+            'payrollScheme'     => ['nullable', 'string', 'max:32'],
+            'umkAmount'         => ['nullable', 'numeric', 'min:0'],
+            'basicSalary'       => ['nullable', 'numeric', 'min:0'],
+            'incentiveAmount'   => ['nullable', 'numeric', 'min:0'],
+            'remarks'           => ['nullable', 'string', 'max:1000'],
+        ];
+
+        $request->validate($rules, [
+            'fullName.required' => 'Nama lengkap wajib diisi.',
+            'fullName.regex' => 'Nama lengkap hanya boleh berisi huruf, spasi, titik, dan apostrof.',
+            'vendor.required' => 'Vendor wajib dipilih.',
+            'vendor.in' => 'Vendor harus Damarindo atau StaffInc.',
+            'whatsappNumber.regex' => 'No WA tidak valid. Gunakan format 08xxxxxxxxxx.',
+            'email.email' => 'Format email tidak valid.',
+            'bankAccount.digits_between' => 'No rekening BCA harus 8–20 digit angka.',
+            'jobTitle.regex' => 'Nama jabatan hanya boleh huruf, angka, spasi, dan tanda . , & ( ) - /',
+            'workLocation.regex' => 'Lokasi kerja hanya boleh huruf, angka, spasi, dan tanda . , & ( ) - /',
+            'workCity.regex' => 'Kota lokasi kerja hanya boleh huruf, angka, spasi, dan tanda . , & ( ) - /',
+            'costCenter.regex' => 'Cabang (cost center) hanya boleh huruf, angka, spasi, dan tanda . , & ( ) - /',
+        ]);
+
+        $values = [];
+        foreach (array_keys($rules) as $property) {
+            if ($partial && !$request->exists($property)) {
+                continue;
+            }
+            $values[$property] = OutsourceEmployeeAttributeMap::normalize($property, $request->input($property));
+        }
+
+        return $values;
+    }
+
+    /**
+     * @param  array<string, mixed>  $input
+     * @return array<string, mixed>
+     */
+    private function sanitizeInput(array $input): array
+    {
+        $clean = [];
+        foreach ($input as $key => $value) {
+            if (!is_string($value)) {
+                continue;
+            }
+            $value = in_array($key, ['citizenIdAddress', 'remarks'], true)
+                ? trim($value)
+                : trim(preg_replace('/\s+/u', ' ', $value) ?? '');
+            $clean[$key] = match ($key) {
+                'whatsappNumber' => $value === '' ? '' : (string) RecruitmentService::normalizePhone(preg_replace('/\D+/', '', $value)),
+                'bankAccount' => preg_replace('/\D+/', '', $value),
+                'email' => strtolower($value),
+                'umkAmount', 'basicSalary', 'incentiveAmount' => $value === '' ? '' : (string) OutsourceEmployeeAttributeMap::parseAmount($value),
+                default => $value,
+            };
+        }
+
+        return $clean;
     }
 }

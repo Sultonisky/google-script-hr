@@ -264,3 +264,28 @@ a.fab-action {
     box-shadow: 0 0 0 0.2rem rgba(235, 28, 36, 0.15);
     outline: none;
 }
+
+// Outsource Add/Edit wraps .modal-body + .modal-footer inside <form>, which breaks
+// Bootstrap's modal-dialog-scrollable flex chain; the form must be a flex column.
+#outsourceFormModal .modal-content {
+    max-height: calc(100vh - 3.5rem);
+    overflow: hidden;
+}
+
+#outsourceFormModal .modal-content > form {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+#outsourceFormModal .modal-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    min-height: 0;
+}
+
+#outsourceFormModal .modal-header,
+#outsourceFormModal .modal-footer {
+    flex-shrink: 0;
+}

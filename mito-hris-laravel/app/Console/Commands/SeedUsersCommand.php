@@ -9,7 +9,8 @@ use Illuminate\Support\Facades\Hash;
 class SeedUsersCommand extends Command
 {
     protected $signature = 'mito:seed-users {--force : Overwrite existing users}';
-    protected $description = 'Seed default users for each role (Super Admin, Admin, User)';
+    protected $description = 'Seed default users via data driver (DB jika HRIS_DATA_DRIVER=pgsql)';
+
 
     protected array $users = [
         ['email' => 'admin@mito.co.id',          'username' => 'admin',          'name' => 'Super Admin HRIS',    'role' => 'Super Admin'],

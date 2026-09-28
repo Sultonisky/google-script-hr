@@ -7,9 +7,9 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
 
 /**
- * Seed default MPR Requestor (Manpower) accounts into the mpr_requestor sheet.
+ * Seed default MPR Requestor (Manpower) accounts via data driver (DB jika pgsql).
  *
- * These accounts are completely separate from the internal HRIS Users sheet.
+ * These accounts are completely separate from the internal HRIS Users store.
  * Each Manager is assigned a job position.
  *
  * Usage:
@@ -21,7 +21,7 @@ class SeedMprRequestorsCommand extends Command
     protected $signature = 'mito:seed-mpr-requestors
         {--force : Overwrite existing requestors}';
 
-    protected $description = 'Seed default MPR Requestor (Manpower) accounts into the mpr_requestor sheet';
+    protected $description = 'Seed default MPR Requestor accounts via data driver (DB jika pgsql)';
 
     /**
      * Default requestor accounts to seed.

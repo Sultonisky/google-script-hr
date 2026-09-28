@@ -32,9 +32,9 @@ The repository is the original shared Git repository. Laravel is the active appl
 
 ### External Data Services
 
-- Google Sheets API through `google/apiclient`
+- Google Sheets API through `google/apiclient` (archive / optional mirror)
 - Google Drive API through Laravel Google services
-- Google Sheets remains the business data source; this is a Laravel API integration, not Google Apps Script
+- Structured HR data SoT is PostgreSQL via `HRIS_DATA_DRIVER=pgsql` after ETL; Sheets are not Apps Script
 
 ### Documents
 
@@ -153,7 +153,7 @@ NIK, phone numbers, recruitment IDs, and employee IDs must preserve text semanti
 
 `.github/workflows/ci.yml` runs from `mito-hris-laravel/` and performs PHP setup, Composer installation, environment preparation, PHP syntax validation, Vite build, and Laravel tests.
 
-`.github/workflows/deploy.yml` deploys over SSH to the existing Laravel checkout at `/home/ubuntu/hris/mito-hris-laravel`. It installs production dependencies, builds assets, runs Laravel diagnostics and Google Sheets checks, caches Laravel, and reloads PHP-FPM.
+`.github/workflows/deploy.yml` deploys over SSH to the Dockerized Laravel app. It builds the image, migrates the database, runs DB-first health/diagnose, warms the active data driver (`mito:sync`), runs Sheets archive helpers as soft no-ops when SoT is pgsql, caches Laravel, and verifies the frontend build.
 
 There is no active Apps Script or `clasp` deployment.
 
@@ -176,7 +176,8 @@ For PHP-only changes, run `php -l` on the touched files. For Google integration 
 
 - Preserve public URLs and route names.
 - Preserve authentication, authorization, RBAC, and domain isolation.
-- Preserve Google Sheets schemas and Google Drive integration.
+- Preserve Google Sheets schemas as archive and Google Drive integration.
+- Prefer `HRIS_DATA_DRIVER=pgsql` for structured HR data after cutover.
 - Preserve Indonesian user-facing copy unless a product change requires otherwise.
 - Use existing controllers, services, repositories, requests, and Blade patterns.
 - Keep changes focused and avoid broad formatting or unrelated refactors.

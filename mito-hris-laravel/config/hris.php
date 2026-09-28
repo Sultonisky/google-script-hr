@@ -1,6 +1,21 @@
 <?php
 
 return [
+    /*
+    |--------------------------------------------------------------------------
+    | HRIS structured-data driver
+    |--------------------------------------------------------------------------
+    | Source of truth for employees, candidates, MPR, audit, documents, etc.
+    | - pgsql  : PostgreSQL (preferred SoT after cutover; never overwrites Spreadsheet)
+    | - sheets : Google Sheets (legacy SoT / archive when GOOGLE_SHEETS_ENABLED)
+    | - local  : in-memory / SQLite Eloquent fallbacks for tests & offline
+    |
+    | When null/empty, derived from GOOGLE_SHEETS_ENABLED (true→sheets, false→local).
+    | Cutover = set HRIS_DATA_DRIVER=pgsql after read-only ETL. Sheets stay as archive.
+    | Mirror archive back: php artisan mito:etl-db-to-sheets
+    */
+    'data_driver' => env('HRIS_DATA_DRIVER'),
+
     'domains' => [
         'hris' => env('HRIS_DOMAIN', 'hrismitogroup.web.id'),
         'mpr' => env('MPR_DOMAIN', 'mpr.hrismitogroup.web.id'),
@@ -186,6 +201,21 @@ return [
             'MEP' => 'PT Mitra Elektro Perkasa (MEP)',
         ],
     ],
+    // Dedicated outsource store (Outsource_Employees), separate from Employee.
+    'outsource' => [
+        // Outsource ID = {prefix}{YYYY}{NNNN}, e.g. DM20260001.
+        'id_prefix' => env('OUTSOURCE_ID_PREFIX', 'DM'),
+        'vendors' => ['Damarindo', 'StaffInc'],
+        'entities' => [
+            'PT. Mahakarya Sukses Indonesia',
+            'PT. Stein Perkasa Internasional',
+            'PT. Perkasa Injeksi Indonesia',
+            'PT. Mitra Elektro Perkasa',
+        ],
+        'payroll_schemes' => ['70/30', 'Khusus'],
+        'education_levels' => ['SD', 'SMP', 'SLTA', 'D1', 'D2', 'D3', 'D4', 'S1', 'S2'],
+        'job_titles' => ['SPB/SPG Toko', 'SPB/SPG MT', 'SPB/SPG Outlet', 'GTM', 'Sales Area', 'Host Live'],
+    ],
     'auth' => [
         'valid_roles' => [
             'Super Admin',
@@ -210,7 +240,7 @@ return [
         ],
         'role_permissions' => [
             'Super Admin' => ['*'],
-            'Admin' => ['manage_recruitment', 'manage_employees', 'manage_probation', 'view_employees', 'view_contracts', 'view_recruitment', 'update_candidates', 'create_offering', 'manage_hold_blacklist', 'view_mpr', 'create_mpr', 'update_mpr', 'export_mpr', 'assets.access', 'assets.view', 'assets.create', 'assets.update', 'assets.delete', 'assets.assign', 'assets.return', 'assets.generate_code', 'certificates.access', 'certificates.view', 'certificates.create', 'certificates.update', 'certificates.delete', 'certificates.generate_code', 'view_asset', 'edit_asset', 'view_certification', 'manage_certification'],
+            'Admin' => ['manage_recruitment', 'manage_employees', 'manage_probation', 'view_employees', 'view_contracts', 'view_outsource', 'manage_outsource', 'view_documents', 'download_documents', 'view_recruitment', 'update_candidates', 'create_offering', 'manage_hold_blacklist', 'view_mpr', 'create_mpr', 'update_mpr', 'export_mpr', 'assets.access', 'assets.view', 'assets.create', 'assets.update', 'assets.delete', 'assets.assign', 'assets.return', 'assets.generate_code', 'certificates.access', 'certificates.view', 'certificates.create', 'certificates.update', 'certificates.delete', 'certificates.generate_code', 'view_asset', 'edit_asset', 'view_certification', 'manage_certification'],
             'User' => ['view_recruitment', 'update_candidates', 'create_offering', 'manage_hold_blacklist', 'view_mpr', 'export_mpr', 'view_asset', 'view_certification'],
             'Manpower' => ['view_mpr', 'create_mpr', 'export_mpr'],
         ],
@@ -273,6 +303,9 @@ return [
             'Created At',
             'Updated At',
             'Outsource Contract Seq',
+            'Start Date (Contract)',
+            'Contract Duration',
+            'Contract Number',
         ],
         'data_kandidat' => [
             'Recruitment ID',
@@ -582,6 +615,48 @@ return [
             'Created At',
             'Updated At',
             'Created By',
+        ],
+        'Employee_Documents' => [
+            'Document ID',
+            'Employee ID',
+            'Sequence',
+            'Doc Type',
+            'Doc Code',
+            'Nomor',
+            'Entity',
+            'Issued At',
+            'Issued By',
+            'Reference',
+            'Notes',
+            'Created At',
+        ],
+        'Outsource_Employees' => [
+            'Outsource ID',
+            'Full Name',
+            'Citizen ID Address',
+            'Birth Date',
+            'Birth Place',
+            'Last Education',
+            'WhatsApp Number',
+            'Email',
+            'Job Title',
+            'Work Location',
+            'Work City',
+            'BCA Account Number',
+            'Mito Join Date',
+            'Contract Start Date',
+            'Contract End Date',
+            'Branch (Cost Center)',
+            'Entity',
+            'Payroll Scheme',
+            'UMK Amount',
+            'Basic Salary',
+            'Incentive Amount (30%)',
+            'Remarks',
+            'Vendor',
+            'Created By',
+            'Created At',
+            'Updated At',
         ],
     ],
 ];

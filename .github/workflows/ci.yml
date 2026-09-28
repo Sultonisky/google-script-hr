@@ -48,6 +48,8 @@ jobs:
         run: |
           cp .env.example .env
           php artisan key:generate --force
+          # sqlite + GOOGLE_SHEETS_ENABLED=false → driver local.
+          # Postgres SoT / ETL covered by Feature tests (no live Sheets in CI).
 
       - name: Install Node dependencies
         run: |

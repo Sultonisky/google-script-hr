@@ -176,6 +176,9 @@
             var btnEdit = document.getElementById('btnDrawerEdit');
             if (btnPrint) btnPrint.style.display = (mode === 'candidate') ? '' : 'none';
             if (btnEdit) btnEdit.style.display = (mode !== 'candidate') ? '' : 'none';
+            if (btnEdit) btnEdit.classList.remove('d-none');
+            var btnEntityEdit = document.getElementById('btnDrawerEntityEdit');
+            if (btnEntityEdit) btnEntityEdit.classList.remove('d-none');
 
             // Reset badge & tombol khusus kandidat saat pindah mode (hindari state basi)
             var badgeWrap = document.getElementById('drawerStatusBadgeWrap');
@@ -348,6 +351,21 @@
             el.innerHTML = sections.length ? sections.join('\n\n') : 'Belum ada catatan.';
         }
 
+        function renderSkDocumentHistory(elementId, docs) {
+            var el = document.getElementById(elementId);
+            if (!el) return;
+            if (!Array.isArray(docs) || !docs.length) {
+                el.textContent = 'Belum ada riwayat dokumen SK.';
+                return;
+            }
+            el.innerHTML = '<ul class="mb-0 ps-3" style="font-size:12.5px;line-height:1.55">' + docs.map(function(d) {
+                var nomor = escapeDrawerHtml(d.nomor || '-');
+                var tipe = escapeDrawerHtml(d.docType || d.docCode || 'Dokumen');
+                var when = escapeDrawerHtml(d.issuedAt || '');
+                return '<li><strong>' + tipe + '</strong>: ' + nomor + (when ? ' <span class="text-muted">(' + when + ')</span>' : '') + '</li>';
+            }).join('') + '</ul>';
+        }
+
         function renderEntityTimeline(elementId, auditLogs) {
             var wrap = document.getElementById(elementId);
             if (!wrap) return;
@@ -361,7 +379,10 @@
                 'Update Status': 'bi-arrow-repeat',
                 Hold: 'bi-pause-fill',
                 Blacklist: 'bi-slash-circle-fill',
-                Accepted: 'bi-check-lg'
+                Accepted: 'bi-check-lg',
+                'Probation Lulus': 'bi-award-fill',
+                'Probation Putus Kontrak': 'bi-x-circle-fill',
+                'Probation Diperpanjang': 'bi-calendar-plus-fill'
             };
             wrap.innerHTML = auditLogs.map(function(ev) {
                 var action = ev.Action || ev.action || 'Perubahan data';
@@ -448,11 +469,15 @@
                     setDrawerText('empDrJoinDate', e.joinDate);
                     setDrawerText('empDrDirectSup', e.directSuperior);
                     setDrawerText('empDrIndirectSup', e.indirectSuperior);
+                    setDrawerText('empDrContractStart', e.contractStart || e.startDateContract || e.joinDate);
                     setDrawerText('empDrContractEnd', e.endDateContract);
+                    setDrawerText('empDrContractDuration', e.contractDuration);
+                    setDrawerText('empDrContractNumber', e.contractNumber);
                     setDrawerText('empDrFormerPos', e.jobPositionFormer);
                     setDrawerText('empDrRotationType', e.typeOfRotation);
                     setDrawerText('empDrMutasiDate', e.rotationDate);
                     setDrawerText('empDrNoSk', e.nomorSk);
+                    renderSkDocumentHistory('empDrSkHistory', data.skDocuments);
                     setDrawerText('empDrResignDate', e.resignDate);
                     setDrawerText('empDrOffbType', e.offboardingType);
                     setDrawerText('empDrOffbReason', e.offboardingReason);
@@ -552,6 +577,37 @@
                 el.value = isNaN(d.getTime()) ? '' : d.toISOString().substring(0, 10);
             }
 
+            function setContractDurationSelect(val) {
+                var el = document.getElementById('efContractDuration');
+                if (!el) return;
+                var value = (val === null || val === undefined) ? '' : String(val).trim();
+                if (!value) {
+                    el.value = '';
+                    return;
+                }
+                // Map Tahun aliases ↔ "N Bulan" for older form options.
+                var aliases = {
+                    '12 Bulan': '1 Tahun',
+                    '24 Bulan': '2 Tahun',
+                    '36 Bulan': '3 Tahun',
+                    '1 Tahun': '12 Bulan',
+                    '2 Tahun': '24 Bulan',
+                    '3 Tahun': '36 Bulan',
+                };
+                var match = value;
+                if (!Array.from(el.options).some(function(o) { return o.value === match; })) {
+                    if (aliases[value] && Array.from(el.options).some(function(o) { return o.value === aliases[value]; })) {
+                        match = aliases[value];
+                    } else {
+                        var opt = document.createElement('option');
+                        opt.value = value;
+                        opt.textContent = value;
+                        el.appendChild(opt);
+                    }
+                }
+                el.value = match;
+            }
+
             // Seksi 1: Identitas
             setVal('efName', emp.fullName);
             setVal('efNik', emp.nikNpwp);
@@ -592,11 +648,12 @@
             setVal('efIndirectSup', emp.indirectSuperior);
             setVal('efOutsourceVendor', emp.outsourceVendor);
 
-            // Seksi 4: Kontrak
-            setDate('efContractStart', emp.contractStart || emp.startDateContract);
+            // Seksi 4: Kontrak — fall back to Join Date / derived duration when
+            // optional contract columns are still empty on the Employee sheet.
+            setDate('efContractStart', emp.contractStart || emp.startDateContract || emp.joinDate || '');
             setDate('efContractEnd', emp.endDateContract);
-            setVal('efContractDuration', emp.contractDuration);
-            setVal('efContractNumber', emp.contractNumber);
+            setContractDurationSelect(emp.contractDuration || '');
+            setVal('efContractNumber', emp.contractNumber || '');
 
             // Seksi 5: Mutasi
             var hasMutasi = !!(emp.jobPositionFormer || emp.typeOfRotation);
@@ -742,7 +799,7 @@
             document.getElementById('drawerCandidateName').innerText = 'Memuat...';
             openDrawer();
 
-            fetch('/hr/employees/' + id + '/json', {
+            fetch('/hr/outsource/' + id + '/json', {
                     headers: {
                         'X-CSRF-TOKEN': getCsrfToken(),
                         'Accept': 'application/json'
@@ -761,57 +818,57 @@
                     // Simpan data outsource aktif untuk keperluan Edit
                     window._activeDrawerOutsource = e;
 
+                    var rupiah = function(v) {
+                        if (v === null || v === undefined || v === '') return null;
+                        var n = Number(v);
+                        return isNaN(n) ? String(v) : 'Rp ' + n.toLocaleString('id-ID');
+                    };
+
                     document.getElementById('drawerCandidateName').innerText = e.fullName || '-';
-                    document.getElementById('drawerPosition').innerText = (e.jobPosition || '-') + (e
-                        .outsourceVendor ? ' · ' + e.outsourceVendor : '');
+                    document.getElementById('drawerPosition').innerText = (e.jobTitle || '-') + (e.vendor ?
+                        ' · ' + e.vendor : '');
                     document.getElementById('drawerAvatar').innerText = initials(e.fullName);
-                    setDrawerText('osDrEmployeeId', e.employeeId);
-                    setDrawerText('osDrNik', e.nikNpwp);
+                    setDrawerText('osDrOutsourceId', e.outsourceId);
                     setDrawerText('osDrFullName', e.fullName);
                     setDrawerText('osDrBirthPlace', e.birthPlace);
                     setDrawerText('osDrBirthDate', e.birthDate);
-                    setDrawerText('osDrGender', e.gender === 'Male' ? 'Laki-laki' : (e.gender === 'Female' ?
-                        'Perempuan' : e.gender));
-                    setDrawerText('osDrMarital', e.maritalStatus);
-                    setDrawerText('osDrStatusEmployee', e.statusEmployee);
-                    setDrawerText('osDrEmail', e.personalEmail);
-                    setDrawerText('osDrPhone', e.mobilePhone);
-                    setDrawerText('osDrCity', e.lokasiKerja || e.areaKerja);
+                    setDrawerText('osDrEducation', e.lastEducation);
+                    setDrawerText('osDrPhone', e.whatsappNumber);
+                    setDrawerText('osDrEmail', e.email);
                     setDrawerText('osDrAddress', e.citizenIdAddress);
-                    setDrawerText('osDrResidentialAddress', e.residentialAddress);
-                    setDrawerText('osDrBankName', e.bankName);
+                    setDrawerText('osDrVendor', e.vendor);
+                    setDrawerText('osDrEntity', e.entity);
+                    setDrawerText('osDrJobTitle', e.jobTitle);
+                    setDrawerText('osDrCostCenter', e.costCenter);
+                    setDrawerText('osDrWorkLocation', e.workLocation);
+                    setDrawerText('osDrWorkCity', e.workCity);
+                    setDrawerText('osDrMitoJoinDate', e.mitoJoinDate);
+                    setDrawerText('osDrContractStart', e.contractStartDate);
+                    setDrawerText('osDrContractEnd', e.contractEndDate);
                     setDrawerText('osDrBankAccount', e.bankAccount);
-                    setDrawerText('osDrBpjsTk', e.bpjsKetenagakerjaan);
-                    setDrawerText('osDrBpjsKes', e.bpjsKesehatan);
-                    setDrawerText('osDrVendor', e.outsourceVendor);
-                    setDrawerText('osDrBranch', e.branchName);
-                    setDrawerText('osDrDivision', e.division);
-                    setDrawerText('osDrDept', e.department);
-                    setDrawerText('osDrPosition', e.jobPositionLocation || e.jobPosition);
-                    setDrawerText('osDrJobLevel', e.jobLevel);
-                    setDrawerText('osDrJoinDate', e.joinDate);
-                    setDrawerText('osDrDirectSup', e.directSuperior);
-                    setDrawerText('osDrIndirectSup', e.indirectSuperior);
+                    setDrawerText('osDrPayrollScheme', e.payrollScheme);
+                    setDrawerText('osDrUmk', rupiah(e.umkAmount));
+                    setDrawerText('osDrBasicSalary', rupiah(e.basicSalary));
+                    setDrawerText('osDrIncentive', rupiah(e.incentiveAmount));
                     setDrawerText('osDrCreatedBy', e.createdBy);
                     setDrawerText('osDrCreated', e.createdAt);
                     setDrawerText('osDrUpdated', e.updatedAt);
-                    renderEntityNotes('osDrUnifiedNotes', e.notes, e.hrNotes);
+                    setDrawerText('osDrRemarks', e.remarks);
                     renderEntityTimeline('osDrTimeline', data.auditLogs);
                     var metaEl = document.getElementById('drawerIdMeta');
-                    if (metaEl) metaEl.innerHTML = '<span>Employee ID<strong>' + (e.employeeId || '-') +
-                        '</strong></span><span>Tanggal Masuk<strong>' + (e.joinDate || '-') + '</strong></span>';
+                    if (metaEl) metaEl.innerHTML = '<span>Outsource ID<strong>' + (e.outsourceId || '-') +
+                        '</strong></span><span>Tgl Join Mito<strong>' + (e.mitoJoinDate || '-') + '</strong></span>';
 
-                    // Tombol Edit di footer — reuse modal edit employee karena outsource disimpan di sheet yang sama
-                    var btnEdit = document.getElementById('btnDrawerEntityEdit');
-                    if (btnEdit) btnEdit.onclick = function() {
-                        empOpenEdit(e);
+                    var canEdit = typeof window.openOutsourceForm === 'function';
+                    var openEdit = function() {
+                        window.openOutsourceForm(e);
                     };
-
-                    // Tombol Edit di header
-                    var btnEditHeader = document.getElementById('btnDrawerEdit');
-                    if (btnEditHeader) btnEditHeader.onclick = function() {
-                        empOpenEdit(e);
-                    };
+                    ['btnDrawerEntityEdit', 'btnDrawerEdit'].forEach(function(btnId) {
+                        var btn = document.getElementById(btnId);
+                        if (!btn) return;
+                        btn.onclick = canEdit ? openEdit : null;
+                        btn.classList.toggle('d-none', !canEdit);
+                    });
                 })
                 .catch(function() {
                     document.getElementById('drawerCandidateName').innerText = 'Gagal memuat data.';

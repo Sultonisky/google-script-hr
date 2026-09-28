@@ -2,15 +2,22 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Concerns\SoftDeprecatesSheetsEraCommand;
+use App\Models\Permission;
+use App\Repositories\Database\PermissionCatalogDatabaseRepository;
 use App\Services\Google\GoogleSheetsService;
+use App\Support\HrisDataDriver;
 use App\Support\PermissionCatalog;
 use Illuminate\Console\Command;
 
 /**
  * mito:seed-permissions
  *
- * Idempotently provisions the Permissions Google Sheet from the authoritative
+ * Idempotently provisions the permission catalog from the authoritative
  * static catalog defined in App\Support\PermissionCatalog::all().
+ *
+ * Target follows HRIS_DATA_DRIVER: pgsql → `permissions` table,
+ * sheets → Permissions sheet. With pgsql, --force writes the Sheets archive instead.
  *
  * Rules:
  *  - Only appends rows for catalog entries that do not yet exist in the sheet.
@@ -22,10 +29,13 @@ use Illuminate\Console\Command;
  */
 class SeedPermissionsCommand extends Command
 {
-    protected $signature = 'mito:seed-permissions
-                            {--dry-run : Report missing entries without writing to the sheet}';
+    use SoftDeprecatesSheetsEraCommand;
 
-    protected $description = 'Provision the Permissions sheet from the application permission catalog';
+    protected $signature = 'mito:seed-permissions
+                            {--dry-run : Report missing entries without writing}
+                            {--force : Saat SoT pgsql, tulis ke archive Sheets (backup) alih-alih DB}';
+
+    protected $description = 'Provision permission catalog ke SoT aktif (DB jika pgsql, Sheets jika sheets)';
 
     /**
      * Canonical 7-column schema for the Permissions sheet.
@@ -42,8 +52,14 @@ class SeedPermissionsCommand extends Command
         'Updated At',
     ];
 
-    public function handle(GoogleSheetsService $sheets): int
+    public function handle(GoogleSheetsService $sheets, PermissionCatalogDatabaseRepository $dbCatalog): int
     {
+        if (HrisDataDriver::usesPgsql() && ! $this->option('force')) {
+            return $this->seedDatabase($dbCatalog);
+        }
+
+        $this->refuseSheetsEraUnlessForced('Archive saja. SoT permissions ada di DB (jalankan tanpa --force).');
+
         $sheetName = config('google.sheets.permissions', 'Permissions');
         $dryRun    = (bool) $this->option('dry-run');
         $mode      = $dryRun ? 'DRY-RUN' : 'APPLY';
@@ -139,6 +155,51 @@ class SeedPermissionsCommand extends Command
         }
 
         $this->info("Permission catalog seed complete. {$totalMissing} row(s) created.");
+        return Command::SUCCESS;
+    }
+
+    private function seedDatabase(PermissionCatalogDatabaseRepository $dbCatalog): int
+    {
+        $dryRun = (bool) $this->option('dry-run');
+        $mode = $dryRun ? 'DRY-RUN' : 'APPLY';
+        $this->info("Permission catalog seed [{$mode}] — database (SoT=pgsql)");
+
+        $existingKeys = array_fill_keys(
+            Permission::query()->pluck('permission_key')->map(fn ($k) => (string) $k)->all(),
+            true
+        );
+
+        $missing = [];
+        foreach (PermissionCatalog::all() as $entry) {
+            $key = trim((string) ($entry['key'] ?? ''));
+            if ($key !== '' && ! isset($existingKeys[$key])) {
+                $missing[] = $entry;
+            }
+        }
+
+        $this->line('  Catalog permissions  : '.count(PermissionCatalog::all()));
+        $this->line('  Already in database  : '.count($existingKeys));
+        $this->line('  To be created        : '.count($missing));
+
+        if ($missing === []) {
+            $this->info('Permissions table is already up to date. Nothing to do.');
+
+            return Command::SUCCESS;
+        }
+
+        if ($dryRun) {
+            foreach ($missing as $entry) {
+                $this->line("  [{$entry['key']}] ".($entry['name'] ?? '').' ('.($entry['group'] ?? '').')');
+            }
+            $this->info('DRY-RUN complete. '.count($missing).' row(s) would be created.');
+
+            return Command::SUCCESS;
+        }
+
+        $inserted = $dbCatalog->syncFromStaticCatalog();
+        $this->info("Permission catalog seed complete. {$inserted} row(s) created in database.");
+        $this->line('Mirror ke archive (opsional): php artisan mito:etl-db-to-sheets --only=permissions');
+
         return Command::SUCCESS;
     }
 

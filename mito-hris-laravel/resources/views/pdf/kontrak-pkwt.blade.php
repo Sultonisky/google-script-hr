@@ -253,7 +253,12 @@
         // Nomor kontrak
         $contractNo =
             $extraData['contract_number'] ??
-            ($extraData['contractNumber'] ?? 'PKWT/HRD/' . date('Y') . '/' . ($subject?->recruitmentId ?? '001'));
+            ($extraData['contractNumber'] ??
+                ($extraData['sk_number'] ??
+                    ($subject?->contractNumber ?? ($subject?->nomorSk ?? ''))));
+        if ($contractNo === '') {
+            $contractNo = '-';
+        }
 
         // Tanggal dokumen
         $rawDoc = $extraData['doc_date'] ?? ($extraData['docDate'] ?? null);

@@ -4,30 +4,31 @@
 @section('description', 'Formulir registrasi karyawan outsource untuk keperluan administrasi HRIS MITO.')
 @section('robots', 'noindex,follow,noarchive')
 
+@php
+    $osConfig = config('hris.outsource', []);
+    $today = now()->timezone('Asia/Jakarta')->toDateString();
+@endphp
+
 @section('content')
     <style>
-        #formOutsource.nik-duplicate-locked .form-section:not(#sectionPersonal),
-        #formOutsource.nik-duplicate-locked .card {
+        #formOutsource.contact-duplicate-locked .form-section:not(#sectionContact),
+        #formOutsource.contact-duplicate-locked .card {
             opacity: 0.55;
             pointer-events: none;
             filter: grayscale(0.12);
         }
 
-        #formOutsource.nik-duplicate-locked #sectionPersonal .form-section-body .row > [class*="col-"]:not(:first-child) {
-            opacity: 0.55;
-            pointer-events: none;
-        }
-
-        #nik.nik-duplicate {
+        #whatsapp_number.contact-duplicate,
+        #email.contact-duplicate {
             border-color: #dc2626;
             background: #fff5f5;
         }
 
-        #nikLockBanner {
+        #contactLockBanner {
             border-radius: 14px;
         }
     </style>
-    <!-- HERO (1:1 from GAS OutsourceForm.html) -->
+    <!-- HERO -->
     <div class="hero-section">
         <div class="container">
             <div class="row align-items-center">
@@ -46,7 +47,7 @@
         </div>
     </div>
 
-    <!-- PROGRESS (sticky 1:1 from GAS OutsourceForm.html) -->
+    <!-- PROGRESS -->
     <div class="progress-section">
         <div class="container">
             <div class="progress-label">Progress Pengisian</div>
@@ -54,17 +55,15 @@
                 <div class="progress-bar-fill" id="progressFill"></div>
             </div>
             <div class="progress-meta">
-                <span id="progressCount">0 dari 36 data telah lengkap</span>
+                <span id="progressCount">0 dari 20 data telah lengkap</span>
                 <span class="progress-message" id="progressMessage">Mulai mengisi formulir...</span>
             </div>
         </div>
     </div>
 
-    <!-- FORM BODY (1:1 from GAS partials/OutsourceFormBody.html) -->
     <div class="content-wrap py-4">
         <div class="container" style="max-width:960px;">
 
-            {{-- Server-side error alert --}}
             @if (session('error'))
                 <div class="alert alert-danger alert-dismissible fade show p-3 mb-4 rounded-3 d-flex align-items-center gap-2"
                     role="alert">
@@ -94,21 +93,11 @@
             <div id="registrationForm">
                 <form action="{{ route('public.outsource.store') }}" method="POST" id="formOutsource" novalidate>
                     @csrf
-                    <div id="nikLockBanner" class="alert alert-danger d-none p-3 mb-4 d-flex align-items-start gap-2" role="alert">
-                        <i class="bi bi-exclamation-octagon-fill fs-5 flex-shrink-0 mt-1"></i>
-                        <div>
-                            <strong id="nikLockBannerTitle">NIK sudah terdaftar.</strong>
-                            <div id="nikLockBannerMessage" class="mt-1" style="font-size:13px;"></div>
-                            <div class="mt-1" style="font-size:12px;">Ubah NIK di kolom identitas untuk membuka kembali formulir. Tombol kirim dan seluruh isian lain dikunci sampai NIK unik terdeteksi.</div>
-                        </div>
-                    </div>
                     <input type="hidden" name="consent_timestamp" id="consentTimestamp">
                     <input type="hidden" name="consent_device" id="consentDevice">
                     <input type="hidden" name="consent_latitude" id="consentLatitude">
                     <input type="hidden" name="consent_longitude" id="consentLongitude">
                     <input type="hidden" name="consent_location" id="consentLocation">
-                    {{-- BUG FIX #2: carries resolved city NAME so backend never stores the numeric code --}}
-                    <input type="hidden" name="kota_nama" id="kotaNama" value="{{ old('kota_nama') }}">
 
                     <!-- SECTION 1: PERSONAL INFORMATION -->
                     <div class="form-section" id="sectionPersonal">
@@ -116,498 +105,272 @@
                             <i class="bi bi-person-fill"></i>
                             <div>
                                 <h5>Informasi Pribadi</h5>
-                                <p>Data identitas dan informasi personal Anda</p>
+                                <p>Data identitas sesuai KTP</p>
                             </div>
-                            <span class="section-status" id="secBadgePersonal"><i class="bi bi-hourglass-split"></i> Belum
-                                lengkap</span>
+                            <span class="section-status" id="secBadgePersonal"><i class="bi bi-hourglass-split"></i></span>
                         </div>
                         <div class="form-section-body p-4">
                             <div class="row g-3">
                                 <div class="col-12">
-                                    <label class="form-label fw-semibold" for="nik" style="font-size:13px">NIK (Nomor
-                                        Induk Kependudukan) <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="nik" name="nik"
-                                        value="{{ old('nik') }}" required maxlength="16" pattern="[0-9]{16}"
-                                        autocomplete="off" inputmode="numeric" data-sanitize-digits="true">
-                                    <div class="invalid-feedback">NIK harus tepat 16 digit angka.</div>
-                                    <div class="p-2 rounded mt-2 d-flex align-items-center gap-2"
-                                        style="background:#f0f7ff;border:1px solid #c7dff7;font-size:12px;color:#005BAC">
-                                        <i class="bi bi-info-circle-fill fs-6 flex-shrink-0"></i>
-                                        <div>Sistem akan mengisi beberapa informasi secara otomatis berdasarkan struktur
-                                            NIK. Pastikan data sudah sesuai sebelum mengirim.</div>
-                                    </div>
-                                    <div class="mt-1" id="nikFeedback"></div>
-                                    <div class="mt-2" id="nikDuplicateWarning" role="alert" aria-live="assertive"></div>
+                                    <label class="form-label fw-semibold" for="full_name" style="font-size:13px">Nama
+                                        (sesuai KTP) <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="full_name" name="full_name"
+                                        value="{{ old('full_name') }}" required minlength="3" maxlength="255"
+                                        pattern="[\p{L}'.]+( [\p{L}'.]+)*" autocomplete="name">
+                                    <div class="invalid-feedback">Nama hanya boleh berisi huruf, spasi, titik, dan apostrof.</div>
                                 </div>
 
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="full_name" style="font-size:13px">Nama
-                                        Lengkap <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="full_name" name="nama_lengkap"
-                                        value="{{ old('nama_lengkap') }}" required minlength="3" maxlength="255"
-                                        pattern="[\p{L}]+( [\p{L}]+)*" autocomplete="name" data-sanitize-name="true">
-                                    <div class="invalid-feedback">Nama lengkap hanya boleh berisi huruf dan spasi.</div>
+                                    <label class="form-label fw-semibold" for="birth_place" style="font-size:13px">Kota
+                                        Kelahiran <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="birth_place" name="birth_place"
+                                        value="{{ old('birth_place') }}" required minlength="3" maxlength="120"
+                                        pattern="[\p{L}'.]+( [\p{L}'.]+)*" placeholder="Contoh: Jakarta">
+                                    <div class="invalid-feedback">Kota kelahiran hanya boleh berisi huruf dan spasi.</div>
                                 </div>
 
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold" for="birth_date" style="font-size:13px">Tanggal
                                         Lahir <span class="text-danger">*</span></label>
                                     <input type="date" class="form-control" id="birth_date" name="birth_date"
-                                        value="{{ old('birth_date') }}" required min="1900-01-01"
-                                        max="{{ now()->timezone('Asia/Jakarta')->toDateString() }}"
+                                        value="{{ old('birth_date') }}" required min="1900-01-01" max="{{ $today }}"
                                         autocomplete="bday">
-                                    <div class="invalid-feedback">Tanggal lahir wajib diisi dengan format YYYY-MM-DD.</div>
+                                    <div class="invalid-feedback">Tanggal lahir wajib diisi dan usia minimal 17 tahun.</div>
                                 </div>
 
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="birth_place" style="font-size:13px">Tempat
-                                        Lahir <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="birth_place" name="tempat_lahir"
-                                        value="{{ old('tempat_lahir') }}" required minlength="3" maxlength="120"
-                                        pattern="[\p{L}]+( [\p{L}]+)*" placeholder="Contoh: Jakarta"
-                                        data-sanitize-name="true">
-                                    <div class="invalid-feedback">Tempat lahir hanya boleh berisi huruf dan spasi.</div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="age"
-                                        style="font-size:13px">Usia</label>
-                                    <input type="number" class="form-control" id="age" name="usia"
-                                        value="{{ old('usia') }}" readonly
+                                    <label class="form-label fw-semibold" for="age" style="font-size:13px">Usia</label>
+                                    <input type="number" class="form-control" id="age" readonly
                                         style="background-color:#f8f9fa;cursor:default;"
                                         placeholder="Otomatis dari Tanggal Lahir">
                                 </div>
 
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="gender" style="font-size:13px">Jenis
-                                        Kelamin <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="gender" name="jenis_kelamin" required>
-                                        <option value="">-- Pilih Jenis Kelamin --</option>
-                                        <option value="Laki-laki"
-                                            {{ old('jenis_kelamin') === 'Laki-laki' ? 'selected' : '' }}>Laki-laki</option>
-                                        <option value="Perempuan"
-                                            {{ old('jenis_kelamin') === 'Perempuan' ? 'selected' : '' }}>Perempuan</option>
+                                    <label class="form-label fw-semibold" for="last_education"
+                                        style="font-size:13px">Pendidikan Terakhir <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="last_education" name="last_education" required>
+                                        <option value="">-- Pilih Pendidikan --</option>
+                                        @foreach ($osConfig['education_levels'] ?? [] as $level)
+                                            <option value="{{ $level }}" @selected(old('last_education') === $level)>{{ $level }}</option>
+                                        @endforeach
                                     </select>
-                                    <div class="invalid-feedback">Jenis kelamin wajib dipilih.</div>
+                                    <div class="invalid-feedback">Pendidikan terakhir wajib dipilih.</div>
                                 </div>
 
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="religion" style="font-size:13px">Agama
-                                        <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="religion" name="agama" required>
-                                        <option value="">-- Pilih Agama --</option>
-                                        <option value="Islam">Islam</option>
-                                        <option value="Kristen">Kristen</option>
-                                        <option value="Katolik">Katolik</option>
-                                        <option value="Hindu">Hindu</option>
-                                        <option value="Buddha">Buddha</option>
-                                        <option value="Khonghucu">Khonghucu</option>
-                                    </select>
-                                    <div class="invalid-feedback">Agama wajib dipilih.</div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="blood_type"
-                                        style="font-size:13px">Golongan Darah <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="blood_type" name="golongan_darah" required>
-                                        <option value="">-- Pilih Golongan Darah --</option>
-                                        <option value="A" {{ old('golongan_darah') === 'A' ? 'selected' : '' }}>A</option>
-                                        <option value="B" {{ old('golongan_darah') === 'B' ? 'selected' : '' }}>B</option>
-                                        <option value="AB" {{ old('golongan_darah') === 'AB' ? 'selected' : '' }}>AB</option>
-                                        <option value="O" {{ old('golongan_darah') === 'O' ? 'selected' : '' }}>O</option>
-                                    </select>
-                                    <div class="invalid-feedback">Golongan darah wajib dipilih.</div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="marital_status"
-                                        style="font-size:13px">Status Pernikahan <span
-                                            class="text-danger">*</span></label>
-                                    <select class="form-select" id="marital_status" name="status_pernikahan" required>
-                                        <option value="">-- Pilih Status Pernikahan --</option>
-                                        <option value="Belum Menikah">Belum Menikah</option>
-                                        <option value="Menikah">Menikah</option>
-                                        <option value="Cerai">Cerai</option>
-                                    </select>
-                                    <div class="invalid-feedback">Status pernikahan wajib dipilih.</div>
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold" for="citizen_id_address"
+                                        style="font-size:13px">Alamat sesuai KTP <span class="text-danger">*</span></label>
+                                    <textarea class="form-control" id="citizen_id_address" name="citizen_id_address" rows="3" required
+                                        minlength="5" maxlength="500" placeholder="Jalan, RT/RW, kelurahan, kecamatan, kota">{{ old('citizen_id_address') }}</textarea>
+                                    <div class="invalid-feedback">Alamat sesuai KTP wajib diisi (minimal 5 karakter).</div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- SECTION 2: CONTACT & ADDRESS (1:1 from GAS sectionContact) -->
+                    <!-- SECTION 2: CONTACT -->
                     <div class="form-section" id="sectionContact">
                         <div class="form-section-header">
-                            <i class="bi bi-envelope-fill"></i>
+                            <i class="bi bi-whatsapp"></i>
                             <div>
                                 <h5>Informasi Kontak</h5>
-                                <p>Data komunikasi dan alamat domisili</p>
+                                <p>Nomor WhatsApp dan email aktif</p>
                             </div>
-                            <span class="section-status" id="secBadgeContact"><i
-                                    class="bi bi-hourglass-split"></i></span>
+                            <span class="section-status" id="secBadgeContact"><i class="bi bi-hourglass-split"></i></span>
                         </div>
                         <div class="form-section-body p-4">
+                            <div id="contactLockBanner" class="alert alert-danger d-none p-3 mb-3 d-flex align-items-start gap-2"
+                                role="alert">
+                                <i class="bi bi-exclamation-octagon-fill fs-5 flex-shrink-0 mt-1"></i>
+                                <div>
+                                    <strong>Kontak sudah terdaftar.</strong>
+                                    <div id="contactLockBannerMessage" class="mt-1" style="font-size:13px;"></div>
+                                    <div class="mt-1" style="font-size:12px;">Ubah nomor WhatsApp atau email untuk membuka
+                                        kembali formulir.</div>
+                                </div>
+                            </div>
                             <div class="row g-3">
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="email" style="font-size:13px">Email
-                                        Pribadi <span class="text-danger">*</span></label>
-                                    <input type="email" class="form-control" id="email" name="email_pribadi"
-                                        value="{{ old('email_pribadi') }}" required autocomplete="email">
-                                    <div class="invalid-feedback">Format alamat email tidak valid.</div>
-                                    <div id="emailValidation" class="mt-1" style="display:none;font-size:12px;"></div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="working_email"
-                                        style="font-size:13px">Email Kantor <span
-                                            class="text-danger">*</span></label>
-                                    <input type="email" class="form-control" id="working_email" name="email_kantor"
-                                        value="{{ old('email_kantor') }}" required autocomplete="off" maxlength="255"
-                                        placeholder="nama@email.com">
-                                    <div class="invalid-feedback">Format alamat email kantor tidak valid.</div>
-                                    <div class="form-text">Gunakan email kerja yang aktif. Email MITO tidak wajib.</div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="phone" style="font-size:13px">Nomor HP
-                                        <span class="text-danger">*</span></label>
+                                    <label class="form-label fw-semibold" for="whatsapp_number" style="font-size:13px">No
+                                        WhatsApp <span class="text-danger">*</span></label>
                                     <div class="input-group-prefix d-flex">
                                         <span
                                             class="input-prefix d-flex align-items-center px-3 border border-end-0 rounded-start bg-light text-muted"
                                             style="font-size:13px;">+62</span>
-                                        <input type="tel" class="form-control rounded-start-0" id="phone"
-                                            name="nomor_telepon" value="{{ old('nomor_telepon') }}" required
-                                            maxlength="13" pattern="8[0-9]{6,12}" autocomplete="tel" inputmode="numeric"
-                                            data-sanitize-digits="true"
+                                        <input type="tel" class="form-control rounded-start-0" id="whatsapp_number"
+                                            name="whatsapp_number" value="{{ old('whatsapp_number') }}" required
+                                            maxlength="13" pattern="8[0-9]{7,12}" autocomplete="tel" inputmode="numeric"
                                             placeholder="81234567890">
                                     </div>
-                                    <div class="invalid-feedback">Nomor HP tidak valid. Gunakan format 8xxxxxxxxxx.</div>
+                                    <div class="invalid-feedback">Nomor WhatsApp tidak valid. Gunakan format 8xxxxxxxxxx.</div>
                                 </div>
 
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="province" style="font-size:13px">Provinsi
+                                    <label class="form-label fw-semibold" for="email" style="font-size:13px">Email
                                         <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="province" name="provinsi" required>
-                                        <option value="">-- Pilih Provinsi --</option>
-                                    </select>
-                                    <div class="invalid-feedback">Provinsi wajib dipilih.</div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="city"
-                                        style="font-size:13px">Kota/Kabupaten <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="city" name="kota" required>
-                                        <option value="">-- Pilih Kota/Kabupaten --</option>
-                                    </select>
-                                    <div class="invalid-feedback">Kota/Kabupaten wajib dipilih.</div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="district" style="font-size:13px">Kecamatan
-                                        <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="district" name="kecamatan" required disabled>
-                                        <option value="">-- Pilih Kota dahulu --</option>
-                                    </select>
-                                    <div class="invalid-feedback">Kecamatan wajib dipilih.</div>
-                                    <div id="districtLoading"
-                                        style="display:none;font-size:12px;color:#6b7280;margin-top:5px;">
-                                        <span class="spinner-border spinner-border-sm me-1" role="status"></span> Memuat
-                                        daftar kecamatan...
-                                    </div>
-                                    <div id="districtManualWrap" style="display:none;margin-top:6px;">
-                                        <input type="text" class="form-control" id="districtManual"
-                                            name="kecamatan_manual" value="{{ old('kecamatan_manual') }}"
-                                            minlength="3" maxlength="120" data-sanitize-moderate="true"
-                                            placeholder="Ketik nama kecamatan manual">
-                                        <div class="form-text">Data kecamatan tidak tersedia, isi manual.</div>
-                                    </div>
-                                </div>
-
-                                <div class="col-12">
-                                    <label class="form-label fw-semibold" for="address" style="font-size:13px">Alamat
-                                        KTP <span class="text-danger">*</span></label>
-                                    <textarea class="form-control" id="address" name="alamat_ktp" rows="2" required
-                                        minlength="5" maxlength="500"
-                                        placeholder="Jalan, RT/RW, Kelurahan, Kecamatan, Kota, Provinsi...">{{ old('alamat_ktp') }}</textarea>
-                                    <div class="invalid-feedback">Alamat KTP wajib diisi.</div>
-                                </div>
-
-                                <div class="col-12">
-                                    <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox" id="same_address">
-                                        <label class="form-check-label fw-semibold" for="same_address"
-                                            style="font-size:12.5px">Alamat domisili saat ini sama dengan alamat
-                                            KTP</label>
-                                    </div>
-                                    <label class="form-label fw-semibold" for="address_residential"
-                                        style="font-size:13px">Alamat Tinggal (Domisili) <span
-                                            class="text-danger">*</span></label>
-                                    <textarea class="form-control" id="address_residential" name="alamat_domisili" rows="2" required
-                                        minlength="5" maxlength="500"
-                                        placeholder="Alamat tempat tinggal saat ini...">{{ old('alamat_domisili') }}</textarea>
-                                    <div class="invalid-feedback">Alamat tinggal wajib diisi.</div>
+                                    <input type="email" class="form-control" id="email" name="email"
+                                        value="{{ old('email') }}" required maxlength="255" autocomplete="email"
+                                        placeholder="nama@email.com">
+                                    <div class="invalid-feedback">Format alamat email tidak valid.</div>
+                                    <div id="emailValidation" class="mt-1" style="display:none;font-size:12px;"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- SECTION 3: DATA PENEMPATAN (1:1 from GAS sectionEmployment) -->
+                    <!-- SECTION 3: PLACEMENT & CONTRACT -->
                     <div class="form-section" id="sectionEmployment">
                         <div class="form-section-header">
                             <i class="bi bi-briefcase-fill"></i>
                             <div>
-                                <h5>Data Penempatan</h5>
-                                <p>Informasi posisi dan penempatan di MITO Group</p>
+                                <h5>Penempatan &amp; Kontrak</h5>
+                                <p>Vendor, jabatan, lokasi kerja, dan periode kontrak</p>
                             </div>
-                            <span class="section-status" id="secBadgeEmployment"><i
-                                    class="bi bi-hourglass-split"></i></span>
+                            <span class="section-status" id="secBadgeEmployment"><i class="bi bi-hourglass-split"></i></span>
                         </div>
                         <div class="form-section-body p-4">
                             <div class="row g-3">
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="branch_name"
-                                        style="font-size:13px">Entitas Perusahaan (Branch) <span
-                                            class="text-danger">*</span></label>
-                                    <select class="form-select" id="branch_name" name="cabang_penempatan" required>
-                                        <option value="">-- Pilih Entitas --</option>
-                                        <option value="PT Mahakarya Sukses Indonesia">PT Mahakarya Sukses Indonesia
-                                        </option>
-                                        <option value="PT Stein Perkasa Internasional">PT Stein Perkasa Internasional
-                                        </option>
-                                        <option value="PT Perkasa Injeksi Indonesia">PT Perkasa Injeksi Indonesia</option>
-                                        <option value="PT Mitra Elektro Perkasa">PT Mitra Elektro Perkasa</option>
-                                    </select>
-                                    <div class="invalid-feedback">Entitas perusahaan wajib dipilih.</div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="outsource_vendor"
-                                        style="font-size:13px">Vendor Outsource <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="outsource_vendor"
-                                        name="vendor_outsource" value="{{ old('vendor_outsource') }}" required
-                                        minlength="3" maxlength="120" data-sanitize-moderate="true"
-                                        placeholder="Contoh: PT Nama Vendor Outsource">
-                                    <div class="invalid-feedback">Vendor outsource wajib diisi (min. 3 karakter).</div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="division" style="font-size:13px">Divisi
+                                    <label class="form-label fw-semibold" for="vendor" style="font-size:13px">Vendor
                                         <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="division" name="divisi"
-                                        value="{{ old('divisi') }}" required minlength="2" maxlength="80"
-                                        data-sanitize-moderate="true" placeholder="Contoh: Finance, IT, HRD">
-                                    <div class="invalid-feedback">Divisi wajib diisi.</div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="department"
-                                        style="font-size:13px">Departemen <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="department" name="departemen"
-                                        value="{{ old('departemen') }}" required minlength="2" maxlength="80"
-                                        data-sanitize-moderate="true"
-                                        placeholder="Contoh: Human Resources, Finance">
-                                    <div class="invalid-feedback">Departemen wajib diisi.</div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="area_kerja" style="font-size:13px">Area
-                                        Kerja <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="area_kerja" name="area_kerja" required>
-                                        <option value="">-- Pilih Area Kerja --</option>
-                                        <option value="Head Office">Head Office</option>
-                                        <option value="Cabang">Cabang</option>
-                                        <option value="Pabrik">Pabrik</option>
+                                    <select class="form-select" id="vendor" name="vendor" required>
+                                        <option value="">-- Pilih Vendor --</option>
+                                        @foreach ($osConfig['vendors'] ?? [] as $vendorName)
+                                            <option value="{{ $vendorName }}" @selected(old('vendor') === $vendorName)>{{ $vendorName }}</option>
+                                        @endforeach
                                     </select>
-                                    <div class="invalid-feedback">Area kerja wajib dipilih.</div>
+                                    <div class="invalid-feedback">Vendor wajib dipilih.</div>
                                 </div>
 
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="cost_center" style="font-size:13px">Cost
-                                        Center <span class="text-danger">*</span></label>
+                                    <label class="form-label fw-semibold" for="entity" style="font-size:13px">Entity
+                                        <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="entity" name="entity" required>
+                                        <option value="">-- Pilih Entity --</option>
+                                        @foreach ($osConfig['entities'] ?? [] as $entityName)
+                                            <option value="{{ $entityName }}" @selected(old('entity') === $entityName)>{{ $entityName }}</option>
+                                        @endforeach
+                                    </select>
+                                    <div class="invalid-feedback">Entity wajib dipilih.</div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold" for="job_title" style="font-size:13px">Nama
+                                        Jabatan <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="job_title" name="job_title"
+                                        value="{{ old('job_title') }}" required minlength="2" maxlength="120"
+                                        list="osJobTitleList" placeholder="Contoh: SPB/SPG Toko">
+                                    <datalist id="osJobTitleList">
+                                        @foreach ($osConfig['job_titles'] ?? [] as $title)
+                                            <option value="{{ $title }}"></option>
+                                        @endforeach
+                                    </datalist>
+                                    <div class="invalid-feedback">Nama jabatan wajib diisi.</div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold" for="cost_center" style="font-size:13px">Cabang
+                                        (Cost Center) <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="cost_center" name="cost_center"
-                                        value="{{ old('cost_center') }}" required minlength="2" maxlength="80"
-                                        data-sanitize-moderate="true"
-                                        placeholder="Contoh: IT, Finance, Manufacture">
-                                    <div class="invalid-feedback">Cost center wajib diisi.</div>
+                                        value="{{ old('cost_center') }}" required minlength="2" maxlength="120"
+                                        placeholder="Contoh: Jakarta">
+                                    <div class="invalid-feedback">Cabang (cost center) wajib diisi.</div>
                                 </div>
 
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="lokasi_kerja"
-                                        style="font-size:13px">Lokasi Kerja <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="lokasi_kerja" name="lokasi_kerja"
-                                        value="{{ old('lokasi_kerja') }}" required minlength="3" maxlength="120"
-                                        data-sanitize-moderate="true"
-                                        placeholder="Contoh: Jakarta, Bandung, Surabaya">
+                                    <label class="form-label fw-semibold" for="work_location" style="font-size:13px">Lokasi
+                                        Kerja <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="work_location" name="work_location"
+                                        value="{{ old('work_location') }}" required minlength="2" maxlength="255"
+                                        placeholder="Nama toko / outlet">
                                     <div class="invalid-feedback">Lokasi kerja wajib diisi.</div>
                                 </div>
 
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="position" style="font-size:13px">Posisi /
-                                        Jabatan <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="position" name="posisi_jabatan" required>
-                                        <option value="">-- Pilih Posisi --</option>
-                                        @foreach ($positions ?? [] as $pos)
-                                            <option value="{{ $pos }}"
-                                                {{ old('posisi_jabatan') === $pos ? 'selected' : '' }}>{{ $pos }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    <div class="invalid-feedback">Posisi/jabatan wajib dipilih.</div>
+                                    <label class="form-label fw-semibold" for="work_city" style="font-size:13px">Kota
+                                        Lokasi Kerja <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="work_city" name="work_city"
+                                        value="{{ old('work_city') }}" required minlength="2" maxlength="120"
+                                        placeholder="Contoh: Bekasi">
+                                    <div class="invalid-feedback">Kota lokasi kerja wajib diisi.</div>
                                 </div>
 
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="job_level" style="font-size:13px">Job
-                                        Level <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="job_level" name="job_level" required>
-                                        <option value="">-- Pilih Job Level --</option>
-                                        <option value="Associate">Associate</option>
-                                        <option value="Supervisor">Supervisor</option>
-                                        <option value="Manager">Manager</option>
-                                    </select>
-                                    <div class="invalid-feedback">Job level wajib dipilih.</div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold" for="mito_join_date" style="font-size:13px">Tgl
+                                        Join di Mito <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="mito_join_date" name="mito_join_date"
+                                        value="{{ old('mito_join_date') }}" required min="1900-01-01">
+                                    <div class="invalid-feedback">Tanggal join di Mito wajib diisi.</div>
                                 </div>
 
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="employee_status"
-                                        style="font-size:13px">Status Karyawan <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control bg-light" id="employee_status"
-                                        value="Outsource" readonly disabled style="cursor:default;">
-                                    <input type="hidden" name="status_karyawan" value="Outsource">
-                                    <div class="form-text">Status dikunci Outsource karena pendaftaran melalui portal outsource.</div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold" for="contract_start_date"
+                                        style="font-size:13px">Tgl Awal Kontrak (Damarindo) <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="contract_start_date"
+                                        name="contract_start_date" value="{{ old('contract_start_date') }}" required
+                                        min="1900-01-01">
+                                    <div class="invalid-feedback">Tanggal awal kontrak wajib diisi.</div>
                                 </div>
 
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="join_date" style="font-size:13px">Tanggal
-                                        Masuk (Join Date) <span class="text-danger">*</span></label>
-                                    <input type="date" class="form-control" id="join_date" name="tanggal_masuk"
-                                        value="{{ old('tanggal_masuk', date('Y-m-d')) }}" required min="1900-01-01">
-                                    <div class="invalid-feedback">Tanggal masuk wajib diisi.</div>
-                                </div>
-
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <label class="form-label fw-semibold" for="contract_end_date"
-                                        style="font-size:13px">Tanggal Berakhir Kontrak <span
-                                            class="text-danger">*</span></label>
+                                        style="font-size:13px">Tgl Akhir Kontrak (StaffInc) <span class="text-danger">*</span></label>
                                     <input type="date" class="form-control" id="contract_end_date"
-                                        name="tanggal_berakhir_kontrak" value="{{ old('tanggal_berakhir_kontrak') }}"
-                                        required min="1900-01-02">
-                                    <div class="invalid-feedback">Tanggal berakhir kontrak harus setelah tanggal masuk.</div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="direct_superior"
-                                        style="font-size:13px">Atasan Langsung (Direct Superior) <span
-                                            class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="direct_superior"
-                                        name="atasan_langsung" value="{{ old('atasan_langsung') }}" required
-                                        minlength="3" maxlength="255" pattern="[\p{L}]+( [\p{L}]+)*"
-                                        data-sanitize-name="true" placeholder="Nama atasan langsung">
-                                    <div class="invalid-feedback">Nama atasan langsung hanya boleh berisi huruf dan spasi.</div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="indirect_superior"
-                                        style="font-size:13px">Atasan Tidak Langsung (Indirect Superior) <span
-                                            class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="indirect_superior"
-                                        name="atasan_tidak_langsung" value="{{ old('atasan_tidak_langsung') }}" required
-                                        minlength="3" maxlength="255" pattern="[\p{L}]+( [\p{L}]+)*"
-                                        data-sanitize-name="true" placeholder="Nama atasan tidak langsung">
-                                    <div class="invalid-feedback">Nama atasan tidak langsung hanya boleh berisi huruf dan spasi.</div>
+                                        name="contract_end_date" value="{{ old('contract_end_date') }}" required
+                                        min="1900-01-02">
+                                    <div class="invalid-feedback">Tanggal akhir kontrak harus setelah tanggal awal kontrak.</div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- SECTION 4: BANK & PAYROLL (1:1 from GAS sectionBank) -->
+                    <!-- SECTION 4: PAYROLL -->
                     <div class="form-section" id="sectionBank">
                         <div class="form-section-header">
                             <i class="bi bi-credit-card-fill"></i>
                             <div>
-                                <h5>Data Bank &amp; Payroll</h5>
-                                <p>Informasi rekening bank, NPWP, dan BPJS</p>
+                                <h5>Data Payroll</h5>
+                                <p>Rekening BCA, skema penggajian, dan nominal UMK</p>
                             </div>
-                            <span class="section-status" id="secBadgeBank"><i class="bi bi-hourglass-split"></i> Belum
-                                lengkap</span>
+                            <span class="section-status" id="secBadgeBank"><i class="bi bi-hourglass-split"></i></span>
                         </div>
                         <div class="form-section-body p-4">
                             <div class="row g-3">
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="bank_name" style="font-size:13px">Nama
-                                        Bank</label>
-                                    <input type="text" class="form-control bg-light" id="bank_name"
-                                        value="BCA" readonly disabled style="cursor:default;">
-                                    <input type="hidden" name="nama_bank" value="BCA">
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="bank_account" style="font-size:13px">Nomor
-                                        Rekening <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="bank_account" name="nomor_rekening"
-                                        value="{{ old('nomor_rekening') }}" required inputmode="numeric"
-                                        maxlength="20" pattern="[0-9]{8,20}" data-sanitize-digits="true"
-                                        placeholder="Contoh: 1234567890">
+                                    <label class="form-label fw-semibold" for="bank_account" style="font-size:13px">No
+                                        Rekening BCA <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="bank_account" name="bank_account"
+                                        value="{{ old('bank_account') }}" required inputmode="numeric" maxlength="20"
+                                        pattern="[0-9]{8,20}" placeholder="Contoh: 1234567890">
                                     <div class="invalid-feedback">Nomor rekening hanya boleh berisi 8–20 digit angka.</div>
                                 </div>
 
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="bank_account_holder"
-                                        style="font-size:13px">Nama Pemilik Rekening <span
-                                            class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="bank_account_holder"
-                                        name="nama_pemilik_rekening" value="{{ old('nama_pemilik_rekening') }}" required
-                                        minlength="3" maxlength="255" pattern="[\p{L}]+( [\p{L}]+)*"
-                                        data-sanitize-name="true" placeholder="Nama sesuai di buku rekening">
-                                    <div class="invalid-feedback">Nama pemilik rekening hanya boleh berisi huruf dan spasi.</div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="npwp" style="font-size:13px">NPWP
-                                        <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="npwp" name="npwp"
-                                        value="{{ old('npwp') }}" required inputmode="numeric" minlength="15"
-                                        maxlength="16" pattern="[0-9]{15,16}" data-sanitize-npwp="true"
-                                        placeholder="15 atau 16 digit" aria-describedby="npwpHelp">
-                                    <div class="form-text" id="npwpHelp" style="font-size:12px;">NPWP harus 15 atau 16 digit angka. Titik atau strip dihapus otomatis.</div>
-                                    <div class="invalid-feedback">NPWP wajib 15 atau 16 digit angka.</div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="ptkp_status" style="font-size:13px">Status
-                                        PTKP <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="ptkp_status" name="status_ptkp" required>
-                                        <option value="">-- Pilih Status PTKP --</option>
-                                        <option value="TK/0">TK/0 - Tidak Kawin Tanpa Tanggungan</option>
-                                        <option value="TK/1">TK/1 - Tidak Kawin 1 Tanggungan</option>
-                                        <option value="TK/2">TK/2 - Tidak Kawin 2 Tanggungan</option>
-                                        <option value="TK/3">TK/3 - Tidak Kawin 3 Tanggungan</option>
-                                        <option value="K/0">K/0 - Kawin Tanpa Tanggungan</option>
-                                        <option value="K/1">K/1 - Kawin 1 Tanggungan</option>
-                                        <option value="K/2">K/2 - Kawin 2 Tanggungan</option>
-                                        <option value="K/3">K/3 - Kawin 3 Tanggungan</option>
+                                    <label class="form-label fw-semibold" for="payroll_scheme"
+                                        style="font-size:13px">Skema Penggajian <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="payroll_scheme" name="payroll_scheme" required>
+                                        <option value="">-- Pilih Skema --</option>
+                                        @foreach ($osConfig['payroll_schemes'] ?? [] as $scheme)
+                                            <option value="{{ $scheme }}" @selected(old('payroll_scheme') === $scheme)>{{ $scheme }}</option>
+                                        @endforeach
                                     </select>
-                                    <div class="invalid-feedback">Status PTKP wajib dipilih.</div>
+                                    <div class="invalid-feedback">Skema penggajian wajib dipilih.</div>
                                 </div>
 
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="bpjs_ketenagakerjaan"
-                                        style="font-size:13px">BPJS Ketenagakerjaan <span
-                                            class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="bpjs_ketenagakerjaan"
-                                        name="bpjs_ketenagakerjaan" value="{{ old('bpjs_ketenagakerjaan') }}" required
-                                        maxlength="16" minlength="11" pattern="[0-9]{11,16}" inputmode="numeric"
-                                        data-sanitize-digits="true" placeholder="Contoh: 123456789012">
-                                    <div class="invalid-feedback">BPJS Ketenagakerjaan hanya boleh berisi 11–16 digit angka.</div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="bpjs_kesehatan"
-                                        style="font-size:13px">BPJS Kesehatan <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="bpjs_kesehatan" name="bpjs_kesehatan"
-                                        value="{{ old('bpjs_kesehatan') }}" required maxlength="16" minlength="13"
-                                        pattern="[0-9]{13,16}" inputmode="numeric" data-sanitize-digits="true"
-                                        placeholder="Contoh: 1234567890123">
-                                    <div class="invalid-feedback">BPJS Kesehatan hanya boleh berisi 13–16 digit angka.</div>
+                                    <label class="form-label fw-semibold" for="umk_amount" style="font-size:13px">Nominal
+                                        UMK <span class="text-danger">*</span></label>
+                                    <div class="input-group-prefix d-flex">
+                                        <span
+                                            class="input-prefix d-flex align-items-center px-3 border border-end-0 rounded-start bg-light text-muted"
+                                            style="font-size:13px;">Rp</span>
+                                        <input type="text" class="form-control rounded-start-0" id="umk_amount"
+                                            name="umk_amount" value="{{ old('umk_amount') }}" required
+                                            inputmode="numeric" maxlength="15" pattern="[0-9]{1,3}(\.[0-9]{3})+"
+                                            autocomplete="off" data-amount placeholder="Contoh: 5.396.761">
+                                    </div>
+                                    <div class="form-text amount-hint" style="font-size:12px;"></div>
+                                    <div class="invalid-feedback">Nominal UMK wajib diisi angka, minimal Rp 1.000.</div>
                                 </div>
                             </div>
                         </div>
@@ -619,8 +382,8 @@
                         <div class="card-body p-4">
                             <div class="form-check mb-3">
                                 <input class="form-check-input" type="checkbox" id="agreement" name="agreement"
-                                    value="1" required style="width:20px;height:20px;cursor:not-allowed;opacity:0.5;"
-                                    onclick="return false;" onfocus="this.blur();">
+                                    value="1" required data-unlocked="0"
+                                    style="width:20px;height:20px;cursor:not-allowed;opacity:0.5;">
                                 <label class="form-check-label ms-2 fw-semibold" for="agreement"
                                     style="font-size:13px;cursor:pointer;color:#0B2540;">
                                     Saya menyatakan bahwa seluruh data yang saya isi adalah benar dan dapat
@@ -647,335 +410,46 @@
                 </form>
             </div>
 
-            {{-- SUCCESS PAGE (1:1 from GAS successPage div) --}}
-            <div id="successPage" style="display:none;text-align:center;padding:80px 20px;">
-                <div class="success-icon"
-                    style="width:100px;height:100px;background:linear-gradient(135deg,#ecfdf3,#d1fae5);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;color:#166534;font-size:48px;border:4px solid #166534;box-shadow:0 6px 20px -6px rgba(22,101,52,0.2);">
-                    <i class="bi bi-check-circle-fill"></i>
-                </div>
-                <h2 class="success-title" style="font-size:30px;font-weight:800;color:#1f2937;margin-bottom:16px;">
-                    Registrasi Berhasil</h2>
-                <p class="success-message"
-                    style="font-size:15px;color:#6b7280;line-height:1.8;max-width:540px;margin:0 auto 32px;">
-                    Terima kasih, data Anda telah berhasil kami terima.<br><br>
-                    Data outsource Anda akan diproses oleh tim Human Resources MITO Group untuk keperluan administrasi
-                    HRIS.<br><br>
-                    Apabila ada pertanyaan, silakan menghubungi tim HR.
-                </p>
-                <p id="successRecruitId" style="font-size:14px;color:#eb1c24;font-weight:700;margin-bottom:32px;"></p>
-            </div>
-
         </div>
     </div>
 @endsection
 
 @section('scripts')
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
-        // ============================================================
-        // REGIONS DATASET (same as career form, 1:1 from GAS js/regions.html)
-        // ============================================================
-        var REGIONS = {
-            "provinces": {
-                "11": "ACEH",
-                "12": "SUMATERA UTARA",
-                "13": "SUMATERA BARAT",
-                "14": "RIAU",
-                "15": "JAMBI",
-                "16": "SUMATERA SELATAN",
-                "17": "BENGKULU",
-                "18": "LAMPUNG",
-                "19": "KEPULAUAN BANGKA BELITUNG",
-                "21": "KEPULAUAN RIAU",
-                "31": "DKI JAKARTA",
-                "32": "JAWA BARAT",
-                "33": "JAWA TENGAH",
-                "34": "DI YOGYAKARTA",
-                "35": "JAWA TIMUR",
-                "36": "BANTEN",
-                "51": "BALI",
-                "52": "NUSA TENGGARA BARAT",
-                "53": "NUSA TENGGARA TIMUR",
-                "61": "KALIMANTAN BARAT",
-                "62": "KALIMANTAN TENGAH",
-                "63": "KALIMANTAN SELATAN",
-                "64": "KALIMANTAN TIMUR",
-                "65": "KALIMANTAN UTARA",
-                "71": "SULAWESI UTARA",
-                "72": "SULAWESI TENGAH",
-                "73": "SULAWESI SELATAN",
-                "74": "SULAWESI TENGGARA",
-                "75": "GORONTALO",
-                "76": "SULAWESI BARAT",
-                "81": "MALUKU",
-                "82": "MALUKU UTARA",
-                "91": "PAPUA",
-                "92": "PAPUA BARAT",
-                "93": "PAPUA SELATAN",
-                "94": "PAPUA TENGAH",
-                "95": "PAPUA PEGUNUNGAN",
-                "96": "PAPUA BARAT DAYA"
-            },
-            "cities": {
-                "1271": "KOTA MEDAN",
-                "1371": "KOTA PADANG",
-                "1471": "KOTA PEKANBARU",
-                "1671": "KOTA PALEMBANG",
-                "1771": "KOTA BENGKULU",
-                "1871": "KOTA BANDAR LAMPUNG",
-                "1971": "KOTA PANGKAL PINANG",
-                "2171": "KOTA BATAM",
-                "2172": "KOTA TANJUNG PINANG",
-                "3101": "KAB. KEP. SERIBU",
-                "3171": "KOTA JAKARTA PUSAT",
-                "3172": "KOTA JAKARTA UTARA",
-                "3173": "KOTA JAKARTA BARAT",
-                "3174": "KOTA JAKARTA SELATAN",
-                "3175": "KOTA JAKARTA TIMUR",
-                "3201": "KAB. BOGOR",
-                "3202": "KAB. SUKABUMI",
-                "3203": "KAB. CIANJUR",
-                "3204": "KAB. BANDUNG",
-                "3205": "KAB. GARUT",
-                "3206": "KAB. TASIKMALAYA",
-                "3207": "KAB. CIAMIS",
-                "3208": "KAB. KUNINGAN",
-                "3209": "KAB. CIREBON",
-                "3210": "KAB. MAJALENGKA",
-                "3211": "KAB. SUMEDANG",
-                "3212": "KAB. INDRAMAYU",
-                "3213": "KAB. SUBANG",
-                "3214": "KAB. PURWAKARTA",
-                "3215": "KAB. KARAWANG",
-                "3216": "KAB. BEKASI",
-                "3217": "KAB. BANDUNG BARAT",
-                "3218": "KAB. PANGANDARAN",
-                "3271": "KOTA BOGOR",
-                "3272": "KOTA SUKABUMI",
-                "3273": "KOTA BANDUNG",
-                "3274": "KOTA CIREBON",
-                "3275": "KOTA BEKASI",
-                "3276": "KOTA DEPOK",
-                "3277": "KOTA CIMAHI",
-                "3278": "KOTA TASIKMALAYA",
-                "3279": "KOTA BANJAR",
-                "3301": "KAB. CILACAP",
-                "3302": "KAB. BANYUMAS",
-                "3303": "KAB. PURBALINGGA",
-                "3304": "KAB. BANJARNEGARA",
-                "3305": "KAB. KEBUMEN",
-                "3306": "KAB. PURWOREJO",
-                "3307": "KAB. WONOSOBO",
-                "3308": "KAB. MAGELANG",
-                "3309": "KAB. BOYOLALI",
-                "3310": "KAB. KLATEN",
-                "3311": "KAB. SUKOHARJO",
-                "3312": "KAB. WONOGIRI",
-                "3313": "KAB. KARANGANYAR",
-                "3314": "KAB. SRAGEN",
-                "3315": "KAB. GROBOGAN",
-                "3316": "KAB. BLORA",
-                "3317": "KAB. REMBANG",
-                "3318": "KAB. PATI",
-                "3319": "KAB. KUDUS",
-                "3320": "KAB. JEPARA",
-                "3321": "KAB. DEMAK",
-                "3322": "KAB. SEMARANG",
-                "3323": "KAB. TEMANGGUNG",
-                "3324": "KAB. KENDAL",
-                "3325": "KAB. BATANG",
-                "3326": "KAB. PEKALONGAN",
-                "3327": "KAB. PEMALANG",
-                "3328": "KAB. TEGAL",
-                "3329": "KAB. BREBES",
-                "3371": "KOTA MAGELANG",
-                "3372": "KOTA SURAKARTA",
-                "3373": "KOTA SALATIGA",
-                "3374": "KOTA SEMARANG",
-                "3375": "KOTA PEKALONGAN",
-                "3376": "KOTA TEGAL",
-                "3401": "KAB. KULON PROGO",
-                "3402": "KAB. BANTUL",
-                "3403": "KAB. GUNUNG KIDUL",
-                "3404": "KAB. SLEMAN",
-                "3471": "KOTA YOGYAKARTA",
-                "3501": "KAB. PACITAN",
-                "3502": "KAB. PONOROGO",
-                "3503": "KAB. TRENGGALEK",
-                "3504": "KAB. TULUNGAGUNG",
-                "3505": "KAB. BLITAR",
-                "3506": "KAB. KEDIRI",
-                "3507": "KAB. MALANG",
-                "3508": "KAB. LUMAJANG",
-                "3509": "KAB. JEMBER",
-                "3510": "KAB. BANYUWANGI",
-                "3511": "KAB. BONDOWOSO",
-                "3512": "KAB. SITUBONDO",
-                "3513": "KAB. PROBOLINGGO",
-                "3514": "KAB. PASURUAN",
-                "3515": "KAB. SIDOARJO",
-                "3516": "KAB. MOJOKERTO",
-                "3517": "KAB. JOMBANG",
-                "3518": "KAB. NGANJUK",
-                "3519": "KAB. MADIUN",
-                "3520": "KAB. MAGETAN",
-                "3521": "KAB. NGAWI",
-                "3522": "KAB. BOJONEGORO",
-                "3523": "KAB. TUBAN",
-                "3524": "KAB. LAMONGAN",
-                "3525": "KAB. GRESIK",
-                "3526": "KAB. BANGKALAN",
-                "3527": "KAB. SAMPANG",
-                "3528": "KAB. PAMEKASAN",
-                "3529": "KAB. SUMENEP",
-                "3571": "KOTA KEDIRI",
-                "3572": "KOTA BLITAR",
-                "3573": "KOTA MALANG",
-                "3574": "KOTA PROBOLINGGO",
-                "3575": "KOTA PASURUAN",
-                "3576": "KOTA MOJOKERTO",
-                "3577": "KOTA MADIUN",
-                "3578": "KOTA SURABAYA",
-                "3579": "KOTA BATU",
-                "3601": "KAB. PANDEGLANG",
-                "3602": "KAB. LEBAK",
-                "3603": "KAB. TANGERANG",
-                "3604": "KAB. SERANG",
-                "3671": "KOTA TANGERANG",
-                "3672": "KOTA CILEGON",
-                "3673": "KOTA SERANG",
-                "3674": "KOTA TANGERANG SELATAN",
-                "5101": "KAB. JEMBRANA",
-                "5102": "KAB. TABANAN",
-                "5103": "KAB. BADUNG",
-                "5104": "KAB. GIANYAR",
-                "5105": "KAB. KLUNGKUNG",
-                "5106": "KAB. BANGLI",
-                "5107": "KAB. KARANGASEM",
-                "5108": "KAB. BULELENG",
-                "5171": "KOTA DENPASAR",
-                "6171": "KOTA PONTIANAK",
-                "6172": "KOTA SINGKAWANG",
-                "6471": "KOTA BALIKPAPAN",
-                "6472": "KOTA SAMARINDA",
-                "6473": "KOTA BONTANG",
-                "7171": "KOTA MANADO",
-                "7271": "KOTA PALU",
-                "7371": "KOTA MAKASSAR",
-                "7372": "KOTA PARE PARE",
-                "7373": "KOTA PALOPO",
-                "7471": "KOTA KENDARI",
-                "7472": "KOTA BAU BAU",
-                "7571": "KOTA GORONTALO",
-                "8171": "KOTA AMBON",
-                "8172": "KOTA TUAL",
-                "8271": "KOTA TERNATE",
-                "8272": "KOTA TIDORE KEPULAUAN",
-                "9171": "KOTA JAYAPURA",
-                "9271": "KOTA SORONG"
-            },
-            "districts": {
-                "3171": ["Cempaka Putih", "Gambir", "Johar Baru", "Kemayoran", "Menteng", "Sawah Besar", "Senen",
-                    "Tanah Abang"
-                ],
-                "3172": ["Cilincing", "Kelapa Gading", "Koja", "Pademangan", "Penjaringan", "Tanjung Priok"],
-                "3173": ["Cengkareng", "Grogol Petamburan", "Kalideres", "Kebon Jeruk", "Kembangan", "Palmerah",
-                    "Taman Sari", "Tambora"
-                ],
-                "3174": ["Cilandak", "Jagakarsa", "Kebayoran Baru", "Kebayoran Lama", "Mampang Prapatan", "Pancoran",
-                    "Pasar Minggu", "Pesanggrahan", "Setiabudi", "Tebet"
-                ],
-                "3175": ["Cipayung", "Ciracas", "Duren Sawit", "Jatinegara", "Kramat Jati", "Makasar", "Matraman",
-                    "Pasar Rebo", "Pulo Gadung"
-                ],
-                "3273": ["Bandung Kidul", "Bandung Kulon", "Bandung Wetan", "Bojongloa Kaler", "Bojongloa Kidul",
-                    "Cibeunying Kaler", "Cibeunying Kidul", "Cidadap", "Cinambo", "Coblong", "Gedebage",
-                    "Kiaracondong", "Lengkong", "Mandalajati", "Panyileukan", "Rancasari", "Regol", "Sukajadi",
-                    "Sukasari", "Sumur Bandung", "Ujungberung"
-                ],
-                "3275": ["Bekasi Barat", "Bekasi Selatan", "Bekasi Timur", "Bekasi Utara", "Medan Satria", "Rawalumbu",
-                    "Jati Asih", "Jati Sampurna", "Bantar Gebang", "Mustika Jaya"
-                ],
-                "3276": ["Beji", "Bojongsari", "Cilodong", "Cimanggis", "Cinere", "Cipayung", "Depok", "Limo",
-                    "Pancoran Mas", "Sawangan", "Sukmajaya", "Tapos"
-                ],
-                "3578": ["Bulak", "Kenjeran", "Krembangan", "Pabean Cantian", "Semampir", "Simokerto", "Tambaksari",
-                    "Tandes", "Wiyung", "Wonokromo", "Wonocolo", "Genteng", "Jambangan", "Karang Pilang", "Rungkut",
-                    "Sawahan", "Tegalsari"
-                ],
-                "3671": ["Batuceper", "Benda", "Ciledug", "Cipondoh", "Jatiuwung", "Karang Tengah", "Karawaci",
-                    "Larangan", "Neglasari", "Periuk", "Pinang", "Tangerang"
-                ],
-                "3674": ["Ciputat", "Ciputat Timur", "Pamulang", "Pondok Aren", "Serpong", "Serpong Utara", "Setu"],
-                "5171": ["Denpasar Barat", "Denpasar Selatan", "Denpasar Timur", "Denpasar Utara"],
-                "7371": ["Biringkanaya", "Bontoala", "Makassar", "Mamajang", "Manggala", "Mariso", "Panakkukang",
-                    "Rappocini", "Tallo", "Tamalanrea", "Tamalate", "Ujung Pandang", "Ujung Tanah", "Wajo"
-                ],
-                "3374": ["Banyumanik", "Candisari", "Gajahmungkur", "Gayamsari", "Genuk", "Gunungpati", "Mijen",
-                    "Ngaliyan", "Pedurungan", "Semarang Barat", "Semarang Selatan", "Semarang Tengah",
-                    "Semarang Timur", "Semarang Utara", "Tembalang", "Tugu"
-                ],
-                "3573": ["Blimbing", "Kedungkandang", "Klojen", "Lowokwaru", "Sukun"],
-                "6471": ["Balikpapan Barat", "Balikpapan Kota", "Balikpapan Selatan", "Balikpapan Tengah",
-                    "Balikpapan Timur", "Balikpapan Utara"
-                ],
-                "6472": ["Loa Janan Ilir", "Samarinda Ilir", "Samarinda Kota", "Samarinda Seberang", "Samarinda Ulu",
-                    "Samarinda Utara", "Sambutan", "Sungai Kunjang", "Sungai Pinang", "Palaran"
-                ]
-            }
-        };
-
-        // ============================================================
-        // FORM SECTIONS CONFIG (1:1 from GAS FORM_SECTIONS outsourceApp)
-        // ============================================================
         var FORM_SECTIONS = [{
                 id: 'sectionPersonal',
                 badgeId: 'secBadgePersonal',
-                fields: ['nik', 'full_name', 'birth_date', 'birth_place', 'gender', 'religion', 'blood_type',
-                    'marital_status'
-                ]
+                fields: ['full_name', 'birth_place', 'birth_date', 'last_education', 'citizen_id_address']
             },
             {
                 id: 'sectionContact',
                 badgeId: 'secBadgeContact',
-                fields: ['email', 'working_email', 'phone', 'province', 'city', 'address', 'address_residential'],
-                district: true
+                fields: ['whatsapp_number', 'email']
             },
             {
                 id: 'sectionEmployment',
                 badgeId: 'secBadgeEmployment',
-                fields: ['branch_name', 'outsource_vendor', 'division', 'department', 'area_kerja', 'cost_center',
-                    'lokasi_kerja', 'position', 'job_level', 'employee_status', 'join_date', 'contract_end_date',
-                    'direct_superior', 'indirect_superior'
+                fields: ['vendor', 'entity', 'job_title', 'cost_center', 'work_location', 'work_city',
+                    'mito_join_date', 'contract_start_date', 'contract_end_date'
                 ]
             },
             {
                 id: 'sectionBank',
                 badgeId: 'secBadgeBank',
-                fields: ['bank_account', 'bank_account_holder', 'npwp', 'ptkp_status', 'bpjs_ketenagakerjaan',
-                    'bpjs_kesehatan'
-                ]
+                fields: ['bank_account', 'payroll_scheme', 'umk_amount']
             },
         ];
 
-        var districtInput, districtLoading, districtManualWrap, districtManualInput;
-        var manualBirthDateChanged = false;
-        var isSubmitting = false;
+        var CONTACT_CHECK_URL = @json(route('public.outsource.contact-check'));
         var SUBMISSION_FLAG = 'mito_outsource_submitted';
-        var form = null;
-        var nikEl = null;
-        var nikFeedback = null;
-        var nikDuplicateWarning = null;
-        var nikLockBanner = null;
-        var birthDateEl = null;
-        var ageEl = null;
-        var genderEl = null;
-        var provinceEl = null;
-        var cityEl = null;
-        var nikIsBlocked = false;
-        var nikCheckTimer = null;
-        var nikCheckSeq = 0;
-        var nikCheckPending = false;
-        var pendingDistrictValue = @json(old('kecamatan'));
+        var isSubmitting = false;
+        var contactIsBlocked = false;
+        var contactCheckPending = false;
+        var contactCheckSeq = 0;
+        var contactCheckTimer = null;
+        var form, agreementCheckbox, agreementError, submitBtn, submitSpinner, submitText;
+        var progressFill, progressCount, progressMessage;
+        var birthDateEl, ageEl, phoneEl, emailEl, contractStartEl, contractEndEl, umkEl;
 
         function isAlreadySubmitted() {
             try {
@@ -991,78 +465,38 @@
             } catch (err) {}
         }
 
-        function showAlreadySubmittedPage() {
-            window.location.replace('{{ route('public.outsource.success') }}');
-        }
-
         function clearClientSubmitFlag() {
             try {
                 window.sessionStorage.removeItem(SUBMISSION_FLAG);
             } catch (err) {}
         }
 
-        function prepareFormForSubmit() {
-            lockFormExceptNik(false);
-            if (!form) return;
-            form.querySelectorAll('input, select, textarea').forEach(function(el) {
-                if (!el.name || el.name === '_token') return;
-                el.disabled = false;
-            });
+        function getCsrfToken() {
+            var meta = document.querySelector('meta[name="csrf-token"]');
+            if (meta) return meta.getAttribute('content');
+            var input = form ? form.querySelector('input[name="_token"]') : null;
+            return input ? input.value : '';
         }
 
-        function isDistrictValid() {
-            if (districtManualWrap && districtManualWrap.style.display !== 'none') {
-                return (districtManualInput.value || '').trim() !== '';
-            }
-            return districtInput && !districtInput.disabled && (districtInput.value || '').trim() !== '';
-        }
-
+        // ============================================================
+        // FIELD / SECTION STATE
+        // ============================================================
         function isFieldValid(el) {
             if (!el) return false;
-            if (el.type === 'checkbox') return !!el.checked;
-            if (el.id === 'npwp') {
-                var digits = (el.value || '').replace(/\D+/g, '');
-                return digits.length === 15 || digits.length === 16;
-            }
             var v = (el.value || '').trim();
             if (v === '') return false;
-            if (el.checkValidity) return el.checkValidity();
-            return true;
-        }
-
-        function getSectionFieldIds(sec) {
-            var ids = sec.fields.slice();
-            if (sec.district) ids.push('__district__');
-            return ids;
-        }
-
-        function isSectionComplete(sec) {
-            var ids = getSectionFieldIds(sec);
-            for (var i = 0; i < ids.length; i++) {
-                var id = ids[i];
-                if (id === '__district__') {
-                    if (!isDistrictValid()) return false;
-                    continue;
-                }
-                if (!isFieldValid(document.getElementById(id))) return false;
-            }
-            return true;
+            if (el.id === 'birth_date') return validateBirthDate(el, true);
+            if (el.id === 'contract_end_date') return validateContractDates(true);
+            return el.checkValidity ? el.checkValidity() : true;
         }
 
         function countSection(sec) {
-            var ids = getSectionFieldIds(sec);
             var valid = 0;
-            for (var i = 0; i < ids.length; i++) {
-                var id = ids[i];
-                if (id === '__district__') {
-                    if (isDistrictValid()) valid++;
-                    continue;
-                }
-                var el = document.getElementById(id);
-                if (el && isFieldValid(el)) valid++;
-            }
+            sec.fields.forEach(function(id) {
+                if (isFieldValid(document.getElementById(id))) valid++;
+            });
             return {
-                total: ids.length,
+                total: sec.fields.length,
                 valid: valid
             };
         }
@@ -1071,64 +505,51 @@
             var b = document.getElementById(sec.badgeId);
             if (!b) return;
             b.className = 'section-status' + (complete ? ' done' : '');
-            b.innerHTML = complete ?
-                '<i class="bi bi-check-circle-fill"></i>' :
-                '<i class="bi bi-hourglass-split"></i>';
+            b.innerHTML = complete ? '<i class="bi bi-check-circle-fill"></i>' : '<i class="bi bi-hourglass-split"></i>';
         }
 
-        var agreementCheckbox, agreementError, submitBtn, submitSpinner, submitText;
-        var progressFill, progressCount, progressMessage;
+        function lockAgreement() {
+            agreementCheckbox.setAttribute('data-unlocked', '0');
+            agreementCheckbox.checked = false;
+            agreementCheckbox.style.cursor = 'not-allowed';
+            agreementCheckbox.style.opacity = '0.5';
+        }
 
         function updateFormState() {
             var allComplete = true;
             FORM_SECTIONS.forEach(function(sec) {
-                var done = isSectionComplete(sec);
+                var c = countSection(sec);
+                var done = c.valid === c.total;
                 if (!done) allComplete = false;
                 setSectionBadge(sec, done);
             });
-            if (allComplete) {
-                agreementCheckbox.setAttribute('data-unlocked', '1');
-                agreementCheckbox.style.cursor = 'pointer';
-                agreementCheckbox.style.opacity = '1';
-                agreementCheckbox.onclick = null;
-                agreementCheckbox.onfocus = null;
-            } else {
-                agreementCheckbox.setAttribute('data-unlocked', '0');
-                agreementCheckbox.checked = false;
-                agreementCheckbox.style.cursor = 'not-allowed';
-                agreementCheckbox.style.opacity = '0.5';
-                agreementCheckbox.onclick = function() {
-                    return false;
-                };
-                agreementCheckbox.onfocus = function() {
-                    this.blur();
-                };
-                submitBtn.disabled = true;
-            }
+
             var hint = document.getElementById('agreementHint');
-            if (hint) hint.style.display = (allComplete && !nikIsBlocked) ? 'none' : 'block';
-            if (nikIsBlocked) {
-                agreementCheckbox.setAttribute('data-unlocked', '0');
-                agreementCheckbox.checked = false;
-                agreementCheckbox.style.cursor = 'not-allowed';
-                agreementCheckbox.style.opacity = '0.5';
-                agreementCheckbox.onclick = function() {
-                    return false;
-                };
-                agreementCheckbox.onfocus = function() {
-                    this.blur();
-                };
+            if (contactIsBlocked) {
+                lockAgreement();
                 if (hint) {
                     hint.style.display = 'block';
-                    hint.innerHTML = '<i class="bi bi-exclamation-octagon-fill me-1"></i> NIK sudah terdaftar. Ubah NIK agar formulir dan tombol kirim dapat digunakan kembali.';
+                    hint.innerHTML =
+                        '<i class="bi bi-exclamation-octagon-fill me-1"></i> Nomor WhatsApp atau email sudah terdaftar. Ubah kontak agar formulir dapat dikirim.';
                 }
                 submitBtn.disabled = true;
                 return;
             }
-            if (hint && !allComplete) {
-                hint.innerHTML = '<i class="bi bi-info-circle-fill me-1"></i> Lengkapi seluruh data pada semua bagian terlebih dahulu untuk mengaktifkan persetujuan.';
+
+            if (allComplete) {
+                agreementCheckbox.setAttribute('data-unlocked', '1');
+                agreementCheckbox.style.cursor = 'pointer';
+                agreementCheckbox.style.opacity = '1';
+                if (hint) hint.style.display = 'none';
+            } else {
+                lockAgreement();
+                if (hint) {
+                    hint.style.display = 'block';
+                    hint.innerHTML =
+                        '<i class="bi bi-info-circle-fill me-1"></i> Lengkapi seluruh data pada semua bagian terlebih dahulu untuk mengaktifkan persetujuan.';
+                }
             }
-            submitBtn.disabled = nikIsBlocked || nikCheckPending || !(allComplete && agreementCheckbox.checked);
+            submitBtn.disabled = contactCheckPending || !(allComplete && agreementCheckbox.checked);
         }
 
         var progressMessages = [{
@@ -1154,16 +575,14 @@
         ];
 
         function updateProgress() {
-            var total = 0,
-                valid = 0;
+            var total = 1,
+                valid = agreementCheckbox.checked ? 1 : 0;
             FORM_SECTIONS.forEach(function(sec) {
                 var c = countSection(sec);
                 total += c.total;
                 valid += c.valid;
             });
-            total += 1;
-            if (agreementCheckbox.checked) valid += 1;
-            var percent = total === 0 ? 0 : Math.min(100, Math.round((valid / total) * 100));
+            var percent = Math.min(100, Math.round((valid / total) * 100));
             progressFill.style.width = percent + '%';
             progressCount.textContent = valid + ' dari ' + total + ' data telah lengkap';
             var msg = progressMessages[0].text;
@@ -1178,331 +597,174 @@
         }
 
         // ============================================================
-        // BIRTH DATE — native YYYY-MM-DD + age / calendar validation
+        // AMOUNT FORMATTER — 5396761 → 5.396.761 (+ "≈ 5,4 juta" hint)
         // ============================================================
-        function attachBirthDateListeners(birthDateEl, ageEl) {
-            birthDateEl.addEventListener('input', function() {
-                manualBirthDateChanged = true;
-                calculateAge(this.value, ageEl);
-                if (this.value) validateBirthDate(birthDateEl);
-                else this.classList.remove('is-valid', 'is-invalid');
-                updateProgress();
-            });
-            birthDateEl.addEventListener('change', function() {
-                manualBirthDateChanged = true;
-                calculateAge(this.value, ageEl);
-                if (this.value.trim().length > 0) validateBirthDate(birthDateEl);
-                updateProgress();
-            });
-            birthDateEl.addEventListener('blur', function() {
-                if (this.value.trim().length > 0) validateBirthDate(birthDateEl);
-                updateProgress();
-            });
+        function amountHint(digits) {
+            var n = Number(digits);
+            if (!digits || !n) return '';
+            var units = [[1e12, 'triliun'], [1e9, 'miliar'], [1e6, 'juta'], [1e3, 'ribu']];
+            for (var i = 0; i < units.length; i++) {
+                if (n >= units[i][0]) {
+                    return '≈ ' + (n / units[i][0]).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + ' ' + units[i][1];
+                }
+            }
+            return '';
         }
 
-        function validateBirthDate(el) {
-            var container = el.closest('.col-md-6');
+        function formatAmount(el) {
+            var caret = el.selectionStart || 0;
+            var digitsBeforeCaret = el.value.slice(0, caret).replace(/\D/g, '').length;
+            var digits = el.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '').slice(0, 12);
+            var formatted = digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            el.value = formatted;
+            if (document.activeElement === el) {
+                var pos = 0, seen = 0;
+                while (pos < formatted.length && seen < digitsBeforeCaret) {
+                    if (formatted.charAt(pos) !== '.') seen++;
+                    pos++;
+                }
+                el.setSelectionRange(pos, pos);
+            }
+            var hint = el.closest('[class*="col-"]').querySelector('.amount-hint');
+            if (hint) hint.textContent = amountHint(digits);
+        }
+
+        function setFieldState(el, valid, message) {
+            var container = el.closest('[class*="col-"]');
             var feedback = container ? container.querySelector('.invalid-feedback') : null;
-            var val = el.value.trim();
-
-            function setInvalid(msg) {
-                el.classList.add('is-invalid');
-                el.classList.remove('is-valid');
-                if (feedback) {
-                    feedback.textContent = msg;
-                    feedback.style.display = 'flex';
-                }
-            }
-
-            function setValid() {
-                el.classList.remove('is-invalid');
-                el.classList.add('is-valid');
+            if (feedback && message) feedback.textContent = message;
+            if (valid === null) {
+                el.classList.remove('is-valid', 'is-invalid');
                 if (feedback) feedback.style.display = 'none';
-            }
-            if (!val) {
-                setInvalid('Tanggal lahir wajib diisi dengan format YYYY-MM-DD.');
-                return false;
-            }
-            var p = val.split('-');
-            if (p.length !== 3 || p[0].length !== 4 || p[1].length !== 2 || p[2].length !== 2) {
-                setInvalid('Format tidak valid. Gunakan YYYY-MM-DD.');
-                return false;
-            }
-            var year = parseInt(p[0], 10),
-                month = parseInt(p[1], 10),
-                day = parseInt(p[2], 10),
-                curYear = new Date().getFullYear();
-            if (isNaN(day) || isNaN(month) || isNaN(year)) {
-                setInvalid('Tanggal lahir mengandung karakter tidak valid.');
-                return false;
-            }
-            if (month < 1 || month > 12) {
-                setInvalid('Bulan tidak valid (01–12).');
-                return false;
-            }
-            if (day < 1 || day > 31) {
-                setInvalid('Tanggal tidak valid (01–31).');
-                return false;
-            }
-            if (year < 1900 || year > curYear) {
-                setInvalid('Tahun lahir tidak valid.');
-                return false;
-            }
-            var d = new Date(year, month - 1, day);
-            if (d.getFullYear() !== year || d.getMonth() !== month - 1 || d.getDate() !== day) {
-                setInvalid('Tanggal tidak ada dalam kalender.');
-                return false;
-            }
-            var today = new Date();
-            today.setHours(0, 0, 0, 0);
-            if (d > today) {
-                setInvalid('Tanggal lahir tidak boleh tanggal yang akan datang.');
-                return false;
-            }
-            var age = today.getFullYear() - year,
-                mDiff = today.getMonth() - (month - 1);
-            if (mDiff < 0 || (mDiff === 0 && today.getDate() < day)) age--;
-            if (age < 17) {
-                setInvalid('Usia minimal 17 tahun.');
-                return false;
-            }
-            setValid();
-            return true;
-        }
-
-        function calculateAge(bdStr, ageEl) {
-            if (!bdStr || bdStr.length < 10) {
-                ageEl.value = '';
                 return;
             }
-            var p = bdStr.split('-');
-            if (p.length !== 3) return;
-            var year = parseInt(p[0], 10),
-                month = parseInt(p[1], 10),
-                day = parseInt(p[2], 10);
-            if (!day || !month || !year) return;
-            var bd = new Date(year, month - 1, day),
-                today = new Date();
-            var age = today.getFullYear() - bd.getFullYear(),
-                m = today.getMonth() - bd.getMonth();
-            if (m < 0 || (m === 0 && today.getDate() < bd.getDate())) age--;
-            ageEl.value = (age >= 0 && age <= 120) ? age : '';
+            el.classList.toggle('is-valid', valid);
+            el.classList.toggle('is-invalid', !valid);
+            if (feedback) feedback.style.display = valid ? 'none' : 'flex';
         }
 
-        function syncContractEndMin(joinEl, endEl) {
-            if (!joinEl || !endEl || !joinEl.value) return;
-            var parts = joinEl.value.split('-');
-            if (parts.length !== 3) return;
-            var next = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10) + 1);
-            if (isNaN(next.getTime())) return;
-            var min = next.getFullYear() + '-' + ('0' + (next.getMonth() + 1)).slice(-2) + '-' + ('0' + next.getDate()).slice(-2);
-            endEl.min = min;
-        }
-
-        function validateContractDates(joinEl, endEl) {
-            if (!joinEl || !endEl) return true;
-            var feedback = endEl.closest('.col-md-6') ? endEl.closest('.col-md-6').querySelector('.invalid-feedback') : null;
-            if (!joinEl.value || !endEl.value) {
-                return false;
+        function validateField(el) {
+            if (!el || el.type === 'checkbox' || el.type === 'hidden') return;
+            if (el.id === 'birth_date') {
+                validateBirthDate(el, false);
+                return;
             }
-            if (endEl.value <= joinEl.value) {
-                endEl.classList.add('is-invalid');
-                endEl.classList.remove('is-valid');
-                if (feedback) {
-                    feedback.textContent = 'Tanggal berakhir kontrak harus setelah tanggal masuk.';
-                    feedback.style.display = 'flex';
-                }
-                return false;
+            if (el.id === 'contract_end_date' || el.id === 'contract_start_date') {
+                validateContractDates(false);
+                if (el.id === 'contract_end_date') return;
             }
-            endEl.classList.remove('is-invalid');
-            endEl.classList.add('is-valid');
-            if (feedback) feedback.style.display = 'none';
-            return true;
+            if ((el.id === 'whatsapp_number' || el.id === 'email') && contactIsBlocked) {
+                el.classList.add('is-invalid', 'contact-duplicate');
+                el.classList.remove('is-valid');
+                return;
+            }
+            if (!el.value) {
+                setFieldState(el, null);
+                return;
+            }
+            setFieldState(el, el.checkValidity());
         }
 
         // ============================================================
-        // NIK PARSER + AUTO-FILL (1:1 from GAS outsourceApp)
+        // DATES
         // ============================================================
-        function parseNIK(nik) {
-            if (!nik || nik.length !== 16 || !/^[0-9]{16}$/.test(nik)) return null;
-            var day = parseInt(nik.substring(6, 8), 10),
-                gender = (day > 40) ? 'Perempuan' : 'Laki-laki';
-            if (day > 40) day -= 40;
-            var month = parseInt(nik.substring(8, 10), 10),
-                year = parseInt(nik.substring(10, 12), 10);
-            var fullYear = (year <= 24) ? 2000 + year : 1900 + year;
-            if (month < 1 || month > 12 || day < 1 || day > 31) return null;
-            return {
-                birthDate: {
-                    day: day,
-                    month: month,
-                    year: fullYear,
-                    formatted: fullYear + '-' + ('0' + month).slice(-2) + '-' + ('0' + day).slice(-2)
-                },
-                gender: gender,
-                provinceCode: nik.substring(0, 2),
-                cityCode: nik.substring(0, 4)
-            };
-        }
-
-        function applyNikAutofill(nik) {
-            if (nikIsBlocked) return;
-            var r = parseNIK(nik);
-            if (!r) {
-                showNIKFeedback(nikFeedback, false);
-                return;
-            }
-            if (!manualBirthDateChanged) {
-                birthDateEl.value = r.birthDate.formatted;
-                calculateAge(r.birthDate.formatted, ageEl);
-                validateBirthDate(birthDateEl);
-            }
-            genderEl.value = r.gender;
-            if (REGIONS.provinces[r.provinceCode]) {
-                provinceEl.value = r.provinceCode;
-                populateCities(r.provinceCode, provinceEl, cityEl);
-                if (REGIONS.cities[r.cityCode]) {
-                    cityEl.value = r.cityCode;
-                    loadDistricts(r.cityCode);
-                    var kotaNamaInput = document.getElementById('kotaNama');
-                    if (kotaNamaInput) {
-                        kotaNamaInput.value = REGIONS.cities[r.cityCode];
-                    }
-                }
-            }
-            showNIKFeedback(nikFeedback, true, r);
-            updateProgress();
-        }
-
-        function clearNikAutofill() {
-            manualBirthDateChanged = false;
-            if (birthDateEl) {
-                birthDateEl.value = '';
-                birthDateEl.classList.remove('is-valid', 'is-invalid');
-            }
-            if (ageEl) {
+        function calculateAge(value) {
+            if (!value) {
                 ageEl.value = '';
-                ageEl.classList.remove('is-valid', 'is-invalid');
+                return null;
             }
-            if (genderEl) {
-                genderEl.value = '';
-                genderEl.classList.remove('is-valid', 'is-invalid');
+            var p = value.split('-');
+            var birth = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+            if (isNaN(birth.getTime())) {
+                ageEl.value = '';
+                return null;
             }
-            if (provinceEl) {
-                provinceEl.value = '';
-                provinceEl.classList.remove('is-valid', 'is-invalid');
-            }
-            if (cityEl && provinceEl) {
-                populateCities('', provinceEl, cityEl);
-                cityEl.classList.remove('is-valid', 'is-invalid');
-            }
-            var kotaNamaInput = document.getElementById('kotaNama');
-            if (kotaNamaInput) kotaNamaInput.value = '';
-            if (districtInput) resetDistrict();
+            var now = new Date();
+            var age = now.getFullYear() - birth.getFullYear();
+            var m = now.getMonth() - birth.getMonth();
+            if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--;
+            ageEl.value = age >= 0 ? age : '';
+            return age;
         }
 
-        function lockFormExceptNik(locked) {
-            if (!form) return;
-            form.classList.toggle('nik-duplicate-locked', !!locked);
-            var controls = form.querySelectorAll('input, select, textarea, button');
-            controls.forEach(function(el) {
-                if (el.id === 'nik') return;
-                if (el.type === 'hidden' || el.name === '_token') return;
-                if (locked) {
-                    if (!el.hasAttribute('data-nik-lock-prev')) {
-                        el.setAttribute('data-nik-lock-prev', el.disabled ? '1' : '0');
-                    }
-                    el.disabled = true;
-                    el.setAttribute('aria-disabled', 'true');
-                } else if (el.hasAttribute('data-nik-lock-prev')) {
-                    el.disabled = el.getAttribute('data-nik-lock-prev') === '1';
-                    el.removeAttribute('data-nik-lock-prev');
-                    el.removeAttribute('aria-disabled');
-                }
-            });
-        }
-
-        function showNikChecking() {
-            if (nikFeedback) {
-                nikFeedback.innerHTML =
-                    '<div class="alert alert-info p-2 mb-0" style="font-size:12px"><i class="bi bi-hourglass-split me-1"></i> <strong>Memeriksa NIK...</strong> Sistem memastikan NIK belum terdaftar sebelum mengisi data otomatis.</div>';
-            }
-            if (nikDuplicateWarning) nikDuplicateWarning.innerHTML = '';
-        }
-
-        function getCsrfToken() {
-            var meta = document.querySelector('meta[name="csrf-token"]');
-            return meta ? meta.getAttribute('content') : '';
-        }
-
-        function setNikBlocked(blocked, message) {
-            nikIsBlocked = !!blocked;
-            var duplicateMessage = message || 'NIK ini sudah terdaftar. Setiap NIK hanya dapat digunakan untuk satu kali pendaftaran.';
-            if (blocked) {
-                clearNikAutofill();
-                lockFormExceptNik(true);
-                if (nikEl) {
-                    nikEl.classList.add('is-invalid', 'nik-duplicate');
-                    nikEl.classList.remove('is-valid');
-                    nikEl.setAttribute('aria-invalid', 'true');
-                }
-                if (nikFeedback) nikFeedback.innerHTML = '';
-                if (nikDuplicateWarning) {
-                    nikDuplicateWarning.innerHTML =
-                        '<div class="alert alert-danger p-3 mb-0" style="font-size:13px"><i class="bi bi-exclamation-octagon-fill me-1"></i> <strong>' +
-                        duplicateMessage +
-                        '</strong><div class="mt-1" style="font-size:12px;">Data otomatis dari NIK tidak diisi. Seluruh isian dan tombol kirim dikunci. Ubah NIK untuk membuka kembali formulir.</div></div>';
-                }
-                if (nikLockBanner) {
-                    nikLockBanner.classList.remove('d-none');
-                    var bannerMsg = document.getElementById('nikLockBannerMessage');
-                    if (bannerMsg) bannerMsg.textContent = duplicateMessage;
-                }
-                if (submitBtn) submitBtn.disabled = true;
-                if (typeof window.showToast === 'function') {
-                    window.showToast({
-                        type: 'error',
-                        title: 'NIK sudah terdaftar',
-                        message: duplicateMessage
-                    });
-                }
+        function validateBirthDate(el, silent) {
+            var val = (el.value || '').trim();
+            var msg = null;
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(val)) {
+                msg = 'Tanggal lahir wajib diisi dengan format YYYY-MM-DD.';
             } else {
-                lockFormExceptNik(false);
-                if (nikEl) {
-                    nikEl.classList.remove('nik-duplicate');
-                    nikEl.setAttribute('aria-invalid', 'false');
-                    if (nikEl.value && nikEl.checkValidity()) {
-                        nikEl.classList.remove('is-invalid');
-                        nikEl.classList.add('is-valid');
-                    }
-                }
-                if (nikDuplicateWarning) nikDuplicateWarning.innerHTML = '';
-                if (nikLockBanner) nikLockBanner.classList.add('d-none');
+                var age = calculateAge(val);
+                var year = parseInt(val.substring(0, 4), 10);
+                if (year < 1900 || age === null || age < 0) msg = 'Tanggal lahir tidak valid.';
+                else if (age < 17) msg = 'Usia minimal untuk mendaftar adalah 17 tahun.';
             }
+            if (!silent) {
+                if (!val) setFieldState(el, null);
+                else setFieldState(el, msg === null, msg);
+            }
+            return msg === null;
+        }
+
+        function syncContractEndMin() {
+            if (!contractStartEl.value) {
+                contractEndEl.min = '1900-01-02';
+                return;
+            }
+            var d = new Date(contractStartEl.value + 'T00:00:00');
+            d.setDate(d.getDate() + 1);
+            var mm = String(d.getMonth() + 1).padStart(2, '0');
+            var dd = String(d.getDate()).padStart(2, '0');
+            contractEndEl.min = d.getFullYear() + '-' + mm + '-' + dd;
+        }
+
+        function validateContractDates(silent) {
+            var start = contractStartEl.value;
+            var end = contractEndEl.value;
+            var ok = !!end && (!start || end > start);
+            if (!silent) {
+                if (!end) setFieldState(contractEndEl, null);
+                else setFieldState(contractEndEl, ok, ok ? null :
+                    'Tanggal akhir kontrak harus setelah tanggal awal kontrak.');
+            }
+            return ok;
+        }
+
+        // ============================================================
+        // CONTACT DUPLICATE CHECK
+        // ============================================================
+        function setContactBlocked(blocked, message) {
+            contactIsBlocked = !!blocked;
+            var banner = document.getElementById('contactLockBanner');
+            var bannerMsg = document.getElementById('contactLockBannerMessage');
+            form.classList.toggle('contact-duplicate-locked', contactIsBlocked);
+            if (banner) banner.classList.toggle('d-none', !contactIsBlocked);
+            if (bannerMsg) bannerMsg.textContent = contactIsBlocked ? (message || '') : '';
+            [phoneEl, emailEl].forEach(function(el) {
+                el.classList.toggle('contact-duplicate', contactIsBlocked);
+                if (!contactIsBlocked) validateField(el);
+            });
             updateProgress();
-            if (blocked && nikEl) {
-                nikEl.focus();
-                if (nikDuplicateWarning && typeof nikDuplicateWarning.scrollIntoView === 'function') {
-                    nikDuplicateWarning.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'center'
-                    });
-                }
+        }
+
+        function scheduleContactCheck() {
+            if (contactCheckTimer) clearTimeout(contactCheckTimer);
+            var phone = phoneEl.checkValidity() ? phoneEl.value : '';
+            var email = emailEl.checkValidity() ? emailEl.value.trim() : '';
+            if (!phone && !email) {
+                contactCheckPending = false;
+                if (contactIsBlocked) setContactBlocked(false);
+                return;
             }
+            contactCheckPending = true;
+            updateFormState();
+            contactCheckTimer = setTimeout(function() {
+                checkContact(phone, email);
+            }, 400);
         }
 
-        function scheduleNikAvailabilityCheck(nik) {
-            nikCheckPending = true;
-            if (submitBtn) submitBtn.disabled = true;
-            if (nikCheckTimer) clearTimeout(nikCheckTimer);
-            nikCheckTimer = setTimeout(function() {
-                checkNikAvailability(nik);
-            }, 250);
-        }
-
-        function checkNikAvailability(nik) {
-            var seq = ++nikCheckSeq;
-            fetch('{{ route('public.outsource.nik-check') }}', {
+        function checkContact(phone, email) {
+            var seq = ++contactCheckSeq;
+            fetch(CONTACT_CHECK_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1511,208 +773,28 @@
                     'X-Requested-With': 'XMLHttpRequest'
                 },
                 credentials: 'same-origin',
-                body: JSON.stringify({ nik: nik })
+                body: JSON.stringify({
+                    whatsapp_number: phone,
+                    email: email
+                })
             }).then(function(res) {
-                return res.json().then(function(data) {
-                    return { status: res.status, data: data };
-                });
-            }).then(function(result) {
-                if (seq !== nikCheckSeq) return;
-                if (String(nikEl.value || '') !== String(nik)) return;
-                nikCheckPending = false;
-                if (result.data && result.data.available === false) {
-                    setNikBlocked(true, result.data.message);
-                    return;
-                }
-                setNikBlocked(false);
-                applyNikAutofill(nik);
+                return res.json();
+            }).then(function(data) {
+                if (seq !== contactCheckSeq) return;
+                contactCheckPending = false;
+                setContactBlocked(data && data.available === false, data ? data.message : null);
             }).catch(function() {
-                if (seq !== nikCheckSeq) return;
-                if (String(nikEl.value || '') !== String(nik)) return;
-                nikCheckPending = false;
-                setNikBlocked(false);
-                applyNikAutofill(nik);
+                if (seq !== contactCheckSeq) return;
+                contactCheckPending = false;
+                setContactBlocked(false);
             });
-        }
-
-        function showNIKFeedback(el, success, r) {
-            if (nikIsBlocked || !el) return;
-            if (success) {
-                var det = ['Tanggal Lahir: ' + r.birthDate.formatted, 'Jenis Kelamin: ' + r.gender];
-                if (REGIONS.provinces[r.provinceCode]) det.push('Provinsi: ' + REGIONS.provinces[r.provinceCode]);
-                if (REGIONS.cities[r.cityCode]) det.push('Kabupaten/Kota: ' + REGIONS.cities[r.cityCode]);
-                el.innerHTML =
-                    '<div class="alert alert-success p-2 mb-0" style="font-size:12px"><i class="bi bi-check-circle-fill me-1"></i> <strong>Data NIK Terdeteksi</strong><ul class="mb-0 mt-1 ps-3">' +
-                    det.map(function(d) {
-                        return '<li>' + d + '</li>';
-                    }).join('') + '</ul></div>';
-            } else {
-                el.innerHTML =
-                    '<div class="alert alert-warning p-2 mb-0" style="font-size:12px"><i class="bi bi-exclamation-triangle-fill me-1"></i> <strong>NIK tidak valid.</strong></div>';
-            }
-        }
-
-        // ============================================================
-        // REGION DROPDOWNS
-        // ============================================================
-        function populateProvinces(provinceEl) {
-            var html = '<option value="">-- Pilih Provinsi --</option>';
-            Object.keys(REGIONS.provinces).sort().forEach(function(code) {
-                html += '<option value="' + code + '">' + REGIONS.provinces[code] + '</option>';
-            });
-            provinceEl.innerHTML = html;
-        }
-
-        function populateCities(provinceCode, provinceEl, cityEl) {
-            cityEl.innerHTML = '<option value="">-- Pilih Kota/Kabupaten --</option>';
-            resetDistrict();
-            if (!provinceCode) return;
-            Object.keys(REGIONS.cities).filter(function(c) {
-                    return c.substring(0, 2) === provinceCode;
-                }).sort()
-                .forEach(function(code) {
-                    cityEl.innerHTML += '<option value="' + code + '">' + REGIONS.cities[code] + '</option>';
-                });
-        }
-
-        function resetDistrict() {
-            districtInput.innerHTML = '<option value="">-- Pilih Kota dahulu --</option>';
-            districtInput.disabled = true;
-            districtInput.value = '';
-            districtInput.classList.remove('is-valid', 'is-invalid');
-            districtLoading.style.display = 'none';
-            districtManualWrap.style.display = 'none';
-            districtManualInput.value = '';
-        }
-
-        function loadDistricts(cityCode) {
-            if (!cityCode) {
-                resetDistrict();
-                return;
-            }
-            // Load full kecamatan data from JSON if not already loaded
-            if (!window._kecamatanData) {
-                districtInput.innerHTML = '<option value="">Memuat data kecamatan...</option>';
-                districtInput.disabled = true;
-                districtLoading.style.display = 'block';
-                fetch('/data/kecamatan_all.json')
-                    .then(res => {
-                        if (!res.ok) throw new Error('Gagal memuat data kecamatan');
-                        return res.json();
-                    })
-                    .then(data => {
-                        window._kecamatanData = data;
-                        districtLoading.style.display = 'none';
-                        populateDistrictsForCity(cityCode);
-                    })
-                    .catch(() => {
-                        districtLoading.style.display = 'none';
-                        showDistrictManualFallback();
-                    });
-                return;
-            }
-            populateDistrictsForCity(cityCode);
-        }
-
-        function populateDistrictsForCity(cityCode) {
-            var data = window._kecamatanData;
-            if (!data) {
-                resetDistrict();
-                return;
-            }
-            var districts = data[cityCode];
-            if (districts && districts.length) {
-                var html = '<option value="">-- Pilih Kecamatan --</option>';
-                districts.forEach(function(n) {
-                    html += '<option value="' + n + '">' + n + '</option>';
-                });
-                districtInput.innerHTML = html;
-                districtInput.disabled = false;
-                districtInput.required = true;
-                districtManualWrap.style.display = 'none';
-                districtManualInput.required = false;
-                districtInput.classList.remove('is-invalid');
-                if (pendingDistrictValue && districts.indexOf(pendingDistrictValue) !== -1) {
-                    districtInput.value = pendingDistrictValue;
-                    pendingDistrictValue = null;
-                }
-                if (districtInput.value) {
-                    districtInput.classList.add('is-valid');
-                }
-            } else {
-                showDistrictManualFallback();
-            }
-            districtLoading.style.display = 'none';
-        }
-
-        function showDistrictManualFallback() {
-            districtInput.innerHTML = '<option value="">-</option>';
-            districtInput.disabled = true;
-            districtInput.required = false;
-            districtManualWrap.style.display = 'block';
-            districtManualInput.required = true;
-            districtManualInput.focus();
-            districtInput.classList.remove('is-valid');
-        }
-
-        // ============================================================
-        // COPY KTP ADDRESS
-        // ============================================================
-        // ============================================================
-        // FIELD VALIDATION HELPER
-        // ============================================================
-        function sanitizeNpwpField(el) {
-            if (!el) return '';
-            el.value = (el.value || '').replace(/\D+/g, '').substring(0, 16);
-            var len = el.value.length;
-            var help = document.getElementById('npwpHelp');
-            if (help) {
-                help.textContent = len > 0
-                    ? ('Terisi ' + len + ' digit dari 15–16 yang diperlukan.')
-                    : 'NPWP harus 15 atau 16 digit angka. Titik atau strip dihapus otomatis.';
-            }
-            if (len === 0 || len === 15 || len === 16) {
-                el.setCustomValidity('');
-            } else {
-                el.setCustomValidity('NPWP harus 15 atau 16 digit angka.');
-            }
-            return el.value;
-        }
-
-        function validateField(el) {
-            if (!el) return;
-            if (el.id === 'nik' && nikIsBlocked) {
-                el.classList.add('is-invalid', 'nik-duplicate');
-                el.classList.remove('is-valid');
-                return;
-            }
-            if (el.id === 'birth_date') {
-                validateBirthDate(el);
-                return;
-            }
-            if (el.id === 'npwp') {
-                sanitizeNpwpField(el);
-            }
-            var container = el.closest('.col-md-6, .col-md-4, .col-12');
-            var feedback = container ? container.querySelector('.invalid-feedback') : null;
-            if (el.value && el.checkValidity()) {
-                el.classList.remove('is-invalid');
-                el.classList.add('is-valid');
-                if (feedback) feedback.style.display = 'none';
-            } else if (el.value && !el.checkValidity()) {
-                el.classList.add('is-invalid');
-                el.classList.remove('is-valid');
-                if (feedback) feedback.style.display = 'flex';
-            } else {
-                el.classList.remove('is-valid', 'is-invalid');
-                if (feedback) feedback.style.display = 'none';
-            }
         }
 
         // ============================================================
         // INIT
         // ============================================================
         document.addEventListener('DOMContentLoaded', function() {
+            form = document.getElementById('formOutsource');
             agreementCheckbox = document.getElementById('agreement');
             agreementError = document.getElementById('agreementError');
             submitBtn = document.getElementById('submitBtn');
@@ -1721,123 +803,40 @@
             progressFill = document.getElementById('progressFill');
             progressCount = document.getElementById('progressCount');
             progressMessage = document.getElementById('progressMessage');
-            districtInput = document.getElementById('district');
-            districtLoading = document.getElementById('districtLoading');
-            districtManualWrap = document.getElementById('districtManualWrap');
-            districtManualInput = document.getElementById('districtManual');
-
-            nikEl = document.getElementById('nik');
-            nikFeedback = document.getElementById('nikFeedback');
-            nikDuplicateWarning = document.getElementById('nikDuplicateWarning');
-            nikLockBanner = document.getElementById('nikLockBanner');
             birthDateEl = document.getElementById('birth_date');
             ageEl = document.getElementById('age');
-            genderEl = document.getElementById('gender');
-            provinceEl = document.getElementById('province');
-            cityEl = document.getElementById('city');
-            var phoneEl = document.getElementById('phone');
-            var emailEl = document.getElementById('email');
+            phoneEl = document.getElementById('whatsapp_number');
+            emailEl = document.getElementById('email');
+            contractStartEl = document.getElementById('contract_start_date');
+            contractEndEl = document.getElementById('contract_end_date');
             var emailValidation = document.getElementById('emailValidation');
-            form = document.getElementById('formOutsource');
             clearClientSubmitFlag();
-            sanitizeNpwpField(document.getElementById('npwp'));
+            syncContractEndMin();
+            if (birthDateEl.value) calculateAge(birthDateEl.value);
 
-            populateProvinces(provinceEl);
-            attachBirthDateListeners(birthDateEl, ageEl);
+            umkEl = document.getElementById('umk_amount');
+            umkEl.addEventListener('input', function() {
+                formatAmount(umkEl);
+            });
+            if (umkEl.value) formatAmount(umkEl);
 
-            var oldProvince = @json(old('provinsi'));
-            var oldCity = @json(old('kota'));
-            if (oldProvince) {
-                provinceEl.value = oldProvince;
-                populateCities(oldProvince, provinceEl, cityEl);
-                if (oldCity) {
-                    cityEl.value = oldCity;
-                    var kotaNamaInput = document.getElementById('kotaNama');
-                    if (kotaNamaInput && !kotaNamaInput.value) {
-                        kotaNamaInput.value = REGIONS.cities[oldCity] || '';
+            ['whatsapp_number', 'bank_account'].forEach(function(id) {
+                var el = document.getElementById(id);
+                el.addEventListener('input', function() {
+                    var digits = this.value.replace(/[^0-9]/g, '');
+                    if (id === 'whatsapp_number') {
+                        if (digits.indexOf('62') === 0) digits = digits.substring(2);
+                        else if (digits.indexOf('0') === 0) digits = digits.substring(1);
                     }
-                    loadDistricts(oldCity);
-                }
-            }
-
-            var joinDateEl = document.getElementById('join_date');
-            var contractEndEl = document.getElementById('contract_end_date');
-            syncContractEndMin(joinDateEl, contractEndEl);
-            if (joinDateEl && contractEndEl) {
-                joinDateEl.addEventListener('change', function() {
-                    syncContractEndMin(joinDateEl, contractEndEl);
-                    if (contractEndEl.value) validateContractDates(joinDateEl, contractEndEl);
-                    updateProgress();
+                    this.value = digits.substring(0, parseInt(this.getAttribute('maxlength'), 10) || 20);
                 });
-                contractEndEl.addEventListener('change', function() {
-                    validateContractDates(joinDateEl, contractEndEl);
-                    updateProgress();
-                });
-            }
-
-            // NIK input — uniqueness check first; autofill only after NIK is available.
-            nikEl.addEventListener('input', function() {
-                var nik = this.value.replace(/[^0-9]/g, '').substring(0, 16);
-                this.value = nik;
-                if (nikCheckTimer) clearTimeout(nikCheckTimer);
-                nikCheckSeq++;
-                if (nik.length === 16) {
-                    clearNikAutofill();
-                    showNikChecking();
-                    scheduleNikAvailabilityCheck(nik);
-                } else {
-                    nikCheckPending = false;
-                    setNikBlocked(false);
-                    clearNikAutofill();
-                    nikFeedback.innerHTML = nik.length > 0 ?
-                        '<span class="text-muted" style="font-size:12px">Ketik 16 digit NIK... (' + nik.length +
-                        '/16)</span>' : '';
-                }
-                validateField(this);
-                updateProgress();
             });
 
-            // Province / city / district
-            provinceEl.addEventListener('change', function() {
-                populateCities(this.value, provinceEl, cityEl);
-                // Clear kotaNama when province changes — city is reset to blank,
-                // so any previously stored name would be stale.
-                var kotaNamaInput = document.getElementById('kotaNama');
-                if (kotaNamaInput) kotaNamaInput.value = '';
-                validateField(this);
-                updateProgress();
-            });
-            cityEl.addEventListener('change', function() {
-                validateField(this);
-                loadDistricts(this.value);
-                // Keep kotaNama in sync with the human-readable city name.
-                var kotaNamaInput = document.getElementById('kotaNama');
-                if (kotaNamaInput) {
-                    kotaNamaInput.value = this.value ? (REGIONS.cities[this.value] || '') : '';
-                }
-                updateProgress();
-            });
-            districtInput.addEventListener('change', function() {
-                validateField(this);
-                updateProgress();
-            });
-            districtManualInput.addEventListener('input', function() {
-                this.classList.toggle('is-valid', this.value.trim() !== '');
-                if (!this.value.trim()) this.classList.remove('is-valid', 'is-invalid');
-                updateProgress();
-            });
-            districtManualInput.addEventListener('blur', function() {
-                if (this.value.trim() !== '') this.classList.add('is-valid');
-            });
+            contractStartEl.addEventListener('change', syncContractEndMin);
 
-            // Phone
-            phoneEl.addEventListener('input', function() {
-                this.value = this.value.replace(/[^0-9]/g, '').substring(0, 13);
-                validateField(this);
-                updateProgress();
-            });
+            phoneEl.addEventListener('change', scheduleContactCheck);
+            emailEl.addEventListener('change', scheduleContactCheck);
 
-            // Email typo
             var commonTypos = {
                 'gmial.com': 'gmail.com',
                 'gmai.com': 'gmail.com',
@@ -1848,69 +847,37 @@
             emailEl.addEventListener('blur', function() {
                 var email = this.value.trim();
                 emailValidation.style.display = 'none';
-                if (!email) return;
-                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                    emailValidation.style.cssText =
-                        'display:flex;font-size:12px;color:#991b1b;align-items:center;gap:4px;';
-                    emailValidation.innerHTML =
-                        '<i class="bi bi-x-circle-fill"></i> Format email tidak valid';
-                    return;
-                }
+                if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
                 var domain = email.split('@')[1];
                 if (commonTypos[domain]) {
                     emailValidation.style.cssText =
                         'display:flex;font-size:12px;color:#8a6100;align-items:center;gap:4px;';
-                    emailValidation.innerHTML =
-                        '<i class="bi bi-lightbulb-fill"></i> Apakah yang Anda maksud: <strong>' + email
-                        .split('@')[0] + '@' + commonTypos[domain] + '</strong>?';
-                } else {
-                    emailValidation.style.cssText =
-                        'display:flex;font-size:12px;color:#166534;align-items:center;gap:4px;';
-                    emailValidation.innerHTML =
-                        '<i class="bi bi-check-circle-fill"></i> Format email valid';
+                    emailValidation.textContent = 'Apakah yang Anda maksud: ' + email.split('@')[0] + '@' +
+                        commonTypos[domain] + '?';
                 }
             });
-            emailEl.addEventListener('input', function() {
-                emailValidation.style.display = 'none';
-                validateField(this);
-                updateProgress();
-            });
 
-            // Agreement
+            agreementCheckbox.addEventListener('click', function(e) {
+                if (this.getAttribute('data-unlocked') !== '1') e.preventDefault();
+            });
             agreementCheckbox.addEventListener('change', function() {
-                if (this.getAttribute('data-unlocked') !== '1') {
-                    this.checked = false;
-                    return;
-                }
                 if (this.checked) {
-                    agreementError.style.display = 'none';
-                    this.classList.add('is-valid');
+                    agreementError.style.setProperty('display', 'none', 'important');
                     this.classList.remove('is-invalid');
-                } else {
-                    this.classList.remove('is-valid');
                 }
                 updateProgress();
             });
 
-            // Real-time validation
-            var inputs = form.querySelectorAll('input, select, textarea');
-            inputs.forEach(function(input) {
-                if (input.id === 'birth_date' || input.id === 'agreement') return;
-                input.addEventListener('blur', function() {
-                    validateField(this);
-                    updateProgress();
-                });
-                input.addEventListener('input', function() {
-                    validateField(this);
-                    updateProgress();
-                });
-                input.addEventListener('change', function() {
-                    validateField(this);
-                    updateProgress();
+            form.querySelectorAll('input, select, textarea').forEach(function(input) {
+                if (input.id === 'agreement' || input.type === 'hidden') return;
+                ['input', 'change', 'blur'].forEach(function(evt) {
+                    input.addEventListener(evt, function() {
+                        validateField(this);
+                        updateProgress();
+                    });
                 });
             });
 
-            // Form submit
             form.addEventListener('submit', function(e) {
                 if (isSubmitting) {
                     e.preventDefault();
@@ -1918,44 +885,35 @@
                 }
                 if (isAlreadySubmitted()) {
                     e.preventDefault();
-                    showAlreadySubmittedPage();
+                    window.location.replace(@json(route('public.outsource.success')));
                     return;
                 }
-                if (nikIsBlocked || nikCheckPending) {
+                if (contactIsBlocked || contactCheckPending) {
                     e.preventDefault();
-                    nikEl.focus();
+                    phoneEl.focus();
                     return;
                 }
                 if (!agreementCheckbox.checked) {
                     e.preventDefault();
-                    agreementError.style.display = 'block';
+                    agreementError.style.setProperty('display', 'block', 'important');
                     agreementCheckbox.classList.add('is-invalid');
                     return;
                 }
-                agreementError.style.display = 'none';
-                sanitizeNpwpField(document.getElementById('npwp'));
-                var bdValid = validateBirthDate(birthDateEl);
-                var contractValid = validateContractDates(joinDateEl, contractEndEl);
+                var bdValid = validateBirthDate(birthDateEl, false);
+                var contractValid = validateContractDates(false);
                 if (!form.checkValidity() || !bdValid || !contractValid) {
                     e.preventDefault();
                     form.classList.add('was-validated');
-                    if (!bdValid) birthDateEl.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'center'
-                    });
-                    else if (!contractValid) contractEndEl.scrollIntoView({
+                    var target = !bdValid ? birthDateEl : (!contractValid ? contractEndEl : form.querySelector(':invalid'));
+                    if (target) target.scrollIntoView({
                         behavior: 'smooth',
                         block: 'center'
                     });
                     return;
                 }
-                prepareFormForSubmit();
-                // Final authoritative sync: ensure kota_nama always reflects the
-                // current city dropdown value regardless of prior event timing.
-                var kotaNamaInput = document.getElementById('kotaNama');
-                if (kotaNamaInput && cityEl) {
-                    kotaNamaInput.value = cityEl.value ? (REGIONS.cities[cityEl.value] || '') : '';
-                }
+                document.getElementById('consentTimestamp').value = new Date().toISOString();
+                document.getElementById('consentDevice').value = (navigator.platform || '').substring(0, 120);
+                umkEl.value = umkEl.value.replace(/\D/g, '');
                 isSubmitting = true;
                 markSubmitted();
                 submitBtn.disabled = true;
@@ -1966,21 +924,16 @@
                 }
             });
 
-            var initialNik = (nikEl.value || '').replace(/[^0-9]/g, '').substring(0, 16);
             var serverError = @json(session('error'));
-            if (initialNik.length === 16) {
-                if (serverError && /sudah terdaftar|daftar hitam/i.test(String(serverError))) {
-                    setNikBlocked(true, serverError);
-                } else {
-                    showNikChecking();
-                    scheduleNikAvailabilityCheck(initialNik);
-                }
+            if (serverError && /sudah terdaftar/i.test(String(serverError))) {
+                setContactBlocked(true, serverError);
+            } else if (phoneEl.value || emailEl.value) {
+                scheduleContactCheck();
             }
 
             updateProgress();
         });
 
-        // Ask the server to resolve a form restored from BFCache.
         window.addEventListener('pageshow', function(event) {
             if (event.persisted) {
                 window.location.reload();

@@ -44,7 +44,7 @@ class RecruitmentController extends Controller
         $sortFilter   = $request->query('sort', 'newest');
         $perPage      = $request->query('per_page', 10);
 
-        $allCandidates = $this->candidateRepo->getAllFromSheets(['candidates']);
+        $allCandidates = $this->candidateRepo->listByLifecycle(['candidates']);
         $positions = $allCandidates->pluck('positionApplied')
             ->filter(fn($position) => filled($position))
             ->map(fn($position) => trim($position))
@@ -61,9 +61,9 @@ class RecruitmentController extends Controller
             'screening'   => $allCandidates->filter(fn($c) => strtolower($c->status ?? '') === 'screening')->count(),
             'interview'   => $allCandidates->filter(fn($c) => str_contains(strtolower($c->status ?? ''), 'interview'))->count(),
             'offering'    => $allCandidates->filter(fn($c) => strtolower($c->status ?? '') === 'offering')->count(),
-            'accepted'    => $this->candidateRepo->getAllFromSheets(['candidates_accepted'])->count(),
-            'hold'        => $this->candidateRepo->getAllFromSheets(['candidates_hold'])->count(),
-            'blacklist'   => $this->candidateRepo->getAllFromSheets(['candidates_blacklist'])->count(),
+            'accepted'    => $this->candidateRepo->listByLifecycle(['candidates_accepted'])->count(),
+            'hold'        => $this->candidateRepo->listByLifecycle(['candidates_hold'])->count(),
+            'blacklist'   => $this->candidateRepo->listByLifecycle(['candidates_blacklist'])->count(),
             'rejected'    => $allCandidates->filter(fn($c) => strtolower($c->status ?? '') === 'rejected')->count(),
         ];
 
@@ -79,7 +79,7 @@ class RecruitmentController extends Controller
             ];
 
             if (isset($sheetMap[$statusLower])) {
-                $candidates = $this->candidateRepo->getAllFromSheets($sheetMap[$statusLower]);
+                $candidates = $this->candidateRepo->listByLifecycle($sheetMap[$statusLower]);
 
                 $candidates = $candidates->sortByDesc(fn($c) => $c->createdDate ?? '')->values();
             } else {
@@ -140,7 +140,7 @@ class RecruitmentController extends Controller
         $perPage = $request->query('per_page', 10);
         // Full accepted list (unfiltered) — dipakai oleh search modal "Buat Offering Letter"
         // agar modal melihat seluruh kandidat Accepted, bukan hanya hasil filter tabel.
-        $allCandidates = $this->candidateRepo->getAllFromSheets(['candidates_accepted']);
+        $allCandidates = $this->candidateRepo->listByLifecycle(['candidates_accepted']);
         $candidates = $allCandidates;
         $searchFilter = $request->query('search');
         $sortFilter = $request->query('sort', 'newest');
@@ -194,7 +194,7 @@ class RecruitmentController extends Controller
     public function holdPage(Request $request): View
     {
         $perPage = $request->query('per_page', 10);
-        $candidates = $this->candidateRepo->getAllFromSheets(['candidates_hold']);
+        $candidates = $this->candidateRepo->listByLifecycle(['candidates_hold']);
         $searchFilter = $request->query('search');
         if ($searchFilter) {
             $search = strtolower($searchFilter);
@@ -217,7 +217,7 @@ class RecruitmentController extends Controller
     public function blacklistPage(Request $request): View
     {
         $perPage = $request->query('per_page', 10);
-        $candidates = $this->candidateRepo->getAllFromSheets(['candidates_blacklist']);
+        $candidates = $this->candidateRepo->listByLifecycle(['candidates_blacklist']);
         $searchFilter = $request->query('search');
         if ($searchFilter) {
             $search = strtolower($searchFilter);

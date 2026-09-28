@@ -10,7 +10,8 @@ use App\Support\Rbac;
 class SeedUser extends Command
 {
     protected $signature = 'app:seed-user {email} {username} {name} {password} {role=Super Admin}';
-    protected $description = 'Seed atau update user di Google Sheets dengan bcrypt password';
+    protected $description = 'Seed atau update user via data driver (DB jika pgsql, Sheets jika sheets)';
+
 
     public function __construct(
         private UserRepositoryInterface $userRepository,

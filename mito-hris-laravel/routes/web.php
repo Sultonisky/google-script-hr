@@ -12,6 +12,7 @@ use App\Http\Controllers\HR\EmployeeController;
 use App\Http\Controllers\HR\ProbationController;
 use App\Http\Controllers\HR\OutsourceController;
 use App\Http\Controllers\HR\ContractTrackingController;
+use App\Http\Controllers\HR\DocumentTrackingController;
 use App\Http\Controllers\HR\AuditLogController;
 use App\Http\Controllers\HR\MasterDataController;
 use App\Http\Controllers\HR\SettingsController;
@@ -41,6 +42,9 @@ if (!app()->environment('local')) {
 
         Route::prefix('hr')->name('hr.')->middleware(['portal.access', 'hr.auth', 'mpr.auth'])->group(function () {
             Route::post('/refresh-data', [\App\Http\Controllers\HR\RefreshController::class, 'refreshData'])->name('refresh-data');
+            Route::post('/sync-to-sheets', [\App\Http\Controllers\HR\SheetsMirrorController::class, 'sync'])
+                ->middleware(['can:manage_settings', 'role:Super Admin'])
+                ->name('sync-to-sheets');
             Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
             Route::prefix('recruitment')->name('recruitment.')->middleware('can:view_recruitment')->group(function () {
                 Route::get('/', [RecruitmentController::class, 'index'])->name('index');
@@ -104,18 +108,27 @@ if (!app()->environment('local')) {
                 Route::get('/{id}/eval-history', [ProbationController::class, 'evalHistory'])->name('eval-history');
                 Route::get('/{id}/preview', [ProbationController::class, 'previewPerformanceReview'])->name('preview');
             });
-            Route::prefix('outsource')->name('outsource.')->middleware('can:view_employees')->group(function () {
+            Route::prefix('outsource')->name('outsource.')->middleware('can:view_outsource')->group(function () {
                 Route::get('/', [OutsourceController::class, 'index'])->name('index');
-                Route::post('/', [OutsourceController::class, 'store'])->name('store')->middleware('can:manage_employees');
+                Route::post('/', [OutsourceController::class, 'store'])->name('store')->middleware('can:manage_outsource');
+                Route::post('/import', [OutsourceController::class, 'import'])->name('import')->middleware('can:manage_outsource');
                 Route::post('/kontrak-pkwt-tad', [OutsourceController::class, 'generateKontrakPkwtTad'])
                     ->name('kontrak-pkwt-tad')
-                    ->middleware('can:manage_employees');
+                    ->middleware('can:manage_outsource');
                 Route::get('/kontrak-pkwt-tad/download', [OutsourceController::class, 'downloadKontrakPkwtTad'])
                     ->name('kontrak-pkwt-tad.download')
-                    ->middleware('can:manage_employees');
+                    ->middleware('can:manage_outsource');
+                Route::put('/{id}', [OutsourceController::class, 'update'])->name('update')->middleware('can:manage_outsource');
+                Route::get('/{id}/json', [OutsourceController::class, 'getJson'])->name('json');
             });
             Route::prefix('contracts')->name('contracts.')->middleware('can:view_contracts')->group(function () {
                 Route::get('/', [ContractTrackingController::class, 'index'])->name('index');
+            });
+            Route::prefix('documents')->name('documents.')->middleware('can:view_documents')->group(function () {
+                Route::get('/', [DocumentTrackingController::class, 'index'])->name('index');
+                Route::get('/{documentId}/download', [DocumentTrackingController::class, 'download'])
+                    ->name('download')
+                    ->middleware('can:download_documents');
             });
             Route::prefix('audit-logs')->name('audit-logs.')->middleware('can:view_reports')->group(function () {
                 Route::get('/', [AuditLogController::class, 'index'])->name('index');
@@ -212,7 +225,7 @@ if (!app()->environment('local')) {
     Route::domain(config('hris.domains.outsource'))->middleware(['web', 'domain'])->group(function () {
         Route::get('/', [OutsourceApplyController::class, 'index'])->name('public.outsource.index');
         Route::get('/apply', [OutsourceApplyController::class, 'index'])->name('public.outsource.apply');
-        Route::post('/apply/nik-check', [OutsourceApplyController::class, 'checkNik'])->middleware('throttle:outsource-apply')->name('public.outsource.nik-check');
+        Route::post('/apply/contact-check', [OutsourceApplyController::class, 'checkContact'])->middleware('throttle:outsource-apply')->name('public.outsource.contact-check');
         Route::post('/apply', [OutsourceApplyController::class, 'store'])->name('public.outsource.store');
         Route::get('/success', [OutsourceApplyController::class, 'success'])->name('public.outsource.success');
     });
@@ -267,6 +280,9 @@ if (app()->environment('local')) {
 
         Route::prefix('hr')->name('hr.')->middleware(['portal.access', 'hr.auth', 'mpr.auth'])->group(function () {
             Route::post('/refresh-data', [\App\Http\Controllers\HR\RefreshController::class, 'refreshData'])->name('refresh-data');
+            Route::post('/sync-to-sheets', [\App\Http\Controllers\HR\SheetsMirrorController::class, 'sync'])
+                ->middleware(['can:manage_settings', 'role:Super Admin'])
+                ->name('sync-to-sheets');
             Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
             Route::prefix('recruitment')->name('recruitment.')->middleware('can:view_recruitment')->group(function () {
@@ -333,19 +349,29 @@ if (app()->environment('local')) {
                 Route::get('/{id}/preview', [ProbationController::class, 'previewPerformanceReview'])->name('preview');
             });
 
-            Route::prefix('outsource')->name('outsource.')->middleware('can:view_employees')->group(function () {
+            Route::prefix('outsource')->name('outsource.')->middleware('can:view_outsource')->group(function () {
                 Route::get('/', [OutsourceController::class, 'index'])->name('index');
-                Route::post('/', [OutsourceController::class, 'store'])->name('store')->middleware('can:manage_employees');
+                Route::post('/', [OutsourceController::class, 'store'])->name('store')->middleware('can:manage_outsource');
+                Route::post('/import', [OutsourceController::class, 'import'])->name('import')->middleware('can:manage_outsource');
                 Route::post('/kontrak-pkwt-tad', [OutsourceController::class, 'generateKontrakPkwtTad'])
                     ->name('kontrak-pkwt-tad')
-                    ->middleware('can:manage_employees');
+                    ->middleware('can:manage_outsource');
                 Route::get('/kontrak-pkwt-tad/download', [OutsourceController::class, 'downloadKontrakPkwtTad'])
                     ->name('kontrak-pkwt-tad.download')
-                    ->middleware('can:manage_employees');
+                    ->middleware('can:manage_outsource');
+                Route::put('/{id}', [OutsourceController::class, 'update'])->name('update')->middleware('can:manage_outsource');
+                Route::get('/{id}/json', [OutsourceController::class, 'getJson'])->name('json');
             });
 
             Route::prefix('contracts')->name('contracts.')->middleware('can:view_contracts')->group(function () {
                 Route::get('/', [ContractTrackingController::class, 'index'])->name('index');
+            });
+
+            Route::prefix('documents')->name('documents.')->middleware('can:view_documents')->group(function () {
+                Route::get('/', [DocumentTrackingController::class, 'index'])->name('index');
+                Route::get('/{documentId}/download', [DocumentTrackingController::class, 'download'])
+                    ->name('download')
+                    ->middleware('can:download_documents');
             });
 
             Route::prefix('audit-logs')->name('audit-logs.')->middleware('can:view_reports')->group(function () {
@@ -449,15 +475,16 @@ if (app()->environment('local')) {
 
         Route::get('/outsource', [OutsourceApplyController::class, 'index'])->name('public.outsource.index');
         Route::get('/outsource/apply', [OutsourceApplyController::class, 'index'])->name('public.outsource.apply');
-        Route::post('/outsource/apply/nik-check', [OutsourceApplyController::class, 'checkNik'])->middleware('throttle:outsource-apply')->name('public.outsource.nik-check');
+        Route::post('/outsource/apply/contact-check', [OutsourceApplyController::class, 'checkContact'])->middleware('throttle:outsource-apply')->name('public.outsource.contact-check');
         Route::post('/outsource/apply', [OutsourceApplyController::class, 'store'])->name('public.outsource.store');
         Route::get('/outsource/success', [OutsourceApplyController::class, 'success'])->name('public.outsource.success');
 
         Route::middleware(['domain'])->group(function () {
-            Route::get('/assets/login', [AssetAuthController::class, 'showLoginForm'])->name('assets.login');
-            Route::post('/assets/login', [AssetAuthController::class, 'login'])->middleware('throttle:login')->name('assets.login.post');
-            Route::post('/assets/logout', [AssetAuthController::class, 'logout'])->name('assets.logout');
-            Route::prefix('assets')->name('assets.portal.')->group(function () {
+            // public/assets holds static files, so a bare /assets path never reaches Laravel.
+            Route::get('/assets-portal/login', [AssetAuthController::class, 'showLoginForm'])->name('assets.login');
+            Route::post('/assets-portal/login', [AssetAuthController::class, 'login'])->middleware('throttle:login')->name('assets.login.post');
+            Route::post('/assets-portal/logout', [AssetAuthController::class, 'logout'])->name('assets.logout');
+            Route::prefix('assets-portal')->name('assets.portal.')->group(function () {
                 Route::get('/', [AssetController::class, 'index'])->name('index');
                 Route::get('/missing-code-summary', [AssetController::class, 'missingCodeSummary'])->name('missing-code-summary')->middleware('can:assets.view');
                 Route::get('/preview-next-code/{prefix}', [AssetController::class, 'previewNextCode'])->name('preview-next-code')->middleware('can:assets.generate_code');

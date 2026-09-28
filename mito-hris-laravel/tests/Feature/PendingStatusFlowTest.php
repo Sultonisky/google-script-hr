@@ -96,7 +96,8 @@ class PendingStatusFlowTest extends TestCase
             $employeeRepo ?? Mockery::mock(EmployeeRepositoryInterface::class),
             Mockery::mock(\App\Services\Google\GoogleDriveService::class),
             $this->mockAuditRepo(),
-            new EmployeeIdGenerator()
+            new EmployeeIdGenerator(),
+            $this->app->make(\App\Services\SkNumberService::class)
         );
     }
 
@@ -112,10 +113,10 @@ class PendingStatusFlowTest extends TestCase
 
         $candidateRepo = Mockery::mock(CandidateRepositoryInterface::class);
         $candidateRepo->shouldReceive('findById')->andReturn($candidate);
-        $candidateRepo->shouldReceive('moveToSheet')
+        $candidateRepo->shouldReceive('moveToHold')
             ->once()
-            ->withArgs(function (string $id, string $sheet, array $extra) use (&$movedToSheet) {
-                $movedToSheet = $sheet;
+            ->withArgs(function (string $id, array $extra) use (&$movedToSheet) {
+                $movedToSheet = 'candidates_hold';
                 return $id === 'REC-20260801-000001';
             })
             ->andReturn(true);
@@ -139,8 +140,8 @@ class PendingStatusFlowTest extends TestCase
 
         $candidateRepo = Mockery::mock(CandidateRepositoryInterface::class);
         $candidateRepo->shouldReceive('findById')->andReturn($candidate);
-        $candidateRepo->shouldReceive('moveToSheet')
-            ->withArgs(function (string $id, string $sheet, array $extra) use (&$capturedExtra) {
+        $candidateRepo->shouldReceive('moveToHold')
+            ->withArgs(function (string $id, array $extra) use (&$capturedExtra) {
                 $capturedExtra = $extra;
                 return true;
             })
@@ -171,10 +172,10 @@ class PendingStatusFlowTest extends TestCase
 
         $candidateRepo = Mockery::mock(CandidateRepositoryInterface::class);
         $candidateRepo->shouldReceive('findById')->andReturn($candidate);
-        $candidateRepo->shouldReceive('moveToSheet')
+        $candidateRepo->shouldReceive('moveToBlacklist')
             ->once()
-            ->withArgs(function (string $id, string $sheet, array $extra) use (&$movedToSheet) {
-                $movedToSheet = $sheet;
+            ->withArgs(function (string $id, array $extra) use (&$movedToSheet) {
+                $movedToSheet = 'candidates_blacklist';
                 return true;
             })
             ->andReturn(true);
@@ -197,8 +198,8 @@ class PendingStatusFlowTest extends TestCase
 
         $candidateRepo = Mockery::mock(CandidateRepositoryInterface::class);
         $candidateRepo->shouldReceive('findById')->andReturn($candidate);
-        $candidateRepo->shouldReceive('moveToSheet')
-            ->withArgs(function (string $id, string $sheet, array $extra) use (&$capturedExtra) {
+        $candidateRepo->shouldReceive('moveToBlacklist')
+            ->withArgs(function (string $id, array $extra) use (&$capturedExtra) {
                 $capturedExtra = $extra;
                 return true;
             })
@@ -228,10 +229,10 @@ class PendingStatusFlowTest extends TestCase
 
         $candidateRepo = Mockery::mock(CandidateRepositoryInterface::class);
         $candidateRepo->shouldReceive('findById')->andReturn($candidate);
-        $candidateRepo->shouldReceive('moveToSheet')
+        $candidateRepo->shouldReceive('moveToAccepted')
             ->once()
-            ->withArgs(function (string $id, string $sheet, array $extra) use (&$movedToSheet) {
-                $movedToSheet = $sheet;
+            ->withArgs(function (string $id, array $extra) use (&$movedToSheet) {
+                $movedToSheet = 'candidates_accepted';
                 return $id === 'REC-20260801-000001';
             })
             ->andReturn(true);
@@ -261,8 +262,8 @@ class PendingStatusFlowTest extends TestCase
 
         $candidateRepo = Mockery::mock(CandidateRepositoryInterface::class);
         $candidateRepo->shouldReceive('findById')->andReturn($candidate);
-        $candidateRepo->shouldReceive('moveToSheet')
-            ->withArgs(function (string $id, string $sheet, array $extra) use (&$capturedExtra) {
+        $candidateRepo->shouldReceive('moveToAccepted')
+            ->withArgs(function (string $id, array $extra) use (&$capturedExtra) {
                 $capturedExtra = $extra;
                 return true;
             })
@@ -295,7 +296,7 @@ class PendingStatusFlowTest extends TestCase
 
         $candidateRepo = Mockery::mock(CandidateRepositoryInterface::class);
         $candidateRepo->shouldReceive('findById')->andReturn($candidate);
-        $candidateRepo->shouldReceive('moveToSheet')->andReturn(true);
+        $candidateRepo->shouldReceive('moveToAccepted')->andReturn(true);
 
         // Strict: neither findById nor create must be called on employeeRepo
         $employeeRepo = Mockery::mock(EmployeeRepositoryInterface::class);
@@ -321,7 +322,7 @@ class PendingStatusFlowTest extends TestCase
 
         $candidateRepo = Mockery::mock(CandidateRepositoryInterface::class);
         $candidateRepo->shouldReceive('findById')->andReturn($candidate);
-        $candidateRepo->shouldReceive('moveToSheet')
+        $candidateRepo->shouldReceive('moveToAccepted')
             ->withArgs(function () use (&$callCount) {
                 $callCount++;
                 return true;
@@ -336,7 +337,7 @@ class PendingStatusFlowTest extends TestCase
         $this->makeService($candidateRepo, $employeeRepo)
             ->acceptCandidateToEmployee('REC-20260801-000001');
 
-        $this->assertSame(1, $callCount, 'moveToSheet should be called exactly once — no double-move');
+        $this->assertSame(1, $callCount, 'moveToAccepted should be called exactly once — no double-move');
     }
 
     // =========================================================================
@@ -352,7 +353,9 @@ class PendingStatusFlowTest extends TestCase
 
         $candidateRepo = Mockery::mock(CandidateRepositoryInterface::class);
         $candidateRepo->shouldReceive('findById')->andReturn($candidate)->times(3);
-        $candidateRepo->shouldReceive('moveToSheet')->andReturn(true)->times(3);
+        $candidateRepo->shouldReceive('moveToHold')->andReturn(true)->once();
+        $candidateRepo->shouldReceive('moveToBlacklist')->andReturn(true)->once();
+        $candidateRepo->shouldReceive('moveToAccepted')->andReturn(true)->once();
 
         $employeeRepo = Mockery::mock(EmployeeRepositoryInterface::class);
         $employeeRepo->shouldNotReceive('create');
@@ -382,8 +385,8 @@ class PendingStatusFlowTest extends TestCase
 
         $candidateRepo = Mockery::mock(CandidateRepositoryInterface::class);
         $candidateRepo->shouldReceive('findById')->andReturn($candidate);
-        $candidateRepo->shouldReceive('moveToSheet')
-            ->with('REC-20260801-000001', 'candidates_accepted', Mockery::type('array'))
+        $candidateRepo->shouldReceive('moveToAccepted')
+            ->with('REC-20260801-000001', Mockery::type('array'))
             ->once()
             ->andReturn(true);
         // updateStatus should NOT be called by accept endpoint
@@ -446,7 +449,7 @@ class PendingStatusFlowTest extends TestCase
 
         $candidateRepo = Mockery::mock(CandidateRepositoryInterface::class);
         $candidateRepo->shouldReceive('findById')->andReturn($candidate);
-        $candidateRepo->shouldReceive('moveToSheet')->andReturn(true);
+        $candidateRepo->shouldReceive('moveToHold')->andReturn(true);
 
         $this->app->instance(CandidateRepositoryInterface::class, $candidateRepo);
         $this->app->instance(AuditLogRepositoryInterface::class, $this->mockAuditRepo());
@@ -472,7 +475,7 @@ class PendingStatusFlowTest extends TestCase
 
         $candidateRepo = Mockery::mock(CandidateRepositoryInterface::class);
         $candidateRepo->shouldReceive('findById')->andReturn($candidate);
-        $candidateRepo->shouldReceive('moveToSheet')->andReturn(true);
+        $candidateRepo->shouldReceive('moveToBlacklist')->andReturn(true);
 
         $this->app->instance(CandidateRepositoryInterface::class, $candidateRepo);
         $this->app->instance(AuditLogRepositoryInterface::class, $this->mockAuditRepo());
@@ -498,7 +501,7 @@ class PendingStatusFlowTest extends TestCase
 
         $candidateRepo = Mockery::mock(CandidateRepositoryInterface::class);
         $candidateRepo->shouldReceive('findById')->andReturn($candidate);
-        $candidateRepo->shouldReceive('moveToSheet')->andReturn(true);
+        $candidateRepo->shouldReceive('moveToAccepted')->andReturn(true);
 
         $employeeRepo = Mockery::mock(EmployeeRepositoryInterface::class);
         $employeeRepo->shouldNotReceive('create');
@@ -524,3 +527,4 @@ class PendingStatusFlowTest extends TestCase
         parent::tearDown();
     }
 }
+

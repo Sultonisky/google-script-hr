@@ -365,12 +365,12 @@
                             <i class="bi bi-box-arrow-in-right"></i>
                             Get Started
                         </a>
-                        <a href="{{ request()->getScheme() . '://' . config('hris.domains.assets') }}"
+                        <a href="{{ route('assets.portal.index') }}"
                             class="btn btn-outline-danger" data-portal-redirect data-portal-msg="Membuka Portal Aset...">
                             <i class="bi bi-box-seam"></i>
                             Portal Aset
                         </a>
-                        <a href="{{ request()->getScheme() . '://' . config('hris.domains.certificates') }}"
+                        <a href="{{ route('certificates.portal.index') }}"
                             class="btn btn-outline-danger" data-portal-redirect data-portal-msg="Membuka Portal Sertifikasi...">
                             <i class="bi bi-award"></i>
                             Portal Sertifikasi

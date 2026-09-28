@@ -5,10 +5,8 @@
 @section('page-subtitle', 'Manajemen tenaga kerja alih daya (Outsource)')
 
 @section('content')
-    <!-- partials/OutsourceTable.html — OUTSOURCE DATA PANEL (1:1 from GAS) -->
     <section class="page-section active" id="pageOutsource">
 
-        <!-- Outsource Stat Cards (1:1 from GAS) -->
         <div class="row g-3 mb-3 mt-2" id="outsourceStats">
             <div class="col-6 col-md-3">
                 <div class="stat-card">
@@ -19,6 +17,17 @@
                     </div>
                 </div>
             </div>
+            @foreach ($stats['vendors'] ?? [] as $vendorName => $vendorCount)
+                <div class="col-6 col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-icon bg-cyan"><i class="bi bi-building"></i></div>
+                        <div>
+                            <div class="stat-label">{{ $vendorName }}</div>
+                            <div class="stat-value text-navy">{{ $vendorCount }}</div>
+                        </div>
+                    </div>
+                </div>
+            @endforeach
         </div>
 
         <div class="panel mt-2" id="outsourcePanel">
@@ -34,7 +43,7 @@
                         @endif
                     </div>
                 </div>
-                @can('manage_employees')
+                @can('manage_outsource')
                     <div class="export-btns d-flex flex-wrap gap-2">
                         <button class="btn btn-sm fw-semibold text-white"
                             style="background:#0d6efd;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
@@ -45,10 +54,16 @@
                             <i class="bi bi-file-earmark-text me-1"></i>Proses Kontrak
                         </button>
                         <button class="btn btn-sm fw-semibold text-white"
-                            style="background:#eb1c24;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
+                            style="background:#198754;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
                             type="button"
                             data-bs-toggle="modal"
-                            data-bs-target="#addEmployeeModal"
+                            data-bs-target="#outsourceImportModal"
+                            id="btnImportOutsource">
+                            <i class="bi bi-file-earmark-spreadsheet me-1"></i>Import Excel
+                        </button>
+                        <button class="btn btn-sm fw-semibold text-white"
+                            style="background:#eb1c24;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
+                            type="button"
                             id="btnAddOutsource">
                             <i class="bi bi-building-fill-gear me-1"></i>Tambah Outsource
                         </button>
@@ -64,8 +79,15 @@
                     <div class="table-search">
                         <i class="bi bi-search"></i>
                         <input type="text" name="search" id="osSearchInput"
-                            placeholder="Cari nama, ID, vendor, posisi..." value="{{ $searchFilter ?? '' }}" />
+                            placeholder="Cari nama, ID, jabatan, lokasi..." value="{{ $searchFilter ?? '' }}" />
                     </div>
+                    <select class="filter-select" name="vendor" id="osVendorSelect" data-auto-submit="true">
+                        <option value="">Semua Vendor</option>
+                        @foreach (config('hris.outsource.vendors', []) as $vendorName)
+                            <option value="{{ $vendorName }}" {{ ($vendorFilter ?? '') === $vendorName ? 'selected' : '' }}>
+                                {{ $vendorName }}</option>
+                        @endforeach
+                    </select>
                     <select class="filter-select" name="sort" id="osSortSelect" data-auto-submit="true">
                         <option value="name_asc" {{ ($sortFilter ?? 'name_asc') === 'name_asc' ? 'selected' : '' }}>Nama A-Z
                         </option>
@@ -84,38 +106,39 @@
                 </div>
             </form>
 
-            <!-- Table (1:1 from GAS: Avatar, Employee ID, Nama, Posisi / Dept, Tanggal Join, Status, Aksi) -->
             <div class="table-responsive">
                 <table class="table hr-table">
                     <thead>
                         <tr>
                             <th>Avatar</th>
-                            <th>Employee ID</th>
+                            <th>Outsource ID</th>
                             <th>Nama</th>
-                            <th>Posisi / Dept</th>
-                            <th>Tanggal Join</th>
-                            <th>Status</th>
+                            <th>Jabatan / Lokasi</th>
+                            <th>Vendor</th>
+                            <th>Tgl Join Mito</th>
+                            <th>Tgl Akhir Kontrak (StaffInc)</th>
                         </tr>
                     </thead>
                     <tbody id="osTableBody">
                         @forelse($outsources as $os)
-                            <tr data-drawer-type="outsource" data-drawer-id="{{ $os->employeeId }}"
+                            <tr data-drawer-type="outsource" data-drawer-id="{{ $os->outsourceId }}"
                                 style="cursor:pointer;">
                                 <td>
                                     <div class="avatar-sm">
                                         {{ strtoupper(substr($os->fullName ?? 'O', 0, 2)) }}
                                     </div>
                                 </td>
-                                <td class="id-mono fw-bold">{{ $os->employeeId }}</td>
+                                <td class="id-mono fw-bold">{{ $os->outsourceId }}</td>
                                 <td>
                                     <div class="cand-name fw-bold text-primary text-decoration-underline ">
                                         {{ $os->fullName }}</div>
-                                    <div class="cand-sub">{{ $os->workingEmail ?? $os->personalEmail }}</div>
+                                    <div class="cand-sub">{{ $os->email }}</div>
                                 </td>
-                                <td>{{ $os->jobPosition }} <small
-                                        class="text-muted d-block">({{ $os->department }})</small></td>
-                                <td class="id-mono">{{ $os->joinDate ?? '-' }}</td>
-                                <td><x-badge-status :status="$os->statusEmployee ?? 'Outsource'" /></td>
+                                <td>{{ $os->jobTitle ?? '-' }} <small
+                                        class="text-muted d-block">{{ collect([$os->workLocation, $os->workCity])->filter()->implode(' · ') ?: '-' }}</small></td>
+                                <td>{{ $os->vendor ?? '-' }}</td>
+                                <td class="id-mono">{{ $os->mitoJoinDate ?? '-' }}</td>
+                                <td class="id-mono">{{ $os->contractEndDate ?? '-' }}</td>
                             </tr>
                         @empty
                             <tr>
@@ -142,28 +165,28 @@
                 </span>
                 @if ($total > $perPage)
                     <x-pagination :currentPage="$currentPage" :total="$total" :perPage="$perPage" :route="'hr.outsource.index'"
-                        :queryParams="['search' => $searchFilter, 'sort' => $sortFilter, 'per_page' => $perPage]" />
+                        :queryParams="['search' => $searchFilter, 'vendor' => $vendorFilter, 'sort' => $sortFilter, 'per_page' => $perPage]" />
                 @endif
             </div>
         </div>
 
     </section>
 
-    @can('manage_employees')
+    @can('manage_outsource')
         @include('hr.partials.outsource-contract-modal')
+        @include('hr.partials.outsource-form-modal')
+        @include('hr.partials.outsource-import-modal')
     @endcan
 @endsection
 
 @section('scripts')
     <script>
-        // Wire add-employee modal untuk mode outsource
-        document.addEventListener('DOMContentLoaded', function () {
-            var aeModal = document.getElementById('addEmployeeModal');
-            if (aeModal) {
-                aeModal.setAttribute('data-mode', 'outsource');
-                aeModal.setAttribute('data-store-url', '{{ route("hr.outsource.store") }}');
-            }
-        });
+        var btnAddOutsource = document.getElementById('btnAddOutsource');
+        if (btnAddOutsource) {
+            btnAddOutsource.addEventListener('click', function() {
+                if (typeof window.openOutsourceForm === 'function') window.openOutsourceForm(null);
+            });
+        }
 
         // Drawer click handler for outsource
         document.querySelectorAll('#osTableBody tr[data-drawer-type="outsource"]').forEach(function(row) {

@@ -12,7 +12,8 @@ class MigrateUserPermissionsCommand extends Command
 {
     protected $signature = 'mito:permissions:migrate {--dry-run : Report changes without writing User_Permissions}';
 
-    protected $description = 'Migrate legacy role permissions into User_Permissions without changing Users';
+    protected $description = 'Migrate legacy role permissions into user_permissions via data driver';
+
 
     public function handle(
         UserRepositoryInterface $userRepository,
