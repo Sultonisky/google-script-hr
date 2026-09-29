@@ -177,6 +177,8 @@ if (!app()->environment('local')) {
                 Route::get('/surat-bpjs/{id}', [ExportController::class, 'suratBpjsPdf'])->name('surat-bpjs');
                 Route::get('/paklaring/{id}', [ExportController::class, 'paklaringPdf'])->name('paklaring');
                 Route::get('/offboarding-bundle/{id}', [ExportController::class, 'offboardingBundlePdf'])->name('offboarding-bundle');
+            });
+            Route::prefix('export')->name('export.')->middleware('can:manage_probation')->group(function () {
                 Route::get('/performance-review/{id}', [ExportController::class, 'performanceReviewPdf'])->name('performance-review');
             });
             Route::prefix('export')->name('export.')->middleware('can:manage_recruitment')->group(function () {
@@ -433,6 +435,8 @@ if (app()->environment('local')) {
                 Route::get('/surat-bpjs/{id}', [ExportController::class, 'suratBpjsPdf'])->name('surat-bpjs');
                 Route::get('/paklaring/{id}', [ExportController::class, 'paklaringPdf'])->name('paklaring');
                 Route::get('/offboarding-bundle/{id}', [ExportController::class, 'offboardingBundlePdf'])->name('offboarding-bundle');
+            });
+            Route::prefix('export')->name('export.')->middleware('can:manage_probation')->group(function () {
                 Route::get('/performance-review/{id}', [ExportController::class, 'performanceReviewPdf'])->name('performance-review');
             });
 

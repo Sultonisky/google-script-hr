@@ -45,6 +45,8 @@
             // HRIS identity variables (only used when $isMprRequestorUi = false).
             $currentAuthDomain = session('hr_user.auth_domain', 'users');
             $currentRole       = session('hr_user.role', 'Viewer');
+            // Users, MPR Requestors and Permissions routes also require role:Super Admin.
+            $isSuperAdmin      = \App\Support\Rbac::normalizeRole($currentRole) === 'Super Admin';
 
             $showDashboard = true;
         @endphp
@@ -148,25 +150,29 @@
                 <div class="nav-section-label">System</div>
 
                 @can('manage_settings')
-                    <a href="{{ route('hr.users.index') }}"
-                        class="nav-item {{ request()->routeIs('hr.users.*') ? 'active' : '' }}">
-                        <i class="bi bi-shield-lock"></i> User Management
-                    </a>
-                    <a href="{{ route('hr.mpr-requestors.index') }}"
-                        class="nav-item {{ request()->routeIs('hr.mpr-requestors.*') ? 'active' : '' }}">
-                        <i class="bi bi-person-lines-fill"></i> MPR Requestors
-                    </a>
+                    @if ($isSuperAdmin)
+                        <a href="{{ route('hr.users.index') }}"
+                            class="nav-item {{ request()->routeIs('hr.users.*') ? 'active' : '' }}">
+                            <i class="bi bi-shield-lock"></i> User Management
+                        </a>
+                        <a href="{{ route('hr.mpr-requestors.index') }}"
+                            class="nav-item {{ request()->routeIs('hr.mpr-requestors.*') ? 'active' : '' }}">
+                            <i class="bi bi-person-lines-fill"></i> MPR Requestors
+                        </a>
+                    @endif
                     <a href="{{ route('hr.settings.index') }}"
                         class="nav-item {{ request()->routeIs('hr.settings.*') ? 'active' : '' }}">
                         <i class="bi bi-gear-fill"></i> Settings
                     </a>
                 @endcan
-                @can('manage_permissions')
-                    <a href="{{ route('hr.permissions.index') }}"
-                        class="nav-item {{ request()->routeIs('hr.permissions.*') ? 'active' : '' }}">
-                        <i class="bi bi-key-fill"></i> Permission Management
-                    </a>
-                @endcan
+                @if ($isSuperAdmin)
+                    @can('manage_permissions')
+                        <a href="{{ route('hr.permissions.index') }}"
+                            class="nav-item {{ request()->routeIs('hr.permissions.*') ? 'active' : '' }}">
+                            <i class="bi bi-key-fill"></i> Permission Management
+                        </a>
+                    @endcan
+                @endif
                 @can('view_reports')
                     <a href="{{ route('hr.audit-logs.index') }}"
                         class="nav-item {{ request()->routeIs('hr.audit-logs.*') ? 'active' : '' }}">
