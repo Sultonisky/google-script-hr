@@ -346,7 +346,7 @@
                 Karyawan yang bersangkutan,
                 <div class="sign-space"></div>
                 <strong><u>{{ $employee->fullName ?? '-' }}</u></strong><br>
-                Tanggal: ____________________
+                Tanggal: {{ $docDateFmt }}
             </td>
             <td class="sign-hr">
                 {{ $companyCity }}, {{ $docDateFmt }}<br>

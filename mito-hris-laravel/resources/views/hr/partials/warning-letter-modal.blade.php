@@ -2,7 +2,7 @@
 <div class="modal fade" id="warningLetterModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content" style="border-radius:16px">
-            <div class="modal-header" style="background:#7c2d12;border-radius:16px 16px 0 0">
+            <div class="modal-header" style="background:#eb1c24;border-radius:16px 16px 0 0">
                 <div class="d-flex align-items-center gap-2">
                     <i class="bi bi-exclamation-triangle-fill text-white fs-5"></i>
                     <h6 class="modal-title mb-0 text-white fw-bold">Generate Surat Peringatan</h6>
@@ -10,7 +10,8 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
 
-            <form id="formWarningLetter" novalidate>
+            {{-- Form membungkus body + footer: harus flex column agar modal-dialog-scrollable tetap menggulir body --}}
+            <form id="formWarningLetter" class="d-flex flex-column" style="min-height:0;flex:1 1 auto;overflow:hidden" novalidate>
                 <div class="modal-body p-4">
                     <input type="hidden" id="wlEmployeeId" />
 
@@ -33,10 +34,10 @@
 
                     <!-- STEP 2: Preview + form -->
                     <div id="wlEmpPreview" style="display:none">
-                        <div class="p-3 rounded-3 mb-3" style="border:1px solid #7c2d12">
+                        <div class="p-3 rounded-3 mb-3" style="border:1px solid #eb1c24">
                             <div class="d-flex align-items-center gap-3">
                                 <div id="wlEmpAvatar"
-                                    style="width:44px;height:44px;font-size:16px;flex-shrink:0;background:#7c2d12;color:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800">
+                                        style="width:44px;height:44px;font-size:16px;flex-shrink:0;background:#eb1c24;color:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800">
                                     ?</div>
                                 <div class="flex-grow-1">
                                     <div class="fw-bold text-primary" id="wlEmpName" style="font-size:15px">-</div>
@@ -60,7 +61,7 @@
 
                         <div id="wlErrors" class="alert alert-danger py-2 px-3 mb-3" style="display:none;font-size:12.5px"></div>
 
-                        <p class="fw-bold mb-3" style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#7c2d12">
+                        <p class="fw-bold mb-3" style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#eb1c24">
                             <i class="bi bi-file-earmark-text me-1"></i>Detail Surat
                         </p>
                         <div class="row g-3 mb-4">
@@ -88,7 +89,7 @@
                             </div>
                         </div>
 
-                        <p class="fw-bold mb-3" style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#7c2d12">
+                        <p class="fw-bold mb-3" style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#eb1c24">
                             <i class="bi bi-exclamation-octagon me-1"></i>Pelanggaran
                         </p>
                         <div class="row g-3 mb-4">
@@ -120,7 +121,7 @@
                             </div>
                         </div>
 
-                        <p class="fw-bold mb-3" style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#7c2d12">
+                        <p class="fw-bold mb-3" style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#eb1c24">
                             <i class="bi bi-tools me-1"></i>Tindakan Perbaikan
                         </p>
                         <div class="row g-3">
@@ -136,9 +137,9 @@
 
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-sm text-white fw-semibold" style="background:#7c2d12"
+                    <button type="submit" class="btn btn-sm text-white fw-semibold" style="background:#eb1c24"
                         id="btnGenerateWarningLetter" disabled>
-                        <i class="bi bi-file-earmark-pdf me-1"></i>Generate Surat Peringatan
+                        <i class="bi bi-file-earmark-pdf me-1"></i>Buat Surat Peringatan
                     </button>
                 </div>
             </form>

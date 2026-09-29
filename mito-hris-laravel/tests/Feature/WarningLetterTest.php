@@ -180,6 +180,8 @@ class WarningLetterTest extends TestCase
         $this->assertStringContainsString('28 Maret 2027', $html);
         $this->assertStringContainsString('Surat Peringatan Ketiga (SP-3)', $html);
         $this->assertStringContainsString('Jakarta, 29 September 2026', $html);
+        $this->assertStringContainsString('Tanggal: 29 September 2026', $html);
+        $this->assertStringNotContainsString('Tanggal: ____', $html);
         $this->assertStringContainsString('Hisar Hesti', $html);
         $this->assertStringContainsString('Atasan Langsung (Budi Santoso)', $html);
     }
