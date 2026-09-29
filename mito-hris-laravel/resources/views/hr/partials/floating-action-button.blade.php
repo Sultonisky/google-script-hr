@@ -4,13 +4,17 @@
     && config('google.enabled')
     && \App\Support\Rbac::normalizeRole(session('hr_user.role')) === \App\Support\Rbac::normalizeRole('Super Admin')
     && \Illuminate\Support\Facades\Gate::allows('manage_settings');
+  $canOpenSpreadsheet = trim((string) config('google.spreadsheet_id', '')) !== ''
+    && \Illuminate\Support\Facades\Gate::allows('open_spreadsheet');
 @endphp
 <div class="fab-wrap">
   <div class="fab-actions d-none" id="fabActions">
-    <a class="fab-action" href="https://docs.google.com/spreadsheets/d/{{ config('google.spreadsheet_id') }}/edit" target="_blank" rel="noopener noreferrer">
+    @if ($canOpenSpreadsheet)
+    <a class="fab-action" href="{{ route('hr.spreadsheet.open') }}" target="_blank" rel="noopener noreferrer">
       Buka Spreadsheet
       <i class="bi bi-table"></i>
     </a>
+    @endif
     @if ($canSyncSheets)
     <button class="fab-action" id="fabSyncSheets" type="button" data-sync-sheets
       aria-label="Sinkron ke Spreadsheet" title="Salin data terbaru dari database ke Spreadsheet"
