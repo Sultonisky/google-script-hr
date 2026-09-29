@@ -454,6 +454,38 @@ class RbacTest extends TestCase
             ->assertDontSee('Settings');
     }
 
+    #[Test]
+    public function sidebar_hides_super_admin_only_links_from_granted_admin(): void
+    {
+        $this->actingAsRole('Admin');
+        $repository = app(\App\Repositories\Contracts\UserPermissionRepositoryInterface::class);
+        $repository->upsert('admin@mito.id', 'manage_settings', true, 'test');
+        $repository->upsert('admin@mito.id', 'manage_permissions', true, 'test');
+        app(\App\Services\PermissionResolver::class)->forget('admin@mito.id');
+
+        $this->get('/hr/dashboard')
+            ->assertOk()
+            ->assertSee('href="' . route('hr.settings.index') . '"', false)
+            ->assertDontSee('href="' . route('hr.users.index') . '"', false)
+            ->assertDontSee('href="' . route('hr.mpr-requestors.index') . '"', false)
+            ->assertDontSee('href="' . route('hr.permissions.index') . '"', false);
+
+        $this->get('/hr/users')->assertStatus(403);
+        $this->get('/hr/permissions')->assertStatus(403);
+    }
+
+    #[Test]
+    public function sidebar_shows_super_admin_only_links_to_super_admin(): void
+    {
+        $this->actingAsRole('Super Admin');
+
+        $this->get('/hr/dashboard')
+            ->assertOk()
+            ->assertSee('href="' . route('hr.users.index') . '"', false)
+            ->assertSee('href="' . route('hr.mpr-requestors.index') . '"', false)
+            ->assertSee('href="' . route('hr.permissions.index') . '"', false);
+    }
+
     // =========================================================================
     // 5. User role — renamed from Privileged User, same permission logic
     // =========================================================================

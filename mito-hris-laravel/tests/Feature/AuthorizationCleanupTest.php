@@ -26,6 +26,15 @@ class AuthorizationCleanupTest extends TestCase
     }
 
     #[Test]
+    public function performance_review_export_follows_probation_permission(): void
+    {
+        $middleware = $this->middleware('hr.export.performance-review');
+
+        $this->assertContains('can:manage_probation', $middleware);
+        $this->assertNotContains('can:manage_employees', $middleware);
+    }
+
+    #[Test]
     public function certificate_attachment_requires_portal_access_and_certificate_view(): void
     {
         $middleware = $this->middleware('certificates.portal.attachment');
