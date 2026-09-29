@@ -74,11 +74,11 @@ if (!app()->environment('local')) {
                 Route::post('/import', [EmployeeController::class, 'import'])->name('import')->middleware('can:manage_employees');
                 Route::post('/', [EmployeeController::class, 'store'])->name('store')->middleware('can:manage_employees');
                 Route::put('/{id}', [EmployeeController::class, 'update'])->name('update')->middleware('can:manage_employees');
-                Route::post('/{id}/rotate', [EmployeeController::class, 'rotate'])->name('rotate')->middleware('can:manage_employees');
-                Route::post('/{id}/offboard', [EmployeeController::class, 'offboard'])->name('offboard')->middleware('can:manage_employees');
-                Route::post('/{id}/off-contract', [EmployeeController::class, 'offContract'])->name('off-contract')->middleware('can:manage_employees');
-                Route::post('/{id}/warning-letter', [WarningLetterController::class, 'store'])->name('warning-letter')->middleware('can:manage_employees');
-                Route::get('/{id}/warning-letter/{documentId}', [WarningLetterController::class, 'download'])->name('warning-letter.download')->middleware('can:manage_employees');
+                Route::post('/{id}/rotate', [EmployeeController::class, 'rotate'])->name('rotate')->middleware('can:rotate_employees');
+                Route::post('/{id}/offboard', [EmployeeController::class, 'offboard'])->name('offboard')->middleware('can:offboard_employees');
+                Route::post('/{id}/off-contract', [EmployeeController::class, 'offContract'])->name('off-contract')->middleware('can:off_contract_employees');
+                Route::post('/{id}/warning-letter', [WarningLetterController::class, 'store'])->name('warning-letter')->middleware('can:manage_warning_letters');
+                Route::get('/{id}/warning-letter/{documentId}', [WarningLetterController::class, 'download'])->name('warning-letter.download')->middleware('can:manage_warning_letters');
                 Route::get('/{id}/json', [EmployeeController::class, 'getJson'])->name('json');
             });
             Route::get('/employees/lookup', [EmployeeController::class, 'lookup'])->middleware('can:lookup_employee')->name('employees.lookup');
@@ -172,11 +172,17 @@ if (!app()->environment('local')) {
             Route::prefix('export')->name('export.')->middleware('can:manage_employees')->group(function () {
                 Route::get('/kontrak-pkwt/{id}', [ExportController::class, 'kontrakPkwtPdf'])->name('kontrak-pkwt');
                 Route::get('/sk-pengangkatan/{id}', [ExportController::class, 'skPengangkatanPdf'])->name('sk-pengangkatan');
-                Route::get('/sk-off/{id}', [ExportController::class, 'skOffPdf'])->name('sk-off');
+            });
+            Route::prefix('export')->name('export.')->middleware('can:rotate_employees')->group(function () {
                 Route::get('/sk-rotation/{id}', [ExportController::class, 'skRotationPdf'])->name('sk-rotation');
+            });
+            Route::prefix('export')->name('export.')->middleware('can:offboard_employees')->group(function () {
+                Route::get('/sk-off/{id}', [ExportController::class, 'skOffPdf'])->name('sk-off');
                 Route::get('/surat-bpjs/{id}', [ExportController::class, 'suratBpjsPdf'])->name('surat-bpjs');
-                Route::get('/paklaring/{id}', [ExportController::class, 'paklaringPdf'])->name('paklaring');
                 Route::get('/offboarding-bundle/{id}', [ExportController::class, 'offboardingBundlePdf'])->name('offboarding-bundle');
+            });
+            Route::prefix('export')->name('export.')->middleware('can:export_paklaring')->group(function () {
+                Route::get('/paklaring/{id}', [ExportController::class, 'paklaringPdf'])->name('paklaring');
             });
             Route::prefix('export')->name('export.')->middleware('can:manage_probation')->group(function () {
                 Route::get('/performance-review/{id}', [ExportController::class, 'performanceReviewPdf'])->name('performance-review');
@@ -321,11 +327,11 @@ if (app()->environment('local')) {
                 Route::post('/import', [EmployeeController::class, 'import'])->name('import')->middleware('can:manage_employees');
                 Route::post('/', [EmployeeController::class, 'store'])->name('store')->middleware('can:manage_employees');
                 Route::put('/{id}', [EmployeeController::class, 'update'])->name('update')->middleware('can:manage_employees');
-                Route::post('/{id}/rotate', [EmployeeController::class, 'rotate'])->name('rotate')->middleware('can:manage_employees');
-                Route::post('/{id}/offboard', [EmployeeController::class, 'offboard'])->name('offboard')->middleware('can:manage_employees');
-                Route::post('/{id}/off-contract', [EmployeeController::class, 'offContract'])->name('off-contract')->middleware('can:manage_employees');
-                Route::post('/{id}/warning-letter', [WarningLetterController::class, 'store'])->name('warning-letter')->middleware('can:manage_employees');
-                Route::get('/{id}/warning-letter/{documentId}', [WarningLetterController::class, 'download'])->name('warning-letter.download')->middleware('can:manage_employees');
+                Route::post('/{id}/rotate', [EmployeeController::class, 'rotate'])->name('rotate')->middleware('can:rotate_employees');
+                Route::post('/{id}/offboard', [EmployeeController::class, 'offboard'])->name('offboard')->middleware('can:offboard_employees');
+                Route::post('/{id}/off-contract', [EmployeeController::class, 'offContract'])->name('off-contract')->middleware('can:off_contract_employees');
+                Route::post('/{id}/warning-letter', [WarningLetterController::class, 'store'])->name('warning-letter')->middleware('can:manage_warning_letters');
+                Route::get('/{id}/warning-letter/{documentId}', [WarningLetterController::class, 'download'])->name('warning-letter.download')->middleware('can:manage_warning_letters');
                 Route::get('/{id}/json', [EmployeeController::class, 'getJson'])->name('json');
             });
             Route::get('/employees/lookup', [EmployeeController::class, 'lookup'])->middleware('can:lookup_employee')->name('employees.lookup');
@@ -430,11 +436,17 @@ if (app()->environment('local')) {
             Route::prefix('export')->name('export.')->middleware('can:manage_employees')->group(function () {
                 Route::get('/kontrak-pkwt/{id}', [ExportController::class, 'kontrakPkwtPdf'])->name('kontrak-pkwt');
                 Route::get('/sk-pengangkatan/{id}', [ExportController::class, 'skPengangkatanPdf'])->name('sk-pengangkatan');
-                Route::get('/sk-off/{id}', [ExportController::class, 'skOffPdf'])->name('sk-off');
+            });
+            Route::prefix('export')->name('export.')->middleware('can:rotate_employees')->group(function () {
                 Route::get('/sk-rotation/{id}', [ExportController::class, 'skRotationPdf'])->name('sk-rotation');
+            });
+            Route::prefix('export')->name('export.')->middleware('can:offboard_employees')->group(function () {
+                Route::get('/sk-off/{id}', [ExportController::class, 'skOffPdf'])->name('sk-off');
                 Route::get('/surat-bpjs/{id}', [ExportController::class, 'suratBpjsPdf'])->name('surat-bpjs');
-                Route::get('/paklaring/{id}', [ExportController::class, 'paklaringPdf'])->name('paklaring');
                 Route::get('/offboarding-bundle/{id}', [ExportController::class, 'offboardingBundlePdf'])->name('offboarding-bundle');
+            });
+            Route::prefix('export')->name('export.')->middleware('can:export_paklaring')->group(function () {
+                Route::get('/paklaring/{id}', [ExportController::class, 'paklaringPdf'])->name('paklaring');
             });
             Route::prefix('export')->name('export.')->middleware('can:manage_probation')->group(function () {
                 Route::get('/performance-review/{id}', [ExportController::class, 'performanceReviewPdf'])->name('performance-review');
