@@ -42,6 +42,7 @@ final class PermissionCatalog
             ['key' => 'export_mpr', 'name' => 'Export MPR', 'description' => 'Export manpower requests.', 'group' => 'MPR'],
             ['key' => 'manage_settings', 'name' => 'Manage settings', 'description' => 'Manage system settings and users.', 'group' => 'Settings'],
             ['key' => 'manage_permissions', 'name' => 'Manage permissions', 'description' => 'Manage user-specific permissions.', 'group' => 'Settings'],
+            ['key' => 'open_spreadsheet', 'name' => 'Open spreadsheet archive', 'description' => 'Open the Google Sheets archive (database mirror) from the dashboard quick actions.', 'group' => 'Settings'],
             ['key' => 'view_reports', 'name' => 'View reports', 'description' => 'View audit and report data.', 'group' => 'Reports'],
             ['key' => 'view_asset', 'name' => 'View legacy assets', 'description' => 'Compatibility permission for legacy HRIS Assets routes.', 'group' => 'Assets'],
             ['key' => 'edit_asset', 'name' => 'Edit legacy assets', 'description' => 'Compatibility permission for legacy HRIS Assets mutations.', 'group' => 'Assets'],
