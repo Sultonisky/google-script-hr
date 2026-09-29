@@ -1015,6 +1015,7 @@
         var SUBMISSION_FLAG = 'mito_career_submitted';
         var manualBirthDateChanged = false;
         var isSubmitting = false;
+        var sessionExpired = false;
 
         // ============================================================
         // FORM SECTIONS CONFIG (1:1 from GAS FORM_SECTIONS)
@@ -1157,7 +1158,7 @@
             if (hint && !allComplete) {
                 hint.innerHTML = '<i class="bi bi-info-circle-fill me-1"></i> Lengkapi seluruh data pada semua bagian terlebih dahulu untuk mengaktifkan persetujuan.';
             }
-            submitBtn.disabled = nikIsBlocked || nikCheckPending || !(allComplete && agreementCheckbox.checked);
+            submitBtn.disabled = nikIsBlocked || nikCheckPending || sessionExpired || !(allComplete && agreementCheckbox.checked);
         }
 
         var progressMessages = [{
@@ -1523,6 +1524,9 @@
                 credentials: 'same-origin',
                 body: JSON.stringify({ nik: nik })
             }).then(function(res) {
+                if (res.status === 419 || res.status === 403) {
+                    return { status: res.status, data: null };
+                }
                 return res.json().then(function(data) {
                     return { status: res.status, data: data };
                 });
@@ -1530,6 +1534,10 @@
                 if (seq !== nikCheckSeq) return;
                 if (String(nikInput.value || '') !== String(nik)) return;
                 nikCheckPending = false;
+                if (result.status === 419 || result.status === 403) {
+                    showSessionExpired();
+                    return;
+                }
                 if (result.data && result.data.available === false) {
                     setNikBlocked(true, result.data.message);
                     return;
@@ -1557,6 +1565,29 @@
             try {
                 window.sessionStorage.setItem(SUBMISSION_FLAG, '1');
             } catch (err) {}
+        }
+
+        function clearSubmitted() {
+            try {
+                window.sessionStorage.removeItem(SUBMISSION_FLAG);
+            } catch (err) {}
+        }
+
+        function showSessionExpired() {
+            sessionExpired = true;
+            if (nikFeedback) {
+                nikFeedback.classList.add('show');
+                nikFeedback.innerHTML =
+                    '<div class="alert alert-danger p-2 mb-0" style="font-size:12px"><i class="bi bi-clock-history me-1"></i> <strong>Sesi pendaftaran telah berakhir.</strong> Silakan <a href="{{ route('public.career.index') }}" class="alert-link">mulai ulang dari halaman persetujuan</a> agar data dapat dikirim.</div>';
+            }
+            if (submitBtn) submitBtn.disabled = true;
+            if (typeof window.showToast === 'function') {
+                window.showToast({
+                    type: 'error',
+                    title: 'Sesi berakhir',
+                    message: 'Sesi pendaftaran telah berakhir. Silakan mulai ulang dari halaman persetujuan.'
+                });
+            }
         }
 
         function showAlreadySubmittedPage() {
@@ -1817,6 +1848,10 @@
             phoneInput = document.getElementById('phone');
             salaryInput = document.getElementById('expected_salary');
 
+            // The server redirects completed submissions away from this page, so a
+            // rendered form means any earlier submit in this tab did not complete.
+            clearSubmitted();
+
             populateProvinces();
             attachBirthDateListeners();
 
@@ -1991,6 +2026,11 @@
                 if (isAlreadySubmitted()) {
                     e.preventDefault();
                     showAlreadySubmittedPage();
+                    return;
+                }
+                if (sessionExpired) {
+                    e.preventDefault();
+                    showSessionExpired();
                     return;
                 }
                 if (nikIsBlocked || nikCheckPending) {
