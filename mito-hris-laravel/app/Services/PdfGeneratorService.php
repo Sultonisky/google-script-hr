@@ -184,6 +184,16 @@ class PdfGeneratorService
             ->setPaper('a4', 'portrait');
     }
 
+    /**
+     * Generate Surat Peringatan (SP-1 / SP-2 / SP-3) PDF.
+     */
+    public function generateWarningLetterPdf(EmployeeData $employee, array $extraData = []): \Barryvdh\DomPDF\PDF
+    {
+        $company = $this->resolveCompany($this->getBranchName($employee, $extraData));
+        return Pdf::loadView('pdf.surat-peringatan', compact('employee', 'extraData', 'company'))
+            ->setPaper('a4', 'portrait');
+    }
+
     public function generateKontrakPkwtTadPdf(EmployeeData $employee, array $extraData = []): \Barryvdh\DomPDF\PDF
     {
         // PT Damarindo Mandiri as contracting party for TAD / outsource placement

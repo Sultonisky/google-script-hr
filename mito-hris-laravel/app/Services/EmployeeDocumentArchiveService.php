@@ -261,6 +261,9 @@ class EmployeeDocumentArchiveService
                 ]),
                 "Surat_BPJS_{$stem}.pdf",
             ],
+            SkDocumentType::SURAT_PERINGATAN => throw new RuntimeException(
+                'Isi Surat Peringatan hanya tersimpan di arsip saat diterbitkan, PDF tidak dapat dibuat ulang.'
+            ),
         };
     }
 
