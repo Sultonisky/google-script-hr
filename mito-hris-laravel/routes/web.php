@@ -11,6 +11,7 @@ use App\Http\Controllers\HR\RecruitmentController;
 use App\Http\Controllers\HR\EmployeeController;
 use App\Http\Controllers\HR\ProbationController;
 use App\Http\Controllers\HR\OutsourceController;
+use App\Http\Controllers\HR\WarningLetterController;
 use App\Http\Controllers\HR\ContractTrackingController;
 use App\Http\Controllers\HR\DocumentTrackingController;
 use App\Http\Controllers\HR\AuditLogController;
@@ -73,6 +74,8 @@ if (!app()->environment('local')) {
                 Route::post('/{id}/rotate', [EmployeeController::class, 'rotate'])->name('rotate')->middleware('can:manage_employees');
                 Route::post('/{id}/offboard', [EmployeeController::class, 'offboard'])->name('offboard')->middleware('can:manage_employees');
                 Route::post('/{id}/off-contract', [EmployeeController::class, 'offContract'])->name('off-contract')->middleware('can:manage_employees');
+                Route::post('/{id}/warning-letter', [WarningLetterController::class, 'store'])->name('warning-letter')->middleware('can:manage_employees');
+                Route::get('/{id}/warning-letter/{documentId}', [WarningLetterController::class, 'download'])->name('warning-letter.download')->middleware('can:manage_employees');
                 Route::get('/{id}/json', [EmployeeController::class, 'getJson'])->name('json');
             });
             Route::get('/employees/lookup', [EmployeeController::class, 'lookup'])->middleware('can:lookup_employee')->name('employees.lookup');
@@ -313,6 +316,8 @@ if (app()->environment('local')) {
                 Route::post('/{id}/rotate', [EmployeeController::class, 'rotate'])->name('rotate')->middleware('can:manage_employees');
                 Route::post('/{id}/offboard', [EmployeeController::class, 'offboard'])->name('offboard')->middleware('can:manage_employees');
                 Route::post('/{id}/off-contract', [EmployeeController::class, 'offContract'])->name('off-contract')->middleware('can:manage_employees');
+                Route::post('/{id}/warning-letter', [WarningLetterController::class, 'store'])->name('warning-letter')->middleware('can:manage_employees');
+                Route::get('/{id}/warning-letter/{documentId}', [WarningLetterController::class, 'download'])->name('warning-letter.download')->middleware('can:manage_employees');
                 Route::get('/{id}/json', [EmployeeController::class, 'getJson'])->name('json');
             });
             Route::get('/employees/lookup', [EmployeeController::class, 'lookup'])->middleware('can:lookup_employee')->name('employees.lookup');

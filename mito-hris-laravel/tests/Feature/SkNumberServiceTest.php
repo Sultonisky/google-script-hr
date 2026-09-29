@@ -204,9 +204,12 @@ class SkNumberServiceTest extends TestCase
                 'SKO' => 'SK Offboarding',
                 'SPAK' => 'Paklaring',
                 'BPJS' => 'Surat Keterangan BPJS',
+                'SP' => 'Surat Peringatan',
             ],
             collect(SkDocumentType::cases())->mapWithKeys(fn (SkDocumentType $t) => [$t->value => $t->label()])->all()
         );
+        $this->assertFalse(SkDocumentType::SURAT_PERINGATAN->updatesEmployeeNomorSk());
+        $this->assertTrue(SkDocumentType::PENGANGKATAN->updatesEmployeeNomorSk());
         $this->assertSame(SkDocumentType::MUTASI, SkDocumentType::fromRotationType('Rotasi'));
         $this->assertSame(SkDocumentType::PROMOSI, SkDocumentType::fromRotationType('promosi'));
         $this->assertSame(SkDocumentType::DEMOSI, SkDocumentType::fromRotationType('Demosi'));

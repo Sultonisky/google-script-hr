@@ -8,6 +8,7 @@ namespace App\Enums;
  * Format: {seq}/{CODE}/{ENTITY}/{ROMAN}/{YEAR}, e.g. 001/SKPR/MSI/IX/2026.
  * Kontrak PKWT TAD (outsource) also uses PKWT.
  * SURAT_BPJS is tracked in Employee_Documents without a number (Nomor kosong).
+ * SURAT_PERINGATAN (SP-1/2/3) is numbered but never replaces Employee.Nomor SK.
  */
 enum SkDocumentType: string
 {
@@ -19,7 +20,7 @@ enum SkDocumentType: string
     case OFFBOARDING = 'SKO';
     case PAKLARING = 'SPAK';
     case SURAT_BPJS = 'BPJS';
-    // Surat Peringatan (SP) — reserved; feature not implemented yet.
+    case SURAT_PERINGATAN = 'SP';
 
     public function label(): string
     {
@@ -32,12 +33,22 @@ enum SkDocumentType: string
             self::OFFBOARDING => 'SK Offboarding',
             self::PAKLARING => 'Paklaring',
             self::SURAT_BPJS => 'Surat Keterangan BPJS',
+            self::SURAT_PERINGATAN => 'Surat Peringatan',
         };
     }
 
     public function isNumbered(): bool
     {
         return $this !== self::SURAT_BPJS;
+    }
+
+    /**
+     * Employee.Nomor SK holds the latest employment decree (SK/contract);
+     * disciplinary letters are tracked only in Employee_Documents.
+     */
+    public function updatesEmployeeNomorSk(): bool
+    {
+        return $this !== self::SURAT_PERINGATAN;
     }
 
     public function isContract(): bool

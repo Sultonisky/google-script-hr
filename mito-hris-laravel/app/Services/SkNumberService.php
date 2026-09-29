@@ -28,7 +28,8 @@ class SkNumberService
     ) {}
 
     /**
-     * Issue a new document number, append history, and update Employee.Nomor SK.
+     * Issue a new document number, append history, and update Employee.Nomor SK
+     * (unless the type opts out, e.g. Surat Peringatan).
      *
      * @return array{nomor:string, sequence:int, doc_code:string, entity:string, document_id:string}
      */
@@ -56,6 +57,16 @@ class SkNumberService
         $sequence = $this->resolveFixedSequence($employeeId);
         $nomor = $this->format($sequence, $type->value, $entity, $now);
         $documentId = $this->appendHistory($employeeId, $type, $sequence, $nomor, $entity, $now, $issuedBy, $reference, $notes, $docTypeLabel);
+
+        if (!$type->updatesEmployeeNomorSk()) {
+            return [
+                'nomor' => $nomor,
+                'sequence' => $sequence,
+                'doc_code' => $type->value,
+                'entity' => $entity,
+                'document_id' => $documentId,
+            ];
+        }
 
         $updated = $this->employees->update($employeeId, [
             'Nomor SK' => $nomor,

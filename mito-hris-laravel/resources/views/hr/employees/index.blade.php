@@ -73,6 +73,12 @@
                                 <i class="bi bi-person-plus-fill me-1"></i>Tambah Karyawan
                             </button>
                             <button class="btn btn-sm text-white fw-semibold"
+                                style="background:#eb1c24;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
+                                type="button" data-bs-toggle="modal" data-bs-target="#warningLetterModal"
+                                id="btnWarningLetter">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>Surat Peringatan
+                            </button>
+                            <button class="btn btn-sm text-white fw-semibold"
                                 style="background:#166534;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
                                 type="button" data-bs-toggle="modal" data-bs-target="#empImportModal">
                                 <i class="bi bi-upload me-1"></i>Import
@@ -333,6 +339,11 @@
     {{-- Semua modal (Rotasi, Off Contract, Offboarding, Promote Probation) sudah di-include --}}
     {{-- via layouts/hr.blade.php → hr.partials.rotation-modal, off-contract-modal, entity-modals --}}
     {{-- JANGAN include lagi di sini — akan menyebabkan duplikasi modal ID di DOM --}}
+
+    {{-- Surat Peringatan hanya ada di Master Data, butuh daftar $all karyawan --}}
+    @can('manage_employees')
+        @include('hr.partials.warning-letter-modal')
+    @endcan
 @endsection
 
 @section('scripts')
