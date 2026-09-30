@@ -375,26 +375,6 @@ body.sidebar-open {
             flex: 1 1 auto;
         }
     }
-
-    /* Settings Page */
-    .settings-card {
-        max-width: 100%;
-    }
-    .settings-row {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 8px;
-        padding: 12px 0;
-
-        input[type="text"],
-        input[type="email"],
-        input[type="url"],
-        select,
-        input[type="number"] {
-            width: 100% !important;
-            min-width: 0 !important;
-        }
-    }
 }
 
 /* ── Mobile Standard & Small (<= 576px) ── */
