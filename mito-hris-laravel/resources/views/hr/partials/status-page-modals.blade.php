@@ -554,21 +554,18 @@
                         <option value="Blacklist">Blacklist</option>
                     </select>
                 </div>
-                <div class="mb-3" id="moveStatusReasonWrap">
-                    <label class="form-label fw-semibold" style="font-size: 13px">Alasan <span
-                            id="moveStatusReasonLabel">(opsional)</span></label>
-                    <textarea class="form-control" id="moveStatusReason" rows="3"
+                <div class="mb-0" id="moveStatusReasonWrap">
+                    <label class="form-label fw-semibold" style="font-size: 13px" for="moveStatusReason">Alasan <span
+                            class="text-danger">*</span></label>
+                    <textarea class="form-control" id="moveStatusReason" rows="3" maxlength="500" required
                         placeholder="Masukkan alasan perubahan status..."></textarea>
-                </div>
-                <div class="mb-0">
-                    <label class="form-label fw-semibold" style="font-size: 13px">Catatan HR (opsional)</label>
-                    <textarea class="form-control" id="moveStatusHrNotes" rows="2" placeholder="Catatan tambahan..."></textarea>
+                    <div class="invalid-feedback">Alasan wajib diisi.</div>
                 </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
                 <button class="btn text-white" style="background: var(--color-primary)" id="btnConfirmMoveStatus">
-                    <i class="bi bi-arrow-repeat me-1"></i>Simpan Perubahan
+                    <i class="bi bi-repeat me-1"></i>Simpan Perubahan
                 </button>
             </div>
         </div>
@@ -1714,18 +1711,35 @@
         });
     })();
 
+    function moveStatusNeedsReason(status) {
+        return status === 'Hold' || status === 'Blacklist';
+    }
+
+    function syncMoveStatusReason() {
+        var targetEl = document.getElementById('moveStatusTarget');
+        var wrapEl = document.getElementById('moveStatusReasonWrap');
+        var reasonEl = document.getElementById('moveStatusReason');
+        var needed = moveStatusNeedsReason(targetEl ? targetEl.value : '');
+        if (wrapEl) wrapEl.classList.toggle('d-none', !needed);
+        if (reasonEl) {
+            reasonEl.required = needed;
+            if (!needed) reasonEl.classList.remove('is-invalid');
+        }
+    }
+
     function openMoveStatusModal(recruitmentId, fromStatus) {
         var idEl = document.getElementById('moveStatusRecruitmentId');
         var fromEl = document.getElementById('moveStatusFromStatus');
         var titleEl = document.getElementById('moveStatusModalTitle');
         var targetEl = document.getElementById('moveStatusTarget');
         var reasonEl = document.getElementById('moveStatusReason');
-        var notesEl = document.getElementById('moveStatusHrNotes');
         if (idEl) idEl.value = recruitmentId;
         if (fromEl) fromEl.value = fromStatus;
         if (titleEl) titleEl.innerText = 'Ubah Status: ' + recruitmentId;
-        if (reasonEl) reasonEl.value = '';
-        if (notesEl) notesEl.value = '';
+        if (reasonEl) {
+            reasonEl.value = '';
+            reasonEl.classList.remove('is-invalid');
+        }
         if (targetEl) {
             Array.from(targetEl.options).forEach(function(opt) {
                 opt.disabled = opt.value === fromStatus;
@@ -1735,6 +1749,7 @@
             });
             if (firstEnabled) targetEl.value = firstEnabled.value;
         }
+        syncMoveStatusReason();
         var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('moveStatusModal'));
         modal.show();
     }
@@ -1742,13 +1757,28 @@
     document.addEventListener('DOMContentLoaded', function() {
         var confirmBtn = document.getElementById('btnConfirmMoveStatus');
         if (!confirmBtn) return;
+        var moveReasonEl = document.getElementById('moveStatusReason');
+        if (moveReasonEl) moveReasonEl.addEventListener('input', function() {
+            if (moveReasonEl.value.trim()) moveReasonEl.classList.remove('is-invalid');
+        });
+        var moveTargetEl = document.getElementById('moveStatusTarget');
+        if (moveTargetEl) moveTargetEl.addEventListener('change', syncMoveStatusReason);
         confirmBtn.addEventListener('click', function() {
             var recruitmentId = (document.getElementById('moveStatusRecruitmentId') || {}).value;
             var fromStatus = (document.getElementById('moveStatusFromStatus') || {}).value;
             var toStatus = (document.getElementById('moveStatusTarget') || {}).value;
-            var reason = (document.getElementById('moveStatusReason') || {}).value;
-            var hrNotes = (document.getElementById('moveStatusHrNotes') || {}).value;
+            var reasonEl = document.getElementById('moveStatusReason');
+            var needsReason = moveStatusNeedsReason(toStatus);
+            var reason = needsReason && reasonEl ? reasonEl.value.trim() : '';
             if (!recruitmentId || !fromStatus || !toStatus) return;
+            if (needsReason && !reason) {
+                if (reasonEl) {
+                    reasonEl.classList.add('is-invalid');
+                    reasonEl.focus();
+                }
+                return;
+            }
+            if (reasonEl) reasonEl.classList.remove('is-invalid');
             confirmBtn.disabled = true;
             fetch('/hr/recruitment/' + recruitmentId + '/move-status', {
                     method: 'POST',
@@ -1760,8 +1790,7 @@
                     body: JSON.stringify({
                         from_status: fromStatus,
                         to_status: toStatus,
-                        reason: reason,
-                        hr_notes: hrNotes
+                        reason: reason
                     })
                 })
                 .then(function(res) {

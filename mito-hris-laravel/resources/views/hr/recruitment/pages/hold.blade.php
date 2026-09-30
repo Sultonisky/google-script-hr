@@ -65,7 +65,9 @@
                             <th>Usia</th>
                             <th>Posisi</th>
                             <th>Alasan Hold</th>
-                            <th>Follow Up</th>
+                            <th>Tgl Hold</th>
+                            <th>Diproses Oleh</th>
+                            <th>Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="holdTableBody">
@@ -86,11 +88,21 @@
                                 <td>{{ $c->age ? "{$c->age} th" : '-' }}</td>
                                 <td class="fw-semibold text-navy">{{ $c->positionApplied }}</td>
                                 <td>{{ $c->holdReason ?? '-' }}</td>
-                                <td class="id-mono text-warning fw-semibold">{{ $c->holdFollowUpDate ?? '-' }}</td>
+                                <td class="id-mono">{{ $c->processedDate ?: '-' }}</td>
+                                <td>{{ $c->processedBy ?: 'HR Team' }}</td>
+                                <td>
+                                    @can('update_candidates')
+                                        <button class="btn btn-sm btn-outline-info btn-status-move"
+                                            data-id="{{ $c->recruitmentId }}" data-from="Hold" title="Ubah Status"
+                                            data-action="open-move-status-modal" data-recruitment-id="{{ $c->recruitmentId }}" data-from-status="Hold">
+                                            <i class="bi bi-repeat"></i>
+                                        </button>
+                                    @endcan
+                                </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8">
+                                <td colspan="9">
                                     <div class="table-empty">
                                         <i class="bi bi-inbox"></i>
                                         <p>Belum ada kandidat dengan status Hold.</p>
@@ -116,6 +128,7 @@
     <script>
         document.querySelectorAll('#holdTableBody tr[data-drawer-type="candidate"]').forEach(function(row) {
             row.addEventListener('click', function(e) {
+                if (e.target.closest('button')) return;
                 e.stopPropagation();
                 var id = this.getAttribute('data-drawer-id');
                 if (id && typeof openCandidateDrawer === 'function') openCandidateDrawer(id);
