@@ -233,107 +233,6 @@
             color: var(--color-text-soft) !important;
         }
 
-        /* Modal MPR Detail styles */
-        #modalMprDetail .modal-content {
-            background: var(--color-surface);
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
-        #modalMprDetail .modal-header {
-            padding: 20px 24px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        #modalMprDetail .modal-body {
-            background: var(--color-bg);
-            max-height: calc(100vh - 200px);
-        }
-
-        #modalMprDetail .modal-body .border-bottom {
-            border-color: var(--color-border) !important;
-        }
-
-        #modalMprDetail .modal-footer {
-            background: var(--color-surface);
-            border-top: 1px solid var(--color-border);
-            padding: 14px 24px;
-        }
-
-        #modalMprDetail label {
-            color: var(--color-text-soft);
-            font-size: 11px;
-            letter-spacing: 0.5px;
-            margin-bottom: 6px;
-        }
-
-        #modalMprDetail .fw-semibold,
-        #modalMprDetail .fw-bold {
-            color: var(--color-text);
-        }
-
-        #modalMprDetail .text-primary {
-            color: var(--color-primary) !important;
-        }
-
-        #modalMprDetail h6.text-primary {
-            font-size: 15px;
-            letter-spacing: 0.3px;
-        }
-
-        #modalMprDetail .mpr-markdown-content {
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            color: var(--color-text);
-        }
-
-        #modalMprDetail .badge {
-            font-weight: 600;
-        }
-
-        #modalMprDetail .border-top.border-dark {
-            border-color: var(--color-text) !important;
-        }
-
-        /* Markdown-rendered content in MPR detail modal */
-        .mpr-markdown-content p {
-            margin: 0 0 8px;
-        }
-
-        .mpr-markdown-content p:last-child {
-            margin-bottom: 0;
-        }
-
-        .mpr-markdown-content h1,
-        .mpr-markdown-content h2,
-        .mpr-markdown-content h3,
-        .mpr-markdown-content h4,
-        .mpr-markdown-content h5,
-        .mpr-markdown-content h6 {
-            margin-top: 8px;
-            margin-bottom: 6px;
-            font-weight: 600;
-        }
-
-        .mpr-markdown-content ul,
-        .mpr-markdown-content ol {
-            margin-top: 4px;
-            margin-bottom: 8px;
-            padding-left: 22px;
-        }
-
-        .mpr-markdown-content li {
-            margin-bottom: 3px;
-        }
-
-        .mpr-markdown-content strong {
-            font-weight: 700;
-        }
-
-        .mpr-markdown-content em {
-            font-style: italic;
-        }
-
         /* Manager form card responsive height */
         @media (min-width: 1200px) {
             .mpr-form-card {
@@ -1843,8 +1742,11 @@
                     const detailMprNum = document.getElementById('detailMprNumber');
                     const btnPdf = document.getElementById('btnModalDownloadPdf');
 
+                    const errorEl = document.getElementById('detailError');
+
                     loadingEl.classList.remove('d-none');
                     contentEl.classList.add('d-none');
+                    errorEl.classList.add('d-none');
                     detailMprNum.innerText = id;
                     detailModal.show();
 
@@ -2115,8 +2017,10 @@
                             contentEl.classList.remove('d-none');
                         })
                         .catch(error => {
-                            loadingEl.innerHTML =
-                                `<div class="text-danger py-4"><i class="bi bi-exclamation-triangle-fill fs-2 d-block mb-2"></i>${error.message}</div>`;
+                            loadingEl.classList.add('d-none');
+                            document.getElementById('detailErrorMessage').textContent =
+                                error.message || 'Gagal memuat detail MPR.';
+                            errorEl.classList.remove('d-none');
                         });
                 });
             });

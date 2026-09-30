@@ -1,202 +1,217 @@
-<div class="modal fade" id="modalMprDetail" tabindex="-1" aria-labelledby="modalMprDetailLabel" aria-hidden="true">
+<div class="modal fade hr-detail-modal" id="modalMprDetail" tabindex="-1" aria-labelledby="modalMprDetailLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow">
             <!-- Header -->
-            <div class="modal-header bg-primary text-white">
-                <div>
-                    <h5 class="modal-title fw-bold mb-1" id="modalMprDetailLabel">
-                        <i class="bi bi-file-earmark-text me-2"></i>Detail Manpower Request
-                    </h5>
-                    <small class="text-white opacity-90" id="detailMprNumber">-</small>
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-3 min-w-0">
+                    <div class="detail-header-icon"><i class="bi bi-file-earmark-text"></i></div>
+                    <div class="min-w-0">
+                        <h5 class="modal-title" id="modalMprDetailLabel">Detail Manpower Request</h5>
+                        <span class="detail-number" id="detailMprNumber">-</span>
+                    </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
             <!-- Body -->
-            <div class="modal-body p-0" id="modalMprDetailBody">
+            <div class="modal-body" id="modalMprDetailBody">
                 <!-- Loading State -->
                 <div class="text-center py-5" id="detailLoading">
                     <div class="spinner-border text-primary" role="status"></div>
                     <div class="mt-2 text-muted small">Memuat data MPR...</div>
                 </div>
 
+                <!-- Error State -->
+                <div class="text-center text-danger py-5 d-none" id="detailError">
+                    <i class="bi bi-exclamation-triangle-fill fs-2 d-block mb-2"></i>
+                    <div id="detailErrorMessage">Gagal memuat detail MPR.</div>
+                </div>
+
                 <!-- Content -->
                 <div id="detailContent" class="d-none">
-                    <!-- Section: Info Pemohon & Entitas -->
-                    <div class="p-4 border-bottom">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="small text-uppercase text-muted fw-semibold mb-1">Pemohon (Manager)</label>
-                                <div class="fw-semibold" id="detManagerName">-</div>
-                                <div class="small text-muted" id="detManagerEmail">-</div>
-                                <div class="small text-muted" id="detRequestorPosition">-</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="small text-uppercase text-muted fw-semibold mb-1">Entitas / Perusahaan</label>
-                                <div class="fw-semibold" id="detEntity">-</div>
-                                <div class="small text-muted mt-1" id="detCreatedBy">Diajukan: -</div>
-                            </div>
+                    <!-- Ringkasan -->
+                    <div class="detail-summary">
+                        <div class="min-w-0">
+                            <div class="detail-eyebrow">Posisi yang Diminta</div>
+                            <div class="detail-position" id="detPosition">-</div>
+                            <div class="detail-meta" id="detDeptDiv">-</div>
+                        </div>
+                        <div class="detail-qty">
+                            <span id="detQuantity">-</span>
+                            <small>Orang</small>
                         </div>
                     </div>
 
-                    <!-- Section: Detail Posisi -->
-                    <div class="p-4 border-bottom">
-                        <h6 class="fw-bold text-primary mb-3"><i class="bi bi-briefcase me-2"></i>Detail Posisi & Kebutuhan</h6>
+                    <!-- Informasi Pemohon -->
+                    <section class="detail-section">
+                        <h6 class="detail-section-title"><i class="bi bi-person-badge"></i>Informasi Pemohon</h6>
                         <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="small text-uppercase text-muted fw-semibold mb-1">Posisi / Jabatan</label>
-                                <div class="text-primary fw-bold fs-6" id="detPosition">-</div>
+                            <div class="col-sm-6 detail-field">
+                                <label>Pemohon (Manager)</label>
+                                <div class="detail-value" id="detManagerName">-</div>
+                                <div class="detail-meta" id="detManagerEmail">-</div>
+                                <div class="detail-meta" id="detRequestorPosition">-</div>
                             </div>
-                            <div class="col-md-6">
-                                <label class="small text-uppercase text-muted fw-semibold mb-1">Departemen / Divisi</label>
-                                <div class="fw-semibold" id="detDeptDiv">-</div>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="small text-uppercase text-muted fw-semibold mb-1">Level Jabatan</label>
-                                <div class="fw-semibold" id="detJobLevel">-</div>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="small text-uppercase text-muted fw-semibold mb-1">Status Kepegawaian</label>
-                                <div class="fw-semibold" id="detEmpType">-</div>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="small text-uppercase text-muted fw-semibold mb-1">Lokasi Penempatan</label>
-                                <div class="fw-semibold" id="detLocation">-</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="small text-uppercase text-muted fw-semibold mb-1">Jumlah Kebutuhan</label>
-                                <div><span class="badge bg-primary" style="font-size: 15px; padding: 6px 12px;" id="detQuantity">-</span> <span class="small text-muted">Orang</span></div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="small text-uppercase text-muted fw-semibold mb-1">Target Join Date</label>
-                                <div class="fw-semibold" id="detJoinDate">-</div>
+                            <div class="col-sm-6 detail-field">
+                                <label>Entitas / Perusahaan</label>
+                                <div class="detail-value" id="detEntity">-</div>
+                                <div class="detail-meta" id="detCreatedBy">Diajukan: -</div>
                             </div>
                         </div>
-                    </div>
+                    </section>
 
-                    <!-- Section: Waktu Kerja & Benefits -->
-                    <div class="p-4 border-bottom">
-                        <h6 class="fw-bold text-primary mb-3"><i class="bi bi-clock me-2"></i>Waktu Kerja & Benefits</h6>
+                    <!-- Detail Posisi -->
+                    <section class="detail-section">
+                        <h6 class="detail-section-title"><i class="bi bi-briefcase"></i>Detail Posisi & Kebutuhan</h6>
                         <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="small text-uppercase text-muted fw-semibold mb-1">Hari Kerja</label>
-                                <div class="fw-semibold" id="detWorkingDays">-</div>
+                            <div class="col-sm-6 detail-field">
+                                <label>Level Jabatan</label>
+                                <div class="detail-value" id="detJobLevel">-</div>
                             </div>
-                            <div class="col-md-6">
-                                <label class="small text-uppercase text-muted fw-semibold mb-1">Jam Kerja</label>
-                                <div class="fw-semibold" id="detWorkingHours">-</div>
+                            <div class="col-sm-6 detail-field">
+                                <label>Status Kepegawaian</label>
+                                <div class="detail-value" id="detEmpType">-</div>
                             </div>
-                            <div class="col-12" id="wrapShiftDetail">
-                                <label class="small text-uppercase text-muted fw-semibold mb-1">Detail Shift</label>
-                                <div class="fw-semibold" id="detShiftDetail">-</div>
+                            <div class="col-sm-6 detail-field">
+                                <label>Lokasi Penempatan</label>
+                                <div class="detail-value" id="detLocation">-</div>
                             </div>
-                            <div class="col-12">
-                                <label class="small text-uppercase text-muted fw-semibold mb-1">Benefits / Tunjangan</label>
-                                <div class="fw-semibold" id="detBenefits">-</div>
+                            <div class="col-sm-6 detail-field">
+                                <label>Target Join Date</label>
+                                <div class="detail-value" id="detJoinDate">-</div>
                             </div>
                         </div>
-                    </div>
+                    </section>
 
-                    <!-- Section: Kualifikasi Kandidat -->
-                    <div class="p-4 border-bottom">
-                        <h6 class="fw-bold text-primary mb-3"><i class="bi bi-person-check me-2"></i>Kualifikasi Kandidat</h6>
+                    <!-- Waktu Kerja & Benefits -->
+                    <section class="detail-section">
+                        <h6 class="detail-section-title"><i class="bi bi-clock"></i>Waktu Kerja & Benefits</h6>
                         <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="small text-uppercase text-muted fw-semibold mb-1">Latar Belakang Pendidikan</label>
-                                <div class="fw-semibold" id="detEducation">-</div>
+                            <div class="col-sm-6 detail-field">
+                                <label>Hari Kerja</label>
+                                <div class="detail-value" id="detWorkingDays">-</div>
                             </div>
-                            <div class="col-md-6">
-                                <label class="small text-uppercase text-muted fw-semibold mb-1">Pengalaman Kerja</label>
-                                <div class="fw-semibold" id="detExperience">-</div>
+                            <div class="col-sm-6 detail-field">
+                                <label>Jam Kerja</label>
+                                <div class="detail-value" id="detWorkingHours">-</div>
                             </div>
-                            <div class="col-md-6" id="wrapSkills">
-                                <label class="small text-uppercase text-muted fw-semibold mb-1">Skills & Kompetensi</label>
-                                <div class="fw-semibold" id="detSkills">-</div>
+                            <div class="col-12 detail-field" id="wrapShiftDetail">
+                                <label>Detail Shift</label>
+                                <div class="detail-value" id="detShiftDetail">-</div>
                             </div>
-                            <div class="col-md-6" id="wrapLanguages">
-                                <label class="small text-uppercase text-muted fw-semibold mb-1">Bahasa</label>
-                                <div class="fw-semibold" id="detLanguages">-</div>
-                            </div>
-                            <div class="col-12" id="wrapIndustryRef">
-                                <label class="small text-uppercase text-muted fw-semibold mb-1">Referensi Industri Sejenis</label>
-                                <div class="fw-semibold" id="detIndustryRef">-</div>
+                            <div class="col-12 detail-field">
+                                <label>Benefits / Tunjangan</label>
+                                <div class="detail-value" id="detBenefits">-</div>
                             </div>
                         </div>
-                    </div>
+                    </section>
 
-                    <!-- Section: Alasan Permintaan -->
-                    <div class="p-4 border-bottom">
-                        <h6 class="fw-bold text-primary mb-3"><i class="bi bi-info-circle me-2"></i>Alasan Permintaan</h6>
+                    <!-- Kualifikasi Kandidat -->
+                    <section class="detail-section">
+                        <h6 class="detail-section-title"><i class="bi bi-person-check"></i>Kualifikasi Kandidat</h6>
                         <div class="row g-3">
-                            <div class="col-12">
-                                <label class="small text-uppercase text-muted fw-semibold mb-1">Alasan</label>
-                                <div class="fw-semibold" id="detReason">-</div>
+                            <div class="col-sm-6 detail-field">
+                                <label>Latar Belakang Pendidikan</label>
+                                <div class="detail-value" id="detEducation">-</div>
                             </div>
-                            <div class="col-12" id="wrapReplacement">
-                                <label class="small text-uppercase text-muted fw-semibold mb-1">Menggantikan Karyawan</label>
-                                <div class="fw-semibold" id="detReplacementFor">-</div>
+                            <div class="col-sm-6 detail-field">
+                                <label>Pengalaman Kerja</label>
+                                <div class="detail-value" id="detExperience">-</div>
+                            </div>
+                            <div class="col-sm-6 detail-field" id="wrapSkills">
+                                <label>Skills & Kompetensi</label>
+                                <div class="detail-value" id="detSkills">-</div>
+                            </div>
+                            <div class="col-sm-6 detail-field" id="wrapLanguages">
+                                <label>Bahasa</label>
+                                <div class="detail-value" id="detLanguages">-</div>
+                            </div>
+                            <div class="col-12 detail-field" id="wrapIndustryRef">
+                                <label>Referensi Industri Sejenis</label>
+                                <div class="detail-value" id="detIndustryRef">-</div>
                             </div>
                         </div>
-                    </div>
+                    </section>
 
-                    <!-- Section: Kualifikasi & Uraian Tugas -->
-                    <div class="p-4 border-bottom">
-                        <h6 class="fw-bold text-primary mb-3"><i class="bi bi-list-task me-2"></i>Kualifikasi & Uraian Tugas</h6>
+                    <!-- Alasan Permintaan -->
+                    <section class="detail-section">
+                        <h6 class="detail-section-title"><i class="bi bi-info-circle"></i>Alasan Permintaan</h6>
                         <div class="row g-3">
-                            <div class="col-12">
-                                <label class="small text-uppercase text-muted fw-semibold mb-2">Kualifikasi & Persyaratan</label>
-                                <div class="p-3 border rounded small mpr-markdown-content" id="detRequirements" style="min-height:60px; line-height: 1.6;">-</div>
+                            <div class="col-12 detail-field">
+                                <label>Alasan</label>
+                                <div class="detail-value" id="detReason">-</div>
                             </div>
-                            <div class="col-12">
-                                <label class="small text-uppercase text-muted fw-semibold mb-2">Uraian Tugas & Tanggung Jawab</label>
-                                <div class="p-3 border rounded small mpr-markdown-content" id="detJobDesc" style="min-height:60px; line-height: 1.6;">-</div>
-                            </div>
-                            <div class="col-12" id="wrapKeyResults">
-                                <label class="small text-uppercase text-muted fw-semibold mb-1">Key Results / Target Posisi Ini</label>
-                                <div class="fw-semibold" id="detKeyResults">-</div>
-                            </div>
-                            <div class="col-12" id="wrapSpecialNotes">
-                                <label class="small text-uppercase text-muted fw-semibold mb-1">Catatan Khusus MPR</label>
-                                <div class="fw-semibold" id="detSpecialNotes">-</div>
+                            <div class="col-12 detail-field" id="wrapReplacement">
+                                <label>Menggantikan Karyawan</label>
+                                <div class="detail-value" id="detReplacementFor">-</div>
                             </div>
                         </div>
-                    </div>
+                    </section>
 
-                    <!-- Section: Tanda Tangan -->
-                    <div class="p-4">
-                        <h6 class="fw-bold text-primary mb-3"><i class="bi bi-pen me-2"></i>Tanda Tangan</h6>
-                        <!-- Row 1: 3 kolom -->
-                        <div class="row text-center g-3 mb-4">
-                            <div class="col-4">
-                                <div class="small fw-semibold text-muted mb-4">Diajukan oleh (Pemohon)</div>
-                                <div class="fw-semibold d-inline-block border-top border-dark pt-2 px-3" style="min-width: 140px;" id="detSignRequestorName">-</div>
-                                <div class="small text-muted mt-1" id="detSignRequestorPosition">-</div>
+                    <!-- Kualifikasi & Uraian Tugas -->
+                    <section class="detail-section">
+                        <h6 class="detail-section-title"><i class="bi bi-list-task"></i>Kualifikasi & Uraian Tugas</h6>
+                        <div class="row g-3">
+                            <div class="col-12 detail-field">
+                                <label>Kualifikasi & Persyaratan</label>
+                                <div class="mpr-markdown-content" id="detRequirements">-</div>
                             </div>
-                            <div class="col-4">
-                                <div class="small fw-semibold text-muted mb-4">Diperiksa oleh (HRD)</div>
-                                <div class="fw-semibold d-inline-block border-top border-dark pt-2 px-3" style="min-width: 140px;">Hisar Hesti</div>
-                                <div class="small text-muted mt-1">HR Manager / Recruiter</div>
+                            <div class="col-12 detail-field">
+                                <label>Uraian Tugas & Tanggung Jawab</label>
+                                <div class="mpr-markdown-content" id="detJobDesc">-</div>
                             </div>
-                            <div class="col-4">
-                                <div class="small fw-semibold text-muted mb-4">Disetujui oleh (Divisi)</div>
-                                <div class="fw-semibold d-inline-block border-top border-dark pt-2 px-3" style="min-width: 140px;" id="detApprovalDivision">( ........................................  )</div>
-                                <div class="small text-muted mt-1">Pimpinan Divisi</div>
+                            <div class="col-12 detail-field" id="wrapKeyResults">
+                                <label>Key Results / Target Posisi Ini</label>
+                                <div class="detail-value" id="detKeyResults">-</div>
                             </div>
-                        </div>
-                        <!-- Row 2: 2 kolom centered -->
-                        <div class="row text-center g-3 justify-content-center">
-                            <div class="col-4">
-                                <div class="small fw-semibold text-muted mb-4">Disetujui oleh (COO)</div>
-                                <div class="fw-semibold d-inline-block border-top border-dark pt-2 px-3" style="min-width: 140px;">Frans Arsianto</div>
-                                <div class="small text-muted mt-1">COO</div>
-                            </div>
-                            <div class="col-4">
-                                <div class="small fw-semibold text-muted mb-4">Disetujui oleh (CEO)</div>
-                                <div class="fw-semibold d-inline-block border-top border-dark pt-2 px-3" style="min-width: 140px;">Jacksen Lie</div>
-                                <div class="small text-muted mt-1">CEO</div>
+                            <div class="col-12 detail-field" id="wrapSpecialNotes">
+                                <label>Catatan Khusus MPR</label>
+                                <div class="detail-value" id="detSpecialNotes">-</div>
                             </div>
                         </div>
-                    </div>
+                    </section>
+
+                    <!-- Tanda Tangan (urutan sama dengan PDF: 3 + 2) -->
+                    <section class="detail-section">
+                        <h6 class="detail-section-title"><i class="bi bi-pen"></i>Tanda Tangan</h6>
+                        <div class="row row-cols-2 row-cols-md-3 g-2 justify-content-center">
+                            <div class="col">
+                                <div class="mpr-sign-card">
+                                    <div class="mpr-sign-role">Diajukan oleh (Pemohon)</div>
+                                    <div class="mpr-sign-name" id="detSignRequestorName">-</div>
+                                    <div class="mpr-sign-position" id="detSignRequestorPosition">-</div>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="mpr-sign-card">
+                                    <div class="mpr-sign-role">Diperiksa oleh (HRD)</div>
+                                    <div class="mpr-sign-name">Hisar Hesti</div>
+                                    <div class="mpr-sign-position">HR Manager / Recruiter</div>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="mpr-sign-card">
+                                    <div class="mpr-sign-role">Disetujui oleh (Divisi)</div>
+                                    <div class="mpr-sign-name" id="detApprovalDivision">( ........................................ )</div>
+                                    <div class="mpr-sign-position">Pimpinan Divisi</div>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="mpr-sign-card">
+                                    <div class="mpr-sign-role">Disetujui oleh (COO)</div>
+                                    <div class="mpr-sign-name">Frans Arsianto</div>
+                                    <div class="mpr-sign-position">COO</div>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="mpr-sign-card">
+                                    <div class="mpr-sign-role">Disetujui oleh (CEO)</div>
+                                    <div class="mpr-sign-name">Jacksen Lie</div>
+                                    <div class="mpr-sign-position">CEO</div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
                 </div>
             </div>
 

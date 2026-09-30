@@ -576,183 +576,136 @@
 </div>
 
 <!-- Offering Letter Preview Modal -->
-<div class="modal fade" id="offeringPreviewModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade hr-detail-modal" id="offeringPreviewModal" tabindex="-1" aria-labelledby="offeringPreviewModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
-        <div class="modal-content" style="border-radius: 16px">
-            <div class="modal-header" style="background: var(--color-primary); border-radius: 16px 16px 0 0">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-file-earmark-check-fill text-white fs-5"></i>
-                    <h6 class="modal-title mb-0 text-white fw-bold">Preview Offering Letter</h6>
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-3 min-w-0">
+                    <div class="detail-header-icon"><i class="bi bi-file-earmark-check"></i></div>
+                    <h5 class="modal-title mb-0" id="offeringPreviewModalLabel">Preview Offering Letter</h5>
                 </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-4">
-                <div id="prevOfferNoDataWarn" class="alert alert-warning d-none align-items-center gap-2 mb-3"
-                    style="font-size: 13px">
-                    <i class="bi bi-exclamation-triangle-fill"></i>
-                    <span>Data detail offering tidak tersedia. Klik <strong>Edit</strong> untuk mengisi ulang.</span>
+            <div class="modal-body">
+                <div class="text-center py-5" id="prevOfferLoading">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <div class="mt-2 text-muted small">Memuat data offering...</div>
                 </div>
-                <div class="d-flex align-items-center gap-3 mb-4 p-3 rounded-3"
-                    style="background: #f0f7ff; border: 1px solid #c7dff7">
-                    <div class="avatar-sm d-flex align-items-center justify-content-center fw-bold text-white rounded-3 flex-shrink-0"
-                        id="prevOfferCandAvatar"
-                        style="width: 44px; height: 44px; font-size: 15px; background: var(--color-primary)">?</div>
-                    <div class="flex-grow-1 min-w-0">
-                        <div class="fw-bold text-truncate" id="prevOfferCandName" style="font-size: 15px">-</div>
-                        <div class="text-muted text-truncate" id="prevOfferCandPos" style="font-size: 12px">-</div>
-                        <div style="font-size: 11px; color: #999" id="prevOfferCandRid">-</div>
-                    </div>
-                    <div class="text-end flex-shrink-0" style="font-size: 11px; color: #666; line-height: 1.8">
-                        <div>Dibuat: <strong id="prevOfferCreated">-</strong></div>
-                        <div>Oleh: <strong id="prevOfferCreatedBy">-</strong></div>
-                        <div>Diperbarui: <strong id="prevOfferUpdated">-</strong></div>
-                    </div>
+                <div class="text-center text-danger py-5 d-none" id="prevOfferError">
+                    <i class="bi bi-exclamation-triangle-fill fs-2 d-block mb-2"></i>
+                    <div id="prevOfferErrorMessage">Gagal memuat data offering.</div>
                 </div>
-                <p class="fw-semibold mb-2 mt-1"
-                    style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-primary)">
-                    <i class="bi bi-building me-1"></i>Penempatan
-                </p>
-                <div class="row g-2 mb-3" style="font-size: 13px">
-                    <div class="col-md-6">
-                        <div class="p-2 rounded-2" style="background: #f8fafc; border: 1px solid #e8edf2">
-                            <div class="text-muted mb-1"
-                                style="font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em">
-                                Branch / Entitas</div>
-                            <div class="fw-semibold text-truncate" id="prevOfferCompany">-</div>
-                        </div>
+                <div id="prevOfferContent" class="d-none">
+                    <div id="prevOfferNoDataWarn" class="alert alert-warning d-none align-items-center gap-2 mb-3 small">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <span>Data detail offering tidak tersedia. Klik <strong>Edit Offering</strong> untuk mengisi ulang.</span>
                     </div>
-                    <div class="col-md-6">
-                        <div class="p-2 rounded-2" style="background: #f8fafc; border: 1px solid #e8edf2">
-                            <div class="text-muted mb-1"
-                                style="font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em">
-                                Lokasi Kerja</div>
-                            <div class="fw-semibold" id="prevOfferLokasiKerja">-</div>
+
+                    <!-- Ringkasan kandidat -->
+                    <div class="detail-summary">
+                        <div class="d-flex align-items-center gap-3 min-w-0">
+                            <div class="detail-avatar" id="prevOfferCandAvatar">?</div>
+                            <div class="min-w-0">
+                                <div class="detail-candidate-name" id="prevOfferCandName">-</div>
+                                <div class="detail-meta" id="prevOfferCandPos">-</div>
+                                <div class="detail-meta detail-mono" id="prevOfferCandRid">-</div>
+                            </div>
                         </div>
+                        <dl class="detail-audit">
+                            <div><dt>Dibuat</dt><dd id="prevOfferCreated">-</dd></div>
+                            <div><dt>Oleh</dt><dd id="prevOfferCreatedBy">-</dd></div>
+                            <div><dt>Diperbarui</dt><dd id="prevOfferUpdated">-</dd></div>
+                        </dl>
                     </div>
-                    <div class="col-md-6">
-                        <div class="p-2 rounded-2" style="background: #f8fafc; border: 1px solid #e8edf2">
-                            <div class="text-muted mb-1"
-                                style="font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em">
-                                Division</div>
-                            <div class="fw-semibold" id="prevOfferDivision">-</div>
+
+                    <!-- Penempatan -->
+                    <section class="detail-section">
+                        <h6 class="detail-section-title"><i class="bi bi-building"></i>Penempatan</h6>
+                        <div class="row g-3">
+                            <div class="col-12 detail-field">
+                                <label>Branch / Entitas</label>
+                                <div class="detail-value" id="prevOfferCompany">-</div>
+                            </div>
+                            <div class="col-sm-6 detail-field">
+                                <label>Division</label>
+                                <div class="detail-value" id="prevOfferDivision">-</div>
+                            </div>
+                            <div class="col-sm-6 detail-field">
+                                <label>Lokasi Kerja</label>
+                                <div class="detail-value" id="prevOfferLokasiKerja">-</div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-                <p class="fw-semibold mb-2"
-                    style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-primary)">
-                    <i class="bi bi-person-badge me-1"></i>Jabatan &amp; Kontrak
-                </p>
-                <div class="row g-2 mb-3" style="font-size: 13px">
-                    <div class="col-md-6">
-                        <div class="p-2 rounded-2" style="background: #f8fafc; border: 1px solid #e8edf2">
-                            <div class="text-muted mb-1"
-                                style="font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em">
-                                Job Position</div>
-                            <div class="fw-semibold" id="prevOfferPosition">-</div>
+                    </section>
+
+                    <!-- Jabatan & Kontrak -->
+                    <section class="detail-section">
+                        <h6 class="detail-section-title"><i class="bi bi-person-badge"></i>Jabatan &amp; Kontrak</h6>
+                        <div class="row g-3">
+                            <div class="col-sm-6 detail-field">
+                                <label>Job Position</label>
+                                <div class="detail-value" id="prevOfferPosition">-</div>
+                            </div>
+                            <div class="col-sm-6 detail-field">
+                                <label>Job Level</label>
+                                <div class="detail-value" id="prevOfferJobLevel">-</div>
+                            </div>
+                            <div class="col-sm-6 detail-field">
+                                <label>Status Kerja</label>
+                                <div class="detail-value" id="prevOfferEmploymentStatus">-</div>
+                            </div>
+                            <div class="col-sm-6 detail-field">
+                                <label>Masa Kontrak</label>
+                                <div class="detail-value" id="prevOfferContractDuration">-</div>
+                            </div>
+                            <div class="col-sm-6 detail-field">
+                                <label>Join Date</label>
+                                <div class="detail-value" id="prevOfferJoinDate">-</div>
+                            </div>
+                            <div class="col-sm-6 detail-field">
+                                <label>Jam Kerja</label>
+                                <div class="detail-value" id="prevOfferWorkingHours">-</div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="p-2 rounded-2" style="background: #f8fafc; border: 1px solid #e8edf2">
-                            <div class="text-muted mb-1"
-                                style="font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em">
-                                Job Level</div>
-                            <div class="fw-semibold" id="prevOfferJobLevel">-</div>
+                    </section>
+
+                    <!-- Kompensasi -->
+                    <section class="detail-section">
+                        <h6 class="detail-section-title"><i class="bi bi-cash-stack"></i>Kompensasi</h6>
+                        <div class="row g-3">
+                            <div class="col-sm-4 detail-field">
+                                <label>Gaji Pokok</label>
+                                <div class="detail-value" id="prevOfferSalaryBasic">-</div>
+                            </div>
+                            <div class="col-sm-4 detail-field">
+                                <label>Tunj. Pulsa</label>
+                                <div class="detail-value" id="prevOfferAllowPulsa">-</div>
+                            </div>
+                            <div class="col-sm-4 detail-field">
+                                <label>Tunj. Transport</label>
+                                <div class="detail-value" id="prevOfferAllowTransport">-</div>
+                            </div>
+                            <div class="col-12">
+                                <div class="detail-total">
+                                    <span>Total Penghasilan</span>
+                                    <strong id="prevOfferSalary">-</strong>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="p-2 rounded-2" style="background: #f8fafc; border: 1px solid #e8edf2">
-                            <div class="text-muted mb-1"
-                                style="font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em">
-                                Status Kerja</div>
-                            <div class="fw-semibold" id="prevOfferEmploymentStatus">-</div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="p-2 rounded-2" style="background: #f8fafc; border: 1px solid #e8edf2">
-                            <div class="text-muted mb-1"
-                                style="font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em">
-                                Masa Kontrak</div>
-                            <div class="fw-semibold" id="prevOfferContractDuration">-</div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="p-2 rounded-2" style="background: #f8fafc; border: 1px solid #e8edf2">
-                            <div class="text-muted mb-1"
-                                style="font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em">
-                                Join Date</div>
-                            <div class="fw-semibold" id="prevOfferJoinDate">-</div>
-                        </div>
-                    </div>
-                    <div class="col-12">
-                        <div class="p-2 rounded-2" style="background: #f8fafc; border: 1px solid #e8edf2">
-                            <div class="text-muted mb-1"
-                                style="font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em">
-                                Jam Kerja</div>
-                            <div class="fw-semibold" id="prevOfferWorkingHours">-</div>
-                        </div>
-                    </div>
-                </div>
-                <p class="fw-semibold mb-2"
-                    style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-primary)">
-                    <i class="bi bi-cash-stack me-1"></i>Kompensasi
-                </p>
-                <div class="row g-2 mb-3" style="font-size: 13px">
-                    <div class="col-md-4">
-                        <div class="p-2 rounded-2" style="background: #f8fafc; border: 1px solid #e8edf2">
-                            <div class="text-muted mb-1"
-                                style="font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em">
-                                Gaji Pokok</div>
-                            <div class="fw-bold" id="prevOfferSalaryBasic">-</div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="p-2 rounded-2" style="background: #f8fafc; border: 1px solid #e8edf2">
-                            <div class="text-muted mb-1"
-                                style="font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em">
-                                Tunj. Pulsa</div>
-                            <div class="fw-semibold" id="prevOfferAllowPulsa">-</div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="p-2 rounded-2" style="background: #f8fafc; border: 1px solid #e8edf2">
-                            <div class="text-muted mb-1"
-                                style="font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em">
-                                Tunj. Transport</div>
-                            <div class="fw-semibold" id="prevOfferAllowTransport">-</div>
-                        </div>
-                    </div>
-                    <div class="col-12">
-                        <div class="p-2 rounded-2 d-flex align-items-center justify-content-between"
-                            style="border: 1px solid #ff8282">
-                            <div class="text-muted fw-semibold"
-                                style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em">Total
-                                Penghasilan</div>
-                            <div class="fw-bold" id="prevOfferSalary" style="font-size: 15px">-</div>
-                        </div>
-                    </div>
-                </div>
-                <p class="fw-semibold mb-2"
-                    style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-primary)">
-                    <i class="bi bi-sticky me-1"></i>Catatan
-                </p>
-                <div class="row g-2" style="background: #f8fafc; border: 1px solid #e8edf2; font-size: 13px">
-                    <div class="col-12">
-                        <div class="p-2 rounded-2">
-                            <div class="text-muted mb-1"
-                                style="font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em">
-                                Catatan Tambahan</div>
-                            <div id="prevOfferNotes" style="white-space: pre-wrap; font-size: 13px">-</div>
-                        </div>
-                    </div>
+                    </section>
+
+                    <!-- Catatan -->
+                    <section class="detail-section">
+                        <h6 class="detail-section-title"><i class="bi bi-sticky"></i>Catatan Tambahan</h6>
+                        <div class="detail-value fw-normal" id="prevOfferNotes">-</div>
+                    </section>
                 </div>
             </div>
-            <div class="modal-footer" style="border-top: 1px solid #eee; gap: 8px">
+            <div class="modal-footer">
                 <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
                 <button class="btn btn-outline-primary btn-sm" id="btnEditOffering">
                     <i class="bi bi-pencil me-1"></i>Edit Offering
                 </button>
-                <a href="#" target="_blank" class="btn btn-sm text-white"
-                    style="background: var(--color-primary)" id="btnDownloadOffering" disabled>
+                <a href="#" target="_blank" class="btn btn-primary btn-sm" id="btnDownloadOffering" disabled>
                     <i class="bi bi-download me-1"></i>Download PDF
                 </a>
             </div>
@@ -1837,6 +1790,22 @@
     });
 
     function openOfferingPreviewModal(recruitmentId) {
+        var loadingEl = document.getElementById('prevOfferLoading');
+        var errorEl = document.getElementById('prevOfferError');
+        var contentEl = document.getElementById('prevOfferContent');
+        var actionEls = [document.getElementById('btnEditOffering'), document.getElementById('btnDownloadOffering')];
+        var setActionsEnabled = function(enabled) {
+            actionEls.forEach(function(el) {
+                if (el) el.classList.toggle('disabled', !enabled);
+            });
+        };
+
+        loadingEl.classList.remove('d-none');
+        errorEl.classList.add('d-none');
+        contentEl.classList.add('d-none');
+        setActionsEnabled(false);
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('offeringPreviewModal')).show();
+
         fetch('/hr/recruitment/' + recruitmentId + '/json?preview=1', {
                 headers: {
                     'X-CSRF-TOKEN': getCsrfToken(),
@@ -1847,7 +1816,7 @@
                 return res.json();
             })
             .then(function(data) {
-                if (!data.success) return;
+                if (!data.success) throw new Error(data.error || data.message || 'Gagal memuat data offering.');
                 var row = data.candidate;
                 var avatarEl = document.getElementById('prevOfferCandAvatar');
                 var nameEl = document.getElementById('prevOfferCandName');
@@ -1875,11 +1844,19 @@
                     return v ? v : '-';
                 }
 
+                function toNum(v) {
+                    var n = Number(String(v || '').replace(/[^\d]/g, ''));
+                    return isNaN(n) ? 0 : n;
+                }
+
                 function dispRp(v) {
                     if (!v || v === '-') return '-';
                     var n = Number(String(v).replace(/[^\d]/g, ''));
                     return isNaN(n) || n === 0 ? (String(v) || '-') : 'Rp ' + n.toLocaleString('id-ID');
                 }
+                var totalBruto = toNum(row.offeringSalaryBasic || row.offeringSalary) +
+                    toNum(row.offeringAllowPulsa || row.allowPulsa) +
+                    toNum(row.offeringAllowTransport);
                 var fields = {
                     prevOfferCompany: disp(row.offeringCompanyEntity || row.branchName),
                     prevOfferLokasiKerja: disp(row.offeringLokasiKerja || row.city),
@@ -1893,7 +1870,7 @@
                     prevOfferSalaryBasic: dispRp(row.offeringSalaryBasic),
                     prevOfferAllowPulsa: dispRp(row.offeringAllowPulsa || row.allowPulsa),
                     prevOfferAllowTransport: dispRp(row.offeringAllowTransport),
-                    prevOfferSalary: dispRp(row.offeringSalary || row.offeringSalaryBasic),
+                    prevOfferSalary: totalBruto ? dispRp(String(totalBruto)) : '-',
                     prevOfferNotes: disp(row.offeringNotes)
                 };
                 Object.keys(fields).forEach(function(id) {
@@ -2001,11 +1978,15 @@
                         }, 350);
                     };
                 }
-                var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('offeringPreviewModal'));
-                modal.show();
+                loadingEl.classList.add('d-none');
+                contentEl.classList.remove('d-none');
+                setActionsEnabled(true);
             })
-            .catch(function() {
-                if (typeof showToast === 'function') showToast('Gagal memuat data offering.', 'error');
+            .catch(function(err) {
+                loadingEl.classList.add('d-none');
+                document.getElementById('prevOfferErrorMessage').textContent =
+                    (err && err.message && !(err instanceof SyntaxError)) ? err.message : 'Gagal memuat data offering.';
+                errorEl.classList.remove('d-none');
             });
     }
 
