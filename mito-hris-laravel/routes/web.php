@@ -16,7 +16,6 @@ use App\Http\Controllers\HR\ContractTrackingController;
 use App\Http\Controllers\HR\DocumentTrackingController;
 use App\Http\Controllers\HR\AuditLogController;
 use App\Http\Controllers\HR\MasterDataController;
-use App\Http\Controllers\HR\SettingsController;
 use App\Http\Controllers\HR\UserController;
 use App\Http\Controllers\HR\MprRequestorController;
 use App\Http\Controllers\HR\ExportController;
@@ -55,6 +54,7 @@ if (!app()->environment('local')) {
                 Route::get('/accepted', [RecruitmentController::class, 'accepted'])->name('accepted');
                 Route::get('/hold', [RecruitmentController::class, 'holdPage'])->name('hold');
                 Route::get('/blacklist', [RecruitmentController::class, 'blacklistPage'])->name('blacklist');
+                Route::post('/bulk-status', [RecruitmentController::class, 'bulkStatus'])->name('bulk-status')->middleware('can:update_candidates');
                 Route::post('/{id}/status', [RecruitmentController::class, 'updateStatus'])->name('update-status')->middleware('can:update_candidates');
                 Route::post('/{id}/hold', [RecruitmentController::class, 'hold'])->name('hold.post')->middleware('can:manage_hold_blacklist');
                 Route::post('/{id}/blacklist', [RecruitmentController::class, 'blacklist'])->name('blacklist.post')->middleware('can:manage_hold_blacklist');
@@ -142,10 +142,6 @@ if (!app()->environment('local')) {
             Route::prefix('master-data')->name('master-data.')->middleware('can:manage_settings')->group(function () {
                 Route::get('/', [MasterDataController::class, 'index'])->name('index');
                 Route::post('/', [MasterDataController::class, 'store'])->name('store');
-            });
-            Route::prefix('settings')->name('settings.')->middleware('can:manage_settings')->group(function () {
-                Route::get('/', [SettingsController::class, 'index'])->name('index');
-                Route::post('/', [SettingsController::class, 'update'])->name('update');
             });
             Route::prefix('users')->name('users.')->middleware(['can:manage_settings', 'role:Super Admin'])->group(function () {
                 Route::get('/', [UserController::class, 'index'])->name('index');
@@ -310,6 +306,7 @@ if (app()->environment('local')) {
                 Route::get('/accepted', [RecruitmentController::class, 'accepted'])->name('accepted');
                 Route::get('/hold', [RecruitmentController::class, 'holdPage'])->name('hold');
                 Route::get('/blacklist', [RecruitmentController::class, 'blacklistPage'])->name('blacklist');
+                Route::post('/bulk-status', [RecruitmentController::class, 'bulkStatus'])->name('bulk-status')->middleware('can:update_candidates');
                 Route::post('/{id}/status', [RecruitmentController::class, 'updateStatus'])->name('update-status')->middleware('can:update_candidates');
                 Route::post('/{id}/hold', [RecruitmentController::class, 'hold'])->name('hold.post')->middleware('can:manage_hold_blacklist');
                 Route::post('/{id}/blacklist', [RecruitmentController::class, 'blacklist'])->name('blacklist.post')->middleware('can:manage_hold_blacklist');
@@ -403,11 +400,6 @@ if (app()->environment('local')) {
             Route::prefix('master-data')->name('master-data.')->middleware('can:manage_settings')->group(function () {
                 Route::get('/', [MasterDataController::class, 'index'])->name('index');
                 Route::post('/', [MasterDataController::class, 'store'])->name('store');
-            });
-
-            Route::prefix('settings')->name('settings.')->middleware('can:manage_settings')->group(function () {
-                Route::get('/', [SettingsController::class, 'index'])->name('index');
-                Route::post('/', [SettingsController::class, 'update'])->name('update');
             });
 
             Route::prefix('users')->name('users.')->middleware(['can:manage_settings', 'role:Super Admin'])->group(function () {
