@@ -193,6 +193,9 @@ if (!app()->environment('local')) {
             Route::prefix('export')->name('export.')->middleware('can:view_employees')->group(function () {
                 Route::get('/employees-xlsx', [ExportController::class, 'exportEmployeesXlsx'])->name('employees-xlsx');
             });
+            Route::prefix('export')->name('export.')->middleware('can:view_outsource')->group(function () {
+                Route::get('/outsource-xlsx', [ExportController::class, 'exportOutsourceXlsx'])->name('outsource-xlsx');
+            });
             Route::prefix('mpr')->name('mpr.')->middleware('can:view_mpr')->group(function () {
                 Route::get('/', [MprController::class, 'index'])->name('index');
                 Route::get('/create', function () {
@@ -457,6 +460,9 @@ if (app()->environment('local')) {
             });
             Route::prefix('export')->name('export.')->middleware('can:view_employees')->group(function () {
                 Route::get('/employees-xlsx', [ExportController::class, 'exportEmployeesXlsx'])->name('employees-xlsx');
+            });
+            Route::prefix('export')->name('export.')->middleware('can:view_outsource')->group(function () {
+                Route::get('/outsource-xlsx', [ExportController::class, 'exportOutsourceXlsx'])->name('outsource-xlsx');
             });
 
             Route::prefix('mpr')->name('mpr.')->middleware('can:view_mpr')->group(function () {
