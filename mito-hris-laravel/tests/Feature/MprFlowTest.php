@@ -203,8 +203,8 @@ class MprFlowTest extends TestCase
         // Manager accessing Outsource -> 403
         $this->get('/hr/outsource')->assertStatus(403);
 
-        // Manager accessing Settings -> 403
-        $this->get('/hr/settings')->assertStatus(403);
+        // Manager accessing settings-protected Master Data -> 403
+        $this->get('/hr/master-data')->assertStatus(403);
 
         // Manager accessing Users -> 403
         $this->get('/hr/users')->assertStatus(403);
