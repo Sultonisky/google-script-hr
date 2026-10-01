@@ -47,10 +47,11 @@ class OutsourcePayslipImportService
 
     /**
      * Baris yang error membatalkan seluruh import (tidak ada yang disimpan).
-     * Outsource ID yang tidak ada di master dilewati dengan peringatan, dan
-     * import ulang pada periode yang sama memperbarui payslip yang sudah ada.
+     * Outsource ID yang tidak ada di master dilewati dengan peringatan. Pada import
+     * ulang periode yang sama, payslip dengan nominal identik tidak ditulis ulang
+     * (status unchanged); hanya yang nominalnya berbeda yang diperbarui.
      *
-     * @return array{read: int, created: int, updated: int, skipped: int, rows: list<array<string, mixed>>, warnings: list<string>, errors: list<string>}
+     * @return array{read: int, created: int, updated: int, unchanged: int, skipped: int, rows: list<array<string, mixed>>, warnings: list<string>, errors: list<string>}
      */
     public function import(
         string $path,
@@ -66,9 +67,8 @@ class OutsourcePayslipImportService
         $master = $this->outsourceRepo->getAll()->keyBy(fn (OutsourceEmployeeData $e) => strtoupper((string) $e->outsourceId));
         $existing = OutsourcePayslip::query()
             ->where('period', $period)
-            ->pluck('outsource_id')
-            ->map(fn ($id) => strtoupper((string) $id))
-            ->flip();
+            ->get()
+            ->keyBy(fn (OutsourcePayslip $p) => strtoupper((string) $p->outsource_id));
 
         $rows = [];
         $skipped = 0;
@@ -89,15 +89,16 @@ class OutsourcePayslipImportService
                 'bpjs_kesehatan_deduction' => $row['bpjs_kesehatan_deduction'],
                 'loan_deduction' => $row['loan_deduction'],
                 'take_home_pay' => $row['take_home_pay'],
-                'status' => $existing->has($row['outsource_id']) ? 'updated' : 'created',
+                'status' => $this->statusFor($existing->get($row['outsource_id']), $row),
             ];
         }
 
-        $created = count(array_filter($rows, fn (array $r) => $r['status'] === 'created'));
+        $count = fn (string $status) => count(array_filter($rows, fn (array $r) => $r['status'] === $status));
         $summary = [
             'read' => count($result['rows']),
-            'created' => $created,
-            'updated' => count($rows) - $created,
+            'created' => $count('created'),
+            'updated' => $count('updated'),
+            'unchanged' => $count('unchanged'),
             'skipped' => $skipped,
             'rows' => $rows,
             'warnings' => $warnings,
@@ -110,6 +111,9 @@ class OutsourcePayslipImportService
 
         DB::transaction(function () use ($rows, $period, $importedBy, $sourceFile) {
             foreach ($rows as $row) {
+                if ($row['status'] === 'unchanged') {
+                    continue;
+                }
                 OutsourcePayslip::query()->updateOrCreate(
                     ['period' => $period, 'outsource_id' => $row['outsource_id']],
                     array_diff_key($row, ['status' => true, 'outsource_id' => true]) + [
@@ -252,6 +256,23 @@ class OutsourcePayslipImportService
             ->setTitle('Template Payslip Outsource');
 
         return $spreadsheet;
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     */
+    private function statusFor(?OutsourcePayslip $current, array $row): string
+    {
+        if (!$current) {
+            return 'created';
+        }
+        foreach (self::AMOUNT_FIELDS as $field) {
+            if (round((float) $current->{$field}, 2) !== round((float) $row[$field], 2)) {
+                return 'updated';
+            }
+        }
+
+        return 'unchanged';
     }
 
     private function columnOf(string $field): string

@@ -131,15 +131,16 @@ class OutsourcePayslipController extends Controller
         }
 
         $ok = $result['errors'] === [];
+        $changed = $result['created'] + $result['updated'] > 0;
 
-        if (!$dryRun && $ok) {
+        if (!$dryRun && $ok && $changed) {
             $this->auditRepo->log(
                 'Outsource',
                 'PAYSLIP_' . $period,
                 'imported',
                 'Payslip Outsource',
                 '-',
-                "Periode {$period}: dibuat {$result['created']}, diperbarui {$result['updated']}, dilewati {$result['skipped']}",
+                "Periode {$period}: dibuat {$result['created']}, diperbarui {$result['updated']}, tidak berubah {$result['unchanged']}, dilewati {$result['skipped']}",
                 $user,
                 'HR Dashboard'
             );
@@ -147,8 +148,9 @@ class OutsourcePayslipController extends Controller
 
         $message = match (true) {
             !$ok => 'Ditemukan ' . count($result['errors']) . ' error. Perbaiki file lalu coba lagi; belum ada data yang disimpan.',
-            $dryRun => "Preview periode {$period}: {$result['read']} baris dibaca, {$result['created']} baru, {$result['updated']} diperbarui, {$result['skipped']} dilewati.",
-            default => "Payslip periode {$period} tersimpan: {$result['created']} baru, {$result['updated']} diperbarui.",
+            !$changed => "Tidak ada perubahan: semua payslip periode {$period} di file sama dengan data tersimpan.",
+            $dryRun => "Preview periode {$period}: {$result['read']} baris dibaca, {$result['created']} baru, {$result['updated']} diperbarui, {$result['unchanged']} tidak berubah, {$result['skipped']} dilewati.",
+            default => "Payslip periode {$period} tersimpan: {$result['created']} baru, {$result['updated']} diperbarui, {$result['unchanged']} tidak berubah.",
         };
 
         return response()->json([
@@ -160,6 +162,7 @@ class OutsourcePayslipController extends Controller
                 'read' => $result['read'],
                 'created' => $result['created'],
                 'updated' => $result['updated'],
+                'unchanged' => $result['unchanged'],
                 'skipped' => $result['skipped'],
             ],
             'rows' => $dryRun ? $result['rows'] : [],

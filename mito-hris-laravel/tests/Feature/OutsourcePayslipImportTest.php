@@ -139,13 +139,15 @@ class OutsourcePayslipImportTest extends TestCase
 
         $this->get('/hr/outsource-payslips')->assertOk()
             ->assertSee('id="btnImportOutsourcePayslip"', false)
-            ->assertSee('id="outsourcePayslipImportModal"', false);
+            ->assertSee('id="outsourcePayslipImportModal"', false)
+            ->assertSee('id="outsourcePayslipConfirmModal"', false)
+            ->assertDontSee('confirm(\'Simpan payslip', false);
 
         $this->import($this->validWorkbook(), ['dry_run' => '1'])
             ->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('dry_run', true)
-            ->assertJsonPath('summary', ['read' => 3, 'created' => 2, 'updated' => 0, 'skipped' => 1])
+            ->assertJsonPath('summary', ['read' => 3, 'created' => 2, 'updated' => 0, 'unchanged' => 0, 'skipped' => 1])
             ->assertJsonPath('rows.1.outsource_id', 'DM20260002')
             ->assertJsonPath('rows.1.loan_deduction', 0)
             ->assertJsonFragment(['baris 5: Outsource ID DM29999999 tidak ditemukan di master data outsource, dilewati.'])
@@ -155,7 +157,7 @@ class OutsourcePayslipImportTest extends TestCase
         $this->import($this->validWorkbook())
             ->assertOk()
             ->assertJsonPath('dry_run', false)
-            ->assertJsonPath('summary', ['read' => 3, 'created' => 2, 'updated' => 0, 'skipped' => 1]);
+            ->assertJsonPath('summary', ['read' => 3, 'created' => 2, 'updated' => 0, 'unchanged' => 0, 'skipped' => 1]);
 
         $this->assertSame(2, OutsourcePayslip::count());
         $bayu = OutsourcePayslip::query()->where('outsource_id', 'DM20260001')->firstOrFail();
@@ -176,10 +178,11 @@ class OutsourcePayslipImportTest extends TestCase
         $this->assertEquals(3168000, (float) $citra->take_home_pay);
         $this->assertSame('StaffInc', $citra->vendor);
 
-        // Import ulang pada periode yang sama memperbarui, tidak menduplikasi.
+        // Import ulang file yang sama: tidak ada yang ditulis ulang.
         $this->import($this->validWorkbook())
             ->assertOk()
-            ->assertJsonPath('summary', ['read' => 3, 'created' => 0, 'updated' => 2, 'skipped' => 1]);
+            ->assertJsonPath('summary', ['read' => 3, 'created' => 0, 'updated' => 0, 'unchanged' => 2, 'skipped' => 1])
+            ->assertJsonPath('message', 'Tidak ada perubahan: semua payslip periode 2026-09 di file sama dengan data tersimpan.');
         $this->assertSame(2, OutsourcePayslip::count());
 
         $this->get('/hr/outsource-payslips?period=2026-09')->assertOk()
@@ -221,6 +224,40 @@ class OutsourcePayslipImportTest extends TestCase
         $this->assertEquals(9999999, (float) $payslip->basic_salary);
         $this->assertEquals(9849999, (float) $payslip->take_home_pay);
         $this->assertEquals(3500000, (float) OutsourceEmployee::query()->where('outsource_id', 'DM20260001')->value('basic_salary'));
+    }
+
+    public function test_reimport_only_updates_rows_with_different_amounts(): void
+    {
+        $this->actingWithPermissions(['view_outsource_payslip', 'manage_outsource_payslip']);
+
+        $this->import($this->workbook([
+            ['DM20260001', 'Bayu', 26, 3500000, 35000, 250000, 3215000],
+            ['DM20260002', 'Citra', 24, 3200000, 32000, 0, 3168000],
+        ]))->assertOk();
+        $citraBefore = OutsourcePayslip::query()->where('outsource_id', 'DM20260002')->firstOrFail();
+
+        Carbon::setTestNow(Carbon::parse('2026-10-05 09:00', 'Asia/Jakarta'));
+        $revision = $this->workbook([
+            ['DM20260001', 'Bayu', 25, 3500000, 35000, 250000, 3080000],
+            ['DM20260002', 'Citra', '24', 'Rp 3.200.000', 32000, null, 3168000],
+        ]);
+
+        $this->import($revision, ['dry_run' => '1'])
+            ->assertOk()
+            ->assertJsonPath('summary', ['read' => 2, 'created' => 0, 'updated' => 1, 'unchanged' => 1, 'skipped' => 0])
+            ->assertJsonPath('rows.0.status', 'updated')
+            ->assertJsonPath('rows.1.status', 'unchanged');
+
+        $this->import($revision)->assertOk()->assertJsonPath('summary.updated', 1);
+
+        $bayu = OutsourcePayslip::query()->where('outsource_id', 'DM20260001')->firstOrFail();
+        $this->assertEquals(25, (float) $bayu->hke);
+        $this->assertEquals(3080000, (float) $bayu->take_home_pay);
+        $this->assertSame('2026-10-05', $bayu->updated_at->timezone('Asia/Jakarta')->format('Y-m-d'));
+
+        $citraAfter = OutsourcePayslip::query()->where('outsource_id', 'DM20260002')->firstOrFail();
+        $this->assertEquals($citraBefore->updated_at, $citraAfter->updated_at);
+        $this->assertSame($citraBefore->source_file, $citraAfter->source_file);
     }
 
     public function test_index_shows_fifteen_payslips_per_page(): void
