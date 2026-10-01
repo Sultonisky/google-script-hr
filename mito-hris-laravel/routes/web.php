@@ -11,12 +11,12 @@ use App\Http\Controllers\HR\RecruitmentController;
 use App\Http\Controllers\HR\EmployeeController;
 use App\Http\Controllers\HR\ProbationController;
 use App\Http\Controllers\HR\OutsourceController;
+use App\Http\Controllers\HR\OutsourcePayslipController;
 use App\Http\Controllers\HR\WarningLetterController;
 use App\Http\Controllers\HR\ContractTrackingController;
 use App\Http\Controllers\HR\DocumentTrackingController;
 use App\Http\Controllers\HR\AuditLogController;
 use App\Http\Controllers\HR\MasterDataController;
-use App\Http\Controllers\HR\SettingsController;
 use App\Http\Controllers\HR\UserController;
 use App\Http\Controllers\HR\MprRequestorController;
 use App\Http\Controllers\HR\ExportController;
@@ -55,6 +55,7 @@ if (!app()->environment('local')) {
                 Route::get('/accepted', [RecruitmentController::class, 'accepted'])->name('accepted');
                 Route::get('/hold', [RecruitmentController::class, 'holdPage'])->name('hold');
                 Route::get('/blacklist', [RecruitmentController::class, 'blacklistPage'])->name('blacklist');
+                Route::post('/bulk-status', [RecruitmentController::class, 'bulkStatus'])->name('bulk-status')->middleware('can:update_candidates');
                 Route::post('/{id}/status', [RecruitmentController::class, 'updateStatus'])->name('update-status')->middleware('can:update_candidates');
                 Route::post('/{id}/hold', [RecruitmentController::class, 'hold'])->name('hold.post')->middleware('can:manage_hold_blacklist');
                 Route::post('/{id}/blacklist', [RecruitmentController::class, 'blacklist'])->name('blacklist.post')->middleware('can:manage_hold_blacklist');
@@ -74,11 +75,11 @@ if (!app()->environment('local')) {
                 Route::post('/import', [EmployeeController::class, 'import'])->name('import')->middleware('can:manage_employees');
                 Route::post('/', [EmployeeController::class, 'store'])->name('store')->middleware('can:manage_employees');
                 Route::put('/{id}', [EmployeeController::class, 'update'])->name('update')->middleware('can:manage_employees');
-                Route::post('/{id}/rotate', [EmployeeController::class, 'rotate'])->name('rotate')->middleware('can:manage_employees');
-                Route::post('/{id}/offboard', [EmployeeController::class, 'offboard'])->name('offboard')->middleware('can:manage_employees');
-                Route::post('/{id}/off-contract', [EmployeeController::class, 'offContract'])->name('off-contract')->middleware('can:manage_employees');
-                Route::post('/{id}/warning-letter', [WarningLetterController::class, 'store'])->name('warning-letter')->middleware('can:manage_employees');
-                Route::get('/{id}/warning-letter/{documentId}', [WarningLetterController::class, 'download'])->name('warning-letter.download')->middleware('can:manage_employees');
+                Route::post('/{id}/rotate', [EmployeeController::class, 'rotate'])->name('rotate')->middleware('can:rotate_employees');
+                Route::post('/{id}/offboard', [EmployeeController::class, 'offboard'])->name('offboard')->middleware('can:offboard_employees');
+                Route::post('/{id}/off-contract', [EmployeeController::class, 'offContract'])->name('off-contract')->middleware('can:off_contract_employees');
+                Route::post('/{id}/warning-letter', [WarningLetterController::class, 'store'])->name('warning-letter')->middleware('can:manage_warning_letters');
+                Route::get('/{id}/warning-letter/{documentId}', [WarningLetterController::class, 'download'])->name('warning-letter.download')->middleware('can:manage_warning_letters');
                 Route::get('/{id}/json', [EmployeeController::class, 'getJson'])->name('json');
             });
             Route::get('/employees/lookup', [EmployeeController::class, 'lookup'])->middleware('can:lookup_employee')->name('employees.lookup');
@@ -127,6 +128,11 @@ if (!app()->environment('local')) {
                 Route::put('/{id}', [OutsourceController::class, 'update'])->name('update')->middleware('can:manage_outsource');
                 Route::get('/{id}/json', [OutsourceController::class, 'getJson'])->name('json');
             });
+            Route::prefix('outsource-payslips')->name('outsource-payslips.')->middleware('can:view_outsource_payslip')->group(function () {
+                Route::get('/', [OutsourcePayslipController::class, 'index'])->name('index');
+                Route::get('/template', [OutsourcePayslipController::class, 'template'])->name('template')->middleware('can:manage_outsource_payslip');
+                Route::post('/import', [OutsourcePayslipController::class, 'import'])->name('import')->middleware('can:manage_outsource_payslip');
+            });
             Route::prefix('contracts')->name('contracts.')->middleware('can:view_contracts')->group(function () {
                 Route::get('/', [ContractTrackingController::class, 'index'])->name('index');
             });
@@ -142,10 +148,6 @@ if (!app()->environment('local')) {
             Route::prefix('master-data')->name('master-data.')->middleware('can:manage_settings')->group(function () {
                 Route::get('/', [MasterDataController::class, 'index'])->name('index');
                 Route::post('/', [MasterDataController::class, 'store'])->name('store');
-            });
-            Route::prefix('settings')->name('settings.')->middleware('can:manage_settings')->group(function () {
-                Route::get('/', [SettingsController::class, 'index'])->name('index');
-                Route::post('/', [SettingsController::class, 'update'])->name('update');
             });
             Route::prefix('users')->name('users.')->middleware(['can:manage_settings', 'role:Super Admin'])->group(function () {
                 Route::get('/', [UserController::class, 'index'])->name('index');
@@ -172,11 +174,17 @@ if (!app()->environment('local')) {
             Route::prefix('export')->name('export.')->middleware('can:manage_employees')->group(function () {
                 Route::get('/kontrak-pkwt/{id}', [ExportController::class, 'kontrakPkwtPdf'])->name('kontrak-pkwt');
                 Route::get('/sk-pengangkatan/{id}', [ExportController::class, 'skPengangkatanPdf'])->name('sk-pengangkatan');
-                Route::get('/sk-off/{id}', [ExportController::class, 'skOffPdf'])->name('sk-off');
+            });
+            Route::prefix('export')->name('export.')->middleware('can:rotate_employees')->group(function () {
                 Route::get('/sk-rotation/{id}', [ExportController::class, 'skRotationPdf'])->name('sk-rotation');
+            });
+            Route::prefix('export')->name('export.')->middleware('can:offboard_employees')->group(function () {
+                Route::get('/sk-off/{id}', [ExportController::class, 'skOffPdf'])->name('sk-off');
                 Route::get('/surat-bpjs/{id}', [ExportController::class, 'suratBpjsPdf'])->name('surat-bpjs');
-                Route::get('/paklaring/{id}', [ExportController::class, 'paklaringPdf'])->name('paklaring');
                 Route::get('/offboarding-bundle/{id}', [ExportController::class, 'offboardingBundlePdf'])->name('offboarding-bundle');
+            });
+            Route::prefix('export')->name('export.')->middleware('can:export_paklaring')->group(function () {
+                Route::get('/paklaring/{id}', [ExportController::class, 'paklaringPdf'])->name('paklaring');
             });
             Route::prefix('export')->name('export.')->middleware('can:manage_probation')->group(function () {
                 Route::get('/performance-review/{id}', [ExportController::class, 'performanceReviewPdf'])->name('performance-review');
@@ -186,6 +194,9 @@ if (!app()->environment('local')) {
             });
             Route::prefix('export')->name('export.')->middleware('can:view_employees')->group(function () {
                 Route::get('/employees-xlsx', [ExportController::class, 'exportEmployeesXlsx'])->name('employees-xlsx');
+            });
+            Route::prefix('export')->name('export.')->middleware('can:view_outsource')->group(function () {
+                Route::get('/outsource-xlsx', [ExportController::class, 'exportOutsourceXlsx'])->name('outsource-xlsx');
             });
             Route::prefix('mpr')->name('mpr.')->middleware('can:view_mpr')->group(function () {
                 Route::get('/', [MprController::class, 'index'])->name('index');
@@ -301,6 +312,7 @@ if (app()->environment('local')) {
                 Route::get('/accepted', [RecruitmentController::class, 'accepted'])->name('accepted');
                 Route::get('/hold', [RecruitmentController::class, 'holdPage'])->name('hold');
                 Route::get('/blacklist', [RecruitmentController::class, 'blacklistPage'])->name('blacklist');
+                Route::post('/bulk-status', [RecruitmentController::class, 'bulkStatus'])->name('bulk-status')->middleware('can:update_candidates');
                 Route::post('/{id}/status', [RecruitmentController::class, 'updateStatus'])->name('update-status')->middleware('can:update_candidates');
                 Route::post('/{id}/hold', [RecruitmentController::class, 'hold'])->name('hold.post')->middleware('can:manage_hold_blacklist');
                 Route::post('/{id}/blacklist', [RecruitmentController::class, 'blacklist'])->name('blacklist.post')->middleware('can:manage_hold_blacklist');
@@ -321,11 +333,11 @@ if (app()->environment('local')) {
                 Route::post('/import', [EmployeeController::class, 'import'])->name('import')->middleware('can:manage_employees');
                 Route::post('/', [EmployeeController::class, 'store'])->name('store')->middleware('can:manage_employees');
                 Route::put('/{id}', [EmployeeController::class, 'update'])->name('update')->middleware('can:manage_employees');
-                Route::post('/{id}/rotate', [EmployeeController::class, 'rotate'])->name('rotate')->middleware('can:manage_employees');
-                Route::post('/{id}/offboard', [EmployeeController::class, 'offboard'])->name('offboard')->middleware('can:manage_employees');
-                Route::post('/{id}/off-contract', [EmployeeController::class, 'offContract'])->name('off-contract')->middleware('can:manage_employees');
-                Route::post('/{id}/warning-letter', [WarningLetterController::class, 'store'])->name('warning-letter')->middleware('can:manage_employees');
-                Route::get('/{id}/warning-letter/{documentId}', [WarningLetterController::class, 'download'])->name('warning-letter.download')->middleware('can:manage_employees');
+                Route::post('/{id}/rotate', [EmployeeController::class, 'rotate'])->name('rotate')->middleware('can:rotate_employees');
+                Route::post('/{id}/offboard', [EmployeeController::class, 'offboard'])->name('offboard')->middleware('can:offboard_employees');
+                Route::post('/{id}/off-contract', [EmployeeController::class, 'offContract'])->name('off-contract')->middleware('can:off_contract_employees');
+                Route::post('/{id}/warning-letter', [WarningLetterController::class, 'store'])->name('warning-letter')->middleware('can:manage_warning_letters');
+                Route::get('/{id}/warning-letter/{documentId}', [WarningLetterController::class, 'download'])->name('warning-letter.download')->middleware('can:manage_warning_letters');
                 Route::get('/{id}/json', [EmployeeController::class, 'getJson'])->name('json');
             });
             Route::get('/employees/lookup', [EmployeeController::class, 'lookup'])->middleware('can:lookup_employee')->name('employees.lookup');
@@ -376,6 +388,12 @@ if (app()->environment('local')) {
                 Route::get('/{id}/json', [OutsourceController::class, 'getJson'])->name('json');
             });
 
+            Route::prefix('outsource-payslips')->name('outsource-payslips.')->middleware('can:view_outsource_payslip')->group(function () {
+                Route::get('/', [OutsourcePayslipController::class, 'index'])->name('index');
+                Route::get('/template', [OutsourcePayslipController::class, 'template'])->name('template')->middleware('can:manage_outsource_payslip');
+                Route::post('/import', [OutsourcePayslipController::class, 'import'])->name('import')->middleware('can:manage_outsource_payslip');
+            });
+
             Route::prefix('contracts')->name('contracts.')->middleware('can:view_contracts')->group(function () {
                 Route::get('/', [ContractTrackingController::class, 'index'])->name('index');
             });
@@ -394,11 +412,6 @@ if (app()->environment('local')) {
             Route::prefix('master-data')->name('master-data.')->middleware('can:manage_settings')->group(function () {
                 Route::get('/', [MasterDataController::class, 'index'])->name('index');
                 Route::post('/', [MasterDataController::class, 'store'])->name('store');
-            });
-
-            Route::prefix('settings')->name('settings.')->middleware('can:manage_settings')->group(function () {
-                Route::get('/', [SettingsController::class, 'index'])->name('index');
-                Route::post('/', [SettingsController::class, 'update'])->name('update');
             });
 
             Route::prefix('users')->name('users.')->middleware(['can:manage_settings', 'role:Super Admin'])->group(function () {
@@ -430,11 +443,17 @@ if (app()->environment('local')) {
             Route::prefix('export')->name('export.')->middleware('can:manage_employees')->group(function () {
                 Route::get('/kontrak-pkwt/{id}', [ExportController::class, 'kontrakPkwtPdf'])->name('kontrak-pkwt');
                 Route::get('/sk-pengangkatan/{id}', [ExportController::class, 'skPengangkatanPdf'])->name('sk-pengangkatan');
-                Route::get('/sk-off/{id}', [ExportController::class, 'skOffPdf'])->name('sk-off');
+            });
+            Route::prefix('export')->name('export.')->middleware('can:rotate_employees')->group(function () {
                 Route::get('/sk-rotation/{id}', [ExportController::class, 'skRotationPdf'])->name('sk-rotation');
+            });
+            Route::prefix('export')->name('export.')->middleware('can:offboard_employees')->group(function () {
+                Route::get('/sk-off/{id}', [ExportController::class, 'skOffPdf'])->name('sk-off');
                 Route::get('/surat-bpjs/{id}', [ExportController::class, 'suratBpjsPdf'])->name('surat-bpjs');
-                Route::get('/paklaring/{id}', [ExportController::class, 'paklaringPdf'])->name('paklaring');
                 Route::get('/offboarding-bundle/{id}', [ExportController::class, 'offboardingBundlePdf'])->name('offboarding-bundle');
+            });
+            Route::prefix('export')->name('export.')->middleware('can:export_paklaring')->group(function () {
+                Route::get('/paklaring/{id}', [ExportController::class, 'paklaringPdf'])->name('paklaring');
             });
             Route::prefix('export')->name('export.')->middleware('can:manage_probation')->group(function () {
                 Route::get('/performance-review/{id}', [ExportController::class, 'performanceReviewPdf'])->name('performance-review');
@@ -445,6 +464,9 @@ if (app()->environment('local')) {
             });
             Route::prefix('export')->name('export.')->middleware('can:view_employees')->group(function () {
                 Route::get('/employees-xlsx', [ExportController::class, 'exportEmployeesXlsx'])->name('employees-xlsx');
+            });
+            Route::prefix('export')->name('export.')->middleware('can:view_outsource')->group(function () {
+                Route::get('/outsource-xlsx', [ExportController::class, 'exportOutsourceXlsx'])->name('outsource-xlsx');
             });
 
             Route::prefix('mpr')->name('mpr.')->middleware('can:view_mpr')->group(function () {

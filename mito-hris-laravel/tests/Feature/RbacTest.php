@@ -367,10 +367,11 @@ class RbacTest extends TestCase
     }
 
     #[Test]
-    public function super_admin_can_access_settings(): void
+    public function settings_page_is_removed(): void
     {
         $this->actingAsRole('Super Admin');
-        $this->get('/hr/settings')->assertOk();
+        $this->get('/hr/settings')->assertNotFound();
+        $this->get('/hr/dashboard')->assertOk()->assertDontSee('bi-gear-fill', false);
     }
 
     #[Test]
@@ -437,7 +438,7 @@ class RbacTest extends TestCase
     public function admin_cannot_access_system_settings(): void
     {
         $this->actingAsRole('Admin');
-        $this->get('/hr/settings')->assertStatus(403);
+        $this->get('/hr/master-data')->assertStatus(403);
         $this->get('/hr/users')->assertStatus(403);
         $this->get('/hr/audit-logs')->assertStatus(403);
     }
@@ -465,7 +466,7 @@ class RbacTest extends TestCase
 
         $this->get('/hr/dashboard')
             ->assertOk()
-            ->assertSee('href="' . route('hr.settings.index') . '"', false)
+            ->assertDontSee('<div class="nav-section-label">System</div>', false)
             ->assertDontSee('href="' . route('hr.users.index') . '"', false)
             ->assertDontSee('href="' . route('hr.mpr-requestors.index') . '"', false)
             ->assertDontSee('href="' . route('hr.permissions.index') . '"', false);
@@ -521,17 +522,10 @@ class RbacTest extends TestCase
     }
 
     #[Test]
-    public function hr_recruitment_cannot_access_settings(): void
+    public function hr_recruitment_cannot_access_settings_protected_routes(): void
     {
         $this->actingAsRole('User');
-        $this->get('/hr/settings')->assertStatus(403);
-    }
-
-    #[Test]
-    public function hr_staff_cannot_access_settings(): void
-    {
-        $this->actingAsRole('User');
-        $this->get('/hr/settings')->assertStatus(403);
+        $this->get('/hr/master-data')->assertStatus(403);
     }
 
     #[Test]
@@ -593,7 +587,6 @@ class RbacTest extends TestCase
             ->assertDontSee('href="' . route('hr.employees.index') . '"')
             ->assertDontSee('href="' . route('hr.outsource.index') . '"')
             ->assertDontSee('href="' . route('hr.contracts.index') . '"')
-            ->assertDontSee('href="' . route('hr.settings.index') . '"')
             ->assertDontSee('href="' . route('hr.users.index') . '"')
             ->assertDontSee('id="btnHold"')
             ->assertDontSee('id="btnBlacklist"');
@@ -657,7 +650,7 @@ class RbacTest extends TestCase
         foreach ([null, '', 'Unknown Role'] as $role) {
             Session::put('hr_user', ['role' => $role, 'permissions' => []]);
             $this->assertFalse(Gate::allows('view_recruitment'));
-            $this->get('/hr/settings')->assertStatus(403);
+            $this->get('/hr/master-data')->assertStatus(403);
         }
     }
 
@@ -734,11 +727,11 @@ class RbacTest extends TestCase
     public function mpr_requestor_is_blocked_from_settings(): void
     {
         $this->actingAsMprRequestor();
-        $response = $this->get('/hr/settings');
+        $response = $this->get('/hr/master-data');
         $this->assertNotSame(
             200,
             $response->getStatusCode(),
-            'MPR Requestor must not access Settings'
+            'MPR Requestor must not access settings-protected routes'
         );
     }
 
@@ -1085,7 +1078,7 @@ class RbacTest extends TestCase
         $this->assertFalse(Gate::allows('view_mpr'),        'Invalid Users-sheet Manpower must not gain MPR access');
 
         // Protected HRIS routes enforce Gate checks.
-        $this->get('/hr/settings')->assertStatus(403);
+        $this->get('/hr/master-data')->assertStatus(403);
         $this->get('/hr/employees')->assertStatus(403);
         $this->get('/hr/recruitment')->assertStatus(403);
         $this->get('/hr/users')->assertStatus(403);

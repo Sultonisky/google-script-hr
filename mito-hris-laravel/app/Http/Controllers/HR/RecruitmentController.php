@@ -5,6 +5,7 @@ namespace App\Http\Controllers\HR;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\HR\AcceptCandidateRequest;
 use App\Http\Requests\HR\BlacklistCandidateRequest;
+use App\Http\Requests\HR\BulkCandidateStatusRequest;
 use App\Http\Requests\HR\HoldCandidateRequest;
 use App\Http\Requests\HR\UpdateCandidateStatusRequest;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
@@ -13,6 +14,8 @@ use App\Services\RecruitmentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class RecruitmentController extends Controller
@@ -362,10 +365,20 @@ class RecruitmentController extends Controller
             }
 
             $toLower = strtolower($toStatus);
+            if (in_array($toLower, ['hold', 'blacklist'], true)) {
+                $reason = trim((string) $reason);
+                if ($reason === '') {
+                    return response()->json(['success' => false, 'message' => 'Alasan ' . $toLower . ' wajib diisi.'], 422);
+                }
+                if (mb_strlen($reason) > 500) {
+                    return response()->json(['success' => false, 'message' => 'Alasan maksimal 500 karakter.'], 422);
+                }
+            }
+
             if ($toLower === 'hold') {
                 $this->recruitmentService->holdCandidate(
                     recruitmentId: $id,
-                    reason: $reason ?? '',
+                    reason: $reason,
                     followUpDate: null,
                     notes: $hrNotes,
                     user: 'HR Administrator'
@@ -373,7 +386,7 @@ class RecruitmentController extends Controller
             } elseif ($toLower === 'blacklist') {
                 $this->recruitmentService->blacklistCandidate(
                     recruitmentId: $id,
-                    reason: $reason ?? '',
+                    reason: $reason,
                     notes: $hrNotes,
                     user: 'HR Administrator'
                 );
@@ -396,6 +409,67 @@ class RecruitmentController extends Controller
         } catch (\Throwable $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Bulk ubah status kandidat Pending dari tabel halaman Recruitment.
+     */
+    public function bulkStatus(BulkCandidateStatusRequest $request): JsonResponse
+    {
+        $status = $request->input('status');
+        $permission = $status === 'Accepted' ? 'create_offering' : 'manage_hold_blacklist';
+        if (Gate::denies($permission)) {
+            return response()->json([
+                'success' => false,
+                'message' => "Anda tidak memiliki akses untuk mengubah status ke {$status}.",
+            ], 403);
+        }
+
+        $reason = trim((string) $request->input('reason', ''));
+        $user = $this->hrUserName();
+
+        $pendingIds = $this->candidateRepo->listByLifecycle(['candidates'])
+            ->map(fn($c) => trim((string) $c->recruitmentId))
+            ->filter()
+            ->flip();
+
+        $updated = 0;
+        $failedIds = [];
+        foreach ($request->input('recruitment_ids') as $rawId) {
+            $id = trim((string) $rawId);
+            if (!$pendingIds->has($id)) {
+                $failedIds[] = $id;
+                continue;
+            }
+
+            try {
+                $ok = match ($status) {
+                    'Hold' => $this->recruitmentService->holdCandidate($id, $reason, null, null, $user),
+                    'Blacklist' => $this->recruitmentService->blacklistCandidate($id, $reason, null, $user),
+                    'Accepted' => $this->recruitmentService->acceptCandidateToEmployee($id, [], $user),
+                };
+            } catch (\Throwable $e) {
+                Log::warning("RecruitmentController::bulkStatus {$id} failed: " . $e->getMessage());
+                $ok = false;
+            }
+
+            if ($ok) {
+                $updated++;
+            } else {
+                $failedIds[] = $id;
+            }
+        }
+
+        $failed = count($failedIds);
+        $message = "{$updated} kandidat berhasil diubah ke {$status}." . ($failed > 0 ? " {$failed} gagal diproses." : '');
+
+        return response()->json([
+            'success'    => $updated > 0,
+            'message'    => $message,
+            'updated'    => $updated,
+            'failed'     => $failed,
+            'failed_ids' => $failedIds,
+        ], $updated > 0 ? 200 : 422);
     }
 
     public function saveOffering(Request $request, string $id): JsonResponse

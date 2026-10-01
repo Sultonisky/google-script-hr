@@ -207,14 +207,27 @@
                             <div class="col-md-6">
                                 <label class="form-label" for="userPassword">Password <span
                                         class="text-danger">*</span></label>
-                                <input type="password" class="form-control" id="userPassword" name="password"
-                                    minlength="8" autocomplete="new-password" required />
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="userPassword" name="password"
+                                        minlength="8" autocomplete="new-password" required />
+                                    <button type="button" class="btn btn-outline-primary" data-password-toggle="userPassword"
+                                        aria-label="Tampilkan password" aria-pressed="false">
+                                        <i class="bi bi-eye-fill" aria-hidden="true"></i>
+                                    </button>
+                                </div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label" for="userPasswordConfirmation">Konfirmasi Password <span
                                         class="text-danger">*</span></label>
-                                <input type="password" class="form-control" id="userPasswordConfirmation"
-                                    name="password_confirmation" minlength="8" autocomplete="new-password" required />
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="userPasswordConfirmation"
+                                        name="password_confirmation" minlength="8" autocomplete="new-password" required />
+                                    <button type="button" class="btn btn-outline-primary"
+                                        data-password-toggle="userPasswordConfirmation" aria-label="Tampilkan password"
+                                        aria-pressed="false">
+                                        <i class="bi bi-eye-fill" aria-hidden="true"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -279,13 +292,27 @@
                         <div class="row g-3 mt-0">
                             <div class="col-md-6">
                                 <label class="form-label" for="userEditPassword">Password Baru</label>
-                                <input type="password" class="form-control" id="userEditPassword" name="password"
-                                    minlength="8" autocomplete="new-password" />
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="userEditPassword" name="password"
+                                        minlength="8" autocomplete="new-password" />
+                                    <button type="button" class="btn btn-outline-primary"
+                                        data-password-toggle="userEditPassword" aria-label="Tampilkan password"
+                                        aria-pressed="false">
+                                        <i class="bi bi-eye-fill" aria-hidden="true"></i>
+                                    </button>
+                                </div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label" for="userEditPasswordConfirmation">Konfirmasi Password</label>
-                                <input type="password" class="form-control" id="userEditPasswordConfirmation"
-                                    name="password_confirmation" minlength="8" autocomplete="new-password" />
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="userEditPasswordConfirmation"
+                                        name="password_confirmation" minlength="8" autocomplete="new-password" />
+                                    <button type="button" class="btn btn-outline-primary"
+                                        data-password-toggle="userEditPasswordConfirmation" aria-label="Tampilkan password"
+                                        aria-pressed="false">
+                                        <i class="bi bi-eye-fill" aria-hidden="true"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -303,6 +330,31 @@
 @section('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            function setPasswordVisible(button, visible) {
+                const input = document.getElementById(button.dataset.passwordToggle);
+                if (!input) return;
+                input.type = visible ? 'text' : 'password';
+                button.setAttribute('aria-pressed', visible ? 'true' : 'false');
+                button.setAttribute('aria-label', visible ? 'Sembunyikan password' : 'Tampilkan password');
+                const icon = button.querySelector('i');
+                if (icon) icon.className = visible ? 'bi bi-eye-slash-fill' : 'bi bi-eye-fill';
+            }
+
+            document.querySelectorAll('[data-password-toggle]').forEach(function(button) {
+                button.addEventListener('click', function() {
+                    const input = document.getElementById(button.dataset.passwordToggle);
+                    if (input) setPasswordVisible(button, input.type === 'password');
+                });
+            });
+
+            ['userAddModal', 'userEditModal'].forEach(function(id) {
+                document.getElementById(id)?.addEventListener('hidden.bs.modal', function() {
+                    this.querySelectorAll('[data-password-toggle]').forEach(function(button) {
+                        setPasswordVisible(button, false);
+                    });
+                });
+            });
+
             const search = document.getElementById('userSearch');
             const body = document.getElementById('usersTableBody');
             const emptyRow = document.getElementById('userSearchEmptyRow');

@@ -161,10 +161,10 @@
                                 </td>
                                 <td><small>{{ $c->processedBy ?? '-' }}</small></td>
                                 <td>
-                                    <button class="btn btn-sm btn-outline-secondary btn-status-move"
+                                    <button class="btn btn-sm btn-outline-info btn-status-move"
                                         data-id="{{ $c->recruitmentId }}" data-from="Accepted" title="Ubah Status"
                                         data-action="open-move-status-modal" data-recruitment-id="{{ $c->recruitmentId }}" data-from-status="Accepted">
-                                        <i class="bi bi-arrow-repeat"></i>
+                                        <i class="bi bi-repeat"></i>
                                     </button>
                                     @can('create_offering')
                                         @if (!empty($c->offeringCreated) && $c->offeringCreated !== '-')

@@ -221,8 +221,11 @@
                     const detailMprNum = document.getElementById('detailMprNumber');
                     const btnPdf = document.getElementById('btnModalDownloadPdf');
 
+                    const errorEl = document.getElementById('detailError');
+
                     loadingEl.classList.remove('d-none');
                     contentEl.classList.add('d-none');
+                    errorEl.classList.add('d-none');
                     detailMprNum.innerText = id;
                     detailModal.show();
 
@@ -328,8 +331,10 @@
                             contentEl.classList.remove('d-none');
                         })
                         .catch(error => {
-                            loadingEl.innerHTML =
-                                `<div class="text-danger py-4"><i class="bi bi-exclamation-triangle-fill fs-2 d-block mb-2"></i>${error.message}</div>`;
+                            loadingEl.classList.add('d-none');
+                            document.getElementById('detailErrorMessage').textContent =
+                                error.message || 'Gagal memuat detail MPR.';
+                            errorEl.classList.remove('d-none');
                         });
                 });
             });

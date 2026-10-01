@@ -44,6 +44,8 @@
             <x-toast />
             @yield('content')
         </div>
+
+        @include('components.dashboard-footer')
     </div>
 
     <!-- 1:1 Floating Action Button (FAB) -->
@@ -1115,8 +1117,6 @@
                     formHold.querySelectorAll('textarea').forEach(function(el) {
                         el.value = '';
                     });
-                    var fuDate = formHold.querySelector('input[name="hold_follow_up_date"]');
-                    if (fuDate) fuDate.value = '';
                     injectCandidatePreviewBanner('modalHold', candName, activeCandidateId);
                     var modal = new bootstrap.Modal(document.getElementById('modalHold'));
                     modal.show();

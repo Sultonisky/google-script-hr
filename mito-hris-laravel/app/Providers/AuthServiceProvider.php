@@ -67,5 +67,9 @@ class AuthServiceProvider extends ServiceProvider
         // ==============================================================
         Gate::define('access_assets_portal', fn ($user) => app(PermissionResolver::class)->allows($user, 'assets.access'));
         Gate::define('access_certificates_portal', fn ($user) => app(PermissionResolver::class)->allows($user, 'certificates.access'));
+
+        // Paklaring is issued by both the offboarding and off-contract flows.
+        Gate::define('export_paklaring', fn ($user) => app(PermissionResolver::class)->allows($user, 'offboard_employees')
+            || app(PermissionResolver::class)->allows($user, 'off_contract_employees'));
     }
 }
