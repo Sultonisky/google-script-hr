@@ -153,6 +153,15 @@
 
 @section('scripts')
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        window.addEventListener('load', function() {
+            var message = null;
+            try {
+                message = sessionStorage.getItem('opsImportToast');
+                sessionStorage.removeItem('opsImportToast');
+            } catch (e) {}
+            if (message && typeof window.showToast === 'function') window.showToast(message, 'success');
+        });
+
         var opsSearchInput = document.getElementById('opsSearchInput');
         if (opsSearchInput) {
             opsSearchInput.addEventListener('keydown', function(e) {

@@ -9,6 +9,13 @@
 .modal-backdrop {
     z-index: 2050 !important;
 }
+// Modal konfirmasi yang dibuka di atas modal lain; backdrop kedua harus menutupi modal pertama.
+.modal.modal-stacked {
+    z-index: 2160 !important;
+}
+.modal-backdrop ~ .modal-backdrop {
+    z-index: 2150 !important;
+}
 .drawer-panel {
     z-index: 1900;
 }
