@@ -17,17 +17,6 @@
                     </div>
                 </div>
             </div>
-            @foreach ($stats['vendors'] ?? [] as $vendorName => $vendorCount)
-                <div class="col-6 col-md-3">
-                    <div class="stat-card">
-                        <div class="stat-icon bg-cyan"><i class="bi bi-building"></i></div>
-                        <div>
-                            <div class="stat-label">{{ $vendorName }}</div>
-                            <div class="stat-value text-navy">{{ $vendorCount }}</div>
-                        </div>
-                    </div>
-                </div>
-            @endforeach
         </div>
 
         <div class="panel mt-2" id="outsourcePanel">
@@ -43,30 +32,40 @@
                         @endif
                     </div>
                 </div>
-                @can('manage_outsource')
+                {{-- Export XLSX — server-side dilindungi can:view_outsource di route --}}
+                @can('view_outsource')
                     <div class="export-btns d-flex flex-wrap gap-2">
-                        <button class="btn btn-sm fw-semibold text-white"
-                            style="background:#0d6efd;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
-                            type="button"
-                            data-bs-toggle="modal"
-                            data-bs-target="#outsourceContractModal"
-                            id="btnProsesKontrakOutsource">
-                            <i class="bi bi-file-earmark-text me-1"></i>Proses Kontrak
-                        </button>
-                        <button class="btn btn-sm fw-semibold text-white"
-                            style="background:#198754;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
-                            type="button"
-                            data-bs-toggle="modal"
-                            data-bs-target="#outsourceImportModal"
-                            id="btnImportOutsource">
-                            <i class="bi bi-file-earmark-spreadsheet me-1"></i>Import Excel
-                        </button>
-                        <button class="btn btn-sm fw-semibold text-white"
-                            style="background:#eb1c24;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
-                            type="button"
-                            id="btnAddOutsource">
-                            <i class="bi bi-building-fill-gear me-1"></i>Tambah Outsource
-                        </button>
+                        @can('manage_outsource')
+                            <button class="btn btn-sm fw-semibold text-white"
+                                style="background:#0d6efd;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
+                                type="button"
+                                data-bs-toggle="modal"
+                                data-bs-target="#outsourceContractModal"
+                                id="btnProsesKontrakOutsource">
+                                <i class="bi bi-file-earmark-text me-1"></i>Proses Kontrak
+                            </button>
+                            <button class="btn btn-sm fw-semibold text-white"
+                                style="background:#198754;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
+                                type="button"
+                                data-bs-toggle="modal"
+                                data-bs-target="#outsourceImportModal"
+                                id="btnImportOutsource">
+                                <i class="bi bi-file-earmark-spreadsheet me-1"></i>Import Excel
+                            </button>
+                            <button class="btn btn-sm fw-semibold text-white"
+                                style="background:#eb1c24;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
+                                type="button"
+                                id="btnAddOutsource">
+                                <i class="bi bi-building-fill-gear me-1"></i>Tambah Outsource
+                            </button>
+                        @endcan
+                        <a href="{{ route('hr.export.outsource-xlsx') }}"
+                            class="btn btn-sm fw-semibold text-white"
+                            style="background:#005BAC;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
+                            id="btnExportOutsourceXlsx"
+                            title="Export seluruh data karyawan outsource ke Excel (XLSX)">
+                            <i class="bi bi-download me-1"></i>Export
+                        </a>
                     </div>
                 @endcan
             </div>

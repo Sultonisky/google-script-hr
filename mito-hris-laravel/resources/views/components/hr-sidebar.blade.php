@@ -146,7 +146,8 @@
             @endcanany
 
             <!-- System Section -->
-            @canany(['view_reports', 'manage_settings'])
+            @if (($isSuperAdmin && \Illuminate\Support\Facades\Gate::any(['manage_settings', 'manage_permissions'])) ||
+                    \Illuminate\Support\Facades\Gate::check('view_reports'))
                 <div class="nav-section-label">System</div>
 
                 @can('manage_settings')
@@ -160,16 +161,12 @@
                             <i class="bi bi-person-lines-fill"></i> MPR Requestors
                         </a>
                     @endif
-                    <a href="{{ route('hr.settings.index') }}"
-                        class="nav-item {{ request()->routeIs('hr.settings.*') ? 'active' : '' }}">
-                        <i class="bi bi-gear-fill"></i> Settings
-                    </a>
                 @endcan
                 @if ($isSuperAdmin)
                     @can('manage_permissions')
                         <a href="{{ route('hr.permissions.index') }}"
                             class="nav-item {{ request()->routeIs('hr.permissions.*') ? 'active' : '' }}">
-                            <i class="bi bi-key-fill"></i> Permission Management
+                            <i class="bi bi-key-fill"></i> User Permissions
                         </a>
                     @endcan
                 @endif
@@ -179,7 +176,7 @@
                         <i class="bi bi-clock-history"></i> Audit Log
                     </a>
                 @endcan
-            @endcanany
+            @endif
         @endif
     </nav>
 </aside>

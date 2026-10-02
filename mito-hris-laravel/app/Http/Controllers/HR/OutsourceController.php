@@ -44,11 +44,6 @@ class OutsourceController extends Controller
 
         // Stats — always from full dataset (not current page)
         $stats = ['total' => $allOutsources->count()];
-        foreach (config('hris.outsource.vendors', []) as $vendor) {
-            $stats['vendors'][$vendor] = $allOutsources
-                ->filter(fn (OutsourceEmployeeData $e) => strcasecmp((string) $e->vendor, $vendor) === 0)
-                ->count();
-        }
 
         $searchFilter = $request->query('search');
         $vendorFilter = (string) $request->query('vendor', '');

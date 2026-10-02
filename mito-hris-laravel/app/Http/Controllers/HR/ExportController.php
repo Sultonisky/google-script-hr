@@ -7,11 +7,14 @@ use App\Enums\SkDocumentType;
 use App\Repositories\Contracts\CandidateRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
+use App\Repositories\Contracts\OutsourceEmployeeRepositoryInterface;
 use App\Services\EmployeeDocumentArchiveService;
 use App\Services\PdfGeneratorService;
 use App\Services\ProbationService;
 use App\Services\SkNumberService;
+use App\Support\OutsourceEmployeeAttributeMap;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\Response;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx as XlsxWriter;
@@ -30,6 +33,7 @@ class ExportController extends Controller
     protected AuditLogRepositoryInterface $auditRepo;
     protected SkNumberService $skNumbers;
     protected EmployeeDocumentArchiveService $documentArchive;
+    protected OutsourceEmployeeRepositoryInterface $outsourceRepo;
 
     public function __construct(
         CandidateRepositoryInterface $candidateRepo,
@@ -38,7 +42,8 @@ class ExportController extends Controller
         ProbationService $probationService,
         AuditLogRepositoryInterface $auditRepo,
         SkNumberService $skNumbers,
-        EmployeeDocumentArchiveService $documentArchive
+        EmployeeDocumentArchiveService $documentArchive,
+        OutsourceEmployeeRepositoryInterface $outsourceRepo
     ) {
         $this->candidateRepo    = $candidateRepo;
         $this->employeeRepo     = $employeeRepo;
@@ -47,6 +52,7 @@ class ExportController extends Controller
         $this->auditRepo = $auditRepo;
         $this->skNumbers = $skNumbers;
         $this->documentArchive = $documentArchive;
+        $this->outsourceRepo = $outsourceRepo;
     }
 
     /**
@@ -677,6 +683,108 @@ class ExportController extends Controller
         // ---------------------------------------------------------------
         // Stream response
         // ---------------------------------------------------------------
+        $responseHeaders = [
+            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Cache-Control'       => 'no-cache, no-store, must-revalidate',
+            'Pragma'              => 'no-cache',
+            'Expires'             => '0',
+        ];
+
+        return response()->stream(function () use ($spreadsheet) {
+            $writer = new XlsxWriter($spreadsheet);
+            $writer->save('php://output');
+            $spreadsheet->disconnectWorksheets();
+            unset($spreadsheet);
+        }, 200, $responseHeaders);
+    }
+
+    /**
+     * Export all Outsource Employees to XLSX — canonical schema Outsource_Employees.
+     * Authorization: can:view_outsource. Kolom kompensasi hanya disertakan jika
+     * user memiliki view_outsource_compensation.
+     */
+    public function exportOutsourceXlsx(): StreamedResponse
+    {
+        $outsources = $this->outsourceRepo->getAll()
+            ->sortBy(fn ($e) => strtolower(trim($e->fullName ?? '')))
+            ->values();
+
+        $this->auditRepo->log(
+            'Outsource',
+            null,
+            'exported',
+            'format',
+            null,
+            ['format' => 'XLSX', 'total_records' => $outsources->count()],
+            session('hr_user.email', 'HR Administrator'),
+            'Export'
+        );
+
+        $filename = 'Data_Outsource_MITO_' . now()->timezone('Asia/Jakarta')->format('Ymd_His') . '.xlsx';
+
+        $excluded = ['createdBy', 'createdAt', 'updatedAt'];
+        if (Gate::denies('view_outsource_compensation')) {
+            $excluded = array_merge($excluded, OutsourceEmployeeAttributeMap::COMPENSATION_FIELDS);
+        }
+        $fields = array_diff_key(OutsourceEmployeeAttributeMap::FIELDS, array_flip($excluded));
+
+        $spreadsheet = new Spreadsheet();
+        $sheet       = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Data Outsource');
+
+        $colIndex = 1;
+        foreach ($fields as [, $headerText]) {
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex++);
+            $sheet->getCell($colLetter . '1')->setValue($headerText);
+            $sheet->getStyle($colLetter . '1')->applyFromArray([
+                'font' => [
+                    'bold'  => true,
+                    'color' => ['argb' => 'FFFFFFFF'],
+                    'size'  => 11,
+                ],
+                'fill' => [
+                    'fillType'   => Fill::FILL_SOLID,
+                    'startColor' => ['argb' => 'FF005BAC'],
+                ],
+                'alignment' => [
+                    'horizontal' => Alignment::HORIZONTAL_CENTER,
+                    'vertical'   => Alignment::VERTICAL_CENTER,
+                ],
+            ]);
+        }
+
+        $sheet->freezePane('A2');
+
+        $rowIndex = 2;
+        foreach ($outsources as $os) {
+            $colIndex = 1;
+            foreach (array_keys($fields) as $property) {
+                $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex++);
+                $cellRef   = $colLetter . $rowIndex;
+                $value     = $os->{$property} ?? '';
+
+                if (in_array($property, OutsourceEmployeeAttributeMap::IDENTIFIER_FIELDS, true) && $value !== '') {
+                    // Paksa string agar No WA / rekening tidak kehilangan leading zero atau jadi scientific notation
+                    $sheet->getCell($cellRef)->setValueExplicit((string) $value, DataType::TYPE_STRING);
+                } else {
+                    $sheet->getCell($cellRef)->setValue($value);
+                }
+            }
+
+            $rowIndex++;
+        }
+
+        foreach (range(1, count($fields)) as $colIndex) {
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex);
+            $sheet->getColumnDimension($colLetter)->setAutoSize(true);
+        }
+
+        $spreadsheet->getProperties()
+            ->setCreator('MITO HRIS')
+            ->setTitle('Data Outsource MITO')
+            ->setDescription('Export data karyawan outsource dari MITO HRIS — ' . now()->timezone('Asia/Jakarta')->format('d/m/Y H:i'));
+
         $responseHeaders = [
             'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',

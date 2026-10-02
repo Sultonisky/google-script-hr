@@ -119,6 +119,11 @@ class PermissionResolver
             'manage_outsource_compensation' => ['view_outsource', 'manage_outsource', 'view_outsource_compensation'],
             'download_documents' => ['view_documents'],
 
+            'rotate_employees',
+            'offboard_employees',
+            'off_contract_employees',
+            'manage_warning_letters' => ['view_employees'],
+
             default => [],
         };
     }
@@ -199,6 +204,10 @@ class PermissionResolver
             'manage_probation',
             'manage_employees',
             'view_employees',
+            'rotate_employees',
+            'offboard_employees',
+            'off_contract_employees',
+            'manage_warning_letters',
             'view_contracts',
             'view_outsource',
             'manage_outsource',

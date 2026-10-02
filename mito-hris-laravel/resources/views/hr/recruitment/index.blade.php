@@ -72,6 +72,40 @@
                 </div>
             </form>
 
+            @can('update_candidates')
+                <!-- BULK ACTION BAR -->
+                <div class="bulk-action-bar d-none" id="bulkActionBar">
+                    <div class="bulk-action-info">
+                        <span id="bulkSelectedCount">0</span> kandidat dipilih
+                    </div>
+                    <div class="bulk-action-buttons">
+                        @canany(['create_offering', 'manage_hold_blacklist'])
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-primary dropdown-toggle" type="button"
+                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-arrow-repeat"></i> Ubah Status
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    @can('create_offering')
+                                        <li><a class="dropdown-item bulk-status-btn" href="#" data-status="Accepted">
+                                                <i class="bi bi-check-circle text-success me-1"></i> Accepted</a></li>
+                                    @endcan
+                                    @can('manage_hold_blacklist')
+                                        <li><a class="dropdown-item bulk-status-btn" href="#" data-status="Hold">
+                                                <i class="bi bi-pause-circle text-primary me-1"></i> Hold</a></li>
+                                        <li><a class="dropdown-item bulk-status-btn" href="#" data-status="Blacklist">
+                                                <i class="bi bi-x-circle text-danger me-1"></i> Blacklist</a></li>
+                                    @endcan
+                                </ul>
+                            </div>
+                        @endcanany
+                        <button class="btn btn-sm btn-outline-secondary" id="bulkDeselectBtn" type="button">
+                            <i class="bi bi-x-lg"></i> Batal Pilih
+                        </button>
+                    </div>
+                </div>
+            @endcan
+
             <!-- TABLE -->
             <div class="table-responsive">
                 <table class="table hr-table">
@@ -147,6 +181,39 @@
         </div>
 
     </section>
+
+    @can('update_candidates')
+        <div class="modal fade" id="bulkStatusModal" tabindex="-1" aria-labelledby="bulkStatusModalTitle" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content" style="border-radius: 16px">
+                    <div class="modal-header">
+                        <h6 class="modal-title mb-0" id="bulkStatusModalTitle">Ubah Status Massal</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="mb-3" style="font-size: 13.5px">
+                            Ubah status <strong id="bulkStatusCount">0</strong> kandidat terpilih menjadi
+                            <strong id="bulkStatusTargetLabel">-</strong>?
+                        </p>
+                        <div class="mb-0 d-none" id="bulkStatusReasonWrap">
+                            <label class="form-label fw-semibold" style="font-size: 13px" for="bulkStatusReason">Alasan <span
+                                    class="text-danger">*</span></label>
+                            <textarea class="form-control" id="bulkStatusReason" rows="3" maxlength="500"
+                                placeholder="Alasan ini dipakai untuk semua kandidat terpilih..."></textarea>
+                            <div class="invalid-feedback">Alasan wajib diisi.</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-outline-secondary" data-bs-dismiss="modal" type="button">Batal</button>
+                        <button class="btn text-white" style="background: var(--color-primary)" id="btnConfirmBulkStatus"
+                            type="button">
+                            <i class="bi bi-arrow-repeat me-1"></i>Simpan Perubahan
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endcan
 @endsection
 
 @section('scripts')
@@ -165,12 +232,107 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             const selectAll = document.getElementById('selectAll');
-            const checkboxes = document.querySelectorAll('.row-check');
+            const checkboxes = Array.from(document.querySelectorAll('.row-check'));
+            const bulkBar = document.getElementById('bulkActionBar');
+            const bulkCount = document.getElementById('bulkSelectedCount');
+
+            const selectedIds = () => checkboxes.filter(cb => cb.checked).map(cb => cb.value);
+
+            const updateBulkBar = () => {
+                const total = selectedIds().length;
+                if (bulkCount) bulkCount.textContent = total;
+                if (bulkBar) bulkBar.classList.toggle('d-none', total === 0);
+                if (selectAll) {
+                    selectAll.checked = total > 0 && total === checkboxes.length;
+                    selectAll.indeterminate = total > 0 && total < checkboxes.length;
+                }
+            };
+
             if (selectAll) {
                 selectAll.addEventListener('change', () => {
                     checkboxes.forEach(cb => cb.checked = selectAll.checked);
+                    updateBulkBar();
                 });
             }
+            checkboxes.forEach(cb => cb.addEventListener('change', updateBulkBar));
+
+            const deselectBtn = document.getElementById('bulkDeselectBtn');
+            if (deselectBtn) {
+                deselectBtn.addEventListener('click', () => {
+                    checkboxes.forEach(cb => cb.checked = false);
+                    updateBulkBar();
+                });
+            }
+
+            const modalEl = document.getElementById('bulkStatusModal');
+            if (!modalEl) return;
+
+            const reasonWrap = document.getElementById('bulkStatusReasonWrap');
+            const reasonEl = document.getElementById('bulkStatusReason');
+            const confirmBtn = document.getElementById('btnConfirmBulkStatus');
+            const needsReason = status => status === 'Hold' || status === 'Blacklist';
+            let bulkTarget = '';
+
+            document.querySelectorAll('.bulk-status-btn').forEach(btn => {
+                btn.addEventListener('click', e => {
+                    e.preventDefault();
+                    const ids = selectedIds();
+                    if (!ids.length) return;
+                    bulkTarget = btn.dataset.status;
+                    document.getElementById('bulkStatusCount').textContent = ids.length;
+                    document.getElementById('bulkStatusTargetLabel').textContent = bulkTarget;
+                    reasonEl.value = '';
+                    reasonEl.classList.remove('is-invalid');
+                    reasonWrap.classList.toggle('d-none', !needsReason(bulkTarget));
+                    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                });
+            });
+
+            reasonEl.addEventListener('input', () => {
+                if (reasonEl.value.trim()) reasonEl.classList.remove('is-invalid');
+            });
+
+            confirmBtn.addEventListener('click', () => {
+                const ids = selectedIds();
+                if (!ids.length || !bulkTarget) return;
+                const reason = needsReason(bulkTarget) ? reasonEl.value.trim() : '';
+                if (needsReason(bulkTarget) && !reason) {
+                    reasonEl.classList.add('is-invalid');
+                    reasonEl.focus();
+                    return;
+                }
+
+                confirmBtn.disabled = true;
+                fetch('/hr/recruitment/bulk-status', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': getCsrfToken(),
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            recruitment_ids: ids,
+                            status: bulkTarget,
+                            reason: reason
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(result => {
+                        confirmBtn.disabled = false;
+                        const message = (result && result.message) || 'Gagal mengubah status kandidat.';
+                        if (result && result.updated > 0) {
+                            bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+                            if (typeof showToast === 'function') showToast(message, result.failed > 0 ? 'warning' : 'success');
+                            setTimeout(() => location.reload(), 800);
+                        } else if (typeof showToast === 'function') {
+                            showToast('Gagal: ' + message, 'error');
+                        }
+                    })
+                    .catch(err => {
+                        confirmBtn.disabled = false;
+                        if (typeof showToast === 'function') showToast('Error: ' + err.message, 'error');
+                    });
+            });
         });
     </script>
 @endsection
