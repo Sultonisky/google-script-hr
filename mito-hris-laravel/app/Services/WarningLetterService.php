@@ -28,9 +28,15 @@ class WarningLetterService
         'Lainnya',
     ];
 
-    public const ELIGIBLE_STATUSES = ['contract', 'pkwt', 'permanent', 'pkwtt'];
+    public const REGULATION_TYPES = [
+        'Peraturan Perusahaan',
+        'Perjanjian Kerja',
+        'Peraturan Perundang-undangan',
+        'SOP / Instruksi Kerja',
+        'Kebijakan Perusahaan',
+    ];
 
-    public const MAX_VALIDITY_MONTHS = 6;
+    public const ELIGIBLE_STATUSES = ['contract', 'pkwt', 'permanent', 'pkwtt'];
 
     public function __construct(
         private EmployeeRepositoryInterface $employees,
@@ -69,8 +75,7 @@ class WarningLetterService
 
     /**
      * @param  array{level:string, doc_date:string, violation_category:string, violation_description:string,
-     *               incident_date?:?string, regulation_reference?:?string, corrective_actions?:?string,
-     *               validity_months:int|string}  $data
+     *               incident_date?:?string, regulation_reference?:?string, corrective_actions?:?string}  $data
      * @return array{success:bool, message:string, status:int, document_id?:string, nomor?:string, file_name?:string}
      */
     public function generate(string $employeeId, array $data, string $issuedBy, ?string $archivedBy = null): array
@@ -88,8 +93,11 @@ class WarningLetterService
         }
 
         $level = WarningLetterLevel::from($data['level']);
+        $violationReference = $level->usesFirstLetterTemplate()
+            ? trim((string) $data['regulation_reference'])
+            : trim((string) $data['violation_category']);
         $docDate = Carbon::parse($data['doc_date'], 'Asia/Jakarta')->startOfDay();
-        $validityMonths = max(1, min(self::MAX_VALIDITY_MONTHS, (int) $data['validity_months']));
+        $validityMonths = $level->validityMonths();
         $validUntil = $docDate->copy()->addMonthsNoOverflow($validityMonths)->subDay();
         $issuedAt = $docDate->copy()->setTimeFrom(now()->timezone('Asia/Jakarta'));
 
@@ -99,7 +107,7 @@ class WarningLetterService
             branchName: (string) ($employee->branchName ?? ''),
             issuedBy: $issuedBy,
             reference: $level->value,
-            notes: $data['violation_category'] . ' — berlaku s.d. ' . $validUntil->format('Y-m-d'),
+            notes: $violationReference.' — berlaku s.d. '.$validUntil->format('Y-m-d'),
             issuedAt: $issuedAt,
             docTypeLabel: $level->label(),
         );
@@ -110,10 +118,11 @@ class WarningLetterService
             'letter_number' => $nomor,
             'doc_date' => $docDate->format('Y-m-d'),
             'level' => $level->value,
-            'violation_category' => $data['violation_category'],
+            'violation_category' => $data['violation_category'] ?? '',
             'violation_description' => trim((string) $data['violation_description']),
             'incident_date' => $data['incident_date'] ?? null,
             'regulation_reference' => trim((string) ($data['regulation_reference'] ?? '')),
+            'superior_position' => trim((string) ($data['superior_position'] ?? 'Atasan Langsung')),
             'corrective_actions' => trim((string) ($data['corrective_actions'] ?? '')),
             'validity_months' => $validityMonths,
             'valid_until' => $validUntil->format('Y-m-d'),

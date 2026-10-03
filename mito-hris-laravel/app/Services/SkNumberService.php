@@ -29,7 +29,7 @@ class SkNumberService
 
     /**
      * Issue a new document number, append history, and update Employee.Nomor SK
-     * (unless the type opts out, e.g. Surat Peringatan).
+     * (unless the type opts out, e.g. Surat Peringatan or Surat Penggilan Mangkir).
      *
      * @return array{nomor:string, sequence:int, doc_code:string, entity:string, document_id:string}
      */
@@ -42,6 +42,7 @@ class SkNumberService
         string $notes = '',
         ?Carbon $issuedAt = null,
         ?string $docTypeLabel = null,
+        ?string $documentIdSuffix = null,
     ): array {
         if (!$type->isNumbered()) {
             throw new RuntimeException("{$type->label()} tidak memakai nomor; gunakan record().");
@@ -56,7 +57,19 @@ class SkNumberService
         $entity = $this->resolveEntityCode($branchName);
         $sequence = $this->resolveFixedSequence($employeeId);
         $nomor = $this->format($sequence, $type->value, $entity, $now);
-        $documentId = $this->appendHistory($employeeId, $type, $sequence, $nomor, $entity, $now, $issuedBy, $reference, $notes, $docTypeLabel);
+        $documentId = $this->appendHistory(
+            $employeeId,
+            $type,
+            $sequence,
+            $nomor,
+            $entity,
+            $now,
+            $issuedBy,
+            $reference,
+            $notes,
+            $docTypeLabel,
+            $documentIdSuffix
+        );
 
         if (!$type->updatesEmployeeNomorSk()) {
             return [
@@ -136,12 +149,14 @@ class SkNumberService
         string $reference,
         string $notes,
         ?string $docTypeLabel = null,
+        ?string $documentIdSuffix = null,
     ): string {
         $documentId = sprintf(
-            'DOC-%s-%03d-%s',
+            'DOC-%s-%03d-%s%s',
             $now->format('Ymd'),
             $sequence,
-            $type->value
+            $type->value,
+            $documentIdSuffix ? '-'.$documentIdSuffix : ''
         );
 
         $row = [

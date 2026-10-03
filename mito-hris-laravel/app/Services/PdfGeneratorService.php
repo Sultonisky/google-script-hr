@@ -185,12 +185,37 @@ class PdfGeneratorService
     }
 
     /**
-     * Generate Surat Peringatan (SP-1 / SP-2 / SP-3) PDF.
+     * Generate Surat Peringatan (SP-1 / SP-1 & Terakhir / SP-2 / SP-3) PDF.
      */
     public function generateWarningLetterPdf(EmployeeData $employee, array $extraData = []): \Barryvdh\DomPDF\PDF
     {
         $company = $this->resolveCompany($this->getBranchName($employee, $extraData));
-        return Pdf::loadView('pdf.surat-peringatan', compact('employee', 'extraData', 'company'))
+        $view = \App\Enums\WarningLetterLevel::tryFrom((string) ($extraData['level'] ?? ''))?->usesFirstLetterTemplate()
+            ? 'pdf.surat-peringatan-pertama'
+            : 'pdf.surat-peringatan';
+
+        return Pdf::loadView($view, compact('employee', 'extraData', 'company'))
+            ->setPaper('a4', 'portrait');
+    }
+
+    public function generateAbsenceSummonsPdf(EmployeeData $employee, array $extraData = []): \Barryvdh\DomPDF\PDF
+    {
+        $entityCode = strtoupper(trim((string) ($extraData['company_entity'] ?? '')));
+        $company = config("hris.mpr.companies.{$entityCode}");
+        if (! is_array($company)) {
+            $company = $this->resolveCompany($this->getBranchName($employee, $extraData));
+        }
+        $companyEntity = $company['name'];
+        $view = ($extraData['summons_level'] ?? 'SPM1') === 'SPM2'
+            ? 'pdf.surat-pemanggilan-mangkir-kedua'
+            : 'pdf.surat-pemanggilan-mangkir';
+
+        return Pdf::loadView($view, compact(
+            'employee',
+            'extraData',
+            'company',
+            'companyEntity',
+        ))
             ->setPaper('a4', 'portrait');
     }
 
