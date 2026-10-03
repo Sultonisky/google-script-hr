@@ -47,6 +47,7 @@
                                         <span id="wlEmpStatus">-</span>
                                     </div>
                                     <div class="text-muted" style="font-size:11.5px" id="wlEmpBranch">-</div>
+                                    <div class="text-muted" style="font-size:11.5px">Lokasi kerja: <span id="wlEmpLocation">-</span></div>
                                 </div>
                                 <div class="text-end flex-shrink-0" style="font-size:11.5px">
                                     <div class="text-muted">Employee ID</div>
@@ -79,12 +80,8 @@
                                     value="{{ now()->timezone('Asia/Jakarta')->format('Y-m-d') }}" required />
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label fw-semibold" style="font-size:13px" for="wlValidity">Masa Berlaku <span class="text-danger">*</span></label>
-                                <select class="form-select form-select-sm" name="validity_months" id="wlValidity" required>
-                                    @for ($m = \App\Services\WarningLetterService::MAX_VALIDITY_MONTHS; $m >= 1; $m--)
-                                        <option value="{{ $m }}">{{ $m }} bulan</option>
-                                    @endfor
-                                </select>
+                                <label class="form-label fw-semibold" style="font-size:13px" for="wlValidity">Masa Berlaku</label>
+                                <input type="text" class="form-control form-control-sm bg-light" id="wlValidity" value="6 bulan" readonly tabindex="-1" />
                                 <div class="form-text" style="font-size:11px">Berlaku s.d. <strong id="wlValidUntil">-</strong></div>
                             </div>
                         </div>
@@ -93,7 +90,7 @@
                             <i class="bi bi-exclamation-octagon me-1"></i>Pelanggaran
                         </p>
                         <div class="row g-3 mb-4">
-                            <div class="col-md-7">
+                            <div class="col-md-7" id="wlCategoryField">
                                 <label class="form-label fw-semibold" style="font-size:13px" for="wlCategory">Kategori Pelanggaran <span class="text-danger">*</span></label>
                                 <select class="form-select form-select-sm" name="violation_category" id="wlCategory" required>
                                     <option value="">— Pilih kategori —</option>
@@ -102,34 +99,76 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-5">
+                            <div class="col-md-5" id="wlIncidentDateField">
                                 <label class="form-label fw-semibold" style="font-size:13px" for="wlIncidentDate">Tanggal Kejadian <span class="text-muted fw-normal">(opsional)</span></label>
                                 <input type="date" class="form-control form-control-sm" name="incident_date" id="wlIncidentDate" />
                             </div>
-                            <div class="col-12">
+                            <div class="col-12" id="wlDescriptionField">
                                 <label class="form-label fw-semibold" style="font-size:13px" for="wlDescription">Uraian Pelanggaran <span class="text-danger">*</span></label>
                                 <textarea class="form-control form-control-sm" name="violation_description" id="wlDescription" rows="4"
                                     maxlength="2000" required
                                     placeholder="Jelaskan kronologi pelanggaran secara faktual: apa yang terjadi, kapan, di mana, dan dampaknya."></textarea>
                                 <div class="form-text text-end" style="font-size:11px"><span id="wlDescCount">0</span> / 2000</div>
                             </div>
-                            <div class="col-12">
-                                <label class="form-label fw-semibold" style="font-size:13px" for="wlRegulation">Dasar Ketentuan <span class="text-muted fw-normal">(opsional)</span></label>
-                                <input type="text" class="form-control form-control-sm" name="regulation_reference" id="wlRegulation" maxlength="255"
-                                    placeholder="Misal: Peraturan Perusahaan Bab V Pasal 12 tentang Kehadiran" />
-                                <div class="form-text" style="font-size:11px">Kosongkan untuk memakai "Peraturan Perusahaan serta tata tertib dan prosedur kerja yang berlaku".</div>
+                            <div class="col-12" id="wlRegulationField">
+                                <div id="wlStructuredRegulation">
+                                    <label class="form-label fw-semibold" style="font-size:13px" for="wlRegulationType">
+                                        Jenis Peraturan
+                                        <span class="text-danger" id="wlRegulationRequired" style="display:none">*</span>
+                                        <span class="text-muted fw-normal" id="wlRegulationOptional">(opsional)</span>
+                                    </label>
+                                    <div class="row g-2">
+                                        <div class="col-12">
+                                            <select class="form-select form-select-sm" name="regulation_type" id="wlRegulationType" disabled>
+                                                <option value="">— Pilih jenis peraturan (jika diisi) —</option>
+                                                @foreach (\App\Services\WarningLetterService::REGULATION_TYPES as $regulationType)
+                                                    <option value="{{ $regulationType }}">{{ $regulationType }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <label class="form-label mb-1" style="font-size:12px" for="wlArticleNumber">
+                                                Pasal <span class="text-danger" id="wlArticleRequired" style="display:none">*</span>
+                                                <span class="text-muted fw-normal" id="wlArticleOptional">(opsional)</span>
+                                            </label>
+                                            <input type="number" class="form-control form-control-sm" name="article_number" id="wlArticleNumber"
+                                                min="1" max="9999" step="1" inputmode="numeric" placeholder="Contoh: 46" />
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <label class="form-label mb-1" style="font-size:12px" for="wlParagraphNumber">Ayat <span class="text-muted fw-normal">(opsional)</span></label>
+                                            <input type="number" class="form-control form-control-sm" name="paragraph_number" id="wlParagraphNumber"
+                                                min="1" max="999" step="1" inputmode="numeric" placeholder="Contoh: 1" disabled />
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <label class="form-label mb-1" style="font-size:12px" for="wlArticleLetter">Huruf <span class="text-muted fw-normal">(opsional)</span></label>
+                                            <input type="text" class="form-control form-control-sm text-lowercase" name="article_letter" id="wlArticleLetter"
+                                                maxlength="1" pattern="[A-Za-z]" placeholder="Contoh: e" disabled />
+                                        </div>
+                                    </div>
+                                    <div class="form-text" id="wlRegulationHelp" style="font-size:11px">SP-2/SP-3: dasar ketentuan opsional. Jika diisi, jenis peraturan dan nomor pasal wajib dilengkapi.</div>
+                                    <div class="small mt-2 text-muted" id="wlRegulationPreview" aria-live="polite"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6" id="wlSuperiorPositionField">
+                                <label class="form-label fw-semibold" style="font-size:13px" for="wlSuperiorPosition">Jabatan Atasan <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-sm" name="superior_position" id="wlSuperiorPosition"
+                                    maxlength="150" value="Atasan Langsung"
+                                    placeholder="Misal: Branch Manager Lampung" />
+                                <div class="form-text" style="font-size:11px">Nama atasan diambil dari data karyawan.</div>
                             </div>
                         </div>
 
-                        <p class="fw-bold mb-3" style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#eb1c24">
-                            <i class="bi bi-tools me-1"></i>Tindakan Perbaikan
-                        </p>
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <label class="form-label fw-semibold" style="font-size:13px" for="wlCorrective">Tindakan perbaikan yang diharapkan <span class="text-muted fw-normal">(opsional, satu per baris)</span></label>
-                                <textarea class="form-control form-control-sm" name="corrective_actions" id="wlCorrective" rows="3" maxlength="1500"
-                                    placeholder="Misal:&#10;Hadir tepat waktu sesuai jadwal kerja&#10;Melapor ke atasan langsung apabila berhalangan hadir"></textarea>
-                                <div class="form-text" style="font-size:11px">Poin standar (mematuhi peraturan, tidak mengulangi pelanggaran, perbaikan kinerja) selalu dicantumkan.</div>
+                        <div id="wlCorrectiveSection">
+                            <p class="fw-bold mb-3" style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#eb1c24">
+                                <i class="bi bi-tools me-1"></i>Tindakan Perbaikan
+                            </p>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold" style="font-size:13px" for="wlCorrective">Tindakan perbaikan yang diharapkan <span class="text-muted fw-normal">(opsional, satu per baris)</span></label>
+                                    <textarea class="form-control form-control-sm" name="corrective_actions" id="wlCorrective" rows="3" maxlength="1500"
+                                        placeholder="Misal:&#10;Hadir tepat waktu sesuai jadwal kerja&#10;Melapor ke atasan langsung apabila berhalangan hadir"></textarea>
+                                    <div class="form-text" style="font-size:11px">Poin standar (mematuhi peraturan, tidak mengulangi pelanggaran, perbaikan kinerja) selalu dicantumkan.</div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -156,6 +195,9 @@
             'fullName' => $e->fullName ?? null,
             'statusEmployee' => $e->statusEmployee ?? null,
             'jobPosition' => $e->jobPosition ?? null,
+            'jobPositionLocation' => $e->jobPositionLocation ?? null,
+            'lokasiKerja' => $e->lokasiKerja ?? null,
+            'areaKerja' => $e->areaKerja ?? null,
             'department' => $e->department ?? null,
             'branchName' => $e->branchName ?? null,
             'lastSp' => $__wlLatest[$e->employeeId ?? ''] ?? null,
@@ -166,13 +208,20 @@
     $__wlLevelLabels = collect(\App\Enums\WarningLetterLevel::cases())
         ->mapWithKeys(fn ($l) => [$l->value => $l->shortLabel()])
         ->all();
+    $__wlLevelMeta = collect(\App\Enums\WarningLetterLevel::cases())
+        ->mapWithKeys(fn ($l) => [$l->value => [
+            'months' => $l->validityMonths(),
+            'next' => ($l->next() ?? $l)->value,
+            'first' => $l->usesFirstLetterTemplate(),
+        ]])
+        ->all();
 @endphp
 <script>
     (function() {
         var employees = @json($__wlEmployees);
         var storeUrlTemplate = @json($__wlStoreUrl);
         var levelLabels = @json($__wlLevelLabels);
-        var nextLevel = { SP1: 'SP2', SP2: 'SP3', SP3: 'SP3' };
+        var levelMeta = @json($__wlLevelMeta);
         var bulanId = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
         function el(id) { return document.getElementById(id); }
@@ -201,13 +250,59 @@
             return target;
         }
 
+        function levelMonths(level) {
+            return (levelMeta[level] && levelMeta[level].months) || 12;
+        }
+
+        function usesFirstTemplate(level) {
+            return !!(levelMeta[level] && levelMeta[level].first);
+        }
+
         function refreshValidUntil() {
             var d = parseYmd(el('wlDocDate').value);
-            var months = parseInt(el('wlValidity').value, 10) || 6;
+            var months = levelMonths(el('wlLevel').value);
+            el('wlValidity').value = months % 12 === 0 ? (months / 12) + ' tahun' : months + ' bulan';
             if (!d) { el('wlValidUntil').textContent = '-'; return; }
             var until = addMonthsNoOverflow(d, months);
             until.setDate(until.getDate() - 1);
             el('wlValidUntil').textContent = fmtId(until);
+        }
+
+        function updateLevelFields() {
+            var isSp1 = usesFirstTemplate(el('wlLevel').value);
+            el('wlCorrectiveSection').style.display = isSp1 ? 'none' : '';
+            el('wlCategoryField').style.display = isSp1 ? 'none' : '';
+            el('wlIncidentDateField').style.display = isSp1 ? 'none' : '';
+            el('wlCategory').required = !isSp1;
+            el('wlStructuredRegulation').style.display = '';
+            ['wlRegulationType', 'wlArticleNumber', 'wlParagraphNumber', 'wlArticleLetter'].forEach(function(id) {
+                el(id).disabled = false;
+            });
+            el('wlRegulationType').required = isSp1;
+            el('wlArticleNumber').required = isSp1;
+            el('wlRegulationRequired').style.display = isSp1 ? '' : 'none';
+            el('wlRegulationOptional').style.display = isSp1 ? 'none' : '';
+            el('wlArticleRequired').style.display = isSp1 ? '' : 'none';
+            el('wlArticleOptional').style.display = isSp1 ? 'none' : '';
+            el('wlRegulationHelp').textContent = isSp1
+                ? 'Jenis peraturan dan nomor pasal wajib diisi. Ayat dan huruf diisi jika tercantum dalam ketentuan.'
+                : 'SP-2/SP-3: dasar ketentuan opsional. Jika diisi, jenis peraturan dan nomor pasal wajib dilengkapi.';
+            refreshRegulationPreview();
+            el('wlSuperiorPositionField').style.display = isSp1 ? '' : 'none';
+            el('wlSuperiorPosition').required = isSp1;
+        }
+
+        function refreshRegulationPreview() {
+            var parts = [];
+            var article = el('wlArticleNumber').value.trim();
+            var paragraph = el('wlParagraphNumber').value.trim();
+            var letter = el('wlArticleLetter').value.trim().toLowerCase();
+            var type = el('wlRegulationType').value;
+            if (article) parts.push('Pasal ' + article);
+            if (paragraph) parts.push('ayat (' + paragraph + ')');
+            if (letter) parts.push('huruf ' + letter);
+            if (type) parts.push(type);
+            el('wlRegulationPreview').textContent = parts.length ? 'Format di surat: ' + parts.join(' ') : '';
         }
 
         function renderDropdown(query) {
@@ -259,6 +354,7 @@
             el('wlEmpDept').textContent = emp.department || '-';
             el('wlEmpStatus').textContent = emp.statusEmployee || '-';
             el('wlEmpBranch').textContent = emp.branchName || '-';
+            el('wlEmpLocation').textContent = emp.lokasiKerja || emp.areaKerja || '-';
             el('wlEmpIdDisp').textContent = emp.employeeId;
             el('wlEmpAvatar').textContent = (emp.fullName || 'E').substring(0, 2).toUpperCase();
 
@@ -266,18 +362,19 @@
             var level = 'SP1';
             if (lastSp && lastSp.level) {
                 var issued = parseYmd(lastSp.issued_at);
-                var stillActive = issued && addMonthsNoOverflow(issued, {{ \App\Services\WarningLetterService::MAX_VALIDITY_MONTHS }}) > new Date();
+                var stillActive = issued && addMonthsNoOverflow(issued, levelMonths(lastSp.level)) > new Date();
                 el('wlLastSpText').textContent = 'SP terakhir: ' + (levelLabels[lastSp.level] || lastSp.level) +
                     (lastSp.nomor ? ' — ' + lastSp.nomor : '') + ' (' + fmtId(issued) + ')' +
                     (stillActive ? '. Tingkat berikutnya dipilih otomatis, sesuaikan bila perlu.' : '.');
                 el('wlLastSp').style.display = 'block';
-                if (stillActive && nextLevel[lastSp.level]) level = nextLevel[lastSp.level];
+                if (stillActive && levelMeta[lastSp.level]) level = levelMeta[lastSp.level].next;
             } else {
                 el('wlLastSp').style.display = 'none';
             }
             el('wlLevel').value = level;
 
             refreshValidUntil();
+            updateLevelFields();
             el('wlErrors').style.display = 'none';
             el('wlEmpPreview').style.display = 'block';
             el('btnGenerateWarningLetter').disabled = false;
@@ -293,6 +390,7 @@
             el('wlEmpPreview').style.display = 'none';
             el('wlErrors').style.display = 'none';
             el('wlDescCount').textContent = '0';
+            updateLevelFields();
             el('btnGenerateWarningLetter').disabled = true;
         }
 
@@ -320,9 +418,14 @@
             el('wlEmpSearch').addEventListener('input', function(e) { renderDropdown(e.target.value); });
             el('wlEmpSearchClear').addEventListener('click', resetModal);
             el('wlDocDate').addEventListener('change', refreshValidUntil);
-            el('wlValidity').addEventListener('change', refreshValidUntil);
+            el('wlLevel').addEventListener('change', function() { updateLevelFields(); refreshValidUntil(); });
             el('wlDescription').addEventListener('input', function(e) { el('wlDescCount').textContent = e.target.value.length; });
+            ['wlRegulationType', 'wlArticleNumber', 'wlParagraphNumber', 'wlArticleLetter'].forEach(function(id) {
+                el(id).addEventListener('input', refreshRegulationPreview);
+                el(id).addEventListener('change', refreshRegulationPreview);
+            });
             el('warningLetterModal').addEventListener('hidden.bs.modal', resetModal);
+            updateLevelFields();
 
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
@@ -331,9 +434,19 @@
                 var empId = el('wlEmployeeId').value;
                 var missing = [];
                 if (!empId) missing.push('Pilih karyawan terlebih dahulu.');
-                if (!el('wlCategory').value) missing.push('Kategori pelanggaran wajib dipilih.');
+                var isFirstTemplate = usesFirstTemplate(el('wlLevel').value);
+                if (!isFirstTemplate && !el('wlCategory').value) missing.push('Kategori pelanggaran wajib dipilih.');
                 if (el('wlDescription').value.trim().length < 10) missing.push('Uraian pelanggaran minimal 10 karakter.');
                 if (!el('wlDocDate').value) missing.push('Tanggal surat wajib diisi.');
+                var hasRegulationPart = el('wlRegulationType').value
+                    || el('wlArticleNumber').value
+                    || el('wlParagraphNumber').value
+                    || el('wlArticleLetter').value;
+                if (isFirstTemplate && !el('wlRegulationType').value) missing.push('Jenis peraturan wajib dipilih.');
+                if (isFirstTemplate && !el('wlArticleNumber').value) missing.push('Nomor pasal wajib diisi.');
+                if (!isFirstTemplate && hasRegulationPart && !el('wlRegulationType').value) missing.push('Pilih jenis peraturan atau kosongkan seluruh dasar ketentuan.');
+                if (!isFirstTemplate && hasRegulationPart && !el('wlArticleNumber').value) missing.push('Isi nomor pasal atau kosongkan seluruh dasar ketentuan.');
+                if (isFirstTemplate && !el('wlSuperiorPosition').value.trim()) missing.push('Jabatan atasan wajib diisi.');
                 if (missing.length) { showErrors(missing); return; }
 
                 submitting = true;

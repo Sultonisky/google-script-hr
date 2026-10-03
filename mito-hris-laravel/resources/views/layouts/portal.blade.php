@@ -42,6 +42,8 @@
             <x-toast />
             @yield('content')
         </div>
+
+        @include('components.dashboard-footer')
     </div>
 
     @yield('scripts')

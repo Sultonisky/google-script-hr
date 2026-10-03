@@ -28,8 +28,8 @@ class EmployeeDocumentArchiveService
     ) {}
 
     /**
-     * Archive a freshly rendered PDF for the latest document of $type when its
-     * nomor matches the number printed on the PDF. Never breaks the export.
+     * Archive a freshly rendered PDF for the selected or latest document of $type
+     * when its nomor matches the number printed on the PDF.
      *
      * @param  string|Closure():string  $content
      */
@@ -40,6 +40,7 @@ class EmployeeDocumentArchiveService
         string|Closure $content,
         string $fileName,
         ?string $archivedBy = null,
+        ?string $documentId = null,
     ): ?EmployeeDocumentFile {
         try {
             $employeeId = ltrim(trim($employeeId), "'");
@@ -48,8 +49,15 @@ class EmployeeDocumentArchiveService
                 return null;
             }
 
-            $document = $this->documents->getLatestByEmployeeAndType($employeeId, $type->value);
+            $document = $documentId
+                ? $this->documents->getByEmployeeId($employeeId)->first(
+                    fn (array $row) => trim((string) ($row['Document ID'] ?? '')) === trim($documentId)
+                )
+                : $this->documents->getLatestByEmployeeAndType($employeeId, $type->value);
             if (!$document) {
+                return null;
+            }
+            if (strtoupper(trim((string) ($document['Doc Code'] ?? ''))) !== $type->value) {
                 return null;
             }
             if ($type->isNumbered() && trim((string) ($document['Nomor'] ?? '')) !== $nomor) {
@@ -263,6 +271,9 @@ class EmployeeDocumentArchiveService
             ],
             SkDocumentType::SURAT_PERINGATAN => throw new RuntimeException(
                 'Isi Surat Peringatan hanya tersimpan di arsip saat diterbitkan, PDF tidak dapat dibuat ulang.'
+            ),
+            SkDocumentType::SURAT_PEMANGGILAN_MANGKIR => throw new RuntimeException(
+                'Isi Surat Penggilan Mangkir hanya tersimpan di arsip saat diterbitkan, PDF tidak dapat dibuat ulang.'
             ),
         };
     }

@@ -80,6 +80,12 @@
                                 id="btnWarningLetter">
                                 <i class="bi bi-exclamation-triangle-fill me-1"></i>Surat Peringatan
                             </button>
+                            <button class="btn btn-sm text-white fw-semibold"
+                                style="background:#7c2d12;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
+                                type="button" data-bs-toggle="modal" data-bs-target="#absenceSummonsModal"
+                                id="btnAbsenceSummons">
+                                <i class="bi bi-person-exclamation me-1"></i>Surat Penggilan Mangkir
+                            </button>
                         @endcan
                         @can('manage_employees')
                             <button class="btn btn-sm text-white fw-semibold"
@@ -353,6 +359,7 @@
     {{-- Surat Peringatan hanya ada di Master Data, butuh daftar $all karyawan --}}
     @can('manage_warning_letters')
         @include('hr.partials.warning-letter-modal')
+        @include('hr.partials.absence-summons-modal')
     @endcan
 @endsection
 

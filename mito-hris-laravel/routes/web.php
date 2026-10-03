@@ -11,7 +11,9 @@ use App\Http\Controllers\HR\RecruitmentController;
 use App\Http\Controllers\HR\EmployeeController;
 use App\Http\Controllers\HR\ProbationController;
 use App\Http\Controllers\HR\OutsourceController;
+use App\Http\Controllers\HR\OutsourcePayslipController;
 use App\Http\Controllers\HR\WarningLetterController;
+use App\Http\Controllers\HR\AbsenceSummonsController;
 use App\Http\Controllers\HR\ContractTrackingController;
 use App\Http\Controllers\HR\DocumentTrackingController;
 use App\Http\Controllers\HR\AuditLogController;
@@ -79,6 +81,8 @@ if (!app()->environment('local')) {
                 Route::post('/{id}/off-contract', [EmployeeController::class, 'offContract'])->name('off-contract')->middleware('can:off_contract_employees');
                 Route::post('/{id}/warning-letter', [WarningLetterController::class, 'store'])->name('warning-letter')->middleware('can:manage_warning_letters');
                 Route::get('/{id}/warning-letter/{documentId}', [WarningLetterController::class, 'download'])->name('warning-letter.download')->middleware('can:manage_warning_letters');
+                Route::post('/{id}/absence-summons', [AbsenceSummonsController::class, 'store'])->name('absence-summons')->middleware('can:manage_warning_letters');
+                Route::get('/{id}/absence-summons/{documentId}', [AbsenceSummonsController::class, 'download'])->name('absence-summons.download')->middleware('can:manage_warning_letters');
                 Route::get('/{id}/json', [EmployeeController::class, 'getJson'])->name('json');
             });
             Route::get('/employees/lookup', [EmployeeController::class, 'lookup'])->middleware('can:lookup_employee')->name('employees.lookup');
@@ -126,6 +130,11 @@ if (!app()->environment('local')) {
                     ->middleware('can:manage_outsource');
                 Route::put('/{id}', [OutsourceController::class, 'update'])->name('update')->middleware('can:manage_outsource');
                 Route::get('/{id}/json', [OutsourceController::class, 'getJson'])->name('json');
+            });
+            Route::prefix('outsource-payslips')->name('outsource-payslips.')->middleware('can:view_outsource_payslip')->group(function () {
+                Route::get('/', [OutsourcePayslipController::class, 'index'])->name('index');
+                Route::get('/template', [OutsourcePayslipController::class, 'template'])->name('template')->middleware('can:manage_outsource_payslip');
+                Route::post('/import', [OutsourcePayslipController::class, 'import'])->name('import')->middleware('can:manage_outsource_payslip');
             });
             Route::prefix('contracts')->name('contracts.')->middleware('can:view_contracts')->group(function () {
                 Route::get('/', [ContractTrackingController::class, 'index'])->name('index');
@@ -332,6 +341,8 @@ if (app()->environment('local')) {
                 Route::post('/{id}/off-contract', [EmployeeController::class, 'offContract'])->name('off-contract')->middleware('can:off_contract_employees');
                 Route::post('/{id}/warning-letter', [WarningLetterController::class, 'store'])->name('warning-letter')->middleware('can:manage_warning_letters');
                 Route::get('/{id}/warning-letter/{documentId}', [WarningLetterController::class, 'download'])->name('warning-letter.download')->middleware('can:manage_warning_letters');
+                Route::post('/{id}/absence-summons', [AbsenceSummonsController::class, 'store'])->name('absence-summons')->middleware('can:manage_warning_letters');
+                Route::get('/{id}/absence-summons/{documentId}', [AbsenceSummonsController::class, 'download'])->name('absence-summons.download')->middleware('can:manage_warning_letters');
                 Route::get('/{id}/json', [EmployeeController::class, 'getJson'])->name('json');
             });
             Route::get('/employees/lookup', [EmployeeController::class, 'lookup'])->middleware('can:lookup_employee')->name('employees.lookup');
@@ -380,6 +391,12 @@ if (app()->environment('local')) {
                     ->middleware('can:manage_outsource');
                 Route::put('/{id}', [OutsourceController::class, 'update'])->name('update')->middleware('can:manage_outsource');
                 Route::get('/{id}/json', [OutsourceController::class, 'getJson'])->name('json');
+            });
+
+            Route::prefix('outsource-payslips')->name('outsource-payslips.')->middleware('can:view_outsource_payslip')->group(function () {
+                Route::get('/', [OutsourcePayslipController::class, 'index'])->name('index');
+                Route::get('/template', [OutsourcePayslipController::class, 'template'])->name('template')->middleware('can:manage_outsource_payslip');
+                Route::post('/import', [OutsourcePayslipController::class, 'import'])->name('import')->middleware('can:manage_outsource_payslip');
             });
 
             Route::prefix('contracts')->name('contracts.')->middleware('can:view_contracts')->group(function () {

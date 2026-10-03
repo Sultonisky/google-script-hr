@@ -138,18 +138,6 @@
             height: 50px;
         }
 
-        .sign-image-area {
-            height: 50px;
-            margin: 2px 0 2px auto;
-        }
-
-        .sign-image-area .hr-sign-img {
-            height: 48px !important;
-            width: auto;
-            max-width: 125px;
-            margin: 0 0 4px auto;
-        }
-
         .cc {
             margin-top: 8px;
             font-size: 8pt;
@@ -192,8 +180,10 @@
 
         $docDate = (string) ($extraData['doc_date'] ?? date('Y-m-d'));
         $docDateFmt = $fmtDateId($docDate);
-        $validMonths = max(1, (int) ($extraData['validity_months'] ?? 6));
-        $validMonthsText = $validMonths . ' (' . ($angka[$validMonths] ?? $validMonths) . ') bulan';
+        $validMonths = max(1, (int) ($extraData['validity_months'] ?? $level->validityMonths()));
+        $validMonthsText = $validMonths % 12 === 0
+            ? ($validMonths / 12) . ' (' . ($angka[$validMonths / 12] ?? $validMonths / 12) . ') tahun'
+            : $validMonths . ' (' . ($angka[$validMonths] ?? $validMonths) . ') bulan';
         $validUntilFmt = $fmtDateId($extraData['valid_until'] ?? null);
 
         $status = strtolower(trim((string) ($employee->statusEmployee ?? '')));
@@ -352,9 +342,7 @@
                 {{ $companyCity }}, {{ $docDateFmt }}<br>
                 Hormat kami,<br>
                 <strong>{{ $companyName }}</strong>
-                <div class="sign-image-area">
-                    @include('pdf.components.hr-sign')
-                </div>
+                <div class="sign-space"></div>
                 <strong><u>Hisar Hesti</u></strong><br>
                 Human Resources (HR) &amp; Legal Manager
             </td>
