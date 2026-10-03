@@ -10,6 +10,8 @@ use Illuminate\Validation\Rule;
 class GenerateWarningLetterRequest extends FormRequest
 {
     private bool $hasStructuredRegulationInput = false;
+    private bool $hasRepeatedRegulationInput = false;
+    private array $structuredRegulationRows = [];
 
     public function authorize(): bool
     {
@@ -18,53 +20,81 @@ class GenerateWarningLetterRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $this->hasRepeatedRegulationInput = $this->exists('regulation_references');
         $structuredKeys = ['regulation_type', 'article_number', 'paragraph_number', 'article_letter'];
-        $this->hasStructuredRegulationInput = collect($structuredKeys)->contains(
+        $hasLegacyStructuredInput = collect($structuredKeys)->contains(
             fn (string $key) => $this->exists($key)
         );
+        $this->hasStructuredRegulationInput = $this->hasRepeatedRegulationInput || $hasLegacyStructuredInput;
 
-        if (! $this->hasStructuredRegulationInput) {
-            return;
-        }
-
-        $referenceParts = [];
-        $articleNumber = $this->normalizedPart('article_number');
-        $paragraphNumber = $this->normalizedPart('paragraph_number');
-        $articleLetter = $this->normalizedPart('article_letter');
-        $regulationType = $this->normalizedPart('regulation_type');
-
-        if ($articleNumber !== '') {
-            $referenceParts[] = 'Pasal '.$articleNumber;
-        }
-        if ($paragraphNumber !== '') {
-            $referenceParts[] = 'ayat ('.$paragraphNumber.')';
-        }
-        if ($articleLetter !== '') {
-            $referenceParts[] = 'huruf '.strtolower($articleLetter);
-        }
-        if ($regulationType !== '') {
-            $referenceParts[] = $regulationType;
+        if ($this->hasRepeatedRegulationInput) {
+            $inputRows = $this->input('regulation_references');
+            $this->structuredRegulationRows = is_array($inputRows)
+                ? collect($inputRows)
+                    ->filter(fn ($row) => is_array($row) && collect($row)->contains(fn ($value) => $this->isFilledScalar($value)))
+                    ->values()
+                    ->all()
+                : [];
+        } elseif ($hasLegacyStructuredInput) {
+            $this->structuredRegulationRows = [[
+                'regulation_type' => $this->input('regulation_type'),
+                'article_number' => $this->input('article_number'),
+                'paragraph_number' => $this->input('paragraph_number'),
+                'article_letter' => $this->input('article_letter'),
+            ]];
         }
 
-        $this->merge(['regulation_reference' => implode(' ', $referenceParts)]);
+        if ($this->hasStructuredRegulationInput) {
+            $this->merge([
+                'regulation_references' => $this->structuredRegulationRows,
+                'regulation_reference' => collect($this->structuredRegulationRows)
+                    ->map(fn (array $row) => $this->formatRegulationRow($row))
+                    ->filter()
+                    ->implode('; '),
+            ]);
+        }
     }
 
-    private function normalizedPart(string $key): string
+    private function isFilledScalar(mixed $value): bool
     {
-        $value = $this->input($key);
+        return is_scalar($value) && trim((string) $value) !== '';
+    }
+
+    private function normalizedPart(array $row, string $key): string
+    {
+        $value = $row[$key] ?? '';
 
         return is_scalar($value) ? trim((string) $value) : '';
+    }
+
+    private function formatRegulationRow(array $row): string
+    {
+        $parts = [];
+        $articleNumber = $this->normalizedPart($row, 'article_number');
+        $paragraphNumber = $this->normalizedPart($row, 'paragraph_number');
+        $articleLetter = $this->normalizedPart($row, 'article_letter');
+        $regulationType = $this->normalizedPart($row, 'regulation_type');
+
+        if ($articleNumber !== '') {
+            $parts[] = 'Pasal '.$articleNumber;
+        }
+        if ($paragraphNumber !== '') {
+            $parts[] = 'ayat ('.$paragraphNumber.')';
+        }
+        if ($articleLetter !== '') {
+            $parts[] = 'huruf '.strtolower($articleLetter);
+        }
+        if ($regulationType !== '') {
+            $parts[] = $regulationType;
+        }
+
+        return implode(' ', $parts);
     }
 
     public function rules(): array
     {
         $usesFirstTemplate = in_array($this->input('level'), ['SP1', 'SP1T'], true);
-        $hasStructuredRegulationValue = collect(['regulation_type', 'article_number', 'paragraph_number', 'article_letter'])
-            ->contains(fn (string $key) => $this->normalizedPart($key) !== '');
-        $requiresStructuredReference = $this->hasStructuredRegulationInput
-            && ($usesFirstTemplate || $hasStructuredRegulationValue);
-
-        return [
+        $rules = [
             'level' => ['required', Rule::enum(WarningLetterLevel::class)],
             'doc_date' => ['required', 'date'],
             'violation_category' => ['required_if:level,SP2,SP3', 'nullable', 'string', Rule::in(WarningLetterService::VIOLATION_CATEGORIES)],
@@ -74,16 +104,23 @@ class GenerateWarningLetterRequest extends FormRequest
                 Rule::requiredIf(fn () => $usesFirstTemplate && ! $this->hasStructuredRegulationInput),
                 'nullable',
                 'string',
-                'max:255',
+                'max:2000',
+            ],
+            'regulation_references' => [
+                Rule::requiredIf(fn () => $usesFirstTemplate && $this->hasRepeatedRegulationInput),
+                'sometimes',
+                'array',
+                ...($usesFirstTemplate && $this->hasRepeatedRegulationInput ? ['min:1'] : []),
+                'max:10',
             ],
             'regulation_type' => [
-                Rule::requiredIf(fn () => $requiresStructuredReference),
+                Rule::requiredIf(fn () => $usesFirstTemplate && $this->hasStructuredRegulationInput && ! $this->hasRepeatedRegulationInput),
                 'nullable',
                 'string',
                 Rule::in(WarningLetterService::REGULATION_TYPES),
             ],
             'article_number' => [
-                Rule::requiredIf(fn () => $requiresStructuredReference),
+                Rule::requiredIf(fn () => $usesFirstTemplate && $this->hasStructuredRegulationInput && ! $this->hasRepeatedRegulationInput),
                 'nullable',
                 'integer',
                 'min:1',
@@ -94,6 +131,32 @@ class GenerateWarningLetterRequest extends FormRequest
             'superior_position' => ['required_if:level,SP1,SP1T', 'nullable', 'string', 'max:150'],
             'corrective_actions' => ['nullable', 'string', 'max:1500'],
         ];
+
+        if ($this->hasRepeatedRegulationInput) {
+            foreach ($this->structuredRegulationRows as $index => $row) {
+                $rowStarted = collect(['regulation_type', 'article_number', 'paragraph_number', 'article_letter'])
+                    ->contains(fn (string $key) => $this->normalizedPart($row, $key) !== '');
+                $required = $usesFirstTemplate || $rowStarted;
+
+                $rules["regulation_references.{$index}.regulation_type"] = [
+                    Rule::requiredIf($required),
+                    'nullable',
+                    'string',
+                    Rule::in(WarningLetterService::REGULATION_TYPES),
+                ];
+                $rules["regulation_references.{$index}.article_number"] = [
+                    Rule::requiredIf($required),
+                    'nullable',
+                    'integer',
+                    'min:1',
+                    'max:9999',
+                ];
+                $rules["regulation_references.{$index}.paragraph_number"] = ['nullable', 'integer', 'min:1', 'max:999'];
+                $rules["regulation_references.{$index}.article_letter"] = ['nullable', 'string', 'regex:/^[a-zA-Z]$/'];
+            }
+        }
+
+        return $rules;
     }
 
     public function messages(): array
@@ -110,7 +173,10 @@ class GenerateWarningLetterRequest extends FormRequest
             'violation_description.max' => 'Uraian pelanggaran maksimal 2000 karakter.',
             'incident_date.date' => 'Tanggal kejadian tidak valid.',
             'incident_date.before_or_equal' => 'Tanggal kejadian tidak boleh setelah tanggal surat.',
-            'regulation_reference.max' => 'Dasar ketentuan maksimal 255 karakter.',
+            'regulation_reference.max' => 'Dasar ketentuan maksimal 2000 karakter.',
+            'regulation_references.array' => 'Format dasar ketentuan tidak valid.',
+            'regulation_references.min' => 'Tambahkan minimal satu dasar ketentuan.',
+            'regulation_references.max' => 'Maksimal 10 dasar ketentuan dapat ditambahkan.',
             'regulation_reference.required_if' => 'Pasal atau dasar ketentuan wajib diisi untuk SP-1 dan SP-1 & Terakhir.',
             'regulation_type.required' => 'Jenis peraturan wajib dipilih untuk SP-1 dan SP-1 & Terakhir.',
             'regulation_type.in' => 'Jenis peraturan tidak valid.',

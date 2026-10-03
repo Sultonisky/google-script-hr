@@ -193,6 +193,9 @@ class WarningLetterTest extends TestCase
         ])->render();
 
         $plainText = preg_replace('/\s+/', ' ', strip_tags($html));
+        $this->assertStringContainsString('<td colspan="2" class="signature-date">Tangerang, 29 September 2026</td>', $html);
+        $this->assertStringContainsString('<td class="employee-sign">', $html);
+        $this->assertLessThan(strpos($html, 'Yang Bersangkutan'), strpos($html, 'class="signature-date"'));
         $this->assertStringContainsString('SURAT PERINGATAN TERTULIS', $html);
         $this->assertStringContainsString('Nomor: 007/SP/MSI/IX/2026', $html);
         $this->assertStringContainsString('Dengan ini diberikan Surat Peringatan Tertulis Pertama dan Terakhir (SP1 dan Terakhir) kepada:', $html);
@@ -213,17 +216,30 @@ class WarningLetterTest extends TestCase
 
         $payload = $this->payload([
             'regulation_reference' => '',
-            'regulation_type' => 'Peraturan Perusahaan',
-            'article_number' => '46',
-            'paragraph_number' => '1',
-            'article_letter' => 'E',
+            'regulation_references' => [
+                [
+                    'regulation_type' => 'Peraturan Perusahaan',
+                    'article_number' => '46',
+                    'paragraph_number' => '1',
+                    'article_letter' => 'E',
+                ],
+                [
+                    'regulation_type' => 'Peraturan Perusahaan',
+                    'article_number' => '47',
+                    'paragraph_number' => '1',
+                    'article_letter' => '',
+                ],
+            ],
         ]);
 
         $this->postJson('/hr/employees/EMP-SP-1/warning-letter', $payload)
             ->assertCreated();
 
         $document = EmployeeDocument::query()->where('employee_id', 'EMP-SP-1')->where('doc_code', 'SP')->firstOrFail();
-        $this->assertStringContainsString('Pasal 46 ayat (1) huruf e Peraturan Perusahaan', (string) $document->notes);
+        $this->assertStringContainsString(
+            'Pasal 46 ayat (1) huruf e Peraturan Perusahaan; Pasal 47 ayat (1) Peraturan Perusahaan',
+            (string) $document->notes
+        );
     }
 
     public function test_structured_regulation_fields_reject_invalid_values(): void
@@ -262,10 +278,14 @@ class WarningLetterTest extends TestCase
         $this->postJson('/hr/employees/EMP-SP-1/warning-letter', $this->payload([
             'level' => 'SP2',
             'regulation_reference' => '',
-            'regulation_type' => 'Peraturan Perusahaan',
-            'article_number' => '40',
-            'paragraph_number' => '2',
-            'article_letter' => '',
+            'regulation_references' => [
+                [
+                    'regulation_type' => 'Peraturan Perusahaan',
+                    'article_number' => '40',
+                    'paragraph_number' => '2',
+                    'article_letter' => '',
+                ],
+            ],
         ]))
             ->assertCreated();
     }
@@ -277,11 +297,21 @@ class WarningLetterTest extends TestCase
         $this->postJson('/hr/employees/EMP-SP-1/warning-letter', $this->payload([
             'level' => 'SP3',
             'regulation_reference' => '',
-            'regulation_type' => 'Peraturan Perusahaan',
-            'article_number' => '',
+            'regulation_references' => [
+                [
+                    'regulation_type' => 'Peraturan Perusahaan',
+                    'article_number' => '',
+                    'paragraph_number' => '1.5',
+                    'article_letter' => 'ab',
+                ],
+            ],
         ]))
             ->assertStatus(422)
-            ->assertJsonValidationErrors(['article_number']);
+            ->assertJsonValidationErrors([
+                'regulation_references.0.article_number',
+                'regulation_references.0.paragraph_number',
+                'regulation_references.0.article_letter',
+            ]);
     }
 
     public function test_validity_is_static_per_level(): void
@@ -377,6 +407,12 @@ class WarningLetterTest extends TestCase
         $this->assertStringContainsString('Tanggal kejadian: 22 September 2026', $html);
         $this->assertStringContainsString('6 (enam) bulan', $html);
         $this->assertStringContainsString('Tangerang, 29 September 2026', $html);
+        $this->assertStringContainsString('<td colspan="2" class="signature-date">Tangerang, 29 September 2026</td>', $html);
+        $this->assertStringContainsString('<td class="employee-sign">', $html);
+        $this->assertLessThan(
+            strpos($html, 'Yang Bersangkutan'),
+            strpos($html, 'class="signature-date"')
+        );
         $this->assertStringContainsString('M. Sigit Trisetyo', $html);
         $this->assertStringContainsString('Hisar Hesti', $html);
         $this->assertStringContainsString('Branch Manager Lampung', $html);
@@ -519,12 +555,17 @@ class WarningLetterTest extends TestCase
             ->assertSee('id="wlCorrectiveSection"', false)
             ->assertSee('id="wlCategoryField"', false)
             ->assertSee('id="wlSuperiorPosition"', false)
-            ->assertSee('id="wlRegulationType"', false)
-            ->assertSee('id="wlArticleNumber"', false)
-            ->assertSee('id="wlParagraphNumber"', false)
-            ->assertSee('id="wlArticleLetter"', false)
+            ->assertSee('data-regulation-field="regulation_type"', false)
+            ->assertSee('data-regulation-field="article_number"', false)
+            ->assertSee('data-regulation-field="paragraph_number"', false)
+            ->assertSee('data-regulation-field="article_letter"', false)
+            ->assertSee('id="wlAddRegulation"', false)
             ->assertSee('SP-2/SP-3: dasar ketentuan opsional', false)
             ->assertSee('id="wlEmpLocation"', false)
+            ->assertDontSee('id="wlRegulationType"', false)
+            ->assertDontSee('id="wlArticleNumber"', false)
+            ->assertDontSee('id="wlParagraphNumber"', false)
+            ->assertDontSee('id="wlArticleLetter"', false)
             ->assertSee('Surat Peringatan Pertama (SP-1)');
 
         $this->postJson('/hr/employees/EMP-SP-1/warning-letter', $this->payload())->assertCreated();

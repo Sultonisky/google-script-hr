@@ -112,41 +112,92 @@
                             </div>
                             <div class="col-12" id="wlRegulationField">
                                 <div id="wlStructuredRegulation">
-                                    <label class="form-label fw-semibold" style="font-size:13px" for="wlRegulationType">
+                                    <label class="form-label fw-semibold" style="font-size:13px">
                                         Jenis Peraturan
                                         <span class="text-danger" id="wlRegulationRequired" style="display:none">*</span>
                                         <span class="text-muted fw-normal" id="wlRegulationOptional">(opsional)</span>
                                     </label>
-                                    <div class="row g-2">
-                                        <div class="col-12">
-                                            <select class="form-select form-select-sm" name="regulation_type" id="wlRegulationType" disabled>
-                                                <option value="">— Pilih jenis peraturan (jika diisi) —</option>
-                                                @foreach (\App\Services\WarningLetterService::REGULATION_TYPES as $regulationType)
-                                                    <option value="{{ $regulationType }}">{{ $regulationType }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                        <div class="col-sm-4">
-                                            <label class="form-label mb-1" style="font-size:12px" for="wlArticleNumber">
-                                                Pasal <span class="text-danger" id="wlArticleRequired" style="display:none">*</span>
-                                                <span class="text-muted fw-normal" id="wlArticleOptional">(opsional)</span>
-                                            </label>
-                                            <input type="number" class="form-control form-control-sm" name="article_number" id="wlArticleNumber"
-                                                min="1" max="9999" step="1" inputmode="numeric" placeholder="Contoh: 46" />
-                                        </div>
-                                        <div class="col-sm-4">
-                                            <label class="form-label mb-1" style="font-size:12px" for="wlParagraphNumber">Ayat <span class="text-muted fw-normal">(opsional)</span></label>
-                                            <input type="number" class="form-control form-control-sm" name="paragraph_number" id="wlParagraphNumber"
-                                                min="1" max="999" step="1" inputmode="numeric" placeholder="Contoh: 1" disabled />
-                                        </div>
-                                        <div class="col-sm-4">
-                                            <label class="form-label mb-1" style="font-size:12px" for="wlArticleLetter">Huruf <span class="text-muted fw-normal">(opsional)</span></label>
-                                            <input type="text" class="form-control form-control-sm text-lowercase" name="article_letter" id="wlArticleLetter"
-                                                maxlength="1" pattern="[A-Za-z]" placeholder="Contoh: e" disabled />
+                                    <div id="wlRegulationRows">
+                                        <div class="border rounded-3 p-3 mb-2 wl-regulation-row">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="small fw-semibold wl-regulation-row-title">Dasar ketentuan 1</span>
+                                                <button type="button" class="btn btn-sm btn-outline-danger wl-remove-regulation" aria-label="Hapus dasar ketentuan" style="display:none">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                            <div class="row g-2">
+                                                <div class="col-12">
+                                                    <label class="form-label mb-1" style="font-size:12px">Jenis peraturan</label>
+                                                    <select class="form-select form-select-sm" data-regulation-field="regulation_type" name="regulation_references[0][regulation_type]">
+                                                        <option value="">— Pilih jenis peraturan —</option>
+                                                        @foreach (\App\Services\WarningLetterService::REGULATION_TYPES as $regulationType)
+                                                            <option value="{{ $regulationType }}">{{ $regulationType }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                                <div class="col-sm-4">
+                                                    <label class="form-label mb-1" style="font-size:12px">Pasal</label>
+                                                    <input type="number" class="form-control form-control-sm" data-regulation-field="article_number"
+                                                        name="regulation_references[0][article_number]" min="1" max="9999" step="1"
+                                                        inputmode="numeric" placeholder="Contoh: 46" />
+                                                </div>
+                                                <div class="col-sm-4">
+                                                    <label class="form-label mb-1" style="font-size:12px">Ayat <span class="text-muted fw-normal">(opsional)</span></label>
+                                                    <input type="number" class="form-control form-control-sm" data-regulation-field="paragraph_number"
+                                                        name="regulation_references[0][paragraph_number]" min="1" max="999" step="1"
+                                                        inputmode="numeric" placeholder="Contoh: 1" />
+                                                </div>
+                                                <div class="col-sm-4">
+                                                    <label class="form-label mb-1" style="font-size:12px">Huruf <span class="text-muted fw-normal">(opsional)</span></label>
+                                                    <input type="text" class="form-control form-control-sm text-lowercase" data-regulation-field="article_letter"
+                                                        name="regulation_references[0][article_letter]" maxlength="1" pattern="[A-Za-z]" placeholder="Contoh: e" />
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="form-text" id="wlRegulationHelp" style="font-size:11px">SP-2/SP-3: dasar ketentuan opsional. Jika diisi, jenis peraturan dan nomor pasal wajib dilengkapi.</div>
-                                    <div class="small mt-2 text-muted" id="wlRegulationPreview" aria-live="polite"></div>
+                                    <template id="wlRegulationRowTemplate">
+                                        <div class="border rounded-3 p-3 mb-2 wl-regulation-row">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="small fw-semibold wl-regulation-row-title"></span>
+                                                <button type="button" class="btn btn-sm btn-outline-danger wl-remove-regulation" aria-label="Hapus dasar ketentuan">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                            <div class="row g-2">
+                                                <div class="col-12">
+                                                    <label class="form-label mb-1" style="font-size:12px">Jenis peraturan</label>
+                                                    <select class="form-select form-select-sm" data-regulation-field="regulation_type">
+                                                        <option value="">— Pilih jenis peraturan —</option>
+                                                        @foreach (\App\Services\WarningLetterService::REGULATION_TYPES as $regulationType)
+                                                            <option value="{{ $regulationType }}">{{ $regulationType }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                                <div class="col-sm-4">
+                                                    <label class="form-label mb-1" style="font-size:12px">Pasal</label>
+                                                    <input type="number" class="form-control form-control-sm" data-regulation-field="article_number"
+                                                        min="1" max="9999" step="1" inputmode="numeric" placeholder="Contoh: 46" />
+                                                </div>
+                                                <div class="col-sm-4">
+                                                    <label class="form-label mb-1" style="font-size:12px">Ayat <span class="text-muted fw-normal">(opsional)</span></label>
+                                                    <input type="number" class="form-control form-control-sm" data-regulation-field="paragraph_number"
+                                                        min="1" max="999" step="1" inputmode="numeric" placeholder="Contoh: 1" />
+                                                </div>
+                                                <div class="col-sm-4">
+                                                    <label class="form-label mb-1" style="font-size:12px">Huruf <span class="text-muted fw-normal">(opsional)</span></label>
+                                                    <input type="text" class="form-control form-control-sm text-lowercase" data-regulation-field="article_letter"
+                                                        maxlength="1" pattern="[A-Za-z]" placeholder="Contoh: e" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <div class="d-flex justify-content-between align-items-center gap-2">
+                                        <div class="form-text" id="wlRegulationHelp" style="font-size:11px">SP-2/SP-3: dasar ketentuan opsional. Jika diisi, jenis peraturan dan nomor pasal wajib dilengkapi.</div>
+                                        <button type="button" class="btn btn-sm btn-outline-primary text-nowrap" id="wlAddRegulation">
+                                            <i class="bi bi-plus-lg me-1"></i>Tambah pasal
+                                        </button>
+                                    </div>
+                                    <ol class="small mt-2 mb-0 ps-3 text-muted" id="wlRegulationPreview" aria-live="polite"></ol>
                                 </div>
                             </div>
                             <div class="col-md-6" id="wlSuperiorPositionField">
@@ -275,17 +326,14 @@
             el('wlIncidentDateField').style.display = isSp1 ? 'none' : '';
             el('wlCategory').required = !isSp1;
             el('wlStructuredRegulation').style.display = '';
-            ['wlRegulationType', 'wlArticleNumber', 'wlParagraphNumber', 'wlArticleLetter'].forEach(function(id) {
-                el(id).disabled = false;
+            regulationRows().forEach(function(row) {
+                row.querySelector('[data-regulation-field="regulation_type"]').required = isSp1;
+                row.querySelector('[data-regulation-field="article_number"]').required = isSp1;
             });
-            el('wlRegulationType').required = isSp1;
-            el('wlArticleNumber').required = isSp1;
             el('wlRegulationRequired').style.display = isSp1 ? '' : 'none';
             el('wlRegulationOptional').style.display = isSp1 ? 'none' : '';
-            el('wlArticleRequired').style.display = isSp1 ? '' : 'none';
-            el('wlArticleOptional').style.display = isSp1 ? 'none' : '';
             el('wlRegulationHelp').textContent = isSp1
-                ? 'Jenis peraturan dan nomor pasal wajib diisi. Ayat dan huruf diisi jika tercantum dalam ketentuan.'
+                ? 'Tambahkan satu atau lebih dasar ketentuan. Jenis peraturan dan nomor pasal wajib diisi pada setiap baris.'
                 : 'SP-2/SP-3: dasar ketentuan opsional. Jika diisi, jenis peraturan dan nomor pasal wajib dilengkapi.';
             refreshRegulationPreview();
             el('wlSuperiorPositionField').style.display = isSp1 ? '' : 'none';
@@ -293,16 +341,50 @@
         }
 
         function refreshRegulationPreview() {
-            var parts = [];
-            var article = el('wlArticleNumber').value.trim();
-            var paragraph = el('wlParagraphNumber').value.trim();
-            var letter = el('wlArticleLetter').value.trim().toLowerCase();
-            var type = el('wlRegulationType').value;
-            if (article) parts.push('Pasal ' + article);
-            if (paragraph) parts.push('ayat (' + paragraph + ')');
-            if (letter) parts.push('huruf ' + letter);
-            if (type) parts.push(type);
-            el('wlRegulationPreview').textContent = parts.length ? 'Format di surat: ' + parts.join(' ') : '';
+            var preview = el('wlRegulationPreview');
+            preview.innerHTML = '';
+            regulationRows().forEach(function(row) {
+                var article = row.querySelector('[data-regulation-field="article_number"]').value.trim();
+                var paragraph = row.querySelector('[data-regulation-field="paragraph_number"]').value.trim();
+                var letter = row.querySelector('[data-regulation-field="article_letter"]').value.trim().toLowerCase();
+                var type = row.querySelector('[data-regulation-field="regulation_type"]').value;
+                var parts = [];
+                if (article) parts.push('Pasal ' + article);
+                if (paragraph) parts.push('ayat (' + paragraph + ')');
+                if (letter) parts.push('huruf ' + letter);
+                if (type) parts.push(type);
+                if (!parts.length) return;
+                var item = document.createElement('li');
+                item.textContent = parts.join(' ');
+                preview.appendChild(item);
+            });
+        }
+
+        function regulationRows() {
+            return Array.prototype.slice.call(el('wlRegulationRows').querySelectorAll('.wl-regulation-row'));
+        }
+
+        function updateRegulationRows() {
+            var rows = regulationRows();
+            rows.forEach(function(row, index) {
+                row.querySelector('.wl-regulation-row-title').textContent = 'Dasar ketentuan ' + (index + 1);
+                var remove = row.querySelector('.wl-remove-regulation');
+                remove.style.display = rows.length > 1 ? '' : 'none';
+                row.querySelectorAll('[data-regulation-field]').forEach(function(input) {
+                    input.name = 'regulation_references[' + index + '][' + input.getAttribute('data-regulation-field') + ']';
+                });
+            });
+            el('wlAddRegulation').disabled = rows.length >= 10;
+            refreshRegulationPreview();
+        }
+
+        function resetRegulationRows() {
+            var rows = regulationRows();
+            rows.slice(1).forEach(function(row) { row.remove(); });
+            regulationRows()[0].querySelectorAll('[data-regulation-field]').forEach(function(input) {
+                input.value = '';
+            });
+            updateRegulationRows();
         }
 
         function renderDropdown(query) {
@@ -383,6 +465,7 @@
         function resetModal() {
             var form = el('formWarningLetter');
             if (form) form.reset();
+            resetRegulationRows();
             el('wlEmployeeId').value = '';
             el('wlEmpSearch').value = '';
             el('wlEmpDropdown').style.display = 'none';
@@ -420,12 +503,23 @@
             el('wlDocDate').addEventListener('change', refreshValidUntil);
             el('wlLevel').addEventListener('change', function() { updateLevelFields(); refreshValidUntil(); });
             el('wlDescription').addEventListener('input', function(e) { el('wlDescCount').textContent = e.target.value.length; });
-            ['wlRegulationType', 'wlArticleNumber', 'wlParagraphNumber', 'wlArticleLetter'].forEach(function(id) {
-                el(id).addEventListener('input', refreshRegulationPreview);
-                el(id).addEventListener('change', refreshRegulationPreview);
+            el('wlRegulationRows').addEventListener('input', refreshRegulationPreview);
+            el('wlRegulationRows').addEventListener('change', refreshRegulationPreview);
+            el('wlRegulationRows').addEventListener('click', function(e) {
+                var remove = e.target.closest('.wl-remove-regulation');
+                if (!remove || regulationRows().length < 2) return;
+                remove.closest('.wl-regulation-row').remove();
+                updateRegulationRows();
+            });
+            el('wlAddRegulation').addEventListener('click', function() {
+                var rows = regulationRows();
+                if (rows.length >= 10) return;
+                el('wlRegulationRows').appendChild(el('wlRegulationRowTemplate').content.firstElementChild.cloneNode(true));
+                updateRegulationRows();
             });
             el('warningLetterModal').addEventListener('hidden.bs.modal', resetModal);
             updateLevelFields();
+            updateRegulationRows();
 
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
@@ -438,16 +532,38 @@
                 if (!isFirstTemplate && !el('wlCategory').value) missing.push('Kategori pelanggaran wajib dipilih.');
                 if (el('wlDescription').value.trim().length < 10) missing.push('Uraian pelanggaran minimal 10 karakter.');
                 if (!el('wlDocDate').value) missing.push('Tanggal surat wajib diisi.');
-                var hasRegulationPart = el('wlRegulationType').value
-                    || el('wlArticleNumber').value
-                    || el('wlParagraphNumber').value
-                    || el('wlArticleLetter').value;
-                if (isFirstTemplate && !el('wlRegulationType').value) missing.push('Jenis peraturan wajib dipilih.');
-                if (isFirstTemplate && !el('wlArticleNumber').value) missing.push('Nomor pasal wajib diisi.');
-                if (!isFirstTemplate && hasRegulationPart && !el('wlRegulationType').value) missing.push('Pilih jenis peraturan atau kosongkan seluruh dasar ketentuan.');
-                if (!isFirstTemplate && hasRegulationPart && !el('wlArticleNumber').value) missing.push('Isi nomor pasal atau kosongkan seluruh dasar ketentuan.');
+                var hasRegulationError = false;
+                regulationRows().forEach(function(row, index) {
+                    var type = row.querySelector('[data-regulation-field="regulation_type"]').value;
+                    var article = row.querySelector('[data-regulation-field="article_number"]').value;
+                    var paragraph = row.querySelector('[data-regulation-field="paragraph_number"]').value;
+                    var letter = row.querySelector('[data-regulation-field="article_letter"]').value.trim();
+                    var hasPart = type || article || paragraph || letter;
+                    if (isFirstTemplate && !hasPart) {
+                        missing.push('Lengkapi dasar ketentuan ' + (index + 1) + ' atau hapus baris tersebut.');
+                        hasRegulationError = true;
+                    } else if (hasPart && !type) {
+                        missing.push('Pilih jenis peraturan pada dasar ketentuan ' + (index + 1) + '.');
+                        hasRegulationError = true;
+                    } else if (hasPart && !article) {
+                        missing.push('Isi nomor pasal pada dasar ketentuan ' + (index + 1) + '.');
+                        hasRegulationError = true;
+                    }
+                });
+                if (hasRegulationError) return;
                 if (isFirstTemplate && !el('wlSuperiorPosition').value.trim()) missing.push('Jabatan atasan wajib diisi.');
                 if (missing.length) { showErrors(missing); return; }
+
+                if (!isFirstTemplate) {
+                    regulationRows().filter(function(row) {
+                        return !Array.prototype.some.call(row.querySelectorAll('[data-regulation-field]'), function(input) {
+                            return input.value.trim() !== '';
+                        });
+                    }).forEach(function(row) {
+                        if (regulationRows().length > 1) row.remove();
+                    });
+                    updateRegulationRows();
+                }
 
                 submitting = true;
                 var origHtml = btn.innerHTML;

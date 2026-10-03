@@ -108,12 +108,18 @@
             vertical-align: top;
         }
 
+        .signatures .employee-sign,
         .signatures .company-sign {
             text-align: center;
         }
 
+        .signature-date {
+            padding-bottom: 8px !important;
+            text-align: center;
+        }
+
         .sign-space {
-            height: 34px;
+            height: 72px;
         }
 
         .sign-name {
@@ -282,14 +288,16 @@
 
     <table class="signatures">
         <tr>
-            <td>
+            <td colspan="2" class="signature-date">{{ $companyCity }}, {{ $docDateFormatted }}</td>
+        </tr>
+        <tr>
+            <td class="employee-sign">
                 Yang Bersangkutan
                 <div class="sign-space"></div>
                 <span class="sign-name">{{ $employeeName }}</span><br>
                 {{ $employeePosition }}
             </td>
             <td class="company-sign">
-                {{ $companyCity }}, {{ $docDateFormatted }}<br>
                 {{ $companyName }}<br>
                 Atasan
                 <div class="sign-space"></div>
