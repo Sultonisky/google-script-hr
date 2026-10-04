@@ -7,9 +7,11 @@ use App\Enums\SkDocumentType;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\EmployeeDocumentRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 class AbsenceSummonsService
 {
@@ -20,54 +22,27 @@ class AbsenceSummonsService
         private PdfGeneratorService $pdfService,
         private EmployeeDocumentArchiveService $archive,
         private AuditLogRepositoryInterface $auditRepo,
+        private LetterAttachmentImageService $attachmentImages,
     ) {}
 
     /**
-     * @param  array{level:string, doc_date:string, absence_start_date:string, absence_end_date:string, absence_second_start_date?:?string, absence_second_end_date?:?string, meeting_date:string, meeting_time:string, meeting_location:string, meeting_agenda:string}  $data
+     * @param  array{level:string, doc_date:string, absence_start_date:string, absence_end_date:string, absence_second_start_date?:?string, absence_second_end_date?:?string, meeting_date:string, meeting_time:string, meeting_location:string, meeting_agenda:string, attachment_count?:?int, attachments?:array<int, UploadedFile|null>, attachment_labels?:array<int, ?string>}  $data
      * @return array{success:bool, message:string, status:int, document_id?:string, nomor?:string, file_name?:string}
      */
     public function generate(string $employeeId, array $data, string $issuedBy, ?string $archivedBy = null): array
     {
-        $employee = $this->employees->findById($employeeId);
-        if (! $employee) {
-            return ['success' => false, 'message' => 'Karyawan tidak ditemukan.', 'status' => 404];
+        $context = $this->resolveContext($employeeId, $data);
+        if (isset($context['error'])) {
+            return $context['error'];
         }
-        if (! WarningLetterService::isEligible($employee)) {
-            return [
-                'success' => false,
-                'message' => 'Surat Penggilan Mangkir hanya dapat diterbitkan untuk karyawan berstatus Contract/PKWT atau Permanent/PKWTT.',
-                'status' => 422,
-            ];
-        }
-
-        $level = AbsenceSummonsLevel::from($data['level']);
-        $firstSummons = $level === AbsenceSummonsLevel::SECOND
-            ? $this->latestFirstSummons($employee->employeeId)
-            : null;
-        if ($level === AbsenceSummonsLevel::SECOND && $firstSummons === null) {
-            return [
-                'success' => false,
-                'message' => 'Panggilan Kerja II hanya dapat diterbitkan setelah Panggilan Kerja I tercatat untuk karyawan ini.',
-                'status' => 422,
-            ];
-        }
+        ['employee' => $employee, 'level' => $level, 'company' => $company] = $context;
 
         $docDate = Carbon::parse($data['doc_date'], 'Asia/Jakarta')->startOfDay();
-        $absenceStartDate = Carbon::parse($data['absence_start_date'], 'Asia/Jakarta')->startOfDay();
-        $absenceEndDate = Carbon::parse($data['absence_end_date'], 'Asia/Jakarta')->startOfDay();
-        $absenceSecondStartDate = filled($data['absence_second_start_date'] ?? null)
-            ? Carbon::parse($data['absence_second_start_date'], 'Asia/Jakarta')->startOfDay()
-            : null;
-        $absenceSecondEndDate = filled($data['absence_second_end_date'] ?? null)
-            ? Carbon::parse($data['absence_second_end_date'], 'Asia/Jakarta')->startOfDay()
-            : null;
         $issuedAt = $docDate->copy()->setTimeFrom(now()->timezone('Asia/Jakarta'));
-        $absencePeriod = $absenceStartDate->format('Y-m-d').' s.d. '.$absenceEndDate->format('Y-m-d');
-        if ($absenceSecondStartDate && $absenceSecondEndDate) {
-            $absencePeriod .= '; '.$absenceSecondStartDate->format('Y-m-d').' s.d. '.$absenceSecondEndDate->format('Y-m-d');
+        $absencePeriod = $data['absence_start_date'].' s.d. '.$this->absenceEndDate($level, $data);
+        if (filled($data['absence_second_start_date'] ?? null) && filled($data['absence_second_end_date'] ?? null)) {
+            $absencePeriod .= '; '.$data['absence_second_start_date'].' s.d. '.$data['absence_second_end_date'];
         }
-        $entityCode = strtoupper(trim($data['company_entity']));
-        $company = config("hris.mpr.companies.{$entityCode}");
 
         $issued = $this->skNumbers->issue(
             employeeId: $employee->employeeId,
@@ -81,27 +56,7 @@ class AbsenceSummonsService
             documentIdSuffix: $level->value.'-'.Str::upper((string) Str::uuid()),
         );
         $nomor = $issued['nomor'];
-        $extraData = [
-            'sk_number' => $nomor,
-            'doc_date' => $docDate->format('Y-m-d'),
-            'absence_start_date' => $absenceStartDate->format('Y-m-d'),
-            'absence_end_date' => $absenceEndDate->format('Y-m-d'),
-            'absence_second_start_date' => $absenceSecondStartDate?->format('Y-m-d'),
-            'absence_second_end_date' => $absenceSecondEndDate?->format('Y-m-d'),
-            'meeting_date' => Carbon::parse($data['meeting_date'], 'Asia/Jakarta')->format('Y-m-d'),
-            'meeting_time' => $data['meeting_time'],
-            'meeting_location' => trim($data['meeting_location']),
-            'meeting_agenda' => trim($data['meeting_agenda']),
-            'company_entity' => $entityCode,
-            'summons_level' => $level->value,
-            'first_summons_number' => $firstSummons['Nomor'] ?? null,
-            'first_summons_date' => isset($firstSummons['Issued At'])
-                ? Carbon::parse($firstSummons['Issued At'], 'Asia/Jakarta')->format('Y-m-d')
-                : null,
-            'working_days' => $level === AbsenceSummonsLevel::SECOND
-                ? (int) $data['working_days']
-                : null,
-        ];
+        $extraData = $this->buildExtraData($context, $data, $nomor);
         $fileName = sprintf(
             'Surat_Penggilan_Mangkir_%s_%s_Employee_%s.pdf',
             $level === AbsenceSummonsLevel::FIRST ? 'I' : 'II',
@@ -152,6 +107,144 @@ class AbsenceSummonsService
             'nomor' => $nomor,
             'file_name' => $fileName,
         ];
+    }
+
+    /**
+     * Render a draft PDF from the form input without issuing a number or archiving.
+     *
+     * @return array{success:bool, status:int, message?:string, content?:string, file_name?:string}
+     */
+    public function preview(string $employeeId, array $data): array
+    {
+        $context = $this->resolveContext($employeeId, $data);
+        if (isset($context['error'])) {
+            return $context['error'];
+        }
+
+        $extraData = $this->buildExtraData($context, $data, null) + ['draft' => true];
+
+        return [
+            'success' => true,
+            'status' => 200,
+            'content' => $this->pdfService->generateAbsenceSummonsPdf($context['employee'], $extraData)->output(),
+            'file_name' => sprintf(
+                'DRAFT_Surat_Panggilan_Kerja_%s.pdf',
+                $context['level'] === AbsenceSummonsLevel::FIRST ? 'I' : 'II'
+            ),
+        ];
+    }
+
+    /**
+     * @return array{error: array{success:bool, message:string, status:int}}|array{employee:\App\DTOs\EmployeeData, level:AbsenceSummonsLevel, firstSummons:?array, entityCode:string, company:array, attachments:list<array{label:string, src:string, width:int, height:int}>}
+     */
+    private function resolveContext(string $employeeId, array $data): array
+    {
+        $employee = $this->employees->findById($employeeId);
+        if (! $employee) {
+            return ['error' => ['success' => false, 'message' => 'Karyawan tidak ditemukan.', 'status' => 404]];
+        }
+        if (! WarningLetterService::isEligible($employee)) {
+            return ['error' => [
+                'success' => false,
+                'message' => 'Surat Penggilan Mangkir hanya dapat diterbitkan untuk karyawan berstatus Contract/PKWT atau Permanent/PKWTT.',
+                'status' => 422,
+            ]];
+        }
+
+        $level = AbsenceSummonsLevel::from($data['level']);
+        $firstSummons = $level === AbsenceSummonsLevel::SECOND
+            ? $this->latestFirstSummons($employee->employeeId)
+            : null;
+        if ($level === AbsenceSummonsLevel::SECOND && $firstSummons === null) {
+            return ['error' => [
+                'success' => false,
+                'message' => 'Panggilan Kerja II hanya dapat diterbitkan setelah Panggilan Kerja I tercatat untuk karyawan ini.',
+                'status' => 422,
+            ]];
+        }
+
+        try {
+            $attachments = $this->prepareAttachments($data);
+        } catch (RuntimeException $e) {
+            return ['error' => ['success' => false, 'message' => $e->getMessage(), 'status' => 422]];
+        }
+
+        $entityCode = $this->skNumbers->resolveEntityCode((string) ($employee->branchName ?? ''));
+
+        return [
+            'employee' => $employee,
+            'level' => $level,
+            'firstSummons' => $firstSummons,
+            'entityCode' => $entityCode,
+            'company' => config("hris.mpr.companies.{$entityCode}"),
+            'attachments' => $attachments,
+        ];
+    }
+
+    /**
+     * @return list<array{label:string, src:string, width:int, height:int}>
+     */
+    private function prepareAttachments(array $data): array
+    {
+        $labels = array_values($data['attachment_labels'] ?? []);
+        $attachments = [];
+        foreach (array_values($data['attachments'] ?? []) as $index => $file) {
+            if (! $file instanceof UploadedFile) {
+                continue;
+            }
+            $number = count($attachments) + 1;
+            try {
+                $image = $this->attachmentImages->prepare($file);
+            } catch (RuntimeException) {
+                throw new RuntimeException("File lampiran {$number} bukan gambar yang valid atau rusak.");
+            }
+            $attachments[] = ['label' => trim((string) ($labels[$index] ?? ''))] + $image;
+        }
+
+        return $attachments;
+    }
+
+    private function buildExtraData(array $context, array $data, ?string $nomor): array
+    {
+        $date = static fn (?string $value): ?string => filled($value)
+            ? Carbon::parse($value, 'Asia/Jakarta')->format('Y-m-d')
+            : null;
+        $level = $context['level'];
+        $firstSummons = $context['firstSummons'];
+
+        return [
+            'sk_number' => $nomor,
+            'doc_date' => $date($data['doc_date']),
+            'absence_start_date' => $date($data['absence_start_date']),
+            'absence_end_date' => $date($this->absenceEndDate($level, $data)),
+            'absence_second_start_date' => $date($data['absence_second_start_date'] ?? null),
+            'absence_second_end_date' => $date($data['absence_second_end_date'] ?? null),
+            'meeting_date' => $date($data['meeting_date']),
+            'meeting_time' => $data['meeting_time'],
+            'meeting_location' => trim($data['meeting_location']),
+            'meeting_agenda' => trim((string) ($data['meeting_agenda'] ?? '')) ?: null,
+            'attachment_count' => $context['attachments'] !== []
+                ? count($context['attachments'])
+                : (isset($data['attachment_count']) ? (int) $data['attachment_count'] : null),
+            'attachments' => $context['attachments'],
+            'company_entity' => $context['entityCode'],
+            'summons_level' => $level->value,
+            'first_summons_number' => $firstSummons['Nomor'] ?? null,
+            'first_summons_date' => $date($firstSummons['Issued At'] ?? null),
+            'working_days' => $level === AbsenceSummonsLevel::SECOND
+                ? (int) $data['working_days']
+                : null,
+        ];
+    }
+
+    /**
+     * Panggilan Kerja II menghitung mangkir sampai dengan tanggal surat.
+     */
+    private function absenceEndDate(AbsenceSummonsLevel $level, array $data): ?string
+    {
+        return $level === AbsenceSummonsLevel::SECOND
+            ? $data['doc_date']
+            : ($data['absence_end_date'] ?? null);
     }
 
     /**
