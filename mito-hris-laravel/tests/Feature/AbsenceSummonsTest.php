@@ -8,6 +8,7 @@ use App\Models\EmployeeDocument;
 use App\Models\EmployeeDocumentFile;
 use App\Providers\AppServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Session;
 use Tests\TestCase;
 
@@ -66,7 +67,6 @@ class AbsenceSummonsTest extends TestCase
             'absence_end_date' => '2026-09-23',
             'absence_second_start_date' => '2026-09-25',
             'absence_second_end_date' => '2026-09-26',
-            'company_entity' => 'MSI',
             'meeting_date' => '2026-10-15',
             'meeting_time' => '13:00',
             'meeting_location' => 'Kantor HR Jakarta',
@@ -134,12 +134,6 @@ class AbsenceSummonsTest extends TestCase
             ->assertStatus(422)
             ->assertJsonValidationErrors(['working_days']);
 
-        $this->postJson('/hr/employees/EMP-SPM-1/absence-summons', $this->payload([
-            'company_entity' => 'UNKNOWN',
-        ]))
-            ->assertStatus(422)
-            ->assertJsonValidationErrors(['company_entity']);
-
         Employee::query()->where('employee_id', 'EMP-SPM-1')->update(['status_employee' => 'Outsource']);
         $this->postJson('/hr/employees/EMP-SPM-1/absence-summons', $this->payload())
             ->assertStatus(422)
@@ -204,7 +198,9 @@ class AbsenceSummonsTest extends TestCase
         $this->assertStringContainsString('1 Oktober 2026 sampai dengan 3 Oktober 2026', $html);
         $this->assertStringContainsString('6 Oktober 2026 sampai dengan 8 Oktober 2026', $html);
         $this->assertStringContainsString('Kamis, 15 Oktober 2026', $html);
-        $this->assertStringContainsString('13:00 WIB', $html);
+        $this->assertStringContainsString('13.00 WIB', $html);
+        $this->assertStringContainsString('Tangerang, 29 September 2026', $html);
+        $this->assertStringNotContainsString('09 September 2026', $html);
         $this->assertStringContainsString('Kantor HR Jakarta', $html);
         $this->assertStringContainsString('Klarifikasi Ketidakhadiran/Mangkir', $html);
         $this->assertStringContainsString('Arsip/Personal File', $html);
@@ -214,7 +210,7 @@ class AbsenceSummonsTest extends TestCase
         $this->assertStringContainsString('007/SPM/MSI/IX/2026', $identityHtml);
         $this->assertStringContainsString('Rina Kartika', $identityHtml);
         $this->assertStringContainsString('Staff Finance (Jakarta)', $identityHtml);
-        $this->assertStringContainsString('3603126603950003', $identityHtml);
+        $this->assertStringContainsString('3603 1266 0395 0003', $identityHtml);
         $this->assertStringContainsString('Jl. Mawar No. 10, Jakarta', $identityHtml);
         $this->assertStringNotContainsString('Mila Hermawati', $identityHtml);
     }
@@ -242,17 +238,25 @@ class AbsenceSummonsTest extends TestCase
         $this->assertStringNotContainsString('kembali tercatat tidak hadir', $html);
     }
 
-    public function test_selected_stein_entity_uses_stein_letterhead_and_number_entity_code(): void
+    public function test_entity_follows_employee_branch_and_ignores_submitted_entity(): void
     {
         $this->actingAsAdmin();
 
-        $response = $this->postJson('/hr/employees/EMP-SPM-1/absence-summons', $this->payload([
+        $this->postJson('/hr/employees/EMP-SPM-1/absence-summons', $this->payload([
             'company_entity' => 'SPI',
+        ]))
+            ->assertCreated()
+            ->assertJson(['success' => true, 'nomor' => '007/SPM/MSI/IX/2026']);
+
+        Employee::query()->where('employee_id', 'EMP-SPM-1')->update(['branch_name' => 'PT Stein Perkasa Internasional']);
+        $response = $this->postJson('/hr/employees/EMP-SPM-1/absence-summons', $this->payload([
+            'company_entity' => 'MSI',
         ]))
             ->assertCreated()
             ->assertJson(['success' => true, 'nomor' => '007/SPM/SPI/IX/2026']);
 
-        $this->get($response->json('pdf_url'))->assertOk();
+        $pdf = $this->get($response->json('pdf_url'))->assertOk();
+        $this->assertStringStartsWith('%PDF', $pdf->getContent());
 
         $html = view('pdf.surat-pemanggilan-mangkir', [
             'employee' => EmployeeData::fromSheetRow([
@@ -287,10 +291,20 @@ class AbsenceSummonsTest extends TestCase
             ->where('doc_type', 'Surat Penggilan Mangkir')
             ->firstOrFail();
 
-        $response = $this->postJson('/hr/employees/EMP-SPM-1/absence-summons', $this->payload([
+        $this->postJson('/hr/employees/EMP-SPM-1/absence-summons', $this->payload([
             'level' => 'SPM2',
             'working_days' => '8',
+            'absence_start_date' => '2026-09-30',
         ]))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['absence_start_date']);
+
+        $secondPayload = $this->payload([
+            'level' => 'SPM2',
+            'working_days' => '8',
+        ]);
+        unset($secondPayload['absence_end_date'], $secondPayload['meeting_agenda']);
+        $response = $this->postJson('/hr/employees/EMP-SPM-1/absence-summons', $secondPayload)
             ->assertCreated()
             ->assertJson(['success' => true, 'nomor' => '007/SPM/MSI/IX/2026']);
 
@@ -300,6 +314,7 @@ class AbsenceSummonsTest extends TestCase
             ->firstOrFail();
         $this->assertSame('Surat Penggilan Mangkir II', $document->doc_type);
         $this->assertSame('Panggilan Kerja II', $document->reference);
+        $this->assertSame('Periode mangkir: 2026-09-22 s.d. 2026-09-29', $document->notes);
         $this->assertStringContainsString('-SPM-SPM2-', $document->document_id);
         $this->assertNotSame($firstDocument->document_id, $document->document_id);
         $this->assertSame(2, EmployeeDocument::query()->where('employee_id', 'EMP-SPM-1')->where('doc_code', 'SPM')->count());
@@ -320,9 +335,9 @@ class AbsenceSummonsTest extends TestCase
                 'meeting_date' => '2026-10-15',
                 'meeting_time' => '13:00',
                 'meeting_location' => 'Kantor HR Jakarta',
-                'meeting_agenda' => 'Panggilan Kerja II',
+                'meeting_agenda' => 'Agenda Tidak Dipakai',
                 'first_summons_number' => $firstDocument->nomor,
-                'first_summons_date' => '2026-09-29',
+                'first_summons_date' => '2026-09-09',
                 'working_days' => 8,
             ],
             'company' => ['name' => 'PT MAHAKARYA SUKSES INDONESIA', 'city' => 'Tangerang', 'code' => 'MSI'],
@@ -330,14 +345,195 @@ class AbsenceSummonsTest extends TestCase
 
         $this->assertStringContainsString('SURAT PANGGILAN KERJA II', $html);
         $this->assertStringContainsString('Panggilan Kedua/Terakhir', $html);
-        $this->assertStringContainsString('Panggilan Kerja I Nomor', $html);
-        $this->assertStringContainsString($firstDocument->nomor, $html);
-        $this->assertStringContainsString('29 September 2026', $html);
+        $this->assertStringContainsString('Tangerang, 29 September 2026', $html);
+        $this->assertMatchesRegularExpression('/Lampiran<\/td>\s*<td class="colon">:<\/td>\s*<td>2<\/td>/', $html);
+        $this->assertStringContainsString('Panggilan Kerja I Nomor '.$firstDocument->nomor.' tanggal 09 September 2026', $html);
+        $this->assertMatchesRegularExpression('/sejak tanggal\s+22 September 2026 sampai dengan tanggal surat ini/', $html);
         $this->assertStringContainsString('8 hari kerja berturut-turut', $html);
         $this->assertStringNotContainsString('14 hari kerja berturut-turut', $html);
         $this->assertStringContainsString('Rina Kartika', $html);
-        $this->assertStringContainsString('Kamis, 15 Oktober 2026', $html);
-        $this->assertStringContainsString('Pasal 154A', $html);
+        $this->assertMatchesRegularExpression('/Kamis, 15 Oktober 2026, pukul\s+13\.00 WIB, bertempat di Kantor HR Jakarta; dan/', $html);
+        $this->assertStringContainsString('(HRD) PT Mahakarya Sukses Indonesia', $html);
+        $this->assertStringNotContainsString('Agenda Tidak Dipakai', $html);
+        $this->assertStringContainsString('<strong>Pasal 154A ayat (1) huruf j', $html);
+        $this->assertStringContainsString('Dalam hal hubungan kerja berakhir', $html);
+        $this->assertStringContainsString('untuk menjadi perhatian dan dilaksanakan sebagaimana mestinya', $html);
+    }
+
+    public function test_first_summons_pdf_follows_template_salutation_attachment_and_signature(): void
+    {
+        $render = fn (string $gender, array $extra = []) => view('pdf.surat-pemanggilan-mangkir', [
+            'employee' => EmployeeData::fromSheetRow([
+                'Employee ID' => 'EMP-SPM-1',
+                'Full Name' => 'Rina Kartika',
+                'Gender' => $gender,
+            ]),
+            'extraData' => $extra + [
+                'doc_date' => '2026-09-09',
+                'absence_start_date' => '2026-08-31',
+                'absence_end_date' => '2026-09-04',
+                'meeting_date' => '2026-09-10',
+                'meeting_time' => '13:00',
+                'meeting_location' => 'Kantor HR',
+                'meeting_agenda' => 'Klarifikasi Ketidakhadiran/Mangkir',
+            ],
+            'company' => config('hris.mpr.companies.SPI'),
+        ])->render();
+
+        $female = $render('Perempuan');
+        $this->assertStringContainsString('Jakarta, 09 September 2026', $female);
+        $this->assertMatchesRegularExpression('/kepada\s+Saudari untuk:/', $female);
+        $this->assertStringContainsString('kerja sama Saudari, kami ucapkan', $female);
+        $this->assertStringContainsString('Saudara/Saudari tercatat', $female);
+        $this->assertStringContainsString('<strong>31 Agustus 2026 sampai dengan 4 September 2026</strong>.', $female);
+        $this->assertStringContainsString('PT Stein Perkasa Internasional', $female);
+        $this->assertStringNotContainsString('draft-watermark">DRAFT', $female);
+
+        $male = $render('Laki-laki', ['attachment_count' => 0, 'draft' => true]);
+        $this->assertStringContainsString('kerja sama Saudara, kami ucapkan', $male);
+        $this->assertMatchesRegularExpression('/Lampiran<\/td>\s*<td class="colon">:<\/td>\s*<td>-<\/td>/', $male);
+        $this->assertStringContainsString('draft-watermark">DRAFT', $male);
+
+        $unknown = $render('');
+        $this->assertStringContainsString('kerja sama Saudara/Saudari, kami ucapkan', $unknown);
+        $this->assertMatchesRegularExpression('/Lampiran<\/td>\s*<td class="colon">:<\/td>\s*<td>1<\/td>/', $unknown);
+    }
+
+    public function test_preview_renders_draft_without_issuing_number_and_is_private_to_requester(): void
+    {
+        $this->actingAsAdmin();
+
+        $response = $this->postJson('/hr/employees/EMP-SPM-1/absence-summons/preview', $this->payload([
+            'attachment_count' => 2,
+        ]))
+            ->assertOk()
+            ->assertJson(['success' => true]);
+
+        $previewUrl = $response->json('preview_url');
+        $this->assertStringContainsString('/hr/employees/EMP-SPM-1/absence-summons/preview/', $previewUrl);
+        $this->assertSame(0, EmployeeDocument::query()->where('doc_code', 'SPM')->count());
+        $this->assertSame(0, EmployeeDocumentFile::query()->count());
+
+        $pdf = $this->get($previewUrl)
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
+        $this->assertStringStartsWith('%PDF', $pdf->getContent());
+        $this->assertStringContainsString('inline', (string) $pdf->headers->get('Content-Disposition'));
+        $this->assertStringContainsString('DRAFT_Surat_Panggilan_Kerja_I.pdf', (string) $pdf->headers->get('Content-Disposition'));
+
+        $this->get(str_replace('EMP-SPM-1', 'EMP-OTHER', $previewUrl))->assertNotFound();
+
+        Session::put('hr_user', $this->migratedTestUser([
+            'email' => 'super.admin@mito.id',
+            'fullName' => 'Super Admin User',
+            'role' => 'Super Admin',
+            'permissions' => [],
+            'auth_domain' => 'users',
+            'entities' => [],
+            'branch' => '',
+        ]));
+        $this->get($previewUrl)->assertNotFound();
+    }
+
+    public function test_image_attachments_are_appended_as_pdf_pages_and_counted(): void
+    {
+        $this->actingAsAdmin();
+
+        $response = $this->post('/hr/employees/EMP-SPM-1/absence-summons', $this->payload([
+            'attachment_count' => 0,
+            'attachments' => [
+                UploadedFile::fake()->image('rekap-absensi.jpg', 2400, 1200),
+                UploadedFile::fake()->image('resi.png', 600, 900),
+            ],
+            'attachment_labels' => ['Rekap Absensi', ''],
+        ]), ['Accept' => 'application/json'])
+            ->assertCreated()
+            ->assertJson(['success' => true]);
+
+        $pdf = $this->get($response->json('pdf_url'))->assertOk()->getContent();
+        $this->assertSame(3, preg_match_all('/\/Type\s*\/Page[^s]/', $pdf));
+
+        $html = view('pdf.surat-pemanggilan-mangkir', [
+            'employee' => EmployeeData::fromSheetRow(['Employee ID' => 'EMP-SPM-1', 'Full Name' => 'Rina Kartika']),
+            'extraData' => [
+                'attachment_count' => 2,
+                'attachments' => [
+                    ['label' => 'Rekap Absensi', 'src' => 'data:image/jpeg;base64,AAAA', 'width' => 1600, 'height' => 800],
+                    ['label' => '', 'src' => 'data:image/jpeg;base64,BBBB', 'width' => 600, 'height' => 900],
+                ],
+            ],
+            'company' => config('hris.mpr.companies.SPI'),
+        ])->render();
+        $this->assertMatchesRegularExpression('/Lampiran<\/td>\s*<td class="colon">:<\/td>\s*<td>2<\/td>/', $html);
+        $this->assertStringContainsString('Lampiran 1 - Rekap Absensi', $html);
+        $this->assertStringContainsString('>Lampiran 2</div>', $html);
+        $this->assertStringContainsString('width: 690px; height: 345px;', $html);
+        $this->assertStringContainsString('width: 566px; height: 850px;', $html);
+        $this->assertSame(3, substr_count($html, 'alt="Stein Cookware"'));
+
+        $copiesAt = strpos($html, 'Tembusan:');
+        $firstAttachmentAt = strpos($html, 'class="attachment-page" style="page-break-before: always;');
+        $this->assertNotFalse($firstAttachmentAt);
+        $this->assertGreaterThan($copiesAt, $firstAttachmentAt);
+        $this->assertGreaterThan($firstAttachmentAt, strpos($html, 'Lampiran 1 - Rekap Absensi'));
+        $this->assertSame(2, substr_count($html, 'class="attachment-page"'));
+    }
+
+    public function test_attachment_images_are_downscaled_to_jpeg_and_invalid_images_rejected(): void
+    {
+        $service = app(\App\Services\LetterAttachmentImageService::class);
+
+        $image = $service->prepare(UploadedFile::fake()->image('besar.png', 2400, 1200));
+        $this->assertSame(1600, $image['width']);
+        $this->assertSame(800, $image['height']);
+        $this->assertStringStartsWith('data:image/jpeg;base64,', $image['src']);
+
+        $small = $service->prepare(UploadedFile::fake()->image('kecil.jpg', 800, 600));
+        $this->assertSame([800, 600], [$small['width'], $small['height']]);
+
+        $this->expectException(\RuntimeException::class);
+        $service->prepare(UploadedFile::fake()->createWithContent('palsu.jpg', 'bukan gambar'));
+    }
+
+    public function test_attachment_validation_rejects_non_images_oversized_and_too_many_files(): void
+    {
+        $this->actingAsAdmin();
+
+        $this->post('/hr/employees/EMP-SPM-1/absence-summons/preview', $this->payload([
+            'attachments' => [
+                UploadedFile::fake()->create('dokumen.pdf', 100, 'application/pdf'),
+                UploadedFile::fake()->image('besar.jpg')->size(6000),
+            ],
+        ]), ['Accept' => 'application/json'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['attachments.0', 'attachments.1']);
+
+        $this->post('/hr/employees/EMP-SPM-1/absence-summons/preview', $this->payload([
+            'attachments' => array_map(fn ($i) => UploadedFile::fake()->image("foto-{$i}.jpg", 50, 50), range(1, 6)),
+        ]), ['Accept' => 'application/json'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['attachments']);
+
+        $this->assertSame(0, EmployeeDocument::query()->where('doc_code', 'SPM')->count());
+    }
+
+    public function test_preview_uses_same_validation_and_second_summons_rules(): void
+    {
+        $this->actingAsAdmin();
+
+        $this->postJson('/hr/employees/EMP-SPM-1/absence-summons/preview', $this->payload([
+            'meeting_date' => '2026-09-28',
+            'attachment_count' => -1,
+        ]))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['meeting_date', 'attachment_count']);
+
+        $this->postJson('/hr/employees/EMP-SPM-1/absence-summons/preview', $this->payload([
+            'level' => 'SPM2',
+            'working_days' => 7,
+        ]))
+            ->assertStatus(422)
+            ->assertJson(['success' => false]);
     }
 
     public function test_second_absence_summons_requires_an_existing_first_summons(): void
@@ -366,11 +562,12 @@ class AbsenceSummonsTest extends TestCase
             ->assertSee('id="btnAbsenceSummons"', false)
             ->assertSee('id="absenceSummonsModal"', false)
             ->assertSee('Surat Penggilan Mangkir')
-            ->assertSee('name="company_entity"', false)
+            ->assertDontSee('name="company_entity"', false)
+            ->assertSee('id="asCompanyEntity" readonly', false)
+            ->assertSee('"companyEntity":"PT MAHAKARYA SUKSES INDONESIA"', false)
             ->assertSee('name="level"', false)
             ->assertSee('name="working_days"', false)
             ->assertSee('Panggilan Kerja II (Terakhir)')
-            ->assertSee('PT STEIN PERKASA INTERNASIONAL')
             ->assertSee('type="date" lang="id-ID" class="form-control form-control-sm" name="doc_date"', false)
             ->assertSee('type="date" lang="id-ID" class="form-control form-control-sm" name="absence_start_date"', false)
             ->assertSee('type="date" lang="id-ID" class="form-control form-control-sm" name="absence_end_date"', false)
@@ -379,6 +576,9 @@ class AbsenceSummonsTest extends TestCase
             ->assertSee('name="meeting_date"', false)
             ->assertSee('name="meeting_time"', false)
             ->assertSee('name="meeting_location"', false)
-            ->assertSee('name="meeting_agenda"', false);
+            ->assertSee('name="meeting_agenda"', false)
+            ->assertSee('name="attachment_count"', false)
+            ->assertSee('id="btnAddAsAttachment"', false)
+            ->assertSee('id="btnPreviewAbsenceSummons"', false);
     }
 }
