@@ -107,12 +107,12 @@
                                 <label class="form-label fw-semibold" for="asMeetingTime">Waktu <span class="text-danger">*</span></label>
                                 <input type="time" class="form-control form-control-sm" name="meeting_time" id="asMeetingTime" required />
                             </div>
-                            <div class="col-md-7" id="asMeetingLocationGroup">
+                            <div class="col-12" id="asMeetingLocationGroup">
                                 <label class="form-label fw-semibold" for="asMeetingLocation">Tempat <span class="text-danger">*</span></label>
                                 <textarea class="form-control form-control-sm" name="meeting_location" id="asMeetingLocation"
                                     rows="2" maxlength="1000" required></textarea>
                             </div>
-                            <div class="col-md-5 as-first-only">
+                            <div class="col-12 as-first-only">
                                 <label class="form-label fw-semibold" for="asMeetingAgenda">Agenda <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control form-control-sm" name="meeting_agenda" id="asMeetingAgenda"
                                     maxlength="255" value="Klarifikasi Ketidakhadiran/Mangkir" required />
@@ -188,7 +188,6 @@
             });
             el('asAbsenceStartLabel').textContent = isSecondSummons ? 'Mangkir sejak tanggal' : 'Mangkir dari tanggal';
             el('asAbsenceStartHint').style.display = isSecondSummons ? 'block' : 'none';
-            el('asMeetingLocationGroup').className = isSecondSummons ? 'col-12' : 'col-md-7';
         }
         var MAX_ATTACHMENTS = 5;
         var MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
