@@ -190,12 +190,28 @@ class PdfGeneratorService
     public function generateWarningLetterPdf(EmployeeData $employee, array $extraData = []): \Barryvdh\DomPDF\PDF
     {
         $company = $this->resolveCompany($this->getBranchName($employee, $extraData));
-        $view = \App\Enums\WarningLetterLevel::tryFrom((string) ($extraData['level'] ?? ''))?->usesFirstLetterTemplate()
+        $level = \App\Enums\WarningLetterLevel::tryFrom((string) ($extraData['level'] ?? ''));
+        $view = $level?->usesFirstLetterTemplate()
             ? 'pdf.surat-peringatan-pertama'
             : 'pdf.surat-peringatan';
 
-        return Pdf::loadView($view, compact('employee', 'extraData', 'company'))
+        $pdf = Pdf::loadView($view, compact('employee', 'extraData', 'company'))
             ->setPaper('a4', 'portrait');
+
+        if ($level === \App\Enums\WarningLetterLevel::SP1_FINAL) {
+            // Total halaman hanya diketahui setelah render, sehingga tidak bisa dicetak lewat CSS.
+            $pdf->render();
+            $dompdf = $pdf->getDomPDF();
+            $dompdf->getCanvas()->page_text(
+                40.5,
+                800,
+                'Halaman {PAGE_NUM} dari {PAGE_COUNT}',
+                $dompdf->getFontMetrics()->getFont('Times New Roman'),
+                8
+            );
+        }
+
+        return $pdf;
     }
 
     public function generateAbsenceSummonsPdf(EmployeeData $employee, array $extraData = []): \Barryvdh\DomPDF\PDF

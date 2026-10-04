@@ -198,7 +198,7 @@ class WarningLetterTest extends TestCase
         $this->assertLessThan(strpos($html, 'Yang Bersangkutan'), strpos($html, 'class="signature-date"'));
         $this->assertStringContainsString('SURAT PERINGATAN TERTULIS', $html);
         $this->assertStringContainsString('Nomor: 007/SP/MSI/IX/2026', $html);
-        $this->assertStringContainsString('Dengan ini diberikan Surat Peringatan Tertulis Pertama dan Terakhir (SP1 dan Terakhir) kepada:', $html);
+        $this->assertStringContainsString('Dengan ini diberikan Surat Peringatan Tertulis Pertama dan Terakhir (SP1 dan Terakhir) kepada:', $plainText);
         $this->assertStringContainsString('Berdasarkan pelanggaran-pelanggaran tersebut, Perusahaan memberikan Surat Peringatan Tertulis Pertama dan Terakhir (SP1 dan Terakhir) kepada Saudara sebagai bentuk pembinaan dan penegakan disiplin kerja.', $plainText);
         $this->assertStringContainsString('berlaku selama 1 (satu) tahun sesuai dengan ketentuan Pasal 47 ayat (1) Peraturan Perusahaan.', $plainText);
         $this->assertStringContainsString('Saudara wajib memperbaiki kedisiplinan, mematuhi waktu kerja yang telah ditentukan', $plainText);
@@ -208,6 +208,142 @@ class WarningLetterTest extends TestCase
         $this->assertStringContainsString('Pemutusan Hubungan Kerja (PHK)', $html);
         $this->assertStringNotContainsString('Surat Peringatan Tertulis ke 1', $html);
         $this->assertStringContainsString('Human Resources Manager', $html);
+        $this->assertStringContainsString('<strong>Surat Peringatan Tertulis Pertama dan Terakhir (SP1 dan Terakhir)</strong>', $html);
+        $this->assertStringContainsString('<strong>Surat Peringatan Tertulis Pertama dan Terakhir</strong>', $html);
+        $this->assertStringContainsString('<strong>1 (satu) tahun</strong>', $html);
+        $this->assertStringContainsString('<strong>Pasal 47 ayat (1) Peraturan Perusahaan</strong>', $html);
+    }
+
+    private function finalViolationsPayload(): array
+    {
+        return [
+            [
+                'description' => 'Tidak melaksanakan perintah dan/atau instruksi Atasan dalam penyelesaian permasalahan pekerjaan.',
+                'references' => [
+                    [
+                        'regulation_type' => 'Peraturan Perusahaan',
+                        'article_number' => '40',
+                        'paragraph_number' => '12',
+                        'article_letter' => '',
+                        'article_text' => 'Karyawan wajib mematuhi perintah dan/atau instruksi baik secara lisan maupun tertulis dari Atasannya atau Direksi demi kelancaran pekerjaan.',
+                    ],
+                ],
+            ],
+            [
+                'description' => 'Tidak melaksanakan tugas sesuai dengan waktu yang telah ditentukan',
+                'references' => [
+                    [
+                        'regulation_type' => 'Peraturan Perusahaan',
+                        'article_number' => '40',
+                        'paragraph_number' => '2',
+                        'article_text' => 'Setiap Karyawan wajib melaksanakan pekerjaan dengan penuh tanggung jawab.',
+                    ],
+                    [
+                        'regulation_type' => 'Peraturan Perusahaan',
+                        'article_number' => '40',
+                        'paragraph_number' => '3',
+                        'article_text' => 'Setiap Karyawan wajib hadir di tempat kerja dan mulai bekerja tepat pada waktu yang telah ditentukan.',
+                    ],
+                    ['regulation_type' => '', 'article_number' => '', 'paragraph_number' => '', 'article_text' => ''],
+                ],
+            ],
+        ];
+    }
+
+    public function test_sp1_final_accepts_violation_items_with_article_quotes(): void
+    {
+        $this->actingAsRole('Admin');
+
+        $pdfService = Mockery::mock(PdfGeneratorService::class)->makePartial();
+        $pdfService->shouldReceive('generateWarningLetterPdf')
+            ->once()
+            ->withArgs(fn (EmployeeData $employee, array $extraData) => $extraData['level'] === 'SP1T'
+                && count($extraData['violations']) === 2
+                && count($extraData['violations'][1]['references']) === 2
+                && $extraData['violations'][0]['references'][0]['article_text'] !== ''
+                && str_starts_with($extraData['violation_description'], 'Tidak melaksanakan perintah'))
+            ->andReturn(Pdf::loadHTML('<p>SP-1 & Terakhir</p>'));
+        $this->app->instance(PdfGeneratorService::class, $pdfService);
+
+        $this->postJson('/hr/employees/EMP-SP-1/warning-letter', [
+            'level' => 'SP1T',
+            'doc_date' => '2026-09-29',
+            'violation_category' => '',
+            'superior_position' => 'Branch Manager Jabo',
+            'violations' => $this->finalViolationsPayload(),
+        ])->assertCreated();
+
+        $document = EmployeeDocument::query()->where('employee_id', 'EMP-SP-1')->where('doc_code', 'SP')->firstOrFail();
+        $this->assertStringContainsString(
+            'Pasal 40 ayat (12) Peraturan Perusahaan; Pasal 40 ayat (2) Peraturan Perusahaan; Pasal 40 ayat (3) Peraturan Perusahaan',
+            (string) $document->notes
+        );
+    }
+
+    public function test_sp1_final_violation_items_require_description_and_article(): void
+    {
+        $this->actingAsRole('Admin');
+
+        $response = $this->postJson('/hr/employees/EMP-SP-1/warning-letter', [
+            'level' => 'SP1T',
+            'doc_date' => '2026-09-29',
+            'superior_position' => 'Branch Manager Jabo',
+            'violations' => [
+                [
+                    'description' => 'pendek',
+                    'references' => [
+                        ['regulation_type' => 'Peraturan Perusahaan', 'article_number' => '', 'article_text' => 'Bunyi pasal'],
+                    ],
+                ],
+                ['description' => 'Tidak hadir tanpa keterangan selama dua hari kerja.', 'references' => []],
+            ],
+        ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors([
+                'violations.0.description',
+                'violations.0.references.0.article_number',
+                'violations.1.references',
+            ]);
+        $errors = $response->json('errors');
+        $this->assertSame('Isi nomor pasal pada pelanggaran ke-1, pasal ke-1.', $errors['violations.0.references.0.article_number'][0]);
+        $this->assertSame('Pelanggaran ke-2 wajib memiliki minimal satu pasal.', $errors['violations.1.references'][0]);
+
+        $this->assertSame(0, EmployeeDocument::query()->where('doc_code', 'SP')->count());
+    }
+
+    public function test_sp1_final_template_renders_violation_items_like_provided_letter(): void
+    {
+        $html = view('pdf.surat-peringatan-pertama', [
+            'employee' => $this->employeeData(),
+            'extraData' => [
+                'sk_number' => '007/SP/MSI/IX/2026',
+                'doc_date' => '2026-09-29',
+                'level' => 'SP1T',
+                'violation_description' => 'tidak dipakai bila rincian tersedia',
+                'regulation_reference' => 'Pasal 40 ayat (12) Peraturan Perusahaan',
+                'violations' => $this->finalViolationsPayload(),
+                'validity_months' => 12,
+                'superior_position' => 'Branch Manager Jabo',
+            ],
+            'company' => [],
+        ])->render();
+
+        $plainText = preg_replace('/\s+/', ' ', strip_tags($html));
+        $this->assertStringContainsString('Tata Tertib dan Peraturan Perusahaan, berupa:', $plainText);
+        $this->assertStringContainsString(
+            'Tidak melaksanakan perintah dan/atau instruksi Atasan dalam penyelesaian permasalahan pekerjaan, sebagaimana diatur dalam Pasal 40 ayat (12) Peraturan Perusahaan, yang menyatakan:',
+            $plainText
+        );
+        $this->assertStringContainsString('<strong>Pasal 40 ayat (12)</strong> Peraturan Perusahaan', $html);
+        $this->assertStringContainsString('"Karyawan wajib mematuhi perintah dan/atau instruksi', $html);
+        $this->assertStringContainsString(
+            'sebagaimana diatur dalam Pasal 40 ayat (2) dan Pasal 40 ayat (3) Peraturan Perusahaan, yang menyatakan:',
+            $plainText
+        );
+        $this->assertStringContainsString('<div class="article-heading">Pasal 40 ayat (2):</div>', $html);
+        $this->assertStringContainsString('<div class="article-heading">Pasal 40 ayat (3):</div>', $html);
+        $this->assertStringNotContainsString('tidak dipakai bila rincian tersedia', $html);
+        $this->assertStringNotContainsString('PT MAHAKARYA SUKSES INDONESIA<br>', $html);
     }
 
     public function test_structured_regulation_fields_are_formatted_for_warning_letter(): void
@@ -560,6 +696,9 @@ class WarningLetterTest extends TestCase
             ->assertSee('data-regulation-field="paragraph_number"', false)
             ->assertSee('data-regulation-field="article_letter"', false)
             ->assertSee('id="wlAddRegulation"', false)
+            ->assertSee('id="wlViolationSection"', false)
+            ->assertSee('data-ref-field="article_text"', false)
+            ->assertSee('id="wlAddViolation"', false)
             ->assertSee('SP-2/SP-3: dasar ketentuan opsional', false)
             ->assertSee('id="wlEmpLocation"', false)
             ->assertDontSee('id="wlRegulationType"', false)

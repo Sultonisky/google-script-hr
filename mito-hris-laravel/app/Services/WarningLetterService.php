@@ -75,7 +75,8 @@ class WarningLetterService
 
     /**
      * @param  array{level:string, doc_date:string, violation_category:string, violation_description:string,
-     *               incident_date?:?string, regulation_reference?:?string, corrective_actions?:?string}  $data
+     *               incident_date?:?string, regulation_reference?:?string, corrective_actions?:?string,
+     *               violations?:array<int, array{description:string, references:array<int, array<string, string>>}>}  $data
      * @return array{success:bool, message:string, status:int, document_id?:string, nomor?:string, file_name?:string}
      */
     public function generate(string $employeeId, array $data, string $issuedBy, ?string $archivedBy = null): array
@@ -122,6 +123,7 @@ class WarningLetterService
             'violation_description' => trim((string) $data['violation_description']),
             'incident_date' => $data['incident_date'] ?? null,
             'regulation_reference' => trim((string) ($data['regulation_reference'] ?? '')),
+            'violations' => $level === WarningLetterLevel::SP1_FINAL ? array_values($data['violations'] ?? []) : [],
             'superior_position' => trim((string) ($data['superior_position'] ?? 'Atasan Langsung')),
             'corrective_actions' => trim((string) ($data['corrective_actions'] ?? '')),
             'validity_months' => $validityMonths,
