@@ -191,11 +191,8 @@ class PdfGeneratorService
     {
         $company = $this->resolveCompany($this->getBranchName($employee, $extraData));
         $level = \App\Enums\WarningLetterLevel::tryFrom((string) ($extraData['level'] ?? ''));
-        $view = $level?->usesFirstLetterTemplate()
-            ? 'pdf.surat-peringatan-pertama'
-            : 'pdf.surat-peringatan';
 
-        $pdf = Pdf::loadView($view, compact('employee', 'extraData', 'company'))
+        $pdf = Pdf::loadView('pdf.surat-peringatan-pertama', compact('employee', 'extraData', 'company'))
             ->setPaper('a4', 'portrait');
 
         if ($level === \App\Enums\WarningLetterLevel::SP1_FINAL) {

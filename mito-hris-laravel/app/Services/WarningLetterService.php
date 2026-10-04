@@ -74,14 +74,32 @@ class WarningLetterService
     }
 
     /**
-     * @param  array{level:string, doc_date:string, violation_category:string, violation_description:string,
-     *               incident_date?:?string, regulation_reference?:?string, corrective_actions?:?string,
-     *               violations?:array<int, array{description:string, references:array<int, array<string, string>>}>}  $data
-     * @return array{success:bool, message:string, status:int, document_id?:string, nomor?:string, file_name?:string}
+     * Render draft PDF dari isi form tanpa menerbitkan nomor, mengarsipkan, atau mencatat audit.
+     *
+     * @return array{success:bool, message?:string, status:int, content?:string, file_name?:string}
      */
-    public function generate(string $employeeId, array $data, string $issuedBy, ?string $archivedBy = null): array
+    public function preview(string $employeeId, array $data): array
     {
         $employee = $this->employees->findById($employeeId);
+        if ($error = $this->eligibilityError($employee)) {
+            return $error;
+        }
+
+        $extraData = $this->buildExtraData($data, null) + ['draft' => true];
+
+        return [
+            'success' => true,
+            'status' => 200,
+            'content' => $this->pdfService->generateWarningLetterPdf($employee, $extraData)->output(),
+            'file_name' => sprintf('DRAFT_Surat_Peringatan_%s.pdf', WarningLetterLevel::from($data['level'])->value),
+        ];
+    }
+
+    /**
+     * @return array{success:false, message:string, status:int}|null
+     */
+    private function eligibilityError(?EmployeeData $employee): ?array
+    {
         if (!$employee) {
             return ['success' => false, 'message' => 'Karyawan tidak ditemukan.', 'status' => 404];
         }
@@ -93,13 +111,52 @@ class WarningLetterService
             ];
         }
 
+        return null;
+    }
+
+    private function buildExtraData(array $data, ?string $nomor): array
+    {
         $level = WarningLetterLevel::from($data['level']);
-        $violationReference = $level->usesFirstLetterTemplate()
-            ? trim((string) $data['regulation_reference'])
-            : trim((string) $data['violation_category']);
         $docDate = Carbon::parse($data['doc_date'], 'Asia/Jakarta')->startOfDay();
         $validityMonths = $level->validityMonths();
-        $validUntil = $docDate->copy()->addMonthsNoOverflow($validityMonths)->subDay();
+
+        return [
+            'sk_number' => $nomor ?? '',
+            'letter_number' => $nomor ?? '',
+            'doc_date' => $docDate->format('Y-m-d'),
+            'level' => $level->value,
+            'violation_category' => $data['violation_category'] ?? '',
+            'violation_description' => trim((string) $data['violation_description']),
+            'incident_date' => $data['incident_date'] ?? null,
+            'regulation_reference' => trim((string) ($data['regulation_reference'] ?? '')),
+            'violations' => $level === WarningLetterLevel::SP1_FINAL ? array_values($data['violations'] ?? []) : [],
+            'superior_name' => trim((string) ($data['superior_name'] ?? '')),
+            'superior_position' => trim((string) ($data['superior_position'] ?? 'Atasan Langsung')),
+            'corrective_actions' => trim((string) ($data['corrective_actions'] ?? '')),
+            'validity_months' => $validityMonths,
+            'valid_until' => $docDate->copy()->addMonthsNoOverflow($validityMonths)->subDay()->format('Y-m-d'),
+        ];
+    }
+
+    /**
+     * @param  array{level:string, doc_date:string, violation_category:string, violation_description:string,
+     *               incident_date?:?string, regulation_reference?:?string, corrective_actions?:?string,
+     *               superior_name?:?string, superior_position?:?string,
+     *               violations?:array<int, array{description:string, references:array<int, array<string, string>>}>}  $data
+     * @return array{success:bool, message:string, status:int, document_id?:string, nomor?:string, file_name?:string}
+     */
+    public function generate(string $employeeId, array $data, string $issuedBy, ?string $archivedBy = null): array
+    {
+        $employee = $this->employees->findById($employeeId);
+        if ($error = $this->eligibilityError($employee)) {
+            return $error;
+        }
+
+        $level = WarningLetterLevel::from($data['level']);
+        $violationReference = trim((string) ($data['regulation_reference'] ?? ''))
+            ?: trim((string) ($data['violation_category'] ?? ''));
+        $docDate = Carbon::parse($data['doc_date'], 'Asia/Jakarta')->startOfDay();
+        $validUntil = $docDate->copy()->addMonthsNoOverflow($level->validityMonths())->subDay();
         $issuedAt = $docDate->copy()->setTimeFrom(now()->timezone('Asia/Jakarta'));
 
         $issued = $this->skNumbers->issue(
@@ -114,21 +171,7 @@ class WarningLetterService
         );
         $nomor = $issued['nomor'];
 
-        $extraData = [
-            'sk_number' => $nomor,
-            'letter_number' => $nomor,
-            'doc_date' => $docDate->format('Y-m-d'),
-            'level' => $level->value,
-            'violation_category' => $data['violation_category'] ?? '',
-            'violation_description' => trim((string) $data['violation_description']),
-            'incident_date' => $data['incident_date'] ?? null,
-            'regulation_reference' => trim((string) ($data['regulation_reference'] ?? '')),
-            'violations' => $level === WarningLetterLevel::SP1_FINAL ? array_values($data['violations'] ?? []) : [],
-            'superior_position' => trim((string) ($data['superior_position'] ?? 'Atasan Langsung')),
-            'corrective_actions' => trim((string) ($data['corrective_actions'] ?? '')),
-            'validity_months' => $validityMonths,
-            'valid_until' => $validUntil->format('Y-m-d'),
-        ];
+        $extraData = $this->buildExtraData($data, $nomor);
 
         $fileName = sprintf(
             'Surat_Peringatan_%s_%s_Employee_%s.pdf',
