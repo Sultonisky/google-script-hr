@@ -26,7 +26,7 @@ class AbsenceSummonsService
     ) {}
 
     /**
-     * @param  array{level:string, doc_date:string, absence_start_date:string, absence_end_date:string, absence_second_start_date?:?string, absence_second_end_date?:?string, meeting_date:string, meeting_time:string, meeting_location:string, meeting_agenda:string, attachment_count?:?int, attachments?:array<int, UploadedFile|null>, attachment_labels?:array<int, ?string>}  $data
+     * @param  array{level:string, doc_date:string, absence_start_date:string, absence_end_date:string, absence_second_start_date?:?string, absence_second_end_date?:?string, meeting_date:string, meeting_time:string, meeting_location:string, meeting_agenda:string, attachments?:array<int, UploadedFile|null>, attachment_labels?:array<int, ?string>}  $data
      * @return array{success:bool, message:string, status:int, document_id?:string, nomor?:string, file_name?:string}
      */
     public function generate(string $employeeId, array $data, string $issuedBy, ?string $archivedBy = null): array
@@ -107,6 +107,55 @@ class AbsenceSummonsService
             'nomor' => $nomor,
             'file_name' => $fileName,
         ];
+    }
+
+    /**
+     * Riwayat panggilan mangkir per karyawan untuk prefill modal:
+     * employee_id => [latest => panggilan terakhir, first => Panggilan Kerja I terakhir].
+     *
+     * @return array<string, array{latest: array{level:string, nomor:string, issued_at:string}, first: ?array{nomor:string, issued_at:string, absence_start_date:?string}}>
+     */
+    public function historyByEmployee(): array
+    {
+        $history = [];
+        $this->documents->getAll()
+            ->filter(fn (array $row) => strtoupper(trim((string) ($row['Doc Code'] ?? ''))) === SkDocumentType::SURAT_PEMANGGILAN_MANGKIR->value)
+            ->sortBy(fn (array $row) => (string) ($row['Issued At'] ?? $row['Created At'] ?? ''))
+            ->each(function (array $row) use (&$history) {
+                $level = $this->documentLevel($row);
+                $employeeId = ltrim(trim((string) ($row['Employee ID'] ?? '')), "'");
+                if (! $level || $employeeId === '') {
+                    return;
+                }
+
+                $nomor = trim((string) ($row['Nomor'] ?? ''));
+                $issuedAt = trim((string) ($row['Issued At'] ?? ''));
+                $history[$employeeId]['latest'] = ['level' => $level->value, 'nomor' => $nomor, 'issued_at' => $issuedAt];
+                $history[$employeeId]['first'] ??= null;
+                if ($level === AbsenceSummonsLevel::FIRST) {
+                    preg_match('/Periode mangkir:\s*(\d{4}-\d{2}-\d{2})/', (string) ($row['Notes'] ?? ''), $match);
+                    $history[$employeeId]['first'] = [
+                        'nomor' => $nomor,
+                        'issued_at' => $issuedAt,
+                        'absence_start_date' => $match[1] ?? null,
+                    ];
+                }
+            });
+
+        return $history;
+    }
+
+    private function documentLevel(array $row): ?AbsenceSummonsLevel
+    {
+        $reference = trim((string) ($row['Reference'] ?? ''));
+        $docType = trim((string) ($row['Doc Type'] ?? ''));
+        foreach (AbsenceSummonsLevel::cases() as $level) {
+            if ($reference === $level->reference() || $docType === $level->documentLabel()) {
+                return $level;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -223,9 +272,7 @@ class AbsenceSummonsService
             'meeting_time' => $data['meeting_time'],
             'meeting_location' => trim($data['meeting_location']),
             'meeting_agenda' => trim((string) ($data['meeting_agenda'] ?? '')) ?: null,
-            'attachment_count' => $context['attachments'] !== []
-                ? count($context['attachments'])
-                : (isset($data['attachment_count']) ? (int) $data['attachment_count'] : null),
+            'attachment_count' => count($context['attachments']),
             'attachments' => $context['attachments'],
             'company_entity' => $context['entityCode'],
             'summons_level' => $level->value,
@@ -256,14 +303,8 @@ class AbsenceSummonsService
     private function latestFirstSummons(string $employeeId): ?array
     {
         return $this->documents->getByEmployeeId($employeeId)
-            ->filter(function (array $row): bool {
-                if (strtoupper(trim((string) ($row['Doc Code'] ?? ''))) !== SkDocumentType::SURAT_PEMANGGILAN_MANGKIR->value) {
-                    return false;
-                }
-
-                return trim((string) ($row['Reference'] ?? '')) === AbsenceSummonsLevel::FIRST->reference()
-                    || trim((string) ($row['Doc Type'] ?? '')) === AbsenceSummonsLevel::FIRST->documentLabel();
-            })
+            ->filter(fn (array $row): bool => strtoupper(trim((string) ($row['Doc Code'] ?? ''))) === SkDocumentType::SURAT_PEMANGGILAN_MANGKIR->value
+                && $this->documentLevel($row) === AbsenceSummonsLevel::FIRST)
             ->sortByDesc(fn (array $row) => (string) ($row['Issued At'] ?? $row['Created At'] ?? ''))
             ->first();
     }
