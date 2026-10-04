@@ -182,7 +182,7 @@
         $employeeNik = preg_match('/^\d{16}$/', $employeeNik) ? implode(' ', str_split($employeeNik, 4)) : ($employeeNik ?: '-');
         $employeeAddress = trim((string) ($employee->residentialAddress ?: $employee->citizenIdAddress)) ?: '-';
         $letterNumber = trim((string) ($extraData['sk_number'] ?? '')) ?: '-';
-        $attachmentCount = (int) ($extraData['attachment_count'] ?? 2);
+        $attachmentCount = (int) ($extraData['attachment_count'] ?? 0);
         $firstSummonsNumber = trim((string) ($extraData['first_summons_number'] ?? '')) ?: '-';
         $firstSummonsDate = $formatDate($extraData['first_summons_date'] ?? null, false, true);
         $workingDays = max(1, (int) ($extraData['working_days'] ?? 1));

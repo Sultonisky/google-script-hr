@@ -35,6 +35,10 @@
                             <div class="text-muted" style="font-size:12px"><span id="asEmpBranch">-</span> &bull; Employee ID: <span id="asEmpIdDisp">-</span></div>
                         </div>
 
+                        <div id="asHistory" class="alert alert-warning py-2 px-3 mb-3" style="display:none;font-size:12.5px">
+                            <i class="bi bi-clock-history me-1"></i><span id="asHistoryText"></span>
+                        </div>
+
                         <div id="asErrors" class="alert alert-danger py-2 px-3 mb-3" style="display:none;font-size:12.5px"></div>
                         <div class="row g-3">
                             <div class="col-12">
@@ -56,16 +60,10 @@
                                 <input type="text" class="form-control form-control-sm bg-light" id="asCompanyEntity" readonly tabindex="-1" />
                                 <div class="form-text">Otomatis dari branch karyawan yang dipilih (kop surat &amp; nomor surat).</div>
                             </div>
-                            <div class="col-md-8">
+                            <div class="col-12">
                                 <label class="form-label fw-semibold" for="asDocDate">Tanggal Surat <span class="text-danger">*</span></label>
                                 <input type="date" lang="id-ID" class="form-control form-control-sm" name="doc_date" id="asDocDate"
                                     value="{{ now()->timezone('Asia/Jakarta')->format('Y-m-d') }}" required />
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold" for="asAttachmentCount">Jumlah Lampiran</label>
-                                <input type="number" class="form-control form-control-sm" name="attachment_count" id="asAttachmentCount"
-                                    min="0" max="20" step="1" value="1" />
-                                <div class="form-text" id="asAttachmentCountHint">Isi 0 jika tanpa lampiran.</div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold" for="asAbsenceStart"><span id="asAbsenceStartLabel">Mangkir dari tanggal</span> <span class="text-danger">*</span></label>
@@ -92,7 +90,7 @@
                                 </button>
                                 <div class="form-text">
                                     Foto/scan rekap absensi, resi pengiriman, dll. (JPG, PNG, WebP, maks. 5 MB per file). Gambar ditambahkan
-                                    sebagai halaman lampiran di PDF dan jumlah lampiran dihitung otomatis.
+                                    sebagai halaman lampiran di PDF dan jumlah lampiran di surat dihitung otomatis (tanpa file = "-").
                                 </div>
                             </div>
                             <div class="col-12">
@@ -140,6 +138,7 @@
 
 @php
     $__asSkNumbers = app(\App\Services\SkNumberService::class);
+    $__asHistory = app(\App\Services\AbsenceSummonsService::class)->historyByEmployee();
     $__asEmployees = collect($all ?? [])
         ->filter(fn ($e) => \App\Services\WarningLetterService::isEligible($e))
         ->map(fn ($e) => [
@@ -150,15 +149,21 @@
             'department' => $e->department ?? null,
             'branchName' => $e->branchName ?? null,
             'companyEntity' => config('hris.mpr.companies.'.$__asSkNumbers->resolveEntityCode((string) ($e->branchName ?? '')).'.name'),
+            'summons' => $__asHistory[$e->employeeId ?? ''] ?? null,
         ])
         ->values()
         ->all();
     $__asStoreUrl = route('hr.employees.absence-summons', ['id' => '__ID__']);
     $__asPreviewUrl = route('hr.employees.absence-summons.preview', ['id' => '__ID__']);
+    $__asLevelLabels = collect(\App\Enums\AbsenceSummonsLevel::cases())->mapWithKeys(fn ($level) => [$level->value => $level->label()]);
 @endphp
 <script>
     (function() {
         var employees = @json($__asEmployees);
+        var levelLabels = @json($__asLevelLabels);
+        var FOLLOW_UP_DAYS = 30;
+        var MONTHS_ID = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        var currentEmployee = null;
         var storeUrlTemplate = @json($__asStoreUrl);
         var previewUrlTemplate = @json($__asPreviewUrl);
         function el(id) { return document.getElementById(id); }
@@ -177,7 +182,6 @@
             el('asWorkingDaysGroup').style.display = isSecondSummons ? 'block' : 'none';
             el('asWorkingDays').required = isSecondSummons;
             if (!isSecondSummons) el('asWorkingDays').value = '';
-            syncAttachmentCount();
             document.querySelectorAll('#absenceSummonsModal .as-first-only').forEach(function(group) {
                 group.style.display = isSecondSummons ? 'none' : '';
                 group.querySelectorAll('input, textarea').forEach(function(input) { input.disabled = isSecondSummons; });
@@ -192,23 +196,7 @@
         function attachmentRows() {
             return Array.prototype.slice.call(el('asAttachmentRows').querySelectorAll('.as-attachment-row'));
         }
-        function uploadedAttachmentCount() {
-            return attachmentRows().filter(function(row) {
-                var input = row.querySelector('input[type="file"]');
-                return input.files && input.files.length > 0;
-            }).length;
-        }
-        function syncAttachmentCount() {
-            var attachment = el('asAttachmentCount');
-            var uploaded = uploadedAttachmentCount();
-            attachment.disabled = uploaded > 0;
-            if (uploaded > 0) {
-                attachment.value = String(uploaded);
-                el('asAttachmentCountHint').textContent = 'Otomatis dari file lampiran.';
-            } else {
-                if (attachment.dataset.edited !== '1') attachment.value = el('asLevel').value === 'SPM2' ? '2' : '1';
-                el('asAttachmentCountHint').textContent = 'Isi 0 jika tanpa lampiran.';
-            }
+        function updateAttachmentButton() {
             el('btnAddAsAttachment').disabled = attachmentRows().length >= MAX_ATTACHMENTS;
         }
         function addAttachmentRow() {
@@ -220,7 +208,6 @@
             file.name = 'attachments[]';
             file.accept = ATTACHMENT_TYPES.join(',');
             file.className = 'form-control';
-            file.addEventListener('change', syncAttachmentCount);
             var label = document.createElement('input');
             label.type = 'text';
             label.name = 'attachment_labels[]';
@@ -232,12 +219,12 @@
             remove.className = 'btn btn-outline-danger';
             remove.title = 'Hapus lampiran';
             remove.innerHTML = '<i class="bi bi-trash"></i>';
-            remove.addEventListener('click', function() { row.remove(); syncAttachmentCount(); });
+            remove.addEventListener('click', function() { row.remove(); updateAttachmentButton(); });
             row.appendChild(file);
             row.appendChild(label);
             row.appendChild(remove);
             el('asAttachmentRows').appendChild(row);
-            syncAttachmentCount();
+            updateAttachmentButton();
         }
         function attachmentErrors() {
             var errors = [];
@@ -254,7 +241,50 @@
             });
             return errors;
         }
+        function parseYmd(value) {
+            var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value || ''));
+            return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
+        }
+        function fmtId(date) {
+            return date ? date.getDate() + ' ' + MONTHS_ID[date.getMonth()] + ' ' + date.getFullYear() : '-';
+        }
+        function prefillFirstSummonsStart() {
+            var first = currentEmployee && currentEmployee.summons && currentEmployee.summons.first;
+            if (el('asLevel').value === 'SPM2' && first && first.absence_start_date) {
+                el('asAbsenceStart').value = first.absence_start_date;
+            }
+        }
+        function applySummonsHistory(emp) {
+            var history = emp.summons;
+            var box = el('asHistory');
+            var level = 'SPM1';
+            box.className = 'alert alert-warning py-2 px-3 mb-3';
+            if (!history || !history.latest) {
+                box.style.display = 'none';
+            } else {
+                var latest = history.latest;
+                var issued = parseYmd(latest.issued_at);
+                var text = 'Panggilan terakhir: ' + (levelLabels[latest.level] || latest.level) +
+                    (latest.nomor ? ' — ' + latest.nomor : '') + ' (' + fmtId(issued) + ').';
+                var daysSince = issued ? Math.floor((Date.now() - issued.getTime()) / 86400000) : null;
+                if (latest.level === 'SPM1' && daysSince !== null && daysSince <= FOLLOW_UP_DAYS) {
+                    level = 'SPM2';
+                    text += ' Panggilan Kerja II dipilih otomatis dan tanggal mulai mangkir diisi dari Panggilan Kerja I, sesuaikan bila perlu.';
+                } else if (latest.level === 'SPM2') {
+                    box.className = 'alert alert-danger py-2 px-3 mb-3';
+                    text += ' Panggilan Kerja II (Terakhir) sudah diterbitkan. Pastikan ini kasus mangkir baru sebelum membuat panggilan lagi.';
+                } else {
+                    text += ' Sudah lebih dari ' + FOLLOW_UP_DAYS + ' hari, dianggap kasus mangkir baru (Panggilan Kerja I).';
+                }
+                el('asHistoryText').textContent = text;
+                box.style.display = 'block';
+            }
+            el('asLevel').value = level;
+            updateWorkingDaysField();
+            prefillFirstSummonsStart();
+        }
         function selectEmployee(emp) {
+            currentEmployee = emp;
             el('asEmpDropdown').style.display = 'none';
             el('asEmpSearch').value = emp.fullName + ' (' + emp.employeeId + ')';
             el('asEmployeeId').value = emp.employeeId;
@@ -267,7 +297,7 @@
             el('asCompanyEntity').value = emp.companyEntity || '-';
             el('asEmpPreview').style.display = 'block';
             el('asErrors').style.display = 'none';
-            updateWorkingDaysField();
+            applySummonsHistory(emp);
             el('btnGenerateAbsenceSummons').disabled = false;
             el('btnPreviewAbsenceSummons').disabled = false;
         }
@@ -288,7 +318,10 @@
                     return '<button type="button" class="w-100 text-start p-2 border-0 border-bottom bg-white as-search-item" data-emp-id="' +
                         escapeHtml(e.employeeId) + '"><span class="fw-semibold text-primary">' + escapeHtml(e.fullName || '-') +
                         '</span><br><small class="text-muted">' + escapeHtml(e.employeeId || '') + ' &bull; ' +
-                        escapeHtml(e.jobPosition || '-') + ' &bull; ' + escapeHtml(e.statusEmployee || '-') + '</small></button>';
+                        escapeHtml(e.jobPosition || '-') + ' &bull; ' + escapeHtml(e.statusEmployee || '-') +
+                        (e.summons && e.summons.latest ? ' &bull; <span class="text-danger">' +
+                            escapeHtml(levelLabels[e.summons.latest.level] || e.summons.latest.level) + '</span>' : '') +
+                        '</small></button>';
                 }).join('');
                 dropdown.querySelectorAll('.as-search-item').forEach(function(item) {
                     item.addEventListener('click', function() {
@@ -306,8 +339,10 @@
             el('asEmpSearchClear').style.display = 'none';
             el('asEmpPreview').style.display = 'none';
             el('asErrors').style.display = 'none';
-            el('asAttachmentCount').dataset.edited = '';
             el('asAttachmentRows').innerHTML = '';
+            updateAttachmentButton();
+            el('asHistory').style.display = 'none';
+            currentEmployee = null;
             updateWorkingDaysField();
             el('btnGenerateAbsenceSummons').disabled = true;
             el('btnPreviewAbsenceSummons').disabled = true;
@@ -325,11 +360,13 @@
             if (!form || !btn) return;
             var submitting = false;
             el('asEmpSearch').addEventListener('input', function(e) { renderDropdown(e.target.value); });
-            el('asLevel').addEventListener('change', updateWorkingDaysField);
+            el('asLevel').addEventListener('change', function() {
+                updateWorkingDaysField();
+                if (!el('asAbsenceStart').value) prefillFirstSummonsStart();
+            });
             updateWorkingDaysField();
             el('asEmpSearchClear').addEventListener('click', resetModal);
             el('absenceSummonsModal').addEventListener('hidden.bs.modal', resetModal);
-            el('asAttachmentCount').addEventListener('input', function() { this.dataset.edited = '1'; });
             el('btnAddAsAttachment').addEventListener('click', addAttachmentRow);
 
             function requestHeaders() {

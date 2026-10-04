@@ -191,7 +191,7 @@
         $employeeNik = preg_match('/^\d{16}$/', $employeeNik) ? implode(' ', str_split($employeeNik, 4)) : ($employeeNik ?: '-');
         $employeeAddress = trim((string) ($employee->residentialAddress ?: $employee->citizenIdAddress)) ?: '-';
         $letterNumber = trim((string) ($extraData['sk_number'] ?? '')) ?: '-';
-        $attachmentCount = (int) ($extraData['attachment_count'] ?? 1);
+        $attachmentCount = (int) ($extraData['attachment_count'] ?? 0);
         $docDate = filled($extraData['doc_date'] ?? null) ? \Illuminate\Support\Carbon::parse($extraData['doc_date']) : null;
         $letterDate = $docDate ? $docDate->format('d').' '.$monthNames[$docDate->month - 1].' '.$docDate->year : '-';
         $companyName = (string) ($company['name'] ?? 'PT MAHAKARYA SUKSES INDONESIA');
