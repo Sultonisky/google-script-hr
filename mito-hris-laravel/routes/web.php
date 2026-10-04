@@ -84,6 +84,8 @@ if (!app()->environment('local')) {
                 Route::get('/{id}/warning-letter/preview/{token}', [WarningLetterController::class, 'showPreview'])->name('warning-letter.preview.show')->middleware('can:manage_warning_letters');
                 Route::get('/{id}/warning-letter/{documentId}', [WarningLetterController::class, 'download'])->name('warning-letter.download')->middleware('can:manage_warning_letters');
                 Route::post('/{id}/absence-summons', [AbsenceSummonsController::class, 'store'])->name('absence-summons')->middleware('can:manage_warning_letters');
+                Route::post('/{id}/absence-summons/preview', [AbsenceSummonsController::class, 'preview'])->name('absence-summons.preview')->middleware('can:manage_warning_letters');
+                Route::get('/{id}/absence-summons/preview/{token}', [AbsenceSummonsController::class, 'showPreview'])->name('absence-summons.preview.show')->middleware('can:manage_warning_letters');
                 Route::get('/{id}/absence-summons/{documentId}', [AbsenceSummonsController::class, 'download'])->name('absence-summons.download')->middleware('can:manage_warning_letters');
                 Route::get('/{id}/json', [EmployeeController::class, 'getJson'])->name('json');
             });
@@ -346,6 +348,8 @@ if (app()->environment('local')) {
                 Route::get('/{id}/warning-letter/preview/{token}', [WarningLetterController::class, 'showPreview'])->name('warning-letter.preview.show')->middleware('can:manage_warning_letters');
                 Route::get('/{id}/warning-letter/{documentId}', [WarningLetterController::class, 'download'])->name('warning-letter.download')->middleware('can:manage_warning_letters');
                 Route::post('/{id}/absence-summons', [AbsenceSummonsController::class, 'store'])->name('absence-summons')->middleware('can:manage_warning_letters');
+                Route::post('/{id}/absence-summons/preview', [AbsenceSummonsController::class, 'preview'])->name('absence-summons.preview')->middleware('can:manage_warning_letters');
+                Route::get('/{id}/absence-summons/preview/{token}', [AbsenceSummonsController::class, 'showPreview'])->name('absence-summons.preview.show')->middleware('can:manage_warning_letters');
                 Route::get('/{id}/absence-summons/{documentId}', [AbsenceSummonsController::class, 'download'])->name('absence-summons.download')->middleware('can:manage_warning_letters');
                 Route::get('/{id}/json', [EmployeeController::class, 'getJson'])->name('json');
             });
