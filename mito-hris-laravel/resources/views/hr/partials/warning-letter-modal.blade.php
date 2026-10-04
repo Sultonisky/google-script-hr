@@ -103,6 +103,70 @@
                                 <label class="form-label fw-semibold" style="font-size:13px" for="wlIncidentDate">Tanggal Kejadian <span class="text-muted fw-normal">(opsional)</span></label>
                                 <input type="date" class="form-control form-control-sm" name="incident_date" id="wlIncidentDate" />
                             </div>
+                            <div class="col-12" id="wlViolationSection" style="display:none">
+                                <label class="form-label fw-semibold" style="font-size:13px">Rincian Pelanggaran <span class="text-danger">*</span></label>
+                                <div id="wlViolationRows"></div>
+                                <template id="wlViolationTemplate">
+                                    <div class="border rounded-3 p-3 mb-3 wl-violation-row">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="small fw-semibold wl-violation-row-title"></span>
+                                            <button type="button" class="btn btn-sm btn-outline-danger wl-remove-violation" aria-label="Hapus pelanggaran">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                        <label class="form-label mb-1" style="font-size:12px">Uraian pelanggaran</label>
+                                        <textarea class="form-control form-control-sm" data-violation-field="description" rows="3" maxlength="1000"
+                                            placeholder="Contoh: Tidak melaksanakan perintah dan/atau instruksi Atasan sesuai dengan arahan yang telah diberikan dalam penyelesaian permasalahan pekerjaan"></textarea>
+                                        <div class="form-text mb-2" style="font-size:11px">Tulis tanpa menyebut pasal. Kalimat &ldquo;sebagaimana diatur dalam Pasal &hellip;&rdquo; ditambahkan otomatis di PDF.</div>
+                                        <div class="wl-violation-refs"></div>
+                                        <button type="button" class="btn btn-sm btn-outline-primary wl-add-violation-ref">
+                                            <i class="bi bi-plus-lg me-1"></i>Tambah pasal
+                                        </button>
+                                    </div>
+                                </template>
+                                <template id="wlViolationRefTemplate">
+                                    <div class="bg-light rounded-3 p-2 mb-2 wl-violation-ref">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span class="small fw-semibold wl-violation-ref-title"></span>
+                                            <button type="button" class="btn btn-sm btn-outline-danger wl-remove-violation-ref" aria-label="Hapus pasal">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </div>
+                                        <div class="row g-2">
+                                            <div class="col-12">
+                                                <select class="form-select form-select-sm" data-ref-field="regulation_type" aria-label="Jenis peraturan">
+                                                    @foreach (\App\Services\WarningLetterService::REGULATION_TYPES as $regulationType)
+                                                        <option value="{{ $regulationType }}">{{ $regulationType }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div class="col-4">
+                                                <input type="number" class="form-control form-control-sm" data-ref-field="article_number"
+                                                    min="1" max="9999" step="1" inputmode="numeric" placeholder="Pasal" aria-label="Pasal" />
+                                            </div>
+                                            <div class="col-4">
+                                                <input type="number" class="form-control form-control-sm" data-ref-field="paragraph_number"
+                                                    min="1" max="999" step="1" inputmode="numeric" placeholder="Ayat (opsional)" aria-label="Ayat" />
+                                            </div>
+                                            <div class="col-4">
+                                                <input type="text" class="form-control form-control-sm text-lowercase" data-ref-field="article_letter"
+                                                    maxlength="1" pattern="[A-Za-z]" placeholder="Huruf (opsional)" aria-label="Huruf" />
+                                            </div>
+                                            <div class="col-12">
+                                                <textarea class="form-control form-control-sm" data-ref-field="article_text" rows="2" maxlength="1000"
+                                                    placeholder="Bunyi pasal (opsional), misal: Karyawan wajib mematuhi perintah dan/atau instruksi baik secara lisan maupun tertulis dari Atasannya..."
+                                                    aria-label="Bunyi pasal"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                                <div class="d-flex justify-content-between align-items-center gap-2">
+                                    <div class="form-text" style="font-size:11px">Setiap pelanggaran wajib memiliki uraian dan minimal satu pasal. Bunyi pasal dicetak sebagai kutipan di bawah uraian.</div>
+                                    <button type="button" class="btn btn-sm btn-outline-primary text-nowrap" id="wlAddViolation">
+                                        <i class="bi bi-plus-lg me-1"></i>Tambah pelanggaran
+                                    </button>
+                                </div>
+                            </div>
                             <div class="col-12" id="wlDescriptionField">
                                 <label class="form-label fw-semibold" style="font-size:13px" for="wlDescription">Uraian Pelanggaran <span class="text-danger">*</span></label>
                                 <textarea class="form-control form-control-sm" name="violation_description" id="wlDescription" rows="4"
@@ -264,6 +328,7 @@
             'months' => $l->validityMonths(),
             'next' => ($l->next() ?? $l)->value,
             'first' => $l->usesFirstLetterTemplate(),
+            'final' => $l === \App\Enums\WarningLetterLevel::SP1_FINAL,
         ]])
         ->all();
 @endphp
@@ -309,6 +374,16 @@
             return !!(levelMeta[level] && levelMeta[level].first);
         }
 
+        function isFinalLevel(level) {
+            return !!(levelMeta[level] && levelMeta[level].final);
+        }
+
+        function setFieldsDisabled(container, disabled) {
+            container.querySelectorAll('input, select, textarea').forEach(function(input) {
+                input.disabled = disabled;
+            });
+        }
+
         function refreshValidUntil() {
             var d = parseYmd(el('wlDocDate').value);
             var months = levelMonths(el('wlLevel').value);
@@ -320,11 +395,18 @@
         }
 
         function updateLevelFields() {
-            var isSp1 = usesFirstTemplate(el('wlLevel').value);
-            el('wlCorrectiveSection').style.display = isSp1 ? 'none' : '';
-            el('wlCategoryField').style.display = isSp1 ? 'none' : '';
-            el('wlIncidentDateField').style.display = isSp1 ? 'none' : '';
-            el('wlCategory').required = !isSp1;
+            var isFinal = isFinalLevel(el('wlLevel').value);
+            var isSp1 = usesFirstTemplate(el('wlLevel').value) && !isFinal;
+            el('wlCorrectiveSection').style.display = isSp1 || isFinal ? 'none' : '';
+            el('wlCategoryField').style.display = isSp1 || isFinal ? 'none' : '';
+            el('wlIncidentDateField').style.display = isSp1 || isFinal ? 'none' : '';
+            el('wlCategory').required = !(isSp1 || isFinal);
+            el('wlViolationSection').style.display = isFinal ? '' : 'none';
+            setFieldsDisabled(el('wlViolationSection'), !isFinal);
+            el('wlDescriptionField').style.display = isFinal ? 'none' : '';
+            el('wlDescription').disabled = isFinal;
+            el('wlRegulationField').style.display = isFinal ? 'none' : '';
+            setFieldsDisabled(el('wlRegulationField'), isFinal);
             el('wlStructuredRegulation').style.display = '';
             regulationRows().forEach(function(row) {
                 row.querySelector('[data-regulation-field="regulation_type"]').required = isSp1;
@@ -336,8 +418,49 @@
                 ? 'Tambahkan satu atau lebih dasar ketentuan. Jenis peraturan dan nomor pasal wajib diisi pada setiap baris.'
                 : 'SP-2/SP-3: dasar ketentuan opsional. Jika diisi, jenis peraturan dan nomor pasal wajib dilengkapi.';
             refreshRegulationPreview();
-            el('wlSuperiorPositionField').style.display = isSp1 ? '' : 'none';
-            el('wlSuperiorPosition').required = isSp1;
+            el('wlSuperiorPositionField').style.display = isSp1 || isFinal ? '' : 'none';
+            el('wlSuperiorPosition').required = isSp1 || isFinal;
+        }
+
+        function violationRows() {
+            return Array.prototype.slice.call(el('wlViolationRows').querySelectorAll('.wl-violation-row'));
+        }
+
+        function addViolationRef(violationRow) {
+            violationRow.querySelector('.wl-violation-refs')
+                .appendChild(el('wlViolationRefTemplate').content.firstElementChild.cloneNode(true));
+        }
+
+        function addViolation() {
+            var row = el('wlViolationTemplate').content.firstElementChild.cloneNode(true);
+            addViolationRef(row);
+            el('wlViolationRows').appendChild(row);
+        }
+
+        function updateViolationRows() {
+            var rows = violationRows();
+            rows.forEach(function(row, index) {
+                row.querySelector('.wl-violation-row-title').textContent = 'Pelanggaran ' + (index + 1);
+                row.querySelector('.wl-remove-violation').style.display = rows.length > 1 ? '' : 'none';
+                row.querySelector('[data-violation-field="description"]').name = 'violations[' + index + '][description]';
+                var refs = row.querySelectorAll('.wl-violation-ref');
+                refs.forEach(function(ref, refIndex) {
+                    ref.querySelector('.wl-violation-ref-title').textContent = 'Pasal ' + (refIndex + 1);
+                    ref.querySelector('.wl-remove-violation-ref').style.display = refs.length > 1 ? '' : 'none';
+                    ref.querySelectorAll('[data-ref-field]').forEach(function(input) {
+                        input.name = 'violations[' + index + '][references][' + refIndex + '][' + input.getAttribute('data-ref-field') + ']';
+                    });
+                });
+                row.querySelector('.wl-add-violation-ref').disabled = refs.length >= 5;
+            });
+            el('wlAddViolation').disabled = rows.length >= 10;
+            setFieldsDisabled(el('wlViolationSection'), !isFinalLevel(el('wlLevel').value));
+        }
+
+        function resetViolationRows() {
+            el('wlViolationRows').innerHTML = '';
+            addViolation();
+            updateViolationRows();
         }
 
         function refreshRegulationPreview() {
@@ -466,6 +589,7 @@
             var form = el('formWarningLetter');
             if (form) form.reset();
             resetRegulationRows();
+            resetViolationRows();
             el('wlEmployeeId').value = '';
             el('wlEmpSearch').value = '';
             el('wlEmpDropdown').style.display = 'none';
@@ -517,7 +641,32 @@
                 el('wlRegulationRows').appendChild(el('wlRegulationRowTemplate').content.firstElementChild.cloneNode(true));
                 updateRegulationRows();
             });
+            el('wlAddViolation').addEventListener('click', function() {
+                if (violationRows().length >= 10) return;
+                addViolation();
+                updateViolationRows();
+            });
+            el('wlViolationRows').addEventListener('click', function(e) {
+                var removeViolation = e.target.closest('.wl-remove-violation');
+                if (removeViolation && violationRows().length > 1) {
+                    removeViolation.closest('.wl-violation-row').remove();
+                    updateViolationRows();
+                    return;
+                }
+                var removeRef = e.target.closest('.wl-remove-violation-ref');
+                if (removeRef && removeRef.closest('.wl-violation-refs').children.length > 1) {
+                    removeRef.closest('.wl-violation-ref').remove();
+                    updateViolationRows();
+                    return;
+                }
+                var addRef = e.target.closest('.wl-add-violation-ref');
+                if (addRef && addRef.closest('.wl-violation-row').querySelectorAll('.wl-violation-ref').length < 5) {
+                    addViolationRef(addRef.closest('.wl-violation-row'));
+                    updateViolationRows();
+                }
+            });
             el('warningLetterModal').addEventListener('hidden.bs.modal', resetModal);
+            resetViolationRows();
             updateLevelFields();
             updateRegulationRows();
 
@@ -528,12 +677,26 @@
                 var empId = el('wlEmployeeId').value;
                 var missing = [];
                 if (!empId) missing.push('Pilih karyawan terlebih dahulu.');
+                var isFinal = isFinalLevel(el('wlLevel').value);
                 var isFirstTemplate = usesFirstTemplate(el('wlLevel').value);
                 if (!isFirstTemplate && !el('wlCategory').value) missing.push('Kategori pelanggaran wajib dipilih.');
-                if (el('wlDescription').value.trim().length < 10) missing.push('Uraian pelanggaran minimal 10 karakter.');
+                if (!isFinal && el('wlDescription').value.trim().length < 10) missing.push('Uraian pelanggaran minimal 10 karakter.');
                 if (!el('wlDocDate').value) missing.push('Tanggal surat wajib diisi.');
                 var hasRegulationError = false;
-                regulationRows().forEach(function(row, index) {
+                if (isFinal) {
+                    violationRows().forEach(function(row, index) {
+                        var position = index + 1;
+                        if (row.querySelector('[data-violation-field="description"]').value.trim().length < 10) {
+                            missing.push('Uraian pelanggaran ke-' + position + ' minimal 10 karakter.');
+                        }
+                        row.querySelectorAll('.wl-violation-ref').forEach(function(ref, refIndex) {
+                            if (!ref.querySelector('[data-ref-field="article_number"]').value) {
+                                missing.push('Isi nomor pasal pada pelanggaran ke-' + position + ', pasal ke-' + (refIndex + 1) + '.');
+                            }
+                        });
+                    });
+                }
+                (isFinal ? [] : regulationRows()).forEach(function(row, index) {
                     var type = row.querySelector('[data-regulation-field="regulation_type"]').value;
                     var article = row.querySelector('[data-regulation-field="article_number"]').value;
                     var paragraph = row.querySelector('[data-regulation-field="paragraph_number"]').value;
@@ -550,7 +713,7 @@
                         hasRegulationError = true;
                     }
                 });
-                if (hasRegulationError) return;
+                if (hasRegulationError) { showErrors(missing); return; }
                 if (isFirstTemplate && !el('wlSuperiorPosition').value.trim()) missing.push('Jabatan atasan wajib diisi.');
                 if (missing.length) { showErrors(missing); return; }
 
