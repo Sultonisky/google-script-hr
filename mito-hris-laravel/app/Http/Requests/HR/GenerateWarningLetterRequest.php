@@ -36,18 +36,25 @@ class GenerateWarningLetterRequest extends FormRequest
             fn (string $key) => $this->exists($key)
         );
         $this->hasStructuredRegulationInput = $this->hasRepeatedRegulationInput || $hasLegacyStructuredInput;
+        // SP-1 hanya mencantumkan pasal/ayat/huruf; jenis peraturan diabaikan.
+        $omitRegulationType = $this->omitsRegulationType();
+        if ($omitRegulationType && $this->exists('regulation_type')) {
+            $this->merge(['regulation_type' => null]);
+        }
 
         if ($this->hasRepeatedRegulationInput) {
             $inputRows = $this->input('regulation_references');
             $this->structuredRegulationRows = is_array($inputRows)
                 ? collect($inputRows)
-                    ->filter(fn ($row) => is_array($row) && collect($row)->contains(fn ($value) => $this->isFilledScalar($value)))
+                    ->filter(fn ($row) => is_array($row))
+                    ->map(fn (array $row) => $omitRegulationType ? array_merge($row, ['regulation_type' => null]) : $row)
+                    ->filter(fn (array $row) => collect($row)->contains(fn ($value) => $this->isFilledScalar($value)))
                     ->values()
                     ->all()
                 : [];
         } elseif ($hasLegacyStructuredInput) {
             $this->structuredRegulationRows = [[
-                'regulation_type' => $this->input('regulation_type'),
+                'regulation_type' => $omitRegulationType ? null : $this->input('regulation_type'),
                 'article_number' => $this->input('article_number'),
                 'paragraph_number' => $this->input('paragraph_number'),
                 'article_letter' => $this->input('article_letter'),
@@ -108,6 +115,16 @@ class GenerateWarningLetterRequest extends FormRequest
         ]);
     }
 
+    /**
+     * SP-1, SP-2, dan SP-3 hanya mencantumkan pasal/ayat/huruf, tanpa jenis peraturan.
+     */
+    private function omitsRegulationType(): bool
+    {
+        $level = WarningLetterLevel::tryFrom((string) $this->input('level'));
+
+        return $level !== null && ! $level->usesViolationDetails();
+    }
+
     private function isFilledScalar(mixed $value): bool
     {
         return is_scalar($value) && trim((string) $value) !== '';
@@ -146,11 +163,11 @@ class GenerateWarningLetterRequest extends FormRequest
 
     public function rules(): array
     {
-        $usesFirstTemplate = in_array($this->input('level'), ['SP1', 'SP1T'], true);
+        $usesFirstTemplate = WarningLetterLevel::tryFrom((string) $this->input('level')) !== null;
         $rules = [
             'level' => ['required', Rule::enum(WarningLetterLevel::class)],
             'doc_date' => ['required', 'date'],
-            'violation_category' => ['required_if:level,SP2,SP3', 'nullable', 'string', Rule::in(WarningLetterService::VIOLATION_CATEGORIES)],
+            'violation_category' => ['nullable', 'string', Rule::in(WarningLetterService::VIOLATION_CATEGORIES)],
             'violation_description' => ['required', 'string', 'min:10', 'max:'.($this->hasViolationInput ? 11000 : 2000)],
             'incident_date' => ['nullable', 'date', 'before_or_equal:doc_date'],
             'regulation_reference' => [
@@ -167,7 +184,7 @@ class GenerateWarningLetterRequest extends FormRequest
                 'max:10',
             ],
             'regulation_type' => [
-                Rule::requiredIf(fn () => $usesFirstTemplate && $this->hasStructuredRegulationInput && ! $this->hasRepeatedRegulationInput && ! $this->hasViolationInput),
+                Rule::requiredIf(fn () => $usesFirstTemplate && ! $this->omitsRegulationType() && $this->hasStructuredRegulationInput && ! $this->hasRepeatedRegulationInput && ! $this->hasViolationInput),
                 'nullable',
                 'string',
                 Rule::in(WarningLetterService::REGULATION_TYPES),
@@ -181,7 +198,8 @@ class GenerateWarningLetterRequest extends FormRequest
             ],
             'paragraph_number' => ['nullable', 'integer', 'min:1', 'max:999'],
             'article_letter' => ['nullable', 'string', 'regex:/^[a-zA-Z]$/'],
-            'superior_position' => ['required_if:level,SP1,SP1T', 'nullable', 'string', 'max:150'],
+            'superior_name' => ['nullable', 'string', 'max:150'],
+            'superior_position' => ['required_if:level,SP1,SP1T,SP2,SP3', 'nullable', 'string', 'max:150'],
             'corrective_actions' => ['nullable', 'string', 'max:1500'],
         ];
 
@@ -203,7 +221,7 @@ class GenerateWarningLetterRequest extends FormRequest
                 $required = $usesFirstTemplate || $rowStarted;
 
                 $rules["regulation_references.{$index}.regulation_type"] = [
-                    Rule::requiredIf($required),
+                    Rule::requiredIf($required && ! $this->omitsRegulationType()),
                     'nullable',
                     'string',
                     Rule::in(WarningLetterService::REGULATION_TYPES),
@@ -230,7 +248,6 @@ class GenerateWarningLetterRequest extends FormRequest
             'level.enum' => 'Tingkat Surat Peringatan tidak valid.',
             'doc_date.required' => 'Tanggal surat wajib diisi.',
             'doc_date.date' => 'Tanggal surat tidak valid.',
-            'violation_category.required_if' => 'Kategori pelanggaran wajib dipilih untuk SP-2 dan SP-3.',
             'violation_category.in' => 'Kategori pelanggaran tidak valid.',
             'violation_description.required' => 'Uraian pelanggaran wajib diisi.',
             'violation_description.min' => 'Uraian pelanggaran minimal 10 karakter.',
@@ -241,10 +258,10 @@ class GenerateWarningLetterRequest extends FormRequest
             'regulation_references.array' => 'Format dasar ketentuan tidak valid.',
             'regulation_references.min' => 'Tambahkan minimal satu dasar ketentuan.',
             'regulation_references.max' => 'Maksimal 10 dasar ketentuan dapat ditambahkan.',
-            'regulation_reference.required_if' => 'Pasal atau dasar ketentuan wajib diisi untuk SP-1 dan SP-1 & Terakhir.',
-            'regulation_type.required' => 'Jenis peraturan wajib dipilih untuk SP-1 dan SP-1 & Terakhir.',
+            'regulation_reference.required_if' => 'Pasal yang dilanggar wajib diisi.',
+            'regulation_type.required' => 'Jenis peraturan wajib dipilih untuk SP-1 & Terakhir.',
             'regulation_type.in' => 'Jenis peraturan tidak valid.',
-            'article_number.required' => 'Nomor pasal wajib diisi untuk SP-1 dan SP-1 & Terakhir.',
+            'article_number.required' => 'Nomor pasal wajib diisi.',
             'article_number.integer' => 'Nomor pasal harus berupa angka.',
             'article_number.min' => 'Nomor pasal minimal 1.',
             'article_number.max' => 'Nomor pasal maksimal 9999.',
@@ -256,8 +273,9 @@ class GenerateWarningLetterRequest extends FormRequest
             'article_number.prohibited' => 'Jangan kirim nomor pasal bersama teks dasar ketentuan.',
             'paragraph_number.prohibited' => 'Jangan kirim nomor ayat bersama teks dasar ketentuan.',
             'article_letter.prohibited' => 'Jangan kirim huruf pasal bersama teks dasar ketentuan.',
-            'superior_position.required_if' => 'Jabatan atasan wajib diisi untuk SP-1 dan SP-1 & Terakhir.',
+            'superior_position.required_if' => 'Jabatan atasan wajib diisi.',
             'superior_position.max' => 'Jabatan atasan maksimal 150 karakter.',
+            'superior_name.max' => 'Nama atasan maksimal 150 karakter.',
             'corrective_actions.max' => 'Tindakan perbaikan maksimal 1500 karakter.',
             'violations.required' => 'Tambahkan minimal satu pelanggaran.',
             'violations.array' => 'Format rincian pelanggaran tidak valid.',

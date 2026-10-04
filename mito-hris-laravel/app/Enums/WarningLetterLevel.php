@@ -64,10 +64,11 @@ enum WarningLetterLevel: string
     }
 
     /**
-     * SP-1 dan SP-1 & Terakhir memakai template surat peringatan tertulis (pasal + jabatan atasan).
+     * SP-1, SP-2, dan SP-3 memakai format yang sama (pasal tanpa jenis peraturan + uraian);
+     * SP-1 & Terakhir memakai rincian pelanggaran dengan kutipan pasal.
      */
-    public function usesFirstLetterTemplate(): bool
+    public function usesViolationDetails(): bool
     {
-        return $this === self::SP1 || $this === self::SP1_FINAL;
+        return $this === self::SP1_FINAL;
     }
 }
