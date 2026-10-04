@@ -148,10 +148,26 @@
         .cc ol {
             margin: 1px 0 0;
         }
+
+        .draft-watermark {
+            position: fixed;
+            top: 38%;
+            left: 0;
+            right: 0;
+            color: rgba(235, 28, 36, 0.16);
+            font-size: 96pt;
+            font-weight: bold;
+            letter-spacing: 12px;
+            text-align: center;
+            transform: rotate(-35deg);
+        }
     </style>
 </head>
 
 <body>
+    @if (! empty($extraData['draft']))
+        <div class="draft-watermark">DRAFT</div>
+    @endif
 
     @include('pdf.components.kop-surat')
 

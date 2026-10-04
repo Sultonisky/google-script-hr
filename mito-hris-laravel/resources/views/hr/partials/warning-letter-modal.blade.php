@@ -177,7 +177,7 @@
                             <div class="col-12" id="wlRegulationField">
                                 <div id="wlStructuredRegulation">
                                     <label class="form-label fw-semibold" style="font-size:13px">
-                                        Jenis Peraturan
+                                        <span id="wlRegulationTitle">Jenis Peraturan</span>
                                         <span class="text-danger" id="wlRegulationRequired" style="display:none">*</span>
                                         <span class="text-muted fw-normal" id="wlRegulationOptional">(opsional)</span>
                                     </label>
@@ -190,7 +190,7 @@
                                                 </button>
                                             </div>
                                             <div class="row g-2">
-                                                <div class="col-12">
+                                                <div class="col-12 wl-regulation-type-col">
                                                     <label class="form-label mb-1" style="font-size:12px">Jenis peraturan</label>
                                                     <select class="form-select form-select-sm" data-regulation-field="regulation_type" name="regulation_references[0][regulation_type]">
                                                         <option value="">— Pilih jenis peraturan —</option>
@@ -228,7 +228,7 @@
                                                 </button>
                                             </div>
                                             <div class="row g-2">
-                                                <div class="col-12">
+                                                <div class="col-12 wl-regulation-type-col">
                                                     <label class="form-label mb-1" style="font-size:12px">Jenis peraturan</label>
                                                     <select class="form-select form-select-sm" data-regulation-field="regulation_type">
                                                         <option value="">— Pilih jenis peraturan —</option>
@@ -256,7 +256,7 @@
                                         </div>
                                     </template>
                                     <div class="d-flex justify-content-between align-items-center gap-2">
-                                        <div class="form-text" id="wlRegulationHelp" style="font-size:11px">SP-2/SP-3: dasar ketentuan opsional. Jika diisi, jenis peraturan dan nomor pasal wajib dilengkapi.</div>
+                                        <div class="form-text" id="wlRegulationHelp" style="font-size:11px">Tambahkan satu atau lebih pasal. Nomor pasal wajib diisi; ayat dan huruf opsional.</div>
                                         <button type="button" class="btn btn-sm btn-outline-primary text-nowrap" id="wlAddRegulation">
                                             <i class="bi bi-plus-lg me-1"></i>Tambah pasal
                                         </button>
@@ -264,12 +264,23 @@
                                     <ol class="small mt-2 mb-0 ps-3 text-muted" id="wlRegulationPreview" aria-live="polite"></ol>
                                 </div>
                             </div>
-                            <div class="col-md-6" id="wlSuperiorPositionField">
-                                <label class="form-label fw-semibold" style="font-size:13px" for="wlSuperiorPosition">Jabatan Atasan <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control form-control-sm" name="superior_position" id="wlSuperiorPosition"
-                                    maxlength="150" value="Atasan Langsung"
-                                    placeholder="Misal: Branch Manager Lampung" />
-                                <div class="form-text" style="font-size:11px">Nama atasan diambil dari data karyawan.</div>
+                            <div class="col-12" id="wlSuperiorPositionField">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold" style="font-size:13px" for="wlSuperiorName">Nama Atasan <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control form-control-sm" name="superior_name" id="wlSuperiorName"
+                                            maxlength="150" list="wlSuperiorOptions" autocomplete="off"
+                                            placeholder="Ketik nama atasan..." />
+                                        <datalist id="wlSuperiorOptions"></datalist>
+                                        <div class="form-text" style="font-size:11px">Terisi otomatis dari Direct Superior karyawan, bisa diubah.</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold" style="font-size:13px" for="wlSuperiorPosition">Jabatan Atasan <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control form-control-sm" name="superior_position" id="wlSuperiorPosition"
+                                            maxlength="150" placeholder="Misal: Branch Manager Lampung" />
+                                        <div class="form-text" style="font-size:11px" id="wlSuperiorPositionHelp">Terisi otomatis bila nama atasan ditemukan di data karyawan.</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -291,6 +302,10 @@
 
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-outline-danger btn-sm fw-semibold" id="btnPreviewWarningLetter" disabled
+                        title="Lihat draft PDF tanpa menerbitkan nomor surat">
+                        <i class="bi bi-eye me-1"></i>Preview PDF
+                    </button>
                     <button type="submit" class="btn btn-sm text-white fw-semibold" style="background:#eb1c24"
                         id="btnGenerateWarningLetter" disabled>
                         <i class="bi bi-file-earmark-pdf me-1"></i>Buat Surat Peringatan
@@ -315,11 +330,24 @@
             'areaKerja' => $e->areaKerja ?? null,
             'department' => $e->department ?? null,
             'branchName' => $e->branchName ?? null,
+            'directSuperior' => trim((string) ($e->directSuperior ?? '')) ?: null,
             'lastSp' => $__wlLatest[$e->employeeId ?? ''] ?? null,
         ])
         ->values()
         ->all();
+    $__wlSuperiors = collect($all ?? [])
+        ->reject(fn ($e) => in_array(strtolower(trim((string) ($e->statusEmployee ?? ''))), ['resigned', 'contract finished'], true))
+        ->map(fn ($e) => [
+            'name' => trim((string) ($e->fullName ?? '')),
+            'position' => trim((string) ($e->jobPosition ?? '')) ?: trim((string) ($e->jobPositionLocation ?? '')),
+        ])
+        ->filter(fn ($s) => $s['name'] !== '')
+        ->unique(fn ($s) => mb_strtolower($s['name']))
+        ->sortBy('name')
+        ->values()
+        ->all();
     $__wlStoreUrl = route('hr.employees.warning-letter', ['id' => '__ID__']);
+    $__wlPreviewUrl = route('hr.employees.warning-letter.preview', ['id' => '__ID__']);
     $__wlLevelLabels = collect(\App\Enums\WarningLetterLevel::cases())
         ->mapWithKeys(fn ($l) => [$l->value => $l->shortLabel()])
         ->all();
@@ -327,15 +355,16 @@
         ->mapWithKeys(fn ($l) => [$l->value => [
             'months' => $l->validityMonths(),
             'next' => ($l->next() ?? $l)->value,
-            'first' => $l->usesFirstLetterTemplate(),
-            'final' => $l === \App\Enums\WarningLetterLevel::SP1_FINAL,
+            'final' => $l->usesViolationDetails(),
         ]])
         ->all();
 @endphp
 <script>
     (function() {
         var employees = @json($__wlEmployees);
+        var superiors = @json($__wlSuperiors);
         var storeUrlTemplate = @json($__wlStoreUrl);
+        var previewUrlTemplate = @json($__wlPreviewUrl);
         var levelLabels = @json($__wlLevelLabels);
         var levelMeta = @json($__wlLevelMeta);
         var bulanId = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
@@ -370,8 +399,9 @@
             return (levelMeta[level] && levelMeta[level].months) || 12;
         }
 
+        // Semua tingkat memakai format surat SP-1; SP-1 & Terakhir menambah rincian pelanggaran.
         function usesFirstTemplate(level) {
-            return !!(levelMeta[level] && levelMeta[level].first);
+            return !!levelMeta[level];
         }
 
         function isFinalLevel(level) {
@@ -406,20 +436,69 @@
             el('wlDescriptionField').style.display = isFinal ? 'none' : '';
             el('wlDescription').disabled = isFinal;
             el('wlRegulationField').style.display = isFinal ? 'none' : '';
+            // SP-1: pasal diisi lebih dulu, baru uraian pelanggarannya.
+            el('wlDescriptionField').parentNode.insertBefore(
+                el('wlRegulationField'),
+                isSp1 ? el('wlDescriptionField') : el('wlDescriptionField').nextSibling
+            );
             setFieldsDisabled(el('wlRegulationField'), isFinal);
             el('wlStructuredRegulation').style.display = '';
             regulationRows().forEach(function(row) {
-                row.querySelector('[data-regulation-field="regulation_type"]').required = isSp1;
                 row.querySelector('[data-regulation-field="article_number"]').required = isSp1;
             });
+            applyRegulationTypeVisibility();
+            el('wlRegulationTitle').textContent = isSp1 ? 'Pasal yang Dilanggar' : 'Jenis Peraturan';
             el('wlRegulationRequired').style.display = isSp1 ? '' : 'none';
             el('wlRegulationOptional').style.display = isSp1 ? 'none' : '';
             el('wlRegulationHelp').textContent = isSp1
-                ? 'Tambahkan satu atau lebih dasar ketentuan. Jenis peraturan dan nomor pasal wajib diisi pada setiap baris.'
+                ? 'Tambahkan satu atau lebih pasal. Nomor pasal wajib diisi; ayat dan huruf opsional.'
                 : 'SP-2/SP-3: dasar ketentuan opsional. Jika diisi, jenis peraturan dan nomor pasal wajib dilengkapi.';
             refreshRegulationPreview();
             el('wlSuperiorPositionField').style.display = isSp1 || isFinal ? '' : 'none';
+            el('wlSuperiorName').required = isSp1 || isFinal;
             el('wlSuperiorPosition').required = isSp1 || isFinal;
+        }
+
+        function isSp1Only() {
+            return usesFirstTemplate(el('wlLevel').value) && !isFinalLevel(el('wlLevel').value);
+        }
+
+        // SP-1 hanya mencantumkan pasal/ayat/huruf, tanpa jenis peraturan.
+        function applyRegulationTypeVisibility() {
+            var hideType = isSp1Only();
+            var regulationDisabled = isFinalLevel(el('wlLevel').value);
+            regulationRows().forEach(function(row) {
+                row.querySelector('.wl-regulation-type-col').style.display = hideType ? 'none' : '';
+                var select = row.querySelector('[data-regulation-field="regulation_type"]');
+                select.disabled = hideType || regulationDisabled;
+                if (hideType) select.value = '';
+            });
+        }
+
+        function findSuperior(name) {
+            var key = String(name || '').trim().toLowerCase();
+            if (!key) return null;
+            return superiors.find(function(s) { return s.name.toLowerCase() === key; }) || null;
+        }
+
+        // Jabatan hanya ditimpa bila masih kosong atau sebelumnya hasil isi otomatis.
+        function prefillSuperiorPosition() {
+            var position = el('wlSuperiorPosition');
+            var match = findSuperior(el('wlSuperiorName').value);
+            var canOverwrite = position.value.trim() === '' || position.dataset.autofilled === '1';
+            if (match && match.position && canOverwrite) {
+                position.value = match.position;
+                position.dataset.autofilled = '1';
+            } else if (position.dataset.autofilled === '1') {
+                position.value = '';
+                position.dataset.autofilled = '';
+            }
+        }
+
+        function renderSuperiorOptions() {
+            el('wlSuperiorOptions').innerHTML = superiors.map(function(s) {
+                return '<option value="' + escapeHtml(s.name) + '">' + escapeHtml(s.position || '') + '</option>';
+            }).join('');
         }
 
         function violationRows() {
@@ -498,6 +577,7 @@
                 });
             });
             el('wlAddRegulation').disabled = rows.length >= 10;
+            applyRegulationTypeVisibility();
             refreshRegulationPreview();
         }
 
@@ -578,11 +658,17 @@
             }
             el('wlLevel').value = level;
 
+            el('wlSuperiorName').value = emp.directSuperior || '';
+            el('wlSuperiorPosition').value = '';
+            el('wlSuperiorPosition').dataset.autofilled = '';
+            prefillSuperiorPosition();
+
             refreshValidUntil();
             updateLevelFields();
             el('wlErrors').style.display = 'none';
             el('wlEmpPreview').style.display = 'block';
             el('btnGenerateWarningLetter').disabled = false;
+            el('btnPreviewWarningLetter').disabled = false;
         }
 
         function resetModal() {
@@ -590,6 +676,7 @@
             if (form) form.reset();
             resetRegulationRows();
             resetViolationRows();
+            el('wlSuperiorPosition').dataset.autofilled = '';
             el('wlEmployeeId').value = '';
             el('wlEmpSearch').value = '';
             el('wlEmpDropdown').style.display = 'none';
@@ -599,6 +686,7 @@
             el('wlDescCount').textContent = '0';
             updateLevelFields();
             el('btnGenerateWarningLetter').disabled = true;
+            el('btnPreviewWarningLetter').disabled = true;
         }
 
         function showErrors(messages) {
@@ -665,15 +753,106 @@
                     updateViolationRows();
                 }
             });
+            el('wlSuperiorName').addEventListener('input', prefillSuperiorPosition);
+            el('wlSuperiorName').addEventListener('change', prefillSuperiorPosition);
+            el('wlSuperiorPosition').addEventListener('input', function(e) { e.target.dataset.autofilled = ''; });
             el('warningLetterModal').addEventListener('hidden.bs.modal', resetModal);
+            renderSuperiorOptions();
             resetViolationRows();
             updateLevelFields();
             updateRegulationRows();
 
+            function requestHeaders() {
+                return {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') || {}).content || ''
+                };
+            }
+
+            function responseErrors(data, fallback) {
+                return data && data.errors
+                    ? Object.values(data.errors).flat()
+                    : [(data && data.message) || fallback];
+            }
+
+            el('btnPreviewWarningLetter').addEventListener('click', function() {
+                if (submitting || !prepareSubmission()) return;
+                var previewBtn = el('btnPreviewWarningLetter');
+                // Jendela dibuka saat klik agar tidak diblokir popup blocker; URL diisi setelah draft siap.
+                var previewWin = window.open('', '_blank');
+                var origHtml = previewBtn.innerHTML;
+                submitting = true;
+                previewBtn.disabled = true;
+                previewBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Menyiapkan...';
+
+                fetch(previewUrlTemplate.replace('__ID__', encodeURIComponent(el('wlEmployeeId').value)), {
+                    method: 'POST',
+                    headers: requestHeaders(),
+                    body: new FormData(form)
+                })
+                    .then(function(r) { return r.json().then(function(data) { return { ok: r.ok, data: data }; }); })
+                    .then(function(res) {
+                        if (res.ok && res.data.success && res.data.preview_url) {
+                            el('wlErrors').style.display = 'none';
+                            if (previewWin) previewWin.location.href = res.data.preview_url;
+                            else window.location.assign(res.data.preview_url);
+                            return;
+                        }
+                        if (previewWin) previewWin.close();
+                        showErrors(responseErrors(res.data, 'Gagal membuat pratinjau Surat Peringatan.'));
+                    })
+                    .catch(function(err) {
+                        if (previewWin) previewWin.close();
+                        showErrors(['Error: ' + (err && err.message ? err.message : 'Network error')]);
+                    })
+                    .then(function() {
+                        submitting = false;
+                        previewBtn.disabled = false;
+                        previewBtn.innerHTML = origHtml;
+                    });
+            });
+
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
-                if (submitting) return;
+                if (submitting || !prepareSubmission()) return;
+                var empId = el('wlEmployeeId').value;
 
+                submitting = true;
+                var origHtml = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Memproses...';
+
+                fetch(storeUrlTemplate.replace('__ID__', encodeURIComponent(empId)), {
+                    method: 'POST',
+                    headers: requestHeaders(),
+                    body: new FormData(form)
+                })
+                    .then(function(r) { return r.json().then(function(data) { return { ok: r.ok, data: data }; }); })
+                    .then(function(res) {
+                        submitting = false;
+                        btn.disabled = false;
+                        btn.innerHTML = origHtml;
+
+                        if (res.ok && res.data.success) {
+                            if (res.data.pdf_url) downloadPdf(res.data.pdf_url);
+                            showToast(res.data.message || 'Surat Peringatan berhasil diterbitkan.', 'success', 5000);
+                            var modal = bootstrap.Modal.getInstance(el('warningLetterModal'));
+                            if (modal) modal.hide();
+                            return;
+                        }
+
+                        showErrors(responseErrors(res.data, 'Gagal menerbitkan Surat Peringatan.'));
+                    })
+                    .catch(function(err) {
+                        submitting = false;
+                        btn.disabled = false;
+                        btn.innerHTML = origHtml;
+                        showErrors(['Error: ' + (err && err.message ? err.message : 'Network error')]);
+                    });
+            });
+
+            function prepareSubmission() {
                 var empId = el('wlEmployeeId').value;
                 var missing = [];
                 if (!empId) missing.push('Pilih karyawan terlebih dahulu.');
@@ -705,7 +884,7 @@
                     if (isFirstTemplate && !hasPart) {
                         missing.push('Lengkapi dasar ketentuan ' + (index + 1) + ' atau hapus baris tersebut.');
                         hasRegulationError = true;
-                    } else if (hasPart && !type) {
+                    } else if (hasPart && !type && !isFirstTemplate) {
                         missing.push('Pilih jenis peraturan pada dasar ketentuan ' + (index + 1) + '.');
                         hasRegulationError = true;
                     } else if (hasPart && !article) {
@@ -713,9 +892,10 @@
                         hasRegulationError = true;
                     }
                 });
-                if (hasRegulationError) { showErrors(missing); return; }
+                if (hasRegulationError) { showErrors(missing); return false; }
+                if (isFirstTemplate && !el('wlSuperiorName').value.trim()) missing.push('Nama atasan wajib diisi.');
                 if (isFirstTemplate && !el('wlSuperiorPosition').value.trim()) missing.push('Jabatan atasan wajib diisi.');
-                if (missing.length) { showErrors(missing); return; }
+                if (missing.length) { showErrors(missing); return false; }
 
                 if (!isFirstTemplate) {
                     regulationRows().filter(function(row) {
@@ -728,46 +908,8 @@
                     updateRegulationRows();
                 }
 
-                submitting = true;
-                var origHtml = btn.innerHTML;
-                btn.disabled = true;
-                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Memproses...';
-
-                fetch(storeUrlTemplate.replace('__ID__', encodeURIComponent(empId)), {
-                    method: 'POST',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') || {}).content || ''
-                    },
-                    body: new FormData(form)
-                })
-                    .then(function(r) { return r.json().then(function(data) { return { ok: r.ok, data: data }; }); })
-                    .then(function(res) {
-                        submitting = false;
-                        btn.disabled = false;
-                        btn.innerHTML = origHtml;
-
-                        if (res.ok && res.data.success) {
-                            if (res.data.pdf_url) downloadPdf(res.data.pdf_url);
-                            showToast(res.data.message || 'Surat Peringatan berhasil diterbitkan.', 'success', 5000);
-                            var modal = bootstrap.Modal.getInstance(el('warningLetterModal'));
-                            if (modal) modal.hide();
-                            return;
-                        }
-
-                        var errors = res.data && res.data.errors
-                            ? Object.values(res.data.errors).flat()
-                            : [(res.data && res.data.message) || 'Gagal menerbitkan Surat Peringatan.'];
-                        showErrors(errors);
-                    })
-                    .catch(function(err) {
-                        submitting = false;
-                        btn.disabled = false;
-                        btn.innerHTML = origHtml;
-                        showErrors(['Error: ' + (err && err.message ? err.message : 'Network error')]);
-                    });
-            });
+                return true;
+            }
         });
     })();
 </script>

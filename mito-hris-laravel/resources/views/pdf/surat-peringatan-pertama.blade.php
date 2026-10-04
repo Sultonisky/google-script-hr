@@ -22,7 +22,8 @@
     $employeeNik = ltrim(trim((string) ($employee->nikNpwp ?? '')), "'") ?: '-';
     $employeePosition = trim((string) ($employee->jobPosition ?? $employee->jobPositionLocation ?? '')) ?: '-';
     $employeeLocation = trim((string) ($employee->lokasiKerja ?? $employee->areaKerja ?? '')) ?: '-';
-    $directSuperior = trim((string) ($employee->directSuperior ?? '')) ?: '-';
+    $directSuperior = trim((string) ($extraData['superior_name'] ?? ''))
+        ?: trim((string) ($employee->directSuperior ?? '')) ?: '-';
     $superiorPosition = trim((string) ($extraData['superior_position'] ?? 'Atasan Langsung')) ?: 'Atasan Langsung';
 
     $level = \App\Enums\WarningLetterLevel::tryFrom((string) ($extraData['level'] ?? 'SP1'))
@@ -234,6 +235,7 @@
 
         .sign-name {
             font-weight: bold;
+            text-decoration: underline;
         }
 
         .acknowledgement {
@@ -243,7 +245,24 @@
         }
 
         .acknowledgement-space {
-            height: 34px;
+            height: 72px;
+        }
+
+        .signatures td.sign-title {
+            vertical-align: middle;
+        }
+
+        .draft-watermark {
+            position: fixed;
+            top: 38%;
+            left: 0;
+            right: 0;
+            color: rgba(235, 28, 36, 0.16);
+            font-size: 96pt;
+            font-weight: bold;
+            letter-spacing: 12px;
+            text-align: center;
+            transform: rotate(-35deg);
         }
 
         @if ($isFinal)
@@ -263,10 +282,32 @@
                 text-align: left;
             }
         @endif
+
+        @unless ($isFinal)
+            body {
+                font-size: 11pt;
+                line-height: 1.3;
+            }
+
+            .title {
+                font-size: 12pt;
+            }
+
+            .number {
+                font-size: 11pt;
+            }
+
+            .employee-label {
+                width: 92px;
+            }
+        @endunless
     </style>
 </head>
 
 <body>
+    @if (! empty($extraData['draft']))
+        <div class="draft-watermark">DRAFT</div>
+    @endif
     <div class="letterhead">
         <div class="company-name">{{ $companyName }}</div>
         <div class="company-address">{{ $companyAddress }}</div>
@@ -376,10 +417,21 @@
         </p>
     @else
         <p>
-            {{ $letterName }} ini berlaku {{ $validityText }}, apabila setelah mendapat Surat
+            {{ $letterName }} ini{{ $level === \App\Enums\WarningLetterLevel::SP3 ? ' merupakan peringatan terakhir dan' : '' }}
+            berlaku {{ $validityText }}, apabila setelah mendapat Surat
             Peringatan Tertulis ini Saudara melakukan kembali tindakan pelanggaran disiplin maupun pelanggaran di dalam
-            Peraturan Perusahaan, maka Perusahaan dapat memberikan sanksi sesuai dengan Peraturan Perusahaan /
-            Undang-Undang Ketenagakerjaan yang berlaku.
+            Peraturan Perusahaan, maka Perusahaan dapat
+            @switch($level)
+                @case(\App\Enums\WarningLetterLevel::SP2)
+                    memberikan <strong>Surat Peringatan Tertulis ke 3</strong>
+                    @break
+                @case(\App\Enums\WarningLetterLevel::SP3)
+                    melakukan <strong>Pemutusan Hubungan Kerja (PHK)</strong>
+                    @break
+                @default
+                    memberikan sanksi
+            @endswitch
+            sesuai dengan Peraturan Perusahaan / Undang-Undang Ketenagakerjaan yang berlaku.
         </p>
         <p>
             Demikian Surat Peringatan Tertulis ini diberikan, dan agar dapatnya Saudara memperbaiki tindakan pelanggaran
@@ -392,17 +444,21 @@
             <td colspan="2" class="signature-date">{{ $companyCity }}, {{ $docDateFormatted }}</td>
         </tr>
         <tr>
+            <td class="employee-sign sign-title">Yang Bersangkutan</td>
+            <td class="company-sign sign-title">
+                @unless ($isFinal)
+                    {{ $companyName }}<br>
+                @endunless
+                Atasan
+            </td>
+        </tr>
+        <tr>
             <td class="employee-sign">
-                Yang Bersangkutan
                 <div class="sign-space"></div>
                 <span class="sign-name">{{ $employeeName }}</span><br>
                 {{ $employeePosition }}
             </td>
             <td class="company-sign">
-                @unless ($isFinal)
-                    {{ $companyName }}<br>
-                @endunless
-                Atasan
                 <div class="sign-space"></div>
                 <span class="sign-name">{{ $directSuperior }}</span><br>
                 {{ $superiorPosition }}
