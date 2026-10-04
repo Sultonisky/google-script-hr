@@ -6,34 +6,34 @@
     <title>Surat Panggilan Kerja I</title>
     <style>
         @page {
-            margin: 28px 58px 34px;
+            margin: 22px 32px 30px;
         }
 
         body {
             color: #111;
             font-family: 'Times New Roman', Times, serif;
-            font-size: 9pt;
-            line-height: 1.22;
+            font-size: 10pt;
+            line-height: 1.28;
         }
 
         .letterhead {
             width: 100%;
             border-collapse: collapse;
-            border-bottom: 1.5px solid #111;
-            margin-bottom: 9px;
-            padding-bottom: 5px;
+            border-bottom: 2.5px solid #111;
+            margin-bottom: 12px;
         }
 
         .letterhead td {
+            padding: 0 0 4px;
             vertical-align: middle;
         }
 
         .logo-cell {
-            width: 34%;
+            width: 24%;
         }
 
         .logo {
-            width: 145px;
+            width: 150px;
             height: auto;
         }
 
@@ -43,113 +43,96 @@
 
         .company-name {
             font-family: Arial, sans-serif;
-            font-size: 9pt;
+            font-size: 13pt;
             font-weight: bold;
         }
 
         .company-address {
             font-family: Arial, sans-serif;
-            font-size: 7pt;
-            line-height: 1.2;
+            font-size: 8pt;
+            line-height: 1.25;
+        }
+
+        .content {
+            padding: 0 52px 0 72px;
         }
 
         .title {
-            margin: 8px 0 0;
-            font-size: 11pt;
+            margin: 2px 0 0;
+            font-size: 12pt;
             font-weight: bold;
             text-align: center;
+            text-decoration: underline;
         }
 
         .subtitle {
-            margin: 0 0 14px;
+            margin: 0 0 8px;
             text-align: center;
         }
 
         .letter-date {
-            margin-bottom: 9px;
+            margin-bottom: 14px;
             text-align: right;
+            font-size: 11.5pt;
+        }
+
+        .fields {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .fields td {
+            padding: 0;
+            vertical-align: top;
+        }
+
+        .fields td.field {
+            width: 72px;
+        }
+
+        .fields td.colon {
+            width: 8px;
         }
 
         .metadata {
-            width: 100%;
-            margin: 0 0 12px;
-            border-collapse: collapse;
-            table-layout: fixed;
-        }
-
-        .metadata td {
-            padding: 0;
-            vertical-align: top;
-        }
-
-        .metadata .field {
-            width: 70px;
-        }
-
-        .recipient-table {
-            width: 100%;
-            margin: 0 0 14px;
-            border-collapse: collapse;
-            table-layout: fixed;
-        }
-
-        .recipient-table td {
-            padding: 0;
-            vertical-align: top;
-        }
-
-        .recipient-table .field {
-            width: 70px;
-        }
-
-        .recipient-table .name-field {
-            width: 70px;
-        }
-
-        .recipient {
-            margin: 0 0 2px;
-        }
-
-        .recipient-block {
-            width: 100%;
-            margin-left: 0;
+            margin-bottom: 14px;
         }
 
         p {
-            margin: 0 0 7px;
+            margin: 0;
             text-align: justify;
         }
 
+        .gap {
+            margin-top: 14px;
+        }
+
         .action-list {
-            margin: 0 0 7px 20px;
-            padding-left: 13px;
+            margin: 0 0 0 20px;
+            padding-left: 18px;
         }
 
         .action-list li {
-            margin-bottom: 2px;
             padding-left: 2px;
             text-align: justify;
         }
 
-        .meeting {
-            width: 88%;
-            margin: 1px 0 8px 12%;
-            border-collapse: collapse;
-            table-layout: fixed;
+        .meeting-wrap {
+            padding-left: 38px;
         }
 
-        .meeting td {
-            padding: 0;
-            vertical-align: top;
-        }
-
-        .meeting .field {
-            width: 70px;
+        .meeting td.field {
+            width: 84px;
+            font-weight: bold;
         }
 
         .signature {
-            margin: 20px 0 0;
-            text-align: left;
+            margin-top: 30px;
+            page-break-inside: avoid;
+        }
+
+        .signature-space {
+            height: 62px;
         }
 
         .signature-name {
@@ -158,196 +141,200 @@
         }
 
         .copies {
-            margin: 8px 0 0;
-            text-align: left;
+            margin-top: 12px;
+            font-size: 8pt;
+            line-height: 1.25;
+            page-break-inside: avoid;
         }
 
-        .copies ol {
-            margin: 1px 0 0 16px;
-            padding-left: 12px;
+        .draft-watermark {
+            position: fixed;
+            top: 38%;
+            left: 0;
+            right: 0;
+            color: rgba(235, 28, 36, 0.16);
+            font-size: 96pt;
+            font-weight: bold;
+            letter-spacing: 12px;
+            text-align: center;
+            transform: rotate(-35deg);
         }
     </style>
 </head>
 
 <body>
     @php
-        $isStein = strtoupper((string) ($company['code'] ?? '')) === 'SPI';
         $monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-        $formatAbsenceDate = static function (?string $date) use ($monthNames): string {
+        $dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        $formatDate = static function (?string $date, bool $includeDay = false) use ($monthNames, $dayNames): string {
             if (! $date) {
                 return '-';
             }
 
             $parsedDate = \Illuminate\Support\Carbon::parse($date);
+            $formatted = $parsedDate->day.' '.$monthNames[$parsedDate->month - 1].' '.$parsedDate->year;
 
-            return $parsedDate->day.' '.$monthNames[$parsedDate->month - 1].' '.$parsedDate->year;
+            return $includeDay ? $dayNames[$parsedDate->dayOfWeek].', '.$formatted : $formatted;
         };
-        $formatMeetingDate = static function (?string $date) use ($monthNames): string {
-            if (! $date) {
-                return '-';
-            }
+        $formatPeriod = static fn (?string $start, ?string $end): string => $formatDate($start).' sampai dengan '.$formatDate($end);
 
-            $parsedDate = \Illuminate\Support\Carbon::parse($date);
-            $dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-
-            return $dayNames[$parsedDate->dayOfWeek].', '.$parsedDate->day.' '.$monthNames[$parsedDate->month - 1].' '.$parsedDate->year;
+        $gender = strtolower(trim((string) ($employee->gender ?? '')));
+        $salutation = match (true) {
+            str_contains($gender, 'perempuan') || str_contains($gender, 'wanita') || str_contains($gender, 'female') => 'Saudari',
+            str_contains($gender, 'laki') || str_contains($gender, 'pria') || str_contains($gender, 'male') => 'Saudara',
+            default => 'Saudara/Saudari',
         };
+
         $employeeName = trim((string) ($employee->fullName ?? '')) ?: '-';
         $employeePosition = trim((string) ($employee->jobPositionLocation ?: $employee->jobPosition)) ?: '-';
-        $employeeNik = ltrim(trim((string) ($employee->nikNpwp ?? '')), "'") ?: '-';
+        $employeeNik = ltrim(trim((string) ($employee->nikNpwp ?? '')), "'");
+        $employeeNik = preg_match('/^\d{16}$/', $employeeNik) ? implode(' ', str_split($employeeNik, 4)) : ($employeeNik ?: '-');
         $employeeAddress = trim((string) ($employee->residentialAddress ?: $employee->citizenIdAddress)) ?: '-';
         $letterNumber = trim((string) ($extraData['sk_number'] ?? '')) ?: '-';
+        $attachmentCount = (int) ($extraData['attachment_count'] ?? 1);
+        $docDate = filled($extraData['doc_date'] ?? null) ? \Illuminate\Support\Carbon::parse($extraData['doc_date']) : null;
+        $letterDate = $docDate ? $docDate->format('d').' '.$monthNames[$docDate->month - 1].' '.$docDate->year : '-';
+        $companyName = (string) ($company['name'] ?? 'PT MAHAKARYA SUKSES INDONESIA');
+        $signatureCompany = preg_replace('/^Pt\b\.?/', 'PT', ucwords(strtolower($companyName)));
+        $hasSecondPeriod = ! empty($extraData['absence_second_start_date']) && ! empty($extraData['absence_second_end_date']);
+        $meetingTime = str_replace(':', '.', (string) ($extraData['meeting_time'] ?? '-'));
     @endphp
 
-    @if ($isStein)
-        @php
-            $steinLogoPath = public_path('assets/stein-pdf.png');
-            $steinLogo = 'data:image/png;base64,' . base64_encode(file_get_contents($steinLogoPath));
-        @endphp
-        <table class="letterhead">
-            <tr>
-                <td class="logo-cell">
-                    <img class="logo" src="{{ $steinLogo }}" alt="Stein Cookware">
-                </td>
-                <td class="company">
-                    <div class="company-name">{{ $company['name'] }}</div>
-                    <div class="company-address">{{ $company['address'] }}</div>
-                </td>
-            </tr>
-        </table>
-    @else
-        @include('pdf.components.kop-surat')
+    @if (! empty($extraData['draft']))
+        <div class="draft-watermark">DRAFT</div>
     @endif
 
-    <div class="title">SURAT PANGGILAN KERJA I</div>
-    <div class="subtitle">(Panggilan Pertama karena Ketidakhadiran Tanpa Keterangan)</div>
-    <div class="letter-date">Jakarta, 09 September 2026</div>
+    @include('pdf.components.kop-surat-mangkir')
 
-    <div class="recipient-block">
-        <table class="metadata">
-            <colgroup>
-                <col style="width:70px">
-                <col>
-            </colgroup>
+    <div class="content">
+        <div class="title">SURAT PANGGILAN KERJA I</div>
+        <div class="subtitle">(Panggilan Pertama karena Ketidakhadiran Tanpa Keterangan)</div>
+        <div class="letter-date">{{ $company['city'] ?? 'Jakarta' }}, {{ $letterDate }}</div>
+
+        <table class="fields metadata">
             <tr>
                 <td class="field">Nomor</td>
-                <td>: {{ $letterNumber }}</td>
+                <td class="colon">:</td>
+                <td>{{ $letterNumber }}</td>
             </tr>
             <tr>
                 <td class="field">Lampiran</td>
-                <td>: 1</td>
+                <td class="colon">:</td>
+                <td>{{ $attachmentCount > 0 ? $attachmentCount : '-' }}</td>
             </tr>
             <tr>
                 <td class="field">Perihal</td>
-                <td>: <strong>Panggilan Kerja I</strong></td>
+                <td class="colon">:</td>
+                <td><strong>Panggilan Kerja I</strong></td>
             </tr>
         </table>
 
-        <div class="recipient">Kepada Yth.</div>
-        <table class="recipient-table">
-            <colgroup>
-                <col style="width:70px">
-                <col>
-            </colgroup>
+        <div>Kepada Yth.</div>
+        <table class="fields">
             <tr>
-                <td class="name-field">Sdr/i</td>
-                <td>: {{ $employeeName }}</td>
+                <td class="field">Sdr/I</td>
+                <td class="colon">:</td>
+                <td>{{ $employeeName }}</td>
             </tr>
             <tr>
                 <td class="field">Jabatan</td>
-                <td>: {{ $employeePosition }}</td>
+                <td class="colon">:</td>
+                <td>{{ $employeePosition }}</td>
             </tr>
             <tr>
                 <td class="field">NIK/NIP</td>
-                <td>: {{ $employeeNik }}</td>
+                <td class="colon">:</td>
+                <td>{{ $employeeNik }}</td>
             </tr>
             <tr>
                 <td class="field">Alamat</td>
-                <td>: {{ $employeeAddress }}</td>
+                <td class="colon">:</td>
+                <td>{{ $employeeAddress }}</td>
             </tr>
         </table>
-        <div class="recipient">di tempat</div>
-    </div>
+        <div>di tempat</div>
 
-    <p>Dengan hormat,</p>
-    <p>
-        Berdasarkan data kehadiran Perusahaan, Saudara/Saudari tercatat
-        <strong>tidak hadir bekerja tanpa keterangan</strong> pada tanggal
-        <strong>{{ $formatAbsenceDate($extraData['absence_start_date'] ?? null) }} sampai dengan {{ $formatAbsenceDate($extraData['absence_end_date'] ?? null) }}</strong>
-        @if (! empty($extraData['absence_second_start_date']) && ! empty($extraData['absence_second_end_date']))
-            , dan kembali tercatat tidak hadir pada tanggal
-            <strong>{{ $formatAbsenceDate($extraData['absence_second_start_date']) }} sampai dengan {{ $formatAbsenceDate($extraData['absence_second_end_date']) }}</strong>
-        @endif.
-    </p>
-    <p>
-        Ketidakhadiran tersebut menjadi perhatian Perusahaan karena berdasarkan ketentuan
-        <strong>Peraturan Perusahaan</strong>, karyawan yang tidak masuk kerja tanpa memperoleh izin dari atasan dan
-        tidak diketahui oleh HRBP ditunjuk dapat dikategorikan sebagai mangkir.
-    </p>
-    <p>
-        Sehubungan dengan hal tersebut, Perusahaan dengan ini memberikan <strong>Panggilan Kerja I</strong> kepada
-        Saudari untuk:
-    </p>
-    <ol class="action-list">
-        <li>Hadir dan melapor kepada HR Perusahaan untuk memberikan klarifikasi atas ketidakhadiran Saudari;</li>
-        <li>Menyampaikan keterangan tertulis mengenai alasan ketidakhadiran Saudari; dan</li>
-        <li>
-            Apabila terdapat alasan atau kondisi yang dapat dipertanggungjawabkan, agar disertai dengan
-            <strong>bukti atau dokumen pendukung yang sah.</strong>
-        </li>
-    </ol>
-    <p>
-        Panggilan ini diberikan sebagai bagian dari proses klarifikasi dan pembinaan hubungan kerja sesuai dengan
-        ketentuan Peraturan Perusahaan, khususnya ketentuan mengenai ketidakhadiran/mangkir.
-    </p>
-    <p><strong>Saudara/Saudari diminta untuk hadir pada:</strong></p>
-    <table class="meeting">
-        <colgroup>
-            <col style="width:70px">
-            <col>
-        </colgroup>
-        <tr>
-            <td class="field"><strong>Hari/Tanggal</strong></td>
-            <td>: {{ $formatMeetingDate($extraData['meeting_date'] ?? null) }}</td>
-        </tr>
-        <tr>
-            <td class="field"><strong>Waktu</strong></td>
-            <td>: {{ $extraData['meeting_time'] ?? '-' }} WIB</td>
-        </tr>
-        <tr>
-            <td class="field"><strong>Tempat</strong></td>
-            <td>: {{ $extraData['meeting_location'] ?? '-' }}</td>
-        </tr>
-        <tr>
-            <td class="field"><strong>Agenda</strong></td>
-            <td>: {{ $extraData['meeting_agenda'] ?? '-' }}</td>
-        </tr>
-    </table>
-    <p>
-        Apabila Saudari tidak memenuhi panggilan ini dan tidak memberikan keterangan yang dapat dipertanggungjawabkan,
-        Perusahaan dapat melakukan <strong>Panggilan Kerja II</strong> dan mengambil tindakan lebih lanjut sesuai
-        dengan ketentuan Peraturan Perusahaan dan peraturan perundang-undangan yang berlaku.
-    </p>
-    <p>
-        Demikian surat panggilan ini disampaikan untuk dapat dilaksanakan sebagaimana mestinya. Atas perhatian dan
-        kerja sama Saudari, kami ucapkan terima kasih.
-    </p>
+        <p class="gap">Dengan hormat,</p>
+        <p>
+            Berdasarkan data kehadiran Perusahaan, Saudara/Saudari tercatat
+            <strong>tidak hadir bekerja tanpa keterangan</strong> pada tanggal
+            <strong>{{ $formatPeriod($extraData['absence_start_date'] ?? null, $extraData['absence_end_date'] ?? null) }}</strong>@if ($hasSecondPeriod), dan kembali tercatat tidak hadir pada tanggal
+            <strong>{{ $formatPeriod($extraData['absence_second_start_date'], $extraData['absence_second_end_date']) }}</strong>@endif.
+        </p>
 
-    <div class="signature">
-        Hormat kami,<br>
-        {{ $company['name'] }}
-        <br><br><br><br>
-        <span class="signature-name">Hisar Hesti</span><br>
-        HR &amp; Legal Manager
-    </div>
-
-    <div class="copies">
-        Tembusan:
-        <ol>
-            <li>Arsip/Personal File</li>
-            <li>Atasan langsung Karyawan</li>
+        <p class="gap">
+            Ketidakhadiran tersebut menjadi perhatian Perusahaan karena berdasarkan ketentuan
+            <strong>Peraturan Perusahaan</strong>, karyawan yang tidak masuk kerja tanpa memperoleh izin dari atasan dan
+            tidak diketahui oleh HRBP ditunjuk dapat dikategorikan sebagai <strong>mangkir</strong>.
+        </p>
+        <p>
+            Sehubungan dengan hal tersebut, Perusahaan dengan ini memberikan <strong>Panggilan Kerja I</strong> kepada
+            {{ $salutation }} untuk:
+        </p>
+        <ol class="action-list">
+            <li><strong>Hadir dan melapor kepada HR Perusahaan</strong> untuk memberikan klarifikasi atas ketidakhadiran {{ $salutation }};</li>
+            <li>Menyampaikan <strong>keterangan tertulis</strong> mengenai alasan ketidakhadiran {{ $salutation }}; dan</li>
+            <li>
+                Apabila terdapat alasan atau kondisi yang dapat dipertanggungjawabkan, agar disertai dengan
+                <strong>bukti atau dokumen pendukung yang sah</strong>.
+            </li>
         </ol>
+        <p>
+            Panggilan ini diberikan sebagai bagian dari proses klarifikasi dan pembinaan hubungan kerja sesuai dengan
+            ketentuan <strong>Peraturan Perusahaan</strong>, khususnya ketentuan mengenai <strong>ketidakhadiran/mangkir</strong>.
+        </p>
+        <p>Saudara/Saudari diminta untuk <strong>hadir pada:</strong></p>
+        <div class="meeting-wrap">
+        <table class="fields meeting">
+            <tr>
+                <td class="field">Hari/Tanggal</td>
+                <td class="colon"><strong>:</strong></td>
+                <td><strong>{{ $formatDate($extraData['meeting_date'] ?? null, true) }}</strong></td>
+            </tr>
+            <tr>
+                <td class="field">Waktu</td>
+                <td class="colon"><strong>:</strong></td>
+                <td><strong>{{ $meetingTime }} WIB</strong></td>
+            </tr>
+            <tr>
+                <td class="field">Tempat</td>
+                <td class="colon">:</td>
+                <td>{!! nl2br(e($extraData['meeting_location'] ?? '-')) !!}</td>
+            </tr>
+            <tr>
+                <td class="field">Agenda</td>
+                <td class="colon">:</td>
+                <td>{{ $extraData['meeting_agenda'] ?? '-' }}</td>
+            </tr>
+        </table>
+        </div>
+
+        <p class="gap">
+            Apabila {{ $salutation }} tidak memenuhi panggilan ini dan tidak memberikan keterangan yang dapat
+            dipertanggungjawabkan, Perusahaan dapat melakukan <strong>Panggilan Kerja II</strong> dan mengambil tindakan
+            lebih lanjut sesuai dengan ketentuan Peraturan Perusahaan dan peraturan perundang-undangan yang berlaku.
+        </p>
+        <p>
+            Demikian surat panggilan ini disampaikan untuk dapat dilaksanakan sebagaimana mestinya. Atas perhatian dan
+            kerja sama {{ $salutation }}, kami ucapkan terima kasih.
+        </p>
+
+        <div class="signature">
+            <div>Hormat kami,</div>
+            <div>{{ $signatureCompany }}</div>
+            <div class="signature-space"></div>
+            <div class="signature-name">Hisar Hesti</div>
+            <div>HR &amp; Legal Manager</div>
+        </div>
+
+        <div class="copies">
+            <div>Tembusan:</div>
+            <div>1. Arsip/Personal File</div>
+            <div>2. Atasan langsung Karyawan</div>
+        </div>
     </div>
+
+    @include('pdf.components.lampiran-gambar', ['attachments' => $extraData['attachments'] ?? [], 'withLetterhead' => true])
 </body>
 
 </html>

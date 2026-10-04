@@ -6,34 +6,40 @@
     <title>Surat Panggilan Kerja II</title>
     <style>
         @page {
-            margin: 28px 58px 34px;
+            margin: 112px 32px 40px;
         }
 
         body {
             color: #111;
             font-family: 'Times New Roman', Times, serif;
-            font-size: 9pt;
-            line-height: 1.22;
+            font-size: 11pt;
+            line-height: 1.38;
+        }
+
+        .page-header {
+            position: fixed;
+            top: -94px;
+            left: 0;
+            right: 0;
         }
 
         .letterhead {
             width: 100%;
             border-collapse: collapse;
-            border-bottom: 1.5px solid #111;
-            margin-bottom: 9px;
-            padding-bottom: 5px;
+            border-bottom: 2.5px solid #111;
         }
 
         .letterhead td {
+            padding: 0 0 4px;
             vertical-align: middle;
         }
 
         .logo-cell {
-            width: 34%;
+            width: 24%;
         }
 
         .logo {
-            width: 145px;
+            width: 150px;
             height: auto;
         }
 
@@ -43,91 +49,90 @@
 
         .company-name {
             font-family: Arial, sans-serif;
-            font-size: 9pt;
+            font-size: 13pt;
             font-weight: bold;
         }
 
         .company-address {
             font-family: Arial, sans-serif;
-            font-size: 7pt;
-            line-height: 1.2;
+            font-size: 8pt;
+            line-height: 1.25;
+        }
+
+        .content {
+            padding: 0 52px 0 72px;
         }
 
         .title {
-            margin: 8px 0 0;
-            font-size: 11pt;
+            font-size: 12pt;
             font-weight: bold;
             text-align: center;
+            text-decoration: underline;
         }
 
         .subtitle {
-            margin: 0 0 14px;
+            margin: 0 0 8px;
             text-align: center;
         }
 
         .letter-date {
-            margin-bottom: 9px;
+            margin-bottom: 12px;
             text-align: right;
+            font-size: 11.5pt;
         }
 
-        .metadata,
-        .recipient-table,
-        .meeting {
+        .fields {
+            width: 100%;
             border-collapse: collapse;
-            table-layout: fixed;
         }
 
-        .metadata {
-            width: 100%;
-            margin: 0 0 12px;
-        }
-
-        .recipient-table {
-            width: 100%;
-            margin: 0 0 14px;
-        }
-
-        .metadata td,
-        .recipient-table td,
-        .meeting td {
+        .fields td {
             padding: 0;
             vertical-align: top;
         }
 
-        .field,
-        .name-field {
-            width: 70px;
+        .fields td.field {
+            width: 80px;
         }
 
-        .recipient {
-            margin: 0 0 2px;
+        .fields td.colon {
+            width: 8px;
+        }
+
+        .metadata {
+            margin-bottom: 14px;
+        }
+
+        .recipient-label {
+            margin-bottom: 14px;
         }
 
         p {
-            margin: 0 0 7px;
+            margin: 12px 0 0;
             text-align: justify;
         }
 
         .action-list {
-            margin: 0 0 7px 20px;
-            padding-left: 13px;
+            margin: 12px 0 0 18px;
+            padding-left: 18px;
         }
 
         .action-list li {
-            margin-bottom: 2px;
-            padding-left: 2px;
+            padding-left: 4px;
             text-align: justify;
         }
 
-        .meeting {
-            width: 88%;
-            margin: 1px 0 8px 12%;
+        .action-list li + li {
+            margin-top: 8px;
         }
 
         .signature {
-            margin: 20px 0 0;
-            text-align: left;
+            margin-top: 28px;
             page-break-inside: avoid;
+        }
+
+        .signature-space {
+            height: 62px;
         }
 
         .signature-name {
@@ -136,176 +141,174 @@
         }
 
         .copies {
-            margin: 8px 0 0;
-            text-align: left;
+            margin-top: 12px;
+            font-size: 8pt;
+            line-height: 1.25;
             page-break-inside: avoid;
         }
 
-        .copies ol {
-            margin: 1px 0 0 16px;
-            padding-left: 12px;
+        .draft-watermark {
+            position: fixed;
+            top: 38%;
+            left: 0;
+            right: 0;
+            color: rgba(235, 28, 36, 0.16);
+            font-size: 96pt;
+            font-weight: bold;
+            letter-spacing: 12px;
+            text-align: center;
+            transform: rotate(-35deg);
         }
     </style>
 </head>
 
 <body>
     @php
-        $isStein = strtoupper((string) ($company['code'] ?? '')) === 'SPI';
         $monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
         $dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-        $formatDate = static function (?string $date, bool $includeDay = false) use ($monthNames, $dayNames): string {
+        $formatDate = static function (?string $date, bool $includeDay = false, bool $padDay = false) use ($monthNames, $dayNames): string {
             if (! $date) {
                 return '-';
             }
 
             $parsedDate = \Illuminate\Support\Carbon::parse($date);
-            $formatted = $parsedDate->day.' '.$monthNames[$parsedDate->month - 1].' '.$parsedDate->year;
+            $formatted = $parsedDate->format($padDay ? 'd' : 'j').' '.$monthNames[$parsedDate->month - 1].' '.$parsedDate->year;
 
             return $includeDay ? $dayNames[$parsedDate->dayOfWeek].', '.$formatted : $formatted;
         };
         $employeeName = trim((string) ($employee->fullName ?? '')) ?: '-';
         $employeePosition = trim((string) ($employee->jobPositionLocation ?: $employee->jobPosition)) ?: '-';
-        $employeeNik = ltrim(trim((string) ($employee->nikNpwp ?? '')), "'") ?: '-';
+        $employeeNik = ltrim(trim((string) ($employee->nikNpwp ?? '')), "'");
+        $employeeNik = preg_match('/^\d{16}$/', $employeeNik) ? implode(' ', str_split($employeeNik, 4)) : ($employeeNik ?: '-');
         $employeeAddress = trim((string) ($employee->residentialAddress ?: $employee->citizenIdAddress)) ?: '-';
         $letterNumber = trim((string) ($extraData['sk_number'] ?? '')) ?: '-';
+        $attachmentCount = (int) ($extraData['attachment_count'] ?? 2);
         $firstSummonsNumber = trim((string) ($extraData['first_summons_number'] ?? '')) ?: '-';
-        $firstSummonsDate = $formatDate($extraData['first_summons_date'] ?? null);
+        $firstSummonsDate = $formatDate($extraData['first_summons_date'] ?? null, false, true);
         $workingDays = max(1, (int) ($extraData['working_days'] ?? 1));
-        $companyName = $company['name'] ?? 'PT MAHAKARYA SUKSES INDONESIA';
+        $companyName = (string) ($company['name'] ?? 'PT MAHAKARYA SUKSES INDONESIA');
+        $companyTitle = preg_replace('/^Pt\b\.?/', 'PT', ucwords(strtolower($companyName)));
+        $meetingTime = str_replace(':', '.', (string) ($extraData['meeting_time'] ?? '-'));
+        $meetingLocation = trim((string) ($extraData['meeting_location'] ?? '')) ?: '-';
     @endphp
 
-    @if ($isStein)
-        @php
-            $steinLogoPath = public_path('assets/stein-pdf.png');
-            $steinLogo = 'data:image/png;base64,' . base64_encode(file_get_contents($steinLogoPath));
-        @endphp
-        <table class="letterhead">
-            <tr>
-                <td class="logo-cell">
-                    <img class="logo" src="{{ $steinLogo }}" alt="Stein Cookware">
-                </td>
-                <td class="company">
-                    <div class="company-name">{{ $companyName }}</div>
-                    <div class="company-address">{{ $company['address'] }}</div>
-                </td>
-            </tr>
-        </table>
-    @else
-        @include('pdf.components.kop-surat')
+    @if (! empty($extraData['draft']))
+        <div class="draft-watermark">DRAFT</div>
     @endif
 
-    <div class="title">SURAT PANGGILAN KERJA II</div>
-    <div class="subtitle">(Panggilan Kedua/Terakhir karena Ketidakhadiran Tanpa Keterangan)</div>
-    <div class="letter-date">{{ $company['city'] ?? 'Jakarta' }}, {{ $formatDate($extraData['doc_date'] ?? null) }}</div>
+    <div class="page-header">
+        @include('pdf.components.kop-surat-mangkir')
+    </div>
 
-    <div>
-        <table class="metadata">
-            <colgroup>
-                <col style="width:70px">
-                <col>
-            </colgroup>
+    <div class="content">
+        <div class="title">SURAT PANGGILAN KERJA II</div>
+        <div class="subtitle">(Panggilan Kedua/Terakhir karena Ketidakhadiran Tanpa Keterangan)</div>
+        <div class="letter-date">{{ $company['city'] ?? 'Jakarta' }}, {{ $formatDate($extraData['doc_date'] ?? null, false, true) }}</div>
+
+        <table class="fields metadata">
             <tr>
                 <td class="field">Nomor</td>
-                <td>: {{ $letterNumber }}</td>
+                <td class="colon">:</td>
+                <td>{{ $letterNumber }}</td>
             </tr>
             <tr>
                 <td class="field">Lampiran</td>
-                <td>: 2</td>
+                <td class="colon">:</td>
+                <td>{{ $attachmentCount > 0 ? $attachmentCount : '-' }}</td>
             </tr>
             <tr>
                 <td class="field">Perihal</td>
-                <td>: <strong>Panggilan Kerja II (Terakhir)</strong></td>
+                <td class="colon"><strong>:</strong></td>
+                <td><strong>Panggilan Kerja II (Terakhir)</strong></td>
             </tr>
         </table>
 
-        <div class="recipient">Kepada Yth.</div>
-        <table class="recipient-table">
-            <colgroup>
-                <col style="width:70px">
-                <col>
-            </colgroup>
+        <div class="recipient-label">Kepada Yth.</div>
+        <table class="fields">
             <tr>
-                <td class="name-field">Nama</td>
-                <td>: {{ $employeeName }}</td>
+                <td class="field">Nama</td>
+                <td class="colon">:</td>
+                <td>{{ $employeeName }}</td>
             </tr>
             <tr>
                 <td class="field">Jabatan</td>
-                <td>: {{ $employeePosition }}</td>
+                <td class="colon">:</td>
+                <td>{{ $employeePosition }}</td>
             </tr>
             <tr>
                 <td class="field">NIK/NIP</td>
-                <td>: {{ $employeeNik }}</td>
+                <td class="colon">:</td>
+                <td>{{ $employeeNik }}</td>
             </tr>
             <tr>
                 <td class="field">Alamat</td>
-                <td>: {{ $employeeAddress }}</td>
+                <td class="colon">:</td>
+                <td>{{ $employeeAddress }}</td>
             </tr>
         </table>
-        <div class="recipient">di tempat</div>
-    </div>
+        <p>di tempat</p>
 
-    <p>Dengan hormat,</p>
-    <p>
-        Merujuk Surat Panggilan Kerja I Nomor <strong>{{ $firstSummonsNumber }}</strong> tanggal
-        <strong>{{ $firstSummonsDate }}</strong>, perihal ketidakhadiran Saudara/i, sampai dengan diterbitkannya surat ini
-        Saudara/i belum juga hadir bekerja dan/atau menyampaikan keterangan atau klarifikasi tertulis yang sah.
-        Dengan demikian, terhitung sejak tanggal
-        <strong>{{ $formatDate($extraData['absence_start_date'] ?? null) }}</strong> sampai dengan tanggal
-        <strong>{{ $formatDate($extraData['absence_end_date'] ?? null) }}</strong>, Saudara/i tercatat tidak masuk kerja
-        selama <strong>{{ $workingDays }} hari kerja berturut-turut</strong> tanpa keterangan tertulis yang sah.
-    </p>
-    <p>
-        Melalui surat ini, sebagai <strong>PANGGILAN KEDUA</strong> yang disampaikan secara patut dan tertulis,
-        kami meminta agar Saudara/i:
-    </p>
-    <ol class="action-list">
-        <li>
-            Segera hadir bekerja dan/atau melapor ke bagian Sumber Daya Manusia (HRD) {{ $companyName }} paling lambat
-            pada hari/tanggal <strong>{{ $formatDate($extraData['meeting_date'] ?? null, true) }}</strong>,
-            pukul <strong>{{ $extraData['meeting_time'] ?? '-' }} WIB</strong>, bertempat di
-            <strong>{{ $extraData['meeting_location'] ?? '-' }}</strong>; dan
-        </li>
-        <li>
-            Menyampaikan keterangan atau klarifikasi tertulis disertai bukti yang sah atas ketidakhadiran dimaksud
-            terkait agenda <strong>{{ $extraData['meeting_agenda'] ?? '-' }}</strong>.
-        </li>
-    </ol>
-    <p>
-        Perlu menjadi perhatian Saudara/i bahwa berdasarkan Pasal 154A ayat (1) huruf j Undang-Undang Nomor 13 Tahun
-        2003 tentang Ketenagakerjaan sebagaimana telah diubah dengan Undang-Undang Nomor 6 Tahun 2023, juncto Pasal 36
-        huruf j dan Pasal 51 Peraturan Pemerintah Nomor 35 Tahun 2021, pekerja/buruh yang mangkir selama 5 (lima) hari
-        kerja atau lebih secara berturut-turut tanpa keterangan tertulis yang dilengkapi dengan bukti yang sah dan
-        telah dipanggil oleh pengusaha 2 (dua) kali secara patut dan tertulis, dapat dilakukan Pemutusan Hubungan Kerja
-        (PHK) dengan kualifikasi mengundurkan diri.
-    </p>
-    <p>
-        Dengan diterbitkannya surat ini, Perusahaan memberikan kesempatan kepada Saudara/i untuk memenuhi panggilan dan
-        memberikan klarifikasi atas ketidakhadiran tersebut.
-    </p>
-    <p>
-        Apabila sampai dengan batas waktu yang telah ditentukan Saudara/i tetap tidak hadir dan/atau tidak memberikan
-        keterangan tertulis yang sah, Perusahaan akan menindaklanjuti sesuai dengan ketentuan yang berlaku.
-    </p>
-    <p>
-        Demikian surat panggilan ini disampaikan untuk dapat dilaksanakan sebagaimana mestinya. Atas perhatian dan
-        kerja sama Saudara/i, kami ucapkan terima kasih.
-    </p>
-
-    <div class="signature">
-        Hormat kami,<br>
-        {{ $companyName }}
-        <br><br><br><br>
-        <span class="signature-name">Hisar Hesti</span><br>
-        HR &amp; Legal Manager
-    </div>
-
-    <div class="copies">
-        Tembusan:
-        <ol>
-            <li>Arsip/Personal File</li>
-            <li>Atasan langsung Karyawan</li>
+        <p>Dengan hormat,</p>
+        <p>
+            Merujuk Surat Panggilan Kerja I Nomor {{ $firstSummonsNumber }} tanggal {{ $firstSummonsDate }}
+            perihal ketidakhadiran Saudara/i, sampai dengan diterbitkannya surat ini Saudara/i belum juga hadir bekerja
+            dan/atau menyampaikan keterangan/klarifikasi tertulis yang sah. Dengan demikian, terhitung sejak tanggal
+            {{ $formatDate($extraData['absence_start_date'] ?? null) }} sampai dengan tanggal surat ini, Saudara/i
+            tercatat tidak masuk kerja selama {{ $workingDays }} hari kerja berturut-turut tanpa keterangan tertulis yang sah.
+        </p>
+        <p>
+            Melalui surat ini, sebagai PANGGILAN KEDUA yang disampaikan secara patut dan tertulis, kami meminta agar
+            Saudara/i:
+        </p>
+        <ol class="action-list">
+            <li>
+                Segera hadir bekerja dan/atau melapor ke bagian Sumber Daya Manusia (HRD) {{ $companyTitle }} paling
+                lambat pada hari/tanggal {{ $formatDate($extraData['meeting_date'] ?? null, true) }}, pukul
+                {{ $meetingTime }} WIB, bertempat di {{ $meetingLocation }}; dan
+            </li>
+            <li>Menyampaikan keterangan/klarifikasi tertulis disertai bukti yang sah atas ketidakhadiran dimaksud.</li>
         </ol>
+        <p>
+            Perlu menjadi perhatian Saudara/i bahwa berdasarkan <strong>Pasal 154A ayat (1) huruf j Undang-Undang Nomor 13
+            Tahun 2003 tentang Ketenagakerjaan sebagaimana telah diubah dengan Undang-Undang Nomor 6 Tahun 2023</strong>,
+            juncto <strong>Pasal 36 huruf j dan Pasal 51 Peraturan Pemerintah Nomor 35 Tahun 2021</strong>, pekerja/buruh
+            yang mangkir selama <strong>5 (lima) hari kerja atau lebih secara berturut-turut tanpa keterangan tertulis yang
+            dilengkapi dengan bukti yang sah dan telah dipanggil oleh pengusaha 2 (dua) kali secara patut dan
+            tertulis</strong>, dapat dilakukan Pemutusan Hubungan Kerja (PHK) dengan kualifikasi mengundurkan diri.
+        </p>
+        <p>
+            Dengan diterbitkannya surat ini, Perusahaan memberikan kesempatan kepada Saudara/i untuk memenuhi panggilan dan
+            memberikan klarifikasi atas ketidakhadiran tersebut.
+        </p>
+        <p>
+            Apabila sampai dengan batas waktu yang telah ditentukan Saudara/i tetap tidak hadir dan/atau tidak memberikan
+            keterangan tertulis yang sah, Perusahaan akan menindaklanjuti sesuai dengan ketentuan peraturan
+            perundang-undangan dan <strong>Peraturan Perusahaan yang berlaku</strong>, termasuk proses Pemutusan Hubungan
+            Kerja karena mangkir sesuai ketentuan yang berlaku.
+        </p>
+        <p>
+            <strong>Dalam hal hubungan kerja berakhir berdasarkan ketentuan tersebut, penyelesaian hak dan kewajiban
+            Saudara/i akan dilakukan sesuai dengan ketentuan peraturan perundang-undangan dan Peraturan Perusahaan yang
+            berlaku.</strong>
+        </p>
+        <p>Demikian surat panggilan ini disampaikan untuk menjadi perhatian dan dilaksanakan sebagaimana mestinya.</p>
+
+        <div class="signature">
+            <div>Hormat kami,</div>
+            <div>{{ $companyTitle }}</div>
+            <div class="signature-space"></div>
+            <div class="signature-name">Hisar Hesti</div>
+            <div>HR &amp; Legal Manager</div>
+        </div>
+
+        <div class="copies">
+            <div>Tembusan:</div>
+            <div>1. Arsip/Personal File</div>
+            <div>2. Atasan langsung Karyawan</div>
+        </div>
     </div>
+
+    @include('pdf.components.lampiran-gambar', ['attachments' => $extraData['attachments'] ?? [], 'withLetterhead' => false])
 </body>
 
 </html>
