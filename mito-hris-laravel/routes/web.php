@@ -80,6 +80,8 @@ if (!app()->environment('local')) {
                 Route::post('/{id}/offboard', [EmployeeController::class, 'offboard'])->name('offboard')->middleware('can:offboard_employees');
                 Route::post('/{id}/off-contract', [EmployeeController::class, 'offContract'])->name('off-contract')->middleware('can:off_contract_employees');
                 Route::post('/{id}/warning-letter', [WarningLetterController::class, 'store'])->name('warning-letter')->middleware('can:manage_warning_letters');
+                Route::post('/{id}/warning-letter/preview', [WarningLetterController::class, 'preview'])->name('warning-letter.preview')->middleware('can:manage_warning_letters');
+                Route::get('/{id}/warning-letter/preview/{token}', [WarningLetterController::class, 'showPreview'])->name('warning-letter.preview.show')->middleware('can:manage_warning_letters');
                 Route::get('/{id}/warning-letter/{documentId}', [WarningLetterController::class, 'download'])->name('warning-letter.download')->middleware('can:manage_warning_letters');
                 Route::post('/{id}/absence-summons', [AbsenceSummonsController::class, 'store'])->name('absence-summons')->middleware('can:manage_warning_letters');
                 Route::get('/{id}/absence-summons/{documentId}', [AbsenceSummonsController::class, 'download'])->name('absence-summons.download')->middleware('can:manage_warning_letters');
@@ -340,6 +342,8 @@ if (app()->environment('local')) {
                 Route::post('/{id}/offboard', [EmployeeController::class, 'offboard'])->name('offboard')->middleware('can:offboard_employees');
                 Route::post('/{id}/off-contract', [EmployeeController::class, 'offContract'])->name('off-contract')->middleware('can:off_contract_employees');
                 Route::post('/{id}/warning-letter', [WarningLetterController::class, 'store'])->name('warning-letter')->middleware('can:manage_warning_letters');
+                Route::post('/{id}/warning-letter/preview', [WarningLetterController::class, 'preview'])->name('warning-letter.preview')->middleware('can:manage_warning_letters');
+                Route::get('/{id}/warning-letter/preview/{token}', [WarningLetterController::class, 'showPreview'])->name('warning-letter.preview.show')->middleware('can:manage_warning_letters');
                 Route::get('/{id}/warning-letter/{documentId}', [WarningLetterController::class, 'download'])->name('warning-letter.download')->middleware('can:manage_warning_letters');
                 Route::post('/{id}/absence-summons', [AbsenceSummonsController::class, 'store'])->name('absence-summons')->middleware('can:manage_warning_letters');
                 Route::get('/{id}/absence-summons/{documentId}', [AbsenceSummonsController::class, 'download'])->name('absence-summons.download')->middleware('can:manage_warning_letters');
