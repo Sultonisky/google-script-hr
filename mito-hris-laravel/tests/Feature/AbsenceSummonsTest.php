@@ -346,7 +346,7 @@ class AbsenceSummonsTest extends TestCase
         $this->assertStringContainsString('SURAT PANGGILAN KERJA II', $html);
         $this->assertStringContainsString('Panggilan Kedua/Terakhir', $html);
         $this->assertStringContainsString('Tangerang, 29 September 2026', $html);
-        $this->assertMatchesRegularExpression('/Lampiran<\/td>\s*<td class="colon">:<\/td>\s*<td>2<\/td>/', $html);
+        $this->assertMatchesRegularExpression('/Lampiran<\/td>\s*<td class="colon">:<\/td>\s*<td>-<\/td>/', $html);
         $this->assertStringContainsString('Panggilan Kerja I Nomor '.$firstDocument->nomor.' tanggal 09 September 2026', $html);
         $this->assertMatchesRegularExpression('/sejak tanggal\s+22 September 2026 sampai dengan tanggal surat ini/', $html);
         $this->assertStringContainsString('8 hari kerja berturut-turut', $html);
@@ -396,16 +396,14 @@ class AbsenceSummonsTest extends TestCase
 
         $unknown = $render('');
         $this->assertStringContainsString('kerja sama Saudara/Saudari, kami ucapkan', $unknown);
-        $this->assertMatchesRegularExpression('/Lampiran<\/td>\s*<td class="colon">:<\/td>\s*<td>1<\/td>/', $unknown);
+        $this->assertMatchesRegularExpression('/Lampiran<\/td>\s*<td class="colon">:<\/td>\s*<td>-<\/td>/', $unknown);
     }
 
     public function test_preview_renders_draft_without_issuing_number_and_is_private_to_requester(): void
     {
         $this->actingAsAdmin();
 
-        $response = $this->postJson('/hr/employees/EMP-SPM-1/absence-summons/preview', $this->payload([
-            'attachment_count' => 2,
-        ]))
+        $response = $this->postJson('/hr/employees/EMP-SPM-1/absence-summons/preview', $this->payload())
             ->assertOk()
             ->assertJson(['success' => true]);
 
@@ -440,7 +438,6 @@ class AbsenceSummonsTest extends TestCase
         $this->actingAsAdmin();
 
         $response = $this->post('/hr/employees/EMP-SPM-1/absence-summons', $this->payload([
-            'attachment_count' => 0,
             'attachments' => [
                 UploadedFile::fake()->image('rekap-absensi.jpg', 2400, 1200),
                 UploadedFile::fake()->image('resi.png', 600, 900),
@@ -523,10 +520,9 @@ class AbsenceSummonsTest extends TestCase
 
         $this->postJson('/hr/employees/EMP-SPM-1/absence-summons/preview', $this->payload([
             'meeting_date' => '2026-09-28',
-            'attachment_count' => -1,
         ]))
             ->assertStatus(422)
-            ->assertJsonValidationErrors(['meeting_date', 'attachment_count']);
+            ->assertJsonValidationErrors(['meeting_date']);
 
         $this->postJson('/hr/employees/EMP-SPM-1/absence-summons/preview', $this->payload([
             'level' => 'SPM2',
@@ -534,6 +530,42 @@ class AbsenceSummonsTest extends TestCase
         ]))
             ->assertStatus(422)
             ->assertJson(['success' => false]);
+    }
+
+    public function test_summons_history_is_exposed_to_modal_for_prefill(): void
+    {
+        $this->actingAsAdmin();
+        $service = app(\App\Services\AbsenceSummonsService::class);
+        $this->assertArrayNotHasKey('EMP-SPM-1', $service->historyByEmployee());
+
+        $this->get('/hr/employees')
+            ->assertOk()
+            ->assertSee('id="asHistory"', false)
+            ->assertSee('"summons":null', false);
+
+        $first = $this->postJson('/hr/employees/EMP-SPM-1/absence-summons', $this->payload())->assertCreated();
+        $history = $service->historyByEmployee()['EMP-SPM-1'];
+        $this->assertSame('SPM1', $history['latest']['level']);
+        $this->assertSame($first->json('nomor'), $history['latest']['nomor']);
+        $this->assertSame(['nomor' => $first->json('nomor'), 'absence_start_date' => '2026-09-22'], [
+            'nomor' => $history['first']['nomor'],
+            'absence_start_date' => $history['first']['absence_start_date'],
+        ]);
+        $this->assertStringStartsWith('2026-09-29', $history['first']['issued_at']);
+
+        $this->get('/hr/employees')
+            ->assertOk()
+            ->assertSee('"summons":{"latest":{"level":"SPM1"', false)
+            ->assertSee('"absence_start_date":"2026-09-22"', false);
+
+        $this->postJson('/hr/employees/EMP-SPM-1/absence-summons', $this->payload([
+            'level' => 'SPM2',
+            'working_days' => 8,
+            'absence_start_date' => '2026-09-21',
+        ]))->assertCreated();
+        $history = $service->historyByEmployee()['EMP-SPM-1'];
+        $this->assertSame('SPM2', $history['latest']['level']);
+        $this->assertSame('2026-09-22', $history['first']['absence_start_date']);
     }
 
     public function test_second_absence_summons_requires_an_existing_first_summons(): void
@@ -577,7 +609,7 @@ class AbsenceSummonsTest extends TestCase
             ->assertSee('name="meeting_time"', false)
             ->assertSee('name="meeting_location"', false)
             ->assertSee('name="meeting_agenda"', false)
-            ->assertSee('name="attachment_count"', false)
+            ->assertDontSee('name="attachment_count"', false)
             ->assertSee('id="btnAddAsAttachment"', false)
             ->assertSee('id="btnPreviewAbsenceSummons"', false);
     }
