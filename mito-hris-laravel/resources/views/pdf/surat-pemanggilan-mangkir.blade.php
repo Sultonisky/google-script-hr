@@ -12,7 +12,7 @@
         body {
             color: #111;
             font-family: 'Times New Roman', Times, serif;
-            font-size: 10pt;
+            font-size: 12pt;
             line-height: 1.28;
         }
 
@@ -42,14 +42,12 @@
         }
 
         .company-name {
-            font-family: Arial, sans-serif;
-            font-size: 13pt;
+            font-size: 20pt;
             font-weight: bold;
         }
 
         .company-address {
-            font-family: Arial, sans-serif;
-            font-size: 8pt;
+            font-size: 12pt;
             line-height: 1.25;
         }
 
@@ -57,9 +55,13 @@
             padding: 0 52px 0 72px;
         }
 
+        .closing {
+            page-break-inside: avoid;
+        }
+
         .title {
             margin: 2px 0 0;
-            font-size: 12pt;
+            font-size: 16pt;
             font-weight: bold;
             text-align: center;
             text-decoration: underline;
@@ -73,7 +75,6 @@
         .letter-date {
             margin-bottom: 14px;
             text-align: right;
-            font-size: 11.5pt;
         }
 
         .fields {
@@ -87,7 +88,7 @@
         }
 
         .fields td.field {
-            width: 72px;
+            width: 80px;
         }
 
         .fields td.colon {
@@ -122,12 +123,13 @@
         }
 
         .meeting td.field {
-            width: 84px;
+            width: 100px;
             font-weight: bold;
         }
 
         .signature {
             margin-top: 30px;
+            font-size: 14pt;
             page-break-inside: avoid;
         }
 
@@ -142,7 +144,7 @@
 
         .copies {
             margin-top: 12px;
-            font-size: 8pt;
+            font-size: 12pt;
             line-height: 1.25;
             page-break-inside: avoid;
         }
@@ -314,17 +316,19 @@
             dipertanggungjawabkan, Perusahaan dapat melakukan <strong>Panggilan Kerja II</strong> dan mengambil tindakan
             lebih lanjut sesuai dengan ketentuan Peraturan Perusahaan dan peraturan perundang-undangan yang berlaku.
         </p>
-        <p>
-            Demikian surat panggilan ini disampaikan untuk dapat dilaksanakan sebagaimana mestinya. Atas perhatian dan
-            kerja sama {{ $salutation }}, kami ucapkan terima kasih.
-        </p>
+        <div class="closing">
+            <p>
+                Demikian surat panggilan ini disampaikan untuk dapat dilaksanakan sebagaimana mestinya. Atas perhatian dan
+                kerja sama {{ $salutation }}, kami ucapkan terima kasih.
+            </p>
 
-        <div class="signature">
-            <div>Hormat kami,</div>
-            <div>{{ $signatureCompany }}</div>
-            <div class="signature-space"></div>
-            <div class="signature-name">Hisar Hesti</div>
-            <div>HR &amp; Legal Manager</div>
+            <div class="signature">
+                <div>Hormat kami,</div>
+                <div>{{ $signatureCompany }}</div>
+                <div class="signature-space"></div>
+                <div class="signature-name">Hisar Hesti</div>
+                <div>HR &amp; Legal Manager</div>
+            </div>
         </div>
 
         <div class="copies">

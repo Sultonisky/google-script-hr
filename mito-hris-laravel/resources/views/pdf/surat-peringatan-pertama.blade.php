@@ -107,8 +107,8 @@
 
         body {
             color: #111;
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 11pt;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 12pt;
             line-height: 1.3;
         }
 
@@ -121,15 +121,15 @@
 
         .company-name {
             color: #eb1c24;
-            font-size: 17pt;
+            font-size: 20pt;
             font-weight: bold;
             line-height: 1.2;
         }
 
         .company-address {
             margin-top: 2px;
-            font-size: 8pt;
-            line-height: 1.35;
+            font-size: 12pt;
+            line-height: 1.3;
         }
 
         .title-block {
@@ -138,18 +138,19 @@
         }
 
         .title {
-            font-size: 12pt;
+            font-size: 16pt;
             font-weight: bold;
             text-decoration: underline;
         }
 
         .number {
-            font-size: 11pt;
+            font-size: 12pt;
             font-weight: bold;
         }
 
         .company-intro {
             margin: 0 0 8px;
+            font-size: 14pt;
             font-weight: bold;
         }
 
@@ -217,6 +218,7 @@
             width: 50%;
             padding: 0;
             vertical-align: top;
+            font-size: 14pt;
         }
 
         .signatures .employee-sign,
@@ -240,6 +242,7 @@
 
         .acknowledgement {
             margin-top: 12px;
+            font-size: 14pt;
             text-align: center;
             page-break-inside: avoid;
         }
@@ -267,12 +270,12 @@
 
         @if ($isFinal)
             @page {
-                margin: 112px 54px 64px;
+                margin: 132px 54px 64px;
             }
 
             .letterhead {
                 position: fixed;
-                top: -90px;
+                top: -110px;
                 left: 0;
                 right: 0;
                 margin: 0;

@@ -6,19 +6,19 @@
     <title>Surat Panggilan Kerja II</title>
     <style>
         @page {
-            margin: 112px 32px 40px;
+            margin: 132px 32px 40px;
         }
 
         body {
             color: #111;
             font-family: 'Times New Roman', Times, serif;
-            font-size: 11pt;
+            font-size: 12pt;
             line-height: 1.38;
         }
 
         .page-header {
             position: fixed;
-            top: -94px;
+            top: -114px;
             left: 0;
             right: 0;
         }
@@ -48,14 +48,12 @@
         }
 
         .company-name {
-            font-family: Arial, sans-serif;
-            font-size: 13pt;
+            font-size: 20pt;
             font-weight: bold;
         }
 
         .company-address {
-            font-family: Arial, sans-serif;
-            font-size: 8pt;
+            font-size: 12pt;
             line-height: 1.25;
         }
 
@@ -64,7 +62,7 @@
         }
 
         .title {
-            font-size: 12pt;
+            font-size: 16pt;
             font-weight: bold;
             text-align: center;
             text-decoration: underline;
@@ -78,7 +76,6 @@
         .letter-date {
             margin-bottom: 12px;
             text-align: right;
-            font-size: 11.5pt;
         }
 
         .fields {
@@ -128,6 +125,7 @@
 
         .signature {
             margin-top: 28px;
+            font-size: 14pt;
             page-break-inside: avoid;
         }
 
@@ -142,7 +140,7 @@
 
         .copies {
             margin-top: 12px;
-            font-size: 8pt;
+            font-size: 12pt;
             line-height: 1.25;
             page-break-inside: avoid;
         }

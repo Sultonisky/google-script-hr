@@ -11,7 +11,7 @@
 
         body {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 9pt;
+            font-size: 12pt;
             color: #1f2937;
             line-height: 1.38;
             text-align: justify;
@@ -37,7 +37,7 @@
         }
 
         .doc-title {
-            font-size: 13pt;
+            font-size: 16pt;
             font-weight: bold;
             text-align: center;
             text-transform: uppercase;
@@ -47,14 +47,14 @@
         }
 
         .doc-level {
-            font-size: 10pt;
+            font-size: 12pt;
             font-weight: bold;
             text-align: center;
             color: #000000;
         }
 
         .doc-no {
-            font-size: 9pt;
+            font-size: 12pt;
             text-align: center;
             color: #374151;
             margin-bottom: 8px;
@@ -72,7 +72,7 @@
         }
 
         .kv-label {
-            width: 135px;
+            width: 170px;
             font-weight: bold;
         }
 
@@ -81,7 +81,7 @@
         }
 
         .section-title {
-            font-size: 9.5pt;
+            font-size: 12pt;
             font-weight: bold;
             color: #0b2540;
             text-transform: uppercase;
@@ -104,7 +104,7 @@
         }
 
         .violation-table .v-label {
-            width: 135px;
+            width: 170px;
             font-weight: bold;
             background: #f3f4f6;
         }
@@ -128,6 +128,7 @@
         .sign-table td {
             width: 50%;
             vertical-align: top;
+            font-size: 14pt;
         }
 
         .sign-table td.sign-hr {
@@ -140,7 +141,7 @@
 
         .cc {
             margin-top: 8px;
-            font-size: 8pt;
+            font-size: 12pt;
             color: #374151;
             page-break-inside: avoid;
         }

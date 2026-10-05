@@ -14,10 +14,16 @@
         }
 
         body {
-            font-family: 'DejaVu Sans', 'Times New Roman', Times, serif;
+            font-family: 'Times New Roman', Times, serif;
             font-size: 8.5pt;
             color: #000;
             line-height: 1.45;
+        }
+
+        /* Times New Roman bawaan DomPDF tidak memiliki glyph ✓/✗. */
+        .sym,
+        .chk-box {
+            font-family: 'DejaVu Sans', sans-serif;
         }
         .chk-box, .chk-inline {
             display: inline-block;
@@ -474,9 +480,9 @@
     {{-- ── PANDUAN PENILAIAN ───────────────────────────────────────── --}}
     <div class="guideline">
         <em>Panduan Penilaian:</em><br>
-        Berikan tanda checklist (✓) pada setiap Behavioral Indicator yang ditunjukkan.
-        <strong>Total jumlah (✓)</strong> (pada kolom berwarna) isi kolom tersebut skor dengan jumlah checklist
-        (✓) pada Behavioral Indicators (Contoh: jika terdapat 2 checklist, tuliskan jumlah 2).
+        Berikan tanda checklist (<span class="sym">✓</span>) pada setiap Behavioral Indicator yang ditunjukkan.
+        <strong>Total jumlah (<span class="sym">✓</span>)</strong> (pada kolom berwarna) isi kolom tersebut skor dengan jumlah checklist
+        (<span class="sym">✓</span>) pada Behavioral Indicators (Contoh: jika terdapat 2 checklist, tuliskan jumlah 2).
     </div>
 
     {{-- ── HASIL PENILAIAN TABLE ──────────────────────────────────── --}}
@@ -486,7 +492,7 @@
                 <th class="col-kompeten">Kompetensi</th>
                 <th class="col-action">Key Actions</th>
                 <th class="col-indicator">Behavioral Indicators</th>
-                <th class="col-check">(✓) atau (✗)</th>
+                <th class="col-check">(<span class="sym">✓</span>) atau (<span class="sym">✗</span>)</th>
             </tr>
         </thead>
         <tbody>
@@ -521,11 +527,11 @@
                     • Weekly/deadline report
                 </td>
                 <td class="col-check" style="text-align:center;vertical-align:middle">
-                    <span class="row-total" style="font-size:9pt;font-weight:bold;color:#000">Total (✓)</span>
+                    <span class="row-total" style="font-size:9pt;font-weight:bold;color:#000">Total (<span class="sym">✓</span>)</span>
                 </td>
             </tr>
             <tr class="row-total">
-                <td colspan="2" style="text-align:right;font-size:8pt;color:#000">Total Jumlah (✓) — Integrity</td>
+                <td colspan="2" style="text-align:right;font-size:8pt;color:#000">Total Jumlah (<span class="sym">✓</span>) — Integrity</td>
                 <td class="col-check" style="text-align:center">
                     <span class="total-val">{{ $intTotal }}</span>
                     <span style="font-size:7pt;color:#555"> / 4</span>
@@ -560,11 +566,11 @@
                     • Assignment project &nbsp;• Project report &nbsp;• Coaching form
                 </td>
                 <td class="col-check" style="text-align:center;vertical-align:middle">
-                    <span style="font-size:9pt;font-weight:bold;color:#000">Total (✓)</span>
+                    <span style="font-size:9pt;font-weight:bold;color:#000">Total (<span class="sym">✓</span>)</span>
                 </td>
             </tr>
             <tr class="row-total">
-                <td colspan="2" style="text-align:right;font-size:8pt;color:#000">Total Jumlah (✓) — Continuous
+                <td colspan="2" style="text-align:right;font-size:8pt;color:#000">Total Jumlah (<span class="sym">✓</span>) — Continuous
                     Improvement</td>
                 <td class="col-check" style="text-align:center">
                     <span class="total-val">{{ $ciTotal }}</span>
@@ -599,11 +605,11 @@
                     Dokumentasi kegiatan / bentuk konkrit evidence lain yang dapat menampilkan bukti nyata achievement.
                 </td>
                 <td class="col-check" style="text-align:center;vertical-align:middle">
-                    <span style="font-size:9pt;font-weight:bold;color:#000">Total (✓)</span>
+                    <span style="font-size:9pt;font-weight:bold;color:#000">Total (<span class="sym">✓</span>)</span>
                 </td>
             </tr>
             <tr class="row-total">
-                <td colspan="2" style="text-align:right;font-size:8pt;color:#000">Total Jumlah (✓) — Execution
+                <td colspan="2" style="text-align:right;font-size:8pt;color:#000">Total Jumlah (<span class="sym">✓</span>) — Execution
                     Excellence</td>
                 <td class="col-check" style="text-align:center">
                     <span class="total-val">{{ $eeTotal }}</span>
@@ -639,11 +645,11 @@
                     • Stakeholder feedback &nbsp;• Observasi dari atasan langsung
                 </td>
                 <td class="col-check" style="text-align:center;vertical-align:middle">
-                    <span style="font-size:9pt;font-weight:bold;color:#000">Total (✓)</span>
+                    <span style="font-size:9pt;font-weight:bold;color:#000">Total (<span class="sym">✓</span>)</span>
                 </td>
             </tr>
             <tr class="row-total">
-                <td colspan="2" style="text-align:right;font-size:8pt;color:#000">Total Jumlah (✓) — Teamwork</td>
+                <td colspan="2" style="text-align:right;font-size:8pt;color:#000">Total Jumlah (<span class="sym">✓</span>) — Teamwork</td>
                 <td class="col-check" style="text-align:center">
                     <span class="total-val">{{ $twTotal }}</span>
                     <span style="font-size:7pt;color:#555"> / 3</span>
@@ -653,7 +659,7 @@
             {{-- ─── TOTAL KESELURUHAN ─────────────────────────────── --}}
             <tr style="background:#e8f0fb">
                 <td colspan="3" style="text-align:right;font-weight:bold;font-size:9pt;color:#000">
-                    Total Jumlah Keseluruhan (✓)
+                    Total Jumlah Keseluruhan (<span class="sym">✓</span>)
                 </td>
                 <td class="col-check" style="text-align:center">
                     <span style="font-size:14pt;font-weight:900;color:#000">{{ $overall }}</span>
@@ -669,7 +675,7 @@
         <table>
             <tr>
                 <td style="font-weight:bold;font-size:8.5pt" colspan="8">
-                    Kategori Total Nilai [berdasarkan total jumlah (✓)]:
+                    Kategori Total Nilai [berdasarkan total jumlah (<span class="sym">✓</span>)]:
                 </td>
             </tr>
             <tr class="score-cat-row">

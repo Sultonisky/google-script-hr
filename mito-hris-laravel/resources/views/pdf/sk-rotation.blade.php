@@ -9,15 +9,15 @@
     }
     body {
       font-family: 'Times New Roman', Times, serif;
-      font-size: 9.5pt;
+      font-size: 12pt;
       color: #000000;
-      line-height: 1.5;
+      line-height: 1.45;
       text-align: justify;
     }
 
     /* ── JUDUL ── */
     .doc-title {
-      font-size: 11.5pt;
+      font-size: 16pt;
       font-weight: bold;
       text-align: center;
       text-transform: uppercase;
@@ -26,7 +26,7 @@
       margin-bottom: 2px;
     }
     .doc-no {
-      font-size: 9pt;
+      font-size: 12pt;
       text-align: center;
       margin-bottom: 14px;
     }
@@ -40,7 +40,7 @@
     .opener-table td {
       padding: 1px 0;
       vertical-align: top;
-      font-size: 9.5pt;
+      font-size: 12pt;
     }
     .opener-table .lbl  { width: 120px; }
     .opener-table .col  { width: 12px; }
@@ -52,7 +52,10 @@
       text-transform: uppercase;
       margin-top: 10px;
       margin-bottom: 3px;
-      font-size: 9.5pt;
+      font-size: 12pt;
+    }
+    .section-heading.memutuskan {
+      font-size: 14pt;
     }
 
     /* ── MENIMBANG / MENGINGAT list ── */
@@ -84,14 +87,14 @@
       font-weight: bold;
       padding: 5px 8px;
       border: 0.5pt solid #888;
-      font-size: 9pt;
+      font-size: 12pt;
       text-align: left;
     }
     .data-table td {
       padding: 4px 8px;
       border: 0.5pt solid #888;
       vertical-align: top;
-      font-size: 9pt;
+      font-size: 12pt;
     }
     .data-table tr:nth-child(even) td {
       background-color: #fafafa;
@@ -105,7 +108,7 @@
       text-align: center;
       margin-top: 10px;
       margin-bottom: 2px;
-      font-size: 9.5pt;
+      font-size: 12pt;
     }
     .diktum-body {
       margin-bottom: 8px;
@@ -124,15 +127,16 @@
       width: 50%;
       vertical-align: top;
       padding: 0 4px;
+      font-size: 14pt;
     }
     .sign-image-area {
-      height: 58px;
+      height: 90px;
       margin: 2px 0 2px;
     }
     .sign-image-area .hr-sign-img {
-      height: 48px !important;
+      height: 80px !important;
       width: auto;
-      max-width: 125px;
+      max-width: 200px;
       margin: 0 0 4px;
     }
 
@@ -334,7 +338,7 @@
   </div>
 
   {{-- ══ MEMUTUSKAN ═══════════════════════════════════════════════ --}}
-  <div class="section-heading">MEMUTUSKAN</div>
+  <div class="section-heading memutuskan">MEMUTUSKAN</div>
 
   {{-- ── KESATU ── --}}
   <div class="diktum-heading">KESATU</div>
@@ -458,6 +462,7 @@
     </div>
   @endif
 
+  <div style="page-break-inside: avoid;">
   {{-- ── PENUTUP ── --}}
   <p style="margin-top:10px;margin-bottom:16px;text-align:justify;">
     Demikian Surat Keputusan ini dibuat untuk dilaksanakan dengan sebaik-baiknya dan dipergunakan sebagaimana mestinya.
@@ -482,6 +487,7 @@
         </td>
       </tr>
     </table>
+  </div>
   </div>
 
 </body>
