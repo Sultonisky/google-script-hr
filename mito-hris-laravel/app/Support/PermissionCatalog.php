@@ -40,6 +40,8 @@ final class PermissionCatalog
             ['key' => 'manage_outsource_compensation', 'name' => 'Manage outsource salary', 'description' => 'Edit Basic Salary and Incentive of outsource employees, including via Excel import.', 'group' => 'Outsource'],
             ['key' => 'view_outsource_payslip', 'name' => 'View outsource payslips', 'description' => 'View imported outsource payslips (HKE, salary, deductions, THP).', 'group' => 'Outsource'],
             ['key' => 'manage_outsource_payslip', 'name' => 'Manage outsource payslips', 'description' => 'Download the payslip template and import outsource payslips from Excel.', 'group' => 'Outsource'],
+            ['key' => 'view_outsource_incentive', 'name' => 'View outsource incentives', 'description' => 'View imported outsource incentives per period.', 'group' => 'Outsource'],
+            ['key' => 'manage_outsource_incentive', 'name' => 'Manage outsource incentives', 'description' => 'Download the incentive template and import outsource incentives from Excel.', 'group' => 'Outsource'],
             ['key' => 'view_documents', 'name' => 'View documents', 'description' => 'View issued employee documents in Document Tracking.', 'group' => 'Documents'],
             ['key' => 'download_documents', 'name' => 'Download documents', 'description' => 'Re-download archived employee document PDFs from Document Tracking.', 'group' => 'Documents'],
             ['key' => 'view_mpr', 'name' => 'View MPR', 'description' => 'View manpower requests.', 'group' => 'MPR'],

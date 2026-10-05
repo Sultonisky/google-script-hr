@@ -118,6 +118,7 @@ class PermissionResolver
             'view_outsource_compensation' => ['view_outsource'],
             'manage_outsource_compensation' => ['view_outsource', 'manage_outsource', 'view_outsource_compensation'],
             'manage_outsource_payslip' => ['view_outsource_payslip'],
+            'manage_outsource_incentive' => ['view_outsource_incentive'],
             'download_documents' => ['view_documents'],
 
             'rotate_employees',
@@ -214,6 +215,8 @@ class PermissionResolver
             'manage_outsource',
             'view_outsource_payslip',
             'manage_outsource_payslip',
+            'view_outsource_incentive',
+            'manage_outsource_incentive',
             'view_documents',
             'download_documents',
             'view_mpr',
