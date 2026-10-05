@@ -117,7 +117,7 @@
             @endcan
 
             <!-- Employee Lifecycle Section -->
-            @canany(['manage_probation', 'view_outsource', 'view_contracts', 'view_documents'])
+            @canany(['manage_probation', 'view_outsource', 'view_outsource_payslip', 'view_contracts', 'view_documents'])
                 <div class="nav-section-label">Employee Lifecycle</div>
                 @can('manage_probation')
                     <a href="{{ route('hr.probation.index') }}"
@@ -129,6 +129,12 @@
                     <a href="{{ route('hr.outsource.index') }}"
                         class="nav-item {{ request()->routeIs('hr.outsource.*') ? 'active' : '' }}">
                         <i class="bi bi-building"></i> Outsource
+                    </a>
+                @endcan
+                @can('view_outsource_payslip')
+                    <a href="{{ route('hr.outsource-payslips.index') }}"
+                        class="nav-item {{ request()->routeIs('hr.outsource-payslips.*') ? 'active' : '' }}">
+                        <i class="bi bi-receipt"></i> Payslip Outsource
                     </a>
                 @endcan
                 @can('view_contracts')
