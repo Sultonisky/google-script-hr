@@ -6,15 +6,15 @@
     <title>Surat Pernyataan — Outsource TAD</title>
     <style>
         @page {
-            margin: 36px 52px 64px 52px;
+            margin: 36px 52px 40px 52px;
             size: A4;
         }
 
         body {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 11pt;
+            font-size: 12pt;
             color: #000;
-            line-height: 1.55;
+            line-height: 1.45;
             text-align: justify;
         }
 
@@ -24,7 +24,7 @@
         }
 
         .doc-title {
-            font-size: 14pt;
+            font-size: 16pt;
             font-weight: bold;
             text-transform: uppercase;
             text-decoration: underline;
@@ -45,7 +45,7 @@
         .pihak-table td {
             padding: 2px;
             vertical-align: top;
-            font-size: 11pt;
+            font-size: 12pt;
         }
 
         .pt-label {
@@ -69,7 +69,11 @@
         .sign-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 36px;
+            margin-top: 20px;
+            page-break-inside: avoid;
+        }
+
+        .closing {
             page-break-inside: avoid;
         }
 
@@ -78,6 +82,7 @@
             vertical-align: top;
             text-align: left;
             padding: 0 8px 0 0;
+            font-size: 14pt;
         }
 
         .sign-label {
@@ -87,8 +92,8 @@
 
         .sign-materai {
             font-style: italic;
-            font-size: 10pt;
-            margin: 36px 0;
+            font-size: 12pt;
+            margin: 28px 0;
         }
 
         .sign-line {
@@ -160,6 +165,7 @@
             bersedia untuk dituntut sesuai dengan ketentuan hukum yang berlaku.</li>
     </ol>
 
+    <div class="closing">
     <p>Demikianlah surat pernyataan ini saya tanda tangani di Tangerang, pada tanggal <strong>{{ $docDateFmt }}</strong>
         dalam keadaan sadar, sehat jasmani dan rohani serta tanpa adanya unsur paksaan atau tekanan dari pihak manapun
         juga.</p>
@@ -175,6 +181,7 @@
             <td></td>
         </tr>
     </table>
+    </div>
 </body>
 
 </html>

@@ -7,25 +7,26 @@
     @page { margin: 30px 40px; }
     body {
       font-family: 'Times New Roman', Times, serif;
-      font-size: 11px;
+      font-size: 12pt;
       color: #000000;
-      line-height: 1.55;
+      line-height: 1.45;
       text-align: justify;
     }
-    .doc-title  { font-size: 12pt; font-weight: bold; text-align: center; text-transform: uppercase; color: #000000; margin-top: 6px; }
-    .doc-sub    { font-size: 10pt; font-weight: bold; text-align: center; color: #000000; margin-bottom: 4px; }
-    .doc-no     { font-size: 8.5pt; text-align: center; color: #555555; margin-bottom: 4px; }
-    .doc-co     { font-size: 10pt; font-weight: bold; text-align: center; color: #000000; margin-bottom: 12px; }
+    .doc-title  { font-size: 16pt; font-weight: bold; text-align: center; text-transform: uppercase; color: #000000; margin-top: 6px; }
+    .doc-sub    { font-size: 12pt; font-weight: bold; text-align: center; color: #000000; margin-bottom: 4px; }
+    .doc-no     { font-size: 12pt; text-align: center; color: #555555; margin-bottom: 4px; }
+    .doc-co     { font-size: 14pt; font-weight: bold; text-align: center; color: #000000; margin-bottom: 12px; }
+    .memutuskan { font-size: 14pt; font-weight: bold; text-align: center; margin: 12px 0 6px; }
     .kv-table   { width: 100%; border-collapse: collapse; margin: 4px 0; }
-    .kv-table td { padding: 2px 3px; vertical-align: top; font-size: 8.5pt; }
+    .kv-table td { padding: 2px 3px; vertical-align: top; font-size: 12pt; }
     .kv-label   { width: 120px; font-weight: bold; }
     .kv-colon   { width: 12px; }
     .kv-value   { }
     .sign-table { width: 100%; margin-top: 24px; page-break-inside: avoid; }
-    .sign-table td { text-align: right; padding-right: 0; vertical-align: top; font-size: 8.5pt; }
+    .sign-table td { text-align: right; padding-right: 0; vertical-align: top; font-size: 14pt; }
     .sign-space { height: 50px; display: block; }
-    .sign-image-area { height: 58px; margin: 2px 0 2px auto; }
-    .sign-image-area .hr-sign-img { height: 48px !important; width: auto; max-width: 125px; margin: 0 0 4px auto; }
+    .sign-image-area { height: 90px; margin: 2px 0 2px auto; }
+    .sign-image-area .hr-sign-img { height: 80px !important; width: auto; max-width: 200px; margin: 0 0 4px auto; }
   </style>
 </head>
 <body>
@@ -101,7 +102,7 @@
     </tr>
   </table>
 
-  <div style="text-align:center;font-size:10pt;font-weight:bold;margin:12px 0 6px;">MEMUTUSKAN</div>
+  <div class="memutuskan">MEMUTUSKAN</div>
 
   {{-- ── MENETAPKAN (1:1 GAS ketetapan text) ───────────────── --}}
   <table class="kv-table">
@@ -122,7 +123,7 @@
   </table>
 
   {{-- ── PENUTUP (1:1 GAS) ──────────────────────────────────── --}}
-  <p style="font-size:8.5pt;margin-top:16px;">
+  <p style="margin-top:16px;">
     Demikian Surat Keputusan ini dibuat, untuk dilaksanakan sesuai Peraturan Perusahaan yang berlaku.
   </p>
 
@@ -130,9 +131,9 @@
   <table class="sign-table">
     <tr>
       <td>
-        {{ $city }}, {{ $todayStr }}<br>
+        {{ $city }}, {{ $todayStr }}<br><br>
         Hormat Kami,<br>
-        <strong>{{ $companyName }}</strong><br>
+        <strong>{{ $companyName }}</strong><br><br>
         <div class="sign-image-area">
           @include('pdf.components.hr-sign')
         </div>

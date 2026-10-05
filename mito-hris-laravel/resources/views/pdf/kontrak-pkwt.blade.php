@@ -13,9 +13,9 @@
 
         body {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 11pt;
+            font-size: 12pt;
             color: #000000;
-            line-height: 1.55;
+            line-height: 1.45;
             text-align: justify;
         }
 
@@ -77,7 +77,7 @@
         }
 
         .doc-title {
-            font-size: 12pt;
+            font-size: 16pt;
             font-weight: bold;
             text-decoration: underline;
             text-transform: none;
@@ -105,11 +105,11 @@
         .pihak-table td {
             padding: 1px 2px;
             vertical-align: top;
-            font-size: 11pt;
+            font-size: 12pt;
         }
 
         .pt-label {
-            width: 110px;
+            width: 130px;
         }
 
         .pt-colon {
@@ -141,7 +141,7 @@
             text-align: center;
             font-weight: bold;
             margin: 14px 0 2px 0;
-            font-size: 11pt;
+            font-size: 12pt;
         }
 
         /* ── Page break ──────────────────────────────────────────── */
@@ -162,6 +162,13 @@
             vertical-align: top;
             text-align: left;
             padding: 0 8px 0 0;
+            font-size: 14pt;
+        }
+
+        .sign-date {
+            margin-top: 18px;
+            font-size: 14pt;
+            font-weight: bold;
         }
 
         .sign-table td:last-child {
@@ -184,19 +191,15 @@
             text-decoration: underline;
         }
 
-        .sign-pos {
-            font-size: 10.5pt;
-        }
-
         .sign-image-area {
-            height: 60px;
+            height: 90px;
             margin: 0 0 2px;
         }
 
         .sign-image-area .hr-sign-img {
-            height: 56px;
+            height: 80px;
             width: auto;
-            max-width: 155px;
+            max-width: 200px;
         }
     </style>
 </head>
@@ -890,7 +893,7 @@
        TANDA TANGAN — Halaman terakhir (1:1 template)
        Kiri: PIHAK PERTAMA | Kanan: PIHAK KEDUA
   ═══════════════════════════════════════════════════════ --}}
-    <p style="margin-top:18px;"><strong>{{ $docCityDate }}</strong></p>
+    <p class="sign-date">{{ $docCityDate }}</p>
 
     <table class="sign-table">
         <tr>

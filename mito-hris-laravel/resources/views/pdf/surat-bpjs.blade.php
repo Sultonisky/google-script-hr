@@ -11,14 +11,14 @@
 
         body {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 11px;
+            font-size: 12pt;
             color: #1f2937;
-            line-height: 1.55;
+            line-height: 1.45;
             text-align: justify;
         }
 
         .doc-title {
-            font-size: 14pt;
+            font-size: 16pt;
             font-weight: bold;
             text-align: center;
             text-transform: uppercase;
@@ -60,17 +60,18 @@
             text-align: right;
             padding-right: 20px;
             vertical-align: top;
+            font-size: 14pt;
         }
 
         .sign-image-area {
-            height: 58px;
+            height: 90px;
             margin: 2px 0 2px auto;
         }
 
         .sign-image-area .hr-sign-img {
-            height: 48px !important;
+            height: 80px !important;
             width: auto;
-            max-width: 125px;
+            max-width: 200px;
             margin: 0 0 4px auto;
         }
     </style>
@@ -159,9 +160,9 @@
     <table class="sign-table">
         <tr>
             <td>
-                {{ $companyCity }}, {{ $todayFmt }}<br>
+                {{ $companyCity }}, {{ $todayFmt }}<br><br>
                 Hormat Kami,<br>
-                <strong>{{ $companyName }}</strong><br>
+                <strong>{{ $companyName }}</strong><br><br>
                 <div class="sign-image-area">
                     @include('pdf.components.hr-sign')
                 </div>
