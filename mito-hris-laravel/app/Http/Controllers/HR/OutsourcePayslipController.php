@@ -10,6 +10,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx as XlsxWriter;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -39,17 +43,9 @@ class OutsourcePayslipController extends Controller
             $periodFilter = (string) ($periods->first() ?? now()->timezone('Asia/Jakarta')->format('Y-m'));
         }
 
-        $vendorFilter = (string) $request->query('vendor', '');
-        $vendorFilter = in_array($vendorFilter, config('hris.outsource.vendors', []), true) ? $vendorFilter : '';
         $searchFilter = trim((string) $request->query('search', ''));
 
-        $query = OutsourcePayslip::query()
-            ->where('period', $periodFilter)
-            ->when($vendorFilter !== '', fn ($q) => $q->where('vendor', $vendorFilter))
-            ->when($searchFilter !== '', function ($q) use ($searchFilter) {
-                $like = '%' . mb_strtolower($searchFilter) . '%';
-                $q->where(fn ($w) => $w->whereRaw('LOWER(outsource_id) LIKE ?', [$like])->orWhereRaw('LOWER(full_name) LIKE ?', [$like]));
-            });
+        $query = $this->payslipQuery($periodFilter, $searchFilter);
 
         $total = (clone $query)->count();
         $payslips = $query->orderBy('full_name')->forPage($currentPage, $perPage)->get();
@@ -61,9 +57,74 @@ class OutsourcePayslipController extends Controller
             'currentPage',
             'perPage',
             'periodFilter',
-            'vendorFilter',
             'searchFilter'
         ));
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $period = (string) $request->query('period', '');
+        if (!preg_match(self::PERIOD_REGEX, $period)) {
+            $period = (string) (OutsourcePayslip::query()->orderByDesc('period')->value('period') ?? now()->timezone('Asia/Jakarta')->format('Y-m'));
+        }
+        $search = trim((string) $request->query('search', ''));
+        $payslips = $this->payslipQuery($period, $search)->orderBy('full_name')->get();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Payslip Outsource');
+        $headers = ['Outsource ID', 'Nama', 'Vendor', 'Total HKE', 'Gaji Pokok', 'Potongan BPJS Kesehatan', 'Potongan Pinjaman', 'THP'];
+        foreach ($headers as $index => $header) {
+            $column = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($index + 1);
+            $sheet->setCellValue($column . '1', $header);
+        }
+        $sheet->getStyle('A1:H1')->applyFromArray([
+            'font' => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF005BAC']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+        ]);
+        $sheet->freezePane('A2');
+
+        foreach ($payslips as $index => $payslip) {
+            $row = $index + 2;
+            $sheet->getCell('A' . $row)->setValueExplicit((string) $payslip->outsource_id, DataType::TYPE_STRING);
+            $sheet->setCellValue('B' . $row, $payslip->full_name ?? '');
+            $sheet->setCellValue('C' . $row, $payslip->vendor ?? '');
+            $sheet->setCellValue('D' . $row, (float) $payslip->hke);
+            $sheet->setCellValue('E' . $row, (float) $payslip->basic_salary);
+            $sheet->setCellValue('F' . $row, (float) $payslip->bpjs_kesehatan_deduction);
+            $sheet->setCellValue('G' . $row, (float) $payslip->loan_deduction);
+            $sheet->setCellValue('H' . $row, (float) $payslip->take_home_pay);
+        }
+        foreach (range('A', 'H') as $column) {
+            $sheet->getColumnDimension($column)->setAutoSize(true);
+        }
+        $sheet->getStyle('D2:D' . max(2, $payslips->count() + 1))->getNumberFormat()->setFormatCode('#,##0.##');
+        $sheet->getStyle('E2:H' . max(2, $payslips->count() + 1))->getNumberFormat()->setFormatCode('#,##0');
+        $spreadsheet->getProperties()->setCreator('MITO HRIS')->setTitle('Payslip Outsource ' . $period);
+
+        $filename = 'Payslip_Outsource_' . $period . '_' . now()->timezone('Asia/Jakarta')->format('Ymd_His') . '.xlsx';
+
+        return response()->stream(function () use ($spreadsheet): void {
+            (new XlsxWriter($spreadsheet))->save('php://output');
+            $spreadsheet->disconnectWorksheets();
+        }, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+        ]);
+    }
+
+    private function payslipQuery(string $period, string $search): \Illuminate\Database\Eloquent\Builder
+    {
+        return OutsourcePayslip::query()
+            ->where('period', $period)
+            ->when($search !== '', function ($query) use ($search): void {
+                $like = '%' . mb_strtolower($search) . '%';
+                $query->where(fn ($where) => $where->whereRaw('LOWER(outsource_id) LIKE ?', [$like])->orWhereRaw('LOWER(full_name) LIKE ?', [$like]));
+            });
     }
 
     /**
