@@ -12,6 +12,7 @@ use App\Http\Controllers\HR\EmployeeController;
 use App\Http\Controllers\HR\ProbationController;
 use App\Http\Controllers\HR\OutsourceController;
 use App\Http\Controllers\HR\OutsourcePayslipController;
+use App\Http\Controllers\HR\OutsourceIncentiveController;
 use App\Http\Controllers\HR\WarningLetterController;
 use App\Http\Controllers\HR\AbsenceSummonsController;
 use App\Http\Controllers\HR\ContractTrackingController;
@@ -137,8 +138,15 @@ if (!app()->environment('local')) {
             });
             Route::prefix('outsource-payslips')->name('outsource-payslips.')->middleware('can:view_outsource_payslip')->group(function () {
                 Route::get('/', [OutsourcePayslipController::class, 'index'])->name('index');
+                Route::get('/export', [OutsourcePayslipController::class, 'export'])->name('export');
                 Route::get('/template', [OutsourcePayslipController::class, 'template'])->name('template')->middleware('can:manage_outsource_payslip');
                 Route::post('/import', [OutsourcePayslipController::class, 'import'])->name('import')->middleware('can:manage_outsource_payslip');
+            });
+            Route::prefix('outsource-incentives')->name('outsource-incentives.')->middleware('can:view_outsource_incentive')->group(function () {
+                Route::get('/', [OutsourceIncentiveController::class, 'index'])->name('index');
+                Route::get('/export', [OutsourceIncentiveController::class, 'export'])->name('export');
+                Route::get('/template', [OutsourceIncentiveController::class, 'template'])->name('template')->middleware('can:manage_outsource_incentive');
+                Route::post('/import', [OutsourceIncentiveController::class, 'import'])->name('import')->middleware('can:manage_outsource_incentive');
             });
             Route::prefix('contracts')->name('contracts.')->middleware('can:view_contracts')->group(function () {
                 Route::get('/', [ContractTrackingController::class, 'index'])->name('index');
@@ -403,8 +411,15 @@ if (app()->environment('local')) {
 
             Route::prefix('outsource-payslips')->name('outsource-payslips.')->middleware('can:view_outsource_payslip')->group(function () {
                 Route::get('/', [OutsourcePayslipController::class, 'index'])->name('index');
+                Route::get('/export', [OutsourcePayslipController::class, 'export'])->name('export');
                 Route::get('/template', [OutsourcePayslipController::class, 'template'])->name('template')->middleware('can:manage_outsource_payslip');
                 Route::post('/import', [OutsourcePayslipController::class, 'import'])->name('import')->middleware('can:manage_outsource_payslip');
+            });
+            Route::prefix('outsource-incentives')->name('outsource-incentives.')->middleware('can:view_outsource_incentive')->group(function () {
+                Route::get('/', [OutsourceIncentiveController::class, 'index'])->name('index');
+                Route::get('/export', [OutsourceIncentiveController::class, 'export'])->name('export');
+                Route::get('/template', [OutsourceIncentiveController::class, 'template'])->name('template')->middleware('can:manage_outsource_incentive');
+                Route::post('/import', [OutsourceIncentiveController::class, 'import'])->name('import')->middleware('can:manage_outsource_incentive');
             });
 
             Route::prefix('contracts')->name('contracts.')->middleware('can:view_contracts')->group(function () {
