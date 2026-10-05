@@ -108,8 +108,8 @@
         body {
             color: #111;
             font-family: Arial, Helvetica, sans-serif;
-            font-size: 9pt;
-            line-height: 1.28;
+            font-size: 11pt;
+            line-height: 1.3;
         }
 
         .letterhead {
@@ -138,13 +138,13 @@
         }
 
         .title {
-            font-size: 10pt;
+            font-size: 12pt;
             font-weight: bold;
             text-decoration: underline;
         }
 
         .number {
-            font-size: 9pt;
+            font-size: 11pt;
             font-weight: bold;
         }
 
@@ -168,7 +168,7 @@
         }
 
         .employee-label {
-            width: 76px;
+            width: 92px;
         }
 
         .employee-colon {
@@ -282,25 +282,6 @@
                 text-align: left;
             }
         @endif
-
-        @unless ($isFinal)
-            body {
-                font-size: 11pt;
-                line-height: 1.3;
-            }
-
-            .title {
-                font-size: 12pt;
-            }
-
-            .number {
-                font-size: 11pt;
-            }
-
-            .employee-label {
-                width: 92px;
-            }
-        @endunless
     </style>
 </head>
 
