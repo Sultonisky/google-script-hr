@@ -12,16 +12,16 @@
 
         body {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 9.5pt;
+            font-size: 12pt;
             color: #111111;
-            line-height: 1.55;
+            line-height: 1.45;
             text-align: justify;
         }
 
         /* ── Tanggal pojok kanan ── */
         .doc-date {
             text-align: right;
-            font-size: 9pt;
+            font-size: 12pt;
             margin-bottom: 14px;
             margin-top: 4px;
         }
@@ -44,12 +44,12 @@
 
         .detail-table td {
             padding: 3px 4px;
-            font-size: 9pt;
+            font-size: 12pt;
             vertical-align: top;
         }
 
         .detail-label {
-            width: 155px;
+            width: 200px;
             font-weight: bold;
         }
 
@@ -69,12 +69,12 @@
 
         .remu-row {
             padding: 3px 4px;
-            font-size: 9pt;
+            font-size: 12pt;
         }
 
         .remu-label {
             display: inline-block;
-            width: 220px;
+            width: 290px;
             font-weight: bold;
             vertical-align: top;
         }
@@ -104,34 +104,32 @@
 
         .facility-list li {
             margin-bottom: 2px;
-            font-size: 9pt;
+            font-size: 12pt;
         }
 
         /* ── Tanda tangan ── */
         .sign-block {
             margin-top: 18px;
+            font-size: 14pt;
             text-align: left;
             page-break-inside: avoid;
         }
 
         .sign-image-area {
-            height: 54px;
+            height: 90px;
             margin: 4px 0 0 0;
         }
 
         .sign-image-area .hr-sign-img {
-            height: 50px;
+            height: 80px;
             width: auto;
-            max-width: 150px;
+            max-width: 200px;
         }
 
-        /* ── Halaman 2: Konfirmasi kandidat ── */
-        .page-break {
-            page-break-before: always;
-        }
-
+        /* ── Konfirmasi kandidat (langsung di bawah tanda tangan HR) ── */
         .confirm-block {
-            padding-top: 12px;
+            padding-top: 16px;
+            page-break-inside: avoid;
         }
 
         .confirm-sign-table {
@@ -143,6 +141,7 @@
         .confirm-sign-table td {
             padding: 0;
             vertical-align: top;
+            font-size: 14pt;
         }
 
         .sign-line {
@@ -366,30 +365,26 @@
         <p style="margin:0;">Human Resource &amp; Legal Manager</p>
     </div>
 
-    {{-- ══════════════════════════════════════════════════════════
-       HALAMAN 2 — Konfirmasi Kandidat (1:1 PDF sample halaman 2)
-  ══════════════════════════════════════════════════════════ --}}
-    <div class="page-break">
-        <div class="confirm-block">
-            <p>
-                Dengan ini saya memberikan konfirmasi bahwa saya telah membaca, memahami, dan menyetujui semua
-                persyaratan surat penawaran ini dan saya menerima penawaran ini sebagaimana disajikan.
-            </p>
-            <p>
-                Saya bersedia bergabung di Perusahaan <strong>{{ $companyName }}</strong> pada tanggal:
-                ____________.
-            </p>
+    {{-- ── Konfirmasi Kandidat ─────────────────────────────────── --}}
+    <div class="confirm-block">
+        <p>
+            Dengan ini saya memberikan konfirmasi bahwa saya telah membaca, memahami, dan menyetujui semua
+            persyaratan surat penawaran ini dan saya menerima penawaran ini sebagaimana disajikan.
+        </p>
+        <p>
+            Saya bersedia bergabung di Perusahaan <strong>{{ $companyName }}</strong> pada tanggal:
+            ____________.
+        </p>
 
-            <table class="confirm-sign-table">
-                <tr>
-                    <td>
-                        <div class="sign-line"></div>
-                        <p style="margin:0; font-weight:bold;">{{ $fullName }}</p>
-                        <p style="margin:0;">Kandidat</p>
-                    </td>
-                </tr>
-            </table>
-        </div>
+        <table class="confirm-sign-table">
+            <tr>
+                <td>
+                    <div class="sign-line"></div>
+                    <p style="margin:0; font-weight:bold;">{{ $fullName }}</p>
+                    <p style="margin:0;">Kandidat</p>
+                </td>
+            </tr>
+        </table>
     </div>
 
 </body>

@@ -12,9 +12,9 @@
 
         body {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 11pt;
+            font-size: 12pt;
             color: #000;
-            line-height: 1.5;
+            line-height: 1.4;
             text-align: justify;
             margin: 0;
             padding: 0;
@@ -78,7 +78,7 @@
             margin-bottom: 14px;
         }
         .doc-title {
-            font-size: 13pt;
+            font-size: 16pt;
             font-weight: bold;
             text-transform: uppercase;
             text-decoration: underline;
@@ -91,7 +91,7 @@
             margin: 2px 0 8px;
         }
         .doc-number {
-            font-size: 11pt;
+            font-size: 12pt;
             font-weight: bold;
             margin-top: 4px;
         }
@@ -110,9 +110,9 @@
         .pihak-table td {
             padding: 1px 2px;
             vertical-align: top;
-            font-size: 11pt;
+            font-size: 12pt;
         }
-        .pt-label { width: 140px; }
+        .pt-label { width: 150px; }
         .pt-colon { width: 12px; }
 
         /* ── Ordered list ───────────────────────────────────────*/
@@ -135,7 +135,7 @@
             text-align: center;
             font-weight: bold;
             margin: 16px 0 6px;
-            font-size: 11pt;
+            font-size: 12pt;
             text-transform: uppercase;
             page-break-after: avoid;
         }
@@ -152,12 +152,12 @@
             vertical-align: top;
             text-align: center;
             padding: 0 8px;
+            font-size: 14pt;
         }
         .sign-label   { font-weight: bold; margin-bottom: 4px; }
-        .sign-company { font-weight: bold; font-size: 10.5pt; margin-bottom: 8px; }
-        .sign-materai { font-style: italic; font-size: 10pt; margin: 28px 0; }
+        .sign-company { font-weight: bold; margin-bottom: 8px; }
+        .sign-materai { font-style: italic; font-size: 12pt; margin: 28px 0; }
         .sign-line    { margin-top: 8px; font-weight: bold; text-decoration: underline; }
-        .sign-role    { font-size: 10.5pt; }
 
         .hr-line {
             border: none;

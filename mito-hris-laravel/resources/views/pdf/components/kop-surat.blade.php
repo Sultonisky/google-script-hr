@@ -56,21 +56,21 @@
 {{--
   KOP SURAT — 1:1 dengan GAS renderKopSuratPDF()
   Content:
-    - Company name: bold, red #eb1c24, centered, uppercase  (1:1 GAS: setFontSize(20), setTextColor(235,28,36))
-    - Address: normal, dark, centered, max 2 lines          (1:1 GAS: setFontSize(9.5), splitTextToSize)
+    - Company name: Times New Roman 20pt, bold, red #eb1c24, centered, uppercase
+    - Address: Times New Roman 12pt, normal, dark, centered
     - Double separator line                                  (1:1 GAS: lineWidth 0.7 + 0.2)
   No logo, no contact info, no phone/email — matches GAS exactly.
 --}}
 <div style="text-align:center; margin-bottom: 4px; padding-bottom: 0;">
   {{-- Company name: 1:1 GAS setFontSize(20), setTextColor(235,28,36), bold --}}
-  <div style="font-size: 18pt; font-weight: 800; color: #eb1c24;
+  <div style="font-size: 20pt; font-weight: 800; color: #eb1c24;
               letter-spacing: 0.3px; text-transform: uppercase;
               font-family: 'Times New Roman', Times, serif; line-height: 1.2;">
     {{ $cName }}
   </div>
 
-  {{-- Address: 1:1 GAS setFontSize(9.5), normal, dark, centered --}}
-  <div style="font-size: 9pt; color: #1e1e1e; margin-top: 4px; line-height: 1.5;
+  {{-- Address: normal, dark, centered --}}
+  <div style="font-size: 12pt; color: #1e1e1e; margin-top: 4px; line-height: 1.3;
               font-family: 'Times New Roman', Times, serif;">
     {{ $cAddress }}
   </div>

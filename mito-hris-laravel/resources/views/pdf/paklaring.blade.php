@@ -11,14 +11,14 @@
 
         body {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 11px;
+            font-size: 12pt;
             color: #1f2937;
-            line-height: 1.55;
+            line-height: 1.45;
             text-align: justify;
         }
 
         .doc-title {
-            font-size: 12.5pt;
+            font-size: 16pt;
             font-weight: bold;
             text-align: center;
             text-transform: uppercase;
@@ -28,7 +28,7 @@
         }
 
         .doc-no {
-            font-size: 9pt;
+            font-size: 12pt;
             text-align: center;
             color: #374151;
             margin-top: -8px;
@@ -44,7 +44,7 @@
         .kv-table td {
             padding: 2px 3px;
             vertical-align: top;
-            font-size: 8.5pt;
+            font-size: 12pt;
         }
 
         .kv-label {
@@ -68,18 +68,18 @@
             text-align: right;
             padding-right: 0;
             vertical-align: top;
-            font-size: 8.5pt;
+            font-size: 14pt;
         }
 
         .sign-image-area {
-            height: 58px;
+            height: 90px;
             margin: 2px 0 2px auto;
         }
 
         .sign-image-area .hr-sign-img {
-            height: 48px !important;
+            height: 80px !important;
             width: auto;
-            max-width: 125px;
+            max-width: 200px;
             margin: 0 0 4px auto;
         }
     </style>
@@ -164,7 +164,7 @@
     @endif
 
     {{-- ── PEMBUKA (1:1 GAS: 'Yang bertandatangan di bawah ini:') --}}
-    <p style="font-size:9pt;">Yang bertandatangan di bawah ini:</p>
+    <p>Yang bertandatangan di bawah ini:</p>
 
     {{-- ── SIGNER BLOCK (1:1 GAS: Nama = Hisar Hesti, Jabatan = HR & Legal Manager) --}}
     <table class="kv-table">
@@ -181,7 +181,7 @@
     </table>
 
     {{-- ── 'Dengan ini menerangkan bahwa:' ────────────────────── --}}
-    <p style="font-size:9pt;margin-top:8px;">Dengan ini menerangkan bahwa:</p>
+    <p style="margin-top:8px;">Dengan ini menerangkan bahwa:</p>
 
     {{-- ── EMPLOYEE NAME only (1:1 GAS: only Nama row) ─────────── --}}
     <table class="kv-table">
@@ -193,7 +193,7 @@
     </table>
 
     {{-- ── PARAGRAF UTAMA (1:1 GAS para1 exact text) ─────────── --}}
-    <p style="font-size:9pt;margin-top:12px;">
+    <p style="margin-top:12px;">
         Telah bekerja di <strong>{{ $companyName }}</strong> terhitung sejak
         <strong>{{ $joinFmt }}</strong> dengan jabatan terakhir sebagai
         <strong>{{ $positionStr }}</strong>.
@@ -202,7 +202,7 @@
     </p>
 
     {{-- ── PARAGRAF PENUTUP (1:1 GAS para2 exact text) ───────── --}}
-    <p style="font-size:9pt;">
+    <p>
         Demikian surat keterangan ini dibuat dan digunakan sebagaimana mestinya.
     </p>
 
@@ -210,8 +210,8 @@
     <table class="sign-table">
         <tr>
             <td>
-                {{ $sigCity }}, {{ $todayStr }}<br>
-                Hormat Kami,<br>
+                {{ $sigCity }}, {{ $todayStr }}<br><br>
+                Hormat Kami,<br><br>
                 <div class="sign-image-area">
                     @include('pdf.components.hr-sign')
                 </div>
