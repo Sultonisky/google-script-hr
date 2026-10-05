@@ -209,8 +209,9 @@
 .table-responsive {
     max-height: 640px;
 }
-// Payslip Outsource dibatasi 15 baris per halaman, jadi seluruh halaman ditampilkan tanpa scroll vertikal.
-#outsourcePayslipPanel .table-responsive {
+// Payslip and Incentive Outsource show up to 15 rows per page without vertical table scrolling.
+#outsourcePayslipPanel .table-responsive,
+#outsourceIncentivePanel .table-responsive {
     max-height: none;
 }
 table.hr-table {
