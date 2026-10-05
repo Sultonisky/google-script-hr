@@ -111,10 +111,57 @@ class OutsourcePayslipImportTest extends TestCase
         $this->actingWithPermissions(['view_outsource_payslip']);
         $this->get('/hr/outsource-payslips')->assertOk()
             ->assertSee('Payslip Outsource')
+            ->assertSee('Export Excel')
+            ->assertDontSee('opsVendorSelect')
             ->assertDontSee('id="btnImportOutsourcePayslip"', false)
             ->assertDontSee('id="outsourcePayslipImportModal"', false);
         $this->get('/hr/outsource-payslips/template')->assertForbidden();
         $this->import($this->validWorkbook())->assertForbidden();
+    }
+
+    public function test_export_downloads_filtered_payslips_as_xlsx(): void
+    {
+        $this->actingWithPermissions(['view_outsource_payslip']);
+        OutsourcePayslip::query()->create([
+            'period' => '2026-09',
+            'outsource_id' => 'DM20260001',
+            'full_name' => 'Bayu Saputra',
+            'vendor' => 'Damarindo',
+            'hke' => 26,
+            'basic_salary' => 3500000,
+            'bpjs_kesehatan_deduction' => 35000,
+            'loan_deduction' => 250000,
+            'take_home_pay' => 3215000,
+        ]);
+        OutsourcePayslip::query()->create([
+            'period' => '2026-09',
+            'outsource_id' => 'DM20260002',
+            'full_name' => 'Citra Lestari',
+            'vendor' => 'StaffInc',
+            'hke' => 24,
+            'basic_salary' => 3200000,
+            'bpjs_kesehatan_deduction' => 32000,
+            'loan_deduction' => 0,
+            'take_home_pay' => 3168000,
+        ]);
+
+        $response = $this->get('/hr/outsource-payslips/export?period=2026-09&search=Bayu')
+            ->assertOk()
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            ->assertHeader('content-disposition');
+        $path = tempnam(sys_get_temp_dir(), 'opsexp') . '.xlsx';
+        $this->tempFiles[] = $path;
+        file_put_contents($path, $response->streamedContent());
+        $rows = IOFactory::load($path)->getSheet(0)->toArray();
+
+        $this->assertSame(['Outsource ID', 'Nama', 'Vendor', 'Total HKE', 'Gaji Pokok', 'Potongan BPJS Kesehatan', 'Potongan Pinjaman', 'THP'], $rows[0]);
+        $this->assertSame(['DM20260001', 'Bayu Saputra', 'Damarindo'], array_slice($rows[1], 0, 3));
+        $this->assertSame('26.00', $rows[1][3]);
+        $this->assertSame('3,500,000', $rows[1][4]);
+        $this->assertSame('35,000', $rows[1][5]);
+        $this->assertSame('250,000', $rows[1][6]);
+        $this->assertSame('3,215,000', $rows[1][7]);
+        $this->assertCount(2, $rows);
     }
 
     public function test_template_lists_master_outsource_ids(): void
