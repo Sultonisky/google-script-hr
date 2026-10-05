@@ -25,8 +25,13 @@
                         @endif
                     </div>
                 </div>
-                @can('manage_outsource_payslip')
-                    <div class="export-btns d-flex flex-wrap gap-2">
+                <div class="export-btns d-flex flex-wrap gap-2">
+                    <a class="btn btn-sm fw-semibold text-white"
+                        style="background:#005bac;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
+                        href="{{ route('hr.outsource-payslips.export', ['period' => $periodFilter, 'search' => $searchFilter]) }}">
+                        <i class="bi bi-download me-1"></i>Export Excel
+                    </a>
+                    @can('manage_outsource_payslip')
                         <button class="btn btn-sm fw-semibold text-white"
                             style="background:#198754;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
                             type="button"
@@ -35,12 +40,11 @@
                             id="btnImportOutsourcePayslip">
                             <i class="bi bi-file-earmark-spreadsheet me-1"></i>Import Excel
                         </button>
-                    </div>
-                @endcan
+                    @endcan
+                </div>
             </div>
 
             <form action="{{ route('hr.outsource-payslips.index') }}" method="GET" id="opsFilterForm">
-                <input type="hidden" name="page" value="1">
                 <div class="filter-bar">
                     <div class="table-search">
                         <i class="bi bi-search"></i>
@@ -54,15 +58,7 @@
                             </option>
                         @endforeach
                     </select>
-                    <select class="filter-select" name="vendor" id="opsVendorSelect" data-auto-submit="true">
-                        <option value="">Semua Vendor</option>
-                        @foreach (config('hris.outsource.vendors', []) as $vendorName)
-                            <option value="{{ $vendorName }}" {{ $vendorFilter === $vendorName ? 'selected' : '' }}>{{ $vendorName }}</option>
-                        @endforeach
-                    </select>
-                    <a href="{{ route('hr.outsource-payslips.index') }}" class="btn-reset-filter text-decoration-none">
-                        <i class="bi bi-arrow-counterclockwise"></i> Reset
-                    </a>
+                    <button class="btn-reset-filter" type="submit"><i class="bi bi-search"></i> Cari</button>
                 </div>
             </form>
 
@@ -137,7 +133,7 @@
                 </span>
                 @if ($total > $perPage)
                     <x-pagination :currentPage="$currentPage" :total="$total" :perPage="$perPage" :route="'hr.outsource-payslips.index'"
-                        :queryParams="['search' => $searchFilter, 'vendor' => $vendorFilter, 'period' => $periodFilter, 'per_page' => $perPage]" />
+                        :queryParams="['search' => $searchFilter, 'period' => $periodFilter, 'per_page' => $perPage]" />
                 @endif
             </div>
         </div>
