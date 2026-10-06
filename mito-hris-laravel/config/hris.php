@@ -16,6 +16,10 @@ return [
     */
     'data_driver' => env('HRIS_DATA_DRIVER'),
 
+    'integration' => [
+        'employee_api_token' => env('HRIS_EMPLOYEE_API_TOKEN'),
+    ],
+
     'domains' => [
         'hris' => env('HRIS_DOMAIN', 'hrismitogroup.web.id'),
         'mpr' => env('MPR_DOMAIN', 'mpr.hrismitogroup.web.id'),
