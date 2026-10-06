@@ -104,14 +104,15 @@ class BulkSkPengangkatanCommandTest extends TestCase
         ])
             ->expectsOutputToContain('003/SKP/MSI/X/2026')
             ->expectsOutputToContain('004/SKP/SPI/X/2026')
-            ->expectsOutputToContain('Jabatan HRIS: Engineering Associate (Semarang)')
             ->expectsOutputToContain('Employee ID tidak ditemukan di HRIS')
             ->expectsOutputToContain('Sudah punya SK Pengangkatan')
             ->assertSuccessful();
 
         $this->assertSame(3, EmployeeDocument::query()->count());
         $this->assertSame(0, EmployeeDocumentFile::query()->count());
-        $this->assertCount(1, glob($this->workDir . '/*_dry-run.csv'));
+        $reports = glob($this->workDir . '/*_dry-run.csv');
+        $this->assertCount(1, $reports);
+        $this->assertStringContainsString('Jabatan HRIS: Engineering Associate (Semarang)', file_get_contents($reports[0]));
         $this->assertCount(0, glob($this->workDir . '/*.zip'));
     }
 
