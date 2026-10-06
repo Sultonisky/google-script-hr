@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'mpr.auth' => \App\Http\Middleware\MprRequestorMiddleware::class,
             'mpr.auth.requestor' => \App\Http\Middleware\MprRequestorMiddleware::class,
             'mpr.auth.dedicated' => \App\Http\Middleware\EnsureMprAuthenticated::class,
+            'employee.integration' => \App\Http\Middleware\AuthenticateEmployeeIntegration::class,
         ]);
 
         $middleware->appendToGroup('web', [
