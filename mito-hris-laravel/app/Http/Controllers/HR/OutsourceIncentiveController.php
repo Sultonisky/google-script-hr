@@ -69,9 +69,7 @@ class OutsourceIncentiveController extends Controller
             $sheet->getCell('A' . $row)->setValueExplicit((string) $incentive->outsource_id, DataType::TYPE_STRING);
             $sheet->setCellValue('B' . $row, $incentive->full_name ?? '');
             $sheet->setCellValue('C' . $row, $incentive->vendor ?? '');
-            if ($incentive->umk_amount !== null) {
-                $sheet->setCellValue('D' . $row, (float) $incentive->umk_amount);
-            }
+            $sheet->setCellValue('D' . $row, (float) $incentive->umk_amount);
             $sheet->setCellValue('E' . $row, (float) $incentive->incentive_amount);
         }
         foreach (range('A', 'E') as $column) {
