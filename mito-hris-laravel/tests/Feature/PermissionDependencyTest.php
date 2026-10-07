@@ -93,6 +93,123 @@ class PermissionDependencyTest extends TestCase
     }
 
     #[Test]
+    public function category_asset_permissions_require_portal_and_category_view_access(): void
+    {
+        $resolver = app(PermissionResolver::class);
+        $this->assertEquals(['assets.access'], $resolver->dependenciesFor('assets.building.view'));
+        $this->assertEquals(['assets.access', 'assets.vehicle.view'], $resolver->dependenciesFor('assets.vehicle.update'));
+        $this->assertEquals(
+            ['assets.access', 'assets.office.view', 'lookup_employee'],
+            $resolver->dependenciesFor('assets.office.assign')
+        );
+        $this->assertEquals(
+            ['assets.access', 'assets.electronics.view'],
+            $resolver->dependenciesFor('assets.electronics.return')
+        );
+    }
+
+    #[Test]
+    public function legacy_asset_permissions_apply_until_category_configuration_is_started(): void
+    {
+        $this->setMariePermissions([
+            'assets.access' => true,
+            'assets.view' => true,
+            'assets.create' => true,
+        ]);
+        $resolver = app(PermissionResolver::class);
+        $user = ['email' => 'marie@example.com', 'role' => 'User'];
+
+        foreach (['building', 'vehicle', 'office', 'electronics'] as $category) {
+            $this->assertTrue($resolver->allows($user, "assets.{$category}.view"));
+            $this->assertTrue($resolver->allows($user, "assets.{$category}.create"));
+        }
+
+        $this->setPermission('marie@example.com', 'assets.building.view', false);
+        $resolver->forget('marie@example.com');
+
+        $this->assertFalse($resolver->allows($user, 'assets.building.view'));
+        $this->assertFalse($resolver->allows($user, 'assets.vehicle.view'));
+    }
+
+    #[Test]
+    public function saving_category_permissions_denies_unchecked_categories_even_when_legacy_permissions_are_granted(): void
+    {
+        $this->actingAsSuperAdmin();
+        $this->mockUserRepo($this->makeUserRow());
+        $this->setMariePermissions([
+            'assets.access' => true,
+            'assets.view' => true,
+            'assets.create' => true,
+            'assets.update' => true,
+            'assets.delete' => true,
+            'assets.assign' => true,
+            'assets.return' => true,
+            'assets.generate_code' => true,
+            'lookup_employee' => true,
+        ]);
+
+        $this->putJson('/hr/permissions/marie@example.com', [
+            'permissions' => [
+                'assets.access',
+                'lookup_employee',
+                'assets.building.view',
+                'assets.building.create',
+                'assets.building.update',
+                'assets.building.delete',
+                'assets.building.assign',
+                'assets.building.return',
+                'assets.building.generate_code',
+            ],
+        ])->assertOk()->assertJsonPath('success', true);
+
+        $resolver = app(PermissionResolver::class);
+        $user = ['email' => 'marie@example.com', 'role' => 'User'];
+        $this->assertTrue($resolver->allows($user, 'assets.building.view'));
+        $this->assertTrue($resolver->allows($user, 'assets.building.create'));
+        foreach (['vehicle', 'office', 'electronics'] as $category) {
+            $this->assertFalse($resolver->allows($user, "assets.{$category}.view"));
+            $this->assertFalse($resolver->allows($user, "assets.{$category}.create"));
+        }
+        $storedMappings = collect(app(UserPermissionRepositoryInterface::class)->mappingsForUser('marie@example.com'));
+        $this->assertTrue($storedMappings->firstWhere('Permission Key', 'assets.building.view')['Granted']);
+        $this->assertFalse($storedMappings->firstWhere('Permission Key', 'assets.vehicle.view')['Granted']);
+    }
+
+    #[Test]
+    public function permission_editor_shows_only_category_asset_actions_not_legacy_duplicates(): void
+    {
+        $this->actingAsSuperAdmin();
+        $this->mockUserRepo($this->makeUserRow());
+
+        $permissions = $this->getJson('/hr/permissions/marie@example.com')
+            ->assertOk()
+            ->json('permissions');
+
+        $this->assertArrayHasKey('assets.building.view', $permissions);
+        $this->assertArrayHasKey('assets.vehicle.view', $permissions);
+        $this->assertArrayNotHasKey('assets.view', $permissions);
+        $this->assertArrayNotHasKey('assets.create', $permissions);
+        $this->assertArrayNotHasKey('view_asset', $permissions);
+        $this->assertArrayNotHasKey('edit_asset', $permissions);
+    }
+
+    #[Test]
+    public function scoped_category_permission_can_be_granted_without_granting_its_siblings(): void
+    {
+        $this->setMariePermissions([
+            'assets.access' => true,
+            'assets.view' => false,
+            'assets.building.view' => true,
+        ]);
+        $resolver = app(PermissionResolver::class);
+        $user = ['email' => 'marie@example.com', 'role' => 'User'];
+
+        $this->assertTrue($resolver->allows($user, 'assets.building.view'));
+        $this->assertFalse($resolver->allows($user, 'assets.vehicle.view'));
+        $this->assertFalse($resolver->allows($user, 'assets.office.view'));
+    }
+
+    #[Test]
     public function certificates_view_requires_certificates_access(): void
     {
         $resolver = app(PermissionResolver::class);
@@ -192,19 +309,19 @@ class PermissionDependencyTest extends TestCase
     // =========================================================================
 
     #[Test]
-    public function permission_management_auto_enables_assets_access_when_assets_view_is_selected(): void
+    public function permission_management_auto_enables_assets_access_when_category_view_is_selected(): void
     {
         $this->actingAsSuperAdmin();
         $this->mockUserRepo($this->makeUserRow());
         $this->setMariePermissions([]);
 
         $response = $this->putJson('/hr/permissions/marie@example.com', [
-            'permissions' => ['assets.view'],
+            'permissions' => ['assets.building.view'],
         ]);
 
         $response->assertOk()->assertJsonPath('success', true);
         $this->assertTrue(app(PermissionResolver::class)->allows(['email' => 'marie@example.com', 'role' => 'User'], 'assets.access'));
-        $this->assertTrue(app(PermissionResolver::class)->allows(['email' => 'marie@example.com', 'role' => 'User'], 'assets.view'));
+        $this->assertTrue(app(PermissionResolver::class)->allows(['email' => 'marie@example.com', 'role' => 'User'], 'assets.building.view'));
     }
 
     #[Test]
@@ -246,36 +363,64 @@ class PermissionDependencyTest extends TestCase
         $this->mockUserRepo($this->makeUserRow());
         $this->setMariePermissions([
             'assets.access' => true,
-            'assets.view'   => true,
+            'assets.building.view' => true,
         ]);
 
         $response = $this->putJson('/hr/permissions/marie@example.com', [
-            'permissions' => ['assets.access', 'assets.view', 'assets.create'],
+            'permissions' => ['assets.access', 'assets.building.view', 'assets.building.create'],
         ]);
 
         $response->assertOk()->assertJsonPath('success', true);
-        $this->assertTrue(app(PermissionResolver::class)->allows(['email' => 'marie@example.com', 'role' => 'User'], 'assets.create'));
+        $this->assertTrue(app(PermissionResolver::class)->allows(['email' => 'marie@example.com', 'role' => 'User'], 'assets.building.create'));
         $this->assertTrue(app(PermissionResolver::class)->allows(['email' => 'marie@example.com', 'role' => 'User'], 'assets.access'));
     }
 
-    // =========================================================================
-    // Super Admin bypass
-    // =========================================================================
-
     #[Test]
-    public function super_admin_permission_save_does_not_validate_dependencies(): void
+    public function saving_unchanged_legacy_asset_permissions_does_not_persist_category_overrides(): void
     {
         $this->actingAsSuperAdmin();
         $this->mockUserRepo($this->makeUserRow());
-        $this->setMariePermissions([]);
-
-        $response = $this->putJson('/hr/permissions/marie@example.com', [
-            'permissions' => ['assets.view'],
+        $this->setMariePermissions([
+            'assets.access' => true,
+            'assets.view' => true,
+            'assets.create' => true,
+            'assets.update' => true,
+            'assets.delete' => true,
+            'assets.assign' => true,
+            'assets.return' => true,
+            'assets.generate_code' => true,
+            'lookup_employee' => true,
         ]);
 
-        $response->assertOk()->assertJsonPath('success', true);
-        // Super Admin can save anything; dependencies are not enforced for them
-        $this->assertTrue(app(PermissionResolver::class)->allows(['email' => 'marie@example.com', 'role' => 'User'], 'assets.view'));
+        $user = ['email' => 'marie@example.com', 'role' => 'User'];
+        $resolver = app(PermissionResolver::class);
+        $effectivePermissions = collect(\App\Support\PermissionCatalog::keys())
+            ->reject(fn (string $permission): bool => in_array($permission, [
+                'assets.view',
+                'assets.create',
+                'assets.update',
+                'assets.delete',
+                'assets.assign',
+                'assets.return',
+                'assets.generate_code',
+                'view_asset',
+                'edit_asset',
+            ], true))
+            ->filter(fn (string $permission): bool => $resolver->allows($user, $permission))
+            ->values()
+            ->all();
+
+        $this->putJson('/hr/permissions/marie@example.com', [
+            'permissions' => $effectivePermissions,
+        ])->assertOk()->assertJsonPath('success', true);
+
+        $storedKeys = collect(app(UserPermissionRepositoryInterface::class)->mappingsForUser('marie@example.com'))
+            ->pluck('Permission Key');
+        foreach (['building', 'vehicle', 'office', 'electronics'] as $category) {
+            foreach (['view', 'create', 'update', 'delete', 'assign', 'return', 'generate_code'] as $action) {
+                $this->assertFalse($storedKeys->contains("assets.{$category}.{$action}"));
+            }
+        }
     }
 
     // =========================================================================
