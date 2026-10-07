@@ -64,7 +64,7 @@
                                 <td class="id-mono fw-bold">{{ $incentive->outsource_id }}</td>
                                 <td>{{ $incentive->full_name ?? '-' }}</td>
                                 <td>{{ $incentive->vendor ?? '-' }}</td>
-                                <td class="id-mono">{{ $incentive->umk_amount !== null ? 'Rp ' . number_format((float) $incentive->umk_amount, 0, ',', '.') : '-' }}</td>
+                                <td class="id-mono">Rp {{ number_format((float) $incentive->umk_amount, 0, ',', '.') }}</td>
                                 <td class=" id-mono fw-semibold">Rp {{ number_format((float) $incentive->incentive_amount, 0, ',', '.') }}</td>
                             </tr>
                         @empty
@@ -231,7 +231,7 @@
                         '</div>';
                     resultEl.hidden = false;
                     previewBody.innerHTML = rows.map(function(row) {
-                        var umk = row.umk_amount == null ? '-' : 'Rp ' + Number(row.umk_amount).toLocaleString('id-ID', { maximumFractionDigits: 0 });
+                        var umk = 'Rp ' + Number(row.umk_amount || 0).toLocaleString('id-ID', { maximumFractionDigits: 0 });
                         var incentive = 'Rp ' + Number(row.incentive_amount || 0).toLocaleString('id-ID', { maximumFractionDigits: 0 });
                         var status = row.status === 'updated' ? 'Diperbarui' : (row.status === 'unchanged' ? 'Tidak berubah' : 'Baru');
                         return '<tr><td>' + escapeHtml(row.outsource_id) + '</td><td>' + escapeHtml(row.full_name || '-') +

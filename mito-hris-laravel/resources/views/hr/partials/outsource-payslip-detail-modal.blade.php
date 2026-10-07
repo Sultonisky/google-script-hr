@@ -7,13 +7,13 @@
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow">
             <div class="modal-header">
-                <div class="d-flex align-items-center gap-3 min-w-0">
-                    <div class="min-w-0">
-                        <h5 class="modal-title" id="opdTitle">Payslip Outsource</h5>
-                        <span class="detail-number">Periode <span data-opd="period">-</span></span>
-                    </div>
+                <div class="min-w-0">
+                    <h5 class="modal-title" id="opdTitle">Payslip Outsource</h5>
                 </div>
-                <img src="{{ asset('assets/mito-white.png') }}" alt="MITO" class="payslip-brand">
+                <div class="payslip-period">
+                    <span>PERIODE</span>
+                    <strong data-opd="period">-</strong>
+                </div>
             </div>
 
             <div class="modal-body">

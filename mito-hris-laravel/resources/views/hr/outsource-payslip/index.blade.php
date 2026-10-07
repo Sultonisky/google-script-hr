@@ -105,7 +105,7 @@
                                 <td class="text-end id-mono">{{ $days($payslip->hke) }}</td>
                                 <td class="text-end id-mono">{{ $rupiah($payslip->basic_salary) }}</td>
                                 <td class="text-end id-mono">{{ $rupiah($payslip->bpjs_kesehatan_deduction) }}</td>
-                                <td class="text-end id-mono">{{ (float) $payslip->loan_deduction > 0 ? $rupiah($payslip->loan_deduction) : '-' }}</td>
+                                <td class="text-end id-mono">{{ $rupiah($payslip->loan_deduction) }}</td>
                                 <td class="text-end id-mono fw-bold">{{ $rupiah($payslip->take_home_pay) }}</td>
                             </tr>
                         @empty
