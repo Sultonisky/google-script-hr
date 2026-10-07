@@ -106,7 +106,7 @@ class OutsourceIncentiveImportTest extends TestCase
             'outsource_id' => 'DM20260002',
             'full_name' => 'Citra Lestari',
             'vendor' => 'StaffInc',
-            'umk_amount' => 4200000,
+            'umk_amount' => null,
             'incentive_amount' => 900000,
         ]);
 
@@ -122,6 +122,19 @@ class OutsourceIncentiveImportTest extends TestCase
         $this->assertSame(['Outsource ID', 'Nama', 'Vendor', 'UMK', 'Incentive'], $rows[0]);
         $this->assertSame(['DM20260001', 'Bayu Saputra', 'Damarindo', '4,500,000', '1,250,000'], $rows[1]);
         $this->assertCount(2, $rows);
+
+        $response = $this->get('/hr/outsource-incentives/export?period=2026-09&search=Citra');
+        $response->assertOk();
+        $path = tempnam(sys_get_temp_dir(), 'oincexp') . '.xlsx';
+        $this->tempFiles[] = $path;
+        file_put_contents($path, $response->streamedContent());
+        $rows = IOFactory::load($path)->getSheet(0)->toArray();
+        $this->assertSame('0', $rows[1][3]);
+        $this->assertSame('900,000', $rows[1][4]);
+
+        $this->get('/hr/outsource-incentives?period=2026-09&search=Citra')
+            ->assertOk()
+            ->assertSee('Rp 0');
     }
 
     public function test_incentive_table_shows_fifteen_rows_per_page(): void
