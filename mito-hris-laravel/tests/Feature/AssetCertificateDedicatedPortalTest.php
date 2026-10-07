@@ -198,18 +198,9 @@ class AssetCertificateDedicatedPortalTest extends TestCase
         $this->assertFalse(session()->has('asset_auth'));
     }
 
-    public function test_authenticated_non_admin_cannot_access_asset_json_directly(): void
+    public function test_legacy_asset_json_endpoint_is_retired(): void
     {
-        Session::put('asset_auth', [
-            'email' => 'staff@mito.id',
-            'role' => 'HR Staff',
-            'source_role' => 'HR Staff',
-            'auth_domain' => 'assets',
-        ]);
-
-            $response = $this->get('http://assets.hrismitogroup.web.id/1/json');
-
-        $response->assertForbidden();
+        $this->get('http://assets.hrismitogroup.web.id/1/json')->assertNotFound();
     }
 
     public function test_certificate_domain_requires_dedicated_certificate_session(): void
