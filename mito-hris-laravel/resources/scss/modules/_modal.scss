@@ -577,20 +577,61 @@ a.fab-action {
         max-width: 640px;
     }
 
-    .payslip-brand {
-        height: 40px;
-        width: auto;
-        margin-left: auto;
-        margin-right: 14px;
-        flex-shrink: 0;
-    }
-
     .modal-header .btn-close {
         margin-left: 0;
     }
 
-    .detail-number {
-        font-size: 13px;
+    .modal-header {
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+    }
+
+    .payslip-period {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+        margin-left: auto;
+        padding: 8px 12px;
+        border: 1px solid rgba(255, 255, 255, 0.32);
+        border-radius: 10px;
+        // background: rgba(255, 255, 255, 0.16);
+
+        span {
+            color: rgba(255, 255, 255, 0.78);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.7px;
+        }
+
+        strong {
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+    }
+
+    @media (max-width: 575.98px) {
+        .modal-header {
+            gap: 10px;
+            padding-left: 16px;
+            padding-right: 16px;
+        }
+
+        .payslip-period {
+            gap: 6px;
+            padding: 7px 9px;
+
+            span {
+                font-size: 9px;
+            }
+
+            strong {
+                font-size: 12px;
+            }
+        }
     }
 
     .detail-candidate-name {
@@ -681,10 +722,4 @@ a.fab-action {
         overflow-wrap: anywhere;
     }
 
-    @media (max-width: 575.98px) {
-        .payslip-brand {
-            height: 20px;
-            margin-right: 8px;
-        }
-    }
 }
