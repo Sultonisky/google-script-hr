@@ -59,13 +59,6 @@ class LocalDevAdminTest extends TestCase
         $this->assertTrue(Gate::allows('view_certification'));
         $this->assertTrue(Gate::allows('manage_certification'));
 
-        // Route-level: admin-only write actions must pass RBAC (not 403).
-        // 422/200 both acceptable — only a 403 means RBAC denial.
-        $assetStatus = $this->post('/hr/assets', [
-            'category' => 'Elektronik', 'name' => 'Admin RBAC Probe',
-        ])->status();
-        $this->assertNotSame(403, $assetStatus, 'Admin must pass edit_asset on asset store');
-
         $certStatus = $this->post('/hr/certifications', [])->status();
         $this->assertNotSame(403, $certStatus, 'Admin must pass manage_certification on certification store');
     }

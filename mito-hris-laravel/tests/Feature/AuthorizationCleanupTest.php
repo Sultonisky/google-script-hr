@@ -44,15 +44,19 @@ class AuthorizationCleanupTest extends TestCase
     }
 
     #[Test]
-    public function dedicated_asset_mutations_use_their_action_permissions(): void
+    public function category_asset_mutations_use_their_action_permissions(): void
     {
         $expected = [
-            'assets.portal.store'        => 'can:assets.create',
-            'assets.portal.update'       => 'can:assets.update',
-            'assets.portal.destroy'      => 'can:assets.delete',
-            'assets.portal.assign'       => 'can:assets.assign',
-            'assets.portal.return'       => 'can:assets.return',
-            'assets.portal.generate-code' => 'can:assets.generate_code',
+            'assets.portal.building.index' => 'can:assets.building.view',
+            'assets.portal.building.store' => 'can:assets.building.create',
+            'assets.portal.building.update' => 'can:assets.building.update',
+            'assets.portal.building.destroy' => 'can:assets.building.delete',
+            'assets.portal.vehicle.index' => 'can:assets.vehicle.view',
+            'assets.portal.vehicle.store' => 'can:assets.vehicle.create',
+            'assets.portal.office.store' => 'can:assets.office.create',
+            'assets.portal.electronics.store' => 'can:assets.electronics.create',
+            'assets.portal.electronics.assign' => 'can:assets.electronics.assign',
+            'assets.portal.electronics.return' => 'can:assets.electronics.return',
         ];
 
         foreach ($expected as $routeName => $permission) {
