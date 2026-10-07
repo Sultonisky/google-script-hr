@@ -62,7 +62,7 @@
         @elseif ($currentPortal === 'assets')
             <div class="nav-section-label">Asset</div>
             <a href="{{ route('assets.portal.index') }}"
-                class="nav-item {{ request()->routeIs('assets.portal.*') ? 'active' : '' }}">
+                class="nav-item {{ request()->routeIs('assets.portal.index') ? 'active' : '' }}">
                 <i class="bi bi-box-seam-fill"></i> Asset Management
             </a>
         @elseif ($currentPortal === 'certificates')
