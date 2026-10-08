@@ -280,10 +280,12 @@
                                         class="text-danger">*</span></label>
                                 <select class="form-select form-select-sm" id="offerBranchName">
                                     <option value="">— Pilih —</option>
-                                    <option value="PT Mahakarya Sukses Indonesia">PT Mahakarya Sukses Indonesia</option>
-                                    <option value="PT Stein Perkasa Internasional">PT Stein Perkasa Internasional</option>
-                                    <option value="PT Perkasa Injeksi Indonesia">PT Perkasa Injeksi Indonesia</option>
-                                    <option value="PT Mitra Elektro Perkasa">PT Mitra Elektro Perkasa</option>
+                                    @foreach (config('hris.mpr.companies', []) as $company)
+                                        @php($branchName = $company['branch_name'] ?? $company['name'] ?? '')
+                                        @if ($branchName !== '')
+                                            <option value="{{ $branchName }}">{{ $branchName }}</option>
+                                        @endif
+                                    @endforeach
                                 </select>
                             </div>
                             <div class="col-md-6">
