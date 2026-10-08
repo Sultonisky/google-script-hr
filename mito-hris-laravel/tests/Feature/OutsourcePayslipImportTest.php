@@ -162,6 +162,18 @@ class OutsourcePayslipImportTest extends TestCase
         $this->assertSame('250,000', $rows[1][6]);
         $this->assertSame('3,215,000', $rows[1][7]);
         $this->assertCount(2, $rows);
+
+        $response = $this->get('/hr/outsource-payslips/export?period=2026-09&search=Citra')
+            ->assertOk();
+        $path = tempnam(sys_get_temp_dir(), 'opsexp') . '.xlsx';
+        $this->tempFiles[] = $path;
+        file_put_contents($path, $response->streamedContent());
+        $rows = IOFactory::load($path)->getSheet(0)->toArray();
+
+        $this->assertSame('DM20260002', $rows[1][0]);
+        $this->assertSame('0', $rows[1][6]);
+        $this->assertSame('3,168,000', $rows[1][7]);
+        $this->assertCount(2, $rows);
     }
 
     public function test_template_lists_master_outsource_ids(): void
