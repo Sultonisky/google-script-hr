@@ -16,6 +16,10 @@ return [
     */
     'data_driver' => env('HRIS_DATA_DRIVER'),
 
+    'integration' => [
+        'employee_api_token' => env('HRIS_EMPLOYEE_API_TOKEN'),
+    ],
+
     'domains' => [
         'hris' => env('HRIS_DOMAIN', 'hrismitogroup.web.id'),
         'mpr' => env('MPR_DOMAIN', 'mpr.hrismitogroup.web.id'),
@@ -240,7 +244,7 @@ return [
         ],
         'role_permissions' => [
             'Super Admin' => ['*'],
-            'Admin' => ['manage_recruitment', 'manage_employees', 'manage_probation', 'view_employees', 'rotate_employees', 'offboard_employees', 'off_contract_employees', 'manage_warning_letters', 'view_contracts', 'view_outsource', 'manage_outsource', 'view_outsource_compensation', 'manage_outsource_compensation', 'view_documents', 'download_documents', 'view_recruitment', 'update_candidates', 'create_offering', 'manage_hold_blacklist', 'view_mpr', 'create_mpr', 'update_mpr', 'export_mpr', 'assets.access', 'assets.view', 'assets.create', 'assets.update', 'assets.delete', 'assets.assign', 'assets.return', 'assets.generate_code', 'certificates.access', 'certificates.view', 'certificates.create', 'certificates.update', 'certificates.delete', 'certificates.generate_code', 'view_asset', 'edit_asset', 'view_certification', 'manage_certification'],
+            'Admin' => ['manage_recruitment', 'manage_employees', 'manage_probation', 'view_employees', 'rotate_employees', 'offboard_employees', 'off_contract_employees', 'manage_warning_letters', 'view_contracts', 'view_outsource', 'manage_outsource', 'view_outsource_compensation', 'manage_outsource_compensation', 'view_outsource_payslip', 'manage_outsource_payslip', 'view_outsource_incentive', 'manage_outsource_incentive', 'view_documents', 'download_documents', 'view_recruitment', 'update_candidates', 'create_offering', 'manage_hold_blacklist', 'view_mpr', 'create_mpr', 'update_mpr', 'export_mpr', 'assets.access', 'assets.view', 'assets.create', 'assets.update', 'assets.delete', 'assets.assign', 'assets.return', 'assets.generate_code', 'certificates.access', 'certificates.view', 'certificates.create', 'certificates.update', 'certificates.delete', 'certificates.generate_code', 'view_asset', 'edit_asset', 'view_certification', 'manage_certification'],
             'User' => ['view_recruitment', 'update_candidates', 'create_offering', 'manage_hold_blacklist', 'view_mpr', 'export_mpr', 'view_asset', 'view_certification'],
             'Manpower' => ['view_mpr', 'create_mpr', 'export_mpr'],
         ],

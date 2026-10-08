@@ -209,6 +209,11 @@
 .table-responsive {
     max-height: 640px;
 }
+// Payslip and Incentive Outsource show up to 15 rows per page without vertical table scrolling.
+#outsourcePayslipPanel .table-responsive,
+#outsourceIncentivePanel .table-responsive {
+    max-height: none;
+}
 table.hr-table {
     margin: 0;
     font-size: 13px;
