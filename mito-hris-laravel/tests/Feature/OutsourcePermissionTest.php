@@ -131,7 +131,7 @@ class OutsourcePermissionTest extends TestCase
 
         $this->get('/hr/outsource')
             ->assertOk()
-            ->assertSee('id="btnAddOutsource"', false)
+            ->assertDontSee('id="btnAddOutsource"', false)
             ->assertSee('id="outsourceFormModal"', false);
 
         $this->putJson('/hr/outsource/DM20260001', [

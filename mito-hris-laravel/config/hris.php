@@ -16,6 +16,10 @@ return [
     */
     'data_driver' => env('HRIS_DATA_DRIVER'),
 
+    'integration' => [
+        'outsource_payroll_api_token' => env('HRIS_OUTSOURCE_PAYROLL_API_TOKEN'),
+    ],
+
     'domains' => [
         'hris' => env('HRIS_DOMAIN', 'hrismitogroup.web.id'),
         'mpr' => env('MPR_DOMAIN', 'mpr.hrismitogroup.web.id'),
@@ -86,6 +90,14 @@ return [
                 'city'    => 'Jakarta',
                 'brand'   => 'MITRA ELEKTRO',
                 'code'    => 'MEP',
+            ],
+            'SDI' => [
+                'name'    => 'PT SUKA DESSERT INDONESIA',
+                'branch_name' => 'PT Suka Dessert Indonesia',
+                'address' => 'Ruko RGIE No. 96-98 Golf Island PIK, Kel Kamal Muara Kec. Penjaringan, Jakarta Utara',
+                'city'    => 'Jakarta Utara',
+                'brand'   => 'SDI',
+                'code'    => 'SDI',
             ],
         ],
     ],
@@ -199,6 +211,7 @@ return [
             'SPI' => 'PT Stein Perkasa Internasional (SPI)',
             'PII' => 'PT Perkasa Injeksi Indonesia (PII)',
             'MEP' => 'PT Mitra Elektro Perkasa (MEP)',
+            'SDI' => 'PT Suka Dessert Indonesia (SDI)',
         ],
     ],
     // Dedicated outsource store (Outsource_Employees), separate from Employee.
@@ -211,6 +224,7 @@ return [
             'PT. Stein Perkasa Internasional',
             'PT. Perkasa Injeksi Indonesia',
             'PT. Mitra Elektro Perkasa',
+            'PT. Suka Dessert Indonesia',
         ],
         'payroll_schemes' => ['70/30', 'Khusus'],
         'education_levels' => ['SD', 'SMP', 'SLTA', 'D1', 'D2', 'D3', 'D4', 'S1', 'S2'],
@@ -240,7 +254,7 @@ return [
         ],
         'role_permissions' => [
             'Super Admin' => ['*'],
-            'Admin' => ['manage_recruitment', 'manage_employees', 'manage_probation', 'view_employees', 'rotate_employees', 'offboard_employees', 'off_contract_employees', 'manage_warning_letters', 'view_contracts', 'view_outsource', 'manage_outsource', 'view_outsource_compensation', 'manage_outsource_compensation', 'view_documents', 'download_documents', 'view_recruitment', 'update_candidates', 'create_offering', 'manage_hold_blacklist', 'view_mpr', 'create_mpr', 'update_mpr', 'export_mpr', 'assets.access', 'assets.view', 'assets.create', 'assets.update', 'assets.delete', 'assets.assign', 'assets.return', 'assets.generate_code', 'certificates.access', 'certificates.view', 'certificates.create', 'certificates.update', 'certificates.delete', 'certificates.generate_code', 'view_asset', 'edit_asset', 'view_certification', 'manage_certification'],
+            'Admin' => ['manage_recruitment', 'manage_employees', 'manage_probation', 'view_employees', 'rotate_employees', 'offboard_employees', 'off_contract_employees', 'manage_warning_letters', 'view_contracts', 'view_outsource', 'manage_outsource', 'view_outsource_compensation', 'manage_outsource_compensation', 'view_outsource_payslip', 'manage_outsource_payslip', 'view_outsource_incentive', 'manage_outsource_incentive', 'view_documents', 'download_documents', 'view_recruitment', 'update_candidates', 'create_offering', 'manage_hold_blacklist', 'view_mpr', 'create_mpr', 'update_mpr', 'export_mpr', 'assets.access', 'assets.view', 'assets.create', 'assets.update', 'assets.delete', 'assets.assign', 'assets.return', 'assets.generate_code', 'certificates.access', 'certificates.view', 'certificates.create', 'certificates.update', 'certificates.delete', 'certificates.generate_code', 'view_asset', 'edit_asset', 'view_certification', 'manage_certification'],
             'User' => ['view_recruitment', 'update_candidates', 'create_offering', 'manage_hold_blacklist', 'view_mpr', 'export_mpr', 'view_asset', 'view_certification'],
             'Manpower' => ['view_mpr', 'create_mpr', 'export_mpr'],
         ],

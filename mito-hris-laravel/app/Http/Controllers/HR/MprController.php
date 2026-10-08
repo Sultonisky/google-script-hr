@@ -160,6 +160,7 @@ class MprController extends Controller
             'SPI' => 'PT Stein Perkasa Internasional (SPI)',
             'PII' => 'PT Perkasa Injeksi Indonesia (PII)',
             'MEP' => 'PT Mitra Elektro Perkasa (MEP)',
+            'SDI' => 'PT Suka Dessert Indonesia (SDI)',
         ]);
 
         // Target entity adalah input MPR form — requestor bebas memilih entity dari config,
@@ -264,6 +265,7 @@ class MprController extends Controller
             'SPI' => 'PT Stein Perkasa Internasional (SPI)',
             'PII' => 'PT Perkasa Injeksi Indonesia (PII)',
             'MEP' => 'PT Mitra Elektro Perkasa (MEP)',
+            'SDI' => 'PT Suka Dessert Indonesia (SDI)',
         ]);
         $reasons = array_values(config('hris.mpr_form_options.reasons', [
             'Penambahan Karyawan Baru',

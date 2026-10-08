@@ -192,6 +192,12 @@ class SkNumberServiceTest extends TestCase
         $this->service->issue('EMP-A', SkDocumentType::SURAT_BPJS, 'Head Office MSI', 'HR');
     }
 
+    public function test_sdi_entity_code_is_resolved_from_entity_name_and_code(): void
+    {
+        $this->assertSame('SDI', $this->service->resolveEntityCode('PT Suka Dessert Indonesia'));
+        $this->assertSame('SDI', $this->service->resolveEntityCode('SDI'));
+    }
+
     public function test_document_codes_follow_hris_format(): void
     {
         $this->assertSame(

@@ -52,12 +52,6 @@
                                 id="btnImportOutsource">
                                 <i class="bi bi-file-earmark-spreadsheet me-1"></i>Import Excel
                             </button>
-                            <button class="btn btn-sm fw-semibold text-white"
-                                style="background:#eb1c24;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
-                                type="button"
-                                id="btnAddOutsource">
-                                <i class="bi bi-building-fill-gear me-1"></i>Tambah Outsource
-                            </button>
                         @endcan
                         <a href="{{ route('hr.export.outsource-xlsx') }}"
                             class="btn btn-sm fw-semibold text-white"
@@ -180,13 +174,6 @@
 
 @section('scripts')
     <script>
-        var btnAddOutsource = document.getElementById('btnAddOutsource');
-        if (btnAddOutsource) {
-            btnAddOutsource.addEventListener('click', function() {
-                if (typeof window.openOutsourceForm === 'function') window.openOutsourceForm(null);
-            });
-        }
-
         // Drawer click handler for outsource
         document.querySelectorAll('#osTableBody tr[data-drawer-type="outsource"]').forEach(function(row) {
             row.addEventListener('click', function(e) {
