@@ -235,6 +235,7 @@ class OutsourcePayslipImportTest extends TestCase
         $this->get('/hr/outsource-payslips?period=2026-09')->assertOk()
             ->assertSee('DM20260001')
             ->assertSee('Rp 3.215.000')
+            ->assertSee('<td class="text-end id-mono">Rp 0</td>', false)
             ->assertSee('Rp 0')
             ->assertSee('id="outsourcePayslipDetailModal"', false)
             ->assertSee('data-payslip-detail=', false)
