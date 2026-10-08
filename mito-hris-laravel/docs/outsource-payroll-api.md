@@ -13,7 +13,14 @@ Authorization: Bearer <token>
 ```
 
 The API returns `503` when the token is not configured and `401` when the
-request has no valid token.
+request has no valid token. This credential is separate from
+`HRIS_EMPLOYEE_API_TOKEN`.
+
+Keep this credential only in server-side environment configuration; never
+embed or return it in browser code. The Attendance backend must resolve the
+signed-in user's outsource ID from its trusted account mapping rather than
+accepting an arbitrary ID from a browser request. Serve integration requests
+over HTTPS.
 
 ## Endpoints
 
@@ -34,7 +41,8 @@ GET /api/v1/outsource/{outsourceId}/incentives?period=2026-09
 `period` is optional and must use `YYYY-MM`; invalid periods return `422`.
 Results are scoped to the requested outsource ID and sorted newest period first.
 Amounts are returned as numbers, with missing numeric values represented as
-`0`.
+`0`. A valid ID with no matching records returns an empty `data` array.
+Requests are read-only and limited to 60 per minute.
 
 Successful responses use this shape:
 
