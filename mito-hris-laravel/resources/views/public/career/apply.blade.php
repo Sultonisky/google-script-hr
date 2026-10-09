@@ -1749,9 +1749,19 @@
         // ============================================================
         // REGION DROPDOWNS (1:1 from GAS)
         // ============================================================
+        function compareRegionName(a, b) {
+            return a.localeCompare(b, 'id', { sensitivity: 'base' });
+        }
+
+        function citySortName(name) {
+            return name.replace(/^(KAB\.|KOTA)\s+/, '');
+        }
+
         function populateProvinces() {
             var html = '<option value="">-- Pilih Provinsi --</option>';
-            Object.keys(REGIONS.provinces).sort().forEach(function(code) {
+            Object.keys(REGIONS.provinces).sort(function(a, b) {
+                return compareRegionName(REGIONS.provinces[a], REGIONS.provinces[b]);
+            }).forEach(function(code) {
                 html += '<option value="' + code + '">' + REGIONS.provinces[code] + '</option>';
             });
             provinceSelect.innerHTML = html;
@@ -1763,7 +1773,12 @@
             if (!provinceCode) return;
             Object.keys(REGIONS.cities).filter(function(c) {
                     return c.substring(0, 2) === provinceCode;
-                }).sort()
+                }).sort(function(a, b) {
+                    var nameA = REGIONS.cities[a],
+                        nameB = REGIONS.cities[b];
+                    return compareRegionName(citySortName(nameA), citySortName(nameB)) ||
+                        compareRegionName(nameA, nameB);
+                })
                 .forEach(function(code) {
                     citySelect.innerHTML += '<option value="' + code + '">' + REGIONS.cities[code] + '</option>';
                 });
@@ -1819,7 +1834,7 @@
             var districts = data[cityCode];
             if (districts && districts.length) {
                 var html = '<option value="">-- Pilih Kecamatan --</option>';
-                districts.forEach(function(n) {
+                districts.slice().sort(compareRegionName).forEach(function(n) {
                     html += '<option value="' + n + '">' + n + '</option>';
                 });
                 districtInput.innerHTML = html;
