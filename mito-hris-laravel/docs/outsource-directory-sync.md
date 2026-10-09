@@ -94,3 +94,20 @@ php artisan mito:outsource-push-attendance --execute
 
 The first call only previews; `--execute` creates the missing IDs in batches of
 100 and is safe to repeat.
+
+HR users with `manage_outsource` can also use **Sync ke Attendance** on the
+Outsource list to preview all HRIS Outsource IDs and names first. The preview is
+a dry-run and shows which IDs are missing, already exist, or conflict. The user
+must explicitly confirm before HRIS submits the actual sync. Attendance creates
+only missing IDs; existing people are left unchanged. The result reports
+created, skipped, and conflicting IDs. In the modal, a conflict means that the
+same ID already exists in Attendance with a different name, or its Attendance
+record has been soft-deleted; the row explains which case was detected. A name
+mismatch means an active Attendance person has a different name from HRIS. If
+the ID is confirmed to belong to the same person and the difference is only a
+typo, have an Attendance administrator correct its name to match HRIS, then
+preview again. A deleted-record conflict means the ID still belongs to a
+soft-deleted Attendance record; have an administrator review its history and
+decide how to resolve it. Neither case means the sync changed or lost data:
+Attendance does not create, overwrite, or restore conflicting rows. Do not
+change an ID just to clear the conflict.
