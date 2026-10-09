@@ -554,10 +554,16 @@ class EmployeeController extends Controller
         }
 
         $qLower = strtolower($q);
+        $identityOnly = $request->query('scope') === 'identity';
         $results = $this->employeeRepo->getAll()
-            ->filter(function ($e) use ($qLower) {
-                return str_contains(strtolower($e->fullName ?? ''), $qLower)
-                    || str_contains(strtolower($e->employeeId ?? ''), $qLower)
+            ->filter(function ($e) use ($qLower, $identityOnly) {
+                $matchesIdentity = str_contains(strtolower($e->fullName ?? ''), $qLower)
+                    || str_contains(strtolower($e->employeeId ?? ''), $qLower);
+                if ($identityOnly) {
+                    return $matchesIdentity;
+                }
+
+                return $matchesIdentity
                     || str_contains(strtolower($e->division ?? ''), $qLower)
                     || str_contains(strtolower($e->department ?? ''), $qLower)
                     || str_contains(strtolower($e->jobPosition ?? ''), $qLower);

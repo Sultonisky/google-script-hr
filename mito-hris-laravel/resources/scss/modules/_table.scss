@@ -186,6 +186,21 @@
     color: var(--color-text);
     border-color: #c9cfd8;
 }
+.asset-filter-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+.asset-filter-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+}
 .employee-filter-actions {
     display: flex;
     align-items: center;
@@ -208,6 +223,11 @@
 /* Table */
 .table-responsive {
     max-height: 640px;
+}
+// Payslip and Incentive Outsource show up to 15 rows per page without vertical table scrolling.
+#outsourcePayslipPanel .table-responsive,
+#outsourceIncentivePanel .table-responsive {
+    max-height: none;
 }
 table.hr-table {
     margin: 0;

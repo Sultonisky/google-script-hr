@@ -48,6 +48,15 @@ class PermissionResolver
             return $mappings[$permission];
         }
 
+        $legacyAssetPermission = $this->legacyAssetPermission($permission);
+        if ($legacyAssetPermission !== null) {
+            if ($this->hasCategoryAssetPermissions($mappings)) {
+                return false;
+            }
+
+            return $this->allows($user, $legacyAssetPermission);
+        }
+
         foreach ($this->compatibilityAliases($permission) as $alias) {
             if (array_key_exists($alias, $mappings)) {
                 return $mappings[$alias];
@@ -97,6 +106,19 @@ class PermissionResolver
     {
         $permission = trim((string) $permission);
 
+        if (preg_match('/^assets\.(building|vehicle|office|electronics)\.(view|create|update|delete|assign|return|generate_code)$/', $permission, $matches)) {
+            if ($matches[2] === 'view') {
+                return ['assets.access'];
+            }
+
+            $dependencies = ['assets.access', "assets.{$matches[1]}.view"];
+            if ($matches[2] === 'assign') {
+                $dependencies[] = 'lookup_employee';
+            }
+
+            return $dependencies;
+        }
+
         return match ($permission) {
             'assets.view',
             'assets.create',
@@ -117,6 +139,8 @@ class PermissionResolver
             'manage_outsource' => ['view_outsource'],
             'view_outsource_compensation' => ['view_outsource'],
             'manage_outsource_compensation' => ['view_outsource', 'manage_outsource', 'view_outsource_compensation'],
+            'manage_outsource_payslip' => ['view_outsource_payslip'],
+            'manage_outsource_incentive' => ['view_outsource_incentive'],
             'download_documents' => ['view_documents'],
 
             'rotate_employees',
@@ -211,6 +235,10 @@ class PermissionResolver
             'view_contracts',
             'view_outsource',
             'manage_outsource',
+            'view_outsource_payslip',
+            'manage_outsource_payslip',
+            'view_outsource_incentive',
+            'manage_outsource_incentive',
             'view_documents',
             'download_documents',
             'view_mpr',
@@ -221,6 +249,26 @@ class PermissionResolver
             'manage_permissions',
             'view_reports',
         ], true);
+    }
+
+    private function legacyAssetPermission(string $permission): ?string
+    {
+        if (!preg_match('/^assets\.(building|vehicle|office|electronics)\.(view|create|update|delete|assign|return|generate_code)$/', $permission, $matches)) {
+            return null;
+        }
+
+        return 'assets.' . $matches[2];
+    }
+
+    private function hasCategoryAssetPermissions(array $mappings): bool
+    {
+        foreach (array_keys($mappings) as $permission) {
+            if (preg_match('/^assets\.(building|vehicle|office|electronics)\.(view|create|update|delete|assign|return|generate_code)$/', $permission)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function compatibilityAliases(string $permission): array

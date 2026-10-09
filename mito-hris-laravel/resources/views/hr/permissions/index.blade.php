@@ -109,15 +109,66 @@
         border: 1px solid var(--bs-border-color);
         border-radius: 0.65rem;
         background: var(--bs-body-bg);
+        overflow: hidden;
     }
 
     [data-permission-management] .permission-group-header {
-        border-bottom: 1px solid var(--bs-border-color);
         background: var(--bs-tertiary-bg);
+        min-height: 3.5rem;
+    }
+
+    [data-permission-management] .permission-group-expand {
+        min-width: 0;
+        flex: 1 1 auto;
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        padding: 0.8rem 1rem;
+        border: 0;
+        background: transparent;
+        color: var(--bs-body-color);
+        text-align: left;
+    }
+
+    [data-permission-management] .permission-group-expand:hover {
+        color: var(--bs-primary);
+    }
+
+    [data-permission-management] .permission-group-icon {
+        flex: 0 0 auto;
+        transition: transform 0.18s ease;
+    }
+
+    [data-permission-management] .permission-group-expand[aria-expanded="true"] .permission-group-icon {
+        transform: rotate(90deg);
+    }
+
+    [data-permission-management] .permission-group-title {
+        min-width: 0;
+        overflow-wrap: anywhere;
+        font-weight: 600;
+    }
+
+    [data-permission-management] .permission-group-counter {
+        flex: 0 0 auto;
+        margin-left: auto;
+        padding: 0.2rem 0.55rem;
+        border-radius: 999px;
+        background: var(--bs-secondary-bg);
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    [data-permission-management] .permission-group-select {
+        flex: 0 0 auto;
+        padding: 0 1rem;
     }
 
     [data-permission-management] .permission-item {
         border-bottom: 1px solid var(--bs-border-color-translucent);
+        align-items: center !important;
+        padding-top: 0.7rem !important;
+        padding-bottom: 0.7rem !important;
     }
 
     [data-permission-management] .permission-item:last-child {
@@ -133,13 +184,20 @@
         line-height: 1.4;
     }
 
+    [data-permission-management] .permission-item-label {
+        min-width: 0;
+        cursor: pointer;
+    }
+
+    [data-permission-management] .permission-detail {
+        flex: 0 0 auto;
+        min-width: 2rem;
+        min-height: 2rem;
+    }
+
     [data-permission-management] .permission-toolbar-search {
         flex: 1 1 18rem;
         max-width: 26rem;
-    }
-
-    [data-permission-management] .permission-toolbar-actions {
-        margin-left: auto;
     }
 
     [data-permission-management] .permission-summary-value {
@@ -157,6 +215,9 @@
         padding: 0.9rem 1.5rem;
         border-top: 1px solid var(--bs-border-color);
         background: color-mix(in srgb, var(--bs-body-bg) 94%, transparent);
+        position: sticky;
+        bottom: -1.5rem;
+        z-index: 2;
     }
 
     [data-permission-management] .permission-super-admin {
@@ -205,7 +266,7 @@
 <div class="container-fluid py-3" data-permission-management>
     <div class="permission-shell">
         <div class="row g-4 align-items-start">
-            <div class="col-lg-4">
+            <div class="col-lg-3">
                 <div class="card permission-sidebar">
                     <div class="card-body p-4">
                         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -256,13 +317,13 @@
                     </div>
                 </div>
             </div>
-            <div class="col-lg-8">
+            <div class="col-lg-9">
                 <div class="card permission-editor">
                     <div class="card-body p-4">
                         <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
                             <div>
                                 <h5 class="mb-1">User permissions</h5>
-                                <p class="small text-muted mb-0">Enable only the access this user needs.</p>
+                                <p class="small text-muted mb-0">Pilih kelompok untuk melihat dan mengatur akses.</p>
                             </div>
                             <div class="d-flex gap-3 text-end" aria-live="polite">
                                 <div><div class="permission-summary-value" id="permission-active-count">0</div><div class="small text-muted">Active</div></div>
@@ -290,17 +351,13 @@
                                 <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
                                 <input id="permission-search" class="form-control" type="search" placeholder="Search permissions" autocomplete="off">
                             </div>
-                            <div class="permission-toolbar-actions d-flex gap-2">
-                                <button type="button" class="btn btn-sm btn-outline-secondary" id="permission-select-all"><i class="bi bi-check2-square me-1"></i>Select all</button>
-                                <button type="button" class="btn btn-sm btn-outline-danger" id="permission-clear-all"><i class="bi bi-x-circle me-1"></i>Clear all</button>
-                            </div>
                         </div>
                         <div class="permission-content-scroll">
                             <div id="permission-no-results" class="d-none border rounded p-4 text-center text-muted small">No permissions found</div>
                             <div id="permission-groups" class="row g-3"></div>
                         </div>
                         <div class="permission-save-footer d-flex flex-wrap justify-content-between align-items-center gap-3">
-                            <div class="small text-muted"><i class="bi bi-info-circle me-1"></i><span id="permission-save-hint">Changes are saved as user permissions.</span></div>
+                            <div class="small text-muted" aria-live="polite"><i class="bi bi-info-circle me-1"></i><span id="permission-save-hint">Pilih pengguna untuk mulai mengatur akses.</span></div>
                             <button type="button" class="btn btn-primary" id="permission-save" disabled>
                                 <i class="bi bi-save me-1"></i><span id="permission-save-label">Save permissions</span>
                             </button>
@@ -354,8 +411,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const userResultCount = document.getElementById('permission-user-result-count');
     const activeCount = document.getElementById('permission-active-count');
     const totalCount = document.getElementById('permission-total-count');
-    const selectAll = document.getElementById('permission-select-all');
-    const clearAll = document.getElementById('permission-clear-all');
     const detailModalElement = document.getElementById('permission-detail-modal');
     const detailModal = window.bootstrap ? new bootstrap.Modal(detailModalElement) : null;
     const detailTitle = document.getElementById('permission-detail-title');
@@ -416,16 +471,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function updateDirtyState() {
         const dirty = !isSuperAdmin && hasDirtyChanges();
-        status.textContent = dirty ? 'Unsaved changes' : 'No unsaved changes';
+        const added = [...currentPermissions].filter(permission => !originalPermissions.has(permission)).length;
+        const removed = [...originalPermissions].filter(permission => !currentPermissions.has(permission)).length;
+        status.textContent = dirty
+            ? `Unsaved changes · ${added} added · ${removed} removed`
+            : 'No unsaved changes';
         status.className = dirty ? 'permission-status small text-warning fw-semibold mb-3' : 'permission-status small text-muted mb-3';
         save.disabled = !selectedUser || isSuperAdmin || !dirty || isSaving || isLoading;
-        saveHint.textContent = dirty ? 'Review your changes before saving.' : 'No changes to save.';
+        saveHint.textContent = dirty ? 'Review the changes above, then save.' : 'Changes are saved as user permissions.';
     }
 
     function updateCounts() {
         activeCount.textContent = currentPermissions.size;
         totalCount.textContent = isSuperAdmin ? allPermissions.length : document.querySelectorAll('.permission-checkbox').length;
-        document.querySelectorAll('[data-group-checkboxes]').forEach(group => {
+        groups.querySelectorAll('[data-group-checkboxes]').forEach(group => {
             const checkboxes = group.querySelectorAll('.permission-checkbox');
             const checked = group.querySelectorAll('.permission-checkbox:checked');
             const toggle = group.querySelector('[data-group-toggle]');
@@ -444,34 +503,37 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function renderGroups() {
-        groups.innerHTML = Object.entries(catalog).map(([group, permissions]) => `
-            <div class="col-xl-6">
-                <section class="permission-group h-100" data-group-checkboxes>
-                    <div class="permission-group-header d-flex justify-content-between align-items-center gap-2 px-3 py-2">
-                        <h6 class="mb-0">${escapeHtml(group)}</h6>
-                        <span class="small text-muted" data-group-counter>0 / ${permissions.length}</span>
-                        <label class="small text-muted d-flex align-items-center gap-2 mb-0">
+        const assetGroup = Object.keys(catalog).find(group => group.startsWith('Assets - '));
+        groups.innerHTML = Object.entries(catalog).map(([group, permissions], index) => {
+            const contentId = `permission-group-content-${index}`;
+            return `
+            <div class="col-12 permission-group-column">
+                <section class="permission-group" data-group-checkboxes>
+                    <div class="permission-group-header d-flex justify-content-between align-items-center">
+                        <button type="button" class="permission-group-expand" data-group-expand aria-expanded="false" aria-controls="${contentId}">
+                            <i class="bi bi-chevron-right permission-group-icon" aria-hidden="true"></i>
+                            <span class="permission-group-title">${escapeHtml(group)}</span>
+                            <span class="permission-group-counter" data-group-counter>0 / ${permissions.length}</span>
+                        </button>
+                        <label class="permission-group-select mb-0" title="Select all permissions in ${escapeHtml(group)}">
                             <input class="form-check-input mt-0" type="checkbox" data-group-toggle aria-label="Select all permissions in ${escapeHtml(group)}">
-                            <span class="d-none d-sm-inline">Select all</span>
+                            <span class="small text-muted ms-1">All</span>
                         </label>
                     </div>
-                    <div class="px-3">
+                    <div class="permission-group-content px-3" id="${contentId}" data-group-content hidden>
+                    ${group === assetGroup ? '<div class="alert alert-info py-2 small mt-3 mb-2" role="note">Akses aset diatur per kategori. Permission aset lama hanya berlaku jika pengguna belum memiliki pengaturan kategori. Setelah pengaturan kategori disimpan, kategori yang tidak dicentang tidak mendapat akses.</div>' : ''}
                     ${permissions.map(permission => {
                         const rawKey = permission.key;
                         const key = escapeHtml(rawKey);
                         const label = escapeHtml(permission.name);
-                        const description = escapeHtml(permission.description || 'Tidak ada detail tambahan untuk permission ini.');
                         const requires = permission.requires && permission.requires.length > 0 ? permission.requires : [];
                         const unmet = requires.filter(dep => !currentPermissions.has(dep));
                         const hasUnmet = unmet.length > 0 && currentPermissions.has(rawKey);
                         const id = `permission-${rawKey.replace(/[^a-z0-9]+/gi, '-')}`;
-                        return `<div class="permission-item py-3 d-flex gap-3 ${hasUnmet ? 'has-unmet-dependencies' : ''}">
+                        return `<div class="permission-item d-flex gap-3 ${hasUnmet ? 'has-unmet-dependencies' : ''}">
                             <input class="form-check-input permission-checkbox flex-shrink-0 mt-1" type="checkbox" value="${key}" id="${id}" ${currentPermissions.has(rawKey) ? 'checked' : ''}>
-                            <label class="form-check-label flex-grow-1" for="${id}">
+                            <label class="form-check-label permission-item-label flex-grow-1" for="${id}">
                                 <span class="fw-semibold d-block">${label}</span>
-                                <span class="permission-description d-block small text-muted mt-1">${description}</span>
-                                <code class="small text-muted">${key}</code>
-                                ${requires.length > 0 ? `<div class="permission-dependency-requires mt-1">Requires: ${requires.map(r => escapeHtml(r)).join(', ')}</div>` : ''}
                                 ${hasUnmet ? `<div class="permission-dependency-warning mt-1"><i class="bi bi-exclamation-triangle me-1"></i>Missing: ${unmet.map(u => escapeHtml(u)).join(', ')}</div>` : ''}
                             </label>
                             <button type="button" class="btn btn-sm btn-link text-secondary p-0 align-self-start permission-detail" data-key="${key}" data-group="${escapeHtml(group)}" aria-label="Show details for ${label}" title="Show permission details"><i class="bi bi-info-circle" aria-hidden="true"></i></button>
@@ -479,7 +541,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     }).join('')}
                     </div>
                 </section>
-            </div>`).join('');
+            </div>`;
+        }).join('');
         emptyState.classList.add('d-none');
         applyPermissionFilter();
         updateCounts();
@@ -543,7 +606,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     visible += 1;
                 }
             });
-            group.closest('.col-xl-6').classList.toggle('d-none', groupVisible === 0);
+            group.closest('.permission-group-column').classList.toggle('d-none', groupVisible === 0);
+            if (query && groupVisible > 0) {
+                const expand = group.querySelector('[data-group-expand]');
+                const content = group.querySelector('[data-group-content]');
+                expand.setAttribute('aria-expanded', 'true');
+                content.hidden = false;
+            }
         });
         permissionNoResults.classList.toggle('d-none', visible > 0 || !query);
     }
@@ -621,7 +690,7 @@ document.addEventListener('DOMContentLoaded', function () {
     groups.addEventListener('change', function (event) {
         if (!event.target.matches('.permission-checkbox, [data-group-toggle]')) return;
         if (event.target.matches('[data-group-toggle]')) {
-            event.target.closest('[data-group-checkboxes]').querySelectorAll('.permission-checkbox:not(.d-none)').forEach(checkbox => {
+            event.target.closest('[data-group-checkboxes]').querySelectorAll('.permission-checkbox').forEach(checkbox => {
                 checkbox.checked = event.target.checked;
             });
         }
@@ -630,6 +699,13 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     groups.addEventListener('click', function (event) {
+        const expandButton = event.target.closest('[data-group-expand]');
+        if (expandButton) {
+            const expanded = expandButton.getAttribute('aria-expanded') === 'true';
+            expandButton.setAttribute('aria-expanded', String(!expanded));
+            expandButton.closest('[data-group-checkboxes]').querySelector('[data-group-content]').hidden = expanded;
+            return;
+        }
         const detailButton = event.target.closest('.permission-detail');
         if (!detailButton) return;
         const permission = allPermissions.find(item => item.key === detailButton.dataset.key);
@@ -639,19 +715,6 @@ document.addEventListener('DOMContentLoaded', function () {
         detailKey.textContent = permission.key;
         detailGroup.textContent = detailButton.dataset.group;
         if (detailModal) detailModal.show();
-    });
-
-    selectAll.addEventListener('click', function () {
-        currentPermissions = new Set(allPermissions.map(permission => permission.key));
-        groups.querySelectorAll('.permission-checkbox').forEach(checkbox => checkbox.checked = true);
-        updateCounts();
-    });
-
-    clearAll.addEventListener('click', function () {
-        if (isSuperAdmin || !window.confirm('Remove all permissions? This will remove all explicit permissions from this user.')) return;
-        currentPermissions = new Set();
-        groups.querySelectorAll('.permission-checkbox').forEach(checkbox => checkbox.checked = false);
-        updateCounts();
     });
 
     save.addEventListener('click', async function () {

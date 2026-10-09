@@ -6,7 +6,7 @@ final class PermissionCatalog
 {
     public static function all(): array
     {
-        return [
+        $permissions = [
             ['key' => 'assets.access', 'name' => 'Access Assets portal', 'description' => 'Enter the dedicated Assets portal.', 'group' => 'Assets'],
             ['key' => 'assets.view', 'name' => 'View assets', 'description' => 'View asset data.', 'group' => 'Assets'],
             ['key' => 'assets.create', 'name' => 'Create assets', 'description' => 'Create asset records.', 'group' => 'Assets'],
@@ -27,7 +27,7 @@ final class PermissionCatalog
             ['key' => 'rotate_employees', 'name' => 'Rotate employees', 'description' => 'Process employee rotation/mutation and generate SK Rotasi.', 'group' => 'Employees'],
             ['key' => 'offboard_employees', 'name' => 'Offboard employees', 'description' => 'Process employee offboarding/resign and generate SK Offboarding, Surat BPJS, and Paklaring.', 'group' => 'Employees'],
             ['key' => 'off_contract_employees', 'name' => 'Off-contract employees', 'description' => 'End employee contracts (off contract) and generate Paklaring.', 'group' => 'Employees'],
-            ['key' => 'manage_warning_letters', 'name' => 'Manage warning letters', 'description' => 'Issue and download Surat Peringatan (SP-1/2/3).', 'group' => 'Employees'],
+            ['key' => 'manage_warning_letters', 'name' => 'Manage warning letters', 'description' => 'Issue and download Surat Peringatan (SP-1/2/3) and Surat Penggilan Mangkir.', 'group' => 'Employees'],
             ['key' => 'view_recruitment', 'name' => 'View recruitment', 'description' => 'View recruitment records.', 'group' => 'Recruitment'],
             ['key' => 'update_candidates', 'name' => 'Update candidates', 'description' => 'Update candidate status.', 'group' => 'Recruitment'],
             ['key' => 'create_offering', 'name' => 'Create offerings', 'description' => 'Create offering and contract documents.', 'group' => 'Recruitment'],
@@ -38,6 +38,10 @@ final class PermissionCatalog
             ['key' => 'manage_outsource', 'name' => 'Manage outsource', 'description' => 'Add and edit outsource employees and process PKWT TAD contracts.', 'group' => 'Outsource'],
             ['key' => 'view_outsource_compensation', 'name' => 'View outsource salary', 'description' => 'View Basic Salary and Incentive of outsource employees.', 'group' => 'Outsource'],
             ['key' => 'manage_outsource_compensation', 'name' => 'Manage outsource salary', 'description' => 'Edit Basic Salary and Incentive of outsource employees, including via Excel import.', 'group' => 'Outsource'],
+            ['key' => 'view_outsource_payslip', 'name' => 'View outsource payslips', 'description' => 'View imported outsource payslips (HKE, salary, deductions, THP).', 'group' => 'Outsource'],
+            ['key' => 'manage_outsource_payslip', 'name' => 'Manage outsource payslips', 'description' => 'Download the payslip template and import outsource payslips from Excel.', 'group' => 'Outsource'],
+            ['key' => 'view_outsource_incentive', 'name' => 'View outsource incentives', 'description' => 'View imported outsource incentives per period.', 'group' => 'Outsource'],
+            ['key' => 'manage_outsource_incentive', 'name' => 'Manage outsource incentives', 'description' => 'Download the incentive template and import outsource incentives from Excel.', 'group' => 'Outsource'],
             ['key' => 'view_documents', 'name' => 'View documents', 'description' => 'View issued employee documents in Document Tracking.', 'group' => 'Documents'],
             ['key' => 'download_documents', 'name' => 'Download documents', 'description' => 'Re-download archived employee document PDFs from Document Tracking.', 'group' => 'Documents'],
             ['key' => 'view_mpr', 'name' => 'View MPR', 'description' => 'View manpower requests.', 'group' => 'MPR'],
@@ -54,6 +58,35 @@ final class PermissionCatalog
             ['key' => 'manage_certification', 'name' => 'Manage legacy certificates', 'description' => 'Compatibility permission for legacy HRIS Certificates mutations.', 'group' => 'Certificates'],
             ['key' => 'lookup_employee', 'name' => 'Lookup employees', 'description' => 'Use employee lookup for supported workflows.', 'group' => 'Employees'],
         ];
+
+        $categories = [
+            'building' => 'Building',
+            'vehicle' => 'Vehicle',
+            'office' => 'Office',
+            'electronics' => 'Electronics',
+        ];
+        $actions = [
+            'view' => ['View', 'view category asset records.'],
+            'create' => ['Create', 'create category asset records.'],
+            'update' => ['Update', 'update category asset records.'],
+            'delete' => ['Dispose', 'dispose category assets.'],
+            'assign' => ['Assign', 'assign category assets to employees.'],
+            'return' => ['Return', 'record returns for category assets.'],
+            'generate_code' => ['Generate codes for', 'generate category asset codes.'],
+        ];
+
+        foreach ($categories as $categoryKey => $categoryLabel) {
+            foreach ($actions as $action => [$name, $description]) {
+                $permissions[] = [
+                    'key' => "assets.{$categoryKey}.{$action}",
+                    'name' => "{$name} {$categoryLabel} assets",
+                    'description' => ucfirst($description) . ' This permission applies only to this asset category.',
+                    'group' => "Assets - {$categoryLabel}",
+                ];
+            }
+        }
+
+        return $permissions;
     }
 
     public static function keys(): array

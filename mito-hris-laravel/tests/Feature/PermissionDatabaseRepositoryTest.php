@@ -48,6 +48,26 @@ class PermissionDatabaseRepositoryTest extends TestCase
         $this->assertTrue(collect($rows)->every(fn ($r) => strtolower($r['Status']) === 'active'));
     }
 
+    public function test_category_permissions_are_available_without_mutating_the_existing_catalog(): void
+    {
+        Permission::query()->create([
+            'permission_key' => 'assets.access',
+            'name' => 'Access Assets portal',
+            'description' => 'Existing production-style permission.',
+            'group' => 'Assets',
+            'status' => 'active',
+        ]);
+
+        $catalog = $this->app->make(PermissionCatalogRepositoryInterface::class);
+        $rows = collect($catalog->all());
+        $buildingView = $rows->firstWhere('key', 'assets.building.view');
+        $vehicleAssign = $rows->firstWhere('key', 'assets.vehicle.assign');
+
+        $this->assertNotNull($buildingView);
+        $this->assertNotNull($vehicleAssign);
+        $this->assertSame(1, Permission::query()->count(), 'Reading the expanded catalog must not write production permission rows.');
+    }
+
     public function test_user_permission_upsert_and_resolver(): void
     {
         /** @var UserPermissionRepositoryInterface $perms */

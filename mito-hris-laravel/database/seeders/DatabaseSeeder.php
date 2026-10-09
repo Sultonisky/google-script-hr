@@ -24,7 +24,6 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        $this->call(AssetDummySeeder::class);
         $this->call(CertificationDummySeeder::class);
     }
 }

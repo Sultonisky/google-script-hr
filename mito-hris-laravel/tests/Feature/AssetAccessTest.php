@@ -2,11 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Http\Requests\HR\AssignAssetRequest;
-use App\Http\Requests\HR\StoreAssetRequest;
-use App\Http\Requests\HR\UpdateAssetRequest;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -34,21 +32,6 @@ class AssetAccessTest extends TestCase
         return $this;
     }
 
-    /**
-     * FormRequest authorize() must return true.
-     *
-     * NOTE: We instantiate with `new` instead of `app()` to avoid
-     * triggering ValidatesWhenResolvedTrait which runs validation
-     * on an empty request — causing a ValidationException.
-     */
-    #[Test]
-    public function form_requests_are_authorized(): void
-    {
-        $this->assertTrue((new StoreAssetRequest())->authorize());
-        $this->assertTrue((new UpdateAssetRequest())->authorize());
-        $this->assertTrue((new AssignAssetRequest())->authorize());
-    }
-
     #[Test]
     public function rbac_gates_for_asset_permissions(): void
     {
@@ -66,13 +49,12 @@ class AssetAccessTest extends TestCase
     }
 
     #[Test]
-    public function user_without_edit_asset_cannot_create_asset(): void
+    public function category_asset_routes_replace_the_legacy_asset_routes(): void
     {
-        $this->withSession(['_token' => 'test-token'])
-            ->actingAsRole('User')
-            ->postJson('/hr/assets', ['category' => 'Elektronik', 'name' => 'Laptop'], ['X-CSRF-TOKEN' => 'test-token', 'X-XSRF-TOKEN' => 'test-token'])
-            ->assertForbidden();
-
-        $this->assertDatabaseCount('assets', 0);
+        $this->assertTrue(Route::has('assets.portal.building.index'));
+        $this->assertTrue(Route::has('assets.portal.vehicle.index'));
+        $this->assertTrue(Route::has('assets.portal.office.index'));
+        $this->assertTrue(Route::has('assets.portal.electronics.index'));
+        $this->assertFalse(Route::has('hr.assets.index'));
     }
 }

@@ -11,7 +11,10 @@ use App\Http\Controllers\HR\RecruitmentController;
 use App\Http\Controllers\HR\EmployeeController;
 use App\Http\Controllers\HR\ProbationController;
 use App\Http\Controllers\HR\OutsourceController;
+use App\Http\Controllers\HR\OutsourcePayslipController;
+use App\Http\Controllers\HR\OutsourceIncentiveController;
 use App\Http\Controllers\HR\WarningLetterController;
+use App\Http\Controllers\HR\AbsenceSummonsController;
 use App\Http\Controllers\HR\ContractTrackingController;
 use App\Http\Controllers\HR\DocumentTrackingController;
 use App\Http\Controllers\HR\AuditLogController;
@@ -20,11 +23,15 @@ use App\Http\Controllers\HR\UserController;
 use App\Http\Controllers\HR\MprRequestorController;
 use App\Http\Controllers\HR\ExportController;
 use App\Http\Controllers\HR\MprController;
-use App\Http\Controllers\HR\AssetController;
 use App\Http\Controllers\HR\CertificationController;
 use App\Http\Controllers\HR\PermissionController;
 use App\Http\Controllers\Auth\AssetAuthController;
 use App\Http\Controllers\Auth\CertificateAuthController;
+use App\Http\Controllers\Assets\AssetPortalOverviewController;
+use App\Http\Controllers\Assets\BuildingAssetController;
+use App\Http\Controllers\Assets\ElectronicsAssetController;
+use App\Http\Controllers\Assets\OfficeAssetController;
+use App\Http\Controllers\Assets\VehicleAssetController;
 
 Route::get('/robots.txt', [SeoController::class, 'robots'])->name('public.seo.robots');
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('public.seo.sitemap');
@@ -78,24 +85,16 @@ if (!app()->environment('local')) {
                 Route::post('/{id}/offboard', [EmployeeController::class, 'offboard'])->name('offboard')->middleware('can:offboard_employees');
                 Route::post('/{id}/off-contract', [EmployeeController::class, 'offContract'])->name('off-contract')->middleware('can:off_contract_employees');
                 Route::post('/{id}/warning-letter', [WarningLetterController::class, 'store'])->name('warning-letter')->middleware('can:manage_warning_letters');
+                Route::post('/{id}/warning-letter/preview', [WarningLetterController::class, 'preview'])->name('warning-letter.preview')->middleware('can:manage_warning_letters');
+                Route::get('/{id}/warning-letter/preview/{token}', [WarningLetterController::class, 'showPreview'])->name('warning-letter.preview.show')->middleware('can:manage_warning_letters');
                 Route::get('/{id}/warning-letter/{documentId}', [WarningLetterController::class, 'download'])->name('warning-letter.download')->middleware('can:manage_warning_letters');
+                Route::post('/{id}/absence-summons', [AbsenceSummonsController::class, 'store'])->name('absence-summons')->middleware('can:manage_warning_letters');
+                Route::post('/{id}/absence-summons/preview', [AbsenceSummonsController::class, 'preview'])->name('absence-summons.preview')->middleware('can:manage_warning_letters');
+                Route::get('/{id}/absence-summons/preview/{token}', [AbsenceSummonsController::class, 'showPreview'])->name('absence-summons.preview.show')->middleware('can:manage_warning_letters');
+                Route::get('/{id}/absence-summons/{documentId}', [AbsenceSummonsController::class, 'download'])->name('absence-summons.download')->middleware('can:manage_warning_letters');
                 Route::get('/{id}/json', [EmployeeController::class, 'getJson'])->name('json');
             });
             Route::get('/employees/lookup', [EmployeeController::class, 'lookup'])->middleware('can:lookup_employee')->name('employees.lookup');
-
-            Route::prefix('assets')->name('assets.')->middleware('can:view_asset')->group(function () {
-                Route::get('/', [AssetController::class, 'index'])->name('index');
-                Route::get('/missing-code-summary', [AssetController::class, 'missingCodeSummary'])->name('missing-code-summary')->middleware('can:edit_asset');
-                Route::get('/preview-next-code/{prefix}', [AssetController::class, 'previewNextCode'])->name('preview-next-code')->middleware('can:edit_asset');
-                Route::post('/', [AssetController::class, 'store'])->name('store')->middleware('can:edit_asset');
-                Route::post('/generate-bulk-codes', [AssetController::class, 'generateBulkCodes'])->name('generate-bulk-codes')->middleware('can:edit_asset');
-                Route::put('/{asset}', [AssetController::class, 'update'])->name('update')->middleware('can:edit_asset');
-                Route::delete('/{asset}', [AssetController::class, 'destroy'])->name('destroy')->middleware('can:edit_asset');
-                Route::post('/{asset}/assign', [AssetController::class, 'assign'])->name('assign')->middleware('can:edit_asset');
-                Route::post('/{asset}/return', [AssetController::class, 'returnAsset'])->name('return')->middleware('can:edit_asset');
-                Route::post('/{asset}/generate-code', [AssetController::class, 'generateCode'])->name('generate-code')->middleware('can:edit_asset');
-                Route::get('/{asset}/json', [AssetController::class, 'getJson'])->name('json');
-            });
 
             Route::prefix('certifications')->name('certifications.')->middleware('can:view_certification')->group(function () {
                 Route::get('/', [CertificationController::class, 'index'])->name('index');
@@ -126,6 +125,18 @@ if (!app()->environment('local')) {
                     ->middleware('can:manage_outsource');
                 Route::put('/{id}', [OutsourceController::class, 'update'])->name('update')->middleware('can:manage_outsource');
                 Route::get('/{id}/json', [OutsourceController::class, 'getJson'])->name('json');
+            });
+            Route::prefix('outsource-payslips')->name('outsource-payslips.')->middleware('can:view_outsource_payslip')->group(function () {
+                Route::get('/', [OutsourcePayslipController::class, 'index'])->name('index');
+                Route::get('/export', [OutsourcePayslipController::class, 'export'])->name('export');
+                Route::get('/template', [OutsourcePayslipController::class, 'template'])->name('template')->middleware('can:manage_outsource_payslip');
+                Route::post('/import', [OutsourcePayslipController::class, 'import'])->name('import')->middleware('can:manage_outsource_payslip');
+            });
+            Route::prefix('outsource-incentives')->name('outsource-incentives.')->middleware('can:view_outsource_incentive')->group(function () {
+                Route::get('/', [OutsourceIncentiveController::class, 'index'])->name('index');
+                Route::get('/export', [OutsourceIncentiveController::class, 'export'])->name('export');
+                Route::get('/template', [OutsourceIncentiveController::class, 'template'])->name('template')->middleware('can:manage_outsource_incentive');
+                Route::post('/import', [OutsourceIncentiveController::class, 'import'])->name('import')->middleware('can:manage_outsource_incentive');
             });
             Route::prefix('contracts')->name('contracts.')->middleware('can:view_contracts')->group(function () {
                 Route::get('/', [ContractTrackingController::class, 'index'])->name('index');
@@ -244,23 +255,35 @@ if (!app()->environment('local')) {
     });
 
     Route::domain(config('hris.domains.assets'))->middleware(['web', 'domain'])->group(function () {
-        Route::get('/', [AssetController::class, 'index'])->name('assets.portal.index')->middleware('can:access_assets_portal');
+        Route::get('/', AssetPortalOverviewController::class)->name('assets.portal.index')->middleware('can:access_assets_portal');
         Route::get('/login', [AssetAuthController::class, 'showLoginForm'])->name('assets.login');
         Route::post('/login', [AssetAuthController::class, 'login'])->middleware('throttle:login')->name('assets.login.post');
         Route::post('/logout', [AssetAuthController::class, 'logout'])->name('assets.logout');
 
         Route::name('assets.portal.')->middleware('can:access_assets_portal')->group(function () {
-            Route::get('/missing-code-summary', [AssetController::class, 'missingCodeSummary'])->name('missing-code-summary')->middleware('can:assets.view');
-            Route::get('/preview-next-code/{prefix}', [AssetController::class, 'previewNextCode'])->name('preview-next-code')->middleware('can:assets.generate_code');
-            Route::post('/', [AssetController::class, 'store'])->name('store')->middleware('can:assets.create');
-            Route::post('/generate-bulk-codes', [AssetController::class, 'generateBulkCodes'])->name('generate-bulk-codes')->middleware('can:assets.generate_code');
-            Route::get('/employees/lookup', [EmployeeController::class, 'lookup'])->name('employees.lookup')->middleware('can:lookup_employee');
-            Route::put('/{asset}', [AssetController::class, 'update'])->name('update')->middleware('can:assets.update');
-            Route::delete('/{asset}', [AssetController::class, 'destroy'])->name('destroy')->middleware('can:assets.delete');
-            Route::post('/{asset}/assign', [AssetController::class, 'assign'])->name('assign')->middleware('can:assets.assign');
-            Route::post('/{asset}/return', [AssetController::class, 'returnAsset'])->name('return')->middleware('can:assets.return');
-            Route::post('/{asset}/generate-code', [AssetController::class, 'generateCode'])->name('generate-code')->middleware('can:assets.generate_code');
-            Route::get('/{asset}/json', [AssetController::class, 'getJson'])->name('json')->middleware('can:assets.view');
+            Route::get('/employees/lookup', [EmployeeController::class, 'lookup'])
+                ->name('employees.lookup')->middleware('can:lookup_employee');
+            foreach ([
+                'building' => BuildingAssetController::class,
+                'vehicle' => VehicleAssetController::class,
+                'office' => OfficeAssetController::class,
+                'electronics' => ElectronicsAssetController::class,
+            ] as $category => $controller) {
+                Route::prefix($category)->name($category . '.')->controller($controller)->group(function () use ($category) {
+                    Route::get('/', 'index')->name('index')->middleware("can:assets.{$category}.view");
+                    Route::get('/create', 'create')->name('create')->middleware("can:assets.{$category}.create");
+                    Route::post('/generate-bulk-codes', 'generateBulkCodes')->name('generate-bulk-codes')->middleware("can:assets.{$category}.generate_code");
+                    Route::post('/', 'store')->name('store')->middleware("can:assets.{$category}.create");
+                    Route::post('/{id}/assign', 'assign')->name('assign')->middleware("can:assets.{$category}.assign");
+                    Route::post('/{id}/return', 'returnAsset')->name('return')->middleware("can:assets.{$category}.return");
+                    Route::post('/{id}/generate-code', 'generateCode')->name('generate-code')->middleware("can:assets.{$category}.generate_code");
+                    Route::get('/{id}', 'show')->name('show')->middleware("can:assets.{$category}.view");
+                    Route::get('/{id}/edit', 'edit')->name('edit')->middleware("can:assets.{$category}.update");
+                    Route::put('/{id}', 'update')->name('update')->middleware("can:assets.{$category}.update");
+                    Route::delete('/{id}', 'destroy')->name('destroy')->middleware("can:assets.{$category}.delete");
+                });
+            }
+
         });
     });
     Route::domain(config('hris.domains.certificates'))->middleware(['web', 'domain'])->group(function () {
@@ -331,24 +354,16 @@ if (app()->environment('local')) {
                 Route::post('/{id}/offboard', [EmployeeController::class, 'offboard'])->name('offboard')->middleware('can:offboard_employees');
                 Route::post('/{id}/off-contract', [EmployeeController::class, 'offContract'])->name('off-contract')->middleware('can:off_contract_employees');
                 Route::post('/{id}/warning-letter', [WarningLetterController::class, 'store'])->name('warning-letter')->middleware('can:manage_warning_letters');
+                Route::post('/{id}/warning-letter/preview', [WarningLetterController::class, 'preview'])->name('warning-letter.preview')->middleware('can:manage_warning_letters');
+                Route::get('/{id}/warning-letter/preview/{token}', [WarningLetterController::class, 'showPreview'])->name('warning-letter.preview.show')->middleware('can:manage_warning_letters');
                 Route::get('/{id}/warning-letter/{documentId}', [WarningLetterController::class, 'download'])->name('warning-letter.download')->middleware('can:manage_warning_letters');
+                Route::post('/{id}/absence-summons', [AbsenceSummonsController::class, 'store'])->name('absence-summons')->middleware('can:manage_warning_letters');
+                Route::post('/{id}/absence-summons/preview', [AbsenceSummonsController::class, 'preview'])->name('absence-summons.preview')->middleware('can:manage_warning_letters');
+                Route::get('/{id}/absence-summons/preview/{token}', [AbsenceSummonsController::class, 'showPreview'])->name('absence-summons.preview.show')->middleware('can:manage_warning_letters');
+                Route::get('/{id}/absence-summons/{documentId}', [AbsenceSummonsController::class, 'download'])->name('absence-summons.download')->middleware('can:manage_warning_letters');
                 Route::get('/{id}/json', [EmployeeController::class, 'getJson'])->name('json');
             });
             Route::get('/employees/lookup', [EmployeeController::class, 'lookup'])->middleware('can:lookup_employee')->name('employees.lookup');
-
-            Route::prefix('assets')->name('assets.')->middleware('can:assets.view')->group(function () {
-                Route::get('/', [AssetController::class, 'index'])->name('index');
-                Route::get('/missing-code-summary', [AssetController::class, 'missingCodeSummary'])->name('missing-code-summary')->middleware('can:assets.view');
-                Route::get('/preview-next-code/{prefix}', [AssetController::class, 'previewNextCode'])->name('preview-next-code')->middleware('can:assets.generate_code');
-                Route::post('/', [AssetController::class, 'store'])->name('store')->middleware('can:assets.create');
-                Route::post('/generate-bulk-codes', [AssetController::class, 'generateBulkCodes'])->name('generate-bulk-codes')->middleware('can:assets.generate_code');
-                Route::put('/{asset}', [AssetController::class, 'update'])->name('update')->middleware('can:assets.update');
-                Route::delete('/{asset}', [AssetController::class, 'destroy'])->name('destroy')->middleware('can:assets.delete');
-                Route::post('/{asset}/assign', [AssetController::class, 'assign'])->name('assign')->middleware('can:assets.assign');
-                Route::post('/{asset}/return', [AssetController::class, 'returnAsset'])->name('return')->middleware('can:assets.return');
-                Route::post('/{asset}/generate-code', [AssetController::class, 'generateCode'])->name('generate-code')->middleware('can:assets.generate_code');
-                Route::get('/{asset}/json', [AssetController::class, 'getJson'])->name('json');
-            });
 
             Route::prefix('certifications')->name('certifications.')->middleware('can:certificates.view')->group(function () {
                 Route::get('/', [CertificationController::class, 'index'])->name('index');
@@ -380,6 +395,19 @@ if (app()->environment('local')) {
                     ->middleware('can:manage_outsource');
                 Route::put('/{id}', [OutsourceController::class, 'update'])->name('update')->middleware('can:manage_outsource');
                 Route::get('/{id}/json', [OutsourceController::class, 'getJson'])->name('json');
+            });
+
+            Route::prefix('outsource-payslips')->name('outsource-payslips.')->middleware('can:view_outsource_payslip')->group(function () {
+                Route::get('/', [OutsourcePayslipController::class, 'index'])->name('index');
+                Route::get('/export', [OutsourcePayslipController::class, 'export'])->name('export');
+                Route::get('/template', [OutsourcePayslipController::class, 'template'])->name('template')->middleware('can:manage_outsource_payslip');
+                Route::post('/import', [OutsourcePayslipController::class, 'import'])->name('import')->middleware('can:manage_outsource_payslip');
+            });
+            Route::prefix('outsource-incentives')->name('outsource-incentives.')->middleware('can:view_outsource_incentive')->group(function () {
+                Route::get('/', [OutsourceIncentiveController::class, 'index'])->name('index');
+                Route::get('/export', [OutsourceIncentiveController::class, 'export'])->name('export');
+                Route::get('/template', [OutsourceIncentiveController::class, 'template'])->name('template')->middleware('can:manage_outsource_incentive');
+                Route::post('/import', [OutsourceIncentiveController::class, 'import'])->name('import')->middleware('can:manage_outsource_incentive');
             });
 
             Route::prefix('contracts')->name('contracts.')->middleware('can:view_contracts')->group(function () {
@@ -510,18 +538,29 @@ if (app()->environment('local')) {
             Route::post('/assets-portal/login', [AssetAuthController::class, 'login'])->middleware('throttle:login')->name('assets.login.post');
             Route::post('/assets-portal/logout', [AssetAuthController::class, 'logout'])->name('assets.logout');
             Route::prefix('assets-portal')->name('assets.portal.')->group(function () {
-                Route::get('/', [AssetController::class, 'index'])->name('index');
-                Route::get('/missing-code-summary', [AssetController::class, 'missingCodeSummary'])->name('missing-code-summary')->middleware('can:assets.view');
-                Route::get('/preview-next-code/{prefix}', [AssetController::class, 'previewNextCode'])->name('preview-next-code')->middleware('can:assets.generate_code');
-                Route::post('/', [AssetController::class, 'store'])->name('store')->middleware('can:assets.create');
-                Route::post('/generate-bulk-codes', [AssetController::class, 'generateBulkCodes'])->name('generate-bulk-codes')->middleware('can:assets.generate_code');
-                Route::get('/employees/lookup', [EmployeeController::class, 'lookup'])->name('employees.lookup')->middleware('can:lookup_employee');
-                Route::put('/{asset}', [AssetController::class, 'update'])->name('update')->middleware('can:assets.update');
-                Route::delete('/{asset}', [AssetController::class, 'destroy'])->name('destroy')->middleware('can:assets.delete');
-                Route::post('/{asset}/assign', [AssetController::class, 'assign'])->name('assign')->middleware('can:assets.assign');
-                Route::post('/{asset}/return', [AssetController::class, 'returnAsset'])->name('return')->middleware('can:assets.return');
-                Route::post('/{asset}/generate-code', [AssetController::class, 'generateCode'])->name('generate-code')->middleware('can:assets.generate_code');
-                Route::get('/{asset}/json', [AssetController::class, 'getJson'])->name('json');
+                Route::get('/', AssetPortalOverviewController::class)->name('index');
+                Route::get('/employees/lookup', [EmployeeController::class, 'lookup'])
+                    ->name('employees.lookup')->middleware(['can:access_assets_portal', 'can:lookup_employee']);
+                foreach ([
+                    'building' => BuildingAssetController::class,
+                    'vehicle' => VehicleAssetController::class,
+                    'office' => OfficeAssetController::class,
+                    'electronics' => ElectronicsAssetController::class,
+                ] as $category => $controller) {
+                    Route::prefix($category)->name($category . '.')->controller($controller)->group(function () use ($category) {
+                        Route::get('/', 'index')->name('index')->middleware("can:assets.{$category}.view");
+                        Route::get('/create', 'create')->name('create')->middleware("can:assets.{$category}.create");
+                        Route::post('/generate-bulk-codes', 'generateBulkCodes')->name('generate-bulk-codes')->middleware("can:assets.{$category}.generate_code");
+                        Route::post('/', 'store')->name('store')->middleware("can:assets.{$category}.create");
+                        Route::post('/{id}/assign', 'assign')->name('assign')->middleware("can:assets.{$category}.assign");
+                        Route::post('/{id}/return', 'returnAsset')->name('return')->middleware("can:assets.{$category}.return");
+                        Route::post('/{id}/generate-code', 'generateCode')->name('generate-code')->middleware("can:assets.{$category}.generate_code");
+                        Route::get('/{id}', 'show')->name('show')->middleware("can:assets.{$category}.view");
+                        Route::get('/{id}/edit', 'edit')->name('edit')->middleware("can:assets.{$category}.update");
+                        Route::put('/{id}', 'update')->name('update')->middleware("can:assets.{$category}.update");
+                        Route::delete('/{id}', 'destroy')->name('destroy')->middleware("can:assets.{$category}.delete");
+                    });
+                }
             });
 
             Route::get('/certifications/login', [CertificateAuthController::class, 'showLoginForm'])->name('certificates.login');

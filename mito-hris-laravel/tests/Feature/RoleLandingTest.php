@@ -29,7 +29,7 @@ class RoleLandingTest extends TestCase
     {
         parent::setUp();
 
-        // Local dummy employee source — mirrors AssetManagementTest.
+        // Local dummy employee source for the role landing flow.
         $this->app->instance(EmployeeRepositoryInterface::class, new LocalEmployeeRepository());
     }
 
