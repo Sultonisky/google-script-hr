@@ -7,6 +7,7 @@ use App\Enums\SkDocumentType;
 use App\Http\Controllers\Controller;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\OutsourceEmployeeRepositoryInterface;
+use App\Services\AttendanceOutsourcePushService;
 use App\Services\EmployeeDocumentArchiveService;
 use App\Services\OutsourceContractService;
 use App\Services\OutsourceXlsxImportService;
@@ -97,7 +98,7 @@ class OutsourceController extends Controller
      * POST /hr/outsource
      * Requires: can:manage_outsource
      */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, AttendanceOutsourcePushService $attendancePush): JsonResponse
     {
         $validated = $this->validatePayload($request, false);
 
@@ -120,6 +121,7 @@ class OutsourceController extends Controller
         }
 
         $this->auditRepo->log('Outsource', $created->outsourceId, 'created', 'Outsource ID', '-', $created->outsourceId, $this->hrUserName(), 'HR Dashboard');
+        $attendancePush->pushCreated([$created]);
 
         return response()->json([
             'success' => true,

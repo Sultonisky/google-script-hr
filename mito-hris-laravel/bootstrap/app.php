@@ -23,6 +23,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'mpr.auth.requestor' => \App\Http\Middleware\MprRequestorMiddleware::class,
             'mpr.auth.dedicated' => \App\Http\Middleware\EnsureMprAuthenticated::class,
             'employee.integration' => \App\Http\Middleware\AuthenticateEmployeeIntegration::class,
+            'outsource.payroll.integration' => \App\Http\Middleware\AuthenticateOutsourcePayrollIntegration::class,
+            'outsource.sync.integration' => \App\Http\Middleware\AuthenticateOutsourceSyncIntegration::class,
         ]);
 
         $middleware->appendToGroup('web', [

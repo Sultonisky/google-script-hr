@@ -103,3 +103,62 @@ repository's existing leading-apostrophe normalization.
 
 The API is read-only and does not expose employee contact, identity-document,
 banking, BPJS, address, or HR-note fields.
+
+## Outsource payslips and incentives
+
+The authenticated attendance-app backend can fetch payroll records by the
+Outsource ID associated with the signed-in user:
+
+```http
+GET /api/v1/outsource/{outsource_id}/payslips
+GET /api/v1/outsource/{outsource_id}/incentives
+Authorization: Bearer <HRIS_OUTSOURCE_PAYROLL_API_TOKEN>
+Accept: application/json
+```
+
+Set `HRIS_OUTSOURCE_PAYROLL_API_TOKEN` to a long, random secret in the HRIS
+environment and the PWA backend. This credential is separate from
+`HRIS_EMPLOYEE_API_TOKEN` and fails closed with `503` if it is not configured;
+requests with a missing or invalid credential receive `401`.
+
+Both endpoints return all available periods for that one Outsource ID, newest
+first. Pass `?period=YYYY-MM` to request a single period. Invalid periods
+receive `422`; a valid ID with no matching records returns an empty `data`
+array. Amounts and HKE are JSON numbers, with missing numeric values returned
+as `0`. The response contains only fields needed to display the payslip or
+incentive; import filenames and operator metadata are not included. Requests
+are read-only and limited to 60 per minute.
+
+For example, a payslip response contains:
+
+```json
+{
+    "success": true,
+    "outsource_id": "DM20260001",
+    "filters": {"period": "2026-09"},
+    "data": [
+        {
+            "period": "2026-09",
+            "outsource_id": "DM20260001",
+            "full_name": "Employee Name",
+            "vendor": "Damarindo",
+            "hke": 24.5,
+            "basic_salary": 3200000,
+            "bpjs_kesehatan_deduction": 32000,
+            "loan_deduction": 0,
+            "take_home_pay": 3168000
+        }
+    ],
+    "meta": {"count": 1}
+}
+```
+
+The incentive response uses the same envelope and includes `period`,
+`outsource_id`, `full_name`, `vendor`, `umk_amount`, and `incentive_amount` in
+each data item.
+
+The PWA backend must resolve the signed-in user's Outsource ID from its trusted
+account mapping and must not accept an arbitrary ID from an unauthenticated
+browser request. Keep the shared HRIS Bearer token only on the server; never
+embed it in PWA browser code or return it to clients. Serve the integration
+over HTTPS.
