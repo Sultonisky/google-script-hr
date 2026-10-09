@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Public\OutsourceApplyRequest;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\OutsourceEmployeeRepositoryInterface;
+use App\Services\AttendanceOutsourcePushService;
 use App\Services\RecruitmentService;
 use App\Support\OutsourceEmployeeFilter;
 use Illuminate\Http\JsonResponse;
@@ -64,7 +65,7 @@ class OutsourceApplyController extends Controller
         ]);
     }
 
-    public function store(OutsourceApplyRequest $request): RedirectResponse
+    public function store(OutsourceApplyRequest $request, AttendanceOutsourcePushService $attendancePush): RedirectResponse
     {
         if (session(self::SUBMISSION_COMPLETED)) {
             return redirect()->route('public.outsource.success');
@@ -146,6 +147,8 @@ class OutsourceApplyController extends Controller
             } catch (\Throwable $auditError) {
                 report($auditError);
             }
+
+            $attendancePush->pushCreated([$created]);
 
             session([self::SUBMISSION_COMPLETED => true]);
 
