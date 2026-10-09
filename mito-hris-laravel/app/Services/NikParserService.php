@@ -9,6 +9,7 @@ class NikParserService
 {
     protected array $provinces = [];
     protected array $cities = [];
+    protected array $legacyCities = [];
     protected array $districts = [];
 
     public function __construct()
@@ -18,6 +19,7 @@ class NikParserService
             $json = json_decode(File::get($wilayahPath), true);
             $this->provinces = $json['provinces'] ?? [];
             $this->cities = $json['cities'] ?? [];
+            $this->legacyCities = $json['legacy_cities'] ?? [];
         }
 
         $kecamatanPath = database_path('data/kecamatan_all.json');
@@ -40,8 +42,9 @@ class NikParserService
             ];
         }
 
-        $provCode   = substr($nik, 0, 2);
-        $cityCode   = substr($nik, 0, 4);
+        // NIKs issued before a province split keep the old regency code.
+        $cityCode   = $this->legacyCities[substr($nik, 0, 4)] ?? substr($nik, 0, 4);
+        $provCode   = substr($cityCode, 0, 2);
         $distCode   = substr($nik, 0, 6);
         $rawDay     = (int) substr($nik, 6, 2);
         $month      = (int) substr($nik, 8, 2);
