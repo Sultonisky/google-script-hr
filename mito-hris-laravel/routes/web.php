@@ -118,6 +118,9 @@ if (!app()->environment('local')) {
             });
             Route::prefix('outsource')->name('outsource.')->middleware('can:view_outsource')->group(function () {
                 Route::get('/', [OutsourceController::class, 'index'])->name('index');
+                Route::post('/push-attendance', [OutsourceController::class, 'pushToAttendance'])
+                    ->name('push-attendance')
+                    ->middleware('can:manage_outsource');
                 Route::post('/', [OutsourceController::class, 'store'])->name('store')->middleware('can:manage_outsource');
                 Route::post('/import', [OutsourceController::class, 'import'])->name('import')->middleware('can:manage_outsource');
                 Route::post('/kontrak-pkwt-tad', [OutsourceController::class, 'generateKontrakPkwtTad'])
@@ -384,6 +387,9 @@ if (app()->environment('local')) {
 
             Route::prefix('outsource')->name('outsource.')->middleware('can:view_outsource')->group(function () {
                 Route::get('/', [OutsourceController::class, 'index'])->name('index');
+                Route::post('/push-attendance', [OutsourceController::class, 'pushToAttendance'])
+                    ->name('push-attendance')
+                    ->middleware('can:manage_outsource');
                 Route::post('/', [OutsourceController::class, 'store'])->name('store')->middleware('can:manage_outsource');
                 Route::post('/import', [OutsourceController::class, 'import'])->name('import')->middleware('can:manage_outsource');
                 Route::post('/kontrak-pkwt-tad', [OutsourceController::class, 'generateKontrakPkwtTad'])
