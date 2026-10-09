@@ -66,7 +66,7 @@ class AttendanceOutsourcePushService
     /**
      * @param  list<array{outsource_id: string, full_name: string}>  $people
      * @return array{
-     *   data: list<array{outsource_id: string, status: 'created'|'skipped'|'conflict'|'would_create'}>,
+     *   data: list<array{outsource_id: string, status: 'created'|'skipped'|'conflict'|'would_create', conflict_reason?: 'name_mismatch'|'deleted_record'}>,
      *   meta: array{processed: int, created: int, skipped: int, conflict: int, would_create: int}
      * }
      */
@@ -122,7 +122,16 @@ class AttendanceOutsourcePushService
                 throw new AttendanceOutsourcePushException('Attendance returned an unexpected response.');
             }
 
-            $results[] = ['outsource_id' => $record['outsource_id'], 'status' => $record['status']];
+            $result = ['outsource_id' => $record['outsource_id'], 'status' => $record['status']];
+            if (isset($record['conflict_reason'])) {
+                if (! in_array($record['conflict_reason'], ['name_mismatch', 'deleted_record'], true)) {
+                    throw new AttendanceOutsourcePushException('Attendance returned an unexpected response.');
+                }
+
+                $result['conflict_reason'] = $record['conflict_reason'];
+            }
+
+            $results[] = $result;
             $meta[$record['status']]++;
             $meta['processed']++;
         }
