@@ -279,6 +279,13 @@
             bootstrap.Modal.getOrCreateInstance(modalEl).show();
         };
 
+        var addButton = document.getElementById('btnAddOutsource');
+        if (addButton) {
+            addButton.addEventListener('click', function() {
+                window.openOutsourceForm();
+            });
+        }
+
         form.addEventListener('submit', function(e) {
             e.preventDefault();
             var id = document.getElementById('osfId').value;
