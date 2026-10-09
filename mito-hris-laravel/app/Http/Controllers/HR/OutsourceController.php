@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\HR;
 
+use App\Exceptions\AttendanceOutsourcePushException;
 use App\DTOs\OutsourceEmployeeData;
 use App\Enums\SkDocumentType;
 use App\Http\Controllers\Controller;
@@ -128,6 +129,58 @@ class OutsourceController extends Controller
             'message' => 'Karyawan outsource berhasil ditambahkan.',
             'employee' => $this->present($created),
         ], 201);
+    }
+
+    public function pushToAttendance(Request $request, AttendanceOutsourcePushService $attendancePush): JsonResponse
+    {
+        $validated = $request->validate([
+            'dry_run' => ['sometimes', 'boolean'],
+        ]);
+        $dryRun = (bool) ($validated['dry_run'] ?? false);
+        $people = $this->outsourceRepo->getAll()
+            ->filter(fn (OutsourceEmployeeData $person) => filled($person->outsourceId) && filled($person->fullName))
+            ->map(fn (OutsourceEmployeeData $person) => [
+                'outsource_id' => strtoupper(trim((string) $person->outsourceId)),
+                'full_name' => trim((string) $person->fullName),
+            ])
+            ->values()
+            ->all();
+        $totals = ['processed' => 0, 'created' => 0, 'skipped' => 0, 'conflict' => 0, 'would_create' => 0];
+        $conflicts = [];
+        $records = [];
+
+        try {
+            foreach (array_chunk($people, 100) as $batch) {
+                $result = $attendancePush->push($batch, $dryRun);
+                foreach ($totals as $key => $value) {
+                    $totals[$key] += $result['meta'][$key];
+                }
+                foreach ($result['data'] as $index => $record) {
+                    $record['full_name'] = $batch[$index]['full_name'];
+                    $records[] = $record;
+                    if ($record['status'] === 'conflict') {
+                        $conflicts[] = $record['outsource_id'];
+                    }
+                }
+            }
+        } catch (AttendanceOutsourcePushException $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => $exception->getMessage(),
+                'meta' => $totals,
+            ], 502);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $dryRun
+                ? 'Preview sinkronisasi Outsource ke Attendance selesai.'
+                : 'Sinkronisasi Outsource ke Attendance selesai.',
+            'dry_run' => $dryRun,
+            'data' => $records,
+            'meta' => $totals,
+            'conflicts' => $conflicts,
+        ]);
     }
 
     /**
