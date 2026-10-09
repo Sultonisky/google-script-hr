@@ -85,7 +85,7 @@ class DummyDataService
     private array $hrNotes     = ['Kandidat memiliki pengalaman yang relevan.', 'CV lengkap, perlu follow up interview.', 'Kandidat direferensikan tim internal.', 'Hasil tes technical baik, perlu evaluasi.', 'Komunikasi sangat baik saat screening.', ''];
     private array $holdReasons = ['Kandidat meminta penundaan jadwal interview', 'Posisi belum resmi dibuka', 'Budget rekrutmen belum tersedia', 'Menunggu hasil background check'];
     private array $blReasons   = ['Tidak hadir interview tanpa konfirmasi', 'Data CV terbukti tidak sesuai', 'Pelanggaran etika selama seleksi', 'Memberikan informasi palsu'];
-    private array $internalCos = ['PT Mahakarya Sukses Indonesia', 'PT Stein Perkasa Internasional', 'PT Perkasa Injeksi Indonesia', 'PT Mitra Elektro Perkasa'];
+    private array $internalCos = ['PT Mahakarya Sukses Indonesia', 'PT Stein Perkasa Internasional', 'PT Perkasa Injeksi Indonesia', 'PT Mitra Elektro Perkasa', 'PT Suka Dessert Indonesia'];
     private array $divisions   = ['RnD & aftersales', 'Sales', 'FAT & GA', 'Manufacture', 'E-Commerce', 'IT', 'Digital Marketing', 'Marketing', 'Creative', 'HR & Legal'];
     private array $areas       = ['Head Office (HO)', 'Depo Jakarta', 'Depo Bandung', 'Depo Surabaya', 'Pabrik'];
     private array $jobLevels   = ['Associate', 'Supervisor', 'Manager'];
@@ -96,7 +96,7 @@ class DummyDataService
     private array $empTypes    = ['Project', 'PKWTT', 'PKWT', 'Outsource', 'Intern'];
     private array $contractDurs = ['3 Bulan', '6 Bulan', '1 Tahun', '2 Tahun'];
     private array $empStatEmp  = ['Permanent', 'Permanent', 'Contract', 'Contract', 'Probation', 'Outsource'];
-    private array $branches    = ['PT Mahakarya Sukses Indonesia', 'PT Stein Perkasa Internasional', 'PT Perkasa Injeksi Indonesia', 'PT Mitra Elektro Perkasa'];
+    private array $branches    = ['PT Mahakarya Sukses Indonesia', 'PT Stein Perkasa Internasional', 'PT Perkasa Injeksi Indonesia', 'PT Mitra Elektro Perkasa', 'PT Suka Dessert Indonesia'];
 
     // Used to avoid duplicates
     private array $usedEmails  = [];

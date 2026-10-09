@@ -32,6 +32,13 @@
     $cCity    = 'Jakarta';
     $cBrand   = 'MITRA ELEKTRO';
     $cCode    = 'MEP';
+  } elseif (str_contains($bLower, 'suka dessert') || strtoupper(trim((string) $branch)) === 'SDI') {
+    $cName    = 'PT SUKA DESSERT INDONESIA';
+    $cTagline = 'Suka Dessert Indonesia';
+    $cAddress = 'Ruko RGIE No. 96-98 Golf Island PIK, Kel Kamal Muara Kec. Penjaringan, Jakarta Utara';
+    $cCity    = 'Jakarta Utara';
+    $cBrand   = 'SDI';
+    $cCode    = 'SDI';
   } else {
     // Default: PT Mahakarya Sukses Indonesia (1:1 GAS default profile)
     $cName    = 'PT MAHAKARYA SUKSES INDONESIA';

@@ -301,6 +301,33 @@ class MprFlowTest extends TestCase
     }
 
     #[Test]
+    public function manpower_history_pagination_keeps_the_active_style_after_page_three(): void
+    {
+        $manpowerEmail = 'manager.pagination@mito.id';
+        $this->actingAsRole('Manpower', $manpowerEmail, 'Pagination Manpower', ['MSI'], 'Bandung');
+
+        $mprs = collect();
+        for ($index = 1; $index <= 35; $index++) {
+            $mprs->push($this->makeMprData([
+                'mprNumber' => sprintf('MPR-PAGE-%02d', $index),
+                'requestorEmail' => $manpowerEmail,
+                'createdBy' => $manpowerEmail,
+            ]));
+        }
+
+        $mockRepo = Mockery::mock(MprRepositoryInterface::class);
+        $mockRepo->shouldReceive('getAllForManager')
+            ->once()
+            ->with($manpowerEmail, Mockery::any())
+            ->andReturn($mprs);
+        $this->app->instance(MprRepositoryInterface::class, $mockRepo);
+
+        $this->get(route('hr.mpr.history', ['page' => 4]))
+            ->assertOk()
+            ->assertSee('<li class="page-item active">', false);
+    }
+
+    #[Test]
     public function manpower_history_page_supports_sort_order_filter(): void
     {
         $manpowerEmail = 'manager.sort@mito.id';
@@ -810,6 +837,23 @@ class MprFlowTest extends TestCase
         $this->assertNotEmpty($output);
         // PDF header check (%PDF-)
         $this->assertStringStartsWith('%PDF-', $output);
+    }
+
+    #[Test]
+    public function mpr_pdf_service_resolves_sdi_company_letterhead(): void
+    {
+        $company = app(MprPdfService::class)->resolveCompany('SDI');
+
+        $this->assertSame('PT SUKA DESSERT INDONESIA', $company['name']);
+        $this->assertSame(
+            'Ruko RGIE No. 96-98 Golf Island PIK, Kel Kamal Muara Kec. Penjaringan, Jakarta Utara',
+            $company['address']
+        );
+        $this->assertSame('SDI', $company['code']);
+
+        $letterhead = view('pdf.components.kop-surat', ['companyEntity' => 'SDI'])->render();
+        $this->assertStringContainsString('PT SUKA DESSERT INDONESIA', $letterhead);
+        $this->assertStringContainsString($company['address'], $letterhead);
     }
 
     #[Test]

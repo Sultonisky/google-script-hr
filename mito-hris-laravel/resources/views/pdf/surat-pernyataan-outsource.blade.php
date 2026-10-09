@@ -6,16 +6,18 @@
     <title>Surat Pernyataan — Outsource TAD</title>
     <style>
         @page {
-            margin: 36px 52px 40px 52px;
+            margin: 26px 46px 42px 46px;
             size: A4;
         }
 
         body {
             font-family: 'Times New Roman', Times, serif;
             font-size: 12pt;
-            color: #000;
+            color: #000000;
             line-height: 1.45;
             text-align: justify;
+            margin: 0;
+            padding: 0;
         }
 
         .doc-title-wrap {
@@ -32,7 +34,7 @@
         }
 
         p {
-            margin: 8px 0;
+            margin: 5px 0;
             text-align: justify;
         }
 

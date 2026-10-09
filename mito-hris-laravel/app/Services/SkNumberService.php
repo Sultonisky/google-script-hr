@@ -203,7 +203,26 @@ class SkNumberService
 
     public function resolveEntityCode(string $branchName): string
     {
-        $b = strtolower(trim($branchName));
+        $branch = trim($branchName);
+        $b = strtolower($branch);
+
+        foreach (config('hris.mpr.companies', []) as $code => $company) {
+            if (!is_array($company)) {
+                continue;
+            }
+
+            $entityCode = strtoupper(trim((string) ($company['code'] ?? $code)));
+            $companyName = strtolower(trim((string) ($company['name'] ?? '')));
+            $hasCodeToken = preg_match(
+                '/(?<![A-Z0-9])' . preg_quote($entityCode, '/') . '(?![A-Z0-9])/i',
+                $branch
+            ) === 1;
+
+            if ($hasCodeToken || ($companyName !== '' && str_contains($b, $companyName))) {
+                return $entityCode;
+            }
+        }
+
         if (str_contains($b, 'stein')) {
             return 'SPI';
         }

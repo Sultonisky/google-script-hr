@@ -1,9 +1,9 @@
 @props(['currentPage', 'total', 'perPage', 'route' => null, 'queryParams' => []])
 
 @php
-    $totalPages = max(1, ceil($total / $perPage));
+    $totalPages = max(1, (int) ceil($total / $perPage));
     $maxButtons = 5;
-    $startPage = max(1, $currentPage - floor($maxButtons / 2));
+    $startPage = max(1, $currentPage - intdiv($maxButtons, 2));
     $endPage = min($totalPages, $startPage + $maxButtons - 1);
     $startPage = max(1, $endPage - $maxButtons + 1);
     

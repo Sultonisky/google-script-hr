@@ -117,18 +117,12 @@
             @endcan
 
             <!-- Employee Lifecycle Section -->
-            @canany(['manage_probation', 'view_outsource', 'view_contracts', 'view_documents'])
+            @canany(['manage_probation', 'view_contracts', 'view_documents'])
                 <div class="nav-section-label">Employee Lifecycle</div>
                 @can('manage_probation')
                     <a href="{{ route('hr.probation.index') }}"
                         class="nav-item {{ request()->routeIs('hr.probation.*') ? 'active' : '' }}">
                         <i class="bi bi-hourglass-split"></i> Probation
-                    </a>
-                @endcan
-                @can('view_outsource')
-                    <a href="{{ route('hr.outsource.index') }}"
-                        class="nav-item {{ request()->routeIs('hr.outsource.*') ? 'active' : '' }}">
-                        <i class="bi bi-building"></i> Outsource
                     </a>
                 @endcan
                 @can('view_contracts')
@@ -141,6 +135,29 @@
                     <a href="{{ route('hr.documents.index') }}"
                         class="nav-item {{ request()->routeIs('hr.documents.*') ? 'active' : '' }}">
                         <i class="bi bi-file-earmark-ruled"></i> Document Tracking
+                    </a>
+                @endcan
+            @endcanany
+
+            <!-- Outsource Section -->
+            @canany(['view_outsource', 'view_outsource_payslip', 'view_outsource_incentive'])
+                <div class="nav-section-label">Outsource</div>
+                @can('view_outsource')
+                    <a href="{{ route('hr.outsource.index') }}"
+                        class="nav-item {{ request()->routeIs('hr.outsource.*') ? 'active' : '' }}">
+                        <i class="bi bi-building"></i> Outsource
+                    </a>
+                @endcan
+                @can('view_outsource_payslip')
+                    <a href="{{ route('hr.outsource-payslips.index') }}"
+                        class="nav-item {{ request()->routeIs('hr.outsource-payslips.*') ? 'active' : '' }}">
+                        <i class="bi bi-receipt"></i>Outsource Payslips
+                    </a>
+                @endcan
+                @can('view_outsource_incentive')
+                    <a href="{{ route('hr.outsource-incentives.index') }}"
+                        class="nav-item {{ request()->routeIs('hr.outsource-incentives.*') ? 'active' : '' }}">
+                        <i class="bi bi-cash-coin"></i> Outsource Incentives
                     </a>
                 @endcan
             @endcanany

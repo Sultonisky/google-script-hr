@@ -7,7 +7,7 @@
     <style>
         /* ── Page setup ──────────────────────────────────────────── */
         @page {
-            margin: 26px 46px 42px 46px;
+            margin: 26px 46px 68px 46px;
             size: A4;
         }
 
@@ -38,36 +38,6 @@
         body> :not(.watermark) {
             position: relative;
             z-index: 1;
-        }
-
-        /* Paraf tetap tampil pada halaman isi, tetapi ditutup di halaman terakhir. */
-        .footer-paraf {
-            position: fixed;
-            bottom: 10px;
-            left: 0;
-            right: 46px;
-            font-size: 10pt;
-            text-align: right;
-            z-index: 2;
-        }
-
-        .paraf-box {
-            border: 1px solid #000;
-            display: inline-block;
-            width: 46px;
-            height: 14px;
-            margin-left: 4px;
-            vertical-align: middle;
-        }
-
-        .last-page-footer-mask {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 34px;
-            background: #ffffff;
-            z-index: 10;
         }
 
         /* ── Document title ──────────────────────────────────────── */
@@ -142,6 +112,8 @@
             font-weight: bold;
             margin: 14px 0 2px 0;
             font-size: 12pt;
+            page-break-inside: avoid;
+            page-break-after: avoid;
         }
 
         /* ── Page break ──────────────────────────────────────────── */
@@ -208,9 +180,6 @@
 
     {{-- Watermark CONFIDENTIAL ──────────────────────────────── --}}
     <div class="watermark">CONFIDENTIAL</div>
-
-    {{-- Footer paraf tampil di halaman isi; halaman terakhir ditutup mask. --}}
-    <div class="footer-paraf">Paraf: <span class="paraf-box"></span></div>
 
     @php
         // ── Resolve semua variabel 1:1 template Word ─────────────
@@ -590,6 +559,7 @@
     {{-- ═══════════════════════════════════════════════════════
        PASAL 5 — RUANG LINGKUP PEKERJAAN
   ═══════════════════════════════════════════════════════ --}}
+    <div class="page-break"></div>
     <div class="pasal-heading">Pasal 5<br>RUANG LINGKUP PEKERJAAN</div>
 
     <ol class="pasal-list">
@@ -915,8 +885,6 @@
             </td>
         </tr>
     </table>
-
-    <div class="last-page-footer-mask"></div>
 
 </body>
 

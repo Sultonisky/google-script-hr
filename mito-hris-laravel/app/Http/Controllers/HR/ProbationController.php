@@ -408,6 +408,9 @@ class ProbationController extends Controller
         if (str_contains($b, 'mitra') || str_contains($b, 'elektro')) {
             return ['name' => 'PT MITRA ELEKTRO PERKASA', 'address' => 'Rukan Mangga Dua Square Blok H No. 18-21, Jln. Gunung Sahari Raya Nomor 1, Kel. Ancol/Kec. Pademangan, Kota Jakarta Utara, DKI Jakarta', 'city' => 'Jakarta', 'code' => 'MEP'];
         }
+        if (str_contains($b, 'suka dessert') || strtoupper(trim($branchName)) === 'SDI') {
+            return ['name' => 'PT SUKA DESSERT INDONESIA', 'address' => 'Ruko RGIE No. 96-98 Golf Island PIK, Kel Kamal Muara Kec. Penjaringan, Jakarta Utara', 'city' => 'Jakarta Utara', 'code' => 'SDI'];
+        }
         return ['name' => 'PT MAHAKARYA SUKSES INDONESIA', 'address' => 'Jl. Gajah Tunggal, Kp. Gembor, RT.004/RW.001, Kel. Pasir Jaya, Kec. Jatiuwung, Kota Tangerang, Banten 15135', 'city' => 'Tangerang', 'code' => 'MSI'];
     }
 
