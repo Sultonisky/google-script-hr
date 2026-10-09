@@ -44,6 +44,8 @@
             <x-toast />
             @yield('content')
         </div>
+
+        @include('components.dashboard-footer')
     </div>
 
     <!-- 1:1 Floating Action Button (FAB) -->

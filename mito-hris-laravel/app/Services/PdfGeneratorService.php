@@ -45,6 +45,16 @@ class PdfGeneratorService
                 ];
         }
 
+        if (str_contains($b, 'suka dessert') || strtoupper(trim($branchName)) === 'SDI') {
+                return [
+                    'name'    => 'PT SUKA DESSERT INDONESIA',
+                    'address' => 'Ruko RGIE No. 96-98 Golf Island PIK, Kel Kamal Muara Kec. Penjaringan, Jakarta Utara',
+                    'city'    => 'Jakarta Utara',
+                    'brand'   => 'SDI',
+                    'code'    => 'SDI',
+                ];
+        }
+
         // Default: PT Mahakarya Sukses Indonesia
                 return [
                     'name'    => 'PT MAHAKARYA SUKSES INDONESIA',
@@ -125,8 +135,41 @@ class PdfGeneratorService
         $employee  = $subject instanceof EmployeeData  ? $subject : null;
         $candidate = $subject instanceof CandidateData ? $subject : null;
 
-        return Pdf::loadView('pdf.kontrak-pkwt', compact('employee', 'candidate', 'extraData', 'company'))
+        $pdf = Pdf::loadView('pdf.kontrak-pkwt', compact('employee', 'candidate', 'extraData', 'company'))
             ->setPaper('a4', 'portrait');
+
+        $pdf->render();
+        $pdf->getCanvas()->page_script(function (
+            int $pageNumber,
+            int $pageCount,
+            \Dompdf\Canvas $canvas,
+            \Dompdf\FontMetrics $fontMetrics
+        ): void {
+            if ($pageNumber === $pageCount) {
+                return;
+            }
+
+            $font = $fontMetrics->getFont('Times New Roman');
+            $fontSize = 10;
+            $color = [0, 0, 0];
+            $right = $canvas->get_width() - 34.5;
+            $boxWidth = 50;
+            $boxHeight = 18;
+            $boxTop = $canvas->get_height() - 50;
+            $boxBottom = $boxTop + $boxHeight;
+            $boxLeft = $right - $boxWidth;
+            $label = 'Paraf:';
+            $labelX = $boxLeft - 4 - $fontMetrics->getTextWidth($label, $font, $fontSize);
+            $labelY = $boxTop + ($boxHeight / 2) - ($fontSize * 0.7);
+
+            $canvas->text($labelX, $labelY, $label, $font, $fontSize, $color);
+            $canvas->line($boxLeft, $boxTop, $right, $boxTop, $color, 0.75);
+            $canvas->line($boxLeft, $boxBottom, $right, $boxBottom, $color, 0.75);
+            $canvas->line($boxLeft, $boxTop, $boxLeft, $boxBottom, $color, 0.75);
+            $canvas->line($right, $boxTop, $right, $boxBottom, $color, 0.75);
+        });
+
+        return $pdf;
     }
 
     /**
@@ -205,8 +248,39 @@ class PdfGeneratorService
             'code'    => 'DM',
         ];
 
-        return Pdf::loadView('pdf.kontrak-pkwt-tad', compact('employee', 'extraData', 'company'))
+        $pdf = Pdf::loadView('pdf.kontrak-pkwt-tad', compact('employee', 'extraData', 'company'))
             ->setPaper('a4', 'portrait');
+
+        $pdf->render();
+        $pdf->getCanvas()->page_script(function (
+            int $pageNumber,
+            int $pageCount,
+            \Dompdf\Canvas $canvas,
+            \Dompdf\FontMetrics $fontMetrics
+        ): void {
+            if ($pageNumber === $pageCount) {
+                return;
+            }
+
+            $font = $fontMetrics->getFont('Times New Roman');
+            $fontBold = $fontMetrics->getFont('Times New Roman', 'bold');
+            $fontSize = 11;
+            $right = $canvas->get_width() - 34.5;
+            $labelY = $canvas->get_height() - 129;
+            $lineY = $canvas->get_height() - 47;
+            $roleY = $canvas->get_height() - 32;
+            $lineWidth = 75;
+            $color = [0, 0, 0];
+
+            $canvas->text(34.5, $labelY, 'Paraf', $font, $fontSize, $color);
+            $canvas->text($right - $fontMetrics->getTextWidth('Paraf', $font, $fontSize), $labelY, 'Paraf', $font, $fontSize, $color);
+            $canvas->line(34.5, $lineY, 34.5 + $lineWidth, $lineY, $color, 0.75);
+            $canvas->line($right - $lineWidth, $lineY, $right, $lineY, $color, 0.75);
+            $canvas->text(34.5, $roleY, 'HRD', $fontBold, $fontSize, $color);
+            $canvas->text($right - $fontMetrics->getTextWidth('KARYAWAN', $fontBold, $fontSize), $roleY, 'KARYAWAN', $fontBold, $fontSize, $color);
+        });
+
+        return $pdf;
     }
 
     /**

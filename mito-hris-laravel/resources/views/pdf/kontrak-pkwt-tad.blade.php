@@ -6,70 +6,27 @@
     <title>PKWT Tenaga Alih Daya — PT Damarindo Mandiri</title>
     <style>
         @page {
-            margin: 28px 46px 36px 46px;
+            margin: 26px 46px 150px 46px;
             size: A4;
         }
 
         body {
             font-family: 'Times New Roman', Times, serif;
             font-size: 12pt;
-            color: #000;
-            line-height: 1.4;
+            color: #000000;
+            line-height: 1.45;
             text-align: justify;
             margin: 0;
             padding: 0;
         }
 
         /* ── Section wrapper ────────────────────────────────────
-           Setiap section adalah satu "halaman logis". Konten diisi
-           dari atas, footer paraf statis ditempel di bawah section.
-           page-break-after:always memastikan setiap section = 1 hal. */
+           Biarkan isi mengalir antarseksi agar setiap halaman terisi. */
         .page-section {
-            page-break-after: always;
+            page-break-after: auto;
         }
         .page-section-last {
-            /* Halaman terakhir tidak perlu page-break */
-        }
-
-        /* ── Footer paraf statis ────────────────────────────────
-           Dicetak sebagai bagian normal dari alur konten,
-           tidak ada position:fixed — 100% reliable di dompdf. */
-        .paraf-footer {
-            width: 100%;
-            margin-top: 14px;
-            border-collapse: collapse;
-            table-layout: fixed;
-        }
-        .paraf-footer td {
-            width: 50%;
-            vertical-align: top;
-            padding: 0;
-        }
-        .paraf-footer-left  { text-align: left; }
-        .paraf-footer-right { text-align: right; }
-
-        .paraf-label {
-            font-size: 9pt;
-            display: block;
-            margin-bottom: 10px;
-        }
-        .paraf-line-left {
-            display: block;
-            width: 56px;
-            border-bottom: 1px solid #000;
-            margin-bottom: 3px;
-        }
-        .paraf-line-right {
-            display: block;
-            width: 56px;
-            border-bottom: 1px solid #000;
-            margin-bottom: 3px;
-            margin-left: auto;
-        }
-        .paraf-role {
-            font-size: 9pt;
-            font-weight: bold;
-            display: block;
+            page-break-before: auto;
         }
 
         /* ── Judul dokumen ──────────────────────────────────────*/
@@ -97,7 +54,7 @@
         }
 
         p {
-            margin: 6px 0;
+            margin: 5px 0;
             text-align: justify;
         }
 
@@ -305,22 +262,6 @@
         PIHAK KEDUA setuju dan sepakat mengadakan pengikatan yang dituangkan dalam bentuk perjanjian kerja waktu (PKWT)
         untuk Pemborongan Pekerjaan dengan syarat-syarat dan ketentuan sebagaimana diatur dalam pasal-pasal berikut ini :</p>
 
-    {{-- Footer paraf statis — bagian konten normal --}}
-    <table class="paraf-footer">
-        <tr>
-            <td class="paraf-footer-left">
-                <span class="paraf-label">Paraf</span>
-                <span class="paraf-line-left"></span>
-                <span class="paraf-role">HRD</span>
-            </td>
-            <td class="paraf-footer-right">
-                <span class="paraf-label">Paraf</span>
-                <span class="paraf-line-right"></span>
-                <span class="paraf-role">KARYAWAN</span>
-            </td>
-        </tr>
-    </table>
-
 </div>{{-- /page-section 1 --}}
 
 {{-- ═══════════════════════════════════════════════════════════════
@@ -380,21 +321,6 @@
             <td class="pt-label">3. Mulai tanggal</td>
             <td class="pt-colon">:</td>
             <td class="pt-value">{{ $mulaiFmt }}</td>
-        </tr>
-    </table>
-
-    <table class="paraf-footer">
-        <tr>
-            <td class="paraf-footer-left">
-                <span class="paraf-label">Paraf</span>
-                <span class="paraf-line-left"></span>
-                <span class="paraf-role">HRD</span>
-            </td>
-            <td class="paraf-footer-right">
-                <span class="paraf-label">Paraf</span>
-                <span class="paraf-line-right"></span>
-                <span class="paraf-role">KARYAWAN</span>
-            </td>
         </tr>
     </table>
 
@@ -462,21 +388,6 @@
             perundang-undangan yang berlaku selama melaksanakan pekerjaan.</li>
     </ol>
 
-    <table class="paraf-footer">
-        <tr>
-            <td class="paraf-footer-left">
-                <span class="paraf-label">Paraf</span>
-                <span class="paraf-line-left"></span>
-                <span class="paraf-role">HRD</span>
-            </td>
-            <td class="paraf-footer-right">
-                <span class="paraf-label">Paraf</span>
-                <span class="paraf-line-right"></span>
-                <span class="paraf-role">KARYAWAN</span>
-            </td>
-        </tr>
-    </table>
-
 </div>{{-- /page-section 3 --}}
 
 {{-- ═══════════════════════════════════════════════════════════════
@@ -538,21 +449,6 @@
         <li>KEDUA BELAH PIHAK sepakat untuk menunjuk domisili hukum yang tetap dan tak berubah pada Kantor Pengadilan
             Negeri Tangerang.</li>
     </ol>
-
-    <table class="paraf-footer">
-        <tr>
-            <td class="paraf-footer-left">
-                <span class="paraf-label">Paraf</span>
-                <span class="paraf-line-left"></span>
-                <span class="paraf-role">HRD</span>
-            </td>
-            <td class="paraf-footer-right">
-                <span class="paraf-label">Paraf</span>
-                <span class="paraf-line-right"></span>
-                <span class="paraf-role">KARYAWAN</span>
-            </td>
-        </tr>
-    </table>
 
 </div>{{-- /page-section 4 --}}
 

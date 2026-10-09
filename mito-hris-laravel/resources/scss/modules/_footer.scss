@@ -1,0 +1,86 @@
+// ============================================================
+// modules/_footer.scss — DASHBOARD FOOTER (HRIS, MPR, Aset, Sertifikasi)
+// ============================================================
+
+.main-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.main-content > .content-wrap {
+    flex: 1 0 auto;
+    min-width: 0;
+}
+
+.dashboard-footer {
+    background: var(--color-bg);
+    padding: 0 28px 18px;
+    color: var(--color-text-soft);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.dashboard-footer__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 16px;
+    flex-wrap: wrap;
+    padding-top: 16px;
+    border-top: 1px solid var(--color-border);
+}
+
+.dashboard-footer__copy,
+.dashboard-footer__meta {
+    margin: 0;
+}
+
+.dashboard-footer__copy strong {
+    color: var(--color-text);
+    font-weight: 600;
+}
+
+.dashboard-footer__meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+}
+
+.dashboard-footer__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+// Keep footer text clear of the fixed floating action button.
+body:has(.fab-wrap) .dashboard-footer__inner {
+    padding-right: 84px;
+}
+
+@media (max-width: 991.98px) {
+    .dashboard-footer {
+        padding: 0 18px 16px;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-footer {
+        padding: 0 14px 14px;
+    }
+
+    .dashboard-footer__inner {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+}
+
+@media print {
+    .dashboard-footer {
+        display: none !important;
+    }
+}

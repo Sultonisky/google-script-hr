@@ -104,8 +104,9 @@
                                         @php
                                             $branchOptions = ($all ?? collect())
                                                 ->pluck('branchName')
+                                                ->merge(collect(config('hris.mpr.companies', []))->pluck('branch_name'))
                                                 ->filter()
-                                                ->unique()
+                                                ->unique(fn ($branch) => strtolower(trim((string) $branch)))
                                                 ->sort()
                                                 ->values();
                                         @endphp
