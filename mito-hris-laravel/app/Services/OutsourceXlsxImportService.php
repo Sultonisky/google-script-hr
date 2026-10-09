@@ -49,7 +49,8 @@ class OutsourceXlsxImportService
     private const DIGIT_FIELDS = ['whatsappNumber', 'bankAccount'];
 
     public function __construct(
-        protected OutsourceEmployeeRepositoryInterface $repository
+        protected OutsourceEmployeeRepositoryInterface $repository,
+        protected AttendanceOutsourcePushService $attendancePush,
     ) {}
 
     /**
@@ -89,6 +90,7 @@ class OutsourceXlsxImportService
         $updated = 0;
         $errors = [];
         $seenContacts = [];
+        $createdRows = [];
 
         // Rows without an ID take the next sequence number, so they must come after every explicit ID.
         [$withId, $withoutId] = collect($result['rows'])->partition(fn (OutsourceEmployeeData $row) => $row->outsourceId !== null);
@@ -127,12 +129,15 @@ class OutsourceXlsxImportService
                     }
                     $saved = $this->repository->create($row);
                     $existing->put(strtoupper((string) $saved->outsourceId), $saved);
+                    $createdRows[] = $saved;
                     $created++;
                 }
             } catch (\Throwable $e) {
                 $errors[] = "{$label}: {$e->getMessage()}";
             }
         }
+
+        $this->attendancePush->pushCreated($createdRows);
 
         return [
             'read' => count($result['rows']),

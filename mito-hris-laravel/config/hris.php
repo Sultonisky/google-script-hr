@@ -16,6 +16,16 @@ return [
     */
     'data_driver' => env('HRIS_DATA_DRIVER'),
 
+    'integration' => [
+        'outsource_sync_api_token' => env('HRIS_OUTSOURCE_SYNC_API_TOKEN'),
+        // Outbound: push newly created outsource persons into the Attendance Person List.
+        'attendance' => [
+            'base_url' => env('ATTENDANCE_API_BASE_URL'),
+            'outsource_push_api_token' => env('ATTENDANCE_OUTSOURCE_PUSH_API_TOKEN'),
+            'timeout' => (int) env('ATTENDANCE_API_TIMEOUT', 5),
+        ],
+    ],
+
     'domains' => [
         'hris' => env('HRIS_DOMAIN', 'hrismitogroup.web.id'),
         'mpr' => env('MPR_DOMAIN', 'mpr.hrismitogroup.web.id'),
@@ -205,6 +215,9 @@ return [
     'outsource' => [
         // Outsource ID = {prefix}{YYYY}{NNNN}, e.g. DM20260001.
         'id_prefix' => env('OUTSOURCE_ID_PREFIX', 'DM'),
+        // IDs parked outside the running sequence (e.g. after an ID collision with
+        // Attendance). The generator never continues numbering from these.
+        'reserved_ids' => ['DM20261000'],
         'vendors' => ['Damarindo', 'StaffInc'],
         'entities' => [
             'PT. Mahakarya Sukses Indonesia',

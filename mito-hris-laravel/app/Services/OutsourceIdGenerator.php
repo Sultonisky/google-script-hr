@@ -19,8 +19,18 @@ class OutsourceIdGenerator
     public function generate(iterable $existingIds = [], ?Carbon $now = null): string
     {
         $base = $this->base($now);
+        $reserved = $this->reservedIds();
+        $taken = [];
+        foreach ($existingIds as $id) {
+            $taken[strtoupper(trim((string) $id))] = true;
+        }
 
-        return $base . str_pad((string) ($this->maxSequence($base, $existingIds) + 1), 4, '0', STR_PAD_LEFT);
+        $sequence = $this->maxSequence($base, array_keys(array_diff_key($taken, $reserved)));
+        do {
+            $candidate = $base . str_pad((string) ++$sequence, 4, '0', STR_PAD_LEFT);
+        } while (isset($taken[$candidate]) || isset($reserved[$candidate]));
+
+        return $candidate;
     }
 
     /**
@@ -43,6 +53,22 @@ class OutsourceIdGenerator
         $year = ($now ?? now())->timezone('Asia/Jakarta')->format('Y');
 
         return $prefix . $year;
+    }
+
+    /**
+     * @return array<string, true>
+     */
+    private function reservedIds(): array
+    {
+        $reserved = [];
+        foreach ((array) config('hris.outsource.reserved_ids', []) as $id) {
+            $id = strtoupper(trim((string) $id));
+            if ($id !== '') {
+                $reserved[$id] = true;
+            }
+        }
+
+        return $reserved;
     }
 
     /**

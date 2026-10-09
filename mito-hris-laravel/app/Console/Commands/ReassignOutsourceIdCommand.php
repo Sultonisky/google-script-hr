@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 /**
@@ -17,7 +18,7 @@ use Illuminate\Support\Str;
  */
 class ReassignOutsourceIdCommand extends Command
 {
-    /** Table => column holding the Outsource ID. */
+    /** Table => column holding the Outsource ID; tables not yet migrated are skipped. */
     private const REFERENCES = [
         'outsource_employees' => 'outsource_id',
         'outsource_payslips' => 'outsource_id',
@@ -66,7 +67,9 @@ class ReassignOutsourceIdCommand extends Command
             return self::FAILURE;
         }
 
-        foreach (self::REFERENCES as $table => $column) {
+        $references = $this->references();
+
+        foreach ($references as $table => $column) {
             if (DB::table($table)->where($column, $to)->exists()) {
                 $this->error("ID {$to} sudah dipakai di tabel {$table}.");
 
@@ -75,7 +78,7 @@ class ReassignOutsourceIdCommand extends Command
         }
 
         $this->line("{$from} ({$person->full_name}) -> {$to}");
-        $this->table(['Tabel', 'Baris'], $this->countRows($from));
+        $this->table(['Tabel', 'Baris'], $this->countRows($references, $from));
 
         if (! $execute) {
             $this->comment('Preview saja; tidak ada data ditulis. Tambahkan --execute untuk menjalankan.');
@@ -85,10 +88,10 @@ class ReassignOutsourceIdCommand extends Command
 
         $reason = trim((string) $this->option('reason'));
 
-        DB::transaction(function () use ($from, $to, $reason, $auditRepo): void {
+        DB::transaction(function () use ($references, $from, $to, $reason, $auditRepo): void {
             DB::table('outsource_employees')->where('outsource_id', $from)->lockForUpdate()->first();
 
-            foreach (self::REFERENCES as $table => $column) {
+            foreach ($references as $table => $column) {
                 DB::table($table)->where($column, $from)->update([$column => $to]);
             }
 
@@ -110,12 +113,25 @@ class ReassignOutsourceIdCommand extends Command
     }
 
     /**
+     * @return array<string, string>
+     */
+    private function references(): array
+    {
+        return array_filter(
+            self::REFERENCES,
+            static fn (string $table): bool => Schema::hasTable($table),
+            ARRAY_FILTER_USE_KEY,
+        );
+    }
+
+    /**
+     * @param  array<string, string>  $references
      * @return list<array{0: string, 1: int}>
      */
-    private function countRows(string $id): array
+    private function countRows(array $references, string $id): array
     {
         $rows = [];
-        foreach (self::REFERENCES as $table => $column) {
+        foreach ($references as $table => $column) {
             $rows[] = [$table, DB::table($table)->where($column, $id)->count()];
         }
 
