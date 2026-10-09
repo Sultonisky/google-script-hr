@@ -112,6 +112,112 @@ class AttendanceOutsourcePushTest extends TestCase
         $this->artisan('mito:outsource-push-attendance', ['--execute' => true])->assertFailed();
     }
 
+    public function test_hr_can_sync_all_outsource_ids_to_attendance_from_dashboard(): void
+    {
+        Http::fake([self::URL => fn (Request $request) => Http::response([
+            'success' => true,
+            'data' => [
+                [
+                    'outsource_id' => 'DM20260134',
+                    'status' => $request['dry_run'] ? 'would_create' : 'created',
+                ],
+            ],
+            'meta' => [],
+        ])]);
+        $this->actingAsOutsourceManager();
+
+        $this->get('/hr/outsource')
+            ->assertOk()
+            ->assertSee('id="btnSyncOutsourceAttendance"', false)
+            ->assertSee('Status konflik bukan berarti data terhapus')
+            ->assertSee('Jika hanya typo, minta admin Attendance membetulkan nama agar sesuai HRIS')
+            ->assertSee('ID ini masih tercatat pada person yang sudah dihapus di Attendance');
+
+        $this->postJson('/hr/outsource/push-attendance', ['dry_run' => true])
+            ->assertOk()
+            ->assertJsonPath('meta.processed', 1)
+            ->assertJsonPath('meta.would_create', 1)
+            ->assertJsonPath('data.0.full_name', 'Muhammad Rosidin')
+            ->assertJsonPath('data.0.status', 'would_create');
+
+        $this->postJson('/hr/outsource/push-attendance', ['dry_run' => false])
+            ->assertOk()
+            ->assertJsonPath('meta.created', 1)
+            ->assertJsonPath('data.0.status', 'created')
+            ->assertJsonPath('conflicts', []);
+
+        Http::assertSent(fn (Request $request): bool => $request->url() === self::URL
+            && $request['people'] === [['outsource_id' => 'DM20260134', 'full_name' => 'Muhammad Rosidin']]
+            && $request['dry_run'] === false);
+        Http::assertSent(fn (Request $request): bool => $request['dry_run'] === true);
+    }
+
+    public function test_dashboard_sync_explains_name_and_deleted_record_conflicts(): void
+    {
+        OutsourceEmployee::query()->create([
+            'outsource_id' => 'DM20260135',
+            'full_name' => 'Worker With Name Conflict',
+            'vendor' => 'Damarindo',
+        ]);
+        OutsourceEmployee::query()->create([
+            'outsource_id' => 'DM20260136',
+            'full_name' => 'Worker With Deleted Record',
+            'vendor' => 'Damarindo',
+        ]);
+        Http::fake([self::URL => function (Request $request) {
+            return Http::response([
+                'success' => true,
+                'data' => array_map(fn (array $person): array => [
+                    'outsource_id' => $person['outsource_id'],
+                    'status' => 'conflict',
+                    'conflict_reason' => $person['outsource_id'] === 'DM20260136'
+                        ? 'deleted_record'
+                        : 'name_mismatch',
+                ], $request['people']),
+            ]);
+        }]);
+        $this->actingAsOutsourceManager();
+
+        $response = $this->postJson('/hr/outsource/push-attendance', ['dry_run' => true])
+            ->assertOk()
+            ->assertJsonPath('meta.conflict', 3);
+
+        $response->assertJsonFragment([
+            'outsource_id' => 'DM20260135',
+            'conflict_reason' => 'name_mismatch',
+            'full_name' => 'Worker With Name Conflict',
+        ]);
+        $response->assertJsonFragment([
+            'outsource_id' => 'DM20260136',
+            'conflict_reason' => 'deleted_record',
+            'full_name' => 'Worker With Deleted Record',
+        ]);
+    }
+
+    public function test_outsource_viewer_cannot_trigger_attendance_sync(): void
+    {
+        Http::fake();
+        $this->actingAsOutsourceViewer();
+
+        $this->get('/hr/outsource')
+            ->assertOk()
+            ->assertDontSee('id="btnSyncOutsourceAttendance"', false);
+        $this->postJson('/hr/outsource/push-attendance')->assertForbidden();
+
+        Http::assertNothingSent();
+    }
+
+    public function test_dashboard_sync_reports_attendance_failures(): void
+    {
+        Http::fake([self::URL => Http::response(['message' => 'down'], 503)]);
+        $this->actingAsOutsourceManager();
+
+        $this->postJson('/hr/outsource/push-attendance')
+            ->assertStatus(502)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', 'Attendance returned HTTP 503.');
+    }
+
     private function actingAsOutsourceManager(): void
     {
         $email = 'hr.outsource@mito.id';
@@ -125,6 +231,27 @@ class AttendanceOutsourcePushTest extends TestCase
         Session::put('hr_user', [
             'email' => $email,
             'fullName' => 'HR Outsource',
+            'role' => 'User',
+            'permissions' => $permissions,
+            'auth_domain' => 'users',
+            'entities' => [],
+            'branch' => '',
+        ]);
+    }
+
+    private function actingAsOutsourceViewer(): void
+    {
+        $email = 'hr.outsource.viewer@mito.id';
+        $permissions = ['view_outsource'];
+        $repository = app(UserPermissionRepositoryInterface::class);
+        foreach ($permissions as $permission) {
+            $repository->upsert($email, $permission, true, 'test');
+        }
+        app(PermissionResolver::class)->forget($email);
+
+        Session::put('hr_user', [
+            'email' => $email,
+            'fullName' => 'HR Outsource Viewer',
             'role' => 'User',
             'permissions' => $permissions,
             'auth_domain' => 'users',
