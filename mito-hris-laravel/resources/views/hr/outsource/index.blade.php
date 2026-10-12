@@ -35,13 +35,7 @@
                 {{-- Export XLSX — server-side dilindungi can:view_outsource di route --}}
                 @can('view_outsource')
                     <div class="export-btns d-flex flex-wrap gap-2">
-                        @can('manage_outsource')
-                            <button class="btn btn-sm fw-semibold text-white"
-                                style="background:#005BAC;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
-                                type="button"
-                                id="btnAddOutsource">
-                                <i class="bi bi-person-plus-fill me-1"></i>Tambah Outsource
-                            </button>
+                        @can('sync_outsource_attendance')
                             <button class="btn btn-sm fw-semibold text-white"
                                 style="background:#6f42c1;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
                                 type="button"
@@ -49,6 +43,14 @@
                                 data-url="{{ route('hr.outsource.push-attendance') }}"
                                 data-count="{{ $stats['total'] ?? 0 }}">
                                 <i class="bi bi-arrow-repeat me-1"></i>Sync ke Attendance
+                            </button>
+                        @endcan
+                        @can('manage_outsource')
+                            <button class="btn btn-sm fw-semibold text-white"
+                                style="background:#005BAC;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
+                                type="button"
+                                id="btnAddOutsource">
+                                <i class="bi bi-person-plus-fill me-1"></i>Tambah Outsource
                             </button>
                             <button class="btn btn-sm fw-semibold text-white"
                                 style="background:#0d6efd;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
