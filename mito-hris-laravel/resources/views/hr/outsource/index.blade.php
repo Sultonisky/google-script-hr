@@ -37,17 +37,17 @@
                     <div class="export-btns d-flex flex-wrap gap-2">
                         @can('sync_outsource_attendance')
                             <button class="btn btn-sm fw-semibold text-white"
-                                style="background:#6f42c1;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
+                                style="background:#ce7b07;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
                                 type="button"
                                 id="btnSyncOutsourceAttendance"
                                 data-url="{{ route('hr.outsource.push-attendance') }}"
                                 data-count="{{ $stats['total'] ?? 0 }}">
-                                <i class="bi bi-arrow-repeat me-1"></i>Sync ke Attendance
+                                <i class="bi bi-arrow-repeat me-1"></i>Sync Attendance
                             </button>
                         @endcan
                         @can('manage_outsource')
                             <button class="btn btn-sm fw-semibold text-white"
-                                style="background:#005BAC;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
+                                style="background:#eb1c24;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
                                 type="button"
                                 id="btnAddOutsource">
                                 <i class="bi bi-person-plus-fill me-1"></i>Tambah Outsource
@@ -66,7 +66,7 @@
                                 data-bs-toggle="modal"
                                 data-bs-target="#outsourceImportModal"
                                 id="btnImportOutsource">
-                                <i class="bi bi-file-earmark-spreadsheet me-1"></i>Import Excel
+                                <i class="bi bi-file-earmark-spreadsheet me-1"></i>Import
                             </button>
                         @endcan
                         <a href="{{ route('hr.export.outsource-xlsx') }}"
