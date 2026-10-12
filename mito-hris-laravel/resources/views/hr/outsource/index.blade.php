@@ -90,21 +90,20 @@
                         <input type="text" name="search" id="osSearchInput"
                             placeholder="Cari nama, ID, jabatan, lokasi..." value="{{ $searchFilter ?? '' }}" />
                     </div>
-                    <select class="filter-select" name="vendor" id="osVendorSelect" data-auto-submit="true">
-                        <option value="">Semua Vendor</option>
-                        @foreach (config('hris.outsource.vendors', []) as $vendorName)
-                            <option value="{{ $vendorName }}" {{ ($vendorFilter ?? '') === $vendorName ? 'selected' : '' }}>
-                                {{ $vendorName }}</option>
-                        @endforeach
-                    </select>
                     <select class="filter-select" name="sort" id="osSortSelect" data-auto-submit="true">
+                        <option value="" {{ empty($sortFilter) ? 'selected' : '' }}>Urutan nama</option>
                         <option value="name_asc" {{ ($sortFilter ?? 'name_asc') === 'name_asc' ? 'selected' : '' }}>Nama A-Z
                         </option>
-                        <option value="name_desc" {{ ($sortFilter ?? 'name_asc') === 'name_desc' ? 'selected' : '' }}>Nama
-                            Z-A</option>
+                        <option value="name_desc" {{ ($sortFilter ?? '') === 'name_desc' ? 'selected' : '' }}>Nama Z-A
+                        </option>
+                    </select>
+                    <select class="filter-select" name="id_sort" id="osIdSortSelect" data-auto-submit="true">
+                        <option value="" {{ empty($idSortFilter) ? 'selected' : '' }}>Outsource ID</option>
+                        <option value="oldest" {{ ($idSortFilter ?? '') === 'oldest' ? 'selected' : '' }}>ID terlama</option>
+                        <option value="newest" {{ ($idSortFilter ?? '') === 'newest' ? 'selected' : '' }}>ID terbaru</option>
                     </select>
                     <select class="filter-select" name="order" id="osOrderSelect" data-auto-submit="true">
-                        <option value="" {{ empty($orderFilter) ? 'selected' : '' }}>Urutan</option>
+                        <option value="" {{ empty($orderFilter) ? 'selected' : '' }}>Tanggal join</option>
                         <option value="newest" {{ ($orderFilter ?? '') === 'newest' ? 'selected' : '' }}>Terbaru</option>
                         <option value="oldest" {{ ($orderFilter ?? '') === 'oldest' ? 'selected' : '' }}>Terlama</option>
                     </select>
@@ -174,7 +173,7 @@
                 </span>
                 @if ($total > $perPage)
                     <x-pagination :currentPage="$currentPage" :total="$total" :perPage="$perPage" :route="'hr.outsource.index'"
-                        :queryParams="['search' => $searchFilter, 'vendor' => $vendorFilter, 'sort' => $sortFilter, 'per_page' => $perPage]" />
+                        :queryParams="['search' => $searchFilter, 'sort' => $sortFilter, 'id_sort' => $idSortFilter, 'order' => $orderFilter, 'per_page' => $perPage]" />
                 @endif
             </div>
         </div>
@@ -266,6 +265,21 @@
                 }
             });
         }
+
+        [
+            ['osSortSelect', ['osIdSortSelect', 'osOrderSelect']],
+            ['osIdSortSelect', ['osSortSelect', 'osOrderSelect']],
+            ['osOrderSelect', ['osSortSelect', 'osIdSortSelect']]
+        ].forEach(function(config) {
+            var select = document.getElementById(config[0]);
+            if (!select) return;
+            select.addEventListener('change', function() {
+                config[1].forEach(function(id) {
+                    var otherSelect = document.getElementById(id);
+                    if (otherSelect) otherSelect.value = '';
+                });
+            });
+        });
 
         var syncAttendanceButton = document.getElementById('btnSyncOutsourceAttendance');
         if (syncAttendanceButton) {
