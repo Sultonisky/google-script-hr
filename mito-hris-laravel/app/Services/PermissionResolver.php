@@ -137,6 +137,7 @@ class PermissionResolver
             'certificates.generate_code' => ['certificates.access'],
 
             'manage_outsource' => ['view_outsource'],
+            'sync_outsource_attendance' => ['view_outsource'],
             'view_outsource_compensation' => ['view_outsource'],
             'manage_outsource_compensation' => ['view_outsource', 'manage_outsource', 'view_outsource_compensation'],
             'manage_outsource_payslip' => ['view_outsource_payslip'],
@@ -235,6 +236,7 @@ class PermissionResolver
             'view_contracts',
             'view_outsource',
             'manage_outsource',
+            'sync_outsource_attendance',
             'view_outsource_payslip',
             'manage_outsource_payslip',
             'view_outsource_incentive',

@@ -36,6 +36,7 @@ final class PermissionCatalog
             ['key' => 'view_contracts', 'name' => 'View contracts', 'description' => 'View contract tracking and upcoming contract end dates.', 'group' => 'Contracts'],
             ['key' => 'view_outsource', 'name' => 'View outsource', 'description' => 'View outsource employees in the Outsource menu.', 'group' => 'Outsource'],
             ['key' => 'manage_outsource', 'name' => 'Manage outsource', 'description' => 'Add and edit outsource employees and process PKWT TAD contracts.', 'group' => 'Outsource'],
+            ['key' => 'sync_outsource_attendance', 'name' => 'Sync outsource to Attendance', 'description' => 'Sync outsource IDs and names from HRIS to Attendance.', 'group' => 'Outsource'],
             ['key' => 'view_outsource_compensation', 'name' => 'View outsource salary', 'description' => 'View Basic Salary and Incentive of outsource employees.', 'group' => 'Outsource'],
             ['key' => 'manage_outsource_compensation', 'name' => 'Manage outsource salary', 'description' => 'Edit Basic Salary and Incentive of outsource employees, including via Excel import.', 'group' => 'Outsource'],
             ['key' => 'view_outsource_payslip', 'name' => 'View outsource payslips', 'description' => 'View imported outsource payslips (HKE, salary, deductions, THP).', 'group' => 'Outsource'],
