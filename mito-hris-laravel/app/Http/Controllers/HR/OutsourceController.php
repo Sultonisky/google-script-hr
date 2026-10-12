@@ -48,21 +48,41 @@ class OutsourceController extends Controller
         $stats = ['total' => $allOutsources->count()];
 
         $searchFilter = $request->query('search');
-        $vendorFilter = (string) $request->query('vendor', '');
-        $vendorFilter = in_array($vendorFilter, config('hris.outsource.vendors', []), true) ? $vendorFilter : '';
-        $filtered = $this->outsourceRepo->getAll(['search' => $searchFilter, 'vendor' => $vendorFilter]);
+        $filtered = $this->outsourceRepo->getAll(['search' => $searchFilter]);
 
-        $sortFilter = $request->query('sort', 'name_asc');
-        $sortFilter = in_array($sortFilter, ['name_asc', 'name_desc'], true) ? $sortFilter : 'name_asc';
+        $requestedSort = $request->query('sort', 'name_asc');
+        $sortFilter = in_array($requestedSort, ['name_asc', 'name_desc'], true) ? $requestedSort : '';
+
+        $idSortFilter = $request->query('id_sort');
+        if ($idSortFilter === null && $requestedSort === 'id_asc') {
+            $idSortFilter = 'oldest';
+        }
+        if ($idSortFilter === 'id_asc') {
+            $idSortFilter = 'oldest';
+        }
+        $idSortFilter = in_array($idSortFilter, ['oldest', 'newest'], true) ? $idSortFilter : '';
 
         $orderFilter = $request->query('order');
         $orderFilter = in_array($orderFilter, ['newest', 'oldest'], true) ? $orderFilter : '';
+
+        if ($orderFilter !== '') {
+            $sortFilter = '';
+            $idSortFilter = '';
+        } elseif ($idSortFilter !== '') {
+            $sortFilter = '';
+        } elseif ($sortFilter === '') {
+            $sortFilter = 'name_asc';
+        }
 
         $joinTimestamp = fn (OutsourceEmployeeData $e) => strtotime((string) ($e->mitoJoinDate ?? $e->contractStartDate ?? $e->createdAt ?? '1970-01-01')) ?: 0;
         if ($orderFilter === 'newest') {
             $filtered = $filtered->sortByDesc($joinTimestamp);
         } elseif ($orderFilter === 'oldest') {
             $filtered = $filtered->sortBy($joinTimestamp);
+        } elseif ($idSortFilter === 'oldest') {
+            $filtered = $filtered->sortBy(fn (OutsourceEmployeeData $e) => strtoupper(trim((string) $e->outsourceId)), SORT_NATURAL | SORT_FLAG_CASE);
+        } elseif ($idSortFilter === 'newest') {
+            $filtered = $filtered->sortByDesc(fn (OutsourceEmployeeData $e) => strtoupper(trim((string) $e->outsourceId)), SORT_NATURAL | SORT_FLAG_CASE);
         } elseif ($sortFilter === 'name_desc') {
             $filtered = $filtered->sortByDesc(fn (OutsourceEmployeeData $e) => strtolower(trim($e->fullName ?? '')));
         } else {
@@ -87,8 +107,8 @@ class OutsourceController extends Controller
             'currentPage',
             'perPage',
             'searchFilter',
-            'vendorFilter',
             'sortFilter',
+            'idSortFilter',
             'orderFilter'
         ));
     }
