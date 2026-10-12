@@ -536,7 +536,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 <span class="fw-semibold d-block">${label}</span>
                                 ${hasUnmet ? `<div class="permission-dependency-warning mt-1"><i class="bi bi-exclamation-triangle me-1"></i>Missing: ${unmet.map(u => escapeHtml(u)).join(', ')}</div>` : ''}
                             </label>
-                            <button type="button" class="btn btn-sm btn-link text-secondary p-0 align-self-start permission-detail" data-key="${key}" data-group="${escapeHtml(group)}" aria-label="Show details for ${label}" title="Show permission details"><i class="bi bi-info-circle" aria-hidden="true"></i></button>
+                            <button type="button" class="btn btn-sm btn-link text-info p-0 align-self-start permission-detail" data-key="${key}" data-group="${escapeHtml(group)}" aria-label="Show details for ${label}" title="Show permission details"><i class="bi bi-info-circle" aria-hidden="true"></i></button>
                         </div>`;
                     }).join('')}
                     </div>
