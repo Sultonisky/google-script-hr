@@ -1,4 +1,4 @@
-<!-- SURAT PERINGATAN MODAL — search karyawan Contract/PKWT & Permanent/PKWTT, lalu isi detail SP -->
+<!-- SURAT PERINGATAN MODAL — search karyawan Contract & Permanent, lalu isi detail SP -->
 <div class="modal fade" id="warningLetterModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content" style="border-radius:16px">
@@ -29,7 +29,7 @@
                         </div>
                         <div id="wlEmpDropdown" class="border rounded-3 mt-1 shadow-sm"
                             style="display:none;max-height:220px;overflow-y:auto;z-index:9999;position:relative"></div>
-                        <div class="form-text" style="font-size:11px">Hanya karyawan berstatus Contract/PKWT dan Permanent/PKWTT.</div>
+                        <div class="form-text" style="font-size:11px">Hanya karyawan berstatus Contract dan Permanent.</div>
                     </div>
 
                     <!-- STEP 2: Preview + form -->
