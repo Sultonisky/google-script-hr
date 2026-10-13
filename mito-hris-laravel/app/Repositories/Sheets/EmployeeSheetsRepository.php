@@ -3,6 +3,7 @@
 namespace App\Repositories\Sheets;
 
 use App\DTOs\EmployeeData;
+use App\Enums\EmployeeStatus;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Services\EmployeeIdGenerator;
 use App\Services\Google\GoogleSheetsService;
@@ -27,9 +28,9 @@ class EmployeeSheetsRepository implements EmployeeRepositoryInterface
         $collection = collect($rows)->map(fn($row) => EmployeeData::fromSheetRow($row));
 
         if (!empty($filters['status'])) {
-            $status = strtolower(trim($filters['status']));
-            $collection = $collection->filter(function(EmployeeData $e) use ($status) {
-                return strtolower(trim($e->statusEmployee ?? '')) === $status;
+            $status = (string) $filters['status'];
+            $collection = $collection->filter(function (EmployeeData $e) use ($status) {
+                return EmployeeStatus::matchesFilter($e->statusEmployee, $status);
             });
         }
 

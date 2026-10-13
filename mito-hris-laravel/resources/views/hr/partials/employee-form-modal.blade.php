@@ -212,11 +212,9 @@
                         <div class="col-md-4">
                             <label class="form-label fw-semibold" style="font-size:12.5px">Status Karyawan</label>
                             <select class="form-select form-select-sm" id="efStatusEmployee">
-                                <option value="Contract">Contract / PKWT</option>
-                                <option value="Probation">Probation</option>
-                                <option value="Permanent">Permanent / PKWTT</option>
+                                <option value="Contract">Contract</option>
+                                <option value="Permanent">Permanent</option>
                                 <option value="Outsource">Outsource</option>
-                                <option value="On Leave">On Leave</option>
                                 <option value="Resigned">Resigned</option>
                                 <option value="Terminated">Terminated</option>
                                 <option value="Retired">Retired</option>

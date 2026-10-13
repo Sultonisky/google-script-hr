@@ -3,15 +3,14 @@
 namespace App\Services;
 
 use App\DTOs\EmployeeData;
+use App\Enums\EmployeeStatus;
 use App\Enums\SkDocumentType;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Services\EmployeeIdGenerator;
 use App\Services\Google\GoogleDriveService;
 use App\Services\PdfGeneratorService;
-use App\Services\ProbationService;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
@@ -32,17 +31,6 @@ class EmployeeService
         $this->employeeRepo = $employeeRepo;
         $this->auditRepo    = $auditRepo;
         $this->idGenerator  = $idGenerator;
-    }
-
-    /**
-     * Resolve the canonical ProbationService from the container.
-     * Resolved lazily (not constructor-injected) to avoid a hard coupling
-     * and to preserve the EmployeeService constructor signature for
-     * existing callers / tests that instantiate it directly.
-     */
-    protected function probationService(): ProbationService
-    {
-        return App::make(ProbationService::class);
     }
 
     /**
@@ -105,7 +93,7 @@ class EmployeeService
             jobLevel: trim($data['jobLevel'] ?? ''),
             grade: trim($data['grade'] ?? ''),
             joinDate: $joinDate,
-            statusEmployee: trim($data['statusEmployee'] ?? 'Contract'),
+            statusEmployee: EmployeeStatus::canonical($data['statusEmployee'] ?? EmployeeStatus::CONTRACT->value),
             directSuperior: trim($data['directSuperior'] ?? ''),
             indirectSuperior: trim($data['indirectSuperior'] ?? ''),
             personalEmail: trim($data['personalEmail'] ?? ''),
@@ -272,14 +260,17 @@ class EmployeeService
                 }
             }
 
-            // --- Status Employee validation (1:1 GAS allowed statuses) ---
-            $allowedStatuses = ['Permanent', 'Contract', 'Probation', 'Outsource', 'PKWTT', 'PKWT'];
-            $empStatus = trim(
+            $empStatusRaw = trim(
                 $row['statusEmployee'] ?? $row['employmentStatus'] ?? $row['status'] ?? ''
             );
-            if ($empStatus !== '' && !in_array($empStatus, $allowedStatuses, true)) {
-                // Warn but don't hard-reject — GAS uses default 'Contract' for unknown status
-                $issues[] = "Status Employee '{$empStatus}' tidak dikenali (akan digunakan nilai default)";
+            $empStatus = $this->importStatus($empStatusRaw);
+            $canonicalEmpStatus = EmployeeStatus::canonical($empStatusRaw);
+            if (
+                $empStatusRaw !== ''
+                && ! EmployeeStatus::fromValue($canonicalEmpStatus)
+                && ! EmployeeStatus::isTerminal($canonicalEmpStatus)
+            ) {
+                $issues[] = "Status Employee '{$empStatusRaw}' tidak dikenali (akan dipertahankan apa adanya untuk diedit manual)";
             }
 
             // Tally
@@ -299,7 +290,7 @@ class EmployeeService
                 'fullName'     => $fullName ?: '-',
                 'department'   => trim($row['department'] ?? $row['dept'] ?? $row['departemen'] ?? ''),
                 'jobPosition'  => trim($row['positionCurrent'] ?? $row['jobPositionLocation'] ?? $row['positionNoLocCurrent'] ?? $row['jobPosition'] ?? $row['position'] ?? $row['jabatan'] ?? ''),
-                'statusEmployee' => $empStatus ?: 'Contract',
+                'statusEmployee' => $empStatus,
                 'joinDate'     => trim($row['joinDate'] ?? $row['tanggalMasuk'] ?? ''),
                 'status'       => $status,   // new | duplicate_existing | duplicate_internal | invalid
                 'issues'       => $issues,
@@ -404,7 +395,7 @@ class EmployeeService
                 jobLevel: trim($row['jobLevel'] ?? $row['level'] ?? ''),
                 grade: trim($row['grade'] ?? ''),
                 joinDate: trim($row['joinDate'] ?? $row['tanggalMasuk'] ?? ''),
-                statusEmployee: trim($row['statusEmployee'] ?? $row['employmentStatus'] ?? $row['status'] ?? 'PKWT'),
+                statusEmployee: $this->importStatus($row['statusEmployee'] ?? $row['employmentStatus'] ?? $row['status'] ?? ''),
                 directSuperior: trim($row['directSuperior'] ?? $row['atasanLangsung'] ?? ''),
                 indirectSuperior: trim($row['indirectSuperior'] ?? $row['atasanTidakLangsung'] ?? ''),
                 personalEmail: trim($row['personalEmail'] ?? $row['email'] ?? ''),
@@ -487,10 +478,6 @@ class EmployeeService
         if (!$employee) {
             throw new RuntimeException("Karyawan dengan ID {$employeeId} tidak ditemukan.");
         }
-
-        // STEP 16/17/22: active-probation employees are excluded from Rotation.
-        // Canonical active-probation determination — see ProbationService.
-        $this->throwIfOnProbation($employeeId, 'Rotasi/Mutasi');
 
         $user = $user ?: 'HR Administrator';
         $now = now()->timezone('Asia/Jakarta');
@@ -783,9 +770,9 @@ class EmployeeService
             throw new RuntimeException("Karyawan dengan ID {$employeeId} tidak ditemukan.");
         }
 
-        // STEP 16/18/22: active-probation employees are excluded from Off Contract.
-        // Canonical active-probation determination — see ProbationService.
-        $this->throwIfOnProbation($employeeId, 'Off Contract');
+        if (!EmployeeStatus::matches($employee->statusEmployee, EmployeeStatus::CONTRACT)) {
+            throw new RuntimeException('Off Contract hanya dapat diproses untuk karyawan berstatus Contract.');
+        }
 
         $user = $user ?: 'HR Administrator';
         $now = now()->timezone('Asia/Jakarta');
@@ -833,36 +820,15 @@ class EmployeeService
         ];
     }
 
-    // ==========================================================
-    // Probation status helpers + restrictions
-    //
-    // Canonical source of truth for "is this employee currently in an
-    // active probation process" lives in ProbationService::isActiveProbation().
-    // Employee.Status determines the current Contract population; the
-    // kandidat_probation sheet contributes evaluation history only.
-    // ==========================================================
-
     /**
-        * Server-side source of truth: whether the employee is in an ACTIVE
-        * probation process. Delegates to ProbationService so all callers share
-        * one canonical rule based on Employee.Status plus evaluation history.
+     * Import normalizes known employment aliases and preserves other values so
+     * HR can review and edit them manually.
      */
-    public function isOnProbation(string $employeeId): bool
+    private function importStatus(?string $raw): string
     {
-        return $this->probationService()->isActiveProbation($employeeId);
-    }
-
-    /**
-     * Reject with a RuntimeException when the employee is on active
-     * probation. Central helper used by processRotation / processOffContract.
-     */
-    private function throwIfOnProbation(string $employeeId, string $action): void
-    {
-        if ($this->probationService()->isActiveProbation($employeeId)) {
-            throw new \RuntimeException(
-                "Employee ini sedang dalam proses probation. Selesaikan evaluasi probation terlebih dahulu sebelum melakukan {$action}."
-            );
-        }
+        return $raw === null || trim($raw) === ''
+            ? EmployeeStatus::CONTRACT->value
+            : EmployeeStatus::canonical($raw);
     }
 
     // ── Contract-duration derivation (STEP 5 / STEP 13) ──────────────────

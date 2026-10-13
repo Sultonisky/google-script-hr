@@ -234,8 +234,8 @@
                         </label>
                         <select class="form-select form-select-sm" id="aeStatusEmployee" required>
                             <option value="">— Pilih —</option>
-                            <option value="Contract" selected>Contract / PKWT</option>
-                            <option value="Permanent">Permanent / PKWTT</option>
+                            <option value="Contract" selected>Contract</option>
+                            <option value="Permanent">Permanent</option>
                             <option value="Outsource">Outsource</option>
                         </select>
                     </div>
@@ -370,7 +370,7 @@
                                 Tanggal Akhir Kontrak <span class="text-danger">*</span>
                             </label>
                             <input type="date" class="form-control form-control-sm" id="aeEndDateContract" />
-                            <div class="form-text" style="font-size:11px">Wajib diisi untuk status Contract / PKWT</div>
+                            <div class="form-text" style="font-size:11px">Wajib diisi untuk status Contract</div>
                         </div>
                     </div>
                 </div>

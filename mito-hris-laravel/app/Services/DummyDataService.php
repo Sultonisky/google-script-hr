@@ -93,9 +93,9 @@ class DummyDataService
     private array $religions   = ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha'];
     private array $bloodTypes  = ['A', 'B', 'AB', 'O'];
     private array $superiors   = ['Budi Santoso', 'Siti Nurhaliza', 'Ahmad Wijaya', 'Dewi Lestari', 'Eko Prasetyo'];
-    private array $empTypes    = ['Project', 'PKWTT', 'PKWT', 'Outsource', 'Intern'];
+    private array $empTypes    = ['Project', 'Permanent', 'Contract', 'Outsource', 'Intern'];
     private array $contractDurs = ['3 Bulan', '6 Bulan', '1 Tahun', '2 Tahun'];
-    private array $empStatEmp  = ['Permanent', 'Permanent', 'Contract', 'Contract', 'Probation', 'Outsource'];
+    private array $empStatEmp  = ['Permanent', 'Permanent', 'Contract', 'Contract', 'Contract', 'Outsource'];
     private array $branches    = ['PT Mahakarya Sukses Indonesia', 'PT Stein Perkasa Internasional', 'PT Perkasa Injeksi Indonesia', 'PT Mitra Elektro Perkasa', 'PT Suka Dessert Indonesia'];
 
     // Used to avoid duplicates
@@ -591,7 +591,7 @@ class DummyDataService
             }
             $empId = $c['employeeId'];
             $empType  = $this->pick($this->empTypes);
-            $isContract = in_array($empType, ['PKWT', 'Outsource', 'Intern']);
+            $isContract = in_array($empType, ['Contract', 'Outsource', 'Intern']);
 
             $rows[] = $this->buildEmployeeRow($empId, $c, $joinDate, $empType, $isContract, $nowStr);
         }
@@ -606,7 +606,7 @@ class DummyDataService
             $dateKey  = str_replace('-', '', $joinDate);
             $seqByDate[$dateKey] = ($seqByDate[$dateKey] ?? 0) + 1;
             $empId    = $dateKey . str_pad((string)$seqByDate[$dateKey], 2, '0', STR_PAD_LEFT);
-            $empType  = $this->pick(['PKWTT', 'PKWT']);
+            $empType  = $this->pick(['Permanent', 'Contract']);
 
             $fakeCandidate = [
                 'fullName'       => $fullName,
@@ -623,7 +623,7 @@ class DummyDataService
                 'education'      => $this->pick($this->educations),
             ];
 
-            $rows[] = $this->buildEmployeeRow($empId, $fakeCandidate, $joinDate, $empType, $empType === 'PKWT', $nowStr);
+            $rows[] = $this->buildEmployeeRow($empId, $fakeCandidate, $joinDate, $empType, $empType === 'Contract', $nowStr);
         }
 
         $this->batchAppend('Employee', $rows);
@@ -644,7 +644,7 @@ class DummyDataService
         $outsourceVendor = strtolower($statusEmployee) === 'outsource' ? $this->pick($outsourceVendors) : '';
 
         // End date: applicable for Contract and Outsource
-        $isContractLike = in_array(strtolower($statusEmployee), ['contract', 'pkwt', 'outsource']);
+        $isContractLike = in_array($statusEmployee, ['Contract', 'Outsource'], true);
         $endDate = $isContractLike ? date('Y-m-d', strtotime('+1 year', strtotime($joinDate))) : '';
 
         return [

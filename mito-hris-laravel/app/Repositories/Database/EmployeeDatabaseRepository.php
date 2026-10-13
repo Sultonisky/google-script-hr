@@ -3,6 +3,7 @@
 namespace App\Repositories\Database;
 
 use App\DTOs\EmployeeData;
+use App\Enums\EmployeeStatus;
 use App\Models\Employee;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Services\EmployeeIdGenerator;
@@ -20,7 +21,10 @@ class EmployeeDatabaseRepository implements EmployeeRepositoryInterface
         $query = Employee::query();
 
         if (!empty($filters['status'])) {
-            $query->whereRaw('LOWER(TRIM(status_employee)) = ?', [strtolower(trim((string) $filters['status']))]);
+            $query->whereIn(
+                \Illuminate\Support\Facades\DB::raw('LOWER(TRIM(status_employee))'),
+                EmployeeStatus::equivalentValues((string) $filters['status'])
+            );
         }
 
         if (!empty($filters['department'])) {

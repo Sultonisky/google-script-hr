@@ -146,6 +146,12 @@ class PublicRecruitmentSubmissionFlowTest extends TestCase
         $outsource = $this->onDomain('outsource')->get(route('public.outsource.apply'));
         $outsource->assertOk();
 
+        if (app(\Illuminate\Foundation\Vite::class)->isRunningHot()) {
+            $landing->assertSee('/@vite/client', false);
+            $outsource->assertSee('/@vite/client', false);
+            return;
+        }
+
         if (\App\Support\FrontendAssets::ready($entries)) {
             $landing->assertSee('/build/assets/', false);
             $outsource->assertSee('/build/assets/', false);

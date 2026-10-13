@@ -10,7 +10,7 @@
 
         <!-- Stat Cards -->
         <div class="row g-3 mb-4" id="employeeStatsPanel">
-            <div class="col-6 col-md-2">
+            <div class="col-6 col-lg">
                 <div class="stat-card">
                     <div class="stat-icon bg-blue"><i class="bi bi-people-fill"></i></div>
                     <div>
@@ -19,7 +19,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-6 col-md-2">
+            <div class="col-6 col-lg">
                 <div class="stat-card">
                     <div class="stat-icon bg-green"><i class="bi bi-person-check-fill"></i></div>
                     <div>
@@ -28,7 +28,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-6 col-md-2">
+            <div class="col-6 col-lg">
                 <div class="stat-card">
                     <div class="stat-icon bg-blue"><i class="bi bi-file-earmark-person-fill"></i></div>
                     <div>
@@ -37,21 +37,24 @@
                     </div>
                 </div>
             </div>
-            <div class="col-6 col-md-2">
-                <div class="stat-card">
-                    <div class="stat-icon bg-gold"><i class="bi bi-hourglass-split"></i></div>
-                    <div>
-                        <div class="stat-label">Probation</div>
-                        <div class="stat-value text-navy" id="empStatProbation">{{ $stats['probation'] ?? 0 }}</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-6 col-md-2">
+            <div class="col-6 col-lg">
                 <div class="stat-card">
                     <div class="stat-icon bg-cyan"><i class="bi bi-building-fill"></i></div>
                     <div>
                         <div class="stat-label">Outsource</div>
                         <div class="stat-value text-navy" id="empStatOutsource">{{ $stats['outsource'] ?? 0 }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-lg">
+                <div class="stat-card">
+                    <div class="stat-icon bg-gold"><i class="bi bi-question-circle-fill"></i></div>
+                    <div>
+                        <div class="stat-label">Status Lainnya</div>
+                        <div class="stat-value text-navy" id="empStatOtherActive">{{ $stats['other_active'] ?? 0 }}</div>
+                        <div class="small text-muted">
+                            Contoh: {{ ($otherActiveExamples ?? collect())->isNotEmpty() ? $otherActiveExamples->implode(', ') : '—' }}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -138,10 +141,8 @@
                         @endforeach
                     </select>
                     {{--
-                        Status filter values MUST match actual values stored in Employee Sheet.
-                        GAS generates: Permanent, Contract, Probation, Outsource (via empStatEmp array).
-                        Legacy sheet data may use PKWTT/PKWT — both are included for coverage.
-                        Controller does strtolower(trim()) comparison so all values are matched case-insensitively.
+                        Employment types: Permanent, Contract, Outsource (App\Enums\EmployeeStatus).
+                        The controller also matches legacy PKWTT/PKWT values via EmployeeStatus::fromValue().
                     --}}
                     <select class="filter-select" name="status" id="empStatusFilter" data-auto-submit="true">
                         <option value="">
@@ -153,18 +154,11 @@
                         <option value="Contract" {{ ($statusFilter ?? '') === 'Contract' ? 'selected' : '' }}>
                             Contract ({{ $stats['contract'] ?? 0 }})
                         </option>
-                        <option value="Probation" {{ ($statusFilter ?? '') === 'Probation' ? 'selected' : '' }}>
-                            Probation ({{ $stats['probation'] ?? 0 }})
-                        </option>
-                        {{-- The 'Probation' option above is intentionally retained:
-                             Employee.Status no longer carries a 'Probation'
-                             value, but the dropdown label is kept as a UX cue.
-                             The count shown is the canonical active-probation
-                             count (see EmployeeController::index stats).
-                             Selecting 'Probation' here filters by
-                             active-probation state via the index filter. --}}
                         <option value="Outsource" {{ ($statusFilter ?? '') === 'Outsource' ? 'selected' : '' }}>
                             Outsource ({{ $stats['outsource'] ?? 0 }})
+                        </option>
+                        <option value="other_active" {{ ($statusFilter ?? '') === 'other_active' ? 'selected' : '' }}>
+                            Status Lainnya ({{ $stats['other_active'] ?? 0 }})
                         </option>
                         <option value="Resigned" {{ ($statusFilter ?? '') === 'Resigned' ? 'selected' : '' }}>Resigned
                         </option>
@@ -293,10 +287,9 @@
                                 <td class="fw-semibold text-navy">{{ $emp->jobPosition ?? '-' }}</td>
                                 <td>
                                     @php
-                                        $employeeStatus = strtolower(trim((string) ($emp->statusEmployee ?? '')));
-                                        $employeeBadgeClass = match (true) {
-                                            in_array($employeeStatus, ['permanent', 'pkwtt', 'active', 'aktif'], true) => 'accepted',
-                                            in_array($employeeStatus, ['contract', 'pkwt', 'probation'], true) => 'hold',
+                                        $employeeBadgeClass = match (\App\Enums\EmployeeStatus::fromValue($emp->statusEmployee)) {
+                                            \App\Enums\EmployeeStatus::PERMANENT => 'accepted',
+                                            \App\Enums\EmployeeStatus::CONTRACT => 'hold',
                                             default => null,
                                         };
                                     @endphp

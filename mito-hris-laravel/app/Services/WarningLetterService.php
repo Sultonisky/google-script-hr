@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\DTOs\EmployeeData;
+use App\Enums\EmployeeStatus;
 use App\Enums\SkDocumentType;
 use App\Enums\WarningLetterLevel;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
@@ -13,7 +14,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
- * Penerbitan Surat Peringatan (SP-1/2/3) untuk karyawan Contract/PKWT dan Permanent/PKWTT.
+ * Penerbitan Surat Peringatan (SP-1/2/3) untuk karyawan Contract dan Permanent.
  * Isi surat hanya berasal dari form, sehingga PDF wajib diarsipkan saat terbit.
  */
 class WarningLetterService
@@ -27,8 +28,6 @@ class WarningLetterService
         'Kerahasiaan & Aset Perusahaan',
         'Lainnya',
     ];
-
-    public const ELIGIBLE_STATUSES = ['contract', 'pkwt', 'permanent', 'pkwtt'];
 
     public const MAX_VALIDITY_MONTHS = 6;
 
@@ -44,7 +43,7 @@ class WarningLetterService
     public static function isEligible(?EmployeeData $employee): bool
     {
         return $employee !== null
-            && in_array(strtolower(trim((string) ($employee->statusEmployee ?? ''))), self::ELIGIBLE_STATUSES, true);
+            && EmployeeStatus::matches($employee->statusEmployee, [EmployeeStatus::CONTRACT, EmployeeStatus::PERMANENT]);
     }
 
     /**
@@ -82,7 +81,7 @@ class WarningLetterService
         if (!self::isEligible($employee)) {
             return [
                 'success' => false,
-                'message' => 'Surat Peringatan hanya dapat diterbitkan untuk karyawan berstatus Contract/PKWT atau Permanent/PKWTT.',
+                'message' => 'Surat Peringatan hanya dapat diterbitkan untuk karyawan berstatus Contract atau Permanent.',
                 'status' => 422,
             ];
         }

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\DTOs\EmployeeData;
+use App\Enums\EmployeeStatus;
 use App\Enums\ProbationDecisionType;
 use App\Enums\SkDocumentType;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
@@ -149,10 +150,6 @@ class ProbationService
         // Normalize Employee ID — strip leading apostrophe that GAS sometimes prepends
         $employeeId = ltrim(trim($employeeId), "'");
 
-        if (!$this->isActiveProbation($employeeId)) {
-            throw new RuntimeException('Hanya karyawan dengan probation aktif yang dapat dievaluasi.');
-        }
-
         // Re-read the latest evaluation from the source of truth before any mutation.
         // PASS/FAIL are terminal; after EXTEND only PASS/FAIL are valid next decisions.
         $history = $this->getEvalHistory($employeeId);
@@ -261,7 +258,7 @@ class ProbationService
             );
             $skNumber = $issued['nomor'];
             $this->employeeRepo->update($employeeId, [
-                'Status Employee' => 'PKWTT',
+                'Status Employee' => EmployeeStatus::PERMANENT->value,
                 'Updated At'      => $nowStr,
             ]);
             // Status remains the probation process label; Decision stores the outcome.
@@ -603,106 +600,9 @@ class ProbationService
         return true;
     }
 
-    /**
-     * Canonical active-probation determination (single source of truth).
-     *
-     * Employee.Status determines the current candidate population. The latest
-     * kandidat_probation row only contributes the terminal evaluation state.
-     *
-     * Semantics:
-     *   - Contract with no row                    → ACTIVE
-     *   - Non-Contract, regardless of history    → INACTIVE
-     *   - Contract + terminal decision           → INACTIVE
-     *   - Contract + empty/extend decision       → ACTIVE
-     *
-     * kandidat_probation is evaluation history only.
-     */
-    public function isActiveProbation(string $employeeId): bool
-    {
-        $employee = $this->employeeRepo->findById($employeeId);
-        if (!$employee || !$this->isContractEmployee($employee->statusEmployee ?? null)) {
-            return false;
-        }
-
-        $latest = $this->latestProbationRow($employeeId);
-        if ($latest === null) {
-            return true;
-        }
-
-        $decision = (string) ($latest['Decision'] ?? '');
-        $type = ProbationDecisionType::fromDecisionString($decision);
-        if ($type === null) {
-            // Empty / unrecognized decision on the latest Probation row.
-            // Treat as ACTIVE — process has been started but no terminal
-            // outcome yet (same semantic as canEvaluate's empty-decision
-            // branch).
-            return true;
-        }
-        if ($type->isPass() || $type->isFail()) {
-            return false;
-        }
-        // Extend / Perpanjang → ACTIVE (continuation).
-        return true;
-    }
-
     private function isContractEmployee(?string $status): bool
     {
-        // Accept 'contract', 'pkwt', and legacy 'probation' status values —
-        // all three indicate an employee in an active PKWT/probation engagement.
-        return in_array(strtolower(trim((string) $status)), ['contract', 'pkwt', 'probation'], true);
-    }
-
-    /**
-     * Return the canonical active-probation decision string of the latest
-     * row for diagnostics ("empty", "Lulus", "Tidak Lulus", "Extend",
-     * etc.) — empty string when no active process exists.
-     */
-    public function activeProbationDecision(string $employeeId): string
-    {
-        $latest = $this->latestProbationRow($employeeId);
-        return $latest === null ? '' : (string) ($latest['Decision'] ?? '');
-    }
-
-    /**
-     * Find the latest kandidat_probation row for a given employee whose
-     * Status = 'Probation' (process label), ordered by Updated At desc.
-     *
-     * Matching: exact Employee-ID string match; numeric-only comparison is
-     * only used when both IDs contain digits (prevents false matches like
-     * 'EMP-C' ↔ 'EMP-P' where both have no digits).
-     */
-    private function latestProbationRow(string $employeeId): ?array
-    {
-        if (!$employeeId) {
-            return null;
-        }
-        $normalizedId        = ltrim(trim($employeeId), "'");
-        $normalizedNumeric   = preg_replace('/[^0-9]/', '', $normalizedId);
-        $numericMatchAllowed = $normalizedNumeric !== '';
-
-        $rows = $this->getProbationRows();
-
-        $latest = null;
-        $latestDate = '';
-        foreach ($rows as $row) {
-            $rowId = ltrim(trim((string) ($row['Employee ID'] ?? '')), "'");
-            $rowNum = preg_replace('/[^0-9]/', '', $rowId);
-
-            $idMatch  = ($rowId === $normalizedId);
-            $numMatch = $numericMatchAllowed
-                && $rowNum !== ''
-                && $rowNum === $normalizedNumeric;
-            if (!$idMatch && !$numMatch) {
-                continue;
-            }
-
-            $dateKey = (string) ($row['Updated At'] ?? '');
-            if ($latest === null || strcmp($dateKey, $latestDate) > 0) {
-                $latest = $row;
-                $latestDate = $dateKey;
-            }
-        }
-        return $latest;
+        return EmployeeStatus::matches($status, EmployeeStatus::CONTRACT);
     }
 
     public function latestEvalByEmployee(): Collection

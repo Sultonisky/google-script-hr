@@ -383,7 +383,7 @@
                                             LULUS - Diangkat sebagai Karyawan Tetap
                                         </div>
                                         <div class="text-muted mt-1" style="font-size:12px">
-                                            Employee diproses menjadi karyawan tetap (PKWTT).
+                                            Employee diproses menjadi karyawan tetap (Permanent).
                                             <strong class="text-success">SK Pengangkatan Tetap</strong> akan
                                             diterbitkan.
                                         </div>

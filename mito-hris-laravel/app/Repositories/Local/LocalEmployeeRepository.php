@@ -3,6 +3,7 @@
 namespace App\Repositories\Local;
 
 use App\DTOs\EmployeeData;
+use App\Enums\EmployeeStatus;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use Illuminate\Support\Collection;
 use RuntimeException;
@@ -35,9 +36,9 @@ class LocalEmployeeRepository implements EmployeeRepositoryInterface
         $collection = collect(self::ROWS)->map(fn (array $row) => $this->toEmployee($row));
 
         if (!empty($filters['status'])) {
-            $status = strtolower(trim($filters['status']));
+            $status = (string) $filters['status'];
             $collection = $collection->filter(function (EmployeeData $e) use ($status) {
-                return strtolower(trim($e->statusEmployee ?? '')) === $status;
+                return EmployeeStatus::matchesFilter($e->statusEmployee, $status);
             });
         }
 
@@ -101,7 +102,7 @@ class LocalEmployeeRepository implements EmployeeRepositoryInterface
             division: $row['division'],
             department: $row['department'],
             jobPosition: $row['job_position'] ?? null,
-            statusEmployee: 'Permanent (PKWTT)',
+            statusEmployee: 'Permanent',
             branchName: 'PT Mahakarya Sukses Indonesia (MSI)',
         );
     }

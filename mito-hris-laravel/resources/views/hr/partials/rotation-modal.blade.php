@@ -141,23 +141,8 @@
 
 <script>
     @php
-        $__probationSvc = app(\App\Services\ProbationService::class);
         $allEmpForRotation = collect($all ?? ($employees ?? []))
-            ->filter(function ($e) use ($__probationSvc) {
-                // STEP 16/17/22: exclude employees currently on active
-                // probation from rotation search. Active probation is
-                // determined canonically via ProbationService (NOT via
-                // Employee.Status, which is no longer 'probation').
-                $status = strtolower(trim($e->statusEmployee ?? ''));
-                if (!in_array($status, ['permanent', 'pkwtt'], true)) {
-                    return false;
-                }
-                try {
-                    return !$__probationSvc->isActiveProbation((string) ($e->employeeId ?? ''));
-                } catch (\Throwable) {
-                    return true;
-                }
-            })
+            ->filter(fn ($e) => \App\Enums\EmployeeStatus::matches($e->statusEmployee ?? null, \App\Enums\EmployeeStatus::PERMANENT))
             ->map(function ($e) {
                 if (!is_object($e)) {
                     return $e;
@@ -219,12 +204,10 @@
         }
 
         const matched = (window.__allEmployeesForRotation || []).filter(e => {
-            const status = (e.statusEmployee || '').toLowerCase().trim();
             const name = (e.fullName || '').toLowerCase();
             const id = (e.employeeId || '').toLowerCase();
             const pos = (e.jobPosition || '').toLowerCase();
-            return ['permanent', 'pkwtt'].includes(status) &&
-                (name.includes(q) || id.includes(q) || pos.includes(q));
+            return name.includes(q) || id.includes(q) || pos.includes(q);
         }).slice(0, 8);
 
         if (matched.length === 0) {

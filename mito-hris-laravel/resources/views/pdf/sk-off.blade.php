@@ -116,7 +116,7 @@
         $todayFmt = date('d F Y', strtotime((string) ($extraData['doc_date'] ?? '')) ?: time());
 
         // Deteksi apakah status Permanent untuk kalimat "Karyawan Tetap"
-        $statusLabel = in_array(strtoupper($statusEmp), ['PKWTT', 'PERMANENT']) ? 'Karyawan Tetap' : 'Karyawan';
+        $statusLabel = \App\Enums\EmployeeStatus::matches($statusEmp, \App\Enums\EmployeeStatus::PERMANENT) ? 'Karyawan Tetap' : 'Karyawan';
     @endphp
 
     <div class="doc-title">SURAT KEPUTUSAN</div>

@@ -985,6 +985,7 @@ class RbacTest extends TestCase
         if ($response->getStatusCode() !== 200) {
             $this->markTestSkipped('Google Sheets unavailable — skipping identifier type test');
         }
+        $this->assertSame(200, $response->getStatusCode());
 
         $content = $response->streamedContent();
 
@@ -1013,6 +1014,7 @@ class RbacTest extends TestCase
                 'AD' => 'BPJS Kesehatan',
                 'AE' => 'Mobile Phone',
             ];
+            $checkedIdentifiers = 0;
 
             foreach ($identifierCols as $col => $label) {
                 $cell     = $sheet->getCell($col . '2');
@@ -1020,6 +1022,7 @@ class RbacTest extends TestCase
 
                 // Jika ada value, pastikan tidak dalam format scientific notation
                 if ($rawValue !== null && $rawValue !== '') {
+                    $checkedIdentifiers++;
                     $this->assertDoesNotMatchRegularExpression(
                         '/^\d+\.?\d*[eE][+\-]\d+$/',
                         (string) $rawValue,
@@ -1032,6 +1035,10 @@ class RbacTest extends TestCase
                         "{$label} (kolom {$col}) harus bertipe string di XLSX"
                     );
                 }
+            }
+
+            if ($checkedIdentifiers === 0) {
+                $this->markTestSkipped('No identifier values in the first employee row to verify');
             }
 
             $spreadsheet->disconnectWorksheets();
