@@ -237,7 +237,7 @@ class WarningLetterTest extends TestCase
                 ->assertStatus(422)
                 ->assertJson([
                     'success' => false,
-                    'message' => 'Surat Peringatan hanya dapat diterbitkan untuk karyawan berstatus Contract/PKWT atau Permanent/PKWTT.',
+                    'message' => 'Surat Peringatan hanya dapat diterbitkan untuk karyawan berstatus Contract atau Permanent.',
                 ]);
         }
 
