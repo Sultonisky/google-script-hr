@@ -11,17 +11,13 @@ class PermissionCatalogDatabaseRepository implements PermissionCatalogRepository
     public function all(): array
     {
         $rows = Permission::query()
-            ->whereRaw('LOWER(TRIM(status)) = ?', ['active'])
             ->orderBy('group')
             ->orderBy('permission_key')
             ->get();
 
-        if ($rows->isEmpty()) {
-            // Fallback identical to Sheets repo when catalog sheet is empty.
-            return PermissionCatalog::all();
-        }
-
-        return $rows->map(fn (Permission $row) => [
+        $activeRows = $rows
+            ->filter(fn (Permission $row): bool => strtolower(trim((string) $row->status)) === 'active')
+            ->map(fn (Permission $row) => [
             'Permission Key' => (string) $row->permission_key,
             'Name' => (string) ($row->name ?? ''),
             'Description' => (string) ($row->description ?? ''),
@@ -29,7 +25,18 @@ class PermissionCatalogDatabaseRepository implements PermissionCatalogRepository
             'Status' => (string) ($row->status ?? 'active'),
             'Created At' => optional($row->created_at)?->timezone('Asia/Jakarta')->format('Y-m-d H:i:s') ?? '',
             'Updated At' => optional($row->updated_at)?->timezone('Asia/Jakarta')->format('Y-m-d H:i:s') ?? '',
-        ])->all();
+        ])->values()->all();
+
+        $knownKeys = array_fill_keys(
+            $rows->map(fn (Permission $row): string => strtolower(trim((string) $row->permission_key)))->all(),
+            true
+        );
+        $catalogAdditions = array_filter(
+            PermissionCatalog::all(),
+            fn (array $permission): bool => !isset($knownKeys[strtolower(trim((string) ($permission['key'] ?? '')))])
+        );
+
+        return [...$activeRows, ...$catalogAdditions];
     }
 
     /**

@@ -109,7 +109,7 @@ class OutsourcePermissionTest extends TestCase
         $this->postJson('/hr/outsource/kontrak-pkwt-tad', ['employee_id' => 'DM20260001'])->assertForbidden();
     }
 
-    public function test_vendor_filter_limits_the_list(): void
+    public function test_outsource_list_shows_all_vendors_without_vendor_filter(): void
     {
         OutsourceEmployee::query()->create([
             'outsource_id' => 'DM20260002',
@@ -122,7 +122,66 @@ class OutsourcePermissionTest extends TestCase
         $this->get('/hr/outsource?vendor=StaffInc')
             ->assertOk()
             ->assertSee('Sinta Staffinc')
-            ->assertDontSee('Bayu Saputra');
+            ->assertSee('Bayu Saputra')
+            ->assertDontSee('id="osVendorSelect"', false)
+            ->assertDontSee('Semua Vendor');
+    }
+
+    public function test_outsource_id_sort_orders_from_oldest_sequence_to_newest(): void
+    {
+        foreach ([
+            ['DM20260010', 'Worker Ten'],
+            ['DM20260002', 'Worker Two'],
+        ] as [$id, $name]) {
+            OutsourceEmployee::query()->create([
+                'outsource_id' => $id,
+                'full_name' => $name,
+                'vendor' => 'Damarindo',
+                'created_by' => 'test',
+            ]);
+        }
+        $this->actingWithPermissions(['view_outsource']);
+
+        $oldestResponse = $this->get('/hr/outsource?id_sort=oldest')->assertOk();
+        $oldestTable = preg_match('/<tbody id="osTableBody">(.*?)<\\/tbody>/s', $oldestResponse->getContent(), $matches)
+            ? $matches[1]
+            : '';
+
+        $newestResponse = $this->get('/hr/outsource?id_sort=newest')->assertOk();
+        $newestTable = preg_match('/<tbody id="osTableBody">(.*?)<\\/tbody>/s', $newestResponse->getContent(), $matches)
+            ? $matches[1]
+            : '';
+
+        $this->assertNotSame('', $oldestTable);
+        $this->assertLessThan(strpos($oldestTable, 'DM20260002'), strpos($oldestTable, 'DM20260001'));
+        $this->assertLessThan(strpos($oldestTable, 'DM20260010'), strpos($oldestTable, 'DM20260002'));
+        $this->assertLessThan(strpos($newestTable, 'DM20260002'), strpos($newestTable, 'DM20260010'));
+        $this->assertLessThan(strpos($newestTable, 'DM20260001'), strpos($newestTable, 'DM20260002'));
+        $oldestResponse->assertSee('name="id_sort"', false)
+            ->assertSee('value="oldest" selected', false)
+            ->assertSee('name="sort"', false)
+            ->assertDontSee('name="vendor"', false);
+    }
+
+    public function test_name_sort_supports_ascending_and_descending_order(): void
+    {
+        OutsourceEmployee::query()->create([
+            'outsource_id' => 'DM20260002',
+            'full_name' => 'Sinta Staffinc',
+            'vendor' => 'Damarindo',
+            'created_by' => 'test',
+        ]);
+        $this->actingWithPermissions(['view_outsource']);
+
+        $ascending = $this->get('/hr/outsource?sort=name_asc')->assertOk()->getContent();
+        $descending = $this->get('/hr/outsource?sort=name_desc')->assertOk()->getContent();
+        preg_match('/<tbody id="osTableBody">(.*?)<\\/tbody>/s', $ascending, $ascendingRows);
+        preg_match('/<tbody id="osTableBody">(.*?)<\\/tbody>/s', $descending, $descendingRows);
+
+        $this->assertLessThan(strpos($ascendingRows[1], 'Sinta Staffinc'), strpos($ascendingRows[1], 'Bayu Saputra'));
+        $this->assertLessThan(strpos($descendingRows[1], 'Bayu Saputra'), strpos($descendingRows[1], 'Sinta Staffinc'));
+        $this->get('/hr/outsource?sort=name_desc')
+            ->assertSee('value="name_desc" selected', false);
     }
 
     public function test_manage_outsource_creates_and_edits_only_outsource_records(): void

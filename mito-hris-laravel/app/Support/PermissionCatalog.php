@@ -6,7 +6,7 @@ final class PermissionCatalog
 {
     public static function all(): array
     {
-        return [
+        $permissions = [
             ['key' => 'assets.access', 'name' => 'Access Assets portal', 'description' => 'Enter the dedicated Assets portal.', 'group' => 'Assets'],
             ['key' => 'assets.view', 'name' => 'View assets', 'description' => 'View asset data.', 'group' => 'Assets'],
             ['key' => 'assets.create', 'name' => 'Create assets', 'description' => 'Create asset records.', 'group' => 'Assets'],
@@ -36,6 +36,7 @@ final class PermissionCatalog
             ['key' => 'view_contracts', 'name' => 'View contracts', 'description' => 'View contract tracking and upcoming contract end dates.', 'group' => 'Contracts'],
             ['key' => 'view_outsource', 'name' => 'View outsource', 'description' => 'View outsource employees in the Outsource menu.', 'group' => 'Outsource'],
             ['key' => 'manage_outsource', 'name' => 'Manage outsource', 'description' => 'Add and edit outsource employees and process PKWT TAD contracts.', 'group' => 'Outsource'],
+            ['key' => 'sync_outsource_attendance', 'name' => 'Sync outsource to Attendance', 'description' => 'Sync outsource IDs and names from HRIS to Attendance.', 'group' => 'Outsource'],
             ['key' => 'view_outsource_compensation', 'name' => 'View outsource salary', 'description' => 'View Basic Salary and Incentive of outsource employees.', 'group' => 'Outsource'],
             ['key' => 'manage_outsource_compensation', 'name' => 'Manage outsource salary', 'description' => 'Edit Basic Salary and Incentive of outsource employees, including via Excel import.', 'group' => 'Outsource'],
             ['key' => 'view_outsource_payslip', 'name' => 'View outsource payslips', 'description' => 'View imported outsource payslips (HKE, salary, deductions, THP).', 'group' => 'Outsource'],
@@ -58,6 +59,35 @@ final class PermissionCatalog
             ['key' => 'manage_certification', 'name' => 'Manage legacy certificates', 'description' => 'Compatibility permission for legacy HRIS Certificates mutations.', 'group' => 'Certificates'],
             ['key' => 'lookup_employee', 'name' => 'Lookup employees', 'description' => 'Use employee lookup for supported workflows.', 'group' => 'Employees'],
         ];
+
+        $categories = [
+            'building' => 'Building',
+            'vehicle' => 'Vehicle',
+            'office' => 'Office',
+            'electronics' => 'Electronics',
+        ];
+        $actions = [
+            'view' => ['View', 'view category asset records.'],
+            'create' => ['Create', 'create category asset records.'],
+            'update' => ['Update', 'update category asset records.'],
+            'delete' => ['Dispose', 'dispose category assets.'],
+            'assign' => ['Assign', 'assign category assets to employees.'],
+            'return' => ['Return', 'record returns for category assets.'],
+            'generate_code' => ['Generate codes for', 'generate category asset codes.'],
+        ];
+
+        foreach ($categories as $categoryKey => $categoryLabel) {
+            foreach ($actions as $action => [$name, $description]) {
+                $permissions[] = [
+                    'key' => "assets.{$categoryKey}.{$action}",
+                    'name' => "{$name} {$categoryLabel} assets",
+                    'description' => ucfirst($description) . ' This permission applies only to this asset category.',
+                    'group' => "Assets - {$categoryLabel}",
+                ];
+            }
+        }
+
+        return $permissions;
     }
 
     public static function keys(): array

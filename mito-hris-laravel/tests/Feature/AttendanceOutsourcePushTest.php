@@ -207,6 +207,40 @@ class AttendanceOutsourcePushTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_attendance_sync_permission_does_not_grant_outsource_management(): void
+    {
+        Http::fake([self::URL => Http::response([
+            'success' => true,
+            'data' => [['outsource_id' => 'DM20260134', 'status' => 'would_create']],
+            'meta' => [],
+        ])]);
+        $this->actingAsOutsourceAttendanceSyncer();
+
+        $this->get('/hr/outsource')
+            ->assertOk()
+            ->assertSee('id="btnSyncOutsourceAttendance"', false)
+            ->assertDontSee('id="btnAddOutsource"', false);
+
+        $this->postJson('/hr/outsource/push-attendance', ['dry_run' => true])->assertOk();
+        $this->postJson('/hr/outsource', ['fullName' => 'No Management', 'vendor' => 'Damarindo'])
+            ->assertForbidden();
+
+        Http::assertSentCount(1);
+    }
+
+    public function test_outsource_management_permission_alone_does_not_allow_attendance_sync(): void
+    {
+        Http::fake();
+        $this->actingAsOutsourceManagerWithoutAttendanceSync();
+
+        $this->get('/hr/outsource')
+            ->assertOk()
+            ->assertDontSee('id="btnSyncOutsourceAttendance"', false);
+        $this->postJson('/hr/outsource/push-attendance')->assertForbidden();
+
+        Http::assertNothingSent();
+    }
+
     public function test_dashboard_sync_reports_attendance_failures(): void
     {
         Http::fake([self::URL => Http::response(['message' => 'down'], 503)]);
@@ -221,7 +255,30 @@ class AttendanceOutsourcePushTest extends TestCase
     private function actingAsOutsourceManager(): void
     {
         $email = 'hr.outsource@mito.id';
-        $permissions = ['view_outsource', 'manage_outsource'];
+        $permissions = ['view_outsource', 'manage_outsource', 'sync_outsource_attendance'];
+        $this->actAsWithOutsourcePermissions($email, 'HR Outsource', $permissions);
+    }
+
+    private function actingAsOutsourceManagerWithoutAttendanceSync(): void
+    {
+        $this->actAsWithOutsourcePermissions(
+            'hr.outsource.manager@mito.id',
+            'HR Outsource Manager',
+            ['view_outsource', 'manage_outsource']
+        );
+    }
+
+    private function actingAsOutsourceAttendanceSyncer(): void
+    {
+        $this->actAsWithOutsourcePermissions(
+            'hr.outsource.sync@mito.id',
+            'HR Outsource Sync',
+            ['view_outsource', 'sync_outsource_attendance']
+        );
+    }
+
+    private function actAsWithOutsourcePermissions(string $email, string $name, array $permissions): void
+    {
         $repository = app(UserPermissionRepositoryInterface::class);
         foreach ($permissions as $permission) {
             $repository->upsert($email, $permission, true, 'test');
@@ -230,7 +287,7 @@ class AttendanceOutsourcePushTest extends TestCase
 
         Session::put('hr_user', [
             'email' => $email,
-            'fullName' => 'HR Outsource',
+            'fullName' => $name,
             'role' => 'User',
             'permissions' => $permissions,
             'auth_domain' => 'users',

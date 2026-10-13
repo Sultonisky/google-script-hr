@@ -115,10 +115,21 @@ class PermissionController extends Controller
         }
 
         $actor = strtolower(trim((string) session('hr_user.email', '')));
+        $existingMappings = $this->resolver->mappings($email);
+        $categoryPermissionKeys = $catalog->keys()->filter(
+            fn (string $key): bool => $this->isCategoryAssetPermission($key)
+        );
+        $hasCategoryPermissionChanges = $categoryPermissionKeys->contains(
+            fn (string $key): bool => $this->resolver->allows($target, $key) !== isset($requested[$key])
+        );
         $added = [];
         foreach ($catalog->keys()->all() as $key) {
             $old = $this->resolver->allows($target, $key);
             $new = isset($requested[$key]);
+            $isCategoryPermission = $this->isCategoryAssetPermission($key);
+            if ($isCategoryPermission && !$hasCategoryPermissionChanges && !array_key_exists($key, $existingMappings) && $old === $new) {
+                continue;
+            }
             if (!$this->userPermissionRepository->upsert($email, $key, $new, $actor)) {
                 return response()->json(['message' => 'Permission gagal disimpan.'], 500);
             }
@@ -146,7 +157,7 @@ class PermissionController extends Controller
 
     private function catalog(): array
     {
-        return array_values(array_map(function (array $permission): array {
+        return array_values(array_filter(array_map(function (array $permission): array {
             $key = (string) ($permission['Permission Key'] ?? $permission['key'] ?? '');
             return [
                 'key' => $key,
@@ -156,7 +167,27 @@ class PermissionController extends Controller
                 'status' => strtolower((string) ($permission['Status'] ?? $permission['status'] ?? 'Active')),
                 'requires' => $key !== '' ? $this->resolver->dependenciesFor($key) : [],
             ];
-        }, $this->permissionCatalog->all()));
+        }, $this->permissionCatalog->all()), fn (array $permission): bool => !$this->isLegacyAssetPermission($permission['key'])));
+    }
+
+    private function isCategoryAssetPermission(string $permission): bool
+    {
+        return preg_match('/^assets\.(building|vehicle|office|electronics)\.(view|create|update|delete|assign|return|generate_code)$/', $permission) === 1;
+    }
+
+    private function isLegacyAssetPermission(string $permission): bool
+    {
+        return in_array($permission, [
+            'assets.view',
+            'assets.create',
+            'assets.update',
+            'assets.delete',
+            'assets.assign',
+            'assets.return',
+            'assets.generate_code',
+            'view_asset',
+            'edit_asset',
+        ], true);
     }
 
     private function publicUser(array $user): array
