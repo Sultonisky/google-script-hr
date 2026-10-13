@@ -197,8 +197,7 @@
         $validMonthsText = $validMonths . ' (' . ($angka[$validMonths] ?? $validMonths) . ') bulan';
         $validUntilFmt = $fmtDateId($extraData['valid_until'] ?? null);
 
-        $status = strtolower(trim((string) ($employee->statusEmployee ?? '')));
-        $statusLabel = in_array($status, ['permanent', 'pkwtt'], true)
+        $statusLabel = \App\Enums\EmployeeStatus::matches($employee->statusEmployee ?? null, \App\Enums\EmployeeStatus::PERMANENT)
             ? 'Karyawan Tetap (PKWTT)'
             : 'Karyawan Kontrak (PKWT)';
 
