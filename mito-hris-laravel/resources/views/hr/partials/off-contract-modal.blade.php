@@ -18,7 +18,7 @@
                     <!-- STEP 1: Live Search karyawan kontrak -->
                     <div class="mb-3">
                         <label class="form-label fw-semibold" style="font-size:13px">
-                            <i class="bi bi-search me-1"></i>Cari Karyawan PKWT / Kontrak <span
+                            <i class="bi bi-search me-1"></i>Cari Karyawan Contract <span
                                 class="text-primary">*</span>
                         </label>
                         <div class="position-relative">
@@ -129,23 +129,9 @@
 
 @php
     // Serialize contract employees untuk modal search.
-    // STEP 16/18/22: exclude ACTIVE-PROBATION employees from Off Contract
-    // search. Active probation is determined canonically via
-    // ProbationService::isActiveProbation (kandidat_probation Status +
-    // Decision of the latest row), NOT via Employee.Status, which no
-    // longer carries the 'probation' label.
-    $__probationSvc = app(\App\Services\ProbationService::class);
     $contractEmpSerialized = collect($all ?? ($employees ?? []))
-        ->filter(function ($e) use ($__probationSvc) {
-            if (!is_object($e)) {
-                return true;
-            }
-            try {
-                return !$__probationSvc->isActiveProbation((string) ($e->employeeId ?? ''));
-            } catch (\Throwable) {
-                return true;
-            }
-        })
+        ->filter(fn ($e) => !is_object($e)
+            || \App\Enums\EmployeeStatus::matches($e->statusEmployee ?? null, \App\Enums\EmployeeStatus::CONTRACT))
         ->map(function ($e) {
             if (!is_object($e)) {
                 return $e;
