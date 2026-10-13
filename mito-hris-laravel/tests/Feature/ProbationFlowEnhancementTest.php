@@ -10,6 +10,7 @@ use App\Repositories\Local\ArrayEmployeeDocumentRepository;
 use App\Services\EmployeeService;
 use App\Services\Google\GoogleSheetsService;
 use App\Services\ProbationService;
+use App\Services\SkNumberService;
 use Illuminate\Support\Facades\Session;
 use Mockery;
 use RuntimeException;
@@ -66,6 +67,7 @@ class ProbationFlowEnhancementTest extends TestCase
     {
         $repo = Mockery::mock(AuditLogRepositoryInterface::class);
         $repo->shouldReceive('log')->andReturn(true)->byDefault();
+        $repo->shouldReceive('getLogs')->andReturn(collect())->byDefault();
         return $repo;
     }
 
@@ -105,16 +107,14 @@ class ProbationFlowEnhancementTest extends TestCase
         $this->app->instance(EmployeeDocumentRepositoryInterface::class, new ArrayEmployeeDocumentRepository());
     }
 
-    public function test_contract_without_history_is_active_and_evaluable_without_writing_history(): void
+    public function test_contract_without_history_is_evaluable_without_writing_history(): void
     {
         $employee = $this->employee('EMP-CONTRACT');
         $appended = [];
         $this->bind([$employee], [], $appended);
         $service = $this->app->make(ProbationService::class);
 
-        $this->assertTrue($service->isActiveProbation($employee->employeeId));
         $this->assertTrue($service->canEvaluate($employee->employeeId));
-        $service->isActiveProbation($employee->employeeId);
         $service->canEvaluate($employee->employeeId);
 
         $this->assertCount(0, $appended);
@@ -130,6 +130,27 @@ class ProbationFlowEnhancementTest extends TestCase
 
         $response->assertOk()->assertSee('EMP-INDEX', false);
         $this->assertCount(0, $appended);
+    }
+
+    public function test_employee_drawer_json_includes_active_probation_state(): void
+    {
+        $this->loginAsHr();
+        $employees = [
+            $this->employee('EMP-ACTIVE'),
+            $this->employee('EMP-PERMANENT', 'Permanent'),
+        ];
+        $this->bind($employees, []);
+
+        $skNumbers = Mockery::mock(SkNumberService::class);
+        $skNumbers->shouldReceive('historyForEmployee')->andReturn(collect());
+        $this->app->instance(SkNumberService::class, $skNumbers);
+
+        $this->getJson('/hr/employees/EMP-ACTIVE/json')
+            ->assertOk()
+            ->assertJsonPath('isActiveProbation', true);
+        $this->getJson('/hr/employees/EMP-PERMANENT/json')
+            ->assertOk()
+            ->assertJsonPath('isActiveProbation', false);
     }
 
     public function test_permanent_with_history_is_included_in_probation_index(): void
@@ -215,39 +236,36 @@ class ProbationFlowEnhancementTest extends TestCase
             'Permanent employee with no probation history must not appear in the probation index.');
     }
 
-    public function test_permanent_without_history_is_not_active_or_evaluable(): void
+    public function test_permanent_without_history_is_not_evaluable(): void
     {
         $employee = $this->employee('EMP-PERM', 'Permanent');
         $this->bind([$employee], []);
         $service = $this->app->make(ProbationService::class);
 
-        $this->assertFalse($service->isActiveProbation($employee->employeeId));
         $this->assertFalse($service->canEvaluate($employee->employeeId));
         $this->expectException(RuntimeException::class);
         $service->evaluateProbation($employee->employeeId, ['decision' => 'Lulus']);
     }
 
-    public function test_latest_empty_decision_is_active(): void
+    public function test_latest_empty_decision_is_evaluable(): void
     {
         $employee = $this->employee('EMP-EMPTY');
         $this->bind([$employee], [$this->probationRow('EMP-EMPTY')]);
         $service = $this->app->make(ProbationService::class);
 
-        $this->assertTrue($service->isActiveProbation('EMP-EMPTY'));
         $this->assertTrue($service->canEvaluate('EMP-EMPTY'));
     }
 
-    public function test_latest_extend_decision_is_active_and_evaluable(): void
+    public function test_latest_extend_decision_is_evaluable(): void
     {
         $employee = $this->employee('EMP-EXTEND');
         $this->bind([$employee], [$this->probationRow('EMP-EXTEND', 'Perpanjang Kontrak')]);
         $service = $this->app->make(ProbationService::class);
 
-        $this->assertTrue($service->isActiveProbation('EMP-EXTEND'));
         $this->assertTrue($service->canEvaluate('EMP-EXTEND'));
     }
 
-    public function test_terminal_decisions_are_inactive(): void
+    public function test_terminal_decisions_are_not_evaluable(): void
     {
         $passed = $this->employee('EMP-PASSED', 'Permanent');
         $failed = $this->employee('EMP-FAILED', 'Terminated');
@@ -257,8 +275,8 @@ class ProbationFlowEnhancementTest extends TestCase
         ]);
         $service = $this->app->make(ProbationService::class);
 
-        $this->assertFalse($service->isActiveProbation('EMP-PASSED'));
-        $this->assertFalse($service->isActiveProbation('EMP-FAILED'));
+        $this->assertFalse($service->canEvaluate('EMP-PASSED'));
+        $this->assertFalse($service->canEvaluate('EMP-FAILED'));
     }
 
     public function test_evaluation_without_history_appends_one_row_and_keeps_contract_for_extend(): void
@@ -286,7 +304,7 @@ class ProbationFlowEnhancementTest extends TestCase
         $this->assertSame('kandidat_probation', $appended[0]['sheet']);
         $this->assertSame('Probation', $appended[0]['row'][7]);
         $this->assertSame('Contract', $employee->statusEmployee);
-        $this->assertTrue($service->isActiveProbation('EMP-EVAL'));
+        $this->assertTrue($service->canEvaluate('EMP-EVAL'));
         $this->assertNotEmpty($updated);
     }
 
@@ -313,31 +331,22 @@ class ProbationFlowEnhancementTest extends TestCase
         $this->assertTrue($result['success']);
         $statusUpdate = collect($updates)->first(fn ($row) => isset($row['Status Employee']));
         $this->assertNotNull($statusUpdate);
-        $this->assertSame('PKWTT', $statusUpdate['Status Employee']);
+        $this->assertSame('Permanent', $statusUpdate['Status Employee']);
         $this->assertStringContainsString('/SKP/', (string) ($result['skNumber'] ?? ''));
     }
 
-    public function test_active_probation_blocks_rotation(): void
-    {
-        $employee = $this->employee('EMP-LOCK');
-        $this->bind([$employee], [$this->probationRow('EMP-LOCK')]);
-        $service = $this->app->make(EmployeeService::class);
-
-        $this->expectException(RuntimeException::class);
-        $service->processRotation('EMP-LOCK', ['rotation_type' => 'Mutasi'], 'HR Admin');
-    }
-
-    public function test_active_probation_blocks_off_contract(): void
+    public function test_unevaluated_contract_can_be_off_contracted(): void
     {
         $employee = $this->employee('EMP-OFF');
         $this->bind([$employee], [$this->probationRow('EMP-OFF')]);
         $service = $this->app->make(EmployeeService::class);
 
-        $this->expectException(RuntimeException::class);
-        $service->processOffContract('EMP-OFF', ['last_working_date' => '2026-06-30'], 'HR Admin');
+        $result = $service->processOffContract('EMP-OFF', ['last_working_date' => '2026-06-30'], 'HR Admin');
+
+        $this->assertTrue($result['success']);
     }
 
-    public function test_active_probation_blocks_contract_field_edit(): void
+    public function test_unevaluated_contract_fields_remain_editable(): void
     {
         $this->loginAsHr();
         $employee = $this->employee('EMP-CONTRACT-EDIT');
@@ -346,7 +355,7 @@ class ProbationFlowEnhancementTest extends TestCase
         $this->putJson('/hr/employees/EMP-CONTRACT-EDIT', [
             'fullName' => 'Updated Name',
             'endDateContract' => '2026-12-31',
-        ])->assertStatus(422)->assertJsonPath('success', false);
+        ])->assertOk()->assertJsonPath('success', true);
     }
 
     public function test_non_contract_edit_remains_allowed_after_lulus(): void

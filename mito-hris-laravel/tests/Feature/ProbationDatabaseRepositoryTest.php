@@ -115,7 +115,7 @@ class ProbationDatabaseRepositoryTest extends TestCase
         $this->assertSame('1', $history[0]['ind_integrity_1']);
 
         $updated = $employees->findById('EMP-PASS');
-        $this->assertSame('PKWTT', $updated?->statusEmployee);
+        $this->assertSame('Permanent', $updated?->statusEmployee);
         $this->assertFalse($service->canEvaluate('EMP-PASS'));
     }
 
@@ -156,7 +156,7 @@ class ProbationDatabaseRepositoryTest extends TestCase
 
         $this->assertTrue($pass['success']);
         $this->assertCount(2, $service->getEvalHistory('EMP-EXT'));
-        $this->assertSame('PKWTT', $employees->findById('EMP-EXT')?->statusEmployee);
+        $this->assertSame('Permanent', $employees->findById('EMP-EXT')?->statusEmployee);
     }
 
     public function test_pgsql_driver_binds_probation_database_repository(): void

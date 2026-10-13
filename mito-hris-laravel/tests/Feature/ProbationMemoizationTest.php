@@ -200,38 +200,6 @@ class ProbationMemoizationTest extends TestCase
     }
 
     // =========================================================================
-    // 6. Active probation reads, including the sidebar loop = 1 read
-    // =========================================================================
-
-    #[Test]
-    public function repeated_active_probation_checks_share_one_load(): void
-    {
-        $row = $this->makeRow('EMP001', 'EVAL-1', 'Perpanjang Kontrak', '2026-08-01 10:00:00');
-        $row['Status'] = 'Probation';
-
-        $sheets = Mockery::mock(GoogleSheetsService::class);
-        $sheets->shouldReceive('getRowsAsAssoc')
-            ->with(self::SHEET)
-            ->once()
-            ->andReturn([$row]);
-
-        $employees = Mockery::mock(EmployeeRepositoryInterface::class);
-        $employees->shouldReceive('findById')
-            ->with('EMP001')
-            ->twice()
-            ->andReturn(new EmployeeData(employeeId: 'EMP001', statusEmployee: 'Contract'));
-
-        $this->bindProbationSheetsFromMock($sheets);
-        $this->app->instance(EmployeeRepositoryInterface::class, $employees);
-        $this->app->instance(AuditLogRepositoryInterface::class, Mockery::mock(AuditLogRepositoryInterface::class));
-
-        $svc = $this->app->make(ProbationService::class);
-
-        $this->assertTrue($svc->isActiveProbation('EMP001'));
-        $this->assertTrue($svc->isActiveProbation('EMP001'));
-    }
-
-    // =========================================================================
     // 7. HR sidebar renders probation without loading the count dataset
     // =========================================================================
 
