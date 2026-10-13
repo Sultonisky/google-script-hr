@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\HR;
 
+use App\Enums\EmployeeStatus;
 use App\Http\Controllers\Controller;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use Illuminate\Http\Request;
@@ -30,9 +31,7 @@ class ContractTrackingController extends Controller
 
         $tracking = $allEmployees
             ->filter(function ($employee) {
-                $status = strtolower(trim((string) ($employee->statusEmployee ?? '')));
-
-                return in_array($status, ['contract', 'pkwt', 'outsource'], true)
+                return EmployeeStatus::matches($employee->statusEmployee, [EmployeeStatus::CONTRACT, EmployeeStatus::OUTSOURCE])
                     && !empty(trim((string) ($employee->endDateContract ?? '')));
             })
             ->map(function ($employee) use ($today) {

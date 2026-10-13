@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\HR;
 
+use App\Enums\EmployeeStatus;
 use App\Enums\ProbationDecisionType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\HR\SubmitProbationEvaluationRequest;
@@ -35,9 +36,9 @@ class ProbationController extends Controller
         $perPage = max(1, (int) $request->query('per_page', 10));
         $currentPage = max(1, (int) $request->query('page', 1));
 
-        // Population = all employees who are currently on probation (Contract/PKWT)
+        // Population = all employees who are currently on probation (Contract)
         // PLUS all employees who ever had a probation evaluation record, regardless of
-        // their current status (PKWTT, Terminated, etc.).
+        // their current status (Permanent, Terminated, etc.).
         // This prevents Lulus/Tidak Lulus outcomes from removing rows from the page.
         $employeeRows  = $this->employeeRepo->getAll();
         $latestEvals   = $this->probationService->latestEvalByEmployee();
@@ -50,8 +51,7 @@ class ProbationController extends Controller
 
         $allProbations = $employeeRows
             ->filter(function ($employee) use ($evaluatedIds) {
-                $status = strtolower(trim((string) ($employee->statusEmployee ?? '')));
-                $isActiveContract = in_array($status, ['contract', 'pkwt', 'probation'], true);
+                $isActiveContract = EmployeeStatus::matches($employee->statusEmployee, EmployeeStatus::CONTRACT);
 
                 // Also include employees who have a probation history row, even if
                 // their status has since changed to PKWTT or Terminated.
