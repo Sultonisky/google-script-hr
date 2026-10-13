@@ -2,6 +2,7 @@
 
 namespace App\Listeners;
 
+use App\Enums\EmployeeStatus;
 use App\Events\CandidateApplied;
 use App\Events\CandidateStatusChanged;
 use App\Events\EmployeeHired;
@@ -47,7 +48,7 @@ class WriteAuditLogListener
                 action: 'created',
                 field: 'Status Employee',
                 oldValue: 'Candidate',
-                newValue: $event->employee->statusEmployee ?? 'PKWT',
+                newValue: $event->employee->statusEmployee ?? EmployeeStatus::CONTRACT->value,
                 user: $event->user ?? 'HR Administrator',
                 source: 'Dashboard'
             );
