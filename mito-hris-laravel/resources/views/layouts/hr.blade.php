@@ -162,6 +162,8 @@
 
         function setDrawerMode(mode) {
             if (drawerPanel) drawerPanel.setAttribute('data-mode', mode);
+            var probationAlert = document.getElementById('drawerProbationAlert');
+            if (probationAlert) probationAlert.classList.add('d-none');
             var sections = document.querySelectorAll('.drawer-mode-section');
             sections.forEach(function(sec) {
                 sec.classList.remove('active');
@@ -431,6 +433,11 @@
                     // Simpan data employee aktif untuk keperluan Edit & Probation
                     window._activeDrawerEmployee = e;
 
+                    var probationAlert = document.getElementById('drawerProbationAlert');
+                    if (probationAlert && data.isActiveProbation === true) {
+                        probationAlert.classList.remove('d-none');
+                    }
+
                     document.getElementById('drawerCandidateName').innerText = e.fullName || '-';
                     document.getElementById('drawerPosition').innerText = (e.jobPosition || '-') + (e.department ?
                         ' · ' + e.department : '');
@@ -503,16 +510,6 @@
                     if (btnEditHeader) btnEditHeader.onclick = function() {
                         empOpenEdit(e);
                     };
-
-                    // Show the canonical active-probation state in the drawer.
-                    var probationAlert = document.getElementById('drawerProbationAlert');
-                    if (probationAlert) {
-                        if (data.isActiveProbation === true) {
-                            probationAlert.classList.remove('d-none');
-                        } else {
-                            probationAlert.classList.add('d-none');
-                        }
-                    }
                 })
                 .catch(function() {
                     renderEntityTimeline('osDrTimeline', []);
@@ -634,7 +631,10 @@
             setVal('efBpjsKes', emp.bpjsKesehatan);
 
             // Seksi 3: Organisasi & Pekerjaan
-            setVal('efStatusEmployee', emp.statusEmployee || 'Contract');
+            var empStatus = (emp.statusEmployee || 'Contract').trim();
+            var legacyStatus = { pkwt: 'Contract', probation: 'Contract', pkwtt: 'Permanent' };
+            var normalizedEmpStatus = legacyStatus[empStatus.toLowerCase()] || empStatus;
+            setVal('efStatusEmployee', normalizedEmpStatus);
             setVal('efBranch', emp.branchName);
             setVal('efDivision', emp.division);
             setVal('efDept', emp.department);
@@ -1096,8 +1096,6 @@
                     // Reset to defaults so previous candidate data doesn't leak
                     var joinDateEl = formAccept.querySelector('input[name="join_date"]');
                     if (joinDateEl) joinDateEl.value = new Date().toISOString().substring(0, 10);
-                    var statusEl = formAccept.querySelector('select[name="status_employee"]');
-                    if (statusEl) statusEl.value = 'PKWT';
                     injectCandidatePreviewBanner('modalAccept', candName, activeCandidateId);
                     var modal = new bootstrap.Modal(document.getElementById('modalAccept'));
                     modal.show();
