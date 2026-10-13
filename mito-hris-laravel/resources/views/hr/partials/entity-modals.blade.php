@@ -660,7 +660,7 @@
                             <code>Department</code>, <code>Job Position</code>, <code>Job Level</code>,
                             <code>Grade</code>, <code>Area Kerja</code>, <code>Lokasi Kerja</code><br>
                             <strong>Status &amp; Kontrak:</strong> <code>Status Employee</code> (<em>Permanent /
-                                Contract / Probation / Outsource</em>), <code>Join Date</code>, <code>End Date
+                                Contract / Outsource</em>), <code>Join Date</code>, <code>End Date
                                 Contract</code>
                         </div>
                     </div>
