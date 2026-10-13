@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\HR;
 
+use App\Enums\EmployeeStatus;
 use App\Http\Controllers\Controller;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
@@ -11,6 +12,7 @@ use App\Services\SkNumberService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class EmployeeController extends Controller
@@ -43,22 +45,22 @@ class EmployeeController extends Controller
         // Fetch ALL employees once — used for both stats and filtered/paginated table
         $all = $this->employeeRepo->getAll();
 
-        // Stats — Employee.Status is restricted to Permanent / Contract /
-        // Outsource. The "probation" stat counts employees currently in
-        // ACTIVE probation via the canonical helper (Employee.Status plus
-        // kandidat_probation evaluation history).
-        $probationActive = $all->filter(
-            fn($e) => $this->probationService->isActiveProbation((string) ($e->employeeId ?? ''))
-        )->count();
+        $otherActiveEmployees = $all->filter(
+            fn($e) => !EmployeeStatus::fromValue($e->statusEmployee)
+                && !EmployeeStatus::isTerminal($e->statusEmployee)
+        );
+        $otherActiveExamples = $otherActiveEmployees
+            ->map(fn($e) => trim((string) ($e->statusEmployee ?? '')) ?: '(kosong)')
+            ->unique()
+            ->take(3)
+            ->values();
 
         $stats = [
             'total'        => $all->count(),
-            'permanent'    => $all->filter(fn($e) => in_array(strtolower(trim($e->statusEmployee ?? '')), ['permanent', 'pkwtt']))->count(),
-            'pkwtt'        => 0, // folded into 'permanent' above
-            'contract'     => $all->filter(fn($e) => in_array(strtolower(trim($e->statusEmployee ?? '')), ['contract', 'pkwt']))->count(),
-            'pkwt'         => 0, // folded into 'contract' above
-            'probation'    => $probationActive,
-            'outsource'    => $all->filter(fn($e) => strtolower(trim($e->statusEmployee ?? '')) === 'outsource')->count(),
+            'permanent'    => $all->filter(fn($e) => EmployeeStatus::matches($e->statusEmployee, EmployeeStatus::PERMANENT))->count(),
+            'contract'     => $all->filter(fn($e) => EmployeeStatus::matches($e->statusEmployee, EmployeeStatus::CONTRACT))->count(),
+            'outsource'    => $all->filter(fn($e) => EmployeeStatus::matches($e->statusEmployee, EmployeeStatus::OUTSOURCE))->count(),
+            'other_active' => $otherActiveEmployees->count(),
             'off_contract' => $all->filter(fn($e) => strtolower(trim($e->statusEmployee ?? '')) === 'contract finished')->count(),
         ];
 
@@ -74,19 +76,21 @@ class EmployeeController extends Controller
         $statusFilter = $request->query('status');
         if ($statusFilter) {
             $st = strtolower(trim($statusFilter));
-            // Normalize: 'permanent' matches both 'permanent' and 'pkwtt'
-            // 'contract' matches 'contract' and 'pkwt'.
-            // 'probation' is driven by the canonical active-probation helper,
-            // whose primary source is Employee.Status = Contract.
-            $filtered = $filtered->filter(function ($e) use ($st) {
-                $es = strtolower(trim($e->statusEmployee ?? ''));
-                return match ($st) {
-                    'permanent' => in_array($es, ['permanent', 'pkwtt']),
-                    'contract'  => in_array($es, ['contract', 'pkwt']),
-                    'probation' => $this->probationService->isActiveProbation((string) ($e->employeeId ?? '')),
-                    default     => $es === $st,
-                };
-            });
+            if ($st === 'other_active') {
+                $filtered = $filtered->filter(
+                    fn($e) => !EmployeeStatus::fromValue($e->statusEmployee)
+                        && !EmployeeStatus::isTerminal($e->statusEmployee)
+                );
+            } else {
+                // Employment types also match legacy aliases (PKWT/PKWTT).
+                $filterType = EmployeeStatus::fromValue($st);
+                $filtered = $filtered->filter(function ($e) use ($st, $filterType) {
+                    if ($filterType) {
+                        return EmployeeStatus::matches($e->statusEmployee, $filterType);
+                    }
+                    return strtolower(trim($e->statusEmployee ?? '')) === $st;
+                });
+            }
         }
 
         $searchFilter = $request->query('search');
@@ -143,12 +147,13 @@ class EmployeeController extends Controller
         $offset    = ($currentPage - 1) * $perPage;
         $employees = $filtered->slice($offset, $perPage)->values();
 
-        $contractEmployees = $all->filter(fn($e) => in_array(strtoupper(trim($e->statusEmployee ?? '')), ['PKWT', 'CONTRACT']));
+        $contractEmployees = $all->filter(fn($e) => EmployeeStatus::matches($e->statusEmployee, EmployeeStatus::CONTRACT));
         $departments = $all->pluck('department')->filter()->unique()->sort()->values();
 
         return view('hr.employees.index', compact(
             'employees',
             'stats',
+            'otherActiveExamples',
             'departments',
             'all',
             'contractEmployees',
@@ -173,7 +178,7 @@ class EmployeeController extends Controller
     {
         $request->validate([
             'fullName'       => 'required|string|max:255',
-            'statusEmployee' => 'required|string|max:100',
+            'statusEmployee' => ['required', 'string', Rule::in(EmployeeStatus::values())],
             'employeeId'     => ['nullable', 'string', 'max:12', 'regex:/^\d{1,12}$/'],
             'division'       => ['nullable', 'string', 'max:255', 'regex:/^[\p{L}]+(?:[ \-\/]+[\p{L}]+)*$/u'],
             'jobPosition'    => ['nullable', 'string', 'max:255', 'regex:/^[\p{L}]+(?:[ \-\/]+[\p{L}]+)*$/u'],
@@ -190,6 +195,7 @@ class EmployeeController extends Controller
             'bpjsKetenagakerjaan' => 'nullable|string|max:30',
             'bpjsKesehatan'  => 'nullable|string|max:30',
         ], [
+            'statusEmployee.in' => 'Status karyawan harus Permanent, Contract, atau Outsource.',
             'employeeId.regex' => 'Employee ID hanya boleh angka (maksimal 12 digit).',
             'division.regex' => 'Divisi hanya boleh huruf, spasi, tanda hubung, dan garis miring.',
             'jobPosition.regex' => 'Jabatan hanya boleh huruf, spasi, tanda hubung, dan garis miring.',
@@ -479,31 +485,18 @@ class EmployeeController extends Controller
 
         $all = $this->employeeRepo->getAll();
 
-        // STEP 16/22: when caller is looking for eligible rotation/off-contract
-        // candidates via `?status=contract` or `?status=active`, drop
-        // ACTIVE-PROBATION employees from the response. Active probation is
-        // determined canonically by ProbationService from Employee.Status and
-        // the latest evaluation history, not history existence alone.
-        // Direct API calls still get a backend reject — see
-        // EmployeeService::processRotation / processOffContract.
-        $statusLowerFilter = strtolower($status);
-        if (in_array($statusLowerFilter, ['contract', 'pkwt', 'active'], true)) {
-            $all = $all->filter(function ($e) {
-                return !$this->probationService->isActiveProbation((string) ($e->employeeId ?? ''));
-            });
-        }
+        $statusType = EmployeeStatus::fromValue($status);
 
         // Status filter
         if (!empty($status)) {
             $statusLower = strtolower($status);
-            $all = $all->filter(function ($e) use ($statusLower) {
-                $s = strtolower(trim($e->statusEmployee ?? ''));
-                // Support alias: 'contract' matches 'contract' and 'pkwt'
-                if ($statusLower === 'contract') {
-                    return $s === 'contract' || $s === 'pkwt' || str_contains($s, 'contract');
+            $all = $all->filter(function ($e) use ($statusLower, $statusType) {
+                if ($statusType) {
+                    return EmployeeStatus::matches($e->statusEmployee, $statusType);
                 }
+                $s = strtolower(trim($e->statusEmployee ?? ''));
                 if ($statusLower === 'active') {
-                    return !in_array($s, ['resigned', 'terminated', 'retired', 'deceased', 'inactive', 'contract finished', '']);
+                    return $s !== '' && !EmployeeStatus::isTerminal($s);
                 }
                 return $s === $statusLower;
             });
@@ -727,46 +720,32 @@ class EmployeeController extends Controller
      */
     public function update(Request $request, string $id): JsonResponse
     {
+        $employee = $this->employeeRepo->findById($id);
+
         // Validasi minimal — nama wajib, field lain opsional (sesuai GAS updateEmployee)
         $orgTitle = '/^[\p{L}]+(?:[ \-\/]+[\p{L}]+)*$/u';
+        $allowedStatuses = [...EmployeeStatus::values(), ...EmployeeStatus::TERMINAL_STATUSES];
+        if ($employee?->statusEmployee !== null && trim($employee->statusEmployee) !== '') {
+            $allowedStatuses[] = $employee->statusEmployee;
+        }
         $request->validate([
             'fullName' => 'required|string|max:255',
+            'statusEmployee' => ['nullable', 'string', Rule::in($allowedStatuses)],
             'division' => ['nullable', 'string', 'max:255', 'regex:' . $orgTitle],
             'jobPosition' => ['nullable', 'string', 'max:255', 'regex:' . $orgTitle],
             'jobPositionLocation' => ['nullable', 'string', 'max:255', 'regex:' . $orgTitle],
         ], [
+            'statusEmployee.in' => 'Status karyawan harus Permanent, Contract, atau Outsource.',
             'division.regex' => 'Divisi hanya boleh huruf, spasi, tanda hubung, dan garis miring.',
             'jobPosition.regex' => 'Jabatan hanya boleh huruf, spasi, tanda hubung, dan garis miring.',
             'jobPositionLocation.regex' => 'Jabatan (dengan lokasi) hanya boleh huruf, spasi, tanda hubung, dan garis miring.',
         ]);
 
-        $employee = $this->employeeRepo->findById($id);
         if (!$employee) {
             return response()->json([
                 'success' => false,
                 'message' => 'Karyawan tidak ditemukan.',
             ], 404);
-        }
-
-        // STEP 16/19/22: when an employee is on ACTIVE probation, contract
-        // fields (Start Date / End Date / Contract Duration / Contract
-        // Number) are immutable until probation evaluation is finished.
-        // Active probation is determined canonically by ProbationService
-        // Employee.Status plus the latest kandidat_probation evaluation.
-        $isOnActiveProbation = $this->probationService->isActiveProbation($id);
-        $contractRequestKeys = [
-            'endDateContract',
-            'contractStart',
-            'contractDuration',
-            'contractNumber',
-        ];
-        foreach ($contractRequestKeys as $key) {
-            if ($isOnActiveProbation && $request->has($key)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Employee sedang dalam proses probation. Selesaikan evaluasi probation terlebih dahulu sebelum melakukan perubahan pada data contract.',
-                ], 422);
-            }
         }
 
         // Map semua field yang dikirim dari modal Edit Employee
@@ -832,6 +811,10 @@ class EmployeeController extends Controller
             if ($request->has($requestKey)) {
                 $attributes[$sheetHeader] = $request->input($requestKey) ?? '';
             }
+        }
+        // Empty status means the edit dropdown had no option for a legacy value; keep it.
+        if (($attributes['Status Employee'] ?? null) === '') {
+            unset($attributes['Status Employee']);
         }
 
         if (empty($attributes)) {
@@ -909,9 +892,7 @@ class EmployeeController extends Controller
         return response()->json([
             'success' => true,
             'employee' => $employee,
-            // Canonical active-probation flag from Employee.Status plus
-            // kandidat_probation evaluation history.
-            'isActiveProbation' => $this->probationService->isActiveProbation($id),
+            'isActiveProbation' => $this->probationService->canEvaluate((string) $employee->employeeId),
             'auditLogs' => $auditLogs,
             'skDocuments' => $skDocuments,
         ]);
