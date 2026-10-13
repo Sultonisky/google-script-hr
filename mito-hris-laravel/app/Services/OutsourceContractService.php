@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\DTOs\EmployeeData;
+use App\Enums\EmployeeStatus;
 use App\Enums\SkDocumentType;
 use Illuminate\Support\Carbon;
 
@@ -53,6 +54,6 @@ class OutsourceContractService
 
     public function isOutsource(EmployeeData $employee): bool
     {
-        return strtolower(trim((string) ($employee->statusEmployee ?? ''))) === 'outsource';
+        return EmployeeStatus::matches($employee->statusEmployee, EmployeeStatus::OUTSOURCE);
     }
 }
