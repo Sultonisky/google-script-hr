@@ -90,7 +90,7 @@ class EmployeeData
             jobLevel: $row['Job Level'] ?? null,
             grade: $row['Grade'] ?? null,
             joinDate: $row['Join Date'] ?? null,
-            statusEmployee: $row['Status Employee'] ?? 'PKWT',
+            statusEmployee: $row['Status Employee'] ?? 'Contract',
             directSuperior: $row['Direct Superior'] ?? null,
             indirectSuperior: $row['Indirect Superior'] ?? null,
             personalEmail: $row['Personal Email'] ?? null,
