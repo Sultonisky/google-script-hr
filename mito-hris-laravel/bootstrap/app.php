@@ -24,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'mpr.auth.dedicated' => \App\Http\Middleware\EnsureMprAuthenticated::class,
             'outsource.payroll.integration' => \App\Http\Middleware\AuthenticateOutsourcePayrollIntegration::class,
             'outsource.sync.integration' => \App\Http\Middleware\AuthenticateOutsourceSyncIntegration::class,
+            'employee.integration' => \App\Http\Middleware\AuthenticateEmployeeIntegration::class,
         ]);
 
         $middleware->appendToGroup('web', [
