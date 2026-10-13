@@ -77,6 +77,30 @@ class EmployeeDashboardValidationTest extends TestCase
     }
 
     #[Test]
+    public function store_rejects_status_outside_permanent_contract_outsource(): void
+    {
+        $this->actingAsAdmin();
+
+        foreach (['PKWT', 'Probation', 'Kemitraan'] as $status) {
+            $this->postJson('/hr/employees', [
+                'fullName'       => 'Andi Wijaya',
+                'statusEmployee' => $status,
+            ])->assertStatus(422)->assertJsonValidationErrors(['statusEmployee']);
+        }
+    }
+
+    #[Test]
+    public function update_rejects_probation_status(): void
+    {
+        $this->actingAsAdmin();
+
+        $this->putJson('/hr/employees/2025010101', [
+            'fullName'       => 'Andi Wijaya',
+            'statusEmployee' => 'Probation',
+        ])->assertStatus(422)->assertJsonValidationErrors(['statusEmployee']);
+    }
+
+    #[Test]
     public function outsource_store_rejects_unknown_vendor_and_malformed_fields(): void
     {
         $this->actingAsAdmin();
