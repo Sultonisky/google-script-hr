@@ -392,15 +392,23 @@ class OfferingContractFlowTest extends TestCase
         $candidateRepo = Mockery::mock(CandidateRepositoryInterface::class);
         $candidateRepo->shouldReceive('findById')->andReturn($candidate);
         // If trim() is applied, the guard should PASS and call employeeRepo
-        $candidateRepo->shouldReceive('update')->andReturn(true);
+        $candidateRepo->shouldReceive('update')
+            ->once()
+            ->andReturnUsing(function (string $id, array $attributes): bool {
+                $this->assertSame('Contract', $attributes['Onboarding Status'] ?? null);
+
+                return true;
+            });
 
         $employeeRepo = Mockery::mock(\App\Repositories\Contracts\EmployeeRepositoryInterface::class);
         $employeeRepo->shouldReceive('findById')->andReturn(null);
-        $employeeRepo->shouldReceive('create')->andReturn(new \App\DTOs\EmployeeData());
+        $employeeRepo->shouldReceive('create')
+            ->once()
+            ->withArgs(fn (\App\DTOs\EmployeeData $employee) => $employee->statusEmployee === 'Contract')
+            ->andReturn(new \App\DTOs\EmployeeData(statusEmployee: 'Contract'));
 
         $auditRepo = Mockery::mock(AuditLogRepositoryInterface::class);
         $auditRepo->shouldReceive('log')->andReturn(true);
-
         $idGenerator = Mockery::mock(\App\Services\EmployeeIdGenerator::class);
         $idGenerator->shouldReceive('generate')->andReturn('20260901001');
 
@@ -414,10 +422,13 @@ class OfferingContractFlowTest extends TestCase
             'join_date'   => '2026-09-01',
             'position'    => 'HR Staff',
             'department'  => 'Human Resources',
+            'contract_number' => '001/PKWT/MSI/IX/2026',
         ]);
 
-        // With trim(), " Diterima " should pass the guard and not return a 500 guard error
-        $this->assertNotEquals('Kandidat belum menerima offering letter', $response->json('message'));
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('contractNumber', '001/PKWT/MSI/IX/2026')
+            ->assertJsonPath('message', 'Kontrak PKWT berhasil diproses. Karyawan kini aktif berstatus Contract.');
     }
 
     // =========================================================================
