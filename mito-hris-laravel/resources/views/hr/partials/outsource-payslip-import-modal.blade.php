@@ -99,7 +99,7 @@
             <div class="modal-body">
                 <p class="mb-3">Payslip periode <strong data-opc="period">-</strong> akan disimpan. Hanya payslip baru dan yang
                     nominalnya <strong>berbeda</strong> yang ditulis; data yang sama tidak diubah.</p>
-                <div class="border rounded p-3 bg-light">
+                <div class="border rounded p-3">
                     <div class="row g-2">
                         <div class="col-4 text-muted small">File</div>
                         <div class="col-8 fw-semibold text-break" data-opc="file">-</div>
