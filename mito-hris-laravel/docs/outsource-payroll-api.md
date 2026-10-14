@@ -63,4 +63,6 @@ Successful responses use this shape:
 Payslip records include `period`, `outsource_id`, `full_name`, `vendor`, `hke`,
 `basic_salary`, `bpjs_kesehatan_deduction`, `loan_deduction`, and
 `take_home_pay`. Incentive records include `period`, `outsource_id`,
-`full_name`, `vendor`, `umk_amount`, and `incentive_amount`.
+`full_name`, `vendor`, `incentive_pokok_amount`, `incentive_amount`, and
+`total_amount`. The legacy `umk_amount` response field remains available for
+existing API clients.
