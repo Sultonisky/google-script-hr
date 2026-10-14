@@ -61,7 +61,12 @@ class EmployeeController extends Controller
             'contract'     => $all->filter(fn($e) => EmployeeStatus::matches($e->statusEmployee, EmployeeStatus::CONTRACT))->count(),
             'outsource'    => $all->filter(fn($e) => EmployeeStatus::matches($e->statusEmployee, EmployeeStatus::OUTSOURCE))->count(),
             'other_active' => $otherActiveEmployees->count(),
+            'resigned'     => $all->filter(fn($e) => strtolower(trim($e->statusEmployee ?? '')) === 'resigned')->count(),
+            'terminated'   => $all->filter(fn($e) => strtolower(trim($e->statusEmployee ?? '')) === 'terminated')->count(),
             'off_contract' => $all->filter(fn($e) => strtolower(trim($e->statusEmployee ?? '')) === 'contract finished')->count(),
+            'retired'      => $all->filter(fn($e) => strtolower(trim($e->statusEmployee ?? '')) === 'retired')->count(),
+            'deceased'     => $all->filter(fn($e) => strtolower(trim($e->statusEmployee ?? '')) === 'deceased')->count(),
+            'inactive'     => $all->filter(fn($e) => strtolower(trim($e->statusEmployee ?? '')) === 'inactive')->count(),
         ];
 
         // Apply search/filter to full dataset

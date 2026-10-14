@@ -190,6 +190,69 @@ class EmployeeStatusNormalizationTest extends TestCase
             ->assertSee('(kosong)');
     }
 
+    public function test_employee_status_filter_shows_resigned_and_terminated_counts(): void
+    {
+        $this->employee('EMP-RESIGNED-1', 'Resigned');
+        $this->employee('EMP-RESIGNED-2', ' resigned ');
+        $this->employee('EMP-TERMINATED-1', 'Terminated');
+        $this->employee('EMP-TERMINATED-2', 'TERMINATED');
+        $this->employee('EMP-RETIRED', 'Retired');
+        $this->employee('EMP-DECEASED', 'Deceased');
+        $this->employee('EMP-INACTIVE', 'Inactive');
+        $this->employee('EMP-CONTRACT-FINISHED', 'Contract Finished');
+
+        Session::put('hr_user', $this->migratedTestUser([
+            'email' => 'admin.status@mito.id',
+            'fullName' => 'Admin User',
+            'role' => 'Admin',
+            'permissions' => config('hris.auth.role_permissions.Admin') ?? [],
+            'auth_domain' => 'users',
+            'entities' => [],
+            'branch' => '',
+        ]));
+
+        $this->get('/hr/employees')
+            ->assertOk()
+            ->assertSee('Resigned (2)')
+            ->assertSee('Terminated (2)')
+            ->assertSee('Retired (1)')
+            ->assertSee('Deceased (1)')
+            ->assertSee('Inactive (1)')
+            ->assertSee('Contract Finished (1)');
+    }
+
+    public function test_employee_terminal_status_filter_returns_matching_status(): void
+    {
+        $this->employee('EMP-DECEASED', 'Deceased');
+        $this->employee('EMP-RESIGNED', 'Resigned');
+        $this->employee('EMP-FINISHED', 'Contract Finished');
+
+        Session::put('hr_user', $this->migratedTestUser([
+            'email' => 'admin.status@mito.id',
+            'fullName' => 'Admin User',
+            'role' => 'Admin',
+            'permissions' => config('hris.auth.role_permissions.Admin') ?? [],
+            'auth_domain' => 'users',
+            'entities' => [],
+            'branch' => '',
+        ]));
+
+        $response = $this->get('/hr/employees?status=Deceased')->assertOk();
+        preg_match('/<tbody id="empTableBody">(.*?)<\/tbody>/s', $response->getContent(), $matches);
+        $employeeRows = $matches[1] ?? '';
+
+        $this->assertStringContainsString('Karyawan EMP-DECEASED', $employeeRows);
+        $this->assertStringNotContainsString('Karyawan EMP-RESIGNED', $employeeRows);
+        $this->assertStringNotContainsString('Karyawan EMP-FINISHED', $employeeRows);
+
+        $response = $this->get('/hr/employees?status=Contract%20Finished')->assertOk();
+        preg_match('/<tbody id="empTableBody">(.*?)<\/tbody>/s', $response->getContent(), $matches);
+        $employeeRows = $matches[1] ?? '';
+
+        $this->assertStringContainsString('Karyawan EMP-FINISHED', $employeeRows);
+        $this->assertStringNotContainsString('Karyawan EMP-DECEASED', $employeeRows);
+    }
+
     public function test_employee_other_status_filter_returns_unknown_active_statuses_only(): void
     {
         $this->employee('EMP-PERM', 'Permanent');
