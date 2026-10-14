@@ -117,14 +117,14 @@ class OutsourceApplyController extends Controller
                 jobTitle: $validated['job_title'],
                 workLocation: $validated['work_location'],
                 workCity: $validated['work_city'],
-                bankAccount: $validated['bank_account'],
-                mitoJoinDate: $validated['mito_join_date'],
-                contractStartDate: $validated['contract_start_date'],
-                contractEndDate: $validated['contract_end_date'],
+                bankAccount: null,
+                mitoJoinDate: $validated['mito_join_date'] ?? null,
+                contractStartDate: $validated['contract_start_date'] ?? null,
+                contractEndDate: $validated['contract_end_date'] ?? null,
                 costCenter: $validated['cost_center'],
                 entity: $validated['entity'],
-                payrollScheme: $validated['payroll_scheme'],
-                umkAmount: (float) $validated['umk_amount'],
+                payrollScheme: null,
+                umkAmount: null,
                 vendor: $validated['vendor'],
                 createdBy: 'Portal Outsource',
             ));
@@ -162,26 +162,36 @@ class OutsourceApplyController extends Controller
     }
 
     /**
-     * @return array{available: bool, message: ?string}
+     * @return array{available: bool, message: ?string, duplicate_fields: list<string>}
      */
     public function contactRegistrationStatus(?string $phone, ?string $email): array
     {
         $email = strtolower(trim((string) $email));
-        if (($phone ?? '') === '' && $email === '') {
-            return ['available' => true, 'message' => null];
-        }
+        $duplicateFields = [];
 
-        foreach ($this->contactLockKeys($phone, $email) as $key) {
-            if (Cache::has($key)) {
-                return ['available' => false, 'message' => self::CONTACT_DUPLICATE_MESSAGE];
+        if ($phone !== null && $phone !== '') {
+            $phoneLockKey = $this->contactLockKeys($phone, null)[0] ?? null;
+            if (($phoneLockKey !== null && Cache::has($phoneLockKey))
+                || $this->outsourceRepo->findByContact($phone, null) !== null) {
+                $duplicateFields[] = 'whatsapp_number';
             }
         }
 
-        if ($this->outsourceRepo->findByContact($phone, $email) !== null) {
-            return ['available' => false, 'message' => self::CONTACT_DUPLICATE_MESSAGE];
+        if ($email !== '') {
+            $emailLockKey = $this->contactLockKeys(null, $email)[0] ?? null;
+            if (($emailLockKey !== null && Cache::has($emailLockKey))
+                || $this->outsourceRepo->findByContact(null, $email) !== null) {
+                $duplicateFields[] = 'email';
+            }
         }
 
-        return ['available' => true, 'message' => null];
+        $available = $duplicateFields === [];
+
+        return [
+            'available' => $available,
+            'message' => $available ? null : self::CONTACT_DUPLICATE_MESSAGE,
+            'duplicate_fields' => $duplicateFields,
+        ];
     }
 
     private function canonicalPhone(?string $raw): ?string
