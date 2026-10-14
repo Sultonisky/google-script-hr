@@ -158,7 +158,7 @@
                     </div>
                     <div class="modal-body">
                         <p class="mb-3">Data incentive periode <strong data-oic="period">-</strong> akan disimpan. Perubahan hanya berlaku pada data Outsource Incentive, tidak mengubah UMK maupun incentive di master outsource.</p>
-                        <div class="border rounded p-3 bg-light">
+                        <div class="border rounded p-3">
                             <div class="row g-2">
                                 <div class="col-4 text-muted small">File</div>
                                 <div class="col-8 fw-semibold text-break" data-oic="file">-</div>
