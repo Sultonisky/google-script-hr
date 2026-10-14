@@ -14,7 +14,9 @@ class OutsourceIncentive extends Model
         'full_name',
         'vendor',
         'umk_amount',
+        'incentive_pokok_amount',
         'incentive_amount',
+        'total_amount',
         'source_file',
         'imported_by',
     ];
@@ -23,7 +25,9 @@ class OutsourceIncentive extends Model
     {
         return [
             'umk_amount' => 'decimal:2',
+            'incentive_pokok_amount' => 'decimal:2',
             'incentive_amount' => 'decimal:2',
+            'total_amount' => 'decimal:2',
         ];
     }
 }

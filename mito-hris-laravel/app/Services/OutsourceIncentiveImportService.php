@@ -16,7 +16,12 @@ use RuntimeException;
 
 class OutsourceIncentiveImportService
 {
-    private const HEADERS = ['Outsource ID', 'Nama', 'UMK', 'Incentive'];
+    private const HEADERS = ['Outsource ID', 'Nama', 'Incentive Pokok', 'Incentive', 'Total'];
+    private const AMOUNT_COLUMNS = [
+        'C' => ['incentive_pokok_amount', 'Incentive Pokok'],
+        'D' => ['incentive_amount', 'Incentive'],
+        'E' => ['total_amount', 'Total'],
+    ];
 
     public function __construct(
         protected OutsourceEmployeeRepositoryInterface $outsourceRepo
@@ -36,7 +41,7 @@ class OutsourceIncentiveImportService
             $sheet->setCellValue($column . '1', $header);
             $sheet->getColumnDimension($column)->setAutoSize(true);
         }
-        $sheet->getStyle('A1:D1')->applyFromArray([
+        $sheet->getStyle('A1:E1')->applyFromArray([
             'font' => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF']],
             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF005BAC']],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
@@ -47,11 +52,8 @@ class OutsourceIncentiveImportService
             $row = $index + 2;
             $sheet->getCell('A' . $row)->setValueExplicit((string) $employee->outsourceId, DataType::TYPE_STRING);
             $sheet->setCellValue('B' . $row, $employee->fullName ?? '');
-            if ($employee->umkAmount !== null) {
-                $sheet->setCellValue('C' . $row, $employee->umkAmount);
-            }
         }
-        $sheet->getStyle('C2:D' . max(2, $employees->count() + 1))->getNumberFormat()->setFormatCode('#,##0');
+        $sheet->getStyle('C2:E' . max(2, $employees->count() + 1))->getNumberFormat()->setFormatCode('#,##0');
         $spreadsheet->getProperties()->setCreator('MITO HRIS')->setTitle('Template Outsource Incentive');
 
         return $spreadsheet;
@@ -90,11 +92,15 @@ class OutsourceIncentiveImportService
         for ($line = 2; $line <= $sheet->getHighestDataRow(); $line++) {
             $rawId = $sheet->getCell('A' . $line)->getValue();
             $rawName = $sheet->getCell('B' . $line)->getValue();
-            $rawAmount = $sheet->getCell('D' . $line)->getValue();
-            if (is_string($rawAmount) && str_starts_with($rawAmount, '=')) {
-                $rawAmount = $sheet->getCell('D' . $line)->getOldCalculatedValue();
+            $rawAmounts = [];
+            foreach (self::AMOUNT_COLUMNS as $column => [$field]) {
+                $rawAmounts[$field] = $sheet->getCell($column . $line)->getValue();
+                if (is_string($rawAmounts[$field]) && str_starts_with($rawAmounts[$field], '=')) {
+                    $rawAmounts[$field] = $sheet->getCell($column . $line)->getOldCalculatedValue();
+                }
             }
-            if ($rawAmount === null || (is_string($rawAmount) && trim($rawAmount) === '')) {
+            $hasAnyAmount = collect($rawAmounts)->contains(fn ($amount) => $amount !== null && (!is_string($amount) || trim($amount) !== ''));
+            if (!$hasAnyAmount) {
                 if ($rawId !== null && trim((string) $rawId) !== '') {
                     $blank++;
                 }
@@ -110,20 +116,35 @@ class OutsourceIncentiveImportService
                 $errors[] = "baris {$line}: Outsource ID {$id} duplikat dengan baris {$seen[$id]}.";
                 continue;
             }
-            $seen[$id] = $line;
 
-            $amount = OutsourceEmployeeAttributeMap::parseAmount($rawAmount);
-            if ($amount === null) {
-                $errors[] = "baris {$line} ({$id}): Incentive bukan angka.";
-            } elseif ($amount < 0) {
-                $errors[] = "baris {$line} ({$id}): Incentive tidak boleh negatif.";
-            } else {
+            $amounts = [];
+            $rowHasErrors = false;
+            foreach (self::AMOUNT_COLUMNS as $column => [$field, $label]) {
+                $rawAmount = $rawAmounts[$field];
+                if ($rawAmount === null || (is_string($rawAmount) && trim($rawAmount) === '')) {
+                    $errors[] = "baris {$line} ({$id}): {$label} wajib diisi.";
+                    $rowHasErrors = true;
+                    continue;
+                }
+
+                $amount = OutsourceEmployeeAttributeMap::parseAmount($rawAmount);
+                if ($amount === null) {
+                    $errors[] = "baris {$line} ({$id}): {$label} bukan angka.";
+                    $rowHasErrors = true;
+                } elseif ($amount < 0) {
+                    $errors[] = "baris {$line} ({$id}): {$label} tidak boleh negatif.";
+                    $rowHasErrors = true;
+                } else {
+                    $amounts[$field] = $amount;
+                }
+            }
+            if (!$rowHasErrors) {
+                $seen[$id] = $line;
                 $readRows[] = [
                     'line' => $line,
                     'outsource_id' => $id,
                     'full_name' => $rawName === null ? null : trim((string) $rawName),
-                    'incentive_amount' => $amount,
-                ];
+                ] + $amounts;
             }
         }
         if ($blank > 0) {
@@ -146,12 +167,16 @@ class OutsourceIncentiveImportService
                 'outsource_id' => (string) $employee->outsourceId,
                 'full_name' => $employee->fullName ?? $row['full_name'],
                 'vendor' => $employee->vendor,
-                'umk_amount' => $employee->umkAmount,
+                'incentive_pokok_amount' => $row['incentive_pokok_amount'],
                 'incentive_amount' => $row['incentive_amount'],
+                'total_amount' => $row['total_amount'],
                 'status' => !$current ? 'created' : (
-                    round((float) $current->incentive_amount, 2) === round($row['incentive_amount'], 2)
-                    && (is_null($current->umk_amount) && is_null($employee->umkAmount)
-                        || round((float) $current->umk_amount, 2) === round((float) $employee->umkAmount, 2))
+                    $current->incentive_pokok_amount !== null
+                    && round((float) $current->incentive_pokok_amount, 2) === round($row['incentive_pokok_amount'], 2)
+                    && $current->incentive_amount !== null
+                    && round((float) $current->incentive_amount, 2) === round($row['incentive_amount'], 2)
+                    && $current->total_amount !== null
+                    && round((float) $current->total_amount, 2) === round($row['total_amount'], 2)
                         ? 'unchanged'
                         : 'updated'
                 ),
