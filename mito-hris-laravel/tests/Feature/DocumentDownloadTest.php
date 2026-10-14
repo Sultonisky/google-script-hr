@@ -7,12 +7,15 @@ use App\Models\Employee;
 use App\Models\EmployeeDocument;
 use App\Models\EmployeeDocumentFile;
 use App\Models\OutsourceEmployee;
+use App\Services\EmployeeService;
 use App\Services\PdfGeneratorService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Session;
 use Mockery;
 use Tests\TestCase;
+use ZipArchive;
 
 class DocumentDownloadTest extends TestCase
 {
@@ -444,6 +447,150 @@ class DocumentDownloadTest extends TestCase
             ->assertOk()
             ->assertHeader('X-Document-Source', 'export')
             ->assertHeader('Content-Type', 'application/pdf');
+    }
+
+    public function test_offboarding_accepts_pdf_attachment_under_five_megabytes(): void
+    {
+        $this->actingAsRole('Admin');
+        $fileSize = 3300 * 1024;
+        $employeeService = Mockery::mock(EmployeeService::class);
+        $employeeService->shouldReceive('processOffboarding')
+            ->once()
+            ->with('EMP-DL-1', Mockery::on(function (array $data) use ($fileSize): bool {
+                $file = $data['_attachments']['Surat Resign'] ?? null;
+
+                return $file instanceof UploadedFile && $file->getSize() === $fileSize;
+            }), Mockery::type('string'))
+            ->andReturn(['success' => true, 'message' => 'Offboarding berhasil.']);
+        $this->app->instance(EmployeeService::class, $employeeService);
+
+        $this->post('/hr/employees/EMP-DL-1/offboard', [
+            'offboarding_type' => 'Resignation',
+            'reason' => 'Melanjutkan studi',
+            'last_working_date' => '2026-09-30',
+            'attachment_Surat_Resign' => UploadedFile::fake()->create('surat-resign.pdf', 3300, 'application/pdf'),
+        ], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJson(['success' => true]);
+    }
+
+    public function test_offboarding_accepts_supported_image_and_word_attachment_types(): void
+    {
+        $this->actingAsRole('Admin');
+        $supportedFiles = [
+            ['surat.jpg', 'image/jpeg'],
+            ['surat.jpeg', 'image/jpeg'],
+            ['surat.png', 'image/png'],
+            ['surat.doc', 'application/msword'],
+            ['surat.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+        ];
+        $employeeService = Mockery::mock(EmployeeService::class);
+        $employeeService->shouldReceive('processOffboarding')
+            ->times(count($supportedFiles))
+            ->andReturn(['success' => true, 'message' => 'Offboarding berhasil.']);
+        $this->app->instance(EmployeeService::class, $employeeService);
+
+        foreach ($supportedFiles as [$filename, $mimeType]) {
+            $this->post('/hr/employees/EMP-DL-1/offboard', [
+                'offboarding_type' => 'Resignation',
+                'reason' => 'Melanjutkan studi',
+                'last_working_date' => '2026-09-30',
+                'attachment_Surat_Resign' => UploadedFile::fake()->create($filename, 10, $mimeType),
+            ], ['Accept' => 'application/json'])
+                ->assertOk()
+                ->assertJson(['success' => true]);
+        }
+    }
+
+    public function test_offboarding_accepts_docx_detected_as_zip_when_it_is_a_word_package(): void
+    {
+        $this->actingAsRole('Admin');
+        $path = tempnam(sys_get_temp_dir(), 'offboarding-docx-');
+        $this->assertNotFalse($path);
+
+        $archive = new ZipArchive();
+        $this->assertSame(true, $archive->open($path, ZipArchive::OVERWRITE));
+        $archive->addFromString('[Content_Types].xml', '<Types/>');
+        $archive->addFromString('word/document.xml', '<document/>');
+        $archive->close();
+
+        $file = new UploadedFile($path, 'surat.docx', 'application/zip', UPLOAD_ERR_OK, true);
+        $this->assertSame('application/zip', $file->getMimeType());
+
+        $employeeService = Mockery::mock(EmployeeService::class);
+        $employeeService->shouldReceive('processOffboarding')
+            ->once()
+            ->andReturn(['success' => true, 'message' => 'Offboarding berhasil.']);
+        $this->app->instance(EmployeeService::class, $employeeService);
+
+        try {
+            $this->post('/hr/employees/EMP-DL-1/offboard', [
+                'offboarding_type' => 'Resignation',
+                'reason' => 'Melanjutkan studi',
+                'last_working_date' => '2026-09-30',
+                'attachment_Surat_Resign' => $file,
+            ], ['Accept' => 'application/json'])
+                ->assertOk()
+                ->assertJson(['success' => true]);
+        } finally {
+            unlink($path);
+        }
+    }
+
+    public function test_offboarding_rejects_zip_file_renamed_as_docx(): void
+    {
+        $this->actingAsRole('Admin');
+        $path = tempnam(sys_get_temp_dir(), 'offboarding-invalid-docx-');
+        $this->assertNotFalse($path);
+
+        $archive = new ZipArchive();
+        $this->assertSame(true, $archive->open($path, ZipArchive::OVERWRITE));
+        $archive->addFromString('readme.txt', 'not a Word document');
+        $archive->close();
+
+        $file = new UploadedFile($path, 'surat.docx', 'application/zip', UPLOAD_ERR_OK, true);
+        $this->assertSame('application/zip', $file->getMimeType());
+
+        try {
+            $this->post('/hr/employees/EMP-DL-1/offboard', [
+                'offboarding_type' => 'Resignation',
+                'reason' => 'Melanjutkan studi',
+                'last_working_date' => '2026-09-30',
+                'attachment_Surat_Resign' => $file,
+            ], ['Accept' => 'application/json'])
+                ->assertUnprocessable()
+                ->assertJsonPath('message', 'Tipe file "surat.docx" tidak diizinkan. Gunakan PDF, JPG, PNG, DOC, atau DOCX.');
+        } finally {
+            unlink($path);
+        }
+    }
+
+    public function test_offboarding_rejects_attachment_with_mismatched_extension_and_mime_type(): void
+    {
+        $this->actingAsRole('Admin');
+
+        $this->post('/hr/employees/EMP-DL-1/offboard', [
+            'offboarding_type' => 'Resignation',
+            'reason' => 'Melanjutkan studi',
+            'last_working_date' => '2026-09-30',
+            'attachment_Surat_Resign' => UploadedFile::fake()->create('surat.png', 10, 'application/pdf'),
+        ], ['Accept' => 'application/json'])
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'Tipe file "surat.png" tidak diizinkan. Gunakan PDF, JPG, PNG, DOC, atau DOCX.');
+    }
+
+    public function test_offboarding_rejects_attachment_over_five_megabytes_with_clear_message(): void
+    {
+        $this->actingAsRole('Admin');
+
+        $this->post('/hr/employees/EMP-DL-1/offboard', [
+            'offboarding_type' => 'Resignation',
+            'reason' => 'Melanjutkan studi',
+            'last_working_date' => '2026-09-30',
+            'attachment_Surat_Resign' => UploadedFile::fake()->create('surat-resign.pdf', 5121, 'application/pdf'),
+        ], ['Accept' => 'application/json'])
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'File "surat-resign.pdf" melebihi batas 5 MB.');
     }
 
     public function test_backfill_records_surat_bpjs_for_past_offboarding_once(): void
