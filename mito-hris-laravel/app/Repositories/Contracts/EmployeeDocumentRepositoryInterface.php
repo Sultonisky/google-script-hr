@@ -12,7 +12,7 @@ interface EmployeeDocumentRepositoryInterface
 
     public function getLatestByEmployeeAndType(string $employeeId, string $docCode): ?array;
 
-    public function append(array $row): bool;
+    public function append(array $row): ?string;
 
     /** Highest sequence number already used across all employees (0 if none). */
     public function maxSequence(): int;
