@@ -402,7 +402,7 @@ class ProbationService
             'message'           => $isLulus
                 ? "Karyawan lulus probation & diangkat menjadi karyawan tetap (PKWTT). SK: {$skNumber}"
                 : ($isPutusKontrak
-                    ? "Kontrak diakhiri. Paklaring diterbitkan. No: {$skNumber}"
+                    ? "Kontrak diakhiri. Paklaring dan Surat BPJS diterbitkan. No. Paklaring: {$skNumber}"
                     : "Masa probation diperpanjang ({$extDuration})."),
         ];
     }
