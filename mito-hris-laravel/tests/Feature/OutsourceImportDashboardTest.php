@@ -33,6 +33,7 @@ class OutsourceImportDashboardTest extends TestCase
             'email' => 'bayu@example.com',
             'remarks' => 'Catatan HR',
             'vendor' => 'Damarindo',
+            'hris_status' => 'Aktif',
             'created_by' => 'test',
         ]);
     }
@@ -124,6 +125,7 @@ class OutsourceImportDashboardTest extends TestCase
         $this->assertSame(3, OutsourceEmployee::count());
         $bayu = OutsourceEmployee::query()->where('outsource_id', 'DM20260001')->firstOrFail();
         $this->assertSame('Bayu Saputra Update', $bayu->full_name);
+        $this->assertSame('Aktif', $bayu->hris_status, 'Import source without HRIS status must not clear the manual status.');
         $this->assertSame('Remarks dari Excel', $bayu->remarks);
         $this->assertNull($bayu->basic_salary);
         $this->assertNull($bayu->incentive_amount);

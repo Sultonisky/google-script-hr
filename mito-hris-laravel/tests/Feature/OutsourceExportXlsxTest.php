@@ -50,6 +50,7 @@ class OutsourceExportXlsxTest extends TestCase
         'U' => 'Incentive Amount (30%)',
         'V' => 'Remarks',
         'W' => 'Vendor',
+        'X' => 'Status HRIS',
     ];
 
     private function actingAsRole(string $role): static
@@ -108,6 +109,7 @@ class OutsourceExportXlsxTest extends TestCase
                 costCenter:        'Jakarta HO',
                 entity:            'PT Mito',
                 payrollScheme:     'Monthly',
+                hrisStatus:        'Aktif',
                 umkAmount:         5396000.0,
                 basicSalary:       5396000.0,
                 incentiveAmount:   1618800.0,
@@ -211,6 +213,7 @@ class OutsourceExportXlsxTest extends TestCase
         $this->assertSame('OS-001', $sheet->getCell('A2')->getValue());
         $this->assertSame('Budi Santoso', $sheet->getCell('B2')->getValue());
         $this->assertSame('Damarindo', $sheet->getCell('W2')->getValue());
+        $this->assertSame('Aktif', $sheet->getCell('X2')->getValue());
         $this->assertEquals(5396000, $sheet->getCell('T2')->getValue());
         $this->assertSame('OS-002', $sheet->getCell('A3')->getValue());
 
