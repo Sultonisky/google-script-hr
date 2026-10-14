@@ -123,6 +123,7 @@
                             <th>Nama</th>
                             <th>Jabatan / Lokasi</th>
                             <th>Vendor</th>
+                            <th>Status Outsource</th>
                             <th>Tgl Join Mito</th>
                             <th>Tgl Akhir Kontrak (StaffInc)</th>
                         </tr>
@@ -145,12 +146,17 @@
                                 <td>{{ $os->jobTitle ?? '-' }} <small
                                         class="text-muted d-block">{{ collect([$os->workLocation, $os->workCity])->filter()->implode(' · ') ?: '-' }}</small></td>
                                 <td>{{ $os->vendor ?? '-' }}</td>
+                                <td>
+                                    <span class="badge-status {{ $os->hrisStatus === 'Aktif' ? 'accepted' : ($os->hrisStatus === 'Tidak Aktif' ? 'blacklist' : 'pending') }}">
+                                        {{ $os->hrisStatus ?: 'Belum diatur' }}
+                                    </span>
+                                </td>
                                 <td class="id-mono">{{ $os->mitoJoinDate ?? '-' }}</td>
                                 <td class="id-mono">{{ $os->contractEndDate ?? '-' }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7">
+                                <td colspan="8">
                                     <div class="table-empty">
                                         <i class="bi bi-inbox"></i>
                                         <p>Belum ada data karyawan outsource.</p>
@@ -248,7 +254,7 @@
         // Drawer click handler for outsource
         document.querySelectorAll('#osTableBody tr[data-drawer-type="outsource"]').forEach(function(row) {
             row.addEventListener('click', function(e) {
-                if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+                if (e.target.closest('button, select, input, a')) return;
                 var id = this.getAttribute('data-drawer-id');
                 if (id && typeof openOutsourceDrawer === 'function') {
                     openOutsourceDrawer(id);
