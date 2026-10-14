@@ -55,8 +55,10 @@ class OutsourcePayrollController extends Controller
                 'outsource_id' => $incentive->outsource_id,
                 'full_name' => $incentive->full_name,
                 'vendor' => $incentive->vendor,
-                'umk_amount' => (float) ($incentive->umk_amount ?? 0),
+                'umk_amount' => (float) ($incentive->umk_amount ?? $incentive->incentive_pokok_amount ?? 0),
+                'incentive_pokok_amount' => (float) ($incentive->incentive_pokok_amount ?? 0),
                 'incentive_amount' => (float) ($incentive->incentive_amount ?? 0),
+                'total_amount' => (float) ($incentive->total_amount ?? 0),
             ])
             ->values();
 
