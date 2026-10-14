@@ -68,7 +68,9 @@ class OutsourcePayrollApiTest extends TestCase
             'full_name' => 'Bayu Saputra',
             'vendor' => 'Damarindo',
             'umk_amount' => null,
+            'incentive_pokok_amount' => 1000000,
             'incentive_amount' => 1250000,
+            'total_amount' => 2250000,
         ]);
         OutsourceIncentive::query()->create([
             'period' => '2026-08',
@@ -76,7 +78,9 @@ class OutsourcePayrollApiTest extends TestCase
             'full_name' => 'Bayu Saputra',
             'vendor' => 'Damarindo',
             'umk_amount' => 4500000,
+            'incentive_pokok_amount' => 900000,
             'incentive_amount' => 1000000,
+            'total_amount' => 1900000,
         ]);
 
         $this->withToken(self::API_TOKEN)
@@ -84,8 +88,10 @@ class OutsourcePayrollApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('filters.period', '2026-09')
-            ->assertJsonPath('data.0.umk_amount', 0)
+            ->assertJsonPath('data.0.umk_amount', 1000000)
+            ->assertJsonPath('data.0.incentive_pokok_amount', 1000000)
             ->assertJsonPath('data.0.incentive_amount', 1250000)
+            ->assertJsonPath('data.0.total_amount', 2250000)
             ->assertJsonPath('meta.count', 1);
 
         $this->withToken(self::API_TOKEN)

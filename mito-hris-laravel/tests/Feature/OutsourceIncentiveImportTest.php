@@ -18,7 +18,7 @@ class OutsourceIncentiveImportTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const HEADERS = ['Outsource ID', 'Nama', 'UMK', 'Incentive'];
+    private const HEADERS = ['Outsource ID', 'Nama', 'Incentive Pokok', 'Incentive', 'Total'];
 
     private array $tempFiles = [];
 
@@ -101,7 +101,9 @@ class OutsourceIncentiveImportTest extends TestCase
             'full_name' => 'Bayu Saputra',
             'vendor' => 'Damarindo',
             'umk_amount' => 4500000,
+            'incentive_pokok_amount' => 1000000,
             'incentive_amount' => 1250000,
+            'total_amount' => 2250000,
         ]);
         OutsourceIncentive::query()->create([
             'period' => '2026-09',
@@ -109,7 +111,9 @@ class OutsourceIncentiveImportTest extends TestCase
             'full_name' => 'Citra Lestari',
             'vendor' => 'StaffInc',
             'umk_amount' => null,
+            'incentive_pokok_amount' => null,
             'incentive_amount' => 900000,
+            'total_amount' => null,
         ]);
 
         $response = $this->get('/hr/outsource-incentives/export?period=2026-09&search=Bayu')
@@ -121,8 +125,8 @@ class OutsourceIncentiveImportTest extends TestCase
         file_put_contents($path, $response->streamedContent());
         $rows = IOFactory::load($path)->getSheet(0)->toArray();
 
-        $this->assertSame(['Outsource ID', 'Nama', 'Vendor', 'UMK', 'Incentive'], $rows[0]);
-        $this->assertSame(['DM20260001', 'Bayu Saputra', 'Damarindo', '4,500,000', '1,250,000'], $rows[1]);
+        $this->assertSame(['Outsource ID', 'Nama', 'Vendor', 'Incentive Pokok', 'Incentive', 'Total'], $rows[0]);
+        $this->assertSame(['DM20260001', 'Bayu Saputra', 'Damarindo', '1,000,000', '1,250,000', '2,250,000'], $rows[1]);
         $this->assertCount(2, $rows);
 
         $response = $this->get('/hr/outsource-incentives/export?period=2026-09&search=Citra');
@@ -131,12 +135,15 @@ class OutsourceIncentiveImportTest extends TestCase
         $this->tempFiles[] = $path;
         file_put_contents($path, $response->streamedContent());
         $rows = IOFactory::load($path)->getSheet(0)->toArray();
-        $this->assertSame('0', $rows[1][3]);
+        $this->assertNull($rows[1][3]);
         $this->assertSame('900,000', $rows[1][4]);
+        $this->assertNull($rows[1][5]);
 
         $this->get('/hr/outsource-incentives?period=2026-09&search=Citra')
             ->assertOk()
-            ->assertSee('Rp 0');
+            ->assertSee('Incentive Pokok')
+            ->assertSee('Total')
+            ->assertSee('Rp 900.000');
     }
 
     public function test_incentive_table_shows_fifteen_rows_per_page(): void
@@ -149,7 +156,9 @@ class OutsourceIncentiveImportTest extends TestCase
                 'full_name' => sprintf('Employee %02d', $index),
                 'vendor' => 'Damarindo',
                 'umk_amount' => 4500000,
+                'incentive_pokok_amount' => 1000000,
                 'incentive_amount' => 100000,
+                'total_amount' => 1100000,
             ]);
         }
 
@@ -166,22 +175,26 @@ class OutsourceIncentiveImportTest extends TestCase
         $this->actingWithPermissions(['view_outsource_incentive', 'manage_outsource_incentive']);
         $this->get('/hr/outsource-incentives?period=2026-09')
             ->assertOk()
-            ->assertSee('id="outsourceIncentiveUmkWarning"', false)
-            ->assertSee('Nilai UMK pada file bukan sumber import', false);
+            ->assertSee('Incentive Pokok')
+            ->assertSee('Total')
+            ->assertDontSee('UMK</th>', false)
+            ->assertSee('nilai Total diimpor apa adanya dan tidak dihitung otomatis', false);
 
         $response = $this->get('/hr/outsource-incentives/template')->assertOk();
         $path = tempnam(sys_get_temp_dir(), 'ointpl') . '.xlsx';
         $this->tempFiles[] = $path;
         file_put_contents($path, $response->streamedContent());
         $rows = IOFactory::load($path)->getSheet(0)->toArray();
-        $this->assertSame(['Outsource ID', 'Nama', 'UMK', 'Incentive'], $rows[0]);
+        $this->assertSame(self::HEADERS, $rows[0]);
         $this->assertSame(['DM20260001', 'Bayu Saputra'], array_slice($rows[1], 0, 2));
-        $this->assertSame('4,500,000', $rows[1][2]);
+        $this->assertNull($rows[1][2]);
+        $this->assertNull($rows[1][3]);
+        $this->assertNull($rows[1][4]);
 
         $file = $this->workbook([
-            ['DM20260001', 'Bayu', 4500000, 'Rp 1.250.000'],
-            ['DM29999999', 'Tidak dikenal', 0, 500000],
-            ['DM20260001', 'Duplikat', 4500000, 100],
+            ['DM20260001', 'Bayu', 1000000, 'Rp 1.250.000', 2250000],
+            ['DM29999999', 'Tidak dikenal', 0, 500000, 500000],
+            ['DM20260001', 'Duplikat', 1000000, 100, 100],
         ]);
         $this->post('/hr/outsource-incentives/import', [
             'file' => $file,
@@ -194,8 +207,8 @@ class OutsourceIncentiveImportTest extends TestCase
             ->assertJsonFragment(['baris 4: Outsource ID DM20260001 duplikat dengan baris 2.']);
         $this->assertSame(0, OutsourceIncentive::count());
 
-        // The uploaded UMK value is deliberately different from the master value.
-        $file = $this->workbook([['DM20260001', 'Bayu', 1, 'Rp 1.250.000']]);
+        // All three imported amounts come from the workbook, not the master record.
+        $file = $this->workbook([['DM20260001', 'Bayu', 1, 'Rp 1.250.000', 9750000]]);
         $this->post('/hr/outsource-incentives/import', [
             'file' => $file,
             'period' => '2026-09',
@@ -204,10 +217,12 @@ class OutsourceIncentiveImportTest extends TestCase
             ->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('summary.created', 1)
-            ->assertJsonPath('rows.0.umk_amount', 4500000);
+            ->assertJsonPath('rows.0.incentive_pokok_amount', 1)
+            ->assertJsonPath('rows.0.incentive_amount', 1250000)
+            ->assertJsonPath('rows.0.total_amount', 9750000);
         $this->assertSame(0, OutsourceIncentive::count());
 
-        $file = $this->workbook([['DM20260001', 'Bayu', 1, 'Rp 1.250.000']]);
+        $file = $this->workbook([['DM20260001', 'Bayu', 1, 'Rp 1.250.000', 9750000]]);
         $this->post('/hr/outsource-incentives/import', [
             'file' => $file,
             'period' => '2026-09',
@@ -215,14 +230,28 @@ class OutsourceIncentiveImportTest extends TestCase
             ->assertOk()
             ->assertJsonPath('summary.created', 1);
         $saved = OutsourceIncentive::query()->firstOrFail();
+        $this->assertSame(1.0, (float) $saved->incentive_pokok_amount);
         $this->assertSame(1250000.0, (float) $saved->incentive_amount);
-        $this->assertSame(4500000.0, (float) $saved->umk_amount);
+        $this->assertSame(9750000.0, (float) $saved->total_amount);
+        $this->assertNull($saved->umk_amount);
+        $saved->update(['total_amount' => null]);
+        $this->post('/hr/outsource-incentives/import', [
+            'file' => $this->workbook([['DM20260001', 'Bayu', 1, 1250000, 0]]),
+            'period' => '2026-09',
+            'dry_run' => '1',
+        ], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('rows.0.status', 'updated');
+        $saved->update(['total_amount' => 9750000]);
+
         $master = OutsourceEmployee::query()->where('outsource_id', 'DM20260001')->firstOrFail();
         $this->assertSame(4500000.0, (float) $master->umk_amount);
         $this->assertSame(875000.0, (float) $master->incentive_amount);
         $this->get('/hr/outsource-incentives?period=2026-09')
             ->assertOk()
-            ->assertSee('Rp 4.500.000')
+            ->assertSee('Rp 1')
+            ->assertSee('Rp 9.750.000')
+            ->assertSee('Incentive Pokok')
             ->assertSee('Rp 1.250.000');
     }
 
@@ -232,24 +261,40 @@ class OutsourceIncentiveImportTest extends TestCase
 
         $this->post('/hr/outsource-incentives/import', [
             'file' => $this->workbook(
-                [['DM20260001', 'Bayu', 4500000, 1250000]],
-                ['Outsource ID', 'Nama', 'UMK', 'Bonus'],
+                [['DM20260001', 'Bayu', 4500000, 1250000, 2250000]],
+                ['Outsource ID', 'Nama', 'UMK', 'Incentive', 'Total'],
             ),
             'period' => '2026-09',
         ], ['Accept' => 'application/json'])
             ->assertStatus(422)
             ->assertJsonPath('success', false)
-            ->assertJsonPath('message', "Gagal membaca file: Format file tidak sesuai template: kolom D1 harus berisi 'Incentive'.");
+            ->assertJsonPath('message', "Gagal membaca file: Format file tidak sesuai template: kolom C1 harus berisi 'Incentive Pokok'.");
 
         $this->post('/hr/outsource-incentives/import', [
             'file' => $this->workbook(
-                [['DM20260001', 'Bayu', 4500000, 1250000, 'Damarindo']],
+                [['DM20260001', 'Bayu', 4500000, 1250000, 2250000, 'Damarindo']],
                 [...self::HEADERS, 'Vendor'],
             ),
             'period' => '2026-09',
         ], ['Accept' => 'application/json'])
             ->assertStatus(422)
-            ->assertJsonPath('message', 'Gagal membaca file: Format file tidak sesuai template: kolom E1 tidak diharapkan.');
+            ->assertJsonPath('message', 'Gagal membaca file: Format file tidak sesuai template: kolom F1 tidak diharapkan.');
+
+        $this->assertSame(0, OutsourceIncentive::count());
+    }
+
+    public function test_import_requires_each_amount_to_be_entered_in_the_file(): void
+    {
+        $this->actingWithPermissions(['view_outsource_incentive', 'manage_outsource_incentive']);
+
+        $this->post('/hr/outsource-incentives/import', [
+            'file' => $this->workbook([['DM20260001', 'Bayu', 1000000, 1250000, null]]),
+            'period' => '2026-09',
+            'dry_run' => '1',
+        ], ['Accept' => 'application/json'])
+            ->assertUnprocessable()
+            ->assertJsonPath('success', false)
+            ->assertJsonFragment(['baris 2 (DM20260001): Total wajib diisi.']);
 
         $this->assertSame(0, OutsourceIncentive::count());
     }
