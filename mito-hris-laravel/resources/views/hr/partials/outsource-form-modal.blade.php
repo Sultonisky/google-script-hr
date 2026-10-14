@@ -79,6 +79,14 @@
                             </select>
                         </div>
                         <div class="col-md-4">
+                            <label class="form-label fw-semibold" for="osfHrisStatus" style="font-size:12.5px">Status Outsource</label>
+                            <select class="form-select form-select-sm" id="osfHrisStatus" data-field="hrisStatus">
+                                @foreach ($osOpts['statuses'] ?? [] as $status)
+                                    <option value="{{ $status }}" {{ $status === 'Aktif' ? 'selected' : '' }}>{{ $status }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-4">
                             <label class="form-label fw-semibold" for="osfJobTitle" style="font-size:12.5px">Nama Jabatan</label>
                             <input type="text" class="form-control form-control-sm" id="osfJobTitle" data-field="jobTitle" maxlength="255" list="osfJobTitleList" />
                             <datalist id="osfJobTitleList">

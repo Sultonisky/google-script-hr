@@ -10,6 +10,7 @@ use App\Repositories\Contracts\UserPermissionRepositoryInterface;
 use App\Services\PermissionResolver;
 use App\Support\PermissionCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Session;
 use Tests\TestCase;
 
@@ -91,7 +92,10 @@ class OutsourcePermissionTest extends TestCase
             ->assertSee('Bayu Saputra')
             ->assertSee('DM20260001')
             ->assertSee('Tgl Akhir Kontrak (StaffInc)')
+            ->assertSee('Status Outsource')
             ->assertSee('2026-08-31')
+            ->assertSee('Aktif')
+            ->assertSee('badge-status accepted')
             ->assertDontSee('Legacy Outsource')
             ->assertDontSee('id="btnAddOutsource"', false)
             ->assertDontSee('id="outsourceContractModal"', false)
@@ -107,6 +111,35 @@ class OutsourcePermissionTest extends TestCase
 
         $this->putJson('/hr/outsource/DM20260001', ['fullName' => 'Bayu'])->assertForbidden();
         $this->postJson('/hr/outsource/kontrak-pkwt-tad', ['employee_id' => 'DM20260001'])->assertForbidden();
+    }
+
+    public function test_manager_can_update_manual_hris_status_without_syncing_attendance(): void
+    {
+        Http::fake();
+        $this->actingWithPermissions(['view_outsource', 'manage_outsource']);
+
+        $this->get('/hr/outsource')
+            ->assertOk()
+            ->assertSee('Status Outsource')
+            ->assertSee('id="osfHrisStatus"', false)
+            ->assertSee('value="Aktif" selected', false)
+            ->assertSee('badge-status accepted');
+
+        $this->putJson('/hr/outsource/DM20260001', ['hrisStatus' => 'Aktif'])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('employee.hrisStatus', 'Aktif');
+
+        $this->assertSame('Aktif', OutsourceEmployee::query()->where('outsource_id', 'DM20260001')->value('hris_status'));
+        Http::assertNothingSent();
+
+        $this->putJson('/hr/outsource/DM20260001', ['hrisStatus' => 'Tidak Aktif'])->assertOk();
+        $this->assertSame('Tidak Aktif', OutsourceEmployee::query()->where('outsource_id', 'DM20260001')->value('hris_status'));
+
+        $this->putJson('/hr/outsource/DM20260001', ['hrisStatus' => 'inactive'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('hrisStatus');
+        $this->assertSame('Tidak Aktif', OutsourceEmployee::query()->where('outsource_id', 'DM20260001')->value('hris_status'));
     }
 
     public function test_outsource_list_shows_all_vendors_without_vendor_filter(): void
