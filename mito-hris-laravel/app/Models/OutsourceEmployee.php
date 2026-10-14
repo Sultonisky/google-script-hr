@@ -8,6 +8,10 @@ class OutsourceEmployee extends Model
 {
     protected $table = 'outsource_employees';
 
+    protected $attributes = [
+        'hris_status' => 'Aktif',
+    ];
+
     protected $fillable = [
         'outsource_id',
         'full_name',
@@ -32,6 +36,7 @@ class OutsourceEmployee extends Model
         'incentive_amount',
         'remarks',
         'vendor',
+        'hris_status',
         'created_by',
     ];
 
