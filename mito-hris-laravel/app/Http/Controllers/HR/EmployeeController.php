@@ -740,7 +740,6 @@ class EmployeeController extends Controller
 
         $result = $this->employeeService->processOffContract($id, $request->all(), $this->hrUserName());
 
-        // Off Contract hanya menghasilkan satu dokumen: Paklaring.
         $pdfUrls = [];
         if ($result['success']) {
             $lwd = $request->input('last_working_date');
@@ -754,6 +753,14 @@ class EmployeeController extends Controller
             // perform a second Sheets lookup here: eventual consistency can
             // otherwise make a successful update return no PDF URLs.
             $pdfUrls['paklaring'] = route('hr.export.paklaring', ['id' => $id]) . '?' . $extraQ;
+            $bpjsQ = http_build_query([
+                'effective_date' => $lwd,
+                'last_working_date' => $lwd,
+                'notes' => $request->input('notes', ''),
+                'approved_by' => $request->input('approved_by', ''),
+                'bpjs_document_id' => $result['bpjsDocumentId'] ?? '',
+            ]);
+            $pdfUrls['surat_bpjs'] = route('hr.export.off-contract-surat-bpjs', ['id' => $id]) . '?' . $bpjsQ;
         }
 
         $result['pdf_urls'] = $pdfUrls;
