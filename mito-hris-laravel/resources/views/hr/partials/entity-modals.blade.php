@@ -498,7 +498,22 @@
                         body: formData
                     })
                     .then(function(r) {
-                        return r.json();
+                        return r.text().then(function(body) {
+                            var response;
+                            try {
+                                response = body ? JSON.parse(body) : null;
+                            } catch (error) {
+                                if (r.status === 413) {
+                                    throw new Error(
+                                        'Ukuran total lampiran melebihi batas unggah server. Setiap file maksimal 5 MB. Hubungi administrator jika file di bawah batas ini tetap gagal.'
+                                    );
+                                }
+                                throw new Error(
+                                    'Server tidak dapat memproses unggahan. Pastikan setiap file maksimal 5 MB, lalu coba kembali. Jika masih gagal, hubungi administrator.'
+                                );
+                            }
+                            return response;
+                        });
                     })
                     .then(function(res) {
                         offBtn.disabled = false;
