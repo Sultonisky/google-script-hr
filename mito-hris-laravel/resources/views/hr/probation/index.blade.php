@@ -473,6 +473,7 @@
                         let docBtnLabel = '',
                             docIcon = '',
                             docUrl = '';
+                        let additionalDocBtn = '';
                         if (isLulus) {
                             docBtnLabel = 'Download SK Pengangkatan';
                             docIcon = 'bi-patch-check';
@@ -482,6 +483,12 @@
                             docIcon = 'bi-file-earmark-text';
                             docUrl = '/hr/export/paklaring/' + encodeURIComponent(employeeId) +
                                 '?eval_id=' + evalIdQ;
+                            additionalDocBtn = `
+                    <a class="btn btn-sm" target="_blank"
+                       style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;font-size:12px"
+                       href="/hr/export/probation-surat-bpjs/${encodeURIComponent(employeeId)}?effective_date=${encodeURIComponent(ev.evalDate || '')}&probation_eval_id=${encodeURIComponent(ev.evalId || '')}">
+                       <i class="bi bi-file-earmark-medical me-1"></i>Download Surat BPJS
+                    </a>`;
                         }
 
                         const previewBtn = `
@@ -504,7 +511,7 @@
                     </a>` : '';
 
                         const docActions = (isLulus || isTerm) ?
-                            `<div class="d-flex flex-wrap gap-2 mt-2 pt-2" style="border-top:1px dashed #e5e7eb">${previewBtn}${prPdfBtn}${decDocBtn}</div>` :
+                            `<div class="d-flex flex-wrap gap-2 mt-2 pt-2" style="border-top:1px dashed #e5e7eb">${previewBtn}${prPdfBtn}${decDocBtn}${additionalDocBtn}</div>` :
                             '';
 
                         return `<div class="p-3 rounded-3 mb-3" style="background:#f9fafb;border:1px solid #e5e7eb">
