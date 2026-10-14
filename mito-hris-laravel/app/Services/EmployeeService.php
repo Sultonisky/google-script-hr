@@ -620,8 +620,9 @@ class EmployeeService
         $paklaringNumber = $spakIssued['nomor'];
 
         // Surat BPJS is part of the offboarding set but has no number; track it for Document Tracking.
+        $bpjsIssued = null;
         try {
-            $this->skNumbers->record(
+            $bpjsIssued = $this->skNumbers->record(
                 employeeId: $employeeId,
                 type: SkDocumentType::SURAT_BPJS,
                 branchName: $branchName,
@@ -737,12 +738,16 @@ class EmployeeService
         $skOffQ = http_build_query($baseQ + ['sk_number' => $skNumber]);
         $pakQ   = http_build_query($baseQ + ['sk_number' => $paklaringNumber, 'letter_number' => $paklaringNumber]);
         // Surat BPJS: numbering disabled — do not pass sk_number / letter_number.
-        $bpjsQ  = http_build_query($baseQ);
+        $bpjsQ  = http_build_query($baseQ + [
+            'bpjs_document_id' => $bpjsIssued['document_id'] ?? '',
+        ]);
         $pdfUrls = [
             'sk_off'     => route('hr.export.sk-off',     ['id' => $employeeId]) . '?' . $skOffQ,
             'surat_bpjs' => route('hr.export.surat-bpjs', ['id' => $employeeId]) . '?' . $bpjsQ,
             'paklaring'  => route('hr.export.paklaring',  ['id' => $employeeId]) . '?' . $pakQ,
-            'bundle'     => route('hr.export.offboarding-bundle', ['id' => $employeeId]) . '?' . $skOffQ,
+            'bundle'     => route('hr.export.offboarding-bundle', ['id' => $employeeId]) . '?' . http_build_query(
+                $baseQ + ['sk_number' => $skNumber, 'bpjs_document_id' => $bpjsIssued['document_id'] ?? '']
+            ),
         ];
 
         return [
@@ -793,6 +798,26 @@ class EmployeeService
         $success = $this->employeeRepo->update($employeeId, $attributes);
 
         if ($success) {
+            $notes = trim((string) ($data['notes'] ?? ''));
+            $this->skNumbers->issue(
+                employeeId: $employeeId,
+                type: SkDocumentType::PAKLARING,
+                branchName: $employee->branchName ?? '',
+                issuedBy: $user,
+                reference: 'Contract Finished',
+                notes: $notes,
+                issuedAt: $now,
+            );
+            $bpjsIssued = $this->skNumbers->record(
+                employeeId: $employeeId,
+                type: SkDocumentType::SURAT_BPJS,
+                branchName: $employee->branchName ?? '',
+                issuedBy: $user,
+                reference: 'Contract Finished',
+                notes: $notes,
+                issuedAt: $now,
+            );
+
             $this->auditRepo->log(
                 entityType: 'Employee',
                 entityId: $employeeId,
@@ -817,6 +842,7 @@ class EmployeeService
             'success' => $success,
             'message' => $success ? "Off Contract karyawan {$employeeId} berhasil diproses." : "Gagal memproses Off Contract.",
             'employeeId' => $employeeId,
+            'bpjsDocumentId' => $success ? ($bpjsIssued['document_id'] ?? null) : null,
         ];
     }
 

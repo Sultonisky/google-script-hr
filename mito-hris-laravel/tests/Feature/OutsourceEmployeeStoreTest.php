@@ -39,9 +39,10 @@ class OutsourceEmployeeStoreTest extends TestCase
     public function test_sheet_schema_matches_attribute_map_order(): void
     {
         $this->assertSame(config('hris.schemas.Outsource_Employees'), OutsourceEmployeeAttributeMap::headers());
-        $this->assertCount(26, OutsourceEmployeeAttributeMap::headers());
+        $this->assertCount(27, OutsourceEmployeeAttributeMap::headers());
         $this->assertSame('Outsource ID', OutsourceEmployeeAttributeMap::headers()[0]);
         $this->assertContains('Vendor', OutsourceEmployeeAttributeMap::headers());
+        $this->assertContains('Status HRIS', OutsourceEmployeeAttributeMap::headers());
     }
 
     public function test_amount_parsing_handles_indonesian_formats(): void
@@ -52,6 +53,18 @@ class OutsourceEmployeeStoreTest extends TestCase
         $this->assertSame(3984000.0, OutsourceEmployeeAttributeMap::parseAmount('3984000.00'));
         $this->assertSame(3984000.5, OutsourceEmployeeAttributeMap::parseAmount('Rp 3.984.000,50'));
         $this->assertNull(OutsourceEmployeeAttributeMap::parseAmount(''));
+    }
+
+    public function test_outsource_status_defaults_to_active_for_new_and_legacy_sheet_rows(): void
+    {
+        $this->assertSame('Aktif', (new OutsourceEmployeeData())->hrisStatus);
+
+        $headers = OutsourceEmployeeAttributeMap::headers();
+        $row = array_combine($headers, array_fill(0, count($headers), ''));
+        $row['Outsource ID'] = 'DM20260001';
+        $row['Full Name'] = 'Worker Legacy';
+
+        $this->assertSame('Aktif', OutsourceEmployeeData::fromSheetRow($row)->hrisStatus);
     }
 
     public function test_id_generator_continues_from_existing_ids_per_year(): void

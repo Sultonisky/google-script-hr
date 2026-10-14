@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\Public;
 
-use App\Support\OutsourceEmployeeAttributeMap;
 use Carbon\Carbon;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -42,7 +41,7 @@ class OutsourceApplyRequest extends FormRequest
 
         foreach ([
             'full_name', 'birth_place', 'last_education', 'vendor', 'job_title', 'work_location',
-            'work_city', 'cost_center', 'entity', 'payroll_scheme',
+            'work_city', 'cost_center', 'entity',
         ] as $key) {
             $value = $this->input($key);
             if (is_string($value)) {
@@ -60,12 +59,6 @@ class OutsourceApplyRequest extends FormRequest
             $merged['email'] = strtolower(trim($email));
         }
 
-        $umk = $this->input('umk_amount');
-        if (is_string($umk) || is_numeric($umk)) {
-            $parsed = OutsourceEmployeeAttributeMap::parseAmount($umk);
-            $merged['umk_amount'] = $parsed ?? $umk;
-        }
-
         if ($merged !== []) {
             $this->merge($merged);
         }
@@ -74,6 +67,10 @@ class OutsourceApplyRequest extends FormRequest
     public function rules(): array
     {
         $config = config('hris.outsource', []);
+        $contractEndRules = ['nullable', 'date_format:Y-m-d', 'after_or_equal:1900-01-01'];
+        if ($this->filled('contract_start_date')) {
+            $contractEndRules[] = 'after:contract_start_date';
+        }
 
         return [
             'full_name' => ['required', 'string', 'min:3', 'max:255', 'regex:' . self::NAME_REGEX],
@@ -94,12 +91,9 @@ class OutsourceApplyRequest extends FormRequest
             'work_city' => ['required', 'string', 'min:2', 'max:120', 'regex:' . self::MODERATE_REGEX],
             'cost_center' => ['required', 'string', 'min:2', 'max:120', 'regex:' . self::MODERATE_REGEX],
             'entity' => ['required', Rule::in($config['entities'] ?? [])],
-            'mito_join_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:1900-01-01'],
-            'contract_start_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:1900-01-01'],
-            'contract_end_date' => ['required', 'date_format:Y-m-d', 'after:contract_start_date'],
-            'payroll_scheme' => ['required', Rule::in($config['payroll_schemes'] ?? [])],
-            'umk_amount' => ['required', 'numeric', 'min:0', 'max:1000000000'],
-            'bank_account' => ['required', 'digits_between:8,20'],
+            'mito_join_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:1900-01-01'],
+            'contract_start_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:1900-01-01'],
+            'contract_end_date' => $contractEndRules,
             'agreement' => ['required', 'in:1'],
             'consent_timestamp' => ['nullable', 'string', 'max:80'],
             'consent_device' => ['nullable', 'string', 'max:120'],
@@ -167,20 +161,11 @@ class OutsourceApplyRequest extends FormRequest
             'cost_center.regex' => 'Cabang (cost center) ' . $moderate,
             'entity.required' => 'Entity wajib dipilih.',
             'entity.in' => 'Entity tidak valid.',
-            'mito_join_date.required' => 'Tanggal join di Mito wajib diisi.',
             'mito_join_date.date_format' => 'Tanggal join di Mito harus berformat YYYY-MM-DD.',
-            'contract_start_date.required' => 'Tanggal awal kontrak wajib diisi.',
             'contract_start_date.date_format' => 'Tanggal awal kontrak harus berformat YYYY-MM-DD.',
-            'contract_end_date.required' => 'Tanggal akhir kontrak wajib diisi.',
             'contract_end_date.date_format' => 'Tanggal akhir kontrak harus berformat YYYY-MM-DD.',
             'contract_end_date.after' => 'Tanggal akhir kontrak harus setelah tanggal awal kontrak.',
-            'payroll_scheme.required' => 'Skema penggajian wajib dipilih.',
-            'payroll_scheme.in' => 'Skema penggajian tidak valid.',
-            'umk_amount.required' => 'Nominal UMK wajib diisi.',
-            'umk_amount.numeric' => 'Nominal UMK harus berupa angka.',
-            'umk_amount.min' => 'Nominal UMK tidak boleh negatif.',
-            'bank_account.required' => 'Nomor rekening BCA wajib diisi.',
-            'bank_account.digits_between' => 'Nomor rekening BCA harus 8–20 digit angka.',
+            'contract_end_date.after_or_equal' => 'Tanggal akhir kontrak tidak valid.',
             'agreement.required' => 'Anda harus menyetujui pernyataan keabsahan data untuk melanjutkan.',
             'agreement.in' => 'Anda harus menyetujui pernyataan keabsahan data untuk melanjutkan.',
         ];

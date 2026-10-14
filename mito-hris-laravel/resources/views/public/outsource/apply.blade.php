@@ -24,9 +24,6 @@
             background: #fff5f5;
         }
 
-        #contactLockBanner {
-            border-radius: 14px;
-        }
     </style>
     <!-- HERO -->
     <div class="hero-section">
@@ -55,7 +52,7 @@
                 <div class="progress-bar-fill" id="progressFill"></div>
             </div>
             <div class="progress-meta">
-                <span id="progressCount">0 dari 20 data telah lengkap</span>
+                <span id="progressCount">0 dari 14 data telah lengkap</span>
                 <span class="progress-message" id="progressMessage">Mulai mengisi formulir...</span>
             </div>
         </div>
@@ -64,7 +61,7 @@
     <div class="content-wrap py-4">
         <div class="container" style="max-width:960px;">
 
-            @if (session('error'))
+            @if (session('error') && !str_contains(mb_strtolower((string) session('error')), 'sudah terdaftar'))
                 <div class="alert alert-danger alert-dismissible fade show p-3 mb-4 rounded-3 d-flex align-items-center gap-2"
                     role="alert">
                     <i class="bi bi-exclamation-triangle-fill fs-5 flex-shrink-0"></i>
@@ -179,16 +176,6 @@
                             <span class="section-status" id="secBadgeContact"><i class="bi bi-hourglass-split"></i></span>
                         </div>
                         <div class="form-section-body p-4">
-                            <div id="contactLockBanner" class="alert alert-danger d-none p-3 mb-3 d-flex align-items-start gap-2"
-                                role="alert">
-                                <i class="bi bi-exclamation-octagon-fill fs-5 flex-shrink-0 mt-1"></i>
-                                <div>
-                                    <strong>Kontak sudah terdaftar.</strong>
-                                    <div id="contactLockBannerMessage" class="mt-1" style="font-size:13px;"></div>
-                                    <div class="mt-1" style="font-size:12px;">Ubah nomor WhatsApp atau email untuk membuka
-                                        kembali formulir.</div>
-                                </div>
-                            </div>
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold" for="whatsapp_number" style="font-size:13px">No
@@ -202,7 +189,10 @@
                                             maxlength="13" pattern="8[0-9]{7,12}" autocomplete="tel" inputmode="numeric"
                                             placeholder="81234567890">
                                     </div>
-                                    <div class="invalid-feedback">Nomor WhatsApp tidak valid. Gunakan format 8xxxxxxxxxx.</div>
+                                    <div class="invalid-feedback" data-default-message="Nomor WhatsApp tidak valid. Gunakan format 8xxxxxxxxxx.">Nomor WhatsApp tidak valid. Gunakan format 8xxxxxxxxxx.</div>
+                                    <div id="whatsappDuplicateFeedback" class="small text-danger mt-1 d-none" role="alert">
+                                        Nomor WhatsApp sudah terdaftar. Gunakan nomor lain.
+                                    </div>
                                 </div>
 
                                 <div class="col-md-6">
@@ -211,10 +201,14 @@
                                     <input type="email" class="form-control" id="email" name="email"
                                         value="{{ old('email') }}" required maxlength="255" autocomplete="email"
                                         placeholder="nama@email.com">
-                                    <div class="invalid-feedback">Format alamat email tidak valid.</div>
+                                    <div class="invalid-feedback" data-default-message="Format alamat email tidak valid.">Format alamat email tidak valid.</div>
+                                    <div id="emailDuplicateFeedback" class="small text-danger mt-1 d-none" role="alert">
+                                        Email sudah terdaftar. Gunakan email lain.
+                                    </div>
                                     <div id="emailValidation" class="mt-1" style="display:none;font-size:12px;"></div>
                                 </div>
                             </div>
+                            <div id="contactCheckStatus" class="small text-muted mt-2 d-none" role="status" aria-live="polite"></div>
                         </div>
                     </div>
 
@@ -297,80 +291,27 @@
 
                                 <div class="col-md-4">
                                     <label class="form-label fw-semibold" for="mito_join_date" style="font-size:13px">Tgl
-                                        Join di Mito <span class="text-danger">*</span></label>
+                                        Join di Mito</label>
                                     <input type="date" class="form-control" id="mito_join_date" name="mito_join_date"
-                                        value="{{ old('mito_join_date') }}" required min="1900-01-01">
-                                    <div class="invalid-feedback">Tanggal join di Mito wajib diisi.</div>
+                                        value="{{ old('mito_join_date') }}" min="1900-01-01">
+                                    <div class="invalid-feedback">Tanggal join di Mito tidak valid.</div>
                                 </div>
 
                                 <div class="col-md-4">
                                     <label class="form-label fw-semibold" for="contract_start_date"
-                                        style="font-size:13px">Tgl Awal Kontrak (Damarindo) <span class="text-danger">*</span></label>
+                                        style="font-size:13px">Tgl Awal Kontrak (Damarindo)</label>
                                     <input type="date" class="form-control" id="contract_start_date"
-                                        name="contract_start_date" value="{{ old('contract_start_date') }}" required
+                                        name="contract_start_date" value="{{ old('contract_start_date') }}"
                                         min="1900-01-01">
-                                    <div class="invalid-feedback">Tanggal awal kontrak wajib diisi.</div>
+                                    <div class="invalid-feedback">Tanggal awal kontrak tidak valid.</div>
                                 </div>
 
                                 <div class="col-md-4">
                                     <label class="form-label fw-semibold" for="contract_end_date"
-                                        style="font-size:13px">Tgl Akhir Kontrak (StaffInc) <span class="text-danger">*</span></label>
+                                        style="font-size:13px">Tgl Akhir Kontrak (StaffInc)</label>
                                     <input type="date" class="form-control" id="contract_end_date"
-                                        name="contract_end_date" value="{{ old('contract_end_date') }}" required
-                                        min="1900-01-02">
+                                        name="contract_end_date" value="{{ old('contract_end_date') }}" min="1900-01-02">
                                     <div class="invalid-feedback">Tanggal akhir kontrak harus setelah tanggal awal kontrak.</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- SECTION 4: PAYROLL -->
-                    <div class="form-section" id="sectionBank">
-                        <div class="form-section-header">
-                            <i class="bi bi-credit-card-fill"></i>
-                            <div>
-                                <h5>Data Payroll</h5>
-                                <p>Rekening BCA, skema penggajian, dan nominal UMK</p>
-                            </div>
-                            <span class="section-status" id="secBadgeBank"><i class="bi bi-hourglass-split"></i></span>
-                        </div>
-                        <div class="form-section-body p-4">
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="bank_account" style="font-size:13px">No
-                                        Rekening BCA <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="bank_account" name="bank_account"
-                                        value="{{ old('bank_account') }}" required inputmode="numeric" maxlength="20"
-                                        pattern="[0-9]{8,20}" placeholder="Contoh: 1234567890">
-                                    <div class="invalid-feedback">Nomor rekening hanya boleh berisi 8–20 digit angka.</div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="payroll_scheme"
-                                        style="font-size:13px">Skema Penggajian <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="payroll_scheme" name="payroll_scheme" required>
-                                        <option value="">-- Pilih Skema --</option>
-                                        @foreach ($osConfig['payroll_schemes'] ?? [] as $scheme)
-                                            <option value="{{ $scheme }}" @selected(old('payroll_scheme') === $scheme)>{{ $scheme }}</option>
-                                        @endforeach
-                                    </select>
-                                    <div class="invalid-feedback">Skema penggajian wajib dipilih.</div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold" for="umk_amount" style="font-size:13px">Nominal
-                                        UMK <span class="text-danger">*</span></label>
-                                    <div class="input-group-prefix d-flex">
-                                        <span
-                                            class="input-prefix d-flex align-items-center px-3 border border-end-0 rounded-start bg-light text-muted"
-                                            style="font-size:13px;">Rp</span>
-                                        <input type="text" class="form-control rounded-start-0" id="umk_amount"
-                                            name="umk_amount" value="{{ old('umk_amount') }}" required
-                                            inputmode="numeric" maxlength="15" pattern="[0-9]{1,3}(\.[0-9]{3})+"
-                                            autocomplete="off" data-amount placeholder="Contoh: 5.396.761">
-                                    </div>
-                                    <div class="form-text amount-hint" style="font-size:12px;"></div>
-                                    <div class="invalid-feedback">Nominal UMK wajib diisi angka, minimal Rp 1.000.</div>
                                 </div>
                             </div>
                         </div>
@@ -429,14 +370,7 @@
             {
                 id: 'sectionEmployment',
                 badgeId: 'secBadgeEmployment',
-                fields: ['vendor', 'entity', 'job_title', 'cost_center', 'work_location', 'work_city',
-                    'mito_join_date', 'contract_start_date', 'contract_end_date'
-                ]
-            },
-            {
-                id: 'sectionBank',
-                badgeId: 'secBadgeBank',
-                fields: ['bank_account', 'payroll_scheme', 'umk_amount']
+                fields: ['vendor', 'entity', 'job_title', 'cost_center', 'work_location', 'work_city']
             },
         ];
 
@@ -445,11 +379,13 @@
         var isSubmitting = false;
         var contactIsBlocked = false;
         var contactCheckPending = false;
+        var contactCheckFailed = false;
+        var contactDuplicateFields = [];
         var contactCheckSeq = 0;
         var contactCheckTimer = null;
         var form, agreementCheckbox, agreementError, submitBtn, submitSpinner, submitText;
         var progressFill, progressCount, progressMessage;
-        var birthDateEl, ageEl, phoneEl, emailEl, contractStartEl, contractEndEl, umkEl;
+        var birthDateEl, ageEl, phoneEl, emailEl, contractStartEl, contractEndEl;
 
         function isAlreadySubmitted() {
             try {
@@ -483,6 +419,8 @@
         // ============================================================
         function isFieldValid(el) {
             if (!el) return false;
+            if ((el.id === 'whatsapp_number' || el.id === 'email')
+                && contactDuplicateFields.indexOf(el.id) !== -1) return false;
             var v = (el.value || '').trim();
             if (v === '') return false;
             if (el.id === 'birth_date') return validateBirthDate(el, true);
@@ -525,13 +463,8 @@
             });
 
             var hint = document.getElementById('agreementHint');
-            if (contactIsBlocked) {
+            if (contactIsBlocked || contactCheckPending || contactCheckFailed) {
                 lockAgreement();
-                if (hint) {
-                    hint.style.display = 'block';
-                    hint.innerHTML =
-                        '<i class="bi bi-exclamation-octagon-fill me-1"></i> Nomor WhatsApp atau email sudah terdaftar. Ubah kontak agar formulir dapat dikirim.';
-                }
                 submitBtn.disabled = true;
                 return;
             }
@@ -596,39 +529,6 @@
             updateFormState();
         }
 
-        // ============================================================
-        // AMOUNT FORMATTER — 5396761 → 5.396.761 (+ "≈ 5,4 juta" hint)
-        // ============================================================
-        function amountHint(digits) {
-            var n = Number(digits);
-            if (!digits || !n) return '';
-            var units = [[1e12, 'triliun'], [1e9, 'miliar'], [1e6, 'juta'], [1e3, 'ribu']];
-            for (var i = 0; i < units.length; i++) {
-                if (n >= units[i][0]) {
-                    return '≈ ' + (n / units[i][0]).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + ' ' + units[i][1];
-                }
-            }
-            return '';
-        }
-
-        function formatAmount(el) {
-            var caret = el.selectionStart || 0;
-            var digitsBeforeCaret = el.value.slice(0, caret).replace(/\D/g, '').length;
-            var digits = el.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '').slice(0, 12);
-            var formatted = digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-            el.value = formatted;
-            if (document.activeElement === el) {
-                var pos = 0, seen = 0;
-                while (pos < formatted.length && seen < digitsBeforeCaret) {
-                    if (formatted.charAt(pos) !== '.') seen++;
-                    pos++;
-                }
-                el.setSelectionRange(pos, pos);
-            }
-            var hint = el.closest('[class*="col-"]').querySelector('.amount-hint');
-            if (hint) hint.textContent = amountHint(digits);
-        }
-
         function setFieldState(el, valid, message) {
             var container = el.closest('[class*="col-"]');
             var feedback = container ? container.querySelector('.invalid-feedback') : null;
@@ -645,6 +545,12 @@
 
         function validateField(el) {
             if (!el || el.type === 'checkbox' || el.type === 'hidden') return;
+            if (el.id === 'whatsapp_number' || el.id === 'email') {
+                var feedback = el.closest('[class*="col-"]').querySelector('.invalid-feedback');
+                if (feedback && feedback.dataset.defaultMessage) {
+                    feedback.textContent = feedback.dataset.defaultMessage;
+                }
+            }
             if (el.id === 'birth_date') {
                 validateBirthDate(el, false);
                 return;
@@ -652,11 +558,6 @@
             if (el.id === 'contract_end_date' || el.id === 'contract_start_date') {
                 validateContractDates(false);
                 if (el.id === 'contract_end_date') return;
-            }
-            if ((el.id === 'whatsapp_number' || el.id === 'email') && contactIsBlocked) {
-                el.classList.add('is-invalid', 'contact-duplicate');
-                el.classList.remove('is-valid');
-                return;
             }
             if (!el.value) {
                 setFieldState(el, null);
@@ -720,9 +621,9 @@
         function validateContractDates(silent) {
             var start = contractStartEl.value;
             var end = contractEndEl.value;
-            var ok = !!end && (!start || end > start);
+            var ok = !start || !end || end > start;
             if (!silent) {
-                if (!end) setFieldState(contractEndEl, null);
+                if (!start || !end) setFieldState(contractEndEl, null);
                 else setFieldState(contractEndEl, ok, ok ? null :
                     'Tanggal akhir kontrak harus setelah tanggal awal kontrak.');
             }
@@ -734,36 +635,98 @@
         // ============================================================
         function setContactBlocked(blocked, message) {
             contactIsBlocked = !!blocked;
-            var banner = document.getElementById('contactLockBanner');
-            var bannerMsg = document.getElementById('contactLockBannerMessage');
+            contactCheckFailed = false;
+            contactDuplicateFields = blocked ? (message.duplicate_fields || []) : [];
             form.classList.toggle('contact-duplicate-locked', contactIsBlocked);
-            if (banner) banner.classList.toggle('d-none', !contactIsBlocked);
-            if (bannerMsg) bannerMsg.textContent = contactIsBlocked ? (message || '') : '';
-            [phoneEl, emailEl].forEach(function(el) {
-                el.classList.toggle('contact-duplicate', contactIsBlocked);
-                if (!contactIsBlocked) validateField(el);
+            var duplicateInputs = [
+                [phoneEl, 'whatsapp_number'],
+                [emailEl, 'email']
+            ];
+            duplicateInputs.forEach(function([el, field]) {
+                var duplicate = contactDuplicateFields.indexOf(field) !== -1;
+                el.classList.toggle('contact-duplicate', duplicate);
+                document.getElementById(field === 'whatsapp_number' ?
+                    'whatsappDuplicateFeedback' : 'emailDuplicateFeedback').classList.toggle('d-none', !duplicate);
+                var feedback = el.closest('[class*="col-"]').querySelector('.invalid-feedback');
+                feedback.textContent = feedback.dataset.defaultMessage;
+                if (!duplicate) {
+                    el.classList.remove('is-invalid');
+                    validateField(el);
+                }
             });
+            document.getElementById('contactCheckStatus').classList.add('d-none');
+            updateProgress();
+        }
+
+        function showContactCheckFailure() {
+            contactCheckFailed = true;
+            contactIsBlocked = false;
+            contactDuplicateFields = [];
+            form.classList.remove('contact-duplicate-locked');
+            document.getElementById('contactCheckStatus').textContent =
+                'Kontak belum dapat diperiksa. Periksa koneksi internet dan coba lagi.';
+            document.getElementById('contactCheckStatus').className = 'small text-danger mt-2';
+            [phoneEl, emailEl].forEach(function(el) {
+                el.classList.remove('contact-duplicate');
+                el.classList.remove('is-invalid');
+            });
+            [phoneEl, emailEl].forEach(function(el) {
+                var feedback = el.closest('[class*="col-"]').querySelector('.invalid-feedback');
+                feedback.textContent = feedback.dataset.defaultMessage;
+            });
+            document.getElementById('whatsappDuplicateFeedback').classList.add('d-none');
+            document.getElementById('emailDuplicateFeedback').classList.add('d-none');
             updateProgress();
         }
 
         function scheduleContactCheck() {
             if (contactCheckTimer) clearTimeout(contactCheckTimer);
+            var seq = ++contactCheckSeq;
             var phone = phoneEl.checkValidity() ? phoneEl.value : '';
             var email = emailEl.checkValidity() ? emailEl.value.trim() : '';
             if (!phone && !email) {
                 contactCheckPending = false;
-                if (contactIsBlocked) setContactBlocked(false);
+                contactCheckFailed = false;
+                contactIsBlocked = false;
+                contactDuplicateFields = [];
+                form.classList.remove('contact-duplicate-locked');
+                document.getElementById('contactCheckStatus').classList.add('d-none');
+                document.getElementById('whatsappDuplicateFeedback').classList.add('d-none');
+                document.getElementById('emailDuplicateFeedback').classList.add('d-none');
+                [phoneEl, emailEl].forEach(function(el) {
+                    el.classList.remove('contact-duplicate');
+                    validateField(el);
+                });
+                updateProgress();
                 return;
             }
             contactCheckPending = true;
+            contactCheckFailed = false;
+            contactIsBlocked = false;
+            contactDuplicateFields = [];
+            form.classList.remove('contact-duplicate-locked');
+            phoneEl.classList.remove('contact-duplicate');
+            emailEl.classList.remove('contact-duplicate');
+            phoneEl.classList.remove('is-invalid');
+            emailEl.classList.remove('is-invalid');
+            [phoneEl, emailEl].forEach(function(el) {
+                var feedback = el.closest('[class*="col-"]').querySelector('.invalid-feedback');
+                feedback.textContent = feedback.dataset.defaultMessage;
+                validateField(el);
+            });
+            document.getElementById('whatsappDuplicateFeedback').classList.add('d-none');
+            document.getElementById('emailDuplicateFeedback').classList.add('d-none');
+            var status = document.getElementById('contactCheckStatus');
+            status.textContent = 'Memeriksa kontak...';
+            status.className = 'small text-muted mt-2';
+            status.classList.remove('d-none');
             updateFormState();
             contactCheckTimer = setTimeout(function() {
-                checkContact(phone, email);
+                checkContact(phone, email, seq);
             }, 400);
         }
 
-        function checkContact(phone, email) {
-            var seq = ++contactCheckSeq;
+        function checkContact(phone, email, seq) {
             fetch(CONTACT_CHECK_URL, {
                 method: 'POST',
                 headers: {
@@ -778,15 +741,19 @@
                     email: email
                 })
             }).then(function(res) {
+                if (!res.ok) throw new Error('Contact check request failed.');
                 return res.json();
             }).then(function(data) {
+                if (!data || typeof data.available !== 'boolean') {
+                    throw new Error('Contact check response was invalid.');
+                }
                 if (seq !== contactCheckSeq) return;
                 contactCheckPending = false;
-                setContactBlocked(data && data.available === false, data ? data.message : null);
+                setContactBlocked(data && data.available === false, data || {});
             }).catch(function() {
                 if (seq !== contactCheckSeq) return;
                 contactCheckPending = false;
-                setContactBlocked(false);
+                showContactCheckFailure();
             });
         }
 
@@ -814,13 +781,7 @@
             syncContractEndMin();
             if (birthDateEl.value) calculateAge(birthDateEl.value);
 
-            umkEl = document.getElementById('umk_amount');
-            umkEl.addEventListener('input', function() {
-                formatAmount(umkEl);
-            });
-            if (umkEl.value) formatAmount(umkEl);
-
-            ['whatsapp_number', 'bank_account'].forEach(function(id) {
+            ['whatsapp_number'].forEach(function(id) {
                 var el = document.getElementById(id);
                 el.addEventListener('input', function() {
                     var digits = this.value.replace(/[^0-9]/g, '');
@@ -834,8 +795,8 @@
 
             contractStartEl.addEventListener('change', syncContractEndMin);
 
-            phoneEl.addEventListener('change', scheduleContactCheck);
-            emailEl.addEventListener('change', scheduleContactCheck);
+            phoneEl.addEventListener('input', scheduleContactCheck);
+            emailEl.addEventListener('input', scheduleContactCheck);
 
             var commonTypos = {
                 'gmial.com': 'gmail.com',
@@ -888,9 +849,11 @@
                     window.location.replace(@json(route('public.outsource.success')));
                     return;
                 }
-                if (contactIsBlocked || contactCheckPending) {
+                if (contactIsBlocked || contactCheckPending || contactCheckFailed) {
                     e.preventDefault();
-                    phoneEl.focus();
+                    var blockedContact = contactDuplicateFields.indexOf('whatsapp_number') !== -1 ?
+                        phoneEl : emailEl;
+                    blockedContact.focus();
                     return;
                 }
                 if (!agreementCheckbox.checked) {
@@ -913,7 +876,6 @@
                 }
                 document.getElementById('consentTimestamp').value = new Date().toISOString();
                 document.getElementById('consentDevice').value = (navigator.platform || '').substring(0, 120);
-                umkEl.value = umkEl.value.replace(/\D/g, '');
                 isSubmitting = true;
                 markSubmitted();
                 submitBtn.disabled = true;
@@ -925,9 +887,7 @@
             });
 
             var serverError = @json(session('error'));
-            if (serverError && /sudah terdaftar/i.test(String(serverError))) {
-                setContactBlocked(true, serverError);
-            } else if (phoneEl.value || emailEl.value) {
+            if ((serverError && /sudah terdaftar/i.test(String(serverError))) || phoneEl.value || emailEl.value) {
                 scheduleContactCheck();
             }
 

@@ -30,6 +30,7 @@ class OutsourceEmployeeData
         public ?float $incentiveAmount = null,
         public ?string $remarks = null,
         public ?string $vendor = null,
+        public ?string $hrisStatus = 'Aktif',
         public ?string $createdBy = null,
         public ?string $createdAt = null,
         public ?string $updatedAt = null,

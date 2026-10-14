@@ -43,7 +43,7 @@ class EmployeeDocumentSheetsRepository implements EmployeeDocumentRepositoryInte
         return $rows->first();
     }
 
-    public function append(array $row): bool
+    public function append(array $row): ?string
     {
         try {
             $this->ensureSheet();
@@ -56,10 +56,10 @@ class EmployeeDocumentSheetsRepository implements EmployeeDocumentRepositoryInte
             if ($ok) {
                 $this->sheets->clearCache($this->sheetName);
             }
-            return $ok;
+            return $ok ? trim((string) ($row['Document ID'] ?? '')) ?: null : null;
         } catch (\Throwable $e) {
             Log::error('EmployeeDocumentSheetsRepository::append failed: ' . $e->getMessage());
-            return false;
+            return null;
         }
     }
 

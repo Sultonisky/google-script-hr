@@ -40,6 +40,8 @@ class EmployeeDocumentArchiveService
         string|Closure $content,
         string $fileName,
         ?string $archivedBy = null,
+        ?string $documentId = null,
+        ?string $expectedReference = null,
     ): ?EmployeeDocumentFile {
         try {
             $employeeId = ltrim(trim($employeeId), "'");
@@ -48,7 +50,17 @@ class EmployeeDocumentArchiveService
                 return null;
             }
 
-            $document = $this->documents->getLatestByEmployeeAndType($employeeId, $type->value);
+            if ($type === SkDocumentType::SURAT_BPJS && trim((string) $documentId) === '') {
+                return null;
+            }
+
+            $document = trim((string) $documentId) !== ''
+                ? $this->documents->getByEmployeeId($employeeId)->first(
+                    fn (array $row) => trim((string) ($row['Document ID'] ?? '')) === trim((string) $documentId)
+                        && strtoupper(trim((string) ($row['Doc Code'] ?? ''))) === $type->value
+                        && ($expectedReference === null || trim((string) ($row['Reference'] ?? '')) === $expectedReference)
+                )
+                : $this->documents->getLatestByEmployeeAndType($employeeId, $type->value);
             if (!$document) {
                 return null;
             }

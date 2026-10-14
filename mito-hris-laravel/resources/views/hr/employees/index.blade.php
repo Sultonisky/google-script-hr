@@ -160,10 +160,24 @@
                         <option value="other_active" {{ ($statusFilter ?? '') === 'other_active' ? 'selected' : '' }}>
                             Status Lainnya ({{ $stats['other_active'] ?? 0 }})
                         </option>
-                        <option value="Resigned" {{ ($statusFilter ?? '') === 'Resigned' ? 'selected' : '' }}>Resigned
+                        <option value="Resigned" {{ ($statusFilter ?? '') === 'Resigned' ? 'selected' : '' }}>
+                            Resigned ({{ $stats['resigned'] ?? 0 }})
                         </option>
                         <option value="Terminated" {{ ($statusFilter ?? '') === 'Terminated' ? 'selected' : '' }}>
-                            Terminated</option>
+                            Terminated ({{ $stats['terminated'] ?? 0 }})
+                        </option>
+                        <option value="Retired" {{ ($statusFilter ?? '') === 'Retired' ? 'selected' : '' }}>
+                            Retired ({{ $stats['retired'] ?? 0 }})
+                        </option>
+                        <option value="Deceased" {{ ($statusFilter ?? '') === 'Deceased' ? 'selected' : '' }}>
+                            Deceased ({{ $stats['deceased'] ?? 0 }})
+                        </option>
+                        <option value="Inactive" {{ ($statusFilter ?? '') === 'Inactive' ? 'selected' : '' }}>
+                            Inactive ({{ $stats['inactive'] ?? 0 }})
+                        </option>
+                        <option value="Contract Finished" {{ ($statusFilter ?? '') === 'Contract Finished' ? 'selected' : '' }}>
+                            Contract Finished ({{ $stats['off_contract'] ?? 0 }})
+                        </option>
                     </select>
                     <select class="filter-select" name="sort" id="empSortSelect" data-auto-submit="true">
                         <option value="">Sortir Nama</option>

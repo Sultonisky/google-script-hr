@@ -223,6 +223,7 @@ return [
     ],
     // Dedicated outsource store (Outsource_Employees), separate from Employee.
     'outsource' => [
+        'statuses' => ['Aktif', 'Tidak Aktif'],
         // Outsource ID = {prefix}{YYYY}{NNNN}, e.g. DM20260001.
         'id_prefix' => env('OUTSOURCE_ID_PREFIX', 'DM'),
         // IDs parked outside the running sequence (e.g. after an ID collision with
@@ -678,6 +679,7 @@ return [
             'Incentive Amount (30%)',
             'Remarks',
             'Vendor',
+            'Status HRIS',
             'Created By',
             'Created At',
             'Updated At',

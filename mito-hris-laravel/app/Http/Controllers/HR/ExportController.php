@@ -58,7 +58,15 @@ class ExportController extends Controller
     /**
      * Keep the first rendered PDF of an issued document for re-download from Document Tracking.
      */
-    private function archiveIssuedPdf(string $employeeId, SkDocumentType $type, array $extraData, string $content, string $filename): void
+    private function archiveIssuedPdf(
+        string $employeeId,
+        SkDocumentType $type,
+        array $extraData,
+        string $content,
+        string $filename,
+        ?string $documentId = null,
+        ?string $expectedReference = null,
+    ): void
     {
         $nomor = (string) match (true) {
             !$type->isNumbered() => '',
@@ -72,7 +80,9 @@ class ExportController extends Controller
             $nomor,
             $content,
             $filename,
-            session('hr_user.email', 'HR Administrator')
+            session('hr_user.email', 'HR Administrator'),
+            $documentId,
+            $expectedReference
         );
     }
 
@@ -82,6 +92,20 @@ class ExportController extends Controller
         $id   = preg_replace('/[^a-zA-Z0-9_-]+/', '_', trim($employee->employeeId ?? 'Unknown'));
 
         return trim($name ?: 'Employee', '_') . '_Employee_' . ($id ?: 'Unknown');
+    }
+
+    private function resolveBpjsDocumentId(string $employeeId, string $reference, ?string $requestedId = null): ?string
+    {
+        if ($requestedId === '') {
+            return null;
+        }
+
+        $document = $this->skNumbers->historyForEmployee($employeeId)
+            ->first(fn (array $row) => strtoupper(trim((string) ($row['Doc Code'] ?? ''))) === SkDocumentType::SURAT_BPJS->value
+                && trim((string) ($row['Reference'] ?? '')) === $reference
+                && ($requestedId === null || trim((string) ($row['Document ID'] ?? '')) === $requestedId));
+
+        return $document ? trim((string) ($document['Document ID'] ?? '')) : null;
     }
 
     /**
@@ -260,10 +284,59 @@ class ExportController extends Controller
 
         // Nomor surat BPJS dinonaktifkan — jangan generate / resolve nomor SK.
         $extraData = $request->except(['sk_number', 'skNumber', 'letter_number']);
+        $probationEvalId = trim((string) $request->query('probation_eval_id', ''));
+        $routeName = (string) $request->route()?->getName();
+        $reference = $probationEvalId !== ''
+            ? 'Probation Tidak Lulus'
+            : ($routeName === 'hr.export.off-contract-surat-bpjs'
+                ? 'Contract Finished'
+                : trim((string) $request->query('offboarding_type', 'Resignation')));
+        $bpjsDocumentReference = $reference;
+        $requestedBpjsDocumentId = $request->query('bpjs_document_id');
+        $bpjsDocumentId = null;
+        if ($probationEvalId !== '') {
+            $trackingNote = 'Surat BPJS ' . $probationEvalId;
+            $trackedDocument = $this->skNumbers->historyForEmployee($employee->employeeId)
+                ->first(fn (array $row) => strtoupper(trim((string) ($row['Doc Code'] ?? ''))) === SkDocumentType::SURAT_BPJS->value
+                    && (
+                        trim((string) ($row['Notes'] ?? '')) === $trackingNote
+                        || trim((string) ($row['Reference'] ?? '')) === 'Probation: ' . $probationEvalId
+                    ));
+
+            if (!$trackedDocument) {
+                $tracked = $this->skNumbers->record(
+                    $employee->employeeId,
+                    SkDocumentType::SURAT_BPJS,
+                    $employee->branchName ?? '',
+                    session('hr_user.email', 'HR Administrator'),
+                    $reference,
+                    $trackingNote
+                );
+                $bpjsDocumentId = $tracked['document_id'];
+            } else {
+                $bpjsDocumentId = trim((string) ($trackedDocument['Document ID'] ?? ''));
+                $bpjsDocumentReference = trim((string) ($trackedDocument['Reference'] ?? '')) ?: $reference;
+            }
+        } else {
+            $bpjsDocumentId = $this->resolveBpjsDocumentId(
+                $employee->employeeId,
+                $reference,
+                $requestedBpjsDocumentId === null ? null : trim((string) $requestedBpjsDocumentId)
+            );
+        }
+
         $pdf = $this->pdfService->generateSuratBpjsPdf($employee, $extraData);
         $this->auditRepo->log('Employee', $employee->employeeId, 'generated', 'surat_bpjs', null, 'PDF', session('hr_user.email', 'HR Administrator'), 'Export');
         $filename = "Surat_BPJS_{$this->employeeDocumentStem($employee)}.pdf";
-        $this->archiveIssuedPdf($employee->employeeId, SkDocumentType::SURAT_BPJS, $extraData, $pdf->output(), $filename);
+        $this->archiveIssuedPdf(
+            $employee->employeeId,
+            SkDocumentType::SURAT_BPJS,
+            $extraData,
+            $pdf->output(),
+            $filename,
+            $bpjsDocumentId,
+            $bpjsDocumentReference
+        );
         return $pdf->download($filename);
     }
 
@@ -293,6 +366,14 @@ class ExportController extends Controller
         );
         // Nomor surat BPJS dinonaktifkan
         $bpjsData = collect($extraData)->except(['sk_number', 'skNumber', 'letter_number'])->all();
+        $bpjsReference = trim((string) $request->query('offboarding_type', 'Resignation'));
+        $bpjsDocumentId = $this->resolveBpjsDocumentId(
+            $employee->employeeId,
+            $bpjsReference,
+            $request->query('bpjs_document_id') === null
+                ? null
+                : trim((string) $request->query('bpjs_document_id'))
+        );
         $documents = [
             "SK_Offboarding_{$fileStem}.pdf" => $this->pdfService->generateSkOffPdf($employee, $skOffData)->output(),
             "Surat_BPJS_{$fileStem}.pdf" => $this->pdfService->generateSuratBpjsPdf($employee, $bpjsData)->output(),
@@ -300,7 +381,15 @@ class ExportController extends Controller
         ];
         $this->archiveIssuedPdf($employee->employeeId, SkDocumentType::OFFBOARDING, $skOffData, $documents["SK_Offboarding_{$fileStem}.pdf"], "SK_Offboarding_{$fileStem}.pdf");
         $this->archiveIssuedPdf($employee->employeeId, SkDocumentType::PAKLARING, $pakData, $documents["Paklaring_{$fileStem}.pdf"], "Paklaring_{$fileStem}.pdf");
-        $this->archiveIssuedPdf($employee->employeeId, SkDocumentType::SURAT_BPJS, $bpjsData, $documents["Surat_BPJS_{$fileStem}.pdf"], "Surat_BPJS_{$fileStem}.pdf");
+        $this->archiveIssuedPdf(
+            $employee->employeeId,
+            SkDocumentType::SURAT_BPJS,
+            $bpjsData,
+            $documents["Surat_BPJS_{$fileStem}.pdf"],
+            "Surat_BPJS_{$fileStem}.pdf",
+            $bpjsDocumentId,
+            $bpjsReference
+        );
 
         $zipPath = tempnam(storage_path('app'), 'offboarding_');
         $zip = new \ZipArchive();

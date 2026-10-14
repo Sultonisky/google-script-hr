@@ -35,10 +35,10 @@ class ArrayEmployeeDocumentRepository implements EmployeeDocumentRepositoryInter
             ->first();
     }
 
-    public function append(array $row): bool
+    public function append(array $row): ?string
     {
         $this->rows[] = $row;
-        return true;
+        return trim((string) ($row['Document ID'] ?? '')) ?: null;
     }
 
     public function maxSequence(): int

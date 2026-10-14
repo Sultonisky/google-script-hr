@@ -3,16 +3,22 @@
 namespace Tests\Feature;
 
 use App\DTOs\EmployeeData;
+use App\Enums\SkDocumentType;
 use App\Models\Employee;
 use App\Models\EmployeeDocument;
 use App\Models\EmployeeDocumentFile;
 use App\Models\OutsourceEmployee;
+use App\Repositories\Contracts\EmployeeDocumentRepositoryInterface;
+use App\Services\EmployeeService;
 use App\Services\PdfGeneratorService;
+use App\Services\SkNumberService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Session;
 use Mockery;
 use Tests\TestCase;
+use ZipArchive;
 
 class DocumentDownloadTest extends TestCase
 {
@@ -245,6 +251,101 @@ class DocumentDownloadTest extends TestCase
         $this->assertStringNotContainsString('007/SPAK/MSI/III/2026', $html);
     }
 
+    public function test_probation_surat_bpjs_is_tracked_and_archived_for_document_tracking(): void
+    {
+        $this->actingAsRole('Admin');
+        $pdfService = Mockery::mock(PdfGeneratorService::class);
+        $pdfService->shouldReceive('generateSuratBpjsPdf')
+            ->twice()
+            ->andReturn(Pdf::loadHTML('<p>Surat BPJS probation</p>'));
+        $this->app->instance(PdfGeneratorService::class, $pdfService);
+
+        $url = '/hr/export/probation-surat-bpjs/EMP-DL-1?effective_date=2026-10-14&probation_eval_id=EVAL-20261014-0001';
+        $first = $this->get($url)->assertOk();
+        $this->get($url)->assertOk();
+
+        $documents = EmployeeDocument::query()->where('employee_id', 'EMP-DL-1')->where('doc_code', 'BPJS')->get();
+        $this->assertCount(1, $documents);
+        $document = $documents->first();
+        $this->assertSame('Surat Keterangan BPJS', $document->doc_type);
+        $this->assertSame('', $document->nomor);
+        $this->assertSame('Probation Tidak Lulus', $document->reference);
+        $this->assertSame('Surat BPJS EVAL-20261014-0001', $document->notes);
+
+        $archive = EmployeeDocumentFile::query()->where('document_id', $document->document_id)->firstOrFail();
+        $this->assertSame(hash('sha256', $first->getContent()), $archive->checksum_sha256);
+
+        $this->get('/hr/documents?search=EMP-DL-1')
+            ->assertOk()
+            ->assertSee('Surat Keterangan BPJS')
+            ->assertSee(route('hr.documents.download', ['documentId' => $document->document_id]), false);
+
+        $download = $this->get('/hr/documents/' . $document->document_id . '/download')
+            ->assertOk()
+            ->assertHeader('X-Document-Source', 'export');
+        $this->assertSame($first->getContent(), $download->getContent());
+    }
+
+    public function test_each_surat_bpjs_entry_point_archives_its_own_document(): void
+    {
+        $this->actingAsRole('Admin');
+        $skNumbers = $this->app->make(SkNumberService::class);
+        $offboarding = $skNumbers->record(
+            'EMP-DL-1',
+            SkDocumentType::SURAT_BPJS,
+            'PT Mahakarya Sukses Indonesia',
+            'HR Admin',
+            'Resignation'
+        );
+        $offContract = $skNumbers->record(
+            'EMP-DL-1',
+            SkDocumentType::SURAT_BPJS,
+            'PT Mahakarya Sukses Indonesia',
+            'HR Admin',
+            'Contract Finished'
+        );
+
+        $pdfService = Mockery::mock(PdfGeneratorService::class);
+        $pdfService->shouldReceive('generateSuratBpjsPdf')
+            ->times(3)
+            ->andReturn(
+                Pdf::loadHTML('<p>BPJS from offboarding</p>'),
+                Pdf::loadHTML('<p>BPJS from off-contract</p>'),
+                Pdf::loadHTML('<p>BPJS from probation</p>')
+            );
+        $this->app->instance(PdfGeneratorService::class, $pdfService);
+
+        $this->get('/hr/export/surat-bpjs/EMP-DL-1?' . http_build_query([
+            'offboarding_type' => 'Resignation',
+            'bpjs_document_id' => $offboarding['document_id'],
+        ]))->assertOk();
+        $this->assertDatabaseHas('employee_document_files', ['document_id' => $offboarding['document_id']]);
+        $this->get('/hr/export/off-contract-surat-bpjs/EMP-DL-1?' . http_build_query([
+            'bpjs_document_id' => $offContract['document_id'],
+        ]))->assertOk();
+        $this->assertDatabaseHas('employee_document_files', ['document_id' => $offContract['document_id']]);
+        $this->get('/hr/export/probation-surat-bpjs/EMP-DL-1?' . http_build_query([
+            'probation_eval_id' => 'EVAL-20261014-0099',
+        ]))->assertOk();
+
+        $probationRecord = $this->app->make(EmployeeDocumentRepositoryInterface::class)
+            ->getLatestByEmployeeAndType('EMP-DL-1', 'BPJS');
+        $this->assertNotNull($probationRecord);
+        $this->assertSame('Probation Tidak Lulus', $probationRecord['Reference']);
+        $documentIds = [
+            $offboarding['document_id'],
+            $offContract['document_id'],
+            $probationRecord['Document ID'],
+        ];
+        $archives = EmployeeDocumentFile::query()
+            ->where('employee_id', 'EMP-DL-1')
+            ->whereIn('document_id', $documentIds)
+            ->get();
+        $this->assertCount(3, $archives);
+        $this->assertEqualsCanonicalizing($documentIds, $archives->pluck('document_id')->all());
+        $this->assertSame(['export'], $archives->pluck('source')->unique()->values()->all());
+    }
+
     public function test_regeneration_failure_redirects_back_with_message(): void
     {
         $this->actingAsRole('Admin');
@@ -444,6 +545,221 @@ class DocumentDownloadTest extends TestCase
             ->assertOk()
             ->assertHeader('X-Document-Source', 'export')
             ->assertHeader('Content-Type', 'application/pdf');
+    }
+
+    public function test_off_contract_tracks_and_archives_paklaring_and_surat_bpjs(): void
+    {
+        $this->actingAsRole('Admin');
+        Employee::query()->create([
+            'employee_id' => 'EMP-OFF-CONTRACT-1',
+            'full_name' => 'Dina Kurnia',
+            'branch_name' => 'PT Mahakarya Sukses Indonesia',
+            'job_position' => 'Staff Finance',
+            'department' => 'Finance',
+            'status_employee' => 'Contract',
+            'join_date' => '2025-04-01',
+            'end_date_contract' => '2026-09-30',
+        ]);
+
+        $pdfService = Mockery::mock(PdfGeneratorService::class);
+        $pdfService->shouldReceive('generatePaklaringPdf')
+            ->once()
+            ->andReturn(Pdf::loadHTML('<p>Paklaring off-contract</p>'));
+        $pdfService->shouldReceive('generateSuratBpjsPdf')
+            ->once()
+            ->andReturn(Pdf::loadHTML('<p>Surat BPJS off-contract</p>'));
+        $this->app->instance(PdfGeneratorService::class, $pdfService);
+
+        $response = $this->postJson('/hr/employees/EMP-OFF-CONTRACT-1/off-contract', [
+            'last_working_date' => '2026-09-30',
+            'notes' => 'Kontrak selesai',
+        ])->assertOk()->assertJsonPath('success', true);
+
+        $pdfUrls = $response->json('pdf_urls');
+        $this->assertArrayHasKey('paklaring', $pdfUrls);
+        $this->assertArrayHasKey('surat_bpjs', $pdfUrls);
+
+        $this->get($pdfUrls['paklaring'])->assertOk();
+        $this->get($pdfUrls['surat_bpjs'])->assertOk();
+
+        $documents = EmployeeDocument::query()
+            ->where('employee_id', 'EMP-OFF-CONTRACT-1')
+            ->orderBy('doc_code')
+            ->get();
+        $this->assertSame(['BPJS', 'SPAK'], $documents->pluck('doc_code')->all());
+        $paklaring = $documents->firstWhere('doc_code', 'SPAK');
+        $bpjs = $documents->firstWhere('doc_code', 'BPJS');
+        $this->assertNotSame('', $paklaring->nomor);
+        $this->assertSame('', $bpjs->nomor);
+
+        $this->assertSame(2, EmployeeDocumentFile::query()
+            ->where('employee_id', 'EMP-OFF-CONTRACT-1')
+            ->where('source', 'export')
+            ->count());
+
+        $tracking = $this->get('/hr/documents?search=EMP-OFF-CONTRACT-1')
+            ->assertOk()
+            ->assertSee('Paklaring')
+            ->assertSee('Surat Keterangan BPJS');
+        $this->assertStringContainsString(
+            route('hr.documents.download', ['documentId' => $paklaring->document_id]),
+            $tracking->getContent()
+        );
+        $this->assertStringContainsString(
+            route('hr.documents.download', ['documentId' => $bpjs->document_id]),
+            $tracking->getContent()
+        );
+
+        $this->get('/hr/documents/' . $paklaring->document_id . '/download')
+            ->assertOk()
+            ->assertHeader('X-Document-Source', 'export');
+        $this->get('/hr/documents/' . $bpjs->document_id . '/download')
+            ->assertOk()
+            ->assertHeader('X-Document-Source', 'export');
+    }
+
+    public function test_offboarding_accepts_pdf_attachment_under_five_megabytes(): void
+    {
+        $this->actingAsRole('Admin');
+        $fileSize = 3300 * 1024;
+        $employeeService = Mockery::mock(EmployeeService::class);
+        $employeeService->shouldReceive('processOffboarding')
+            ->once()
+            ->with('EMP-DL-1', Mockery::on(function (array $data) use ($fileSize): bool {
+                $file = $data['_attachments']['Surat Resign'] ?? null;
+
+                return $file instanceof UploadedFile && $file->getSize() === $fileSize;
+            }), Mockery::type('string'))
+            ->andReturn(['success' => true, 'message' => 'Offboarding berhasil.']);
+        $this->app->instance(EmployeeService::class, $employeeService);
+
+        $this->post('/hr/employees/EMP-DL-1/offboard', [
+            'offboarding_type' => 'Resignation',
+            'reason' => 'Melanjutkan studi',
+            'last_working_date' => '2026-09-30',
+            'attachment_Surat_Resign' => UploadedFile::fake()->create('surat-resign.pdf', 3300, 'application/pdf'),
+        ], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJson(['success' => true]);
+    }
+
+    public function test_offboarding_accepts_supported_image_and_word_attachment_types(): void
+    {
+        $this->actingAsRole('Admin');
+        $supportedFiles = [
+            ['surat.jpg', 'image/jpeg'],
+            ['surat.jpeg', 'image/jpeg'],
+            ['surat.png', 'image/png'],
+            ['surat.doc', 'application/msword'],
+            ['surat.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+        ];
+        $employeeService = Mockery::mock(EmployeeService::class);
+        $employeeService->shouldReceive('processOffboarding')
+            ->times(count($supportedFiles))
+            ->andReturn(['success' => true, 'message' => 'Offboarding berhasil.']);
+        $this->app->instance(EmployeeService::class, $employeeService);
+
+        foreach ($supportedFiles as [$filename, $mimeType]) {
+            $this->post('/hr/employees/EMP-DL-1/offboard', [
+                'offboarding_type' => 'Resignation',
+                'reason' => 'Melanjutkan studi',
+                'last_working_date' => '2026-09-30',
+                'attachment_Surat_Resign' => UploadedFile::fake()->create($filename, 10, $mimeType),
+            ], ['Accept' => 'application/json'])
+                ->assertOk()
+                ->assertJson(['success' => true]);
+        }
+    }
+
+    public function test_offboarding_accepts_docx_detected_as_zip_when_it_is_a_word_package(): void
+    {
+        $this->actingAsRole('Admin');
+        $path = tempnam(sys_get_temp_dir(), 'offboarding-docx-');
+        $this->assertNotFalse($path);
+
+        $archive = new ZipArchive();
+        $this->assertSame(true, $archive->open($path, ZipArchive::OVERWRITE));
+        $archive->addFromString('[Content_Types].xml', '<Types/>');
+        $archive->addFromString('word/document.xml', '<document/>');
+        $archive->close();
+
+        $file = new UploadedFile($path, 'surat.docx', 'application/zip', UPLOAD_ERR_OK, true);
+        $this->assertSame('application/zip', $file->getMimeType());
+
+        $employeeService = Mockery::mock(EmployeeService::class);
+        $employeeService->shouldReceive('processOffboarding')
+            ->once()
+            ->andReturn(['success' => true, 'message' => 'Offboarding berhasil.']);
+        $this->app->instance(EmployeeService::class, $employeeService);
+
+        try {
+            $this->post('/hr/employees/EMP-DL-1/offboard', [
+                'offboarding_type' => 'Resignation',
+                'reason' => 'Melanjutkan studi',
+                'last_working_date' => '2026-09-30',
+                'attachment_Surat_Resign' => $file,
+            ], ['Accept' => 'application/json'])
+                ->assertOk()
+                ->assertJson(['success' => true]);
+        } finally {
+            unlink($path);
+        }
+    }
+
+    public function test_offboarding_rejects_zip_file_renamed_as_docx(): void
+    {
+        $this->actingAsRole('Admin');
+        $path = tempnam(sys_get_temp_dir(), 'offboarding-invalid-docx-');
+        $this->assertNotFalse($path);
+
+        $archive = new ZipArchive();
+        $this->assertSame(true, $archive->open($path, ZipArchive::OVERWRITE));
+        $archive->addFromString('readme.txt', 'not a Word document');
+        $archive->close();
+
+        $file = new UploadedFile($path, 'surat.docx', 'application/zip', UPLOAD_ERR_OK, true);
+        $this->assertSame('application/zip', $file->getMimeType());
+
+        try {
+            $this->post('/hr/employees/EMP-DL-1/offboard', [
+                'offboarding_type' => 'Resignation',
+                'reason' => 'Melanjutkan studi',
+                'last_working_date' => '2026-09-30',
+                'attachment_Surat_Resign' => $file,
+            ], ['Accept' => 'application/json'])
+                ->assertUnprocessable()
+                ->assertJsonPath('message', 'Tipe file "surat.docx" tidak diizinkan. Gunakan PDF, JPG, PNG, DOC, atau DOCX.');
+        } finally {
+            unlink($path);
+        }
+    }
+
+    public function test_offboarding_rejects_attachment_with_mismatched_extension_and_mime_type(): void
+    {
+        $this->actingAsRole('Admin');
+
+        $this->post('/hr/employees/EMP-DL-1/offboard', [
+            'offboarding_type' => 'Resignation',
+            'reason' => 'Melanjutkan studi',
+            'last_working_date' => '2026-09-30',
+            'attachment_Surat_Resign' => UploadedFile::fake()->create('surat.png', 10, 'application/pdf'),
+        ], ['Accept' => 'application/json'])
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'Tipe file "surat.png" tidak diizinkan. Gunakan PDF, JPG, PNG, DOC, atau DOCX.');
+    }
+
+    public function test_offboarding_rejects_attachment_over_five_megabytes_with_clear_message(): void
+    {
+        $this->actingAsRole('Admin');
+
+        $this->post('/hr/employees/EMP-DL-1/offboard', [
+            'offboarding_type' => 'Resignation',
+            'reason' => 'Melanjutkan studi',
+            'last_working_date' => '2026-09-30',
+            'attachment_Surat_Resign' => UploadedFile::fake()->create('surat-resign.pdf', 5121, 'application/pdf'),
+        ], ['Accept' => 'application/json'])
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'File "surat-resign.pdf" melebihi batas 5 MB.');
     }
 
     public function test_backfill_records_surat_bpjs_for_past_offboarding_once(): void

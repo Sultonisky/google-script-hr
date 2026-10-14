@@ -552,6 +552,7 @@ class OutsourceController extends Controller
         $rules = [
             'fullName'          => [...$required, 'string', 'max:255', 'regex:/^[\p{L}\' .]+$/u'],
             'vendor'            => [...$required, 'string', Rule::in(config('hris.outsource.vendors', []))],
+            'hrisStatus'        => ['nullable', 'string', Rule::in(config('hris.outsource.statuses', []))],
             'citizenIdAddress'  => ['nullable', 'string', 'max:500'],
             'birthDate'         => ['nullable', 'date'],
             'birthPlace'        => ['nullable', 'string', 'max:120'],
@@ -579,6 +580,7 @@ class OutsourceController extends Controller
             'fullName.regex' => 'Nama lengkap hanya boleh berisi huruf, spasi, titik, dan apostrof.',
             'vendor.required' => 'Vendor wajib dipilih.',
             'vendor.in' => 'Vendor harus Damarindo atau StaffInc.',
+            'hrisStatus.in' => 'Status outsource harus Aktif atau Tidak Aktif.',
             'whatsappNumber.regex' => 'No WA tidak valid. Gunakan format 08xxxxxxxxxx.',
             'email.email' => 'Format email tidak valid.',
             'bankAccount.digits_between' => 'No rekening BCA harus 8–20 digit angka.',

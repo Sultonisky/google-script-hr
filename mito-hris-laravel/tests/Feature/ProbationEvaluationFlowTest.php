@@ -25,7 +25,7 @@ use Tests\TestCase;
  *
  * PDF rules:
  *   PASS   â†’ SK Pengangkatan + Performance Review (direct download)
- *   FAIL   â†’ Paklaring + Performance Review (direct download)
+ *   FAIL   â†’ Paklaring + Surat BPJS (direct download)
  *   EXTEND â†’ NO PDF generated at all (evaluation + duration saved only)
  */
 class ProbationEvaluationFlowTest extends TestCase
@@ -227,7 +227,8 @@ class ProbationEvaluationFlowTest extends TestCase
         [$response, $rows] = $this->postEvaluation('Lulus');
 
         $response->assertOk()->assertJsonPath('success', true)
-            ->assertJsonPath('decisionType', 'pass');
+            ->assertJsonPath('decisionType', 'pass')
+            ->assertJsonPath('bpjsPdfUrl', null);
 
         $row = end($rows);
         $this->assertCount(1, $rows, 'First evaluation must create exactly one history row.');
@@ -274,10 +275,10 @@ class ProbationEvaluationFlowTest extends TestCase
     }
 
     // =========================================================================
-    // T02 â€” FAIL: evaluation saved + on-demand PDF URLs (Paklaring + Performance Review)
+    // T02 â€” FAIL: evaluation saved + on-demand PDF URLs (Paklaring + BPJS)
     // =========================================================================
 
-    public function test_t02_fail_returns_download_urls_for_paklaring_and_performance_review(): void
+    public function test_t02_fail_returns_download_urls_for_paklaring_and_bpjs_only(): void
     {
         [$response, $rows] = $this->postEvaluation('Tidak Lulus');
 
@@ -291,7 +292,9 @@ class ProbationEvaluationFlowTest extends TestCase
 
         $data = $response->json();
         $this->assertStringContainsString('/hr/export/paklaring/EMP001', $data['pdfUrl']);
-        $this->assertStringContainsString('/hr/export/performance-review/EMP001', $data['evalPdfUrl']);
+        $this->assertStringContainsString('/hr/export/probation-surat-bpjs/EMP001', $data['bpjsPdfUrl']);
+        $this->assertStringContainsString('probation_eval_id=', $data['bpjsPdfUrl']);
+        $this->assertNull($data['evalPdfUrl']);
     }
 
     // =========================================================================
@@ -307,6 +310,7 @@ class ProbationEvaluationFlowTest extends TestCase
 
         $response->assertOk()->assertJsonPath('success', true)
             ->assertJsonPath('decisionType', 'extend')
+            ->assertJsonPath('bpjsPdfUrl', null)
             ->assertJsonPath('pdfUrl', null)
             ->assertJsonPath('evalPdfUrl', null);
 

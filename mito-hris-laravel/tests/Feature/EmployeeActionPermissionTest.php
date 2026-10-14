@@ -66,6 +66,7 @@ class EmployeeActionPermissionTest extends TestCase
             'hr.export.surat-bpjs' => 'can:offboard_employees',
             'hr.export.offboarding-bundle' => 'can:offboard_employees',
             'hr.employees.off-contract' => 'can:off_contract_employees',
+            'hr.export.off-contract-surat-bpjs' => 'can:off_contract_employees',
             'hr.export.paklaring' => 'can:export_paklaring',
             'hr.employees.warning-letter' => 'can:manage_warning_letters',
             'hr.employees.warning-letter.download' => 'can:manage_warning_letters',
@@ -91,6 +92,7 @@ class EmployeeActionPermissionTest extends TestCase
         $this->get('/hr/export/sk-off/EMP001')->assertForbidden();
         $this->get('/hr/export/surat-bpjs/EMP001')->assertForbidden();
         $this->get('/hr/export/offboarding-bundle/EMP001')->assertForbidden();
+        $this->get('/hr/export/off-contract-surat-bpjs/EMP001')->assertForbidden();
         $this->get('/hr/export/paklaring/EMP001')->assertForbidden();
     }
 

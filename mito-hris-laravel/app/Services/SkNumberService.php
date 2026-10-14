@@ -159,11 +159,12 @@ class SkNumberService
             'Created At' => $now->format('Y-m-d H:i:s'),
         ];
 
-        if (!$this->documents->append($row)) {
+        $storedDocumentId = $this->documents->append($row);
+        if (!$storedDocumentId) {
             throw new RuntimeException('Gagal menyimpan riwayat dokumen SK ke Employee_Documents.');
         }
 
-        return $documentId;
+        return $storedDocumentId;
     }
 
     /**

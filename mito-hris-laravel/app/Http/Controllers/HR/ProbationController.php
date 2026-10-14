@@ -168,7 +168,7 @@ class ProbationController extends Controller
     //
     // PDF rules (on-demand — same convention as hr/export PDF functions):
     //   PASS   → SK Pengangkatan PDF + Performance Review PDF
-    //   FAIL   → Paklaring PDF + Performance Review PDF
+    //   FAIL   → Paklaring PDF + Surat BPJS PDF
     //   EXTEND → NO PDF generated (evaluation + duration saved only)
     // ==========================================================
 
@@ -234,9 +234,10 @@ class ProbationController extends Controller
         // ── Build on-demand PDF URLs (hr.export.* streams the download) ──
         //
         // PASS   → pdfUrl = SK Pengangkatan  + evalPdfUrl = Performance Review
-        // FAIL   → pdfUrl = Paklaring        + evalPdfUrl = Performance Review
+        // FAIL   → pdfUrl = Paklaring        + bpjsPdfUrl = Surat BPJS
         // EXTEND → pdfUrl = null             + evalPdfUrl = null  (no PDF at all)
         $pdfUrl     = null;
+        $bpjsPdfUrl = null;
         $evalPdfUrl = null;
 
         if ($decisionType?->isPass()) {
@@ -249,23 +250,25 @@ class ProbationController extends Controller
                 $this->buildEvalPdfParams($result['evalId'], $evalData)
             ));
         } elseif ($decisionType?->isFail()) {
+            $lastWorkingDate = now()->timezone('Asia/Jakarta')->format('Y-m-d');
             $pdfUrl = route('hr.export.paklaring', [
                 $id,
                 'letter_number'     => $result['skNumber'],
                 'evalId'            => $result['evalId'],
-                'last_working_date' => now()->timezone('Asia/Jakarta')->format('Y-m-d'),
+                'last_working_date' => $lastWorkingDate,
             ]);
-            $evalPdfUrl = route('hr.export.performance-review', array_merge(
-                [$id],
-                $this->buildEvalPdfParams($result['evalId'], $evalData)
-            ));
+            $bpjsPdfUrl = route('hr.export.probation-surat-bpjs', [
+                $id,
+                'effective_date' => $lastWorkingDate,
+                'probation_eval_id' => $result['evalId'],
+            ]);
         }
 
         if ($isAjax) {
             return response()->json([
                 'success'        => true,
                 'message'        => $successMsg,
-                'documentsGenerated' => ($pdfUrl !== null || $evalPdfUrl !== null),
+                'documentsGenerated' => ($pdfUrl !== null || $bpjsPdfUrl !== null || $evalPdfUrl !== null),
                 'evalId'         => $result['evalId'],
                 'employeeId'     => $id,
                 'decision'       => $result['decision'],
@@ -279,6 +282,7 @@ class ProbationController extends Controller
                 'twTotal'        => $result['twTotal'],
                 'previewUrl'     => route('hr.probation.preview', [$id]) . '?eval_id=' . urlencode($result['evalId']),
                 'pdfUrl'            => $pdfUrl,      // null for EXTEND
+                'bpjsPdfUrl'        => $bpjsPdfUrl,  // available for FAIL only
                 'evalPdfUrl'        => $evalPdfUrl,  // null for EXTEND
                 'skNumber'          => $result['skNumber'],
                 // Extension duration label derived from manual start/end dates.

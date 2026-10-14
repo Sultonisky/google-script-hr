@@ -53,7 +53,7 @@ class EmployeeDocumentDatabaseRepository implements EmployeeDocumentRepositoryIn
      * employee on the same day repeats it. Sheets accepted duplicates; the DB column is
      * unique, so later rows get a -2, -3, ... suffix to keep every history entry.
      */
-    public function append(array $row): bool
+    public function append(array $row): ?string
     {
         $baseId = trim((string) ($row['Document ID'] ?? ''));
         $attributes = [
@@ -78,13 +78,13 @@ class EmployeeDocumentDatabaseRepository implements EmployeeDocumentRepositoryIn
             try {
                 EmployeeDocument::create(['document_id' => $documentId] + $attributes);
 
-                return true;
+                return $documentId;
             } catch (UniqueConstraintViolationException) {
                 continue;
             } catch (\Throwable $e) {
                 Log::error('EmployeeDocumentDatabaseRepository::append failed: ' . $e->getMessage());
 
-                return false;
+                return null;
             }
         }
 
@@ -92,7 +92,7 @@ class EmployeeDocumentDatabaseRepository implements EmployeeDocumentRepositoryIn
             'document_id' => $baseId,
         ]);
 
-        return false;
+        return null;
     }
 
     public function maxSequence(): int

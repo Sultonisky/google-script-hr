@@ -61,7 +61,12 @@ class EmployeeController extends Controller
             'contract'     => $all->filter(fn($e) => EmployeeStatus::matches($e->statusEmployee, EmployeeStatus::CONTRACT))->count(),
             'outsource'    => $all->filter(fn($e) => EmployeeStatus::matches($e->statusEmployee, EmployeeStatus::OUTSOURCE))->count(),
             'other_active' => $otherActiveEmployees->count(),
+            'resigned'     => $all->filter(fn($e) => strtolower(trim($e->statusEmployee ?? '')) === 'resigned')->count(),
+            'terminated'   => $all->filter(fn($e) => strtolower(trim($e->statusEmployee ?? '')) === 'terminated')->count(),
             'off_contract' => $all->filter(fn($e) => strtolower(trim($e->statusEmployee ?? '')) === 'contract finished')->count(),
+            'retired'      => $all->filter(fn($e) => strtolower(trim($e->statusEmployee ?? '')) === 'retired')->count(),
+            'deceased'     => $all->filter(fn($e) => strtolower(trim($e->statusEmployee ?? '')) === 'deceased')->count(),
+            'inactive'     => $all->filter(fn($e) => strtolower(trim($e->statusEmployee ?? '')) === 'inactive')->count(),
         ];
 
         // Apply search/filter to full dataset
@@ -576,6 +581,25 @@ class EmployeeController extends Controller
      */
     public function offboard(Request $request, string $id): RedirectResponse|JsonResponse
     {
+        $contentLength = (int) $request->server('CONTENT_LENGTH', 0);
+        $postMaxSize = trim((string) ini_get('post_max_size'));
+        $postMaxBytes = (int) $postMaxSize;
+        $postMaxUnit = strtolower(substr($postMaxSize, -1));
+        if ($postMaxUnit === 'k') {
+            $postMaxBytes *= 1024;
+        } elseif ($postMaxUnit === 'm') {
+            $postMaxBytes *= 1024 ** 2;
+        } elseif ($postMaxUnit === 'g') {
+            $postMaxBytes *= 1024 ** 3;
+        }
+
+        if ($contentLength > 0 && $postMaxBytes > 0 && $contentLength > $postMaxBytes) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ukuran total unggahan melampaui batas server. Setiap lampiran maksimal 5 MB. Hubungi administrator jika file di bawah batas tersebut tetap gagal.',
+            ], 413);
+        }
+
         $request->validate([
             'offboarding_type'  => 'required|string|in:Resignation,Termination,Retirement,Death',
             'reason'            => 'required|string|max:1000',
@@ -611,16 +635,43 @@ class EmployeeController extends Controller
         }
 
         // Validate uploaded files: max 5MB, allowed MIME types (1:1 GAS _OFFB_DOC_MAX_BYTES / _OFFB_DOC_ACCEPT)
-        $allowedMimes = [
-            'application/pdf',
-            'image/jpeg',
-            'image/png',
-            'application/msword',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        $allowedMimesByExtension = [
+            'pdf' => ['application/pdf'],
+            'jpg' => ['image/jpeg'],
+            'jpeg' => ['image/jpeg'],
+            'png' => ['image/png'],
+            'doc' => ['application/msword', 'application/x-ole-storage'],
+            'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
         ];
+        $isDocxPackage = static function (string $path): bool {
+            if (!class_exists(\ZipArchive::class)) {
+                return false;
+            }
+
+            $archive = new \ZipArchive();
+            if ($archive->open($path, \ZipArchive::RDONLY) !== true) {
+                return false;
+            }
+
+            $isDocx = $archive->locateName('[Content_Types].xml') !== false
+                && $archive->locateName('word/document.xml') !== false;
+            $archive->close();
+
+            return $isDocx;
+        };
         foreach ($request->allFiles() as $key => $file) {
             if (!str_starts_with($key, 'attachment_')) {
                 continue;
+            }
+            if (!$file->isValid()) {
+                $message = in_array($file->getError(), [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true)
+                    ? "Ukuran file \"{$file->getClientOriginalName()}\" melampaui batas unggah server. Setiap lampiran maksimal 5 MB."
+                    : "File \"{$file->getClientOriginalName()}\" gagal diunggah. Silakan coba kembali.";
+
+                return response()->json([
+                    'success' => false,
+                    'message' => $message,
+                ], 422);
             }
             if ($file->getSize() > 5 * 1024 * 1024) {
                 return response()->json([
@@ -628,7 +679,13 @@ class EmployeeController extends Controller
                     'message' => "File \"{$file->getClientOriginalName()}\" melebihi batas 5 MB.",
                 ], 422);
             }
-            if (!in_array($file->getMimeType(), $allowedMimes, true)) {
+            $extension = strtolower($file->getClientOriginalExtension());
+            $mimeType = strtolower($file->getMimeType());
+            $mimeIsAllowed = in_array($mimeType, $allowedMimesByExtension[$extension] ?? [], true);
+            if ($extension === 'docx' && $mimeType === 'application/zip') {
+                $mimeIsAllowed = $isDocxPackage($file->getPathname());
+            }
+            if (!$mimeIsAllowed) {
                 return response()->json([
                     'success' => false,
                     'message' => "Tipe file \"{$file->getClientOriginalName()}\" tidak diizinkan. Gunakan PDF, JPG, PNG, DOC, atau DOCX.",
@@ -688,7 +745,6 @@ class EmployeeController extends Controller
 
         $result = $this->employeeService->processOffContract($id, $request->all(), $this->hrUserName());
 
-        // Off Contract hanya menghasilkan satu dokumen: Paklaring.
         $pdfUrls = [];
         if ($result['success']) {
             $lwd = $request->input('last_working_date');
@@ -702,6 +758,14 @@ class EmployeeController extends Controller
             // perform a second Sheets lookup here: eventual consistency can
             // otherwise make a successful update return no PDF URLs.
             $pdfUrls['paklaring'] = route('hr.export.paklaring', ['id' => $id]) . '?' . $extraQ;
+            $bpjsQ = http_build_query([
+                'effective_date' => $lwd,
+                'last_working_date' => $lwd,
+                'notes' => $request->input('notes', ''),
+                'approved_by' => $request->input('approved_by', ''),
+                'bpjs_document_id' => $result['bpjsDocumentId'] ?? '',
+            ]);
+            $pdfUrls['surat_bpjs'] = route('hr.export.off-contract-surat-bpjs', ['id' => $id]) . '?' . $bpjsQ;
         }
 
         $result['pdf_urls'] = $pdfUrls;

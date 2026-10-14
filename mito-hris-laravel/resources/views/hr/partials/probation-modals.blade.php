@@ -4,8 +4,8 @@
      
      SUBMIT FLOW (AJAX):
        fetch POST /hr/probation/{id}/evaluate  (X-Requested-With: XMLHttpRequest)
-         → JSON { success, pdfUrl, isLulus, isPutusKontrak, isPerpanjang, ... }
-         → if pdfUrl: window.open(pdfUrl, '_blank')   ← PDF download in new tab
+         → JSON { success, pdfUrl, bpjsPdfUrl, evalPdfUrl, ... }
+         → download the returned PDFs as separate files
          → modal.hide()
          → show toast success
          → location.reload() to refresh probation table + stats
@@ -397,7 +397,7 @@
                                 </div>
                             </div>
 
-                            {{-- 2. TIDAK LULUS / PAKLARING --}}
+                            {{-- 2. TIDAK LULUS / PAKLARING & BPJS --}}
                             <div class="eval-decision-opt rounded-3 p-3" data-value="Tidak Lulus"
                                 style="border:2px solid #e5e7eb;cursor:pointer;transition:all .15s">
                                 <div class="d-flex align-items-start gap-3">
@@ -411,12 +411,12 @@
                                     <div>
                                         <div class="fw-bold d-flex align-items-center gap-2" style="font-size:13px">
                                             <i class="bi bi-x-octagon-fill text-danger"></i>
-                                            TIDAK LULUS - Putus Kontrak (Paklaring)
+                                            TIDAK LULUS - Putus Kontrak
                                         </div>
                                         <div class="text-muted mt-1" style="font-size:12px">
                                             Kontrak karyawan diakhiri.
-                                            <strong class="text-danger">Surat Keterangan Kerja (Paklaring)</strong>
-                                            akan diterbitkan.
+                                            <strong class="text-danger">Paklaring dan Surat BPJS</strong> akan
+                                            diterbitkan.
                                         </div>
                                     </div>
                                 </div>
@@ -1120,7 +1120,7 @@
                     tEl.innerHTML = '<i class="bi bi-file-earmark-check me-1"></i>Simpan & Terbitkan SK Tetap';
                 } else if (cls.isPutus) {
                     btn.style.background = '#991b1b';
-                    tEl.innerHTML = '<i class="bi bi-file-earmark-x me-1"></i>Simpan & Terbitkan Paklaring';
+                    tEl.innerHTML = '<i class="bi bi-file-earmark-x me-1"></i>Simpan & Terbitkan Paklaring + BPJS';
                 } else if (cls.isPerp) {
                     btn.style.background = '#d97706';
                     tEl.innerHTML = '<i class="bi bi-calendar-plus me-1"></i>Simpan Perpanjangan';
@@ -1157,7 +1157,7 @@
             var cls = classifyDecision(decVal);
 
             var decLabel = cls.isLulus ? '✓ LULUS - SK Pengangkatan' :
-                cls.isPutus ? '✗ TIDAK LULUS - Paklaring' :
+                cls.isPutus ? '✗ TIDAK LULUS - Paklaring + BPJS' :
                 '↺ EXTEND - Perpanjang Probation';
             var decColor = cls.isLulus ? '#166534' : cls.isPutus ? '#991b1b' : '#d97706';
 
@@ -1363,7 +1363,7 @@
                         };
                     });
                 })
-                .then(function(res) {
+                .then(async function(res) {
                     var data = res.data;
                     var status = res.status;
 
@@ -1389,30 +1389,84 @@
                     }
 
                     // ── SUCCESS ──────────────────────────────────────────────
-                    // Step A: trigger PDF downloads via anchor click (bypass popup blockers)
-                    // For EXTEND both URLs are null → no PDF is generated at all.
-                    function downloadPdf(url) {
-                        if (!url) return;
-                        var a = document.createElement('a');
-                        a.href = url;
-                        a.target = '_blank';
-                        a.style.display = 'none';
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
+                    // Step A: fetch complete PDF responses before starting downloads so the
+                    // page refresh cannot interrupt a document that is still being generated.
+                    async function downloadPdfs(pdfUrls) {
+                        var pdfs = await Promise.all(pdfUrls.map(async function(url) {
+                            try {
+                                var response = await fetch(url, {
+                                    headers: {
+                                        'Accept': 'application/pdf'
+                                    },
+                                    credentials: 'same-origin'
+                                });
+                                if (!response.ok) {
+                                    throw new Error('PDF request failed with status ' + response.status);
+                                }
+
+                                var blob = await response.blob();
+                                if (!blob.type.includes('pdf')) {
+                                    throw new Error('PDF response had an unexpected content type.');
+                                }
+
+                                var disposition = response.headers.get('Content-Disposition') || '';
+                                var encodedName = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+                                var plainName = disposition.match(/filename="?([^";]+)"?/i);
+
+                                return {
+                                    blob: blob,
+                                    filename: encodedName ? decodeURIComponent(encodedName[1]) :
+                                        (plainName ? plainName[1] : 'Dokumen.pdf')
+                                };
+                            } catch (error) {
+                                return {
+                                    error: error
+                                };
+                            }
+                        }));
+
+                        var errors = [];
+                        pdfs.forEach(function(pdf) {
+                            if (pdf.error) {
+                                errors.push(pdf.error);
+                                return;
+                            }
+
+                            var objectUrl = URL.createObjectURL(pdf.blob);
+                            var a = document.createElement('a');
+                            a.href = objectUrl;
+                            a.download = pdf.filename;
+                            a.style.display = 'none';
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            setTimeout(function() {
+                                URL.revokeObjectURL(objectUrl);
+                            }, 60000);
+                        });
+
+                        return errors;
                     }
 
-                    if (data.pdfUrl) {
+                    var pdfUrls = [data.pdfUrl, data.bpjsPdfUrl, data.evalPdfUrl].filter(Boolean);
+                    if (pdfUrls.length) {
                         setLoading(true, 'Membuat dokumen PDF…');
-                        setTimeout(function() {
-                            downloadPdf(data.pdfUrl);
-                        }, 200);
-                    }
-                    if (data.evalPdfUrl) {
-                        setLoading(true, 'Membuat dokumen PDF…');
-                        setTimeout(function() {
-                            downloadPdf(data.evalPdfUrl);
-                        }, data.pdfUrl ? 600 : 200);
+                        try {
+                            var pdfErrors = await downloadPdfs(pdfUrls);
+                            if (pdfErrors.length) {
+                                throw pdfErrors[0];
+                            }
+                        } catch (error) {
+                            console.error('[ProbationEval] PDF download failed:', error);
+                            showServerError(
+                                'Evaluasi berhasil disimpan, tetapi dokumen gagal diunduh. Silakan unduh melalui riwayat evaluasi.'
+                            );
+                            setLoading(false);
+                            setTimeout(function() {
+                                window.location.reload();
+                            }, 1500);
+                            return;
+                        }
                     }
 
                     // Step B: close modal
@@ -1428,6 +1482,9 @@
                         msg += data.decisionType === 'pass' ? ' SK Pengangkatan sedang diunduh.' :
                             data.decisionType === 'fail' ? ' Paklaring sedang diunduh.' :
                             '';
+                    }
+                    if (data.bpjsPdfUrl) {
+                        msg += ' Surat BPJS sedang diunduh.';
                     }
                     if (data.evalPdfUrl) {
                         msg += ' Formulir Performance Review sedang diunduh.';
@@ -1447,7 +1504,6 @@
                         }
                     }
 
-                    // Step D: reload page to refresh table + stats (after 600ms for UX)
                     setTimeout(function() {
                         window.location.reload();
                     }, 600);

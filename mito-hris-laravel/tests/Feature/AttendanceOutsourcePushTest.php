@@ -336,9 +336,6 @@ class AttendanceOutsourcePushTest extends TestCase
             'mito_join_date' => '2026-10-01',
             'contract_start_date' => '2026-10-01',
             'contract_end_date' => '2026-12-31',
-            'payroll_scheme' => '70/30',
-            'umk_amount' => '5396761',
-            'bank_account' => '1234567890',
             'agreement' => '1',
         ];
     }

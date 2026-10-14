@@ -26,7 +26,7 @@ final class PermissionCatalog
             ['key' => 'view_employees', 'name' => 'View employees', 'description' => 'View employee records.', 'group' => 'Employees'],
             ['key' => 'rotate_employees', 'name' => 'Rotate employees', 'description' => 'Process employee rotation/mutation and generate SK Rotasi.', 'group' => 'Employees'],
             ['key' => 'offboard_employees', 'name' => 'Offboard employees', 'description' => 'Process employee offboarding/resign and generate SK Offboarding, Surat BPJS, and Paklaring.', 'group' => 'Employees'],
-            ['key' => 'off_contract_employees', 'name' => 'Off-contract employees', 'description' => 'End employee contracts (off contract) and generate Paklaring.', 'group' => 'Employees'],
+            ['key' => 'off_contract_employees', 'name' => 'Off-contract employees', 'description' => 'End employee contracts (off contract) and generate Paklaring and Surat BPJS.', 'group' => 'Employees'],
             ['key' => 'manage_warning_letters', 'name' => 'Manage warning letters', 'description' => 'Issue and download Surat Peringatan (SP-1/2/3).', 'group' => 'Employees'],
             ['key' => 'view_recruitment', 'name' => 'View recruitment', 'description' => 'View recruitment records.', 'group' => 'Recruitment'],
             ['key' => 'update_candidates', 'name' => 'Update candidates', 'description' => 'Update candidate status.', 'group' => 'Recruitment'],

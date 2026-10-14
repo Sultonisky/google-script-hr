@@ -37,28 +37,40 @@ class PublicOutsourceApplyValidationTest extends TestCase
         foreach ([
             'full_name', 'citizen_id_address', 'birth_date', 'birth_place', 'last_education', 'whatsapp_number',
             'email', 'vendor', 'job_title', 'work_location', 'work_city', 'cost_center', 'entity',
-            'mito_join_date', 'contract_start_date', 'contract_end_date', 'payroll_scheme', 'umk_amount', 'bank_account',
+            'mito_join_date', 'contract_start_date', 'contract_end_date',
         ] as $field) {
             $response->assertSee('name="' . $field . '"', false);
         }
-        foreach (['basic_salary', 'incentive_amount', 'remarks', 'nik', 'npwp', 'bpjs_kesehatan'] as $field) {
+        foreach (['bank_account', 'payroll_scheme', 'umk_amount', 'basic_salary', 'incentive_amount', 'remarks', 'nik', 'npwp', 'bpjs_kesehatan'] as $field) {
             $response->assertDontSee('name="' . $field . '"', false);
         }
         $response->assertSee('value="Damarindo"', false);
         $response->assertSee('value="StaffInc"', false);
         $response->assertSee('validateContractDates', false);
+        $response->assertSee('0 dari 14 data telah lengkap', false);
+        $response->assertSee("phoneEl.addEventListener('input', scheduleContactCheck)", false);
+        $response->assertSee("emailEl.addEventListener('input', scheduleContactCheck)", false);
+        foreach (['mito_join_date', 'contract_start_date', 'contract_end_date'] as $field) {
+            $response->assertDontSee('id="' . $field . '" name="' . $field . '" value="" required', false);
+        }
         $response->assertSee(json_encode(route('public.outsource.contact-check')), false);
     }
 
     public function test_form_locks_from_server_duplicate_contact_error(): void
     {
         $response = $this->onDomain('outsource')
-            ->withSession(['error' => 'Nomor WhatsApp atau email ini sudah terdaftar.'])
+            ->withSession([
+                'error' => 'Nomor WhatsApp atau email ini sudah terdaftar.',
+                '_old_input' => ['whatsapp_number' => '81234567890', 'email' => 'budi@example.com'],
+            ])
             ->get(route('public.outsource.apply'));
 
         $response->assertOk();
-        $response->assertSee('setContactBlocked(true, serverError)', false);
-        $response->assertSee('id="contactLockBanner"', false);
+        $response->assertSee('scheduleContactCheck()', false);
+        $response->assertSee('id="contactCheckStatus"', false);
+        $response->assertSee('id="whatsappDuplicateFeedback"', false);
+        $response->assertSee('id="emailDuplicateFeedback"', false);
+        $response->assertDontSee('id="contactLockBanner"', false);
     }
 
     public function test_contact_check_reports_duplicate_phone_in_any_format(): void
@@ -68,17 +80,28 @@ class PublicOutsourceApplyValidationTest extends TestCase
         $this->onDomain('outsource')
             ->postJson(route('public.outsource.contact-check'), ['whatsapp_number' => '0812-3456-7890'])
             ->assertOk()
-            ->assertJsonPath('available', false);
+            ->assertJsonPath('available', false)
+            ->assertJsonPath('duplicate_fields', ['whatsapp_number']);
 
         $this->onDomain('outsource')
             ->postJson(route('public.outsource.contact-check'), ['email' => 'LAMA@example.com'])
             ->assertOk()
-            ->assertJsonPath('available', false);
+            ->assertJsonPath('available', false)
+            ->assertJsonPath('duplicate_fields', ['email']);
+
+        $this->onDomain('outsource')
+            ->postJson(route('public.outsource.contact-check'), [
+                'whatsapp_number' => '0812-3456-7890',
+                'email' => 'LAMA@example.com',
+            ])
+            ->assertOk()
+            ->assertJsonPath('duplicate_fields', ['whatsapp_number', 'email']);
 
         $this->onDomain('outsource')
             ->postJson(route('public.outsource.contact-check'), ['whatsapp_number' => '81111111111', 'email' => 'baru@example.com'])
             ->assertOk()
-            ->assertJsonPath('available', true);
+            ->assertJsonPath('available', true)
+            ->assertJsonPath('duplicate_fields', []);
     }
 
     public function test_valid_submission_creates_outsource_record(): void
@@ -98,7 +121,12 @@ class PublicOutsourceApplyValidationTest extends TestCase
         $this->assertSame('budi@example.com', $saved->email);
         $this->assertSame('Damarindo', $saved->vendor);
         $this->assertSame('PT. Mahakarya Sukses Indonesia', $saved->entity);
-        $this->assertSame(5396761.0, $saved->umkAmount);
+        $this->assertSame('2026-01-15', $saved->mitoJoinDate);
+        $this->assertSame('2026-01-15', $saved->contractStartDate);
+        $this->assertSame('2026-12-31', $saved->contractEndDate);
+        $this->assertNull($saved->bankAccount);
+        $this->assertNull($saved->payrollScheme);
+        $this->assertNull($saved->umkAmount);
         $this->assertSame('Portal Outsource', $saved->createdBy);
         $this->assertNull($saved->basicSalary);
         $this->assertNull($saved->incentiveAmount);
@@ -113,12 +141,18 @@ class PublicOutsourceApplyValidationTest extends TestCase
             'basic_salary' => '9999999',
             'incentive_amount' => '9999999',
             'remarks' => 'diisi pelamar',
+            'bank_account' => '1234567890',
+            'payroll_scheme' => '70/30',
+            'umk_amount' => '5396761',
         ])->assertRedirect(route('public.outsource.success'));
 
         $saved = $this->outsourceRepo->getAll()->first();
         $this->assertNull($saved->basicSalary);
         $this->assertNull($saved->incentiveAmount);
         $this->assertNull($saved->remarks);
+        $this->assertNull($saved->bankAccount);
+        $this->assertNull($saved->payrollScheme);
+        $this->assertNull($saved->umkAmount);
     }
 
     public function test_duplicate_phone_or_email_cannot_apply_again(): void
@@ -139,16 +173,15 @@ class PublicOutsourceApplyValidationTest extends TestCase
         $this->assertCount(1, $this->outsourceRepo->getAll());
     }
 
-    public function test_rejects_vendor_entity_and_scheme_outside_the_lists(): void
+    public function test_rejects_vendor_entity_and_education_outside_the_lists(): void
     {
         $this->expectNoAudit();
 
         $this->submit([
             'vendor' => 'PT Vendor Lain',
             'entity' => 'PT Tidak Dikenal',
-            'payroll_scheme' => '50/50',
             'last_education' => 'SMA',
-        ])->assertSessionHasErrors(['vendor', 'entity', 'payroll_scheme', 'last_education']);
+        ])->assertSessionHasErrors(['vendor', 'entity', 'last_education']);
 
         $this->assertCount(0, $this->outsourceRepo->getAll());
     }
@@ -163,6 +196,23 @@ class PublicOutsourceApplyValidationTest extends TestCase
         ])->assertSessionHasErrors(['contract_end_date']);
     }
 
+    public function test_submission_accepts_blank_optional_dates(): void
+    {
+        $this->expectAudit();
+
+        $this->submit([
+            'mito_join_date' => '',
+            'contract_start_date' => '',
+            'contract_end_date' => '',
+        ])->assertRedirect(route('public.outsource.success'));
+
+        $saved = $this->outsourceRepo->getAll()->first();
+        $this->assertNotNull($saved);
+        $this->assertNull($saved->mitoJoinDate);
+        $this->assertNull($saved->contractStartDate);
+        $this->assertNull($saved->contractEndDate);
+    }
+
     public function test_rejects_applicant_younger_than_seventeen(): void
     {
         $this->expectNoAudit();
@@ -172,16 +222,15 @@ class PublicOutsourceApplyValidationTest extends TestCase
         ])->assertSessionHasErrors(['birth_date']);
     }
 
-    public function test_rejects_invalid_contact_and_bank_formats(): void
+    public function test_rejects_invalid_contact_formats(): void
     {
         $this->expectNoAudit();
 
         $this->submit([
             'email' => 'bukan-email',
             'whatsapp_number' => '12345',
-            'bank_account' => '123',
             'full_name' => 'Budi<script>',
-        ])->assertSessionHasErrors(['email', 'whatsapp_number', 'bank_account', 'full_name']);
+        ])->assertSessionHasErrors(['email', 'whatsapp_number', 'full_name']);
     }
 
     private function submit(array $overrides = [])
@@ -235,9 +284,6 @@ class PublicOutsourceApplyValidationTest extends TestCase
             'mito_join_date' => '2026-01-15',
             'contract_start_date' => '2026-01-15',
             'contract_end_date' => '2026-12-31',
-            'payroll_scheme' => '70/30',
-            'umk_amount' => '5396761',
-            'bank_account' => '1234567890',
             'agreement' => '1',
         ], $overrides);
     }
