@@ -116,6 +116,9 @@ if (!app()->environment('local')) {
                 Route::get('/{id}/eval-history', [ProbationController::class, 'evalHistory'])->name('eval-history');
                 Route::get('/{id}/preview', [ProbationController::class, 'previewPerformanceReview'])->name('preview');
             });
+            Route::prefix('export')->name('export.')->middleware('can:manage_probation')->group(function () {
+                Route::get('/probation-surat-bpjs/{id}', [ExportController::class, 'suratBpjsPdf'])->name('probation-surat-bpjs');
+            });
             Route::prefix('outsource')->name('outsource.')->middleware('can:view_outsource')->group(function () {
                 Route::get('/', [OutsourceController::class, 'index'])->name('index');
                 Route::post('/push-attendance', [OutsourceController::class, 'pushToAttendance'])
@@ -196,6 +199,9 @@ if (!app()->environment('local')) {
             });
             Route::prefix('export')->name('export.')->middleware('can:export_paklaring')->group(function () {
                 Route::get('/paklaring/{id}', [ExportController::class, 'paklaringPdf'])->name('paklaring');
+            });
+            Route::prefix('export')->name('export.')->middleware('can:off_contract_employees')->group(function () {
+                Route::get('/off-contract-surat-bpjs/{id}', [ExportController::class, 'suratBpjsPdf'])->name('off-contract-surat-bpjs');
             });
             Route::prefix('export')->name('export.')->middleware('can:manage_probation')->group(function () {
                 Route::get('/performance-review/{id}', [ExportController::class, 'performanceReviewPdf'])->name('performance-review');
@@ -384,6 +390,9 @@ if (app()->environment('local')) {
                 Route::get('/{id}/eval-history', [ProbationController::class, 'evalHistory'])->name('eval-history');
                 Route::get('/{id}/preview', [ProbationController::class, 'previewPerformanceReview'])->name('preview');
             });
+            Route::prefix('export')->name('export.')->middleware('can:manage_probation')->group(function () {
+                Route::get('/probation-surat-bpjs/{id}', [ExportController::class, 'suratBpjsPdf'])->name('probation-surat-bpjs');
+            });
 
             Route::prefix('outsource')->name('outsource.')->middleware('can:view_outsource')->group(function () {
                 Route::get('/', [OutsourceController::class, 'index'])->name('index');
@@ -475,6 +484,9 @@ if (app()->environment('local')) {
             });
             Route::prefix('export')->name('export.')->middleware('can:export_paklaring')->group(function () {
                 Route::get('/paklaring/{id}', [ExportController::class, 'paklaringPdf'])->name('paklaring');
+            });
+            Route::prefix('export')->name('export.')->middleware('can:off_contract_employees')->group(function () {
+                Route::get('/off-contract-surat-bpjs/{id}', [ExportController::class, 'suratBpjsPdf'])->name('off-contract-surat-bpjs');
             });
             Route::prefix('export')->name('export.')->middleware('can:manage_probation')->group(function () {
                 Route::get('/performance-review/{id}', [ExportController::class, 'performanceReviewPdf'])->name('performance-review');
