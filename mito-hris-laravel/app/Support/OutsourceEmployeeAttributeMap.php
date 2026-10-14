@@ -36,6 +36,7 @@ final class OutsourceEmployeeAttributeMap
         'incentiveAmount' => ['incentive_amount', 'Incentive Amount (30%)'],
         'remarks' => ['remarks', 'Remarks'],
         'vendor' => ['vendor', 'Vendor'],
+        'hrisStatus' => ['hris_status', 'Status HRIS'],
         'createdBy' => ['created_by', 'Created By'],
         'createdAt' => ['created_at', 'Created At'],
         'updatedAt' => ['updated_at', 'Updated At'],
@@ -144,6 +145,9 @@ final class OutsourceEmployeeAttributeMap
 
     public static function normalize(string $property, mixed $value): string|float|null
     {
+        if ($property === 'hrisStatus' && ($value === null || trim((string) $value) === '')) {
+            return 'Aktif';
+        }
         if (in_array($property, self::AMOUNT_FIELDS, true)) {
             return self::parseAmount($value);
         }
