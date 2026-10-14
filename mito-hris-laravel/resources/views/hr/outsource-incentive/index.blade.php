@@ -54,8 +54,9 @@
                             <th>Outsource ID</th>
                             <th>Nama</th>
                             <th>Vendor</th>
-                            <th>UMK</th>
+                            <th>Incentive Pokok</th>
                             <th>Incentive</th>
+                            <th>Total</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -64,12 +65,13 @@
                                 <td class="id-mono fw-bold">{{ $incentive->outsource_id }}</td>
                                 <td>{{ $incentive->full_name ?? '-' }}</td>
                                 <td>{{ $incentive->vendor ?? '-' }}</td>
-                                <td class="id-mono">Rp {{ number_format((float) $incentive->umk_amount, 0, ',', '.') }}</td>
+                                <td class="id-mono">{{ $incentive->incentive_pokok_amount === null ? '-' : 'Rp ' . number_format((float) $incentive->incentive_pokok_amount, 0, ',', '.') }}</td>
                                 <td class=" id-mono fw-semibold">Rp {{ number_format((float) $incentive->incentive_amount, 0, ',', '.') }}</td>
+                                <td class="id-mono fw-semibold">{{ $incentive->total_amount === null ? '-' : 'Rp ' . number_format((float) $incentive->total_amount, 0, ',', '.') }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5">
+                                <td colspan="6">
                                     <div class="table-empty">
                                         <i class="bi bi-inbox"></i>
                                         <p>Belum ada data incentive untuk periode ini.</p>
@@ -100,7 +102,7 @@
                     </div>
                     <div class="modal-body">
                         <div class="alert alert-light border small">
-                            <div>Gunakan file <strong>.xlsx</strong> maksimal 10 MB. Header dan urutan kolom A–D harus sesuai template: Outsource ID, Nama, UMK (dari master outsource), dan Incentive. Jangan mengganti nama atau memindahkan kolom. Nilai UMK pada file bukan sumber import; pastikan UMK sudah diisi di master outsource. Isi nominal Incentive secara manual untuk baris yang akan diimpor; ID yang tidak ada di master outsource dilewati.</div>
+                            <div>Gunakan file <strong>.xlsx</strong> maksimal 10 MB. Header dan urutan kolom A–E harus sesuai template: Outsource ID, Nama, Incentive Pokok, Incentive, dan Total. Jangan mengganti nama atau memindahkan kolom. Isi ketiga nominal sesuai file; nilai Total diimpor apa adanya dan tidak dihitung otomatis. ID yang tidak ada di master outsource dilewati.</div>
                             <a href="{{ route('hr.outsource-incentives.template') }}" class="btn btn-primary btn-sm mt-2">
                                 <i class="bi bi-download me-1"></i>Download Template
                             </a>
@@ -118,7 +120,6 @@
                             </div>
                         </form>
                         <div id="outsourceIncentiveResult" class="mt-3" hidden></div>
-                        <div id="outsourceIncentiveUmkWarning" class="alert alert-warning mt-3 mb-0 small" role="alert" hidden></div>
                         <div id="outsourceIncentivePreviewRows" class="table-responsive mt-3" hidden>
                             <table class="table table-sm mb-0">
                                 <thead>
@@ -126,8 +127,9 @@
                                         <th>Outsource ID</th>
                                         <th>Nama</th>
                                         <th>Vendor</th>
-                                        <th class="text-end">UMK</th>
+                                        <th class="text-end">Incentive Pokok</th>
                                         <th class="text-end">Incentive</th>
+                                        <th class="text-end">Total</th>
                                         <th>Status</th>
                                     </tr>
                                 </thead>
@@ -156,7 +158,6 @@
                     </div>
                     <div class="modal-body">
                         <p class="mb-3">Data incentive periode <strong data-oic="period">-</strong> akan disimpan. Perubahan hanya berlaku pada data Outsource Incentive, tidak mengubah UMK maupun incentive di master outsource.</p>
-                        <div id="outsourceIncentiveConfirmUmkWarning" class="alert alert-warning small" role="alert" hidden></div>
                         <div class="border rounded p-3 bg-light">
                             <div class="row g-2">
                                 <div class="col-4 text-muted small">File</div>
@@ -191,8 +192,6 @@
                 var form = document.getElementById('outsourceIncentiveForm');
                 if (!form) return;
                 var resultEl = document.getElementById('outsourceIncentiveResult');
-                var umkWarningEl = document.getElementById('outsourceIncentiveUmkWarning');
-                var confirmUmkWarningEl = document.getElementById('outsourceIncentiveConfirmUmkWarning');
                 var previewRowsEl = document.getElementById('outsourceIncentivePreviewRows');
                 var previewBody = document.getElementById('outsourceIncentivePreviewBody');
                 var previewButton = document.getElementById('outsourceIncentivePreview');
@@ -225,9 +224,6 @@
                     var errors = Array.isArray(data.errors) ? data.errors : Object.values(data.errors || {}).flat();
                     var warnings = Array.isArray(data.warnings) ? data.warnings : [];
                     var rows = Array.isArray(data.rows) ? data.rows : [];
-                    var missingUmkRows = rows.filter(function(row) {
-                        return row.umk_amount == null || row.umk_amount === '' || !Number.isFinite(Number(row.umk_amount)) || Number(row.umk_amount) <= 0;
-                    });
                     resultEl.innerHTML = '<div class="alert ' + (data.success ? 'alert-info' : 'alert-danger') + '">' +
                         escapeHtml(data.message || 'Import gagal.') +
                         '<div class="mt-1">Dibaca: ' + (summary.read || 0) + ', baru: ' + (summary.created || 0) +
@@ -237,25 +233,15 @@
                         (warnings.length ? '<hr><div>' + warnings.map(escapeHtml).join('<br>') + '</div>' : '') +
                         '</div>';
                     resultEl.hidden = false;
-                    if (missingUmkRows.length) {
-                        var missingUmkPeople = missingUmkRows.map(function(row) {
-                            return escapeHtml(row.outsource_id) + ' (' + escapeHtml(row.full_name || '-') + ')';
-                        }).join(', ');
-                        var warning = 'UMK belum diatur atau bernilai 0 di Master Outsource untuk: ' + missingUmkPeople +
-                            '. Lengkapi UMK di master data outsource sebelum menyimpan/generate incentive. Nilai UMK dari file Excel tidak digunakan.';
-                        umkWarningEl.textContent = warning;
-                        umkWarningEl.hidden = false;
-                    } else {
-                        umkWarningEl.textContent = '';
-                        umkWarningEl.hidden = true;
-                    }
                     previewBody.innerHTML = rows.map(function(row) {
-                        var umk = 'Rp ' + Number(row.umk_amount || 0).toLocaleString('id-ID', { maximumFractionDigits: 0 });
+                        var incentivePokok = 'Rp ' + Number(row.incentive_pokok_amount || 0).toLocaleString('id-ID', { maximumFractionDigits: 0 });
                         var incentive = 'Rp ' + Number(row.incentive_amount || 0).toLocaleString('id-ID', { maximumFractionDigits: 0 });
+                        var total = 'Rp ' + Number(row.total_amount || 0).toLocaleString('id-ID', { maximumFractionDigits: 0 });
                         var status = row.status === 'updated' ? 'Diperbarui' : (row.status === 'unchanged' ? 'Tidak berubah' : 'Baru');
                         return '<tr><td>' + escapeHtml(row.outsource_id) + '</td><td>' + escapeHtml(row.full_name || '-') +
-                            '</td><td>' + escapeHtml(row.vendor || '-') + '</td><td class="text-end">' + escapeHtml(umk) +
-                            '</td><td class="text-end">' + escapeHtml(incentive) + '</td><td>' + status + '</td></tr>';
+                            '</td><td>' + escapeHtml(row.vendor || '-') + '</td><td class="text-end">' + escapeHtml(incentivePokok) +
+                            '</td><td class="text-end">' + escapeHtml(incentive) + '</td><td class="text-end">' + escapeHtml(total) +
+                            '</td><td>' + status + '</td></tr>';
                     }).join('');
                     previewRowsEl.hidden = rows.length === 0;
                     saveButton.disabled = !data.success || (summary.created || 0) + (summary.updated || 0) === 0;
@@ -309,8 +295,6 @@
                     setConfirm('updated', summary.updated || 0);
                     setConfirm('unchanged', summary.unchanged || 0);
                     setConfirm('skipped', summary.skipped || 0);
-                    confirmUmkWarningEl.textContent = umkWarningEl.textContent;
-                    confirmUmkWarningEl.hidden = umkWarningEl.hidden;
                     bootstrap.Modal.getOrCreateInstance(confirmModalEl).show();
                 });
                 confirmButton.addEventListener('click', function() {
