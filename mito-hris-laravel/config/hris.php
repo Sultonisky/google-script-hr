@@ -17,6 +17,7 @@ return [
     'data_driver' => env('HRIS_DATA_DRIVER'),
 
     'integration' => [
+        'employee_api_token' => env('HRIS_EMPLOYEE_API_TOKEN'),
         'outsource_payroll_api_token' => env('HRIS_OUTSOURCE_PAYROLL_API_TOKEN'),
         'outsource_sync_api_token' => env('HRIS_OUTSOURCE_SYNC_API_TOKEN'),
         // Outbound: push newly created outsource persons into the Attendance Person List.
