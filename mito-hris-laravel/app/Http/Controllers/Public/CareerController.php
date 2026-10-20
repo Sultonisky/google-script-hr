@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Public\ApplyJobRequest;
-use App\Http\Requests\Public\CandidateSelfUpdateRequest;
 use App\Services\RecruitmentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -148,38 +147,6 @@ class CareerController extends Controller
         }
 
         return view('public.career.check-status', compact('candidate', 'query'));
-    }
-
-    /**
-     * Show candidate self-update form.
-     */
-    public function selfUpdate(string $id): View
-    {
-        $candidate = $this->recruitmentService->checkApplicationStatus($id);
-        if (!$candidate) {
-            abort(404, 'Data pelamar tidak ditemukan.');
-        }
-
-        return view('public.career.self-update', compact('candidate'));
-    }
-
-    /**
-     * Store candidate self-updated data.
-     */
-    public function storeSelfUpdate(CandidateSelfUpdateRequest $request, string $id): RedirectResponse
-    {
-        try {
-            $this->recruitmentService->updateCandidateStatus(
-                recruitmentId: $id,
-                newStatus: 'Screening',
-                notes: 'Data diperbarui secara mandiri oleh pelamar.',
-                user: 'Pelamar (Self-Update)'
-            );
-
-            return back()->with('success', 'Data lamaran Anda berhasil diperbarui.');
-        } catch (\Throwable $e) {
-            return back()->with('error', $e->getMessage());
-        }
     }
 
     private function consentEvidence(Request $request, string $stage): array

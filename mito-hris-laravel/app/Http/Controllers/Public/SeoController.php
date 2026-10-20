@@ -19,7 +19,6 @@ class SeoController
             'Disallow: /success',
             'Disallow: /outsource/success',
             'Disallow: /check-status',
-            'Disallow: /self-update/',
             'Disallow: /outsource/apply',
             'Sitemap: ' . rtrim(config('seo.canonical_base_url'), '/') . '/sitemap.xml',
             '',
