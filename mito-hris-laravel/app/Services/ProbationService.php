@@ -98,7 +98,7 @@ class ProbationService
      * Decision strings (GAS-compatible):
      *  - "Diangkat sebagai Karyawan Tetap"           → isLulus path → SK Pengangkatan
      *  - "Tidak Lulus"                               → isPutusKontrak path → Paklaring
-     *  - "Perpanjang Kontrak"                        → isPerpanjang path → no PDF
+     *  - "Perpanjang Kontrak"                        → isPerpanjang path → kontrak PKWT /RNW1–RNW3
      *
      * OLD decision strings still detected for backward compat:
      *  - "Lulus → Karyawan Tetap"                   → isLulus
@@ -151,7 +151,7 @@ class ProbationService
         $employeeId = ltrim(trim($employeeId), "'");
 
         // Re-read the latest evaluation from the source of truth before any mutation.
-        // PASS/FAIL are terminal; after EXTEND only PASS/FAIL are valid next decisions.
+        // PASS/FAIL are terminal. EXTEND may be repeated until three renewals exist.
         $history = $this->getEvalHistory($employeeId);
         $latest = $history[0] ?? null;
         if ($latest) {
@@ -189,16 +189,16 @@ class ProbationService
             throw new RuntimeException('Keputusan evaluasi tidak valid: "' . $decision . '". Pilih salah satu keputusan yang tersedia.');
         }
         // Only PASS and FAIL are terminal — those block any further evaluation.
-        // EXTEND is allowed only once: if the latest decision is already EXTEND,
-        // the next evaluation must be PASS or FAIL (no second extension).
+        // EXTEND may be chosen up to three times (RNW1, RNW2, RNW3).
+        $priorExtends = $this->extendCount($history);
         if ($latest) {
             $latestDecisionType = ProbationDecisionType::fromDecisionString((string) ($latest['decision'] ?? ''));
             if ($latestDecisionType && ($latestDecisionType->isPass() || $latestDecisionType->isFail())) {
                 throw new RuntimeException('Kandidat sudah menyelesaikan evaluasi probation dan tidak dapat dievaluasi kembali.');
             }
-            if ($latestDecisionType && $latestDecisionType->isExtend() && $decisionType->isExtend()) {
-                throw new RuntimeException('Perpanjangan probation hanya dapat dilakukan satu kali. Pilih keputusan Lulus atau Tidak Lulus.');
-            }
+        }
+        if ($decisionType->isExtend() && $priorExtends >= 3) {
+            throw new RuntimeException('Perpanjangan probation maksimal 3 kali. Pilih keputusan Lulus atau Tidak Lulus.');
         }
         $isLulus = $decisionType->isPass();
         $isPutusKontrak = $decisionType->isFail();
@@ -235,6 +235,7 @@ class ProbationService
         }
 
         $branchName = $employee->branchName ?? '';
+        $issuedAt = $this->skNumbers->issuedAtFrom($evalData['doc_date'] ?? null);
         $contractDuration = $this->monthsBetweenDates(
             $employee->joinDate ?? null,
             $employee->endDateContract ?? null
@@ -255,6 +256,7 @@ class ProbationService
                 branchName: $branchName,
                 issuedBy: $user,
                 reference: $evalId,
+                issuedAt: $issuedAt,
             );
             $skNumber = $issued['nomor'];
             $this->employeeRepo->update($employeeId, [
@@ -271,6 +273,7 @@ class ProbationService
                 branchName: $branchName,
                 issuedBy: $user,
                 reference: $evalId,
+                issuedAt: $issuedAt,
             );
             $skNumber = $issued['nomor'];
             $this->employeeRepo->update($employeeId, [
@@ -283,10 +286,23 @@ class ProbationService
             $probStatus = 'Probation';
             $skStatus   = 'Paklaring Diterbitkan';
         } else {
-            // Perpanjang: sync active-contract fields used by the Employee
-            // edit modal (Seksi Kontrak). Join Date stays the original hire date.
-            // Start Date (Contract) / Contract Duration are written only when
-            // those optional headers exist on the Employee sheet.
+            // Perpanjang: reuse the employee's sequence when one exists, otherwise
+            // take the next unused sequence. The renewal marker sits after the year.
+            $renewal = $priorExtends + 1;
+            $suffix = 'RNW' . $renewal;
+            $issued = $this->skNumbers->issue(
+                employeeId: $employeeId,
+                type: SkDocumentType::PKWT,
+                branchName: $branchName,
+                issuedBy: $user,
+                reference: $evalId,
+                notes: 'Perpanjangan probation ke-' . $renewal,
+                issuedAt: $issuedAt,
+                docTypeLabel: 'Kontrak PKWT ' . $suffix,
+                numberSuffix: $suffix,
+            );
+            $skNumber = $issued['nomor'];
+            // Join Date stays the original hire date. Start/end/duration follow the new contract.
             $updates = [
                 'End Date (Contract)'   => $extEnd,
                 'Start Date (Contract)' => $extStart,
@@ -304,8 +320,7 @@ class ProbationService
         //   - PASS/FAIL → PDF (SK Pengangkatan / Paklaring + Performance Review)
         //     dibuat on-demand dan langsung di-download oleh controller/frontend
         //     lewat route hr.export.* (konvensi fungsi PDF lainnya).
-        //   - EXTEND → tidak ada dokumen sama sekali; hanya data evaluasi +
-        //     durasi perpanjangan yang disimpan ke sheet.
+        //   - EXTEND → kontrak PKWT dengan akhiran /RNW1–RNW3, diunduh lewat hr.export.kontrak-pkwt.
         $this->appendProbationEvalRow([
             'Probation ID'       => $this->generateProbationId($now),
             'Employee ID'        => $employeeId,
@@ -364,7 +379,7 @@ class ProbationService
         // ── 5. Audit log → Riwayat Aktivitas (not HR Notes) ────────
         $action = $isLulus ? 'Probation Lulus' : ($isPutusKontrak ? 'Probation Putus Kontrak' : 'Probation Diperpanjang');
         $auditNewValue = $isPerpanjang
-            ? "{$decision} {$extDuration} ({$extStart} s/d {$extEnd}) — total {$overallTotal}/13, {$category}"
+            ? "{$decision} {$extDuration} ({$extStart} s/d {$extEnd}) — {$skNumber} — total {$overallTotal}/13, {$category}"
             : ("{$decision} (total {$overallTotal}/13, {$category})" . ($skNumber ? " — {$skNumber}" : ''));
         $this->auditRepo->log(
             entityType: 'Probation',
@@ -397,13 +412,12 @@ class ProbationService
             // extensionDuration: label ("N Bulan") derived from manual start/end.
             // The controller must return this value — never a browser-supplied duration string.
             'extensionDuration' => $isPerpanjang ? $extDuration : '',
-            // hasPdf = false untuk EXTEND → controller tidak membangun URL PDF
             'hasPdf'            => $decisionType?->hasPdf() ?? false,
             'message'           => $isLulus
                 ? "Karyawan lulus probation & diangkat menjadi karyawan tetap (PKWTT). SK: {$skNumber}"
                 : ($isPutusKontrak
                     ? "Kontrak diakhiri. Paklaring dan Surat BPJS diterbitkan. No. Paklaring: {$skNumber}"
-                    : "Masa probation diperpanjang ({$extDuration})."),
+                    : "Masa probation diperpanjang ({$extDuration}). Kontrak: {$skNumber}"),
         ];
     }
 
@@ -486,6 +500,136 @@ class ProbationService
     }
 
     /**
+     * Pair each extend row with the PKWT renewal issued for that evaluation.
+     * An older extend that predates the renewal contract stays without a number.
+     *
+     * @param  array<int, array<string, mixed>>  $history  newest first
+     * @return array<int, array<string, mixed>>
+     */
+    public function withRenewalContracts(string $employeeId, array $history): array
+    {
+        $documents = $this->skNumbers->historyForEmployee($employeeId)
+            ->filter(function (array $row): bool {
+                return strtoupper(trim((string) ($row['Doc Code'] ?? ''))) === SkDocumentType::PKWT->value
+                    && preg_match('#/RNW\d+$#i', trim((string) ($row['Nomor'] ?? ''))) === 1;
+            })
+            ->values()
+            ->all();
+        $ordinalByIndex = $this->extendOrdinals($history);
+        $used = [];
+
+        foreach ($history as $index => $row) {
+            $history[$index]['contractNumber'] = '';
+            $history[$index]['contractIssuedAt'] = '';
+            $ordinal = $ordinalByIndex[$index] ?? null;
+            if ($ordinal === null) {
+                continue;
+            }
+
+            $document = $this->matchRenewalDocument($row, $ordinal, $documents, $used);
+            if ($document === null) {
+                continue;
+            }
+
+            $used[$this->renewalDocumentKey($document)] = true;
+            $history[$index]['contractNumber'] = trim((string) ($document['Nomor'] ?? ''));
+            $history[$index]['contractIssuedAt'] = $this->documentIssuedDate($document['Issued At'] ?? '');
+        }
+
+        return $history;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $history
+     * @return array<int, int>
+     */
+    private function extendOrdinals(array $history): array
+    {
+        $ordinals = [];
+        $sequence = 0;
+        for ($index = count($history) - 1; $index >= 0; $index--) {
+            $decision = ProbationDecisionType::fromDecisionString((string) ($history[$index]['decision'] ?? ''));
+            if ($decision?->isExtend()) {
+                $sequence++;
+                $ordinals[$index] = $sequence;
+            }
+        }
+
+        return $ordinals;
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     * @param  array<int, array<string, mixed>>  $documents
+     * @param  array<string, bool>  $used
+     * @return array<string, mixed>|null
+     */
+    private function matchRenewalDocument(array $row, int $ordinal, array $documents, array $used): ?array
+    {
+        $evalId = trim((string) ($row['evalId'] ?? ''));
+        foreach ($documents as $document) {
+            if (isset($used[$this->renewalDocumentKey($document)])) {
+                continue;
+            }
+            $reference = trim((string) ($document['Reference'] ?? ''));
+            if ($evalId !== '' && $reference === $evalId) {
+                return $document;
+            }
+        }
+
+        foreach ($documents as $document) {
+            if (isset($used[$this->renewalDocumentKey($document)])) {
+                continue;
+            }
+            $reference = trim((string) ($document['Reference'] ?? ''));
+            if ($reference !== '' && $reference !== $evalId) {
+                continue;
+            }
+            if ($this->renewalOrdinal($document) === $ordinal) {
+                return $document;
+            }
+        }
+
+        return null;
+    }
+
+    /** @param array<string, mixed> $document */
+    private function renewalDocumentKey(array $document): string
+    {
+        $id = trim((string) ($document['Document ID'] ?? ''));
+
+        return $id !== '' ? $id : trim((string) ($document['Nomor'] ?? ''));
+    }
+
+    /** @param array<string, mixed> $document */
+    private function renewalOrdinal(array $document): ?int
+    {
+        $notes = (string) ($document['Notes'] ?? '');
+        if (preg_match('/perpanjangan probation ke-(\d+)/i', $notes, $match) === 1) {
+            return (int) $match[1];
+        }
+        if (preg_match('#/RNW(\d+)$#i', trim((string) ($document['Nomor'] ?? '')), $match) === 1) {
+            return (int) $match[1];
+        }
+
+        return null;
+    }
+
+    private function documentIssuedDate(mixed $issuedAt): string
+    {
+        $raw = trim((string) $issuedAt);
+        if ($raw === '') {
+            return '';
+        }
+
+        try {
+            return \Illuminate\Support\Carbon::parse($raw, 'Asia/Jakarta')->timezone('Asia/Jakarta')->toDateString();
+        } catch (\Throwable) {
+            return '';
+        }
+    }
+
+    /**
      * Fill Employee contract-section display fields for drawer / edit modal.
      *
      * Priority for Tanggal Mulai Kontrak:
@@ -536,6 +680,19 @@ class ProbationService
         $employee->contractDuration = $duration !== '' ? $duration : null;
 
         return $employee;
+    }
+
+    private function extendCount(array $history): int
+    {
+        $count = 0;
+        foreach ($history as $row) {
+            $type = ProbationDecisionType::fromDecisionString((string) ($row['decision'] ?? ''));
+            if ($type?->isExtend()) {
+                $count++;
+            }
+        }
+
+        return $count;
     }
 
     /**
