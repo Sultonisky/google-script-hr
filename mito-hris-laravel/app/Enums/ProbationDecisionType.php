@@ -15,7 +15,7 @@ namespace App\Enums;
  * convention as the other PDF functions in hr/export):
  *   PASS   → Performance Review PDF + SK Pengangkatan PDF
  *   FAIL   → Performance Review PDF + Paklaring PDF
- *   EXTEND → NO PDF generated (evaluation + duration saved only)
+ *   EXTEND → Kontrak PKWT perpanjangan (akhiran /RNW1–RNW3), maksimal 3 kali
  *
  * Detection priority: FAIL must be checked BEFORE PASS to prevent
  * str_contains('Tidak Lulus', 'Lulus') = true false-positive.
@@ -24,7 +24,7 @@ enum ProbationDecisionType: string
 {
     case PASS   = 'pass';    // Lulus → Karyawan Tetap → SK Pengangkatan
     case FAIL   = 'fail';    // Tidak Lulus → Putus Kontrak → Paklaring
-    case EXTEND = 'extend';  // Perpanjang Kontrak → No PDF
+    case EXTEND = 'extend';  // Perpanjang Kontrak → Kontrak PKWT /RNW1–RNW3
 
     // ── Classification ────────────────────────────────────────────
 
@@ -78,27 +78,23 @@ enum ProbationDecisionType: string
 
     /**
      * Whether this decision triggers PDF generation.
-     * EXTEND does NOT generate any PDF — only the evaluation + duration are saved.
      */
     public function hasPdf(): bool
     {
         return match($this) {
-            self::PASS   => true,
-            self::FAIL   => true,
-            self::EXTEND => false,
+            self::PASS, self::FAIL, self::EXTEND => true,
         };
     }
 
     /**
      * Export route name for the decision-specific document.
-     * Returns null for EXTEND (no document generated).
      */
     public function documentType(): ?string
     {
         return match($this) {
             self::PASS   => 'sk_pengangkatan',
             self::FAIL   => 'paklaring',
-            self::EXTEND => null,
+            self::EXTEND => 'kontrak_pkwt',
         };
     }
 
@@ -108,7 +104,7 @@ enum ProbationDecisionType: string
         return match($this) {
             self::PASS   => 'SK Pengangkatan',
             self::FAIL   => 'Paklaring',
-            self::EXTEND => '',
+            self::EXTEND => 'Kontrak PKWT Perpanjangan',
         };
     }
 
@@ -124,14 +120,13 @@ enum ProbationDecisionType: string
 
     /**
      * Export route name for the decision-specific document.
-     * Returns null for EXTEND (no PDF).
      */
     public function exportRouteName(): ?string
     {
         return match($this) {
             self::PASS   => 'hr.export.sk-pengangkatan',
             self::FAIL   => 'hr.export.paklaring',
-            self::EXTEND => null,
+            self::EXTEND => 'hr.export.kontrak-pkwt',
         };
     }
 
@@ -143,7 +138,7 @@ enum ProbationDecisionType: string
         return match($this) {
             self::PASS   => "Karyawan lulus probation & diangkat menjadi karyawan tetap (PKWTT). SK: {$skNumber}",
             self::FAIL   => "Kontrak diakhiri. Paklaring dan Surat BPJS diterbitkan. No. Paklaring: {$skNumber}",
-            self::EXTEND => "Masa probation diperpanjang ({$extDuration}).",
+            self::EXTEND => "Masa probation diperpanjang ({$extDuration}). Kontrak: {$skNumber}",
         };
     }
 }
