@@ -153,7 +153,7 @@
         ->values()
         ->all();
 @endphp
-<script>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
     window.__contractEmployeesForOff = @json($contractEmpSerialized);
 
     function handleOcEmpSearch(query) {

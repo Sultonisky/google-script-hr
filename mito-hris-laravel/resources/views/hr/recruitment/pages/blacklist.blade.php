@@ -116,7 +116,7 @@
 @endsection
 
 @section('scripts')
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         document.querySelectorAll('#blTableBody tr[data-drawer-type="candidate"]').forEach(function(row) {
             row.addEventListener('click', function(e) {
                 e.stopPropagation();

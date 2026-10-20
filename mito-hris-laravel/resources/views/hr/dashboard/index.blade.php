@@ -12,8 +12,8 @@
 @endsection
 
 @section('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
   document.addEventListener('DOMContentLoaded', () => {
     const ctx = document.getElementById('chartMonthly');
     if (ctx) {

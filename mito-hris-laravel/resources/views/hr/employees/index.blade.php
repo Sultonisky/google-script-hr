@@ -364,7 +364,7 @@
 @endsection
 
 @section('scripts')
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         // Wire add-employee modal store URL (domain-agnostic)
         document.addEventListener('DOMContentLoaded', function () {
             var aeModal = document.getElementById('addEmployeeModal');

@@ -262,7 +262,7 @@
 @endsection
 
 @section('scripts')
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         var docSearchInput = document.getElementById('docSearchInput');
         if (docSearchInput) {
             docSearchInput.addEventListener('keydown', function(e) {

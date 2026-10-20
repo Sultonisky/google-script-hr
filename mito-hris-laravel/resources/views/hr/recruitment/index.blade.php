@@ -217,7 +217,7 @@
 @endsection
 
 @section('scripts')
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         // Drawer click handler for candidates
         document.querySelectorAll('#tableBody tr[data-drawer-type="candidate"]').forEach(function(row) {
             row.addEventListener('click', function(e) {

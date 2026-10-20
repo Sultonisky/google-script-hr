@@ -167,7 +167,7 @@
         ->mapWithKeys(fn ($l) => [$l->value => $l->shortLabel()])
         ->all();
 @endphp
-<script>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
     (function() {
         var employees = @json($__wlEmployees);
         var storeUrlTemplate = @json($__wlStoreUrl);

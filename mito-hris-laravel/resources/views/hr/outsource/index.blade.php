@@ -250,7 +250,7 @@
 @endsection
 
 @section('scripts')
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         // Drawer click handler for outsource
         document.querySelectorAll('#osTableBody tr[data-drawer-type="outsource"]').forEach(function(row) {
             row.addEventListener('click', function(e) {

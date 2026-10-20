@@ -467,7 +467,7 @@
         </div>
     </div>
 
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         document.querySelectorAll('#pageAuditLog .audit-detail-btn').forEach(function(button) {
             button.addEventListener('click', function() {
                 var detail = JSON.parse(button.dataset.auditDetail);

@@ -805,7 +805,7 @@
     </div>
 </div>
 
-<script>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
     window.__allCandidatesForStatus = @json($allCandidates ?? ($candidates ?? []));
 
     // ============================================================

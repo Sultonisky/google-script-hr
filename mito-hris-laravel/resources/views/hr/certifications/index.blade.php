@@ -75,7 +75,7 @@
 @endsection
 
 @section('scripts')
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         window.MITO_CERT_BASE = '{{ $certBasePath ?? '/certifications' }}';
     </script>
     @vite(['resources/js/certification.js'])

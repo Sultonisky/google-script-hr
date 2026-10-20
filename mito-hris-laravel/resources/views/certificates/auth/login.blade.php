@@ -232,8 +232,7 @@
 
     <div class="login-header">
         <div class="login-logo">
-            <img src="{{ asset('assets/mito-red.png') }}" alt="MITO Logo"
-                 onerror="this.style.display='none';this.parentElement.innerHTML='<h2 class=\'fw-bold mb-0 text-danger\' style=\'font-size:32px;\'>MITO</h2>'">
+            <img src="{{ asset('assets/mito-red.png') }}" alt="MITO Logo">
         </div>
         <h1>{{ config('app.name', 'MITO HRIS') }}</h1>
         <p class="login-greeting">Selamat datang - silakan masuk untuk melanjutkan</p>
@@ -264,7 +263,7 @@
         </div>
 
         @if (session('error'))
-            <script>
+            <script nonce="{{ request()->attributes->get('csp_nonce') }}">
                 document.addEventListener('DOMContentLoaded', function () {
                     var el = document.getElementById('loginError');
                     var tx = document.getElementById('loginErrorText');
@@ -273,7 +272,7 @@
             </script>
         @endif
         @if (session('info'))
-            <script>
+            <script nonce="{{ request()->attributes->get('csp_nonce') }}">
                 document.addEventListener('DOMContentLoaded', function () {
                     var el = document.getElementById('loginInfo');
                     var tx = document.getElementById('loginInfoText');
@@ -282,7 +281,7 @@
             </script>
         @endif
         @if ($errors->any())
-            <script>
+            <script nonce="{{ request()->attributes->get('csp_nonce') }}">
                 document.addEventListener('DOMContentLoaded', function () {
                     var el = document.getElementById('loginError');
                     var tx = document.getElementById('loginErrorText');
@@ -347,8 +346,8 @@
     <span class="version-badge">Portal Sertifikasi</span>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
 (function () {
     'use strict';
 

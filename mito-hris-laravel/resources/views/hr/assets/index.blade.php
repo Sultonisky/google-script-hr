@@ -98,6 +98,17 @@
 @endsection
 
 @section('scripts')
-<script>window.MITO_ASSET_BASE = '{{ $assetBasePath ?? '/assets' }}';</script>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
+    window.MITO_ASSET_BASE = @json($assetBasePath ?? '/assets');
+    document.querySelectorAll('.js-asset-category').forEach(function (card) {
+        card.addEventListener('click', function () {
+            var filter = document.getElementById('assetCategoryFilter');
+            var form = document.getElementById('assetFilterForm');
+            if (!filter || !form) return;
+            filter.value = card.getAttribute('data-category') || '';
+            form.submit();
+        });
+    });
+</script>
 @vite(['resources/js/asset.js'])
 @endsection
