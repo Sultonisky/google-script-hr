@@ -482,6 +482,7 @@ class EmployeeService
         $user = $user ?: 'HR Administrator';
         $now = now()->timezone('Asia/Jakarta');
         $nowStr = $now->format('Y-m-d H:i:s');
+        $issuedAt = $this->skNumbers->issuedAtFrom($data['doc_date'] ?? null);
 
         $oldPosition   = $employee->jobPosition ?? '';
         $oldDepartment = $employee->department ?? '';
@@ -504,7 +505,7 @@ class EmployeeService
             issuedBy: $user,
             reference: $effectiveDate,
             notes: trim($notesRaw),
-            issuedAt: $now,
+            issuedAt: $issuedAt,
         );
         $skNumber = $issued['nomor'];
 
@@ -551,6 +552,7 @@ class EmployeeService
             'rotationType'  => $rotationType,
             'effectiveDate' => $effectiveDate,
             'notes'         => trim($notesRaw),
+            'docDate'       => $issuedAt->toDateString(),
         ];
     }
 
@@ -579,6 +581,7 @@ class EmployeeService
         $user = $user ?: 'HR Administrator';
         $now    = now()->timezone('Asia/Jakarta');
         $nowStr = $now->format('Y-m-d H:i:s');
+        $issuedAt = $this->skNumbers->issuedAtFrom($data['doc_date'] ?? null);
 
         $offboardingType = trim($data['offboarding_type'] ?? 'Resignation');
         $effectiveDate   = trim($data['effective_date'] ?? $data['last_working_date'] ?? $now->format('Y-m-d'));
@@ -605,7 +608,7 @@ class EmployeeService
             issuedBy: $user,
             reference: $offboardingType,
             notes: $notes,
-            issuedAt: $now,
+            issuedAt: $issuedAt,
         );
         $spakIssued = $this->skNumbers->issue(
             employeeId: $employeeId,
@@ -614,7 +617,7 @@ class EmployeeService
             issuedBy: $user,
             reference: $offboardingType,
             notes: $notes,
-            issuedAt: $now,
+            issuedAt: $issuedAt,
         );
         $skNumber = $skoIssued['nomor'];
         $paklaringNumber = $spakIssued['nomor'];
@@ -629,7 +632,7 @@ class EmployeeService
                 issuedBy: $user,
                 reference: $offboardingType,
                 notes: $notes,
-                issuedAt: $now,
+                issuedAt: $issuedAt,
             );
         } catch (\Throwable $e) {
             Log::warning('EmployeeService: gagal mencatat Surat BPJS di Employee_Documents', [
@@ -734,6 +737,7 @@ class EmployeeService
             'offboarding_type'  => $offboardingType,
             'notes'             => $notes,
             'approved_by'       => $approvedBy,
+            'doc_date'          => $issuedAt->toDateString(),
         ];
         $skOffQ = http_build_query($baseQ + ['sk_number' => $skNumber]);
         $pakQ   = http_build_query($baseQ + ['sk_number' => $paklaringNumber, 'letter_number' => $paklaringNumber]);
@@ -782,6 +786,7 @@ class EmployeeService
         $user = $user ?: 'HR Administrator';
         $now = now()->timezone('Asia/Jakarta');
         $nowStr = $now->format('Y-m-d H:i:s');
+        $issuedAt = $this->skNumbers->issuedAtFrom($data['doc_date'] ?? null);
         $lastDate = $data['last_working_date'] ?? ($employee->endDateContract ?: $now->format('Y-m-d'));
 
         $attributes = [
@@ -806,7 +811,7 @@ class EmployeeService
                 issuedBy: $user,
                 reference: 'Contract Finished',
                 notes: $notes,
-                issuedAt: $now,
+                issuedAt: $issuedAt,
             );
             $bpjsIssued = $this->skNumbers->record(
                 employeeId: $employeeId,
@@ -815,7 +820,7 @@ class EmployeeService
                 issuedBy: $user,
                 reference: 'Contract Finished',
                 notes: $notes,
-                issuedAt: $now,
+                issuedAt: $issuedAt,
             );
 
             $this->auditRepo->log(
@@ -836,6 +841,7 @@ class EmployeeService
             'sk_number' => $employee->nomorSk ?? '',
             'notes' => $data['notes'] ?? '',
             'approved_by' => $data['approved_by'] ?? $user,
+            'doc_date' => $issuedAt->toDateString(),
         ];
 
         return [
@@ -843,6 +849,7 @@ class EmployeeService
             'message' => $success ? "Off Contract karyawan {$employeeId} berhasil diproses." : "Gagal memproses Off Contract.",
             'employeeId' => $employeeId,
             'bpjsDocumentId' => $success ? ($bpjsIssued['document_id'] ?? null) : null,
+            'docDate' => $issuedAt->toDateString(),
         ];
     }
 
