@@ -10,7 +10,7 @@
         'description' =>
             trim($__env->yieldContent('description')) ?:
             'Temukan informasi rekrutmen dan peluang karir yang tersedia melalui MITO HRIS Career Portal.',
-        'robots' => trim($__env->yieldContent('robots')) ?: 'index,follow',
+        'robots' => trim($__env->yieldContent('robots')) ?: 'noindex, nofollow, noarchive',
         'structuredData' => $__env->yieldContent('structuredData')
             ? json_decode($__env->yieldContent('structuredData'), true)
             : null,
