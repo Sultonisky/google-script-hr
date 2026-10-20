@@ -42,6 +42,7 @@ class SkNumberService
         string $notes = '',
         ?Carbon $issuedAt = null,
         ?string $docTypeLabel = null,
+        ?string $numberSuffix = null,
     ): array {
         if (!$type->isNumbered()) {
             throw new RuntimeException("{$type->label()} tidak memakai nomor; gunakan record().");
@@ -55,7 +56,7 @@ class SkNumberService
         $now = ($issuedAt ?? now())->timezone('Asia/Jakarta');
         $entity = $this->resolveEntityCode($branchName);
         $sequence = $this->resolveFixedSequence($employeeId);
-        $nomor = $this->format($sequence, $type->value, $entity, $now);
+        $nomor = $this->format($sequence, $type->value, $entity, $now, $numberSuffix);
         $documentId = $this->appendHistory($employeeId, $type, $sequence, $nomor, $entity, $now, $issuedBy, $reference, $notes, $docTypeLabel);
 
         if (!$type->updatesEmployeeNomorSk()) {
@@ -195,11 +196,68 @@ class SkNumberService
             ->values();
     }
 
-    public function format(int $sequence, string $code, string $entity, Carbon $at): string
+    /**
+     * Date printed on the document and used for the roman month/year in the number.
+     * An empty value keeps the current Jakarta clock for CLI and older callers.
+     */
+    public function issuedAtFrom(?string $docDate): Carbon
+    {
+        $now = now()->timezone('Asia/Jakarta');
+        $raw = trim((string) $docDate);
+        if ($raw === '') {
+            return $now;
+        }
+
+        try {
+            return Carbon::parse($raw, 'Asia/Jakarta')->timezone('Asia/Jakarta')->setTimeFrom($now);
+        } catch (\Throwable) {
+            return $now;
+        }
+    }
+
+    /**
+     * Stored issue date for a later PDF download, so the letter date does not
+     * jump to the moment the file is generated again.
+     */
+    public function issuedDateForPdf(string $employeeId, SkDocumentType $type): ?string
+    {
+        $employeeId = ltrim(trim($employeeId), "'");
+        $latest = $this->documents->getLatestByEmployeeAndType($employeeId, $type->value);
+        $raw = trim((string) ($latest['Issued At'] ?? ''));
+        if ($raw === '') {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($raw, 'Asia/Jakarta')->timezone('Asia/Jakarta')->toDateString();
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    public function format(int $sequence, string $code, string $entity, Carbon $at, ?string $suffix = null): string
     {
         $roman = self::ROMAN_MONTHS[max(0, min(11, $at->month - 1))];
+        $nomor = sprintf('%03d/%s/%s/%s/%d', $sequence, strtoupper($code), $entity, $roman, $at->year);
+        $suffix = strtoupper(trim((string) $suffix));
+        if ($suffix !== '') {
+            $nomor .= '/' . $suffix;
+        }
 
-        return sprintf('%03d/%s/%s/%s/%d', $sequence, strtoupper($code), $entity, $roman, $at->year);
+        return $nomor;
+    }
+
+    public function employeeOwnsNomor(string $employeeId, SkDocumentType $type, string $nomor): bool
+    {
+        $nomor = trim($nomor);
+        if ($nomor === '') {
+            return false;
+        }
+
+        return $this->historyForEmployee($employeeId)->contains(
+            fn (array $row) => strtoupper(trim((string) ($row['Doc Code'] ?? ''))) === $type->value
+                && trim((string) ($row['Nomor'] ?? '')) === $nomor
+        );
     }
 
     public function resolveEntityCode(string $branchName): string
