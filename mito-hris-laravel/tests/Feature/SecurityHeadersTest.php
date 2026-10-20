@@ -14,6 +14,7 @@ class SecurityHeadersTest extends TestCase
         $response->assertHeader('X-Content-Type-Options', 'nosniff');
         $response->assertHeader('X-Frame-Options', 'SAMEORIGIN');
         $response->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+        $response->assertHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
         $response->assertHeaderMissing('Content-Security-Policy');
         $this->assertNotNull($response->headers->get('Permissions-Policy'));
     }
@@ -26,6 +27,7 @@ class SecurityHeadersTest extends TestCase
         $response->assertHeader('X-Content-Type-Options', 'nosniff');
         $response->assertHeader('X-Frame-Options', 'SAMEORIGIN');
         $response->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+        $response->assertHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
         $this->assertNotNull($response->headers->get('Permissions-Policy'));
     }
 
@@ -132,6 +134,7 @@ class SecurityHeadersTest extends TestCase
         $response->assertHeader('X-Content-Type-Options', 'nosniff');
         $response->assertHeader('X-Frame-Options', 'SAMEORIGIN');
         $response->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+        $response->assertHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
         
         // HSTS presence in HTTPS responses is verified via:
         // 1. Code inspection (conditional: if ($request->isSecure()))

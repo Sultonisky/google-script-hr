@@ -128,6 +128,8 @@ class PublicRecruitmentSubmissionFlowTest extends TestCase
         $response = $this->onDomain('recruitment')->get(route('public.career.index'));
 
         $response->assertOk();
+        $response->assertSee('name="robots" content="noindex,nofollow,noarchive"', false);
+        $response->assertDontSee('application/ld+json', false);
         $response->assertSee('id="btnProceedApply"', false);
         $response->assertSee('id="consentCheckbox"', false);
         $response->assertSee('timeout: 4000', false);

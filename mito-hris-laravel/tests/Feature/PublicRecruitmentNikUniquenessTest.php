@@ -92,6 +92,41 @@ class PublicRecruitmentNikUniquenessTest extends TestCase
         $created = $this->makeService($repo)->apply($this->payload());
         $this->assertSame('REC-NEW-001', $created->recruitmentId);
         $this->assertSame('3174100205050003', $created->nik);
+        $this->assertSame('Pending', $created->status);
+    }
+
+    public function test_scripted_disposable_application_is_moved_to_hold(): void
+    {
+        $repo = $this->mockRepo();
+        $repo->shouldReceive('findByNik')->andReturn(null);
+        $repo->shouldReceive('create')->once()->andReturnUsing(function (CandidateData $data) {
+            $data->recruitmentId = 'REC-PROBE-001';
+
+            return $data;
+        });
+        $repo->shouldReceive('findById')->once()->andReturn(new CandidateData(
+            recruitmentId: 'REC-PROBE-001',
+            status: 'Pending',
+        ));
+        $repo->shouldReceive('moveToHold')->once()->andReturn(true);
+        $repo->shouldReceive('updateStatus')
+            ->once()
+            ->with('REC-PROBE-001', 'Hold', \Mockery::type('string'))
+            ->andReturn(true);
+
+        $payload = $this->payload();
+        $payload['email'] = 'pentestprobe2026@inboxkitten.com';
+        $payload['consent_evidence'] = [
+            'application_agreement' => [
+                'server' => ['user_agent' => 'curl/7.81.0'],
+            ],
+        ];
+
+        $created = $this->makeService($repo)->apply($payload);
+
+        $this->assertSame('Hold', $created->status);
+        $this->assertStringContainsString('user-agent non-browser', (string) $created->holdReason);
+        $this->assertStringContainsString('email sekali pakai', (string) $created->holdReason);
     }
 
     public function test_nik_check_endpoint_reports_duplicate(): void
