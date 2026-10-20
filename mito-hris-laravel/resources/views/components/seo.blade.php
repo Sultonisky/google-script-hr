@@ -2,7 +2,7 @@
     $seoTitle = $title ?? 'MITO Career Portal | Job Opportunities';
     $seoDescription =
         $description ?? 'Temukan informasi rekrutmen dan peluang karir yang tersedia melalui MITO HRIS Career Portal.';
-    $seoRobots = $robots ?? 'index,follow';
+    $seoRobots = $robots ?? 'noindex, nofollow, noarchive';
     $seoType = $type ?? 'website';
     $seoImage = $image ?? asset(config('seo.default_image'));
     $seoCanonical = $canonical ?? rtrim(config('seo.canonical_base_url'), '/') . request()->getPathInfo();
