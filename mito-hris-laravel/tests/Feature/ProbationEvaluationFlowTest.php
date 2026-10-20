@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\DTOs\EmployeeData;
 use App\Enums\ProbationDecisionType;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
+use App\Repositories\Contracts\EmployeeDocumentRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
+use App\Repositories\Local\ArrayEmployeeDocumentRepository;
 use App\Services\Google\GoogleSheetsService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Session;
@@ -26,7 +28,7 @@ use Tests\TestCase;
  * PDF rules:
  *   PASS   â†’ SK Pengangkatan + Performance Review (direct download)
  *   FAIL   â†’ Paklaring + Surat BPJS (direct download)
- *   EXTEND â†’ NO PDF generated at all (evaluation + duration saved only)
+ *   EXTEND â†’ Kontrak PKWT perpanjangan /RNW1–RNW3 (maksimal 3 kali)
  */
 class ProbationEvaluationFlowTest extends TestCase
 {
@@ -311,8 +313,9 @@ class ProbationEvaluationFlowTest extends TestCase
         $response->assertOk()->assertJsonPath('success', true)
             ->assertJsonPath('decisionType', 'extend')
             ->assertJsonPath('bpjsPdfUrl', null)
-            ->assertJsonPath('pdfUrl', null)
             ->assertJsonPath('evalPdfUrl', null);
+        $this->assertStringContainsString('/RNW1', (string) $response->json('skNumber'));
+        $this->assertStringContainsString('/hr/export/kontrak-pkwt/EMP001', (string) $response->json('pdfUrl'));
 
         $row = end($rows);
         $this->assertSame('Probation', self::ref($row, 'Status'));
@@ -377,25 +380,28 @@ class ProbationEvaluationFlowTest extends TestCase
         $response = $this->postJson('/hr/probation/EMP001/evaluate', $payload);
 
         $response->assertOk()->assertJsonPath('decisionType', 'extend');
-        $this->assertCount(1, $employeeUpdates);
-        $this->assertArrayNotHasKey(
-            'Join Date',
-            $employeeUpdates[0],
-            'Extend must not overwrite Employee Join Date with New Contract Start / submit date.'
-        );
+        $contractUpdate = collect($employeeUpdates)->first(fn (array $row) => array_key_exists('End Date (Contract)', $row));
+        $this->assertNotNull($contractUpdate);
+        foreach ($employeeUpdates as $update) {
+            $this->assertArrayNotHasKey(
+                'Join Date',
+                $update,
+                'Extend must not overwrite Employee Join Date with New Contract Start / submit date.'
+            );
+        }
         $this->assertSame(
             '2027-03-21',
-            $employeeUpdates[0]['End Date (Contract)'] ?? null,
+            $contractUpdate['End Date (Contract)'] ?? null,
             'Extend must advance End Date (Contract) to the manually entered New Contract End.'
         );
         $this->assertSame(
             '2026-09-22',
-            $employeeUpdates[0]['Start Date (Contract)'] ?? null,
+            $contractUpdate['Start Date (Contract)'] ?? null,
             'Extend must sync Start Date (Contract) for the Employee edit modal contract section.'
         );
         $this->assertSame(
             '6 Bulan',
-            $employeeUpdates[0]['Contract Duration'] ?? null,
+            $contractUpdate['Contract Duration'] ?? null,
             'Extend must sync Contract Duration for the Employee edit modal contract section.'
         );
     }
@@ -427,8 +433,9 @@ class ProbationEvaluationFlowTest extends TestCase
         );
 
         $response->assertOk()->assertJsonPath('success', true)
-            ->assertJsonPath('decisionType', 'extend')
-            ->assertJsonPath('pdfUrl', null);
+            ->assertJsonPath('decisionType', 'extend');
+        $this->assertStringContainsString('/RNW1', (string) $response->json('skNumber'));
+        $this->assertStringContainsString('/hr/export/kontrak-pkwt/EMP001', (string) $response->json('pdfUrl'));
 
         $row = end($rows);
         $this->assertSame('6 Bulan', self::ref($row, 'Extension Duration'));
@@ -618,7 +625,7 @@ class ProbationEvaluationFlowTest extends TestCase
     }
 
     // =========================================================================
-    // T11 â€” Enum classification: EXTEND produces NO document at all
+    // T11 — Enum classification: EXTEND generates a renewal contract
     // =========================================================================
 
     public function test_t11_decision_type_classification_and_pdf_rules(): void
@@ -629,11 +636,11 @@ class ProbationEvaluationFlowTest extends TestCase
 
         $this->assertTrue(ProbationDecisionType::PASS->hasPdf());
         $this->assertTrue(ProbationDecisionType::FAIL->hasPdf());
-        $this->assertFalse(ProbationDecisionType::EXTEND->hasPdf(), 'EXTEND must NOT generate any PDF.');
+        $this->assertTrue(ProbationDecisionType::EXTEND->hasPdf());
 
         $this->assertSame('sk_pengangkatan', ProbationDecisionType::PASS->documentType());
         $this->assertSame('paklaring', ProbationDecisionType::FAIL->documentType());
-        $this->assertNull(ProbationDecisionType::EXTEND->documentType(), 'EXTEND has no decision document.');
+        $this->assertSame('kontrak_pkwt', ProbationDecisionType::EXTEND->documentType());
     }
 
     // =========================================================================
@@ -666,12 +673,10 @@ class ProbationEvaluationFlowTest extends TestCase
     }
 
     /**
-     * T13 — Second EXTEND is rejected after a first EXTEND.
-     * Business rule: extension is allowed only once. After EXTEND the employee
-     * must be evaluated to PASS or FAIL on the next evaluation.
-     * No evaluation row may be written when the second EXTEND is blocked.
+     * T13 — A second EXTEND is allowed and receives the next RNW suffix.
+     * The employee's existing sequence is reused.
      */
-    public function test_t13_second_extend_after_first_extend_is_rejected(): void
+    public function test_t13_second_extend_reuses_sequence_with_rnw2(): void
     {
         $previous = $this->extendHistoryRow();
 
@@ -683,16 +688,32 @@ class ProbationEvaluationFlowTest extends TestCase
             '2026-12-01'
         );
 
+        $response->assertOk()->assertJsonPath('decisionType', 'extend');
+        $this->assertCount(1, $secondRows);
+        $this->assertMatchesRegularExpression('#^\d{3}/PKWT/MSI/[IVX]+/\d{4}/RNW2$#', (string) $response->json('skNumber'));
+    }
+
+    public function test_t13c_fourth_extend_is_rejected(): void
+    {
+        $history = [];
+        foreach ([1, 2, 3] as $n) {
+            $row = $this->extendHistoryRow();
+            $row['Eval ID'] = 'EVAL-EXTEND-' . $n;
+            $row['Eval Date'] = sprintf('2026-0%d-01 10:00:00', $n);
+            $history[] = $row;
+        }
+
+        [$response, $rows] = $this->postEvaluation(
+            'Perpanjang Kontrak',
+            $this->manualExtend('2027-06-01', '2027-11-30'),
+            $history,
+            '2027-05-31',
+            '2026-12-01'
+        );
+
         $response->assertStatus(422);
-        $this->assertCount(
-            0,
-            $secondRows,
-            'A second Extend must not append an evaluation row — only one extension is allowed.'
-        );
-        $this->assertStringContainsString(
-            'Perpanjangan probation hanya dapat dilakukan satu kali',
-            $response->json('message') ?? ''
-        );
+        $this->assertCount(0, $rows);
+        $this->assertStringContainsString('maksimal 3 kali', (string) $response->json('message'));
     }
 
     /**
@@ -1066,7 +1087,7 @@ class ProbationEvaluationFlowTest extends TestCase
 
         $employeeRepo = Mockery::mock(EmployeeRepositoryInterface::class);
         $employeeRepo->shouldReceive('findById')->with('EMP_BAD')->andReturn($badEmployee);
-        $employeeRepo->shouldReceive('update')->andReturn(true)->once();
+        $employeeRepo->shouldReceive('update')->andReturn(true)->twice();
 
         $auditRepo = Mockery::mock(AuditLogRepositoryInterface::class);
         $auditRepo->shouldReceive('log')->andReturn(true)->byDefault();
@@ -1223,5 +1244,50 @@ class ProbationEvaluationFlowTest extends TestCase
         $this->assertSame('2027-02-10', $enriched->endDateContract);
         $this->assertSame('6 Bulan', $enriched->contractDuration);
         $this->assertSame('2024-12-23', $enriched->joinDate, 'Join Date must remain the original hire date.');
+    }
+
+    public function test_history_attaches_each_renewal_contract_not_only_the_latest(): void
+    {
+        $docs = new ArrayEmployeeDocumentRepository();
+        $docs->append($this->renewalDocument('001/PKWT/MSI/I/2026', 'ONB', 'Kontrak awal', '2026-01-15 09:00:00'));
+        $docs->append($this->renewalDocument('001/PKWT/MSI/X/2026/RNW2', 'EVAL-2', 'Perpanjangan probation ke-2', '2026-10-20 09:00:00'));
+        $docs->append($this->renewalDocument('001/PKWT/MSI/X/2026/RNW3', 'EVAL-3', 'Perpanjangan probation ke-3', '2026-10-20 11:00:00'));
+        $this->app->instance(EmployeeDocumentRepositoryInterface::class, $docs);
+        $this->app->instance(EmployeeRepositoryInterface::class, Mockery::mock(EmployeeRepositoryInterface::class));
+        $this->app->instance(AuditLogRepositoryInterface::class, Mockery::mock(AuditLogRepositoryInterface::class));
+
+        $history = [
+            ['evalId' => 'EVAL-3', 'decision' => 'Extend', 'evalDate' => '2026-10-20 11:00:00'],
+            ['evalId' => 'EVAL-2', 'decision' => 'Perpanjang Kontrak', 'evalDate' => '2026-10-20 09:00:00'],
+            ['evalId' => 'EVAL-1', 'decision' => 'Extend', 'evalDate' => '2026-09-01 09:00:00'],
+        ];
+
+        $result = $this->app->make(\App\Services\ProbationService::class)->withRenewalContracts('EMP001', $history);
+
+        $this->assertSame('001/PKWT/MSI/X/2026/RNW3', $result[0]['contractNumber']);
+        $this->assertSame('2026-10-20', $result[0]['contractIssuedAt']);
+        $this->assertSame('001/PKWT/MSI/X/2026/RNW2', $result[1]['contractNumber']);
+        $this->assertSame('2026-10-20', $result[1]['contractIssuedAt']);
+        $this->assertSame('', $result[2]['contractNumber']);
+        $this->assertSame('', $result[2]['contractIssuedAt']);
+    }
+
+    /** @return array<string, string> */
+    private function renewalDocument(string $nomor, string $reference, string $notes, string $issuedAt): array
+    {
+        return [
+            'Document ID' => 'DOC-' . md5($nomor),
+            'Employee ID' => 'EMP001',
+            'Sequence' => '1',
+            'Doc Type' => 'Kontrak PKWT',
+            'Doc Code' => 'PKWT',
+            'Nomor' => $nomor,
+            'Entity' => 'MSI',
+            'Issued At' => $issuedAt,
+            'Issued By' => 'HR Admin',
+            'Reference' => $reference,
+            'Notes' => $notes,
+            'Created At' => $issuedAt,
+        ];
     }
 }

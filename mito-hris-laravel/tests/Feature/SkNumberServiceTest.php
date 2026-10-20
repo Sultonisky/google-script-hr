@@ -110,6 +110,40 @@ class SkNumberServiceTest extends TestCase
         );
     }
 
+    public function test_renewal_suffix_reuses_sequence_and_new_employee_takes_the_next_number(): void
+    {
+        $first = $this->service->issue(
+            'EMP-A',
+            SkDocumentType::PKWT,
+            'Head Office MSI',
+            'HR',
+            issuedAt: Carbon::parse('2026-01-15', 'Asia/Jakarta')
+        );
+        $renewal = $this->service->issue(
+            'EMP-A',
+            SkDocumentType::PKWT,
+            'Head Office MSI',
+            'HR',
+            issuedAt: Carbon::parse('2026-10-20', 'Asia/Jakarta'),
+            numberSuffix: 'RNW1',
+        );
+        $fresh = $this->service->issue(
+            'EMP-B',
+            SkDocumentType::PKWT,
+            'Head Office MSI',
+            'HR',
+            issuedAt: Carbon::parse('2026-10-20', 'Asia/Jakarta'),
+            numberSuffix: 'RNW1',
+        );
+
+        $this->assertSame('001/PKWT/MSI/I/2026', $first['nomor']);
+        $this->assertSame(1, $renewal['sequence']);
+        $this->assertSame('001/PKWT/MSI/X/2026/RNW1', $renewal['nomor']);
+        $this->assertSame(2, $fresh['sequence']);
+        $this->assertSame('002/PKWT/MSI/X/2026/RNW1', $fresh['nomor']);
+        $this->assertSame('001/PKWT/MSI/X/2026/RNW1', $this->nomorByEmployee['EMP-A'] ?? null);
+    }
+
     public function test_rotation_type_codes(): void
     {
         $this->assertSame(SkDocumentType::PROMOSI, SkDocumentType::fromRotationType('Promosi'));
