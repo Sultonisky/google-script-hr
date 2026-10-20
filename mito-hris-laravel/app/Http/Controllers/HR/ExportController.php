@@ -124,6 +124,27 @@ class ExportController extends Controller
     }
 
     /**
+     * Prefer the date HR chose. If the download link has none, use the date
+     * stored when the document was issued.
+     */
+    private function withResolvedDocDate(array $extraData, string $employeeId, SkDocumentType $type): array
+    {
+        $given = trim((string) ($extraData['doc_date'] ?? $extraData['docDate'] ?? ''));
+        if ($given !== '') {
+            $extraData['doc_date'] = $given;
+
+            return $extraData;
+        }
+
+        $stored = $this->skNumbers->issuedDateForPdf($employeeId, $type);
+        if ($stored !== null) {
+            $extraData['doc_date'] = $stored;
+        }
+
+        return $extraData;
+    }
+
+    /**
      * Download or stream Candidate Resume PDF.
      */
     public function candidatePdf(string $id)
@@ -200,17 +221,27 @@ class ExportController extends Controller
         }
 
         // Prefer stored PKWT number from Employee_Documents / Contract Number.
+        // A requested renewal number (…/RNW1) is kept when that exact nomor belongs
+        // to this employee, so a backdated issue date does not fall back to an older PKWT.
         if ($employee) {
+            $requestedContract = trim((string) ($extraData['contract_number'] ?? $extraData['contractNumber'] ?? $extraData['sk_number'] ?? ''));
             $extraData = $this->withResolvedSkNumber(
                 $extraData,
                 $employee->employeeId,
                 SkDocumentType::PKWT,
                 (string) ($employee->contractNumber ?? $employee->nomorSk ?? '')
             );
-            if (!empty($extraData['sk_number']) && empty($extraData['contract_number'])) {
+            if ($requestedContract !== '' && $this->skNumbers->employeeOwnsNomor($employee->employeeId, SkDocumentType::PKWT, $requestedContract)) {
+                $extraData['sk_number'] = $requestedContract;
+                $extraData['skNumber'] = $requestedContract;
+                $extraData['letter_number'] = $requestedContract;
+                $extraData['contract_number'] = $requestedContract;
+                $extraData['contractNumber'] = $requestedContract;
+            } elseif (!empty($extraData['sk_number']) && empty($extraData['contract_number'])) {
                 $extraData['contract_number'] = $extraData['sk_number'];
                 $extraData['contractNumber'] = $extraData['sk_number'];
             }
+            $extraData = $this->withResolvedDocDate($extraData, $employee->employeeId, SkDocumentType::PKWT);
         }
 
         $pdf   = $this->pdfService->generateKontrakPkwtPdf($subject, $extraData);
@@ -237,11 +268,15 @@ class ExportController extends Controller
             abort(404, 'Data karyawan tidak ditemukan.');
         }
 
-        $extraData = $this->withResolvedSkNumber(
-            $request->all(),
+        $extraData = $this->withResolvedDocDate(
+            $this->withResolvedSkNumber(
+                $request->all(),
+                $employee->employeeId,
+                SkDocumentType::PENGANGKATAN,
+                (string) ($employee->nomorSk ?? '')
+            ),
             $employee->employeeId,
-            SkDocumentType::PENGANGKATAN,
-            (string) ($employee->nomorSk ?? '')
+            SkDocumentType::PENGANGKATAN
         );
         $pdf = $this->pdfService->generateSkPengangkatanPdf($employee, $extraData);
         $this->auditRepo->log('Employee', $employee->employeeId, 'generated', 'sk_pengangkatan', null, 'PDF', session('hr_user.email', 'HR Administrator'), 'Export');
@@ -259,11 +294,15 @@ class ExportController extends Controller
             abort(404, 'Data karyawan tidak ditemukan.');
         }
 
-        $extraData = $this->withResolvedSkNumber(
-            $request->all(),
+        $extraData = $this->withResolvedDocDate(
+            $this->withResolvedSkNumber(
+                $request->all(),
+                $employee->employeeId,
+                SkDocumentType::OFFBOARDING,
+                (string) ($employee->nomorSk ?? '')
+            ),
             $employee->employeeId,
-            SkDocumentType::OFFBOARDING,
-            (string) ($employee->nomorSk ?? '')
+            SkDocumentType::OFFBOARDING
         );
         $pdf = $this->pdfService->generateSkOffPdf($employee, $extraData);
         $this->auditRepo->log('Employee', $employee->employeeId, 'generated', 'sk_offboarding', null, 'PDF', session('hr_user.email', 'HR Administrator'), 'Export');
@@ -283,7 +322,11 @@ class ExportController extends Controller
         }
 
         // Nomor surat BPJS dinonaktifkan — jangan generate / resolve nomor SK.
-        $extraData = $request->except(['sk_number', 'skNumber', 'letter_number']);
+        $extraData = $this->withResolvedDocDate(
+            $request->except(['sk_number', 'skNumber', 'letter_number']),
+            $employee->employeeId,
+            SkDocumentType::SURAT_BPJS
+        );
         $probationEvalId = trim((string) $request->query('probation_eval_id', ''));
         $routeName = (string) $request->route()?->getName();
         $reference = $probationEvalId !== ''
@@ -310,7 +353,8 @@ class ExportController extends Controller
                     $employee->branchName ?? '',
                     session('hr_user.email', 'HR Administrator'),
                     $reference,
-                    $trackingNote
+                    $trackingNote,
+                    $this->skNumbers->issuedAtFrom($extraData['doc_date'] ?? null)
                 );
                 $bpjsDocumentId = $tracked['document_id'];
             } else {
@@ -350,7 +394,7 @@ class ExportController extends Controller
             abort(404, 'Data karyawan tidak ditemukan.');
         }
 
-        $extraData = $request->all();
+        $extraData = $this->withResolvedDocDate($request->all(), $employee->employeeId, SkDocumentType::OFFBOARDING);
         $fileStem = $this->employeeDocumentStem($employee);
         $skOffData = $this->withResolvedSkNumber(
             $extraData,
@@ -424,11 +468,15 @@ class ExportController extends Controller
 
         $extraData   = $request->all();
         $rotationType = $extraData['rotation_type'] ?? $extraData['rotationType'] ?? ($employee->typeOfRotation ?? 'Rotasi');
-        $extraData = $this->withResolvedSkNumber(
-            $extraData,
+        $extraData = $this->withResolvedDocDate(
+            $this->withResolvedSkNumber(
+                $extraData,
+                $employee->employeeId,
+                SkDocumentType::fromRotationType((string) $rotationType),
+                (string) ($employee->nomorSk ?? '')
+            ),
             $employee->employeeId,
-            SkDocumentType::fromRotationType((string) $rotationType),
-            (string) ($employee->nomorSk ?? '')
+            SkDocumentType::fromRotationType((string) $rotationType)
         );
 
         // Type-aware filename — 1:1 GAS fileName pattern
@@ -460,11 +508,15 @@ class ExportController extends Controller
             abort(404, 'Data karyawan tidak ditemukan. Silakan coba lagi.');
         }
 
-        $extraData = $this->withResolvedSkNumber(
-            $request->all(),
+        $extraData = $this->withResolvedDocDate(
+            $this->withResolvedSkNumber(
+                $request->all(),
+                $employee->employeeId,
+                SkDocumentType::PAKLARING,
+                (string) ($employee->nomorSk ?? '')
+            ),
             $employee->employeeId,
-            SkDocumentType::PAKLARING,
-            (string) ($employee->nomorSk ?? '')
+            SkDocumentType::PAKLARING
         );
 
         // Ensure last_working_date is populated for Paklaring content
