@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Public;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Public\ApplyJobRequest;
 use App\Services\RecruitmentService;
+use App\Support\PublicApplicationProbe;
 use App\Support\PublicConsentEvidence;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -110,6 +111,7 @@ class CareerController extends Controller
                         'landing_consent' => session('candidate_consent_evidence', []),
                         'application_agreement' => PublicConsentEvidence::capture($request, 'application_agreement'),
                     ],
+                    'probe_client' => PublicApplicationProbe::clientContext($request),
                 ]),
                 cvFile: $request->file('cv_file')
             );
