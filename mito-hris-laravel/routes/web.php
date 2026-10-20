@@ -253,7 +253,6 @@ if (!app()->environment('local')) {
         Route::post('/apply/nik-check', [CareerController::class, 'checkNik'])->middleware('throttle:career-apply')->name('public.career.nik-check');
         Route::post('/apply', [CareerController::class, 'store'])->middleware('throttle:career-apply')->name('public.career.store');
         Route::get('/career/submission-success', [CareerController::class, 'submissionSuccess'])->name('public.career.submission-success');
-        Route::get('/check-status', [CareerController::class, 'checkStatus'])->name('public.career.check-status');
     });
 
     Route::domain(config('hris.domains.outsource'))->middleware(['web', 'domain'])->group(function () {
@@ -537,7 +536,6 @@ if (app()->environment('local')) {
         Route::post('/career/apply/nik-check', [CareerController::class, 'checkNik'])->middleware('throttle:career-apply')->name('public.career.nik-check');
         Route::post('/career/apply', [CareerController::class, 'store'])->middleware('throttle:career-apply')->name('public.career.store');
         Route::get('/career/submission-success', [CareerController::class, 'submissionSuccess'])->name('public.career.submission-success');
-        Route::get('/career/check-status', [CareerController::class, 'checkStatus'])->name('public.career.check-status');
 
         Route::get('/outsource', [OutsourceApplyController::class, 'index'])->name('public.outsource.index');
         Route::get('/outsource/apply', [OutsourceApplyController::class, 'index'])->name('public.outsource.apply');
