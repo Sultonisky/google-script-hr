@@ -439,8 +439,8 @@
                                             EXTEND - Perpanjang Masa Probation
                                         </div>
                                         <div class="text-muted mt-1" style="font-size:12px">
-                                            Masa probation diperpanjang untuk evaluasi ulang. <em>(Tidak ada dokumen
-                                                PDF.)</em>
+                                            Masa probation diperpanjang untuk evaluasi ulang. Kontrak PKWT baru
+                                            dengan akhiran RNW1, RNW2, atau RNW3 akan digenerate. Maksimal 3 kali.
                                         </div>
                                     </div>
                                 </div>
@@ -452,6 +452,20 @@
                             style="display:none;font-size:12px;color:#dc2626;margin-top:6px;margin-bottom:4px">
                             <i class="bi bi-exclamation-triangle-fill me-1"></i>
                             <span id="evalDecisionErrorMsg">Silakan pilih keputusan evaluasi.</span>
+                        </div>
+
+                        <div id="evalDocDateSection" style="display:none" class="mt-3">
+                            <label class="form-label fw-semibold" style="font-size:13px" for="evalDocDate">Tanggal
+                                Dokumen <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control form-control-sm" id="evalDocDate"
+                                value="{{ now()->timezone('Asia/Jakarta')->toDateString() }}" />
+                            <div class="form-text" style="font-size:11px">Tanggal yang tercetak di SK Pengangkatan,
+                                Paklaring, Surat BPJS, atau kontrak perpanjangan. Bisa dipilih, termasuk hari ini.</div>
+                            <div id="evalDocDateError"
+                                style="display:none;font-size:12px;color:#dc2626;margin-top:6px">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                <span>Tanggal dokumen wajib diisi.</span>
+                            </div>
                         </div>
                     </div>
 
@@ -996,6 +1010,10 @@
             var extSec = document.getElementById('evalExtendSection');
             if (extSec) extSec.style.display = cls.isPerp ? 'block' : 'none';
 
+            var docSec = document.getElementById('evalDocDateSection');
+            if (docSec) docSec.style.display = (cls.isLulus || cls.isPutus || cls.isPerp) ? 'block' : 'none';
+            if (!(cls.isLulus || cls.isPutus || cls.isPerp)) hideInlineError('evalDocDateError');
+
             // Clear decision error
             hideInlineError('evalDecisionError');
 
@@ -1289,6 +1307,17 @@
                 return;
             }
 
+            if (cls.isLulus || cls.isPutus || cls.isPerp) {
+                var docDate = (document.getElementById('evalDocDate') || {}).value || '';
+                if (!docDate) {
+                    showInlineError('evalDocDateError');
+                    var docSec = document.getElementById('evalDocDateSection');
+                    if (docSec) docSec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+                hideInlineError('evalDocDateError');
+            }
+
             if (cls.isPerp) {
                 var start = document.getElementById('evalExtStart').value;
                 var end = document.getElementById('evalExtEnd').value;
@@ -1317,6 +1346,7 @@
             var fd = new FormData();
             fd.append('_token', document.querySelector('meta[name="csrf-token"]').content);
             fd.append('decision', decVal);
+            fd.append('doc_date', (document.getElementById('evalDocDate') || {}).value || '');
             fd.append('recruitment_id', document.getElementById('evalRecruitmentId').value || '');
             fd.append('notes', document.getElementById('evalCatatan').value || '');
 
@@ -1481,6 +1511,7 @@
                     if (data.pdfUrl) {
                         msg += data.decisionType === 'pass' ? ' SK Pengangkatan sedang diunduh.' :
                             data.decisionType === 'fail' ? ' Paklaring sedang diunduh.' :
+                            data.decisionType === 'extend' ? ' Kontrak perpanjangan sedang diunduh.' :
                             '';
                     }
                     if (data.bpjsPdfUrl) {
@@ -1697,9 +1728,12 @@
                     if (!latest) return;
 
                     var latestType = classifyDecision(latest.decision || '');
-                    // Hide Extend option after a prior Extend — only PASS or FAIL allowed next.
-                    // Also hide after PASS/FAIL (terminal decisions).
-                    setPreviousDecisionOptions(!latestType.isLulus && !latestType.isPutus && !latestType.isPerp);
+                    var extendCount = (data.history || []).filter(function(row) {
+                        return classifyDecision(row.decision || '').isPerp;
+                    }).length;
+                    // Extend stays available until three renewals (RNW1–RNW3).
+                    // PASS and FAIL remain terminal.
+                    setPreviousDecisionOptions(!latestType.isLulus && !latestType.isPutus && extendCount < 3);
                     if (latestType.isLulus || latestType.isPutus) {
                         showServerError('Evaluasi probation ini sudah final dan tidak dapat dibuka kembali.');
                         return;
@@ -1834,6 +1868,9 @@
             // Reset extend section
             var extSec = document.getElementById('evalExtendSection');
             if (extSec) extSec.style.display = 'none';
+            var docSec = document.getElementById('evalDocDateSection');
+            if (docSec) docSec.style.display = 'none';
+            hideInlineError('evalDocDateError');
             document.querySelectorAll('.ext-dur-btn').forEach(function(b) {
                 b.style.borderColor = '#d1d5db';
                 b.style.background = '#fff';
