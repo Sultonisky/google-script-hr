@@ -80,7 +80,6 @@ Root-level `data/`, `images/`, `templates/`, and `docs/` are separate reference 
 
 - Candidate career landing page
 - Candidate application form
-- Application status checking
 - Region and NIK lookup endpoints
 
 ### Public Outsource Portal

@@ -31,7 +31,6 @@ policy.
 ### Public Career Portal
 
 - Career landing page and candidate application
-- Application status checking
 - Region and NIK lookup endpoints
 
 ### Public Outsource Portal
