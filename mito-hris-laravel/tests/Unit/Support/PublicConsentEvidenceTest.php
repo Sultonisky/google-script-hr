@@ -59,5 +59,33 @@ class PublicConsentEvidenceTest extends TestCase
                 '3174100205050003'
             )
         );
+        $this->assertSame(
+            ['email sekali pakai'],
+            PublicApplicationProbe::reasons('Mozilla/5.0', 'user@1secmail.com', '3174100205050003')
+        );
+        $this->assertSame(
+            ['email sekali pakai'],
+            PublicApplicationProbe::reasons('Mozilla/5.0', 'user@sub.yopmail.com', '3174100205050003')
+        );
+        $this->assertSame(
+            ['email sekali pakai'],
+            PublicApplicationProbe::reasons('Mozilla/5.0', 'user@yopmail.fr', '3174100205050003')
+        );
+        $this->assertSame(
+            ['email sekali pakai'],
+            PublicApplicationProbe::reasons('Mozilla/5.0', 'user@mail.tm', '3174100205050003')
+        );
+        $this->assertSame(
+            [],
+            PublicApplicationProbe::reasons('Mozilla/5.0', 'user@mail.com', '3174100205050003')
+        );
+        $this->assertSame(
+            ['email sekali pakai'],
+            PublicApplicationProbe::reasons('Mozilla/5.0', 'user@gmailnator.com', '3174100205050003')
+        );
+        $this->assertSame(
+            [],
+            PublicApplicationProbe::reasons('Mozilla/5.0', 'user@gmail.com', '3174100205050003')
+        );
     }
 }

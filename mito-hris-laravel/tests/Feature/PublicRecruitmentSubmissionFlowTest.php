@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\DTOs\CandidateData;
 use App\Services\RecruitmentService;
+use App\Support\PublicApplicationRejection;
 use Mockery;
 use Tests\TestCase;
 
@@ -92,6 +93,80 @@ class PublicRecruitmentSubmissionFlowTest extends TestCase
         $response->assertOk();
         $response->assertDontSee('Kembali ke Halaman Info');
         $response->assertSee('history.pushState', false);
+    }
+
+    public function test_disposable_email_is_rejected_before_the_application_is_stored(): void
+    {
+        $service = Mockery::mock(RecruitmentService::class);
+        $service->shouldNotReceive('apply');
+        $this->app->instance(RecruitmentService::class, $service);
+
+        $rejection = Mockery::mock(PublicApplicationRejection::class);
+        $rejection->shouldReceive('record')->once()->withArgs(function (array $reasons, $ip, $userAgent) {
+            unset($ip, $userAgent);
+
+            return in_array('email sekali pakai', $reasons, true)
+                && !in_array('NIK uji', $reasons, true);
+        });
+        $this->app->instance(PublicApplicationRejection::class, $rejection);
+
+        $payload = $this->validPayload();
+        $payload['email'] = 'pentestprobe2026@inboxkitten.com';
+
+        $response = $this->onDomain('recruitment')
+            ->withSession(['candidate_consent' => true])
+            ->from(route('public.career.form'))
+            ->post(route('public.career.store'), $payload);
+
+        $response->assertRedirect(route('public.career.form'));
+        $response->assertSessionHasErrors([
+            'email' => 'Gunakan alamat email yang bisa dihubungi tim HR. Email sekali pakai tidak dapat digunakan.',
+        ]);
+        $response->assertSessionMissing('public_recruitment_submission_completed');
+    }
+
+    public function test_test_nik_is_rejected_before_the_application_is_stored(): void
+    {
+        $service = Mockery::mock(RecruitmentService::class);
+        $service->shouldNotReceive('apply');
+        $this->app->instance(RecruitmentService::class, $service);
+
+        $rejection = Mockery::mock(PublicApplicationRejection::class);
+        $rejection->shouldReceive('record')->once()->withArgs(function (array $reasons, $ip, $userAgent) {
+            unset($ip, $userAgent);
+
+            return in_array('NIK uji', $reasons, true)
+                && !in_array('email sekali pakai', $reasons, true);
+        });
+        $this->app->instance(PublicApplicationRejection::class, $rejection);
+
+        $payload = $this->validPayload();
+        $payload['nik'] = '1111111111111111';
+
+        $response = $this->onDomain('recruitment')
+            ->withSession(['candidate_consent' => true])
+            ->from(route('public.career.form'))
+            ->post(route('public.career.store'), $payload);
+
+        $response->assertRedirect(route('public.career.form'));
+        $response->assertSessionHasErrors([
+            'nik' => 'NIK tidak valid. Periksa kembali 16 digit pada KTP.',
+        ]);
+        $response->assertSessionMissing('public_recruitment_submission_completed');
+    }
+
+    public function test_apply_form_flags_disposable_email_before_submit(): void
+    {
+        $response = $this->onDomain('recruitment')
+            ->withSession(['candidate_consent' => true])
+            ->get(route('public.career.form'));
+
+        $response->assertOk();
+        $response->assertSee('function isDisposableEmailAddress', false);
+        $response->assertSee('inboxkitten', false);
+        $response->assertSee('labels.indexOf(blocked)', false);
+        $response->assertSee("el.id === 'email' && isDisposableEmailAddress(v)", false);
+        $response->assertSee('Email sekali pakai tidak dapat digunakan.', false);
     }
 
     public function test_invalid_submission_does_not_create_success_state(): void
