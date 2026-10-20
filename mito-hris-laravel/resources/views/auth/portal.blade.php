@@ -9,7 +9,7 @@
         'title' => 'Portal HRIS - MITO Group HRIS',
         'description' =>
             'Portal layanan HRIS untuk rekrutmen, data karyawan, evaluasi masa percobaan, dan kebutuhan tenaga kerja MITO.',
-        'robots' => 'index,follow',
+        'robots' => 'noindex, nofollow, noarchive',
         'canonical' => route('hris.domain.root'),
     ])
     <link rel="icon" type="image/png" href="{{ asset('assets/logo-favicon.png') }}">

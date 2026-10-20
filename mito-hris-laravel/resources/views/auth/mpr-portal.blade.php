@@ -9,7 +9,7 @@
         'title' => 'Portal Manpower Request (MPR) - MITO Group HRIS',
         'description' =>
             'Portal Manpower Request untuk pengajuan kebutuhan tenaga kerja internal, riwayat pengajuan, dan akses requestor MITO.',
-        'robots' => 'index,follow',
+        'robots' => 'noindex, nofollow, noarchive',
         'canonical' => route('mpr.auth.domain.root'),
     ])
     <link rel="icon" type="image/png" href="{{ asset('assets/logo-favicon.png') }}">
