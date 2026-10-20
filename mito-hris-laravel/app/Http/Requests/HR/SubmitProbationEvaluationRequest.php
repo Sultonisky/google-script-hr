@@ -70,6 +70,7 @@ class SubmitProbationEvaluationRequest extends FormRequest
                 $isExtend ? 'after:extension_start' : null,
             ])),
 
+            'doc_date'           => 'nullable|date',
             'notes'              => 'nullable|string|max:1000',
             'reviewer_name'      => 'nullable|string|max:200',
             'approval_dept'      => 'nullable|string|in:Setuju,Tidak',
@@ -87,6 +88,7 @@ class SubmitProbationEvaluationRequest extends FormRequest
             'extension_start.required' => 'Tanggal mulai kontrak baru wajib diisi untuk keputusan Perpanjang Kontrak.',
             'extension_end.required'   => 'Tanggal akhir kontrak baru wajib diisi untuk keputusan Perpanjang Kontrak.',
             'extension_end.after'      => 'Tanggal akhir kontrak baru harus setelah tanggal mulai.',
+            'doc_date.date'            => 'Tanggal dokumen tidak valid.',
         ];
     }
 }
