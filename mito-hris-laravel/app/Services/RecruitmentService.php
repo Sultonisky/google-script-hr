@@ -34,13 +34,15 @@ class RecruitmentService
         GoogleDriveService $drive,
         AuditLogRepositoryInterface $auditRepo,
         EmployeeIdGenerator $idGenerator,
-        private SkNumberService $skNumbers
+        private SkNumberService $skNumbers,
+        private ?AttendanceEmployeePushService $attendanceEmployeePush = null
     ) {
         $this->candidateRepo = $candidateRepo;
         $this->employeeRepo = $employeeRepo;
         $this->drive = $drive;
         $this->auditRepo = $auditRepo;
         $this->idGenerator = $idGenerator;
+        $this->attendanceEmployeePush ??= app(AttendanceEmployeePushService::class);
     }
 
     /**
@@ -439,9 +441,15 @@ class RecruitmentService
             if ($manualContractNumber !== '') {
                 $attrs['Contract Number'] = $manualContractNumber;
             }
-            $this->employeeRepo->update($employeeId, $attrs);
+            if ($this->employeeRepo->update($employeeId, $attrs)) {
+                $updated = $this->employeeRepo->findById($employeeId);
+                if ($updated) {
+                    $this->attendanceEmployeePush?->pushUpdated($updated);
+                }
+            }
         } else {
-            $this->employeeRepo->create($employee);
+            $created = $this->employeeRepo->create($employee);
+            $this->attendanceEmployeePush?->pushCreated([$created]);
         }
 
         if ($manualContractNumber !== '') {
