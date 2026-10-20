@@ -479,6 +479,11 @@
                                 <i class="bi bi-calendar-range"></i>
                                 Detail Perpanjangan <span class="text-danger">*</span>
                             </div>
+                            <div class="mb-3 px-3 py-2 rounded-3"
+                                style="background:#fff;border:1px solid #fcd34d;font-size:12.5px;color:#78350f">
+                                Kontrak saat ini berakhir pada
+                                <strong id="evalCurrentContractEnd">belum tercatat</strong>.
+                            </div>
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold" style="font-size:12px">
@@ -620,6 +625,8 @@
                             <div class="col-7" id="summaryCategory">—</div>
                             <div class="col-5 text-muted">Keputusan</div>
                             <div class="col-7 fw-bold" id="summaryDecision">—</div>
+                            <div class="col-5 text-muted" id="summaryContractEndLbl" style="display:none">Kontrak saat ini berakhir</div>
+                            <div class="col-7 fw-semibold" id="summaryContractEnd" style="display:none">—</div>
                             <div class="col-5 text-muted" id="summaryExtLbl" style="display:none">Durasi Perpanjangan
                             </div>
                             <div class="col-7 fw-semibold" id="summaryExt" style="display:none">—</div>
@@ -1205,6 +1212,12 @@
                 extEl.style.display = cls.isPerp && dur ? '' : 'none';
                 extEl.textContent = dur;
             }
+            var endLbl = document.getElementById('summaryContractEndLbl');
+            var endEl = document.getElementById('summaryContractEnd');
+            if (endLbl && endEl) {
+                endLbl.style.display = cls.isPerp ? '' : 'none';
+                endEl.style.display = cls.isPerp ? '' : 'none';
+            }
             sumEl.style.display = '';
         }
 
@@ -1607,6 +1620,7 @@
             if (d) d.style.display = 'none';
             document.getElementById('evalEmpPreview').style.display = 'none';
             document.getElementById('evalEmployeeId').value = '';
+            setCurrentContractEndNotice('');
             resetEvalFormState();
             updateConfirmBtn();
         };
@@ -1631,6 +1645,24 @@
             return months > 0 ? months + ' Bulan' : '';
         }
 
+        function formatContractDate(value) {
+            var raw = String(value || '').trim();
+            if (!raw) return '';
+            var match = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (!match) return raw;
+            var months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+            var month = months[Number(match[2]) - 1] || match[2];
+            return Number(match[3]) + ' ' + month + ' ' + match[1];
+        }
+
+        function setCurrentContractEndNotice(value) {
+            var formatted = formatContractDate(value);
+            var notice = document.getElementById('evalCurrentContractEnd');
+            if (notice) notice.textContent = formatted || 'belum tercatat';
+            var summary = document.getElementById('summaryContractEnd');
+            if (summary) summary.textContent = formatted || 'belum tercatat';
+        }
+
         window.selectEvalEmployee = function(emp) {
             var dropdown = document.getElementById('evalEmpDropdown');
             var search = document.getElementById('evalEmpSearch');
@@ -1653,7 +1685,7 @@
             tn('evalEmpPT', emp.branchName);
             tn('evalEmpIdDisp', emp.employeeId);
             tn('evalEmpJoinDate', emp.joinDate);
-            tn('evalEmpContractEnd', emp.endDateContract);
+            tn('evalEmpContractEnd', formatContractDate(emp.endDateContract) || '—');
             tn('evalEmpReviewer', emp.directSuperior);
 
             var avatar = document.getElementById('evalEmpAvatar');
@@ -1666,6 +1698,7 @@
 
             document.getElementById('evalEmpPreview').style.display = 'block';
             resetEvalFormState();
+            setCurrentContractEndNotice(emp.endDateContract);
 
             loadPreviousEvaluation(emp.employeeId || '');
         };

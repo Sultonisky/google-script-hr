@@ -452,6 +452,16 @@
                             (sStart + ' s/d ' + sEnd) : '';
                         const contractBits = (sDur ? ' · durasi ' + escapeHistoryHtml(sDur) : '') +
                             (period ? ' · ' + period : '');
+                        const contractEndLines = [];
+                        if (ev.contractEnd) {
+                            contractEndLines.push('Kontrak saat evaluasi berakhir pada ' + formatHistoryDate(ev.contractEnd) + '.');
+                        }
+                        if (isExt && ev.newContractEnd) {
+                            contractEndLines.push('Kontrak baru berakhir pada ' + sEnd + '.');
+                        }
+                        const contractEndHtml = contractEndLines.length ?
+                            '<div class="mt-1">' + contractEndLines.join('<br>') + '</div>' :
+                            '';
                         const outcomeDetail = isLulus ?
                             'Status karyawan berubah menjadi tetap. Dokumen yang terbit: SK Pengangkatan dan Performance Review.' :
                             isTerm ?
@@ -568,7 +578,7 @@
                     </div>
                     <div class="rounded-3 px-3 py-2 mb-2" style="background:${tone.bg}">
                         <div class="fw-semibold" style="font-size:13px;color:#111827">${outcomeTitle}</div>
-                        <div style="font-size:12px;color:#4b5563">${outcomeDetail}</div>
+                        <div style="font-size:12px;color:#4b5563">${outcomeDetail}${contractEndHtml}</div>
                     </div>
                     ${scoreHtml}
                     ${sNote ? `<div class="text-muted" style="font-size:12px"><span class="fw-semibold">Catatan:</span> ${escapeHistoryHtml(sNote)}</div>` : ''}

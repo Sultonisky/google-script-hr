@@ -477,6 +477,7 @@ class ProbationService
                 'ind_tw_3'         => $row['ind_tw_3']           ?? '',
                 // Decision & extension
                 'decision'         => $row['Decision']           ?? '',
+                'contractEnd'      => $row['Contract End']        ?? '',
                 'extensionDuration' => $row['Extension Duration'] ?? '',
                 'newContractStart' => $row['New Contract Start']  ?? '',
                 'newContractEnd'   => $row['New Contract End']    ?? '',
