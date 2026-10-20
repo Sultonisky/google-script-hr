@@ -310,7 +310,7 @@
             <div class="modal-content" style="border-radius:16px">
                 <div class="modal-header">
                     <div>
-                        <h6 class="modal-title mb-0 fw-bold">Evaluation History</h6>
+                        <h6 class="modal-title mb-0 fw-bold">Riwayat Evaluasi</h6>
                         <small class="text-muted" id="evalHistoryEmpName">-</small>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -319,7 +319,7 @@
                     <div class="text-center text-muted py-4" style="font-size:13px">Loading history...</div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                    <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
                 </div>
             </div>
         </div>
@@ -405,33 +405,64 @@
                             '<div class="text-center text-muted py-4" style="font-size:13px">Belum ada riwayat evaluasi untuk karyawan ini.</div>';
                         return;
                     }
-                    bodyEl.innerHTML = history.map((ev, idx) => {
-                        const keputusan = ev.decision || '';
-
-                        // IMPORTANT: check isTerm BEFORE isLulus.
-                        // 'Tidak Lulus' contains 'Lulus' — wrong check order causes misclassification.
-                        const isTerm = keputusan === 'Tidak Lulus' ||
-                            keputusan === 'Tidak Lolos → Putus Kontrak (Paklaring)' ||
-                            keputusan.includes('Putus Kontrak') ||
-                            keputusan.includes('Paklaring');
-                        const isExt = !isTerm && (
-                            keputusan.includes('Perpanjang') ||
-                            keputusan.includes('Evaluasi Ulang')
-                        );
-                        const isLulus = !isTerm && !isExt && keputusan !== '' && (
-                            keputusan === 'Diangkat sebagai Karyawan Tetap' ||
-                            keputusan === 'Lulus → Karyawan Tetap' ||
-                            keputusan.includes('Pass') ||
-                            keputusan.includes('Tetap') ||
-                            keputusan.includes('Diangkat')
-                        );
-
-                        const kepClass = isLulus ? 'accepted' : (isTerm ? 'blacklist' : 'hold');
-                        const kepLabel = isLulus ? 'Passed → Permanent' : (isTerm ? 'Terminated → Paklaring' :
-                            'Extended');
+                    const extendOrdinal = {};
+                    let extendSeq = 0;
+                    for (let i = history.length - 1; i >= 0; i--) {
+                        if (classifyHistoryDecision(history[i].decision || '').kind === 'extend') {
+                            extendSeq += 1;
+                            extendOrdinal[i] = extendSeq;
+                        }
+                    }
+                    bodyEl.innerHTML = `
+                        <div class="d-flex flex-wrap gap-2 mb-3" style="font-size:11px">
+                            <span class="badge-status accepted">Lulus · diangkat tetap</span>
+                            <span class="badge-status blacklist">Tidak Lulus · kontrak diakhiri</span>
+                            <span class="badge-status" style="background:#fff7ed;color:#9a3412">Perpanjang · kontrak baru, maks. 3 kali</span>
+                        </div>` + history.map((ev, idx) => {
+                        const cls = classifyHistoryDecision(ev.decision || '');
+                        const isLulus = cls.kind === 'pass';
+                        const isTerm = cls.kind === 'fail';
+                        const isExt = cls.kind === 'extend';
+                        const renewalNo = extendOrdinal[idx] || 0;
+                        const tone = isLulus ? {
+                            bg: '#f0fdf4',
+                            badge: 'accepted',
+                            label: 'Lulus'
+                        } : isTerm ? {
+                            bg: '#fef2f2',
+                            badge: 'blacklist',
+                            label: 'Tidak Lulus'
+                        } : isExt ? {
+                            bg: '#fff7ed',
+                            badge: '',
+                            label: 'Perpanjang ke-' + renewalNo
+                        } : {
+                            bg: '#f9fafb',
+                            badge: 'pending',
+                            label: 'Keputusan lain'
+                        };
+                        const outcomeTitle = isLulus ? 'Diangkat menjadi karyawan tetap' :
+                            isTerm ? 'Kontrak diakhiri' :
+                            isExt ? 'Masa probation diperpanjang' :
+                            (ev.decision ? escapeHistoryHtml(ev.decision) : 'Keputusan belum tercatat');
                         const sDur = ev.extensionDuration || '';
-                        const sStart = ev.newContractStart || '-';
-                        const sEnd = ev.newContractEnd || '-';
+                        const sStart = formatHistoryDate(ev.newContractStart);
+                        const sEnd = formatHistoryDate(ev.newContractEnd);
+                        const period = (ev.newContractStart || ev.newContractEnd) ?
+                            (sStart + ' s/d ' + sEnd) : '';
+                        const contractBits = (sDur ? ' · durasi ' + escapeHistoryHtml(sDur) : '') +
+                            (period ? ' · ' + period : '');
+                        const outcomeDetail = isLulus ?
+                            'Status karyawan berubah menjadi tetap. Dokumen yang terbit: SK Pengangkatan dan Performance Review.' :
+                            isTerm ?
+                            'Karyawan tidak melanjutkan kontrak. Dokumen yang terbit: Paklaring, Surat BPJS, dan Performance Review.' :
+                            isExt ?
+                            (ev.contractNumber ?
+                                ('Kontrak ' + escapeHistoryHtml(ev.contractNumber) + contractBits +
+                                    '. Perpanjangan ini yang ke-' + renewalNo + ' dari maksimal 3.') :
+                                ('Perpanjangan ke-' + renewalNo + ' dicatat tanpa kontrak PKWT baru, jadi tidak ada PDF.' +
+                                    contractBits)) :
+                            'Nilai keputusan asli ditampilkan apa adanya dan tidak masuk Lulus, Tidak Lulus, atau Perpanjang.';
                         const sNote = ev.evaluatorNotes || '';
 
                         // Determine if this is a Performance Review 2026 (indicator-based) evaluation
@@ -442,8 +473,8 @@
                         if (hasNewData) {
                             // Performance Review 2026 — show competency totals
                             const total = ev.overallTotal || 0;
-                            const cat = ev.category || '-';
-                            const catColor = getCategoryColor(cat);
+                            const cat = escapeHistoryHtml(ev.category || '-');
+                            const catColor = getCategoryColor(ev.category || '');
                             scoreHtml = `
                     <div class="row g-2 mb-2" style="font-size:12px">
                         <div class="col-3"><div class="text-muted">Integrity</div><strong>${ev.integrityTotal ?? '-'}/4</strong></div>
@@ -464,10 +495,9 @@
                                 '<div class="text-muted mb-2" style="font-size:12px">Data skor tidak tersedia.</div>';
                         }
 
-                        // ── Decision-specific document actions ───────────────
-                        // PDF dibuat on-demand dan langsung di-download lewat route
-                        // hr.export.* (konvensi fungsi PDF lainnya).
-                        // EXTEND tidak punya dokumen — hanya info durasi.
+                        // PDF dibuat on-demand lewat route hr.export.*.
+                        // Setiap perpanjangan yang punya nomor sendiri diunduh dengan nomor itu,
+                        // supaya RNW2 tidak jatuh ke kontrak RNW yang paling baru.
                         const evalIdQ = encodeURIComponent(ev.evalId || '');
 
                         let docBtnLabel = '',
@@ -489,6 +519,18 @@
                        href="/hr/export/probation-surat-bpjs/${encodeURIComponent(employeeId)}?effective_date=${encodeURIComponent(ev.evalDate || '')}&probation_eval_id=${encodeURIComponent(ev.evalId || '')}">
                        <i class="bi bi-file-earmark-medical me-1"></i>Download Surat BPJS
                     </a>`;
+                        } else if (isExt && ev.contractNumber) {
+                            const contractQuery = new URLSearchParams();
+                            contractQuery.set('contract_number', ev.contractNumber);
+                            contractQuery.set('sk_number', ev.contractNumber);
+                            if (ev.contractIssuedAt) contractQuery.set('doc_date', ev.contractIssuedAt);
+                            if (ev.newContractStart) contractQuery.set('join_date', ev.newContractStart);
+                            if (ev.newContractEnd) contractQuery.set('contract_end', ev.newContractEnd);
+                            if (ev.extensionDuration) contractQuery.set('contract_duration', ev.extensionDuration);
+                            docBtnLabel = 'Download Kontrak Perpanjangan';
+                            docIcon = 'bi-file-earmark-text';
+                            docUrl = '/hr/export/kontrak-pkwt/' + encodeURIComponent(employeeId) +
+                                '?' + contractQuery.toString();
                         }
 
                         const previewBtn = `
@@ -510,21 +552,26 @@
                        <i class="bi ${docIcon} me-1"></i>${docBtnLabel}
                     </a>` : '';
 
-                        const docActions = (isLulus || isTerm) ?
+                        const docActions = (isLulus || isTerm || docUrl) ?
                             `<div class="d-flex flex-wrap gap-2 mt-2 pt-2" style="border-top:1px dashed #e5e7eb">${previewBtn}${prPdfBtn}${decDocBtn}${additionalDocBtn}</div>` :
                             '';
+                        const whenLabel = 'Evaluasi ke-' + (history.length - idx) + (idx === 0 ? ' · Paling baru' : '');
+                        const badgeStyle = isExt ? 'background:#fff7ed;color:#9a3412;' : '';
 
-                        return `<div class="p-3 rounded-3 mb-3" style="background:#f9fafb;border:1px solid #e5e7eb">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        return `<div class="p-3 rounded-3 mb-3" style="background:#fff;border:1px solid #e5e7eb">
+                    <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
                         <div>
-                            <span class="fw-bold" style="font-size:13px">#${idx+1} — ${ev.evalDate || '-'}</span>
-                            <span class="text-muted ms-2" style="font-size:11px">by ${ev.evaluator || '-'}</span>
+                            <div class="fw-bold" style="font-size:13px">${whenLabel}</div>
+                            <div class="text-muted" style="font-size:11px">${formatHistoryDate(ev.evalDate)} · ${escapeHistoryHtml(ev.evaluator || '-')}</div>
                         </div>
-                        <span class="badge-status ${kepClass}" style="font-size:10px;padding:2px 8px">${kepLabel}</span>
+                        <span class="badge-status ${tone.badge}" style="font-size:11px;padding:4px 10px;white-space:nowrap;${badgeStyle}">${tone.label}</span>
+                    </div>
+                    <div class="rounded-3 px-3 py-2 mb-2" style="background:${tone.bg}">
+                        <div class="fw-semibold" style="font-size:13px;color:#111827">${outcomeTitle}</div>
+                        <div style="font-size:12px;color:#4b5563">${outcomeDetail}</div>
                     </div>
                     ${scoreHtml}
-                    ${sNote ? `<div class="text-muted" style="font-size:11px;font-style:italic">"${sNote}"</div>` : ''}
-                    ${sDur  ? `<div style="font-size:11px;color:#d97706" class="mt-1"><i class="bi bi-calendar-range me-1"></i>Extended ${sDur} (${sStart} – ${sEnd})</div>` : ''}
+                    ${sNote ? `<div class="text-muted" style="font-size:12px"><span class="fw-semibold">Catatan:</span> ${escapeHistoryHtml(sNote)}</div>` : ''}
                     ${docActions}
                 </div>`;
                     }).join('');
@@ -533,6 +580,55 @@
                     if (bodyEl) bodyEl.innerHTML =
                         '<div class="text-center text-muted py-4" style="font-size:13px">Gagal memuat riwayat.</div>';
                 });
+        }
+
+        // Same order as ProbationDecisionType: Tidak Lulus before Lulus, Extend before Lulus.
+        function classifyHistoryDecision(decision) {
+            const val = String(decision || '');
+            if (
+                val === 'Tidak Lulus' ||
+                val === 'Tidak Lolos → Putus Kontrak (Paklaring)' ||
+                val.indexOf('Putus Kontrak') !== -1 ||
+                val.indexOf('Paklaring') !== -1
+            ) {
+                return { kind: 'fail' };
+            }
+            if (
+                val === 'Extend' ||
+                val === 'Perpanjang Kontrak' ||
+                val.indexOf('Perpanjang') !== -1 ||
+                val.indexOf('Evaluasi Ulang') !== -1
+            ) {
+                return { kind: 'extend' };
+            }
+            if (
+                val === 'Lulus' ||
+                val === 'Diangkat sebagai Karyawan Tetap' ||
+                val === 'Lulus → Karyawan Tetap' ||
+                val.indexOf('Diangkat') !== -1 ||
+                val.indexOf('Tetap') !== -1
+            ) {
+                return { kind: 'pass' };
+            }
+            return { kind: 'unknown' };
+        }
+
+        function escapeHistoryHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function formatHistoryDate(value) {
+            const raw = String(value || '').trim();
+            if (!raw) return '-';
+            const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (!match) return escapeHistoryHtml(raw);
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+            const month = months[Number(match[2]) - 1] || match[2];
+            return Number(match[3]) + ' ' + month + ' ' + match[1];
         }
 
         // Helper: get category badge colors for history modal
