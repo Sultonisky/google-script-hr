@@ -26,6 +26,7 @@ class SecurityHeaders
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
+        $response->headers->set('X-Robots-Tag', 'noindex, nofollow, noarchive');
         $response->headers->set('Permissions-Policy', 'geolocation=(self), microphone=(), camera=(), display-capture=(), fullscreen=()');
         $response->headers->set('Content-Security-Policy-Report-Only', $this->buildCsp($nonce));
 
