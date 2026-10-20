@@ -17,12 +17,15 @@ return [
     'data_driver' => env('HRIS_DATA_DRIVER'),
 
     'integration' => [
+        // Read-only employee API for Attendance Person List (same secret as Attendance HRIS_API_TOKEN).
+        'employee_api_token' => env('HRIS_EMPLOYEE_API_TOKEN'),
         'outsource_payroll_api_token' => env('HRIS_OUTSOURCE_PAYROLL_API_TOKEN'),
         'outsource_sync_api_token' => env('HRIS_OUTSOURCE_SYNC_API_TOKEN'),
         // Outbound: push newly created outsource persons into the Attendance Person List.
         'attendance' => [
             'base_url' => env('ATTENDANCE_API_BASE_URL'),
             'outsource_push_api_token' => env('ATTENDANCE_OUTSOURCE_PUSH_API_TOKEN'),
+            'employee_push_api_token' => env('ATTENDANCE_EMPLOYEE_PUSH_API_TOKEN'),
             'timeout' => (int) env('ATTENDANCE_API_TIMEOUT', 5),
         ],
     ],

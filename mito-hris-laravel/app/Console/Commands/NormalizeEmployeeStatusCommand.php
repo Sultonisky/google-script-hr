@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Enums\EmployeeStatus;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
+use App\Services\AttendanceEmployeePushService;
 use Illuminate\Console\Command;
 
 /**
@@ -23,8 +24,11 @@ class NormalizeEmployeeStatusCommand extends Command
 
     protected $description = 'Seragamkan Status Employee menjadi Permanent, Contract, atau Outsource';
 
-    public function handle(EmployeeRepositoryInterface $employees, AuditLogRepositoryInterface $auditRepo): int
-    {
+    public function handle(
+        EmployeeRepositoryInterface $employees,
+        AuditLogRepositoryInterface $auditRepo,
+        AttendanceEmployeePushService $attendancePush,
+    ): int {
         $changes = [];
         $unknown = [];
 
@@ -72,6 +76,10 @@ class NormalizeEmployeeStatusCommand extends Command
                 $this->error("Gagal memperbarui {$change['id']}.");
 
                 continue;
+            }
+            $updatedEmployee = $employees->findById($change['id']);
+            if ($updatedEmployee !== null) {
+                $attendancePush->pushUpdated($updatedEmployee);
             }
             $auditRepo->log('Employee', $change['id'], 'updated', 'Status Employee', $change['old'], $change['new'], 'System', 'Artisan');
         }

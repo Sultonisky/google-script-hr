@@ -44,12 +44,14 @@ class ProbationService
         EmployeeRepositoryInterface $employeeRepo,
         AuditLogRepositoryInterface $auditRepo,
         ProbationRepositoryInterface $probationRepo,
-        SkNumberService $skNumbers
+        SkNumberService $skNumbers,
+        private ?AttendanceEmployeePushService $attendanceEmployeePush = null
     ) {
         $this->employeeRepo = $employeeRepo;
         $this->auditRepo    = $auditRepo;
         $this->probationRepo = $probationRepo;
         $this->skNumbers    = $skNumbers;
+        $this->attendanceEmployeePush ??= app(AttendanceEmployeePushService::class);
     }
 
     /**
@@ -248,6 +250,7 @@ class ProbationService
         // HR Notes stays free-form catatan HR — activity belongs in Audit_Log
         // (Riwayat Aktivitas), not appended into the notes field.
         // Nomor SK is issued via SkNumberService (fixed per-employee sequence).
+        $employeeUpdated = false;
         if ($isLulus) {
             $issued = $this->skNumbers->issue(
                 employeeId: $employeeId,
@@ -257,7 +260,7 @@ class ProbationService
                 reference: $evalId,
             );
             $skNumber = $issued['nomor'];
-            $this->employeeRepo->update($employeeId, [
+            $employeeUpdated = $this->employeeRepo->update($employeeId, [
                 'Status Employee' => EmployeeStatus::PERMANENT->value,
                 'Updated At'      => $nowStr,
             ]);
@@ -273,7 +276,7 @@ class ProbationService
                 reference: $evalId,
             );
             $skNumber = $issued['nomor'];
-            $this->employeeRepo->update($employeeId, [
+            $employeeUpdated = $this->employeeRepo->update($employeeId, [
                 'Status Employee'     => 'Terminated',
                 'Resign Date'         => $now->format('Y-m-d'),
                 'Offboarding Type'    => 'End of Probation',
@@ -293,9 +296,15 @@ class ProbationService
                 'Contract Duration'     => $extDuration,
                 'Updated At'            => $nowStr,
             ];
-            $this->employeeRepo->update($employeeId, $updates);
+            $employeeUpdated = $this->employeeRepo->update($employeeId, $updates);
             $probStatus = 'Probation';
             $skStatus   = 'Diperpanjang';
+        }
+        if ($employeeUpdated) {
+            $updatedEmployee = $this->employeeRepo->findById($employeeId);
+            if ($updatedEmployee) {
+                $this->attendanceEmployeePush?->pushUpdated($updatedEmployee);
+            }
         }
 
         // ── 4. Tulis baris evaluasi ke kandidat_probation ─────────

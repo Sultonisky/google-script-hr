@@ -26,11 +26,13 @@ class EmployeeService
         EmployeeIdGenerator $idGenerator,
         private GoogleDriveService $driveService,
         private PdfGeneratorService $pdfService,
-        private SkNumberService $skNumbers
+        private SkNumberService $skNumbers,
+        private ?AttendanceEmployeePushService $attendanceEmployeePush = null
     ) {
         $this->employeeRepo = $employeeRepo;
         $this->auditRepo    = $auditRepo;
         $this->idGenerator  = $idGenerator;
+        $this->attendanceEmployeePush ??= app(AttendanceEmployeePushService::class);
     }
 
     /**
@@ -148,6 +150,8 @@ class EmployeeService
                 'employeeId' => null,
             ];
         }
+
+        $this->attendanceEmployeePush?->pushCreated([$employee]);
 
         // --- Audit log ---
         $this->auditRepo->log(
@@ -334,6 +338,7 @@ class EmployeeService
         $errors = [];
         $warnings = [];
         $imported = 0;
+        $createdEmployees = [];
 
         $existingEmployees = $this->employeeRepo->getAll();
         $existingIds = $existingEmployees->pluck('employeeId')->filter()->map('strtoupper')->toArray();
@@ -439,12 +444,14 @@ class EmployeeService
                 $this->employeeRepo->create($employee);
                 $existingIds[] = strtoupper($empId);
                 $imported++;
+                $createdEmployees[] = $employee;
             } catch (\Throwable $e) {
                 $errors[] = "Baris {$rowNum}: Gagal menyimpan karyawan ({$fullName}).";
             }
         }
 
         if ($imported > 0) {
+            $this->attendanceEmployeePush?->pushCreated($createdEmployees);
             $this->auditRepo->log(
                 entityType: 'Employee',
                 entityId: 'IMPORT-' . now()->format('YmdHis'),
@@ -523,6 +530,7 @@ class EmployeeService
         $success = $this->employeeRepo->update($employeeId, $attributes);
 
         if ($success) {
+            $this->pushLatestProfile($employeeId);
             $this->auditRepo->log(
                 entityType: 'Employee',
                 entityId: $employeeId,
@@ -669,6 +677,8 @@ class EmployeeService
             ];
         }
 
+        $this->pushLatestProfile($employeeId);
+
         $this->auditRepo->log(
             entityType: 'Employee',
             entityId: $employeeId,
@@ -798,6 +808,7 @@ class EmployeeService
         $success = $this->employeeRepo->update($employeeId, $attributes);
 
         if ($success) {
+            $this->pushLatestProfile($employeeId);
             $notes = trim((string) ($data['notes'] ?? ''));
             $this->skNumbers->issue(
                 employeeId: $employeeId,
@@ -855,6 +866,14 @@ class EmployeeService
         return $raw === null || trim($raw) === ''
             ? EmployeeStatus::CONTRACT->value
             : EmployeeStatus::canonical($raw);
+    }
+
+    private function pushLatestProfile(string $employeeId): void
+    {
+        $employee = $this->employeeRepo->findById($employeeId);
+        if ($employee) {
+            $this->attendanceEmployeePush?->pushUpdated($employee);
+        }
     }
 
     // ── Contract-duration derivation (STEP 5 / STEP 13) ──────────────────

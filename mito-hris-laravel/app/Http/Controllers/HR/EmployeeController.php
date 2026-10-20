@@ -6,6 +6,7 @@ use App\Enums\EmployeeStatus;
 use App\Http\Controllers\Controller;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
+use App\Services\AttendanceEmployeePushService;
 use App\Services\EmployeeService;
 use App\Services\ProbationService;
 use App\Services\SkNumberService;
@@ -22,19 +23,22 @@ class EmployeeController extends Controller
     protected AuditLogRepositoryInterface $auditRepo;
     protected ProbationService $probationService;
     protected SkNumberService $skNumbers;
+    protected AttendanceEmployeePushService $attendanceEmployeePush;
 
     public function __construct(
         EmployeeRepositoryInterface $employeeRepo,
         EmployeeService $employeeService,
         AuditLogRepositoryInterface $auditRepo,
         ProbationService $probationService,
-        SkNumberService $skNumbers
+        SkNumberService $skNumbers,
+        AttendanceEmployeePushService $attendanceEmployeePush
     ) {
         $this->employeeRepo       = $employeeRepo;
         $this->employeeService    = $employeeService;
         $this->auditRepo          = $auditRepo;
         $this->probationService   = $probationService;
         $this->skNumbers          = $skNumbers;
+        $this->attendanceEmployeePush = $attendanceEmployeePush;
     }
 
     public function index(Request $request): View
@@ -908,6 +912,9 @@ class EmployeeController extends Controller
 
         // Kembalikan data karyawan terbaru untuk keperluan drawer refresh
         $updated = $this->employeeRepo->findById($id);
+        if ($updated) {
+            $this->attendanceEmployeePush->pushUpdated($updated);
+        }
 
         return response()->json([
             'success'  => true,
