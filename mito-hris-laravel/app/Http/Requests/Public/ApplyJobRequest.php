@@ -7,6 +7,7 @@ use App\Support\PublicApplicationRejection;
 use Carbon\Carbon;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class ApplyJobRequest extends FormRequest
 {
@@ -96,7 +97,17 @@ class ApplyJobRequest extends FormRequest
                 $this->userAgent(),
                 is_string($email) ? $email : null,
                 is_string($nik) ? $nik : null,
+                PublicApplicationProbe::clientContext($this),
             );
+
+            if (in_array(PublicApplicationProbe::REASON_SCRIPT_USER_AGENT, $reasons, true)) {
+                app(PublicApplicationRejection::class)->record($reasons, $this->ip(), $this->userAgent());
+
+                throw new HttpResponseException(
+                    redirect()->back()->withInput()->with('error', PublicApplicationProbe::messageFor($reasons))
+                );
+            }
+
             $fieldReasons = array_values(array_intersect($reasons, [
                 PublicApplicationProbe::REASON_DISPOSABLE_EMAIL,
                 PublicApplicationProbe::REASON_TEST_NIK,
