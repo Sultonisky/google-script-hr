@@ -159,7 +159,7 @@
         ->values()
         ->all();
 @endphp
-<script>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
     window.__outsourceEmployeesForContract = @json($__oscList);
 
     function handleOscEmpSearch(query) {

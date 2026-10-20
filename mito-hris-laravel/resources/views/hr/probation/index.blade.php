@@ -327,7 +327,7 @@
 @endsection
 
 @section('scripts')
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         // All probation employees — passed to modal for live search (1:1 GAS _probData)
         window.__allProbationEmployees = @json($allProbations->values());
 

@@ -68,8 +68,8 @@
     @endphp
     @foreach($stats['categories'] ?? [] as $catName => $catCount)
         <div class="col-6 col-md-3">
-            <div class="stat-card" style="cursor:pointer;"
-                onclick="document.querySelector('#assetCategoryFilter').value='{{ $catName }}';document.getElementById('assetFilterForm').submit();">
+            <div class="stat-card js-asset-category" style="cursor:pointer;" role="button" tabindex="0"
+                data-category="{{ $catName }}">
                 <div class="stat-icon" style="background:{{ $catIcons[$catName][1] ?? '#6b7280' }}22;">
                     <i class="bi {{ $catIcons[$catName][0] ?? 'bi-box' }}" style="color:{{ $catIcons[$catName][1] ?? '#6b7280' }};"></i>
                 </div>

@@ -2,9 +2,12 @@
 
 namespace App\Http\Requests\Public;
 
+use App\Support\PublicApplicationProbe;
+use App\Support\PublicApplicationRejection;
 use Carbon\Carbon;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class ApplyJobRequest extends FormRequest
 {
@@ -84,6 +87,42 @@ class ApplyJobRequest extends FormRequest
 
             if ($date->age < 17) {
                 $validator->errors()->add('birth_date', 'Usia minimal untuk mendaftar adalah 17 tahun.');
+            }
+        });
+
+        $validator->after(function (Validator $validator) {
+            $email = $this->input('email');
+            $nik = $this->input('nik');
+            $reasons = PublicApplicationProbe::reasons(
+                $this->userAgent(),
+                is_string($email) ? $email : null,
+                is_string($nik) ? $nik : null,
+                PublicApplicationProbe::clientContext($this),
+            );
+
+            if (in_array(PublicApplicationProbe::REASON_SCRIPT_USER_AGENT, $reasons, true)) {
+                app(PublicApplicationRejection::class)->record($reasons, $this->ip(), $this->userAgent());
+
+                throw new HttpResponseException(
+                    redirect()->back()->withInput()->with('error', PublicApplicationProbe::messageFor($reasons))
+                );
+            }
+
+            $fieldReasons = array_values(array_intersect($reasons, [
+                PublicApplicationProbe::REASON_DISPOSABLE_EMAIL,
+                PublicApplicationProbe::REASON_TEST_NIK,
+            ]));
+
+            if (in_array(PublicApplicationProbe::REASON_DISPOSABLE_EMAIL, $fieldReasons, true)) {
+                $validator->errors()->add('email', PublicApplicationProbe::emailMessage());
+            }
+
+            if (in_array(PublicApplicationProbe::REASON_TEST_NIK, $fieldReasons, true)) {
+                $validator->errors()->add('nik', PublicApplicationProbe::nikMessage());
+            }
+
+            if ($fieldReasons !== []) {
+                app(PublicApplicationRejection::class)->record($reasons, $this->ip(), $this->userAgent());
             }
         });
     }

@@ -14,7 +14,9 @@ class SecurityHeadersTest extends TestCase
         $response->assertHeader('X-Content-Type-Options', 'nosniff');
         $response->assertHeader('X-Frame-Options', 'SAMEORIGIN');
         $response->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-        $response->assertHeaderMissing('Content-Security-Policy');
+        $response->assertHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
+        $response->assertHeaderMissing('Content-Security-Policy-Report-Only');
+        $this->assertStringContainsString("script-src-attr 'none'", (string) $response->headers->get('Content-Security-Policy'));
         $this->assertNotNull($response->headers->get('Permissions-Policy'));
     }
 
@@ -26,28 +28,41 @@ class SecurityHeadersTest extends TestCase
         $response->assertHeader('X-Content-Type-Options', 'nosniff');
         $response->assertHeader('X-Frame-Options', 'SAMEORIGIN');
         $response->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+        $response->assertHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
         $this->assertNotNull($response->headers->get('Permissions-Policy'));
     }
 
-    public function test_csp_is_in_report_only_mode(): void
+    public function test_csp_is_enforced_for_scripts(): void
     {
         $response = $this->get('/login');
 
-        $cspReportOnly = $response->headers->get('Content-Security-Policy-Report-Only');
-        $cspEnforce = $response->headers->get('Content-Security-Policy');
+        $csp = $response->headers->get('Content-Security-Policy');
 
-        $this->assertNotNull($cspReportOnly, 'CSP Report-Only header should be present');
-        $this->assertNull($cspEnforce, 'CSP enforcement should NOT be active');
-        $this->assertStringContainsString("default-src 'self'", $cspReportOnly);
-        $this->assertStringContainsString("script-src 'self'", $cspReportOnly);
-        $this->assertStringContainsString("object-src 'none'", $cspReportOnly);
+        $response->assertHeaderMissing('Content-Security-Policy-Report-Only');
+        $this->assertNotNull($csp);
+        $this->assertStringContainsString("default-src 'self'", $csp);
+        $this->assertStringContainsString("script-src 'self'", $csp);
+        $this->assertStringContainsString("script-src-attr 'none'", $csp);
+        $this->assertMatchesRegularExpression("/script-src [^;]*'nonce-/", $csp);
+        preg_match('/(?:^|; )script-src ([^;]+)/', $csp, $scriptSrc);
+        $this->assertStringNotContainsString('unsafe-inline', $scriptSrc[1]);
+        $this->assertStringContainsString("style-src 'self' 'unsafe-inline'", $csp);
+        $hot = public_path('hot');
+        if (is_file($hot)) {
+            $origin = trim((string) file_get_contents($hot));
+            $this->assertStringContainsString($origin, $csp);
+            $this->assertStringContainsString(preg_replace('/^http/', 'ws', $origin), $csp);
+        }
+        $this->assertStringContainsString("object-src 'none'", $csp);
+        $this->assertDoesNotMatchRegularExpression('/<script\b(?![^>]*\bnonce=)/i', $response->getContent());
+        $this->assertDoesNotMatchRegularExpression('/\son(?:click|error|change|submit|load|focus)=/i', $response->getContent());
     }
 
     public function test_csp_does_not_contain_unsafe_eval(): void
     {
         $response = $this->get('/login');
 
-        $csp = $response->headers->get('Content-Security-Policy-Report-Only');
+        $csp = $response->headers->get('Content-Security-Policy');
         $this->assertNotNull($csp);
         $this->assertStringNotContainsString("'unsafe-eval'", $csp);
     }
@@ -56,7 +71,7 @@ class SecurityHeadersTest extends TestCase
     {
         $response = $this->get('/login');
 
-        $csp = $response->headers->get('Content-Security-Policy-Report-Only');
+        $csp = $response->headers->get('Content-Security-Policy');
         $this->assertNotNull($csp);
         $this->assertStringContainsString("object-src 'none'", $csp);
         $this->assertStringContainsString("base-uri 'self'", $csp);
@@ -68,7 +83,7 @@ class SecurityHeadersTest extends TestCase
     {
         $response = $this->get('/login');
 
-        $csp = $response->headers->get('Content-Security-Policy-Report-Only');
+        $csp = $response->headers->get('Content-Security-Policy');
         $this->assertNotNull($csp);
         $this->assertStringContainsString("'nonce-", $csp);
         $this->assertMatchesRegularExpression("/script-src .*'nonce-[A-Za-z0-9+\/]+=*'/", $csp);
@@ -81,7 +96,7 @@ class SecurityHeadersTest extends TestCase
             ->get(route('public.career.form'));
 
         $response->assertOk();
-        $csp = (string) $response->headers->get('Content-Security-Policy-Report-Only');
+        $csp = (string) $response->headers->get('Content-Security-Policy');
         $this->assertMatchesRegularExpression("/'nonce-([A-Za-z0-9+\/]+=*)'/", $csp);
         preg_match("/'nonce-([A-Za-z0-9+\/]+=*)'/", $csp, $matches);
         $nonce = $matches[1];
@@ -93,7 +108,7 @@ class SecurityHeadersTest extends TestCase
 
         $outsource = $this->onDomain('outsource')->get(route('public.outsource.apply'));
         $outsource->assertOk();
-        $outsourceCsp = (string) $outsource->headers->get('Content-Security-Policy-Report-Only');
+        $outsourceCsp = (string) $outsource->headers->get('Content-Security-Policy');
         preg_match("/'nonce-([A-Za-z0-9+\/]+=*)'/", $outsourceCsp, $outsourceMatches);
         $outsource->assertSee('nonce="' . $outsourceMatches[1] . '"', false);
         $this->assertDoesNotMatchRegularExpression('/<script\b(?![^>]*\bnonce=)/i', $outsource->getContent());
@@ -132,6 +147,7 @@ class SecurityHeadersTest extends TestCase
         $response->assertHeader('X-Content-Type-Options', 'nosniff');
         $response->assertHeader('X-Frame-Options', 'SAMEORIGIN');
         $response->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+        $response->assertHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
         
         // HSTS presence in HTTPS responses is verified via:
         // 1. Code inspection (conditional: if ($request->isSecure()))

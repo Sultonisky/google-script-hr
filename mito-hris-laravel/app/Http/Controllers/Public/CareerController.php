@@ -4,8 +4,9 @@ namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Public\ApplyJobRequest;
-use App\Http\Requests\Public\CandidateSelfUpdateRequest;
 use App\Services\RecruitmentService;
+use App\Support\PublicApplicationProbe;
+use App\Support\PublicConsentEvidence;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -43,7 +44,7 @@ class CareerController extends Controller
 
         session([
             'candidate_consent' => true,
-            'candidate_consent_evidence' => $this->consentEvidence($request, 'landing_consent'),
+            'candidate_consent_evidence' => PublicConsentEvidence::capture($request, 'landing_consent'),
         ]);
 
         return redirect()->route('public.career.form');
@@ -108,8 +109,9 @@ class CareerController extends Controller
                 validatedData: array_merge($request->validated(), [
                     'consent_evidence' => [
                         'landing_consent' => session('candidate_consent_evidence', []),
-                        'application_agreement' => $this->consentEvidence($request, 'application_agreement'),
+                        'application_agreement' => PublicConsentEvidence::capture($request, 'application_agreement'),
                     ],
+                    'probe_client' => PublicApplicationProbe::clientContext($request),
                 ]),
                 cvFile: $request->file('cv_file')
             );
@@ -133,68 +135,5 @@ class CareerController extends Controller
         }
 
         return view('public.career.success', ['candidate' => null, 'id' => null]);
-    }
-
-    /**
-     * Show public status check page.
-     */
-    public function checkStatus(Request $request): View
-    {
-        $query = $request->input('q', '');
-        $candidate = null;
-
-        if (!empty($query)) {
-            $candidate = $this->recruitmentService->checkApplicationStatus($query);
-        }
-
-        return view('public.career.check-status', compact('candidate', 'query'));
-    }
-
-    /**
-     * Show candidate self-update form.
-     */
-    public function selfUpdate(string $id): View
-    {
-        $candidate = $this->recruitmentService->checkApplicationStatus($id);
-        if (!$candidate) {
-            abort(404, 'Data pelamar tidak ditemukan.');
-        }
-
-        return view('public.career.self-update', compact('candidate'));
-    }
-
-    /**
-     * Store candidate self-updated data.
-     */
-    public function storeSelfUpdate(CandidateSelfUpdateRequest $request, string $id): RedirectResponse
-    {
-        try {
-            $this->recruitmentService->updateCandidateStatus(
-                recruitmentId: $id,
-                newStatus: 'Screening',
-                notes: 'Data diperbarui secara mandiri oleh pelamar.',
-                user: 'Pelamar (Self-Update)'
-            );
-
-            return back()->with('success', 'Data lamaran Anda berhasil diperbarui.');
-        } catch (\Throwable $e) {
-            return back()->with('error', $e->getMessage());
-        }
-    }
-
-    private function consentEvidence(Request $request, string $stage): array
-    {
-        return [
-            'stage' => $stage,
-            'accepted' => true,
-            'server_timestamp' => now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
-            'ip' => $request->ip(),
-            'user_agent' => substr((string) $request->userAgent(), 0, 500),
-            'device' => substr((string) $request->input('consent_device', $request->input('device')), 0, 120),
-            'client_timestamp' => $request->input('consent_timestamp', $request->input('client_timestamp')),
-            'latitude' => $request->input('consent_latitude', $request->input('latitude')),
-            'longitude' => $request->input('consent_longitude', $request->input('longitude')),
-            'location' => $request->input('consent_location', $request->input('location')),
-        ];
     }
 }

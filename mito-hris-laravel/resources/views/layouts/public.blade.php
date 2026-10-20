@@ -10,7 +10,7 @@
         'description' =>
             trim($__env->yieldContent('description')) ?:
             'Temukan informasi rekrutmen dan peluang karir yang tersedia melalui MITO HRIS Career Portal.',
-        'robots' => trim($__env->yieldContent('robots')) ?: 'index,follow',
+        'robots' => trim($__env->yieldContent('robots')) ?: 'noindex, nofollow, noarchive',
         'structuredData' => $__env->yieldContent('structuredData')
             ? json_decode($__env->yieldContent('structuredData'), true)
             : null,
@@ -141,7 +141,7 @@
         @vite(['resources/scss/app.scss', 'resources/scss/public.scss', 'resources/js/app.js'])
     @else
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+        <script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
     @endif
     @yield('styles')
     <style>

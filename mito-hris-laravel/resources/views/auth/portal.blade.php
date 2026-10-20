@@ -9,7 +9,7 @@
         'title' => 'Portal HRIS - MITO Group HRIS',
         'description' =>
             'Portal layanan HRIS untuk rekrutmen, data karyawan, evaluasi masa percobaan, dan kebutuhan tenaga kerja MITO.',
-        'robots' => 'index,follow',
+        'robots' => 'noindex, nofollow, noarchive',
         'canonical' => route('hris.domain.root'),
     ])
     <link rel="icon" type="image/png" href="{{ asset('assets/logo-favicon.png') }}">
@@ -337,8 +337,7 @@
     <!-- MITO Loading Overlay (Initial Load & Navigation) -->
     <div class="portal-loader" id="portalLoader">
         <div class="portal-loader-content">
-            <img class="portal-loader-logo" src="{{ asset('assets/mito-red-load.png') }}" alt="MITO Logo"
-                onerror="this.style.display='none';this.parentElement.innerHTML='<span class=\'fw-bold text-danger fs-4\'>MITO</span>'">
+            <img class="portal-loader-logo" src="{{ asset('assets/mito-red-load.png') }}" alt="MITO Logo">
             <div class="portal-loader-dots" aria-hidden="true"><span></span><span></span><span></span></div>
             <div class="loader-text" id="loaderText">Memuat Portal HRIS...</div>
         </div>
@@ -599,8 +598,8 @@
     </footer>
 
     <!-- Bootstrap Bundle & Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         (function() {
             'use strict';
 

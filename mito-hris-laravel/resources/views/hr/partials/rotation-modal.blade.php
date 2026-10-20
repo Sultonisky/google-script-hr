@@ -139,7 +139,7 @@
     </div>
 </div>
 
-<script>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
     @php
         $allEmpForRotation = collect($all ?? ($employees ?? []))
             ->filter(fn ($e) => \App\Enums\EmployeeStatus::matches($e->statusEmployee ?? null, \App\Enums\EmployeeStatus::PERMANENT))

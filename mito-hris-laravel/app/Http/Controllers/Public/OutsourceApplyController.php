@@ -10,6 +10,7 @@ use App\Repositories\Contracts\OutsourceEmployeeRepositoryInterface;
 use App\Services\AttendanceOutsourcePushService;
 use App\Services\RecruitmentService;
 use App\Support\OutsourceEmployeeFilter;
+use App\Support\PublicConsentEvidence;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -93,18 +94,7 @@ class OutsourceApplyController extends Controller
                 return back()->withInput()->with('error', self::CONTACT_DUPLICATE_MESSAGE);
             }
 
-            $consentEvidence = [
-                'stage' => 'outsource_agreement',
-                'accepted' => true,
-                'server_timestamp' => now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
-                'ip' => $request->ip(),
-                'user_agent' => substr((string) $request->userAgent(), 0, 500),
-                'device' => substr((string) $request->input('consent_device', $request->input('device')), 0, 120),
-                'client_timestamp' => $request->input('consent_timestamp', $request->input('client_timestamp')),
-                'latitude' => $request->input('consent_latitude', $request->input('latitude')),
-                'longitude' => $request->input('consent_longitude', $request->input('longitude')),
-                'location' => $request->input('consent_location', $request->input('location')),
-            ];
+            $consentEvidence = PublicConsentEvidence::capture($request, 'outsource_agreement');
 
             $created = $this->outsourceRepo->create(new OutsourceEmployeeData(
                 fullName: $validated['full_name'],

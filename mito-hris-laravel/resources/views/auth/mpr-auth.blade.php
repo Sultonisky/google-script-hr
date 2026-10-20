@@ -450,8 +450,7 @@
         <div class="login-header">
             <div class="login-logo rounded-circle d-inline-flex align-items-center justify-content-center shadow-lg"
                 style="width: 130px; height: 130px; margin-bottom: 14px; border: 2px solid #eb1c24;">
-                <img src="{{ asset('assets/mito-red.png') }}" alt="MITO Logo" style="max-width: 120%; max-height: 120%;"
-                    onerror="this.style.display='none';this.parentElement.innerHTML='<h2 class=\'fw-bold mb-0 text-danger\' style=\'font-size:32px;\'>MITO</h2>'">
+                <img src="{{ asset('assets/mito-red.png') }}" alt="MITO Logo" style="max-width: 120%; max-height: 120%;">
             </div>
             <h1 id="loginCompanyName">{{ config('app.name', 'MITO HRIS') }}</h1>
             <p class="login-greeting">Portal MPR - silakan masuk untuk melanjutkan</p>
@@ -540,8 +539,8 @@
         <span class="version-badge">v1.0.0</span>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         document.addEventListener('DOMContentLoaded', function() {
             const togglePassword = document.getElementById('togglePassword');
             const passwordInput = document.getElementById('password');

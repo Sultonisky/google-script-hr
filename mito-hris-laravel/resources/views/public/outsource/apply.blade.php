@@ -2,7 +2,7 @@
 
 @section('title', 'Registrasi Karyawan Outsource - MITO Group')
 @section('description', 'Formulir registrasi karyawan outsource untuk keperluan administrasi HRIS MITO.')
-@section('robots', 'noindex,follow,noarchive')
+@section('robots', 'noindex,nofollow,noarchive')
 
 @php
     $osConfig = config('hris.outsource', []);

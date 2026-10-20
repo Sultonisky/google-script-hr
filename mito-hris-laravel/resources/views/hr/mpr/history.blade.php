@@ -203,7 +203,7 @@
 @endsection
 
 @section('scripts')
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         document.addEventListener('DOMContentLoaded', function() {
             const getCsrfToken = () => {
                 const meta = document.querySelector('meta[name="csrf-token"]');

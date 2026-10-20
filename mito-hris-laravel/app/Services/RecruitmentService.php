@@ -13,6 +13,8 @@ use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\CandidateRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Services\EmployeeIdGenerator;
+use App\Support\PublicApplicationProbe;
+use App\Support\PublicApplicationRejection;
 use App\Services\Google\GoogleDriveService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
@@ -49,6 +51,7 @@ class RecruitmentService
     public function apply(array $validatedData, ?UploadedFile $cvFile = null): CandidateData
     {
         $nik = preg_replace('/\D+/', '', (string) ($validatedData['nik'] ?? ''));
+        $this->rejectProbeApplication($validatedData, $nik);
         $lockAcquired = false;
 
         if ($nik !== '') {
@@ -220,6 +223,39 @@ class RecruitmentService
         );
 
         return $created;
+    }
+
+    private function rejectProbeApplication(array $validatedData, string $nik): void
+    {
+        $evidence = is_array($validatedData['consent_evidence'] ?? null)
+            ? $validatedData['consent_evidence']
+            : [];
+        $userAgent = data_get($evidence, 'application_agreement.server.user_agent')
+            ?? data_get($evidence, 'server.user_agent')
+            ?? data_get($evidence, 'user_agent');
+        $ip = data_get($evidence, 'application_agreement.server.ip')
+            ?? data_get($evidence, 'server.ip');
+        $client = array_key_exists('probe_client', $validatedData) && is_array($validatedData['probe_client'])
+            ? $validatedData['probe_client']
+            : null;
+        $reasons = PublicApplicationProbe::reasons(
+            is_string($userAgent) ? $userAgent : null,
+            isset($validatedData['email']) ? (string) $validatedData['email'] : null,
+            $nik !== '' ? $nik : null,
+            $client
+        );
+
+        if ($reasons === []) {
+            return;
+        }
+
+        (new PublicApplicationRejection($this->auditRepo))->record(
+            $reasons,
+            is_string($ip) ? $ip : null,
+            is_string($userAgent) ? $userAgent : null
+        );
+
+        throw new RuntimeException(PublicApplicationProbe::messageFor($reasons));
     }
 
     /**
@@ -525,21 +561,6 @@ class RecruitmentService
         }
 
         return ['jobPosition' => $noLoc, 'jobPositionLocation' => $withLoc];
-    }
-
-    /**
-     * Check application status for public applicant portal.
-     */
-    public function checkApplicationStatus(string $query): ?CandidateData
-    {
-        $query = trim($query);
-        if (empty($query)) return null;
-
-        if (str_starts_with(strtoupper($query), 'REC-')) {
-            return $this->candidateRepo->findById($query);
-        }
-
-        return $this->candidateRepo->findByNik($query);
     }
 
     /**

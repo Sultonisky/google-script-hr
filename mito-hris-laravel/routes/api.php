@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\RegionController;
 use App\Http\Controllers\Api\V1\OutsourceDirectorySyncController;
 use App\Http\Controllers\Api\V1\OutsourcePayrollController;
 
@@ -9,15 +8,11 @@ use App\Http\Controllers\Api\V1\OutsourcePayrollController;
 |--------------------------------------------------------------------------
 | API Routes
 |--------------------------------------------------------------------------
-| Internal endpoints for NIK Autofill, Cascading Provinces, Cities, and Districts.
+| Region lookup used to be public here. The live application form embeds
+| that data in the page, so those endpoints are no longer registered.
 */
 
 Route::prefix('v1')->group(function () {
-    Route::get('/provinces', [RegionController::class, 'getProvinces']);
-    Route::get('/cities/{provinceCode}', [RegionController::class, 'getCities']);
-    Route::get('/districts/{cityCode}', [RegionController::class, 'getDistricts']);
-    Route::post('/nik/parse', [RegionController::class, 'parseNik']);
-
     Route::prefix('outsource')
         ->middleware(['outsource.payroll.integration', 'throttle:60,1'])
         ->group(function () {

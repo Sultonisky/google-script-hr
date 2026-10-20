@@ -4,7 +4,7 @@
 @section('description',
     'Lengkapi formulir pendaftaran karir MITO dengan data yang valid untuk mengikuti proses
     rekrutmen.')
-@section('robots', 'noindex,follow,noarchive')
+@section('robots', 'noindex,nofollow,noarchive')
 
 @section('content')
     <style>
@@ -80,6 +80,11 @@
             <div id="registrationForm">
                 <form action="{{ route('public.career.store') }}" method="POST" id="formPendaftaran" novalidate>
                     @csrf
+                    <input type="hidden" name="client_runtime" id="clientRuntime" value="">
+                    <div id="clientRuntimeError" class="alert alert-danger d-none p-3 mb-4 rounded-3 align-items-center gap-2" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill fs-5 flex-shrink-0"></i>
+                        <div>Pendaftaran tidak dapat diproses dari aplikasi ini. Gunakan browser.</div>
+                    </div>
                     <div id="nikLockBanner" class="alert alert-danger d-none p-3 mb-4 d-flex align-items-start gap-2" role="alert">
                         <i class="bi bi-exclamation-octagon-fill fs-5 flex-shrink-0 mt-1"></i>
                         <div>
@@ -111,10 +116,13 @@
                                 <div class="col-12">
                                     <label class="form-label fw-semibold" for="nik" style="font-size:13px">NIK (Nomor
                                         Induk Kependudukan) <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="nik" name="nik"
+                                    <input type="text" class="form-control @error('nik') is-invalid @enderror" id="nik" name="nik"
                                         value="{{ old('nik') }}" required maxlength="16" pattern="[0-9]{16}"
                                         autocomplete="off" inputmode="numeric">
                                     <div class="invalid-feedback">NIK harus tepat 16 digit angka.</div>
+                                    @error('nik')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
                                     <div class="p-2 rounded mt-2 d-flex align-items-center gap-2"
                                         style="background:#f0f7ff;border:1px solid #c7dff7;font-size:12px;color:#005BAC">
                                         <i class="bi bi-info-circle-fill fs-6 flex-shrink-0"></i>
@@ -437,8 +445,7 @@
                         <div class="card-body p-4">
                             <div class="form-check mb-3">
                                 <input class="form-check-input" type="checkbox" id="agreement" name="agreement"
-                                    value="1" required style="width:20px;height:20px;cursor:not-allowed;opacity:0.5;"
-                                    onclick="return false;" onfocus="this.blur();">
+                                    value="1" required disabled style="width:20px;height:20px;cursor:not-allowed;opacity:0.5;">
                                 <label class="form-check-label ms-2 fw-semibold" for="agreement"
                                     style="font-size:13px;cursor:pointer;color:#0B2540;">
                                     Saya menyatakan bahwa seluruh data yang saya isi adalah benar dan dapat
@@ -1161,6 +1168,7 @@
             if (el.type === 'checkbox') return !!el.checked;
             var v = (el.value || '').trim();
             if (v === '') return false;
+            if (el.id === 'email' && isDisposableEmailAddress(v)) return false;
             if (el.checkValidity) return el.checkValidity();
             return true;
         }
@@ -1223,19 +1231,13 @@
                 agreementCheckbox.setAttribute('data-unlocked', '1');
                 agreementCheckbox.style.cursor = 'pointer';
                 agreementCheckbox.style.opacity = '1';
-                agreementCheckbox.onclick = null;
-                agreementCheckbox.onfocus = null;
+                agreementCheckbox.disabled = false;
             } else {
                 agreementCheckbox.setAttribute('data-unlocked', '0');
                 agreementCheckbox.checked = false;
                 agreementCheckbox.style.cursor = 'not-allowed';
                 agreementCheckbox.style.opacity = '0.5';
-                agreementCheckbox.onclick = function() {
-                    return false;
-                };
-                agreementCheckbox.onfocus = function() {
-                    this.blur();
-                };
+                agreementCheckbox.disabled = true;
                 submitBtn.disabled = true;
             }
             var hint = document.getElementById('agreementHint');
@@ -1245,12 +1247,7 @@
                 agreementCheckbox.checked = false;
                 agreementCheckbox.style.cursor = 'not-allowed';
                 agreementCheckbox.style.opacity = '0.5';
-                agreementCheckbox.onclick = function() {
-                    return false;
-                };
-                agreementCheckbox.onfocus = function() {
-                    this.blur();
-                };
+                agreementCheckbox.disabled = true;
                 if (hint) {
                     hint.style.display = 'block';
                     hint.innerHTML = '<i class="bi bi-exclamation-octagon-fill me-1"></i> NIK sudah terdaftar. Ubah NIK agar formulir dan tombol kirim dapat digunakan kembali.';
@@ -1730,6 +1727,10 @@
                 validateBirthDate();
                 return;
             }
+            if (el.id === 'email' && isDisposableEmailAddress(el.value.trim())) {
+                validateEmailField(false);
+                return;
+            }
             var container = el.closest('.col-md-6, .col-md-4, .col-12');
             var feedback = container ? container.querySelector('.invalid-feedback') : null;
             if (el.value && el.checkValidity()) {
@@ -1885,6 +1886,26 @@
         // ============================================================
         // EMAIL TYPO DETECTION (1:1 from GAS)
         // ============================================================
+        var disposableEmailDomains = @json(\App\Support\PublicApplicationProbe::disposableDomains());
+        var disposableEmailMessage = @json(\App\Support\PublicApplicationProbe::emailMessage());
+
+        function isDisposableEmailAddress(email) {
+            var at = String(email).lastIndexOf('@');
+            if (at === -1) return false;
+            var domain = String(email).slice(at + 1).trim().toLowerCase().replace(/\.$/, '');
+            var labels = domain.split('.').filter(function(label) { return label !== ''; });
+            for (var i = 0; i < disposableEmailDomains.length; i++) {
+                var blocked = String(disposableEmailDomains[i] || '').trim().toLowerCase();
+                if (!blocked) continue;
+                if (blocked.indexOf('.') !== -1) {
+                    if (domain === blocked || domain.endsWith('.' + blocked)) return true;
+                    continue;
+                }
+                if (labels.indexOf(blocked) !== -1) return true;
+            }
+            return false;
+        }
+
         var commonTypos = {
             'gmial.com': 'gmail.com',
             'gmai.com': 'gmail.com',
@@ -1908,6 +1929,8 @@
                 message = 'Email wajib diisi.';
             } else if (!emailInput.checkValidity() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
                 message = 'Silakan masukkan alamat email yang valid.';
+            } else if (isDisposableEmailAddress(email)) {
+                message = disposableEmailMessage;
             }
 
             if (message) {
@@ -1937,6 +1960,14 @@
         // ============================================================
         // FORM SUBMISSION (Laravel POST — no google.script.run)
         // ============================================================
+        function markClientRuntime() {
+            var input = document.getElementById('clientRuntime');
+            if (!input) return '';
+            var automated = !!(window.navigator && navigator.webdriver === true);
+            input.value = automated ? 'webdriver' : 'browser';
+            return input.value;
+        }
+
         function initForm() {
             form = document.getElementById('formPendaftaran');
             agreementCheckbox = document.getElementById('agreement');
@@ -2076,6 +2107,7 @@
                 if (this.value.trim()) validateEmailField(false);
                 updateProgress();
             });
+            if (emailInput.value.trim()) validateEmailField(false);
 
             // Work experience → show/hide last company
             workExpSelect.addEventListener('change', function() {
@@ -2137,7 +2169,18 @@
             });
 
             // Form submit — Laravel native POST (no google.script.run)
+            markClientRuntime();
+
             form.addEventListener('submit', function(e) {
+                if (markClientRuntime() === 'webdriver') {
+                    e.preventDefault();
+                    var runtimeError = document.getElementById('clientRuntimeError');
+                    if (runtimeError) {
+                        runtimeError.classList.remove('d-none');
+                        runtimeError.classList.add('d-flex');
+                    }
+                    return;
+                }
                 if (isSubmitting) {
                     e.preventDefault();
                     return;

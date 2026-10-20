@@ -1,12 +1,2 @@
 User-agent: *
 Allow: /
-Disallow: /hr/
-Disallow: /login
-Disallow: /logout
-Disallow: /apply
-Disallow: /career/success
-Disallow: /check-status
-Disallow: /self-update/
-Disallow: /outsource/apply
-
-Sitemap: https://hrismitogroup.web.id/sitemap.xml

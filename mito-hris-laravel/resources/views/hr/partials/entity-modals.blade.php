@@ -182,7 +182,7 @@
      handleOffEmpSearch / selectOffEmployee / clearOffEmpSearch
      + formOffboarding AJAX submit
      ================================================================ -->
-<script>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
     // ── OFFBOARDING: Attachment config 1:1 GAS _OFFB_DOC_TYPES ─────────────
     var _OFFB_DOC_TYPES = {
         'Resignation': {
@@ -797,7 +797,7 @@
     </div>
 </div>{{-- /empImportModal --}}
 
-<script>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
     // ============================================================
     // IMPORT EMPLOYEE MODAL — Full 3-step flow
     // 1:1 behavior with GAS js/import.html
@@ -1661,7 +1661,7 @@
         ->values()
         ->all();
 @endphp
-<script>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
     window.__allEmployeesForPdf = @json($allEmpForPdf);
     let _pdfSelectedEmployee = null;
 

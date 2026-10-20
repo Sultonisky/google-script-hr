@@ -209,7 +209,7 @@
 @endsection
 
 @section('scripts')
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         document.querySelectorAll('#accTableBody tr[data-drawer-type="candidate"]').forEach(function(row) {
             row.addEventListener('click', function(e) {
                 // Guard first: let button clicks (Change Status, Preview Offering, etc.)

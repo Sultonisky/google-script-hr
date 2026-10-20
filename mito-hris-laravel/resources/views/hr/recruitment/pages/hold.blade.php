@@ -125,7 +125,7 @@
 @endsection
 
 @section('scripts')
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         document.querySelectorAll('#holdTableBody tr[data-drawer-type="candidate"]').forEach(function(row) {
             row.addEventListener('click', function(e) {
                 if (e.target.closest('button')) return;

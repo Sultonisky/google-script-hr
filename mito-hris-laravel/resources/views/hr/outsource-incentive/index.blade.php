@@ -36,7 +36,7 @@
                         <i class="bi bi-search"></i>
                         <input type="search" name="search" placeholder="Cari Outsource ID atau nama..." value="{{ $search }}">
                     </div>
-                    <select class="filter-select" name="period" onchange="this.form.submit()">
+                    <select class="filter-select" name="period" id="incentivePeriod">
                         @foreach ($periods->contains($period) ? $periods : $periods->prepend($period) as $periodOption)
                             <option value="{{ $periodOption }}" @selected($periodOption === $period)>
                                 {{ \Illuminate\Support\Carbon::createFromFormat('Y-m', $periodOption)->locale('id')->translatedFormat('F Y') }}
@@ -186,6 +186,15 @@
 @endsection
 
 @section('scripts')
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        document.addEventListener('DOMContentLoaded', function () {
+            var period = document.getElementById('incentivePeriod');
+            if (!period) return;
+            period.addEventListener('change', function () {
+                if (this.form) this.form.submit();
+            });
+        });
+    </script>
     @can('manage_outsource_incentive')
         <script nonce="{{ request()->attributes->get('csp_nonce') }}">
             (function() {

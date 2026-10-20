@@ -4,14 +4,7 @@
 @section('description',
     'Temukan informasi proses rekrutmen dan peluang karir melalui MITO HRIS Career Portal.
     Pendaftaran dilakukan secara online tanpa biaya.')
-@section('structuredData',
-    json_encode([
-    '@context' => 'https://schema.org',
-    '@type' => 'Organization',
-    'name' => 'MITO Group',
-    'url' => config('seo.canonical_base_url'),
-    'logo' => asset('assets/mito.png'),
-    ]))
+@section('robots', 'noindex,nofollow,noarchive')
 
 @section('content')
     <div class="career-landing-page">

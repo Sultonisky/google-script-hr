@@ -328,7 +328,7 @@
 @endsection
 
 @section('scripts')
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         document.addEventListener('DOMContentLoaded', function() {
             function setPasswordVisible(button, visible) {
                 const input = document.getElementById(button.dataset.passwordToggle);

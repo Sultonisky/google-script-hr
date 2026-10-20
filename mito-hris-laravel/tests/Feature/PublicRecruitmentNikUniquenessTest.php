@@ -92,6 +92,91 @@ class PublicRecruitmentNikUniquenessTest extends TestCase
         $created = $this->makeService($repo)->apply($this->payload());
         $this->assertSame('REC-NEW-001', $created->recruitmentId);
         $this->assertSame('3174100205050003', $created->nik);
+        $this->assertSame('Pending', $created->status);
+    }
+
+    public function test_scripted_disposable_application_is_rejected_before_create(): void
+    {
+        $repo = $this->mockRepo();
+        $repo->shouldNotReceive('create');
+        $repo->shouldNotReceive('findByNik');
+        $repo->shouldNotReceive('moveToHold');
+        $repo->shouldNotReceive('updateStatus');
+
+        $audit = Mockery::mock(AuditLogRepositoryInterface::class);
+        $audit->shouldReceive('log')->once()->withArgs(function ($entityType, $entityId, $action, $field, $old, $new) {
+            $encoded = (string) json_encode($new);
+
+            return $entityType === 'Candidate'
+                && $entityId === null
+                && $action === 'application_rejected'
+                && $field === 'probe'
+                && is_array($new)
+                && $new['ip'] === '85.137.56.190'
+                && $new['user_agent'] === 'curl/7.81.0'
+                && $new['reasons'] === ['user-agent non-browser', 'email sekali pakai']
+                && !array_key_exists('email', $new)
+                && !array_key_exists('nik', $new)
+                && !str_contains($encoded, 'inboxkitten')
+                && !str_contains($encoded, '3175030101900002');
+        })->andReturn(true);
+
+        $payload = $this->payload();
+        $payload['nik'] = '3175030101900002';
+        $payload['email'] = 'pentestprobe2026@inboxkitten.com';
+        $payload['consent_evidence'] = [
+            'application_agreement' => [
+                'server' => [
+                    'user_agent' => 'curl/7.81.0',
+                    'ip' => '85.137.56.190',
+                ],
+            ],
+        ];
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Gunakan browser.');
+
+        $this->makeService($repo, $audit)->apply($payload);
+    }
+
+    public function test_chrome_user_agent_without_browser_signals_is_rejected_before_create(): void
+    {
+        $repo = $this->mockRepo();
+        $repo->shouldNotReceive('create');
+        $repo->shouldNotReceive('findByNik');
+
+        $audit = Mockery::mock(AuditLogRepositoryInterface::class);
+        $audit->shouldReceive('log')->once()->withArgs(function ($entityType, $entityId, $action, $field, $old, $new) {
+            unset($old);
+
+            return $entityType === 'Candidate'
+                && $entityId === null
+                && $action === 'application_rejected'
+                && $field === 'probe'
+                && is_array($new)
+                && $new['reasons'] === ['user-agent non-browser'];
+        })->andReturn(true);
+
+        $payload = $this->payload();
+        $payload['consent_evidence'] = [
+            'application_agreement' => [
+                'server' => [
+                    'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+                    'ip' => '127.0.0.1',
+                ],
+            ],
+        ];
+        $payload['probe_client'] = [
+            'runtime' => 'browser',
+            'fetch_site' => '',
+            'fetch_mode' => '',
+            'fetch_dest' => '',
+        ];
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Gunakan browser.');
+
+        $this->makeService($repo, $audit)->apply($payload);
     }
 
     public function test_nik_check_endpoint_reports_duplicate(): void
@@ -151,11 +236,15 @@ class PublicRecruitmentNikUniquenessTest extends TestCase
         $response->assertSee('scheduleNikAvailabilityCheck', false);
     }
 
-    private function makeService(CandidateRepositoryInterface $candidateRepo): RecruitmentService
-    {
+    private function makeService(
+        CandidateRepositoryInterface $candidateRepo,
+        ?AuditLogRepositoryInterface $auditRepo = null
+    ): RecruitmentService {
         $employeeRepo = Mockery::mock(EmployeeRepositoryInterface::class);
-        $auditRepo = Mockery::mock(AuditLogRepositoryInterface::class);
-        $auditRepo->shouldReceive('log')->andReturn(true);
+        if ($auditRepo === null) {
+            $auditRepo = Mockery::mock(AuditLogRepositoryInterface::class);
+            $auditRepo->shouldReceive('log')->andReturn(true);
+        }
         $drive = Mockery::mock(GoogleDriveService::class);
         $idGenerator = Mockery::mock(EmployeeIdGenerator::class);
 
