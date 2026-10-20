@@ -13,6 +13,7 @@ use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\CandidateRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Services\EmployeeIdGenerator;
+use App\Support\PublicApplicationProbe;
 use App\Services\Google\GoogleDriveService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
@@ -219,7 +220,37 @@ class RecruitmentService
             source: 'Public'
         );
 
+        $this->quarantineProbeApplication($created, $validatedData, $nik);
+
         return $created;
+    }
+
+    private function quarantineProbeApplication(CandidateData $created, array $validatedData, ?string $nik): void
+    {
+        $evidence = $validatedData['consent_evidence'] ?? [];
+        $userAgent = data_get($evidence, 'application_agreement.server.user_agent')
+            ?? data_get($evidence, 'server.user_agent')
+            ?? data_get($evidence, 'user_agent');
+        $reasons = PublicApplicationProbe::reasons(
+            is_string($userAgent) ? $userAgent : null,
+            isset($validatedData['email']) ? (string) $validatedData['email'] : null,
+            $nik
+        );
+
+        if ($reasons === [] || empty($created->recruitmentId)) {
+            return;
+        }
+
+        $reason = 'Tinjauan otomatis: ' . implode('; ', $reasons);
+
+        try {
+            $this->holdCandidate($created->recruitmentId, $reason, null, $reason, 'Sistem');
+            $this->candidateRepo->updateStatus($created->recruitmentId, CandidateStatus::HOLD->value, $reason);
+            $created->status = CandidateStatus::HOLD->value;
+            $created->holdReason = $reason;
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     /**
@@ -525,21 +556,6 @@ class RecruitmentService
         }
 
         return ['jobPosition' => $noLoc, 'jobPositionLocation' => $withLoc];
-    }
-
-    /**
-     * Check application status for public applicant portal.
-     */
-    public function checkApplicationStatus(string $query): ?CandidateData
-    {
-        $query = trim($query);
-        if (empty($query)) return null;
-
-        if (str_starts_with(strtoupper($query), 'REC-')) {
-            return $this->candidateRepo->findById($query);
-        }
-
-        return $this->candidateRepo->findByNik($query);
     }
 
     /**
