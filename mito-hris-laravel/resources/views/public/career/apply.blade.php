@@ -80,6 +80,11 @@
             <div id="registrationForm">
                 <form action="{{ route('public.career.store') }}" method="POST" id="formPendaftaran" novalidate>
                     @csrf
+                    <input type="hidden" name="client_runtime" id="clientRuntime" value="">
+                    <div id="clientRuntimeError" class="alert alert-danger d-none p-3 mb-4 rounded-3 align-items-center gap-2" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill fs-5 flex-shrink-0"></i>
+                        <div>Pendaftaran tidak dapat diproses dari aplikasi ini. Gunakan browser.</div>
+                    </div>
                     <div id="nikLockBanner" class="alert alert-danger d-none p-3 mb-4 d-flex align-items-start gap-2" role="alert">
                         <i class="bi bi-exclamation-octagon-fill fs-5 flex-shrink-0 mt-1"></i>
                         <div>
@@ -440,8 +445,7 @@
                         <div class="card-body p-4">
                             <div class="form-check mb-3">
                                 <input class="form-check-input" type="checkbox" id="agreement" name="agreement"
-                                    value="1" required style="width:20px;height:20px;cursor:not-allowed;opacity:0.5;"
-                                    onclick="return false;" onfocus="this.blur();">
+                                    value="1" required disabled style="width:20px;height:20px;cursor:not-allowed;opacity:0.5;">
                                 <label class="form-check-label ms-2 fw-semibold" for="agreement"
                                     style="font-size:13px;cursor:pointer;color:#0B2540;">
                                     Saya menyatakan bahwa seluruh data yang saya isi adalah benar dan dapat
@@ -1227,19 +1231,13 @@
                 agreementCheckbox.setAttribute('data-unlocked', '1');
                 agreementCheckbox.style.cursor = 'pointer';
                 agreementCheckbox.style.opacity = '1';
-                agreementCheckbox.onclick = null;
-                agreementCheckbox.onfocus = null;
+                agreementCheckbox.disabled = false;
             } else {
                 agreementCheckbox.setAttribute('data-unlocked', '0');
                 agreementCheckbox.checked = false;
                 agreementCheckbox.style.cursor = 'not-allowed';
                 agreementCheckbox.style.opacity = '0.5';
-                agreementCheckbox.onclick = function() {
-                    return false;
-                };
-                agreementCheckbox.onfocus = function() {
-                    this.blur();
-                };
+                agreementCheckbox.disabled = true;
                 submitBtn.disabled = true;
             }
             var hint = document.getElementById('agreementHint');
@@ -1249,12 +1247,7 @@
                 agreementCheckbox.checked = false;
                 agreementCheckbox.style.cursor = 'not-allowed';
                 agreementCheckbox.style.opacity = '0.5';
-                agreementCheckbox.onclick = function() {
-                    return false;
-                };
-                agreementCheckbox.onfocus = function() {
-                    this.blur();
-                };
+                agreementCheckbox.disabled = true;
                 if (hint) {
                     hint.style.display = 'block';
                     hint.innerHTML = '<i class="bi bi-exclamation-octagon-fill me-1"></i> NIK sudah terdaftar. Ubah NIK agar formulir dan tombol kirim dapat digunakan kembali.';
@@ -1967,6 +1960,14 @@
         // ============================================================
         // FORM SUBMISSION (Laravel POST — no google.script.run)
         // ============================================================
+        function markClientRuntime() {
+            var input = document.getElementById('clientRuntime');
+            if (!input) return '';
+            var automated = !!(window.navigator && navigator.webdriver === true);
+            input.value = automated ? 'webdriver' : 'browser';
+            return input.value;
+        }
+
         function initForm() {
             form = document.getElementById('formPendaftaran');
             agreementCheckbox = document.getElementById('agreement');
@@ -2168,7 +2169,18 @@
             });
 
             // Form submit — Laravel native POST (no google.script.run)
+            markClientRuntime();
+
             form.addEventListener('submit', function(e) {
+                if (markClientRuntime() === 'webdriver') {
+                    e.preventDefault();
+                    var runtimeError = document.getElementById('clientRuntimeError');
+                    if (runtimeError) {
+                        runtimeError.classList.remove('d-none');
+                        runtimeError.classList.add('d-flex');
+                    }
+                    return;
+                }
                 if (isSubmitting) {
                     e.preventDefault();
                     return;
