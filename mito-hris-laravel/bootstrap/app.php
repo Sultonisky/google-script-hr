@@ -26,13 +26,12 @@ return Application::configure(basePath: dirname(__DIR__))
             'outsource.sync.integration' => \App\Http\Middleware\AuthenticateOutsourceSyncIntegration::class,
         ]);
 
+        // Outside the route groups so missing pages get the same policy as a matched route.
+        $middleware->prepend(\App\Http\Middleware\SecurityHeaders::class);
+
         $middleware->appendToGroup('web', [
-            \App\Http\Middleware\SecurityHeaders::class,
             \App\Http\Middleware\DomainMiddleware::class,
             \App\Http\Middleware\PortalAccessMiddleware::class,
-        ]);
-        $middleware->appendToGroup('api', [
-            \App\Http\Middleware\SecurityHeaders::class,
         ]);
 
         $middleware->prependToPriorityList(
