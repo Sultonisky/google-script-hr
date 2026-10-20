@@ -31,6 +31,9 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\DomainMiddleware::class,
             \App\Http\Middleware\PortalAccessMiddleware::class,
         ]);
+        $middleware->appendToGroup('api', [
+            \App\Http\Middleware\SecurityHeaders::class,
+        ]);
 
         $middleware->prependToPriorityList(
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
