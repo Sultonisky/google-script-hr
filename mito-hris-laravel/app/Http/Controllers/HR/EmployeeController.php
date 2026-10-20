@@ -433,6 +433,7 @@ class EmployeeController extends Controller
             'new_job_position' => 'required|string',
             'new_department'   => 'nullable|string',   // optional: Mutasi tidak selalu ganti department
             'effective_date'   => 'required|date',
+            'doc_date'         => 'nullable|date',
         ]);
 
         // Ambil semua data request kecuali sk_number — Nomor SK wajib di-generate server-side
@@ -452,6 +453,7 @@ class EmployeeController extends Controller
             'old_job_position'  => $result['oldPosition'],
             'old_department'    => $result['oldDepartment'],
             'old_branch_name'   => $result['oldBranch'],
+            'doc_date'          => $result['docDate'],
         ]);
         $downloadUrl = route('hr.export.sk-rotation', ['id' => $id]) . '?' . $pdfQuery;
         $result['download_url'] = $downloadUrl;
@@ -604,6 +606,7 @@ class EmployeeController extends Controller
             'offboarding_type'  => 'required|string|in:Resignation,Termination,Retirement,Death',
             'reason'            => 'required|string|max:1000',
             'last_working_date' => 'required|date',
+            'doc_date'          => 'nullable|date',
             // attachments: one file per doc type, keyed as attachment_{docType}
             // Only Death is required; others are optional
         ]);
@@ -741,6 +744,7 @@ class EmployeeController extends Controller
     {
         $request->validate([
             'last_working_date' => 'required|date',
+            'doc_date'          => 'nullable|date',
         ]);
 
         $result = $this->employeeService->processOffContract($id, $request->all(), $this->hrUserName());
@@ -753,6 +757,7 @@ class EmployeeController extends Controller
                 'last_working_date' => $lwd,
                 'notes'             => $request->input('notes', ''),
                 'approved_by'       => $request->input('approved_by', ''),
+                'doc_date'          => $result['docDate'] ?? $request->input('doc_date', ''),
             ]);
             // The service has already confirmed the employee update. Do not
             // perform a second Sheets lookup here: eventual consistency can
@@ -764,6 +769,7 @@ class EmployeeController extends Controller
                 'notes' => $request->input('notes', ''),
                 'approved_by' => $request->input('approved_by', ''),
                 'bpjs_document_id' => $result['bpjsDocumentId'] ?? '',
+                'doc_date' => $result['docDate'] ?? $request->input('doc_date', ''),
             ]);
             $pdfUrls['surat_bpjs'] = route('hr.export.off-contract-surat-bpjs', ['id' => $id]) . '?' . $bpjsQ;
         }

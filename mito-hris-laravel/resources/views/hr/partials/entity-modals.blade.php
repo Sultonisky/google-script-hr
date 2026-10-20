@@ -110,6 +110,15 @@
                                     <input type="date" class="form-control form-control-sm" name="last_working_date"
                                         id="offEffectiveDate" value="{{ date('Y-m-d') }}" required />
                                 </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold" style="font-size:13px">Tanggal Dokumen
+                                        <span class="text-primary">*</span></label>
+                                    <input type="date" class="form-control form-control-sm" name="doc_date"
+                                        id="offDocDate"
+                                        value="{{ now()->timezone('Asia/Jakarta')->toDateString() }}" required />
+                                    <div class="form-text" style="font-size:11px">Tanggal yang tercetak di SK
+                                        Offboarding, Paklaring, dan Surat BPJS. Bisa dipilih, termasuk hari ini.</div>
+                                </div>
                                 <div class="col-md-12">
                                     <label class="form-label fw-semibold" style="font-size:13px">Alasan Offboarding
                                         <span class="text-primary">*</span></label>

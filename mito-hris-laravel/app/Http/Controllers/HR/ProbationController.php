@@ -169,7 +169,7 @@ class ProbationController extends Controller
     // PDF rules (on-demand — same convention as hr/export PDF functions):
     //   PASS   → SK Pengangkatan PDF + Performance Review PDF
     //   FAIL   → Paklaring PDF + Surat BPJS PDF
-    //   EXTEND → NO PDF generated (evaluation + duration saved only)
+    //   EXTEND → Kontrak PKWT perpanjangan (/RNW1–RNW3)
     // ==========================================================
 
     public function evaluate(SubmitProbationEvaluationRequest $request, string $id): RedirectResponse|JsonResponse
@@ -214,6 +214,7 @@ class ProbationController extends Controller
             'approval_hrbp'      => $request->input('approval_hrbp',      ''),
             'approval_hrbp_name' => $request->input('approval_hrbp_name', ''),
             'approval_hrbp_date' => $request->input('approval_hrbp_date', ''),
+            'doc_date'           => $request->input('doc_date', ''),
         ];
 
         $user = $this->hrUserName();
@@ -235,33 +236,48 @@ class ProbationController extends Controller
         //
         // PASS   → pdfUrl = SK Pengangkatan  + evalPdfUrl = Performance Review
         // FAIL   → pdfUrl = Paklaring        + bpjsPdfUrl = Surat BPJS
-        // EXTEND → pdfUrl = null             + evalPdfUrl = null  (no PDF at all)
+        // EXTEND → pdfUrl = Kontrak PKWT perpanjangan (/RNW1–RNW3)
         $pdfUrl     = null;
         $bpjsPdfUrl = null;
         $evalPdfUrl = null;
 
+        $docDate = trim((string) ($evalData['doc_date'] ?? ''));
+
         if ($decisionType?->isPass()) {
-            $pdfUrl = route('hr.export.sk-pengangkatan', [
+            $pdfUrl = route('hr.export.sk-pengangkatan', array_filter([
                 $id,
                 'sk_number' => $result['skNumber'],
-            ]);
+                'doc_date' => $docDate,
+            ]));
             $evalPdfUrl = route('hr.export.performance-review', array_merge(
                 [$id],
                 $this->buildEvalPdfParams($result['evalId'], $evalData)
             ));
         } elseif ($decisionType?->isFail()) {
             $lastWorkingDate = now()->timezone('Asia/Jakarta')->format('Y-m-d');
-            $pdfUrl = route('hr.export.paklaring', [
+            $pdfUrl = route('hr.export.paklaring', array_filter([
                 $id,
                 'letter_number'     => $result['skNumber'],
                 'evalId'            => $result['evalId'],
                 'last_working_date' => $lastWorkingDate,
-            ]);
-            $bpjsPdfUrl = route('hr.export.probation-surat-bpjs', [
+                'doc_date'          => $docDate,
+            ]));
+            $bpjsPdfUrl = route('hr.export.probation-surat-bpjs', array_filter([
                 $id,
                 'effective_date' => $lastWorkingDate,
                 'probation_eval_id' => $result['evalId'],
-            ]);
+                'doc_date' => $docDate,
+            ]));
+        } elseif ($decisionType?->isExtend()) {
+            $pdfUrl = route('hr.export.kontrak-pkwt', array_filter([
+                $id,
+                'contract_number' => $result['skNumber'],
+                'sk_number' => $result['skNumber'],
+                'doc_date' => $docDate,
+                'join_date' => $evalData['extension_start'] ?? '',
+                'contract_end' => $evalData['extension_end'] ?? '',
+                'contract_duration' => $result['extensionDuration'] ?? '',
+            ]));
         }
 
         if ($isAjax) {
@@ -354,7 +370,10 @@ class ProbationController extends Controller
 
     public function evalHistory(Request $request, string $id): JsonResponse
     {
-        $history = $this->probationService->getEvalHistory($id);
+        $history = $this->probationService->withRenewalContracts(
+            $id,
+            $this->probationService->getEvalHistory($id)
+        );
         return response()->json(['history' => $history]);
     }
 

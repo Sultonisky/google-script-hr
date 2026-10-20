@@ -547,6 +547,181 @@ class DocumentDownloadTest extends TestCase
             ->assertHeader('Content-Type', 'application/pdf');
     }
 
+    public function test_every_sk_template_prints_the_manual_date_not_today(): void
+    {
+        $employee = EmployeeData::fromSheetRow([
+            'Employee ID' => 'EMP-DL-1',
+            'Full Name' => 'Rina Kartika',
+            'Branch Name' => 'PT Mahakarya Sukses Indonesia',
+            'Job Position' => 'Staff Finance',
+            'Department' => 'Finance',
+            'Division' => 'Finance',
+            'Join Date' => '2025-01-06',
+            'Status Employee' => 'Contract',
+            'NIK / NPWP' => '3174010101010001',
+        ]);
+        $company = [
+            'name' => 'PT MAHAKARYA SUKSES INDONESIA',
+            'address' => 'Kota Tangerang',
+            'city' => 'Tangerang',
+            'code' => 'MSI',
+        ];
+        $manual = ['doc_date' => '2026-03-10'];
+        $views = [
+            'pdf.sk-pengangkatan' => $manual + ['sk_number' => '007/SKP/MSI/III/2026'],
+            'pdf.sk-rotation' => $manual + ['rotation_type' => 'Promosi', 'sk_number' => '007/SKPR/MSI/III/2026', 'effective_date' => '2026-04-01'],
+            'pdf.sk-off' => $manual + ['sk_number' => '007/SKO/MSI/III/2026', 'effective_date' => '2026-01-31'],
+            'pdf.paklaring' => $manual + ['sk_number' => '007/SPAK/MSI/III/2026', 'last_working_date' => '2026-01-31'],
+            'pdf.surat-bpjs' => $manual + ['last_working_date' => '2026-01-31'],
+            'pdf.kontrak-pkwt' => $manual + ['contract_number' => '007/PKWT/MSI/III/2026', 'join_date' => '2026-01-06', 'contract_end' => '2026-07-05'],
+            'pdf.kontrak-pkwt-tad' => $manual + ['contract_number' => '007/PKWT/MSI/III/2026', 'mulai_tanggal' => '2026-01-06', 'perusahaan' => 'Toko Uji', 'beralamat_di' => 'Jl. Uji', 'pendidikan' => 'SMA'],
+            'pdf.surat-pernyataan-outsource' => $manual,
+            'pdf.surat-peringatan' => $manual + ['sk_number' => '007/SP/MSI/III/2026', 'level' => 'SP1', 'violation_category' => 'Kehadiran', 'violation_description' => 'Terlambat', 'validity_months' => 6, 'valid_until' => '2026-09-09'],
+        ];
+
+        foreach ($views as $view => $extraData) {
+            $html = view($view, [
+                'employee' => $employee,
+                'extraData' => $extraData,
+                'company' => $company,
+            ])->render();
+
+            $printed = str_contains($html, '10 Maret 2026') || str_contains($html, '10 March 2026');
+            $this->assertTrue($printed, "{$view} tidak mencetak tanggal dokumen 10 Maret 2026.");
+            $this->assertStringNotContainsString('20 Oktober 2026', $html, "{$view} masih memakai hari generate.");
+            $this->assertStringNotContainsString('20 October 2026', $html, "{$view} masih memakai hari generate.");
+        }
+    }
+
+    public function test_every_issue_path_stores_the_manual_document_date(): void
+    {
+        $this->actingAsRole('Admin');
+        $docDate = '2026-03-10';
+
+        Employee::query()->create([
+            'employee_id' => 'EMP-ROT-DATE',
+            'full_name' => 'Rotasi Tanggal',
+            'branch_name' => 'PT Mahakarya Sukses Indonesia',
+            'job_position' => 'Staff',
+            'department' => 'Finance',
+            'status_employee' => 'Permanent',
+            'join_date' => '2025-01-06',
+        ]);
+        $rotation = $this->postJson('/hr/employees/EMP-ROT-DATE/rotate', [
+            'rotation_type' => 'Promosi',
+            'new_job_position' => 'Supervisor',
+            'new_department' => 'Finance',
+            'effective_date' => '2026-04-01',
+            'doc_date' => $docDate,
+        ])->assertOk()->assertJsonPath('success', true);
+        $this->assertStringContainsString('/III/2026', (string) $rotation->json('skNumber'));
+        $this->assertStringContainsString('doc_date=2026-03-10', (string) $rotation->json('download_url'));
+
+        Employee::query()->create([
+            'employee_id' => 'EMP-OC-DATE',
+            'full_name' => 'Kontrak Tanggal',
+            'branch_name' => 'PT Mahakarya Sukses Indonesia',
+            'job_position' => 'Staff',
+            'status_employee' => 'Contract',
+            'join_date' => '2025-01-06',
+            'end_date_contract' => '2026-01-05',
+        ]);
+        $offContract = $this->postJson('/hr/employees/EMP-OC-DATE/off-contract', [
+            'last_working_date' => '2026-01-05',
+            'doc_date' => $docDate,
+        ])->assertOk()->assertJsonPath('success', true);
+        $this->assertStringContainsString('doc_date=2026-03-10', (string) $offContract->json('pdf_urls.paklaring'));
+        $paklaring = EmployeeDocument::query()->where('employee_id', 'EMP-OC-DATE')->where('doc_code', 'SPAK')->firstOrFail();
+        $this->assertStringContainsString('/III/2026', (string) $paklaring->nomor);
+        $this->assertStringStartsWith($docDate, (string) $paklaring->issued_at);
+
+        $indicators = collect([
+            'integrity_1', 'integrity_2', 'integrity_3', 'integrity_4',
+            'ci_1', 'ci_2', 'ci_3', 'ci_4',
+            'ee_1', 'ee_2',
+            'tw_1', 'tw_2', 'tw_3',
+        ])->mapWithKeys(fn (string $key) => [$key => '1'])->all();
+        Employee::query()->create([
+            'employee_id' => 'EMP-PROB-DATE',
+            'full_name' => 'Probation Tanggal',
+            'branch_name' => 'PT Mahakarya Sukses Indonesia',
+            'job_position' => 'Staff',
+            'status_employee' => 'Contract',
+            'join_date' => '2025-01-06',
+            'end_date_contract' => '2026-01-05',
+        ]);
+        $probation = $this->postJson('/hr/probation/EMP-PROB-DATE/evaluate', [
+            'decision' => 'Lulus',
+            'doc_date' => $docDate,
+            'indicators' => $indicators,
+        ])->assertOk()->assertJsonPath('success', true);
+        $this->assertStringContainsString('doc_date=2026-03-10', (string) $probation->json('pdfUrl'));
+        $pengangkatan = EmployeeDocument::query()->where('employee_id', 'EMP-PROB-DATE')->where('doc_code', 'SKP')->firstOrFail();
+        $this->assertStringContainsString('/III/2026', (string) $pengangkatan->nomor);
+        $this->assertStringStartsWith($docDate, (string) $pengangkatan->issued_at);
+
+        OutsourceEmployee::query()->create([
+            'outsource_id' => 'DM20260099',
+            'full_name' => 'Outsource Tanggal',
+            'entity' => 'PT. Mahakarya Sukses Indonesia',
+            'job_title' => 'SPG',
+            'vendor' => 'Damarindo',
+            'created_by' => 'test',
+        ]);
+        $outsource = $this->postJson('/hr/outsource/kontrak-pkwt-tad', [
+            'employee_id' => 'DM20260099',
+            'perusahaan' => 'PT Mitra',
+            'beralamat_di' => 'Jl. Uji',
+            'mulai_tanggal' => '2026-01-06',
+            'pendidikan' => 'SMA',
+            'doc_date' => $docDate,
+        ])->assertOk();
+        $this->assertStringContainsString('/III/2026', (string) $outsource->json('contract_number'));
+
+        $captured = [];
+        $pdfService = Mockery::mock(PdfGeneratorService::class);
+        $pdfService->shouldReceive('generateSkRotationPdf')->once()->andReturnUsing(function ($employee, $extra) use (&$captured) {
+            $captured['rotation'] = $extra['doc_date'] ?? null;
+            return Pdf::loadHTML('<p>rotation</p>');
+        });
+        $pdfService->shouldReceive('generateSkPengangkatanPdf')->once()->andReturnUsing(function ($employee, $extra) use (&$captured) {
+            $captured['pengangkatan'] = $extra['doc_date'] ?? null;
+            return Pdf::loadHTML('<p>pengangkatan</p>');
+        });
+        $this->app->instance(PdfGeneratorService::class, $pdfService);
+
+        $this->get('/hr/export/sk-rotation/EMP-ROT-DATE?rotation_type=Promosi')->assertOk();
+        $this->get('/hr/export/sk-pengangkatan/EMP-PROB-DATE')->assertOk();
+        $this->assertSame($docDate, $captured['rotation'] ?? null);
+        $this->assertSame($docDate, $captured['pengangkatan'] ?? null);
+    }
+
+    public function test_offboarding_document_date_follows_manual_input(): void
+    {
+        $this->actingAsRole('Admin');
+        Employee::query()->create([
+            'employee_id' => 'EMP-DATE-1',
+            'full_name' => 'Sari Wulandari',
+            'branch_name' => 'PT Mahakarya Sukses Indonesia',
+            'job_position' => 'Staff Admin',
+            'status_employee' => 'PKWTT',
+            'join_date' => '2024-01-15',
+        ]);
+
+        $response = $this->postJson('/hr/employees/EMP-DATE-1/offboard', [
+            'offboarding_type' => 'Resignation',
+            'reason' => 'Pindah domisili',
+            'last_working_date' => '2026-09-30',
+            'doc_date' => '2026-03-10',
+        ])->assertOk()->assertJsonPath('success', true);
+
+        $sko = EmployeeDocument::query()->where('employee_id', 'EMP-DATE-1')->where('doc_code', 'SKO')->firstOrFail();
+        $this->assertStringContainsString('/III/2026', (string) $sko->nomor);
+        $this->assertStringStartsWith('2026-03-10', (string) $sko->issued_at);
+        $this->assertStringContainsString('doc_date=2026-03-10', (string) $response->json('pdf_urls.sk_off'));
+        $this->assertStringContainsString('doc_date=2026-03-10', (string) $response->json('pdf_urls.paklaring'));
+    }
+
     public function test_off_contract_tracks_and_archives_paklaring_and_surat_bpjs(): void
     {
         $this->actingAsRole('Admin');
