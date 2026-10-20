@@ -81,7 +81,7 @@ flowchart TD
 
 | Portal        | Main purpose                                           | Boundary                                                     |
 | ------------- | ------------------------------------------------------ | ------------------------------------------------------------ |
-| Public career | Candidate application and status/self-update           | Public controllers and portal middleware                     |
+| Public career | Candidate application and status checking              | Public controllers and portal middleware                     |
 | HR            | Recruitment, employees, probation, settings, and users | HR authentication, roles, permissions, and domain middleware |
 | MPR           | Manpower requestor workflow                            | MPR authentication and requestor middleware                  |
 

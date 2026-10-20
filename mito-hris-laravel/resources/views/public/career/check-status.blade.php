@@ -117,12 +117,6 @@
                 </div>
               </div>
             </div>
-
-            <div class="mt-3 text-end">
-              <a href="{{ route('public.career.self-update', ['id' => $candidate->recruitmentId]) }}" class="btn btn-sm btn-outline-danger" style="border-radius:8px">
-                <i class="bi bi-pencil-square me-1"></i> Perbarui Data Kontak / Profil
-              </a>
-            </div>
           </div>
         </div>
       @else
