@@ -14,6 +14,7 @@ use App\Repositories\Contracts\CandidateRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Services\EmployeeIdGenerator;
 use App\Support\PublicApplicationProbe;
+use App\Support\PublicApplicationRejection;
 use App\Services\Google\GoogleDriveService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
@@ -50,6 +51,7 @@ class RecruitmentService
     public function apply(array $validatedData, ?UploadedFile $cvFile = null): CandidateData
     {
         $nik = preg_replace('/\D+/', '', (string) ($validatedData['nik'] ?? ''));
+        $this->rejectProbeApplication($validatedData, $nik);
         $lockAcquired = false;
 
         if ($nik !== '') {
@@ -220,37 +222,36 @@ class RecruitmentService
             source: 'Public'
         );
 
-        $this->quarantineProbeApplication($created, $validatedData, $nik);
-
         return $created;
     }
 
-    private function quarantineProbeApplication(CandidateData $created, array $validatedData, ?string $nik): void
+    private function rejectProbeApplication(array $validatedData, string $nik): void
     {
-        $evidence = $validatedData['consent_evidence'] ?? [];
+        $evidence = is_array($validatedData['consent_evidence'] ?? null)
+            ? $validatedData['consent_evidence']
+            : [];
         $userAgent = data_get($evidence, 'application_agreement.server.user_agent')
             ?? data_get($evidence, 'server.user_agent')
             ?? data_get($evidence, 'user_agent');
+        $ip = data_get($evidence, 'application_agreement.server.ip')
+            ?? data_get($evidence, 'server.ip');
         $reasons = PublicApplicationProbe::reasons(
             is_string($userAgent) ? $userAgent : null,
             isset($validatedData['email']) ? (string) $validatedData['email'] : null,
-            $nik
+            $nik !== '' ? $nik : null
         );
 
-        if ($reasons === [] || empty($created->recruitmentId)) {
+        if ($reasons === []) {
             return;
         }
 
-        $reason = 'Tinjauan otomatis: ' . implode('; ', $reasons);
+        (new PublicApplicationRejection($this->auditRepo))->record(
+            $reasons,
+            is_string($ip) ? $ip : null,
+            is_string($userAgent) ? $userAgent : null
+        );
 
-        try {
-            $this->holdCandidate($created->recruitmentId, $reason, null, $reason, 'Sistem');
-            $this->candidateRepo->updateStatus($created->recruitmentId, CandidateStatus::HOLD->value, $reason);
-            $created->status = CandidateStatus::HOLD->value;
-            $created->holdReason = $reason;
-        } catch (\Throwable $e) {
-            report($e);
-        }
+        throw new RuntimeException(PublicApplicationProbe::messageFor($reasons));
     }
 
     /**
