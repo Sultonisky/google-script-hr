@@ -139,6 +139,46 @@ class PublicRecruitmentNikUniquenessTest extends TestCase
         $this->makeService($repo, $audit)->apply($payload);
     }
 
+    public function test_chrome_user_agent_without_browser_signals_is_rejected_before_create(): void
+    {
+        $repo = $this->mockRepo();
+        $repo->shouldNotReceive('create');
+        $repo->shouldNotReceive('findByNik');
+
+        $audit = Mockery::mock(AuditLogRepositoryInterface::class);
+        $audit->shouldReceive('log')->once()->withArgs(function ($entityType, $entityId, $action, $field, $old, $new) {
+            unset($old);
+
+            return $entityType === 'Candidate'
+                && $entityId === null
+                && $action === 'application_rejected'
+                && $field === 'probe'
+                && is_array($new)
+                && $new['reasons'] === ['user-agent non-browser'];
+        })->andReturn(true);
+
+        $payload = $this->payload();
+        $payload['consent_evidence'] = [
+            'application_agreement' => [
+                'server' => [
+                    'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+                    'ip' => '127.0.0.1',
+                ],
+            ],
+        ];
+        $payload['probe_client'] = [
+            'runtime' => 'browser',
+            'fetch_site' => '',
+            'fetch_mode' => '',
+            'fetch_dest' => '',
+        ];
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Gunakan browser.');
+
+        $this->makeService($repo, $audit)->apply($payload);
+    }
+
     public function test_nik_check_endpoint_reports_duplicate(): void
     {
         $service = Mockery::mock(RecruitmentService::class);

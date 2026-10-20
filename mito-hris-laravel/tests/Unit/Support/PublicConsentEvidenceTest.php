@@ -88,4 +88,66 @@ class PublicConsentEvidenceTest extends TestCase
             PublicApplicationProbe::reasons('Mozilla/5.0', 'user@gmail.com', '3174100205050003')
         );
     }
+
+    public function test_spoofed_browser_user_agent_is_rejected_until_the_browser_actually_submits(): void
+    {
+        $chrome = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+        $firefox = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:131.0) Gecko/20100101 Firefox/131.0';
+        $email = 'pelamar@gmail.com';
+        $nik = '3174100205050003';
+        $browser = [
+            'runtime' => 'browser',
+            'fetch_site' => 'same-origin',
+            'fetch_mode' => 'navigate',
+            'fetch_dest' => 'document',
+        ];
+
+        $this->assertSame(
+            ['user-agent non-browser'],
+            PublicApplicationProbe::reasons($chrome, $email, $nik, [
+                'runtime' => '',
+                'fetch_site' => '',
+                'fetch_mode' => '',
+                'fetch_dest' => '',
+            ])
+        );
+        $this->assertSame(
+            ['user-agent non-browser'],
+            PublicApplicationProbe::reasons($firefox, $email, $nik, [
+                'runtime' => 'browser',
+                'fetch_site' => '',
+                'fetch_mode' => 'navigate',
+                'fetch_dest' => 'document',
+            ])
+        );
+        $this->assertSame(
+            ['user-agent non-browser'],
+            PublicApplicationProbe::reasons($chrome, $email, $nik, array_merge($browser, ['runtime' => 'webdriver']))
+        );
+        $this->assertSame(
+            ['user-agent non-browser'],
+            PublicApplicationProbe::reasons(
+                'Mozilla/5.0 HeadlessChrome/131.0.0.0 Playwright',
+                $email,
+                $nik,
+                $browser
+            )
+        );
+        $this->assertSame([], PublicApplicationProbe::reasons($chrome, $email, $nik, $browser));
+        $this->assertSame(
+            [],
+            PublicApplicationProbe::reasons(
+                'Mozilla/5.0 (Linux; Android 14; wv) AppleWebKit/537.36 Chrome/131.0.0.0 Mobile Safari/537.36 LinkedInApp',
+                $email,
+                $nik,
+                [
+                    'runtime' => 'browser',
+                    'fetch_site' => '',
+                    'fetch_mode' => '',
+                    'fetch_dest' => '',
+                ]
+            )
+        );
+        $this->assertSame([], PublicApplicationProbe::reasons($chrome, $email, $nik));
+    }
 }

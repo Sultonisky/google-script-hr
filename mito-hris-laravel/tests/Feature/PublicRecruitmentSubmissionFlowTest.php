@@ -167,6 +167,62 @@ class PublicRecruitmentSubmissionFlowTest extends TestCase
         $response->assertSee('labels.indexOf(blocked)', false);
         $response->assertSee("el.id === 'email' && isDisposableEmailAddress(v)", false);
         $response->assertSee('Email sekali pakai tidak dapat digunakan.', false);
+        $response->assertSee('function markClientRuntime', false);
+        $response->assertSee('navigator.webdriver', false);
+        $response->assertSee('name="client_runtime"', false);
+    }
+
+    public function test_spoofed_chrome_user_agent_is_rejected_before_the_application_is_stored(): void
+    {
+        $service = Mockery::mock(RecruitmentService::class);
+        $service->shouldNotReceive('apply');
+        $this->app->instance(RecruitmentService::class, $service);
+
+        $rejection = Mockery::mock(PublicApplicationRejection::class);
+        $rejection->shouldReceive('record')->once()->withArgs(function (array $reasons, $ip, $userAgent) {
+            unset($ip);
+
+            return $reasons === ['user-agent non-browser']
+                && str_contains((string) $userAgent, 'Chrome/131');
+        });
+        $this->app->instance(PublicApplicationRejection::class, $rejection);
+
+        $response = $this->onDomain('recruitment')
+            ->withSession(['candidate_consent' => true])
+            ->withHeaders([
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+            ])
+            ->from(route('public.career.form'))
+            ->post(route('public.career.store'), $this->validPayload());
+
+        $response->assertRedirect(route('public.career.form'));
+        $response->assertSessionHas('error', 'Pendaftaran tidak dapat diproses dari aplikasi ini. Gunakan browser.');
+        $response->assertSessionMissing('public_recruitment_submission_completed');
+    }
+
+    public function test_browser_navigation_headers_still_store_the_application(): void
+    {
+        $service = Mockery::mock(RecruitmentService::class);
+        $service->shouldReceive('apply')->once()->andReturn(new CandidateData(
+            recruitmentId: 'REC-TEST-002',
+            fullName: 'Pelamar Uji',
+        ));
+        $this->app->instance(RecruitmentService::class, $service);
+
+        $payload = $this->validPayload();
+        $payload['client_runtime'] = 'browser';
+
+        $response = $this->onDomain('recruitment')
+            ->withSession(['candidate_consent' => true])
+            ->withHeaders([
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+                'Sec-Fetch-Site' => 'same-origin',
+                'Sec-Fetch-Mode' => 'navigate',
+                'Sec-Fetch-Dest' => 'document',
+            ])
+            ->post(route('public.career.store'), $payload);
+
+        $response->assertRedirect(route('public.career.submission-success'));
     }
 
     public function test_invalid_submission_does_not_create_success_state(): void
