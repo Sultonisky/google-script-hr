@@ -235,10 +235,14 @@ class RecruitmentService
             ?? data_get($evidence, 'user_agent');
         $ip = data_get($evidence, 'application_agreement.server.ip')
             ?? data_get($evidence, 'server.ip');
+        $client = array_key_exists('probe_client', $validatedData) && is_array($validatedData['probe_client'])
+            ? $validatedData['probe_client']
+            : null;
         $reasons = PublicApplicationProbe::reasons(
             is_string($userAgent) ? $userAgent : null,
             isset($validatedData['email']) ? (string) $validatedData['email'] : null,
-            $nik !== '' ? $nik : null
+            $nik !== '' ? $nik : null,
+            $client
         );
 
         if ($reasons === []) {
