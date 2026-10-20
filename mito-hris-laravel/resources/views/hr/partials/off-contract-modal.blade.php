@@ -80,6 +80,15 @@
                                         disesuaikan</div>
                                 </div>
                                 <div class="col-12">
+                                    <label class="form-label fw-semibold" style="font-size:13px">Tanggal Dokumen
+                                        <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control form-control-sm" name="doc_date"
+                                        id="ocDocDate"
+                                        value="{{ now()->timezone('Asia/Jakarta')->toDateString() }}" required />
+                                    <div class="form-text" style="font-size:11px">Tanggal yang tercetak di Paklaring
+                                        dan Surat BPJS. Bisa diketik atau dipilih, termasuk hari ini.</div>
+                                </div>
+                                <div class="col-12">
                                     <label class="form-label fw-semibold" style="font-size:13px">Catatan <span
                                             class="text-muted fw-normal">(opsional)</span></label>
                                     <textarea class="form-control form-control-sm" name="notes" id="ocNotes" rows="2"

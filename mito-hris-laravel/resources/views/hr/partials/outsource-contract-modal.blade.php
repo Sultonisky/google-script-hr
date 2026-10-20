@@ -100,6 +100,15 @@
                                     id="oscMulaiTanggal" required />
                             </div>
                             <div class="col-md-6">
+                                <label class="form-label fw-semibold" style="font-size:13px">Tanggal Dokumen <span
+                                        class="text-danger">*</span></label>
+                                <input type="date" class="form-control form-control-sm" name="doc_date"
+                                    id="oscDocDate"
+                                    value="{{ now()->timezone('Asia/Jakarta')->toDateString() }}" required />
+                                <div class="form-text" style="font-size:11px">Tanggal yang tercetak di kontrak. Bisa
+                                    dipilih, termasuk hari ini.</div>
+                            </div>
+                            <div class="col-md-6">
                                 <label class="form-label fw-semibold" style="font-size:13px">Pendidikan <span
                                         class="text-danger">*</span></label>
                                 <input type="text" class="form-control form-control-sm" name="pendidikan"
