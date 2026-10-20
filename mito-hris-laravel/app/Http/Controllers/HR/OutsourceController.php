@@ -17,6 +17,7 @@ use App\Services\RecruitmentService;
 use App\Support\OutsourceEmployeeAttributeMap;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
@@ -396,6 +397,7 @@ class OutsourceController extends Controller
             'mulai_tanggal' => 'required|date',
             'pendidikan'    => 'required|string|max:100',
             'contract_duration' => 'nullable|string|max:50',
+            'doc_date'      => 'nullable|date',
         ]);
 
         $outsource = $this->outsourceRepo->findById($validated['employee_id']);
@@ -404,8 +406,13 @@ class OutsourceController extends Controller
         }
 
         $employee = $outsource->toEmployeeData();
-        $alloc = $this->contractService->allocateContractNumber($employee, null, $this->hrUserName());
-        $now   = now()->timezone('Asia/Jakarta');
+        $issuedAt = now()->timezone('Asia/Jakarta');
+        if (!empty($validated['doc_date'])) {
+            $issuedAt = Carbon::parse($validated['doc_date'], 'Asia/Jakarta')
+                ->timezone('Asia/Jakarta')
+                ->setTimeFrom($issuedAt);
+        }
+        $alloc = $this->contractService->allocateContractNumber($employee, $issuedAt, $this->hrUserName());
 
         $extraData = [
             'contract_number'   => $alloc['contract_number'],
@@ -414,7 +421,7 @@ class OutsourceController extends Controller
             'mulai_tanggal'     => $validated['mulai_tanggal'],
             'pendidikan'        => $validated['pendidikan'],
             'join_date'         => $validated['mulai_tanggal'],
-            'doc_date'          => $now->format('Y-m-d'),
+            'doc_date'          => $issuedAt->toDateString(),
             'contract_duration' => $validated['contract_duration'] ?? '12 Bulan',
             'position'          => $outsource->jobTitle,
         ];
