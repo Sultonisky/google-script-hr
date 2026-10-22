@@ -172,19 +172,14 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold" style="font-size: 13px">Ketentuan Jam Masuk
-                                        Kerja</label>
+                                        Kerja <span class="text-danger">*</span></label>
                                     <select class="form-select form-select-sm" id="onbJamMasuk">
                                         <option value="">— Pilih —</option>
-                                        <option value="mulai pukul 07.00 WIB" selected>Pukul 07.00 WIB</option>
-                                        <option
-                                            value="mulai pukul 07.00 WIB dan selambat-lambatnya sampai dengan pukul 07.15 WIB">
-                                            07.00 WIB (mlm 07.15 WIB)</option>
-                                        <option value="mulai pukul 08.00 WIB">Pukul 08.00 WIB</option>
-                                        <option
-                                            value="mulai pukul 08.00 WIB dan selambat-lambatnya sampai dengan pukul 08.15 WIB">
-                                            08.00 WIB (mlm 08.15 WIB)</option>
-                                        <option value="sesuai shift penempatan">Sesuai shift penempatan</option>
+                                        <option value="mulai pukul 08.00 WIB" selected>Jam 08.00</option>
+                                        <option value="mulai pukul 08.30 WIB">Jam 08.30</option>
+                                        <option value="mengikuti shift sesuai penempatan">Shift sesuai penempatan</option>
                                     </select>
+                                    <div class="form-text" style="font-size: 11px">Tercetak di Pasal 6 kontrak PKWT</div>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold" style="font-size: 13px">Jadwal Waktu
@@ -994,8 +989,8 @@
         if (docDateEl && !docDateEl.value) docDateEl.value = new Date().toISOString().substring(0, 10);
 
         var jamEl = document.getElementById('onbJamMasuk');
-        if (jamEl && !jamEl.value) jamEl.value =
-            'mulai pukul 07.00 WIB dan selambat-lambatnya sampai dengan pukul 07.15 WIB';
+        if (jamEl && !jamEl.value) jamEl.value = 'mulai pukul 08.00 WIB';
+        _syncOnboardingWorkSchedule();
 
         var wsEl = document.getElementById('onbWorkSchedule');
         if (wsEl && !wsEl.value) wsEl.value = 'Normal';
@@ -1033,6 +1028,15 @@
         if (hintEl) hintEl.innerText = 'Auto-hitung dari durasi ' + durationEl.value;
     }
 
+    function _syncOnboardingWorkSchedule() {
+        var jamEl = document.getElementById('onbJamMasuk');
+        var wsEl = document.getElementById('onbWorkSchedule');
+        if (!jamEl || !wsEl) return;
+        var value = (jamEl.value || '').toLowerCase();
+        if (!value) return;
+        wsEl.value = value.indexOf('shift') !== -1 ? 'Shift Khusus' : 'Normal';
+    }
+
     function _updateOnboardingConfirmBtn() {
         var confirmBtn = document.getElementById('btnConfirmOnboarding');
         if (!confirmBtn) return;
@@ -1042,7 +1046,8 @@
         var hasPos = !!((document.getElementById('onbPosition') || {}).value);
         var hasDuration = !!((document.getElementById('onbContractDuration') || {}).value);
         var hasJoin = !!((document.getElementById('onbJoinDate') || {}).value);
-        confirmBtn.disabled = !(hasCand && hasBranch && hasDept && hasPos && hasDuration && hasJoin);
+        var hasJam = !!((document.getElementById('onbJamMasuk') || {}).value);
+        confirmBtn.disabled = !(hasCand && hasBranch && hasDept && hasPos && hasDuration && hasJoin && hasJam);
     }
 
     function clearOnboardingSearch() {
@@ -2255,7 +2260,7 @@
     // ============================================================
     document.addEventListener('DOMContentLoaded', function() {
         // Live validation field wajib
-        ['onbBranchName', 'onbDepartment', 'onbPosition', 'onbContractDuration', 'onbJoinDate'].forEach(
+        ['onbBranchName', 'onbDepartment', 'onbPosition', 'onbContractDuration', 'onbJoinDate', 'onbJamMasuk'].forEach(
             function(id) {
                 var el = document.getElementById(id);
                 if (el) {
@@ -2273,6 +2278,12 @@
         });
         if (joinDateEl) joinDateEl.addEventListener('change', function() {
             _calcOnboardingEndDate();
+            _updateOnboardingConfirmBtn();
+        });
+
+        var jamMasukEl = document.getElementById('onbJamMasuk');
+        if (jamMasukEl) jamMasukEl.addEventListener('change', function() {
+            _syncOnboardingWorkSchedule();
             _updateOnboardingConfirmBtn();
         });
 
