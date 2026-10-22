@@ -552,6 +552,9 @@
             <span id="drawerProbationAlertMsg">Employee sedang dalam proses probation. Selesaikan evaluasi probation terlebih dahulu sebelum melakukan perubahan pada data contract.</span>
         </div>
         <div class="status-action-group">
+            <button class="btn-status print" id="btnDrawerSupplementaryDocs" type="button" style="display:none">
+                <i class="bi bi-file-earmark-plus"></i> Dokumen Pelengkap
+            </button>
             <button class="btn-status accept" id="btnDrawerEntityEdit" type="button"><i
                     class="bi bi-pencil-fill"></i> Edit</button>
         </div>
