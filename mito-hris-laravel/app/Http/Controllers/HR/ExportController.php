@@ -536,6 +536,115 @@ class ExportController extends Controller
     }
 
     /**
+     * Download Surat Pakta Integritas. Cetak saja, tidak mengubah data karyawan.
+     */
+    public function suratPaktaIntegritasPdf(Request $request, string $id)
+    {
+        $employee = $this->employeeRepo->findById($id);
+        if (!$employee) {
+            abort(404, 'Data karyawan tidak ditemukan.');
+        }
+
+        $extraData = ['doc_date' => $this->statementDocDate($request)];
+
+        $pdf = $this->pdfService->generateSuratPaktaIntegritasPdf($employee, $extraData);
+        $this->auditRepo->log(
+            'Employee',
+            $employee->employeeId,
+            'generated',
+            'pakta_integritas',
+            null,
+            'PDF',
+            session('hr_user.email', 'HR Administrator'),
+            'Export'
+        );
+
+        $filename = 'Surat_Pakta_Integritas_' . $this->employeeDocumentStem($employee) . '.pdf';
+
+        return $pdf->download($filename);
+    }
+
+    /**
+     * Download Surat Pernyataan NDA. Cetak saja, tidak mengubah data karyawan.
+     */
+    public function suratNdaPdf(Request $request, string $id)
+    {
+        $employee = $this->employeeRepo->findById($id);
+        if (!$employee) {
+            abort(404, 'Data karyawan tidak ditemukan.');
+        }
+
+        $extraData = ['doc_date' => $this->statementDocDate($request)];
+        $pdf = $this->pdfService->generateSuratNdaPdf($employee, $extraData);
+        $this->auditRepo->log(
+            'Employee',
+            $employee->employeeId,
+            'generated',
+            'nda',
+            null,
+            'PDF',
+            session('hr_user.email', 'HR Administrator'),
+            'Export'
+        );
+
+        return $pdf->download('Surat_NDA_' . $this->employeeDocumentStem($employee) . '.pdf');
+    }
+
+    /**
+     * Download Perjanjian Bersama PHK. Cetak saja, tidak mengubah data karyawan.
+     */
+    public function suratPbPhkPdf(Request $request, string $id)
+    {
+        $employee = $this->employeeRepo->findById($id);
+        if (!$employee) {
+            abort(404, 'Data karyawan tidak ditemukan.');
+        }
+
+        $amountRaw = preg_replace('/\D/', '', (string) $request->query('amount', ''));
+        $amount = (int) $amountRaw;
+        if ($amountRaw === '' || $amount <= 0 || strlen($amountRaw) > 12) {
+            abort(422, 'Uang pisah wajib diisi.');
+        }
+
+        $extraData = [
+            'doc_date' => $this->statementDocDate($request, 'doc_date', 'Tanggal perjanjian'),
+            'last_date' => $this->statementDocDate($request, 'last_date', 'Tanggal terakhir kerja'),
+            'amount' => $amount,
+        ];
+        $pdf = $this->pdfService->generateSuratPbPhkPdf($employee, $extraData);
+        $this->auditRepo->log(
+            'Employee',
+            $employee->employeeId,
+            'generated',
+            'pb_phk',
+            null,
+            'PDF',
+            session('hr_user.email', 'HR Administrator'),
+            'Export'
+        );
+
+        return $pdf->download('Perjanjian_Bersama_PHK_' . $this->employeeDocumentStem($employee) . '.pdf');
+    }
+
+    private function statementDocDate(Request $request, string $key = 'doc_date', string $label = 'Tanggal surat'): string
+    {
+        $docDate = trim((string) $request->query($key, ''));
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $docDate)) {
+            abort(422, $label . ' wajib diisi.');
+        }
+        try {
+            $parsedDocDate = \Carbon\Carbon::createFromFormat('Y-m-d', $docDate, 'Asia/Jakarta');
+        } catch (\Throwable) {
+            $parsedDocDate = false;
+        }
+        if ($parsedDocDate === false || $parsedDocDate->format('Y-m-d') !== $docDate) {
+            abort(422, $label . ' tidak valid.');
+        }
+
+        return $docDate;
+    }
+
+    /**
      * Download Performance Review – Evaluation Form PDF (2026).
      * Reads latest evaluation data from kandidat_probation for the given employee + eval_id.
      */
