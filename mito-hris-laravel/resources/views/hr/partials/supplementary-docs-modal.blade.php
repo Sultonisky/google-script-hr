@@ -33,9 +33,9 @@
                 <label class="form-label fw-semibold" style="font-size:13px" for="suppDocsType">Jenis Dokumen <span class="text-danger">*</span></label>
                 <select class="form-select form-select-sm" id="suppDocsType">
                     <option value="">— Pilih dokumen —</option>
-                    <option value="nda">NDA — Surat Pernyataan Non-Disclosure</option>
+                    <option value="nda">NDA - Surat Pernyataan Non-Disclosure</option>
                     <option value="pakta">Surat Pakta Integritas</option>
-                    <option value="pb-phk">PB PHK Kartap — Perjanjian Bersama</option>
+                    <option value="pb-phk">PB PHK Kartap - Perjanjian Bersama</option>
                 </select>
                 <div class="form-text mb-3" style="font-size:11px">NDA dan Pakta Integritas memakai data karyawan plus tanggal surat. PB PHK memakai data karyawan plus tanggal perjanjian, tanggal terakhir kerja, dan uang pisah. Data master tidak diubah.</div>
 
@@ -83,8 +83,8 @@
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-semibold" style="font-size:13px" for="suppDocsPbAmount">Uang Pisah <span class="text-danger">*</span></label>
-                            <input type="text" inputmode="numeric" class="form-control form-control-sm" id="suppDocsPbAmount" placeholder="Contoh: 2644398" autocomplete="off" />
-                            <div class="form-text" style="font-size:11px">Nominal kompensasi. Terbilang tercetak di PDF.</div>
+                            <input type="text" inputmode="numeric" class="form-control form-control-sm" id="suppDocsPbAmount" placeholder="Contoh: 2.644.398" autocomplete="off" />
+                            <div id="suppDocsPbAmountWords" class="form-text" style="font-size:12px;color:var(--color-text);min-height:1.2em"></div>
                         </div>
                     </div>
                 </div>
@@ -162,6 +162,50 @@
             return '';
         }
 
+        function terbilang(nilai) {
+            var angka = ['', 'satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'delapan', 'sembilan', 'sepuluh', 'sebelas'];
+            nilai = Number(nilai);
+            if (!nilai) return '';
+            if (nilai < 12) return angka[nilai];
+            if (nilai < 20) return terbilang(nilai - 10) + ' belas';
+            if (nilai < 100) return terbilang(Math.floor(nilai / 10)) + ' puluh' + (nilai % 10 ? ' ' + terbilang(nilai % 10) : '');
+            if (nilai < 200) return 'seratus' + (nilai % 100 ? ' ' + terbilang(nilai % 100) : '');
+            if (nilai < 1000) return terbilang(Math.floor(nilai / 100)) + ' ratus' + (nilai % 100 ? ' ' + terbilang(nilai % 100) : '');
+            if (nilai < 2000) return 'seribu' + (nilai % 1000 ? ' ' + terbilang(nilai % 1000) : '');
+            if (nilai < 1000000) return terbilang(Math.floor(nilai / 1000)) + ' ribu' + (nilai % 1000 ? ' ' + terbilang(nilai % 1000) : '');
+            if (nilai < 1000000000) return terbilang(Math.floor(nilai / 1000000)) + ' juta' + (nilai % 1000000 ? ' ' + terbilang(nilai % 1000000) : '');
+            if (nilai < 1000000000000) return terbilang(Math.floor(nilai / 1000000000)) + ' miliar' + (nilai % 1000000000 ? ' ' + terbilang(nilai % 1000000000) : '');
+            return String(nilai);
+        }
+
+        function formatPbAmount() {
+            var el = document.getElementById('suppDocsPbAmount');
+            var preview = document.getElementById('suppDocsPbAmountWords');
+            if (!el) return;
+            var caret = el.selectionStart || 0;
+            var digitsBeforeCaret = el.value.slice(0, caret).replace(/\D/g, '').length;
+            var digits = el.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '').slice(0, 12);
+            var formatted = digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            el.value = formatted;
+            if (document.activeElement === el) {
+                var pos = 0;
+                var seen = 0;
+                while (pos < formatted.length && seen < digitsBeforeCaret) {
+                    if (formatted.charAt(pos) !== '.') seen++;
+                    pos++;
+                }
+                el.setSelectionRange(pos, pos);
+            }
+            if (preview) {
+                if (!digits) {
+                    preview.textContent = '';
+                    return;
+                }
+                var words = terbilang(Number(digits)) + ' rupiah';
+                preview.textContent = words.charAt(0).toUpperCase() + words.slice(1);
+            }
+        }
+
         function pbReady() {
             var date = (document.getElementById('suppDocsPbDate') || {}).value;
             var last = (document.getElementById('suppDocsPbLastDate') || {}).value;
@@ -227,7 +271,9 @@
                     return res.blob();
                 })
                 .then(function(blob) {
-                    var safeName = String(emp.employeeId || 'karyawan').replace(/[^a-zA-Z0-9_-]/g, '_');
+                    var personName = String(emp.fullName || 'Karyawan').trim().replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'Karyawan';
+                    var personId = String(emp.employeeId || '').trim().replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '');
+                    var safeName = personId ? personName + '_' + personId : personName;
                     var blobUrl = window.URL.createObjectURL(blob);
                     var link = document.createElement('a');
                     link.href = blobUrl;
@@ -267,18 +313,26 @@
             document.getElementById('suppDocsPbDate').value = '';
             document.getElementById('suppDocsPbLastDate').value = toDateInput(emp.resignDate);
             document.getElementById('suppDocsPbAmount').value = '';
+            formatPbAmount();
             refreshPreviewState();
             bootstrap.Modal.getOrCreateInstance(modalEl).show();
         }
 
         openBtn.addEventListener('click', openSupplementaryDocsModal);
         typeEl.addEventListener('change', refreshPreviewState);
-        ['suppDocsLetterDate', 'suppDocsPbDate', 'suppDocsPbLastDate', 'suppDocsPbAmount'].forEach(function(id) {
+        ['suppDocsLetterDate', 'suppDocsPbDate', 'suppDocsPbLastDate'].forEach(function(id) {
             var el = document.getElementById(id);
             if (!el) return;
             el.addEventListener('input', refreshPreviewState);
             el.addEventListener('change', refreshPreviewState);
         });
+        var pbAmountEl = document.getElementById('suppDocsPbAmount');
+        if (pbAmountEl) {
+            pbAmountEl.addEventListener('input', function() {
+                formatPbAmount();
+                refreshPreviewState();
+            });
+        }
         modalEl.addEventListener('shown.bs.modal', function() {
             var backdrops = document.querySelectorAll('.modal-backdrop');
             var backdrop = backdrops[backdrops.length - 1];
