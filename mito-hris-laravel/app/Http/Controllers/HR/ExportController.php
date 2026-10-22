@@ -94,6 +94,18 @@ class ExportController extends Controller
         return trim($name ?: 'Employee', '_') . '_Employee_' . ($id ?: 'Unknown');
     }
 
+    private function employeeDownloadStem($employee): string
+    {
+        $name = trim((string) preg_replace('/[^a-zA-Z0-9]+/', '_', trim((string) ($employee->fullName ?? 'Karyawan'))), '_');
+        $id = trim((string) preg_replace('/[^a-zA-Z0-9_-]+/', '_', trim((string) ($employee->employeeId ?? ''))), '_');
+
+        if ($name === '') {
+            $name = 'Karyawan';
+        }
+
+        return $id !== '' ? $name . '_' . $id : $name;
+    }
+
     private function resolveBpjsDocumentId(string $employeeId, string $reference, ?string $requestedId = null): ?string
     {
         if ($requestedId === '') {
@@ -559,7 +571,7 @@ class ExportController extends Controller
             'Export'
         );
 
-        $filename = 'Surat_Pakta_Integritas_' . $this->employeeDocumentStem($employee) . '.pdf';
+        $filename = 'Surat_Pakta_Integritas_' . $this->employeeDownloadStem($employee) . '.pdf';
 
         return $pdf->download($filename);
     }
@@ -587,7 +599,7 @@ class ExportController extends Controller
             'Export'
         );
 
-        return $pdf->download('Surat_NDA_' . $this->employeeDocumentStem($employee) . '.pdf');
+        return $pdf->download('Surat_NDA_' . $this->employeeDownloadStem($employee) . '.pdf');
     }
 
     /**
@@ -623,7 +635,7 @@ class ExportController extends Controller
             'Export'
         );
 
-        return $pdf->download('Perjanjian_Bersama_PHK_' . $this->employeeDocumentStem($employee) . '.pdf');
+        return $pdf->download('Perjanjian_Bersama_PHK_' . $this->employeeDownloadStem($employee) . '.pdf');
     }
 
     private function statementDocDate(Request $request, string $key = 'doc_date', string $label = 'Tanggal surat'): string
