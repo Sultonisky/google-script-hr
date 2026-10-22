@@ -31,7 +31,7 @@
                                 style="right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #aaa; display: none"></i>
                         </div>
                         <div id="onboardingSearchDropdown" class="border rounded-3 mt-1 shadow-sm"
-                            style="display: none; max-height: 200px; overflow-y: auto; background: #fff; z-index: 9999; position: relative">
+                            style="display: none; max-height: 200px; overflow-y: auto; z-index: 9999; position: relative">
                         </div>
                     </div>
 
@@ -237,22 +237,22 @@
                                 placeholder="Ketik nama atau Recruitment ID..." autocomplete="off"
                                 style="font-size: 13px; padding-right: 36px" />
                             <i class="bi bi-x-circle-fill position-absolute" id="offeringSearchClear"
-                                style="right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #aaa; display: none"></i>
+                                style="right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #eb1c24; display: none"></i>
                         </div>
                         <div id="offeringSearchDropdown" class="border rounded-3 mt-1 shadow-sm"
-                            style="display: none; max-height: 200px; overflow-y: auto; background: #fff; z-index: 9999; position: relative">
+                            style="display: none; max-height: 200px; overflow-y: auto; z-index: 9999; position: relative">
                         </div>
                     </div>
 
                     <!-- Preview Info Kandidat -->
                     <div id="offeringCandPreview" style="display: none">
-                        <div class="p-3 rounded-3 mb-3" style="background: #fff5f5; border: 1px solid #fed7d7">
+                        <div class="p-3 rounded-3 mb-3" style="border: 1px solid #eb1c24">
                             <div class="d-flex align-items-center gap-3">
                                 <div class="avatar-sm" id="offeringCandAvatar"
                                     style="width: 44px; height: 44px; font-size: 16px; flex-shrink: 0; background: var(--color-primary, #eb1c24); color: #fff; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800">
                                     ?</div>
                                 <div class="flex-grow-1">
-                                    <div class="fw-bold text-navy" id="offeringCandName" style="font-size: 15px">-</div>
+                                    <div class="fw-bold text-primary" id="offeringCandName" style="font-size: 15px">-</div>
                                     <div class="text-muted" style="font-size: 12px">
                                         <span id="offeringCandPos">-</span> &bull; <span id="offeringCandEmail">-</span>
                                     </div>
