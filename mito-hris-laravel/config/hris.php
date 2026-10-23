@@ -209,8 +209,7 @@ return [
             'proyek_khusus' => 'Proyek Khusus',
         ],
         'replacement_reasons' => [
-            'Penambahan Karyawan Baru',
-            'Penambahan Karyawan Baru (Business Expansion)',
+            'Penggantian Karyawan Resign / Mutasi / Demosi',
             'Restrukturisasi',
         ],
         'target_entities' => [
