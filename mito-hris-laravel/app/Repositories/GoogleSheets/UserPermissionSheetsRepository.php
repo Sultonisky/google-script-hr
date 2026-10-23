@@ -64,4 +64,38 @@ class UserPermissionSheetsRepository implements UserPermissionRepositoryInterfac
 
         return $this->sheets->appendRow($sheet, [$normalizedEmail, $permissionKey, $granted ? 'TRUE' : 'FALSE', $grantedBy, $now, $now]);
     }
+
+    public function reassignEmail(string $fromEmail, string $toEmail): void
+    {
+        $fromEmail = strtolower(trim($fromEmail));
+        $toEmail = strtolower(trim($toEmail));
+        if ($fromEmail === '' || $toEmail === '' || $fromEmail === $toEmail) {
+            return;
+        }
+
+        $sheet = config('google.sheets.user_permissions', 'User_Permissions');
+        $headers = config('hris.schemas.User_Permissions', self::HEADERS);
+        $now = now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s');
+
+        foreach ($this->sheets->getRowsAsAssoc($sheet, false) as $row) {
+            if (strtolower(trim((string) ($row['User Email'] ?? ''))) !== $fromEmail) {
+                continue;
+            }
+
+            $values = [];
+            foreach ($headers as $header) {
+                $values[] = match ($header) {
+                    'User Email' => $toEmail,
+                    'Updated At' => $now,
+                    default => $row[$header] ?? '',
+                };
+            }
+
+            $rowNumber = (int) ($row['_row_number'] ?? 0);
+            if ($rowNumber < 2) {
+                continue;
+            }
+            $this->sheets->updateRow($sheet, $rowNumber, $values);
+        }
+    }
 }
