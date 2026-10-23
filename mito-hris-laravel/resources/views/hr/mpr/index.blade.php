@@ -523,14 +523,14 @@
                                         <label class="form-label fw-semibold small">
                                             Nama Karyawan yang Digantikan
                                             <span class="text-danger d-none" id="mgReplacementForRequiredMark">*</span>
-                                            <span class="text-muted fw-normal small" id="mgReplacementForHint">(aktif jika alasan "Penggantian Karyawan")</span>
+                                            <span class="text-muted fw-normal small" id="mgReplacementForHint">(aktif jika alasan "Penggantian Karyawan" atau "Restrukturisasi")</span>
                                         </label>
                                         <input type="text" name="replacement_for" class="form-control"
                                             id="mgReplacementForField"
                                             placeholder="Nama karyawan yang akan digantikan"
                                             disabled>
                                         <div class="form-text text-muted small mt-1" id="mgReplacementForNote">
-                                            <i class="bi bi-info-circle me-1"></i>Pilih alasan "Penggantian Karyawan Resign / Mutasi / Demosi" untuk mengisi field ini.
+                                            <i class="bi bi-info-circle me-1"></i>Pilih alasan "Penggantian Karyawan Resign / Mutasi / Demosi" atau "Restrukturisasi" untuk mengisi field ini.
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -686,7 +686,7 @@
 
             <!-- METRICS CARDS -->
             <div class="row g-3 mb-4">
-                <div class="col-6 col-md-3">
+                <div class="col-6 col-md-4">
                     <div class="stat-card">
                         <div class="stat-icon bg-blue"><i class="bi bi-file-earmark-text-fill"></i></div>
                         <div>
@@ -695,7 +695,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-6 col-md-3">
+                <div class="col-6 col-md-4">
                     <div class="stat-card">
                         <div class="stat-icon bg-green"><i class="bi bi-calendar-check-fill"></i></div>
                         <div>
@@ -704,22 +704,13 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-6 col-md-3">
+                <div class="col-12 col-md-4">
                     <div class="stat-card">
                         <div class="stat-icon bg-purple"><i class="bi bi-people-fill"></i></div>
                         <div>
                             <div class="stat-label">Total Kebutuhan Manpower</div>
                             <div class="stat-value text-navy">{{ $stats['total_quantity'] ?? 0 }} <span
                                     class="fs-6 fw-normal text-muted">Org</span></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="stat-card">
-                        <div class="stat-icon bg-gold"><i class="bi bi-send-check-fill"></i></div>
-                        <div>
-                            <div class="stat-label">Status Submitted</div>
-                            <div class="stat-value text-navy">{{ $stats['submitted'] ?? 0 }}</div>
                         </div>
                     </div>
                 </div>
@@ -762,11 +753,6 @@
                                     {{ $d }}</option>
                             @endforeach
                         </select>
-                        <select class="filter-select" name="status" id="mprStatusFilter" data-auto-submit="true">
-                            <option value="">Semua Status</option>
-                            <option value="Submitted" {{ $status === 'Submitted' ? 'selected' : '' }}>Submitted
-                            </option>
-                        </select>
                         <select class="filter-select" name="submit_by" id="mprSubmitByFilter" data-auto-submit="true">
                             <option value="">Submit By</option>
                             @foreach ($submitByOptions as $requestor)
@@ -795,7 +781,6 @@
                                     <th>Posisi & Level</th>
                                     <th class="text-center">Kebutuhan</th>
                                     <th>Target Join</th>
-                                    <th>Status</th>
                                     <th class="text-center">Aksi</th>
                                 </tr>
                             </thead>
@@ -827,9 +812,6 @@
                                         <td>
                                             <span>{{ $mpr->expectedJoinDate ? \Carbon\Carbon::parse($mpr->expectedJoinDate)->format('d M Y') : '-' }}</span>
                                         </td>
-                                        <td>
-                                            <span class="badge-status accepted">SUBMITTED</span>
-                                        </td>
                                         <td class="text-center">
                                             <div class="btn-group btn-group-sm">
                                                 <button type="button" class="btn btn-sm btn-outline-primary btn-mpr-detail"
@@ -855,7 +837,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="8" class="text-center py-5 text-muted">
+                                        <td colspan="7" class="text-center py-5 text-muted">
                                             <i class="bi bi-folder-x fs-1 d-block mb-2 text-muted"></i>
                                             Tidak ada data Manpower Request yang cocok dengan filter.
                                         </td>
@@ -879,7 +861,6 @@
                             :queryParams="[
                                 'search' => $search,
                                 'department' => $dept,
-                                'status' => $status,
                                 'submit_by' => $submitBy,
                             ]" />
                     @endif
@@ -1110,14 +1091,14 @@
                                         <div class="col-md-6">
                                             <label class="form-label fw-semibold small">Nama Karyawan yang Digantikan
                                                 <span class="text-danger d-none" id="hrReplacementForRequiredMark">*</span>
-                                                <span class="text-muted fw-normal" id="hrReplacementForHint">(aktif jika alasan "Penggantian Karyawan")</span>
+                                                <span class="text-muted fw-normal" id="hrReplacementForHint">(aktif jika alasan "Penggantian Karyawan" atau "Restrukturisasi")</span>
                                             </label>
                                             <input type="text" name="replacement_for" class="form-control form-control-sm"
                                                 id="hrReplacementForField"
                                                 placeholder="Nama karyawan yang akan digantikan"
                                                 disabled>
                                             <div class="form-text text-muted small mt-1" id="hrReplacementForNote">
-                                                <i class="bi bi-info-circle me-1"></i>Pilih alasan "Penggantian Karyawan Resign / Mutasi / Demosi" untuk mengisi field ini.
+                                                <i class="bi bi-info-circle me-1"></i>Pilih alasan "Penggantian Karyawan Resign / Mutasi / Demosi" atau "Restrukturisasi" untuk mengisi field ini.
                                             </div>
                                         </div>
                                         <div class="col-md-6">
@@ -1371,14 +1352,14 @@
                                         <label class="form-label small fw-semibold">
                                             Karyawan yang Digantikan
                                             <span class="text-danger d-none" id="editReplacementForRequiredMark">*</span>
-                                            <span class="text-muted fw-normal small" id="editReplacementForHint">(aktif jika alasan "Penggantian Karyawan")</span>
+                                            <span class="text-muted fw-normal small" id="editReplacementForHint">(aktif jika alasan "Penggantian Karyawan" atau "Restrukturisasi")</span>
                                         </label>
                                         <input name="replacement_for" class="form-control form-control-sm"
                                             id="editReplacementForField"
                                             placeholder="Nama karyawan yang akan digantikan"
                                             disabled>
                                         <div class="form-text text-muted small mt-1" id="editReplacementForNote">
-                                            <i class="bi bi-info-circle me-1"></i>Pilih alasan "Penggantian Karyawan" untuk mengisi field ini.
+                                            <i class="bi bi-info-circle me-1"></i>Pilih alasan "Penggantian Karyawan Resign / Mutasi / Demosi" atau "Restrukturisasi" untuk mengisi field ini.
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -1528,13 +1509,7 @@
                 if (hintNote)     hintNote.classList.toggle('d-none', isShifting);
             }
 
-            /**
-             * Logika Replacement:
-             * - Jika alasan = "Penggantian Karyawan Resign / Mutasi / Demosi":
-             *   → Input nama karyawan: enabled, required, border highlight
-             * - Selain itu: disabled, not required, value dikosongkan
-             */
-            const REPLACEMENT_REASON_VALUE = 'Penggantian Karyawan Resign / Mutasi / Demosi';
+            const REPLACEMENT_REASONS = @json(array_values(config('hris.mpr_form_options.replacement_reasons', [])));
 
             function applyReplacementState(form) {
                 if (!form) return;
@@ -1545,7 +1520,7 @@
                 const noteText         = form.querySelector('[id$="ReplacementForNote"]');
                 if (!reasonSelect || !replacementField) return;
 
-                const isReplacement = reasonSelect.value === REPLACEMENT_REASON_VALUE;
+                const isReplacement = REPLACEMENT_REASONS.includes(reasonSelect.value);
 
                 replacementField.disabled = !isReplacement;
                 replacementField.required = isReplacement;
@@ -1633,6 +1608,22 @@
             function getCsrfToken() {
                 const meta = document.querySelector('meta[name="csrf-token"]');
                 return meta ? meta.getAttribute('content') : '';
+            }
+
+            function formPayload(form) {
+                const payload = {};
+                new FormData(form).forEach((value, rawKey) => {
+                    const key = rawKey.endsWith('[]') ? rawKey.slice(0, -2) : rawKey;
+                    if (rawKey.endsWith('[]')) {
+                        if (!Array.isArray(payload[key])) {
+                            payload[key] = [];
+                        }
+                        payload[key].push(value);
+                        return;
+                    }
+                    payload[key] = value;
+                });
+                return payload;
             }
 
             // Handle Form Submission (Fetch API + Anti-Double-Submit + Auto PDF Popup)
@@ -2042,7 +2033,7 @@
                             'Accept': 'application/json',
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify(Object.fromEntries(new FormData(editForm)))
+                        body: JSON.stringify(formPayload(editForm))
                     });
                     const data = await response.json();
                     if (!response.ok) {
