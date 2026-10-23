@@ -98,9 +98,7 @@ class MprSheetsRepository implements MprRepositoryInterface
         $now = now()->timezone('Asia/Jakarta');
 
         if (empty($data->mprNumber)) {
-            $datePart = $now->format('Ymd');
-            $randomPart = sprintf('%04d', rand(1, 9999));
-            $data->mprNumber = "MPR-{$datePart}-{$randomPart}";
+            $data->mprNumber = $this->generateNextNumber();
         }
 
         if (empty($data->requestDate)) {
@@ -189,5 +187,23 @@ class MprSheetsRepository implements MprRepositoryInterface
         }
 
         return $data;
+    }
+
+    /**
+     * Short document id: MPR-001, MPR-002, …
+     * Older MPR-YYYYMMDD-XXXX values are left as-is and do not consume this sequence.
+     */
+    private function generateNextNumber(): string
+    {
+        $rows = $this->sheets->getRowsAsAssoc($this->sheetName);
+        $max = 0;
+        foreach ($rows as $row) {
+            $number = trim((string) ($row['MPR Number'] ?? ''));
+            if (preg_match('/^MPR-(\d+)$/i', $number, $match)) {
+                $max = max($max, (int) $match[1]);
+            }
+        }
+
+        return 'MPR-' . str_pad((string) ($max + 1), 3, '0', STR_PAD_LEFT);
     }
 }
