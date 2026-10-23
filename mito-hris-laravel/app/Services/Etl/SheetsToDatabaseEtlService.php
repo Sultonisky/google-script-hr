@@ -160,8 +160,10 @@ class SheetsToDatabaseEtlService
                 // Password Hash from Sheets is already hashed — write via query
                 // builder to avoid User model's 'hashed' cast double-hashing.
                 $exists = DB::table('users')->where('email', $email)->exists();
+                $username = trim((string) ($row['Username'] ?? ''));
                 $payload = [
                     'name' => (string) ($row['Full Name'] ?? $row['Username'] ?? $email),
+                    'username' => $username !== '' ? $username : $email,
                     'password' => (string) ($row['Password Hash'] ?? ''),
                     'role' => (string) ($row['Role'] ?? 'User'),
                     'status' => (string) ($row['Status'] ?? 'Active'),

@@ -117,7 +117,7 @@ class DatabaseToSheetsEtlService
         foreach (DB::table('users')->orderBy('id')->get() as $user) {
             $rows[] = $this->valuesForHeaders($headers, [
                 'Email' => (string) $user->email,
-                'Username' => (string) $user->email,
+                'Username' => (string) (($user->username ?? '') !== '' ? $user->username : $user->email),
                 'Full Name' => (string) ($user->name ?? ''),
                 'Role' => (string) ($user->role ?? 'User'),
                 'Status' => (string) ($user->status ?? 'Active'),
