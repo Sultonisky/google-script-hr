@@ -119,6 +119,7 @@ class MprRequestorSheetsRepository implements MprRequestorRepositoryInterface
 
         // Key → column header mapping
         $colMap = [
+            'email'        => 'Email',
             'passwordHash' => 'Password Hash',
             'fullName'     => 'Full Name',
             'username'     => 'Username',
