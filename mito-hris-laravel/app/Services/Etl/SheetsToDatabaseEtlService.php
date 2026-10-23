@@ -484,6 +484,12 @@ class SheetsToDatabaseEtlService
                         'new_value' => (string) ($row['New Value'] ?? ''),
                         'user' => (string) ($row['User'] ?? ''),
                         'source' => (string) ($row['Source'] ?? 'ETL'),
+                        'ip_address' => $this->nullableAuditText($row['IP Address'] ?? null),
+                        'user_agent' => $this->nullableAuditText($row['User Agent'] ?? null),
+                        'browser' => $this->nullableAuditText($row['Browser'] ?? null),
+                        'device' => $this->nullableAuditText($row['Device'] ?? null),
+                        'platform' => $this->nullableAuditText($row['Platform'] ?? null),
+                        'referer' => $this->nullableAuditText($row['Referer'] ?? null),
                         'logged_at' => $timestamp !== '' ? $timestamp : now(),
                     ]
                 );
@@ -702,6 +708,13 @@ class SheetsToDatabaseEtlService
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    private function nullableAuditText(mixed $value): ?string
+    {
+        $text = trim((string) $value);
+
+        return $text === '' ? null : $text;
     }
 
     /**
