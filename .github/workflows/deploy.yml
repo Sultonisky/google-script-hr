@@ -39,16 +39,9 @@ jobs:
           command_timeout: 45m
           script: |
             set -Eeuo pipefail
-            # Deploy 279 died at 16m with a bare EOF. drone-ssh keeps the remote
-            # log in memory and drops it when the firewall closes an idle SSH
-            # session. Heartbeats keep the channel active through image build.
-            ( while true; do sleep 25; printf 'deploy-heartbeat %s\n' "$(date -u +%H:%M:%S)"; done ) &
-            HEARTBEAT_PID=$!
-            trap 'status=$?; kill "$HEARTBEAT_PID" 2>/dev/null || true; exit $status' EXIT
             trap 'echo "Deployment failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
 
             export GIT_TERMINAL_PROMPT=0
-            export PYTHONUNBUFFERED=1
 
             echo "== Server identity =="
             hostname
@@ -101,31 +94,8 @@ jobs:
 
             echo "App directory: $APP_DIR"
 
-            echo "== Pinning hris-app PHP 8.4.27 and Node 24.22.1 =="
-            cd "$COMPOSE_DIR"
-            PIN_SCRIPT="$REPO_DIR/.github/scripts/pin-hris-runtimes.py"
-            test -f "$PIN_SCRIPT"
-            if ! timeout 60s docker compose config --format json > /tmp/hris-compose.json; then
-              echo "Unable to read the hris-app compose config." >&2
-              exit 1
-            fi
-            # sudo on this host can block on hostname lookup and hold the SSH
-            # session until the firewall returns EOF. Cap it, then continue.
-            echo "Checking passwordless sudo (20s cap)..."
-            sudo_status=0
-            timeout 20s sudo -n true </dev/null >/dev/null 2>&1 || sudo_status=$?
-            if [ "$sudo_status" -eq 0 ]; then
-              timeout 60s sudo -n python3 "$PIN_SCRIPT" "$COMPOSE_DIR" </dev/null
-            else
-              if [ "$sudo_status" -eq 124 ]; then
-                echo "sudo did not respond within 20s; pinning as the deploy user."
-              else
-                echo "Passwordless sudo is unavailable; pinning as the deploy user."
-              fi
-              python3 "$PIN_SCRIPT" "$COMPOSE_DIR"
-            fi
-
             echo "== Building HRIS Docker image =="
+            cd "$COMPOSE_DIR"
             DOCKER_BUILDKIT=1 docker compose build --progress plain --pull hris-app </dev/null
 
             echo "== Updating containers =="
