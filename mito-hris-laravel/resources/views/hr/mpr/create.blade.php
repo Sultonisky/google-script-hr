@@ -7,42 +7,6 @@
 @section('content')
     <div class="container-fluid px-0">
         <div class="mpr-form-shell mx-auto">
-            <div id="mprSuccessAlert" class="alert alert-success alert-dismissible fade d-none shadow-sm" role="alert">
-                <div class="d-flex align-items-center">
-                    <i class="bi bi-check-circle-fill fs-4 me-3 text-success"></i>
-                    <div>
-                        <h6 class="alert-heading mb-1 fw-bold" id="mprSuccessTitle">Pengajuan MPR Berhasil Dibuat!</h6>
-                        <p class="mb-0" id="mprSuccessBody">Dokumen PDF resmi telah digenerate secara otomatis.</p>
-                    </div>
-                    <div class="ms-auto d-flex gap-2">
-                        <a id="btnAlertOpenPdf" href="#" target="_blank" class="btn btn-sm btn-success fw-semibold">
-                            <i class="bi bi-file-earmark-pdf-fill me-1"></i> Buka PDF MPR
-                        </a>
-                    </div>
-                </div>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-
-            @if (session('success'))
-                <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
-                    <div class="d-flex align-items-center">
-                        <i class="bi bi-check-circle-fill fs-4 me-3 text-success"></i>
-                        <div>
-                            <h6 class="alert-heading mb-1 fw-bold">Berhasil</h6>
-                            <p class="mb-0">{{ session('success') }}</p>
-                        </div>
-                        @if (session('mpr_pdf_url'))
-                            <div class="ms-auto">
-                                <a href="{{ session('mpr_pdf_url') }}" target="_blank"
-                                    class="btn btn-sm btn-success fw-semibold">
-                                    <i class="bi bi-file-earmark-pdf-fill me-1"></i> Unduh PDF
-                                </a>
-                            </div>
-                        @endif
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            @endif
             <div class="card border-0 shadow-sm rounded-4 mb-4">
                 <div
                     class="mpr-section-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
@@ -626,25 +590,13 @@
                     .then(data => {
                         const isEditing = formMpr.dataset.editing === '1';
                         if (!isEditing) formMpr.reset();
-                        const alertEl = document.getElementById('mprSuccessAlert');
-                        const alertTitle = document.getElementById('mprSuccessTitle');
-                        const alertBody = document.getElementById('mprSuccessBody');
-                        const btnPdf = document.getElementById('btnAlertOpenPdf');
-
-                        if (alertEl) {
-                            if (alertTitle) alertTitle.innerText = isEditing
-                                ? 'Pengajuan MPR berhasil diperbarui'
-                                : `Pengajuan MPR Berhasil! (${data.mpr_number})`;
-                            if (alertBody) alertBody.innerText = isEditing
-                                ? `Perubahan pada nomor ${data.mpr?.mpr_number || ''} telah disimpan.`
-                                : `Dokumen Manpower Request nomor ${data.mpr_number} telah berhasil disimpan dan PDF otomatis digenerate.`;
-                            if (btnPdf) btnPdf.href = data.pdf_url;
-                            alertEl.classList.remove('d-none');
-                            alertEl.classList.add('show');
-                            window.scrollTo({
-                                top: 0,
-                                behavior: 'smooth'
-                            });
+                        if (typeof showToast === 'function') {
+                            showToast(
+                                isEditing
+                                    ? `Pengajuan MPR berhasil diperbarui (${data.mpr?.mpr_number || data.mpr_number || ''}).`
+                                    : `Pengajuan MPR berhasil dibuat (${data.mpr_number}).`,
+                                'success'
+                            );
                         }
 
                         if (data.pdf_url) {
