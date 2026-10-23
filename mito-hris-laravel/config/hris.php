@@ -369,7 +369,13 @@ return [
             'New Value',
             'User',
             'Source',
-            'Timestamp'
+            'Timestamp',
+            'IP Address',
+            'User Agent',
+            'Browser',
+            'Device',
+            'Platform',
+            'Referer',
         ],
         'Users' => [
             'Email',
