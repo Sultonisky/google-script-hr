@@ -4,6 +4,7 @@ namespace App\Repositories\Database;
 
 use App\Models\AuditLog;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
+use App\Support\AuditClientContext;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
@@ -44,6 +45,7 @@ class AuditLogDatabaseRepository implements AuditLogRepositoryInterface
                 'user' => $user ?: 'HR Administrator',
                 'source' => $source,
                 'logged_at' => $now,
+                ...AuditClientContext::capture()->columns(),
             ]);
 
             return true;
@@ -86,6 +88,12 @@ class AuditLogDatabaseRepository implements AuditLogRepositoryInterface
             'New Value' => (string) ($row->new_value ?? ''),
             'User' => (string) ($row->user ?? ''),
             'Source' => (string) ($row->source ?? ''),
+            'IP Address' => (string) ($row->ip_address ?? ''),
+            'User Agent' => (string) ($row->user_agent ?? ''),
+            'Browser' => (string) ($row->browser ?? ''),
+            'Device' => (string) ($row->device ?? ''),
+            'Platform' => (string) ($row->platform ?? ''),
+            'Referer' => (string) ($row->referer ?? ''),
             'Timestamp' => optional($row->logged_at)?->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
                 ?? optional($row->created_at)?->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
                 ?? '',
