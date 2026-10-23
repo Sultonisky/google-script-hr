@@ -6,12 +6,6 @@
 
 @section('content')
     <section class="page-section active" id="pageMprRequestors">
-        @if ($errors->any())
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                {{ $errors->first() }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button>
-            </div>
-        @endif
         <div class="row g-3 mb-4" id="mprRequestorStatsPanel">
             <div class="col-6 col-md-3">
                 <div class="stat-card">
@@ -283,8 +277,9 @@
                     <div class="modal-body">
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label" for="mprEditEmail">Email</label>
-                                <input type="email" class="form-control" id="mprEditEmail" readonly />
+                                <label class="form-label" for="mprEditEmail">Email <span
+                                        class="text-danger">*</span></label>
+                                <input type="email" class="form-control" id="mprEditEmail" name="email" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label" for="mprEditName">Nama Lengkap <span
