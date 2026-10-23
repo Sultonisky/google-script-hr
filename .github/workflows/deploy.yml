@@ -92,9 +92,75 @@ jobs:
 
             echo "App directory: $APP_DIR"
 
-            echo "== Building HRIS Docker image =="
+            echo "== Pinning hris-app PHP to 8.4.27 =="
             cd "$COMPOSE_DIR"
-            docker compose build hris-app
+            if ! docker compose config --format json > /tmp/hris-compose.json; then
+              echo "Unable to read the hris-app compose config." >&2
+              exit 1
+            fi
+            python3 - <<'PY'
+            import json, os, re, sys
+
+            root = os.environ["COMPOSE_DIR"]
+            with open("/tmp/hris-compose.json", encoding="utf-8") as handle:
+                config = json.load(handle)
+
+            service = config.get("services", {}).get("hris-app")
+            build = service.get("build") if isinstance(service, dict) else None
+            if not build:
+                sys.exit("hris-app has no build section; refusing to deploy the current image")
+
+            if isinstance(build, str):
+                context, dockerfile = build, "Dockerfile"
+            else:
+                context = build.get("context") or root
+                dockerfile = build.get("dockerfile") or "Dockerfile"
+
+            if not os.path.isabs(context):
+                context = os.path.abspath(os.path.join(root, context))
+            if not os.path.isabs(dockerfile):
+                dockerfile = os.path.join(context, dockerfile)
+            if not os.path.isfile(dockerfile):
+                sys.exit(f"Dockerfile not found: {dockerfile}")
+
+            image_re = re.compile(r"php:(\d+\.\d+(?:\.\d+)?)([^\s'\"]*)")
+            arg_re = re.compile(
+                r"(?m)^(\s*ARG\s+[A-Z0-9_]*PHP[A-Z0-9_]*=)['\"]?(\d+\.\d+(?:\.\d+)?)['\"]?"
+            )
+            compose_arg_re = re.compile(
+                r"(PHP_VERSION\s*[:=]\s*['\"]?)(\d+\.\d+(?:\.\d+)?)"
+            )
+
+            def pin_token(match):
+                suffix = re.sub(r"@sha256:[0-9a-fA-F]+", "", match.group(2) or "")
+                return f"php:8.4.27{suffix}"
+
+            def pin_file(path):
+                with open(path, encoding="utf-8") as handle:
+                    original = handle.read()
+                updated, images = image_re.subn(pin_token, original)
+                updated, args = arg_re.subn(r"\g<1>8.4.27", updated)
+                updated, compose_args = compose_arg_re.subn(r"\g<1>8.4.27", updated)
+                if updated != original:
+                    with open(path, "w", encoding="utf-8", newline="\n") as handle:
+                        handle.write(updated)
+                    print(f"Pinned PHP 8.4.27 in {path}")
+                else:
+                    print(f"PHP image already 8.4.27 in {path}")
+                return images + args + compose_args
+
+            pinned = pin_file(dockerfile)
+            for name in ("docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml"):
+                path = os.path.join(root, name)
+                if os.path.isfile(path) and os.path.abspath(path) != os.path.abspath(dockerfile):
+                    pinned += pin_file(path)
+
+            if pinned == 0:
+                sys.exit(f"No PHP image tag found in {dockerfile}")
+            PY
+
+            echo "== Building HRIS Docker image =="
+            docker compose build --pull hris-app
 
             echo "== Updating containers =="
             docker compose up -d hris-app hris-nginx
@@ -112,6 +178,16 @@ jobs:
               fi
               sleep 2
             done
+
+            echo "== Verifying PHP 8.4.27 =="
+            PHP_RUNTIME="$(docker exec hris-app php -r 'echo PHP_VERSION;')"
+            echo "hris-app PHP CLI ${PHP_RUNTIME}"
+            test "${PHP_RUNTIME}" = "8.4.27"
+            if docker exec hris-app sh -c 'command -v php-fpm >/dev/null'; then
+              FPM_RUNTIME="$(docker exec hris-app php-fpm -v | awk 'NR==1 { print $2 }')"
+              echo "hris-app PHP FPM ${FPM_RUNTIME}"
+              test "${FPM_RUNTIME}" = "8.4.27"
+            fi
 
             echo "== Publishing Vite assets for nginx =="
             docker exec hris-app php artisan mito:verify-frontend
