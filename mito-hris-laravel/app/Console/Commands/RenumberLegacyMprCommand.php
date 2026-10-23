@@ -5,13 +5,14 @@ namespace App\Console\Commands;
 use App\Models\AuditLog;
 use App\Models\MprRequest;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
+use App\Support\MprNumber;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Nomor MPR baru memakai MPR-001, MPR-002, …
+ * Nomor MPR baru memakai MPR-2026-001, MPR-2026-002, …
  * Record production yang masih MPR-YYYYMMDD-XXXX tidak ikut sequence itu.
- * Perintah ini memetakan nomor lama ke nomor pendek berikutnya, urut tanggal pengajuan.
+ * Perintah ini memetakan MPR-001 dan MPR-YYYYMMDD-XXXX ke nomor tahun pengajuannya.
  *
  * Usage:
  *   php artisan mito:renumber-legacy-mpr
@@ -22,7 +23,7 @@ class RenumberLegacyMprCommand extends Command
     protected $signature = 'mito:renumber-legacy-mpr
         {--execute : Tulis perubahan; tanpa flag ini hanya preview}';
 
-    protected $description = 'Ubah nomor MPR format lama (MPR-YYYYMMDD-XXXX) menjadi MPR-001, MPR-002, …';
+    protected $description = 'Ubah MPR-001 dan MPR-YYYYMMDD-XXXX menjadi MPR-2026-001, …';
 
     public function handle(AuditLogRepositoryInterface $auditRepo): int
     {
@@ -37,7 +38,7 @@ class RenumberLegacyMprCommand extends Command
         }
 
         if ($plan['changes'] === []) {
-            $this->info('Tidak ada nomor MPR format lama yang perlu diubah.');
+            $this->info('Tidak ada nomor MPR yang perlu diubah.');
 
             return self::SUCCESS;
         }
@@ -82,7 +83,7 @@ class RenumberLegacyMprCommand extends Command
             }
         });
 
-        $this->info(sprintf('%d nomor MPR format lama diubah.', count($plan['changes'])));
+        $this->info(sprintf('%d nomor MPR diubah.', count($plan['changes'])));
         $this->comment('Arsip Google Sheet tidak diubah. Jalankan mirror database ke sheet secara manual jika arsip perlu mengikuti nomor baru.');
 
         return self::SUCCESS;
@@ -94,18 +95,27 @@ class RenumberLegacyMprCommand extends Command
     private function plan(): array
     {
         $rows = MprRequest::query()->orderBy('id')->get();
-        $max = 0;
+        $maxByYear = [];
+        $taken = [];
+        $plain = [];
         $legacy = [];
         $skipped = [];
 
         foreach ($rows as $row) {
             $number = trim((string) $row->mpr_number);
-            if (preg_match('/^MPR-(\d+)$/i', $number, $match)) {
-                $max = max($max, (int) $match[1]);
+            if (MprNumber::isCurrent($number) && preg_match(MprNumber::PATTERN, $number, $match)) {
+                $year = $match[1];
+                $maxByYear[$year] = max($maxByYear[$year] ?? 0, (int) $match[2]);
+                $taken[MprNumber::format($year, (int) $match[2])] = true;
                 continue;
             }
 
-            if (preg_match('/^MPR-\d{8}-\d+$/i', $number)) {
+            if (MprNumber::plainSequence($number) !== null) {
+                $plain[] = $row;
+                continue;
+            }
+
+            if (MprNumber::isLegacy($number)) {
                 $legacy[] = $row;
                 continue;
             }
@@ -113,34 +123,80 @@ class RenumberLegacyMprCommand extends Command
             $skipped[] = $row;
         }
 
-        usort($legacy, function (MprRequest $left, MprRequest $right): int {
-            $leftDate = $left->request_date !== null && $left->request_date !== '' ? $left->request_date : '9999-99-99';
-            $rightDate = $right->request_date !== null && $right->request_date !== '' ? $right->request_date : '9999-99-99';
-            $byDate = strcmp($leftDate, $rightDate);
-            if ($byDate !== 0) {
-                return $byDate;
-            }
-
-            $byCreated = ($left->created_at?->getTimestamp() ?? 0) <=> ($right->created_at?->getTimestamp() ?? 0);
-            if ($byCreated !== 0) {
-                return $byCreated;
-            }
-
-            return $left->id <=> $right->id;
+        usort($plain, function (MprRequest $left, MprRequest $right): int {
+            return (MprNumber::plainSequence((string) $left->mpr_number) ?? 0)
+                <=> (MprNumber::plainSequence((string) $right->mpr_number) ?? 0);
         });
+        usort($legacy, fn (MprRequest $left, MprRequest $right): int => $this->compareByRequestDate($left, $right));
 
         $changes = [];
+        foreach ($plain as $row) {
+            $date = trim((string) $row->request_date);
+            $year = $this->yearFor($row);
+            $sequence = MprNumber::plainSequence((string) $row->mpr_number) ?? 1;
+            $candidate = MprNumber::format($year, $sequence);
+            if (isset($taken[$candidate])) {
+                do {
+                    $maxByYear[$year] = ($maxByYear[$year] ?? 0) + 1;
+                    $candidate = MprNumber::format($year, $maxByYear[$year]);
+                } while (isset($taken[$candidate]));
+            }
+            $taken[$candidate] = true;
+            if (preg_match(MprNumber::PATTERN, $candidate, $assigned)) {
+                $maxByYear[$year] = max($maxByYear[$year] ?? 0, (int) $assigned[2]);
+            }
+            $changes[] = $this->change($row, $candidate, $date);
+        }
+
         foreach ($legacy as $row) {
-            $max++;
-            $changes[] = [
-                'id' => (int) $row->id,
-                'old' => trim((string) $row->mpr_number),
-                'new' => 'MPR-'.str_pad((string) $max, 3, '0', STR_PAD_LEFT),
-                'date' => trim((string) $row->request_date),
-                'position' => trim((string) $row->position),
-            ];
+            $date = trim((string) $row->request_date);
+            $year = $this->yearFor($row);
+            do {
+                $maxByYear[$year] = ($maxByYear[$year] ?? 0) + 1;
+                $candidate = MprNumber::format($year, $maxByYear[$year]);
+            } while (isset($taken[$candidate]));
+            $taken[$candidate] = true;
+            $changes[] = $this->change($row, $candidate, $date);
         }
 
         return ['changes' => $changes, 'skipped' => $skipped];
+    }
+
+    private function yearFor(MprRequest $row): string
+    {
+        return MprNumber::yearFromRequestDate($row->request_date)
+            ?? ($row->created_at?->timezone('Asia/Jakarta')->format('Y'))
+            ?? now()->timezone('Asia/Jakarta')->format('Y');
+    }
+
+    private function compareByRequestDate(MprRequest $left, MprRequest $right): int
+    {
+        $leftDate = $left->request_date !== null && $left->request_date !== '' ? $left->request_date : '9999-99-99';
+        $rightDate = $right->request_date !== null && $right->request_date !== '' ? $right->request_date : '9999-99-99';
+        $byDate = strcmp($leftDate, $rightDate);
+        if ($byDate !== 0) {
+            return $byDate;
+        }
+
+        $byCreated = ($left->created_at?->getTimestamp() ?? 0) <=> ($right->created_at?->getTimestamp() ?? 0);
+        if ($byCreated !== 0) {
+            return $byCreated;
+        }
+
+        return $left->id <=> $right->id;
+    }
+
+    /**
+     * @return array{id: int, old: string, new: string, date: string, position: string}
+     */
+    private function change(MprRequest $row, string $newNumber, string $date): array
+    {
+        return [
+            'id' => (int) $row->id,
+            'old' => trim((string) $row->mpr_number),
+            'new' => $newNumber,
+            'date' => $date,
+            'position' => trim((string) $row->position),
+        ];
     }
 }
