@@ -6,6 +6,18 @@
 
 @section('content')
     <section class="page-section active" id="pageMprHistory">
+        @if (session('success'))
+            <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+                {{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button>
+            </div>
+        @endif
+        @if (session('error'))
+            <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+                {{ session('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button>
+            </div>
+        @endif
         <div class="row g-3 mb-4">
             <div class="col-12 col-md-6">
                 <div class="stat-card">
@@ -58,6 +70,12 @@
                     @endforeach
                 </select>
 
+                <select name="status" class="filter-select" data-auto-submit="true">
+                    <option value="">Semua Status</option>
+                    <option value="Submitted" {{ $status === 'Submitted' ? 'selected' : '' }}>Submitted</option>
+                    <option value="Finish" {{ $status === 'Finish' ? 'selected' : '' }}>Finish</option>
+                </select>
+
                 <select name="sort" class="filter-select" data-auto-submit="true">
                     <option value="newest" {{ request('sort', 'newest') === 'newest' ? 'selected' : '' }}>Terbaru</option>
                     <option value="oldest" {{ request('sort') === 'oldest' ? 'selected' : '' }}>Terlama</option>
@@ -85,6 +103,7 @@
                             <th>Posisi</th>
                             <th>Departemen</th>
                             <th>Qty</th>
+                            <th>Status</th>
                             <th>Tanggal</th>
                             <th class="text-center">Aksi</th>
                         </tr>
@@ -104,6 +123,12 @@
                                 <td>
                                     <span class="badge bg-primary-subtle text-primary border rounded-pill px-2 py-1">
                                         {{ $mpr->quantity }} Org
+                                    </span>
+                                </td>
+                                <td>
+                                    @php $mprStatusLabel = strtoupper(trim((string) ($mpr->status ?? 'Submitted'))); @endphp
+                                    <span class="badge {{ $mprStatusLabel === 'FINISH' ? 'bg-secondary-subtle text-secondary' : 'bg-success-subtle text-success' }} border rounded-pill px-2 py-1">
+                                        {{ $mprStatusLabel }}
                                     </span>
                                 </td>
                                 <td>
@@ -134,11 +159,18 @@
                                             </button>
                                         @endif
                                     </div>
+                                    @if (filled($mpr->mprNumber))
+                                        @include('hr.mpr.partials.finish-button', [
+                                            'action' => request()->routeIs('mpr.auth.*')
+                                                ? route('mpr.auth.request.finish', ['id' => $mpr->mprNumber])
+                                                : route('hr.mpr.finish', ['id' => $mpr->mprNumber]),
+                                        ])
+                                    @endif
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6">
+                                <td colspan="7">
                                     <div class="table-empty">
                                         <i class="bi bi-inbox"></i>
                                         <p>Belum ada riwayat pengajuan Manpower Request.</p>

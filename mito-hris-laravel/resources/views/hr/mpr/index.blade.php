@@ -294,6 +294,13 @@
             </div>
         @endif
 
+        @if (session('error'))
+            <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+                {{ session('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button>
+            </div>
+        @endif
+
         @if ($isManager)
             {{-- ========================================================================= --}}
             {{-- MANAGER EXPERIENCE: SUBMISSION FORM + MY REQUESTS TABLE                   --}}
@@ -686,7 +693,7 @@
 
             <!-- METRICS CARDS -->
             <div class="row g-3 mb-4">
-                <div class="col-6 col-md-4">
+                <div class="col-6 col-md-3">
                     <div class="stat-card">
                         <div class="stat-icon bg-blue"><i class="bi bi-file-earmark-text-fill"></i></div>
                         <div>
@@ -695,7 +702,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-6 col-md-4">
+                <div class="col-6 col-md-3">
                     <div class="stat-card">
                         <div class="stat-icon bg-green"><i class="bi bi-calendar-check-fill"></i></div>
                         <div>
@@ -704,13 +711,22 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-12 col-md-4">
+                <div class="col-6 col-md-3">
                     <div class="stat-card">
                         <div class="stat-icon bg-purple"><i class="bi bi-people-fill"></i></div>
                         <div>
                             <div class="stat-label">Total Kebutuhan Manpower</div>
                             <div class="stat-value text-navy">{{ $stats['total_quantity'] ?? 0 }} <span
                                     class="fs-6 fw-normal text-muted">Org</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-icon bg-gold"><i class="bi bi-send-check-fill"></i></div>
+                        <div>
+                            <div class="stat-label">Status Submitted</div>
+                            <div class="stat-value text-navy">{{ $stats['submitted'] ?? 0 }}</div>
                         </div>
                     </div>
                 </div>
@@ -753,6 +769,12 @@
                                     {{ $d }}</option>
                             @endforeach
                         </select>
+                        <select class="filter-select" name="status" id="mprStatusFilter" data-auto-submit="true">
+                            <option value="">Semua Status</option>
+                            <option value="Submitted" {{ $status === 'Submitted' ? 'selected' : '' }}>Submitted
+                            </option>
+                            <option value="Finish" {{ $status === 'Finish' ? 'selected' : '' }}>Finish</option>
+                        </select>
                         <select class="filter-select" name="submit_by" id="mprSubmitByFilter" data-auto-submit="true">
                             <option value="">Submit By</option>
                             @foreach ($submitByOptions as $requestor)
@@ -776,11 +798,12 @@
                             <thead>
                                 <tr>
                                     <th>No. MPR & Tanggal</th>
-                                    <th>Pemohon (Manager)</th>
+                                    <th>Pemohon (Manpower)</th>
                                     <th>Perusahaan & Dept</th>
                                     <th>Posisi & Level</th>
                                     <th class="text-center">Kebutuhan</th>
                                     <th>Target Join</th>
+                                    <th>Status</th>
                                     <th class="text-center">Aksi</th>
                                 </tr>
                             </thead>
@@ -812,6 +835,10 @@
                                         <td>
                                             <span>{{ $mpr->expectedJoinDate ? \Carbon\Carbon::parse($mpr->expectedJoinDate)->format('d M Y') : '-' }}</span>
                                         </td>
+                                        <td>
+                                            @php $mprStatusLabel = strtoupper(trim((string) ($mpr->status ?? 'Submitted'))); @endphp
+                                            <span class="badge-status {{ $mprStatusLabel === 'FINISH' ? 'hold' : 'accepted' }}">{{ $mprStatusLabel }}</span>
+                                        </td>
                                         <td class="text-center">
                                             <div class="btn-group btn-group-sm">
                                                 <button type="button" class="btn btn-sm btn-outline-primary btn-mpr-detail"
@@ -833,11 +860,18 @@
                                                     @endif
                                                 @endcan
                                             </div>
+                                            @can('update_mpr')
+                                                @if (filled($mpr->mprNumber))
+                                                    @include('hr.mpr.partials.finish-button', [
+                                                        'action' => route('hr.mpr.finish', ['id' => $mpr->mprNumber]),
+                                                    ])
+                                                @endif
+                                            @endcan
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="7" class="text-center py-5 text-muted">
+                                        <td colspan="8" class="text-center py-5 text-muted">
                                             <i class="bi bi-folder-x fs-1 d-block mb-2 text-muted"></i>
                                             Tidak ada data Manpower Request yang cocok dengan filter.
                                         </td>
@@ -861,6 +895,7 @@
                             :queryParams="[
                                 'search' => $search,
                                 'department' => $dept,
+                                'status' => $status,
                                 'submit_by' => $submitBy,
                             ]" />
                     @endif
