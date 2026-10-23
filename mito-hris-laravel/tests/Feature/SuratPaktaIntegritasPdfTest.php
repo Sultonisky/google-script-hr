@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\DTOs\EmployeeData;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Tests\TestCase;
 
 class SuratPaktaIntegritasPdfTest extends TestCase
@@ -40,6 +41,14 @@ class SuratPaktaIntegritasPdfTest extends TestCase
         $this->assertStringContainsString('tidak menerima pembayaran uang kompensasi atas berakhirnya PKWT tersebut', $html);
         $this->assertStringContainsString('<strong>Jakarta, 07 Agustus 2026</strong>', $html);
         $this->assertStringContainsString('Yang menyatakan,', $html);
+        $this->assertStringContainsString('class="num">1.</td>', $html);
+        $this->assertStringContainsString('class="num">11.</td>', $html);
+        $this->assertStringNotContainsString('<ol', $html);
+
+        $pdf = Pdf::loadHTML($html)->setPaper('a4', 'portrait');
+        $output = $pdf->output();
+        $this->assertStringStartsWith('%PDF-', $output);
+        $this->assertSame(1, $pdf->getDomPDF()->getCanvas()->get_page_count());
     }
 
     public function test_pakta_tanpa_tanggal_surat_tidak_memakai_hari_ini(): void

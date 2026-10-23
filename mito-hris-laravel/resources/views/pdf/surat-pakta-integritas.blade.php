@@ -6,7 +6,7 @@
     <title>Surat Pakta Integritas - {{ $employee->fullName }}</title>
     <style>
         @page {
-            margin: 36px 48px 40px 48px;
+            margin: 30px 46px 22px 46px;
             size: A4;
         }
 
@@ -14,7 +14,7 @@
             font-family: 'Times New Roman', Times, serif;
             font-size: 12pt;
             color: #000000;
-            line-height: 1.45;
+            line-height: 1.24;
             text-align: justify;
             margin: 0;
         }
@@ -31,17 +31,17 @@
             font-size: 12pt;
             font-weight: bold;
             text-align: center;
-            margin: 0 0 16px;
+            margin: 0 0 10px;
         }
 
         p {
-            margin: 6px 0;
+            margin: 5px 0;
         }
 
         .identity {
             width: 100%;
             border-collapse: collapse;
-            margin: 4px 0 10px;
+            margin: 3px 0 6px;
         }
 
         .identity td {
@@ -58,24 +58,36 @@
             width: 12px;
         }
 
-        ol.clauses {
-            margin: 6px 0 8px;
-            padding-left: 22px;
+        table.clauses {
+            width: 100%;
+            border-collapse: collapse;
+            border-spacing: 0;
+            margin: 4px 0 4px;
         }
 
-        ol.clauses > li {
-            margin-bottom: 6px;
+        table.clauses td {
+            vertical-align: top;
+            padding: 0 0 2px;
+            margin: 0;
             text-align: justify;
+            line-height: 1.24;
+        }
+
+        table.clauses td.num {
+            width: 1%;
+            white-space: nowrap;
+            text-align: left;
+            padding: 0 4px 0 0;
         }
 
         .closing {
-            page-break-inside: avoid;
+            margin-top: 4px;
         }
 
         .sign-block {
             width: 240px;
             margin-left: auto;
-            margin-top: 18px;
+            margin-top: 10px;
             text-align: center;
             page-break-inside: avoid;
         }
@@ -151,19 +163,52 @@
 
     <p>Sebagai karyawan dari <strong>{{ $companyName }}</strong> (selanjutnya disebut Perusahaan) dengan ini menyatakan berkomitmen bahwa:</p>
 
-    <ol class="clauses">
-        <li><strong>Berkomitmen</strong> melaksanakan tugas dan tanggung jawab pekerjaan secara profesional serta mematuhi Standar Operasional Prosedur (SOP), Peraturan Perusahaan, dan kebijakan internal Perusahaan.</li>
-        <li><strong>Berkomitmen</strong> tidak melakukan pungutan liar (PUNGLI), tidak meminta atau menerima gratifikasi, hadiah, komisi, atau imbalan dalam bentuk apa pun, baik secara langsung maupun tidak langsung, dari pihak mana pun yang berhubungan dengan jabatan dan/atau pekerjaan saya di Perusahaan.</li>
-        <li><strong>Berkomitmen</strong> tidak melakukan praktik Korupsi, Kolusi, dan Nepotisme (KKN) dalam bentuk apa pun, baik yang menguntungkan diri sendiri, keluarga, kelompok, maupun pihak lain, yang dapat merugikan Perusahaan.</li>
-        <li><strong>Berkomitmen</strong> tidak melakukan pekerjaan, kegiatan usaha, atau proyek di luar Perusahaan yang menimbulkan benturan kepentingan (conflict of interest) dan/atau mengganggu pelaksanaan tugas, tanggung jawab, serta kinerja saya sebagai tenaga kerja.</li>
-        <li><strong>Berkomitmen</strong> menjaga kehormatan, loyalitas, disiplin, integritas, serta nama baik Perusahaan.</li>
-        <li><strong>Berkomitmen</strong> untuk bersedia ditempatkan dan/atau dimutasikan ke lokasi atau wilayah kerja sesuai dengan kebutuhan operasional dan kebijakan Perusahaan.</li>
-        <li><strong>Berkomitmen</strong> menjaga kerahasiaan seluruh data, informasi, dan dokumen milik Perusahaan yang diketahui atau diperoleh selama hubungan kerja serta tidak membocorkan, menyebarluaskan, atau menggunakannya untuk kepentingan pribadi maupun pihak lain, baik selama maupun setelah berakhirnya hubungan kerja, kecuali ditentukan lain berdasarkan ketentuan peraturan perundang-undangan.</li>
-        <li><strong>Berkomitmen</strong> tidak mengajak, membujuk, mempengaruhi, atau mendorong pihak ketiga yang memiliki hubungan kerja sama dengan Perusahaan, termasuk namun tidak terbatas pada pelanggan, distributor, pemasok, mitra usaha, maupun tenaga kerja lainnya, untuk mengakhiri hubungan kerja sama, melakukan pelanggaran kontrak, atau melakukan tindakan yang dapat merugikan kepentingan Perusahaan.</li>
-        <li><strong>Berkomitmen</strong> bertanggung jawab atas setiap pelanggaran yang saya lakukan sesuai dengan ketentuan peraturan perundang-undangan, Peraturan Perusahaan, Perjanjian Kerja, dan kebijakan Perusahaan yang berlaku.</li>
-        <li><strong>Berkomitmen</strong> untuk memahami dan menerima bahwa Perjanjian Kerja Waktu Tertentu (PKWT) akan berakhir sesuai dengan jangka waktu yang telah diperjanjikan. Dengan kesadaran, kemauan, dan kehendak sendiri serta tanpa adanya paksaan, tekanan, atau pengaruh dari pihak mana pun, saya menyatakan secara sukarela tidak menerima pembayaran uang kompensasi atas berakhirnya PKWT tersebut.</li>
-        <li><strong>Berkomitmen</strong> mematuhi seluruh ketentuan peraturan perundang-undangan, Peraturan Perusahaan, Perjanjian Kerja, serta kebijakan Perusahaan selama hubungan kerja berlangsung.</li>
-    </ol>
+    <table class="clauses">
+        <tr>
+            <td class="num">1.</td>
+            <td><strong>Berkomitmen</strong> melaksanakan tugas dan tanggung jawab pekerjaan secara profesional serta mematuhi Standar Operasional Prosedur (SOP), Peraturan Perusahaan, dan kebijakan internal Perusahaan.</td>
+        </tr>
+        <tr>
+            <td class="num">2.</td>
+            <td><strong>Berkomitmen</strong> tidak melakukan pungutan liar (PUNGLI), tidak meminta atau menerima gratifikasi, hadiah, komisi, atau imbalan dalam bentuk apa pun, baik secara langsung maupun tidak langsung, dari pihak mana pun yang berhubungan dengan jabatan dan/atau pekerjaan saya di Perusahaan.</td>
+        </tr>
+        <tr>
+            <td class="num">3.</td>
+            <td><strong>Berkomitmen</strong> tidak melakukan praktik Korupsi, Kolusi, dan Nepotisme (KKN) dalam bentuk apa pun, baik yang menguntungkan diri sendiri, keluarga, kelompok, maupun pihak lain, yang dapat merugikan Perusahaan.</td>
+        </tr>
+        <tr>
+            <td class="num">4.</td>
+            <td><strong>Berkomitmen</strong> tidak melakukan pekerjaan, kegiatan usaha, atau proyek di luar Perusahaan yang menimbulkan benturan kepentingan (conflict of interest) dan/atau mengganggu pelaksanaan tugas, tanggung jawab, serta kinerja saya sebagai tenaga kerja.</td>
+        </tr>
+        <tr>
+            <td class="num">5.</td>
+            <td><strong>Berkomitmen</strong> menjaga kehormatan, loyalitas, disiplin, integritas, serta nama baik Perusahaan.</td>
+        </tr>
+        <tr>
+            <td class="num">6.</td>
+            <td><strong>Berkomitmen</strong> untuk bersedia ditempatkan dan/atau dimutasikan ke lokasi atau wilayah kerja sesuai dengan kebutuhan operasional dan kebijakan Perusahaan.</td>
+        </tr>
+        <tr>
+            <td class="num">7.</td>
+            <td><strong>Berkomitmen</strong> menjaga kerahasiaan seluruh data, informasi, dan dokumen milik Perusahaan yang diketahui atau diperoleh selama hubungan kerja serta tidak membocorkan, menyebarluaskan, atau menggunakannya untuk kepentingan pribadi maupun pihak lain, baik selama maupun setelah berakhirnya hubungan kerja, kecuali ditentukan lain berdasarkan ketentuan peraturan perundang-undangan.</td>
+        </tr>
+        <tr>
+            <td class="num">8.</td>
+            <td><strong>Berkomitmen</strong> tidak mengajak, membujuk, mempengaruhi, atau mendorong pihak ketiga yang memiliki hubungan kerja sama dengan Perusahaan, termasuk namun tidak terbatas pada pelanggan, distributor, pemasok, mitra usaha, maupun tenaga kerja lainnya, untuk mengakhiri hubungan kerja sama, melakukan pelanggaran kontrak, atau melakukan tindakan yang dapat merugikan kepentingan Perusahaan.</td>
+        </tr>
+        <tr>
+            <td class="num">9.</td>
+            <td><strong>Berkomitmen</strong> bertanggung jawab atas setiap pelanggaran yang saya lakukan sesuai dengan ketentuan peraturan perundang-undangan, Peraturan Perusahaan, Perjanjian Kerja, dan kebijakan Perusahaan yang berlaku.</td>
+        </tr>
+        <tr>
+            <td class="num">10.</td>
+            <td><strong>Berkomitmen</strong> untuk memahami dan menerima bahwa Perjanjian Kerja Waktu Tertentu (PKWT) akan berakhir sesuai dengan jangka waktu yang telah diperjanjikan. Dengan kesadaran, kemauan, dan kehendak sendiri serta tanpa adanya paksaan, tekanan, atau pengaruh dari pihak mana pun, saya menyatakan secara sukarela tidak menerima pembayaran uang kompensasi atas berakhirnya PKWT tersebut.</td>
+        </tr>
+        <tr>
+            <td class="num">11.</td>
+            <td><strong>Berkomitmen</strong> mematuhi seluruh ketentuan peraturan perundang-undangan, Peraturan Perusahaan, Perjanjian Kerja, serta kebijakan Perusahaan selama hubungan kerja berlangsung.</td>
+        </tr>
+    </table>
 
     <div class="closing">
         <p>Demikian Surat Pakta Integritas ini saya buat dengan sebenar-benarnya, dalam keadaan sadar, tanpa adanya paksaan dari pihak mana pun, sebagai bentuk komitmen saya untuk mematuhi seluruh ketentuan yang berlaku di Perusahaan.</p>
