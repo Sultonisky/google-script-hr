@@ -221,6 +221,7 @@ if (!app()->environment('local')) {
                 Route::get('/history', [MprController::class, 'history'])->name('history');
                 Route::post('/', [MprController::class, 'store'])->name('store')->middleware('can:create_mpr');
                 Route::put('/{id}', [MprController::class, 'update'])->name('update')->middleware('can:update_mpr');
+                Route::post('/{id}/finish', [MprController::class, 'finish'])->name('finish');
                 Route::get('/{id}/preview', [MprController::class, 'preview'])->name('preview');
                 Route::get('/{id}', [MprController::class, 'show'])->name('show');
                 Route::get('/{id}/json', [MprController::class, 'getJson'])->name('json');
@@ -241,6 +242,7 @@ if (!app()->environment('local')) {
             Route::post('/mpr/request', [MprController::class, 'store'])->name('mpr.auth.request.store');
             Route::get('/mpr/request/{id}/edit', [MprController::class, 'edit'])->name('mpr.auth.request.edit');
             Route::put('/mpr/request/{id}', [MprController::class, 'update'])->name('mpr.auth.request.update');
+            Route::post('/mpr/request/{id}/finish', [MprController::class, 'finish'])->name('mpr.auth.request.finish');
             Route::get('/mpr/request/{id}/pdf', [MprController::class, 'exportPdf'])->name('mpr.auth.pdf');
             Route::get('/mpr/request/{id}/json', [MprController::class, 'getJson'])->name('mpr.auth.json');
         });
@@ -505,6 +507,7 @@ if (app()->environment('local')) {
                 Route::get('/history', [MprController::class, 'history'])->name('history');
                 Route::post('/', [MprController::class, 'store'])->name('store')->middleware('can:create_mpr');
                 Route::put('/{id}', [MprController::class, 'update'])->name('update')->middleware('can:update_mpr');
+                Route::post('/{id}/finish', [MprController::class, 'finish'])->name('finish');
                 Route::get('/{id}/preview', [MprController::class, 'preview'])->name('preview');
                 Route::get('/{id}', [MprController::class, 'show'])->name('show');
                 Route::get('/{id}/json', [MprController::class, 'getJson'])->name('json');
@@ -525,6 +528,7 @@ if (app()->environment('local')) {
                 Route::post('/request', [MprController::class, 'store'])->name('request.store');
                 Route::get('/request/{id}/edit', [MprController::class, 'edit'])->name('request.edit');
                 Route::put('/request/{id}', [MprController::class, 'update'])->name('request.update');
+                Route::post('/request/{id}/finish', [MprController::class, 'finish'])->name('request.finish');
                 Route::get('/request/{id}/pdf', [MprController::class, 'exportPdf'])->name('pdf');
                 Route::get('/request/{id}/json', [MprController::class, 'getJson'])->name('json');
             });
