@@ -11,9 +11,9 @@
 
         body {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 9pt;
+            font-size: 9.5pt;
             color: #000;
-            line-height: 1.35;
+            line-height: 1.25;
         }
 
         /* HEADER */
@@ -24,7 +24,7 @@
         }
 
         .company-name {
-            font-size: 13pt;
+            font-size: 14pt;
             font-weight: bold;
             color: #eb1c24;
             text-transform: uppercase;
@@ -32,7 +32,7 @@
         }
 
         .company-address {
-            font-size: 8pt;
+            font-size: 8.5pt;
             color: #000;
             margin-top: 3px;
             line-height: 1.3;
@@ -49,7 +49,7 @@
         }
 
         .doc-title {
-            font-size: 10.5pt;
+            font-size: 11.5pt;
             font-weight: bold;
             color: #000;
             text-transform: uppercase;
@@ -58,21 +58,21 @@
         }
 
         .doc-meta {
-            font-size: 8pt;
+            font-size: 9pt;
             color: #000;
             margin-top: 2px;
         }
 
         /* SECTION */
         .section-title {
-            font-size: 9pt;
+            font-size: 9.5pt;
             font-weight: bold;
             color: #000;
-            background: #e6f0fa;
-            padding: 3px 8px;
-            margin-top: 7px;
-            margin-bottom: 4px;
-            border-left: 3px solid #000;
+            background:rgb(215, 226, 235);
+            padding: 2px 8px;
+            margin-top: 5px;
+            margin-bottom: 3px;
+            border-left: 2px solid #eb1c24;
             text-transform: uppercase;
         }
 
@@ -86,8 +86,8 @@
         table.data-table td {
             padding: 1.5px 5px;
             vertical-align: top;
-            font-size: 8.5pt;
-            line-height: 1.25;
+            font-size: 9pt;
+            line-height: 1.2;
         }
 
         .label-col {
@@ -161,16 +161,16 @@
         .content-box {
             border: 1px solid #cbd5e1;
             background: #ffffff;
-            padding: 5px 7px;
-            font-size: 8pt;
-            min-height: 30px;
+            padding: 3px 6px;
+            font-size: 9pt;
+            min-height: 22px;
             border-radius: 3px;
-            line-height: 1.35;
+            line-height: 1.25;
         }
 
         /* Markdown-rendered HTML inside content-box (DomPDF compatible) */
         .content-box p {
-            margin: 0 0 5px 0;
+            margin: 0 0 2px 0;
         }
 
         .content-box p:last-child {
@@ -189,15 +189,15 @@
         }
 
         .content-box h1 {
-            font-size: 11pt;
+            font-size: 10pt;
         }
 
         .content-box h2 {
-            font-size: 10.5pt;
+            font-size: 9.5pt;
         }
 
         .content-box h3 {
-            font-size: 10pt;
+            font-size: 9pt;
         }
 
         .content-box h4,
@@ -208,8 +208,8 @@
 
         .content-box ul,
         .content-box ol {
-            margin-top: 4px;
-            margin-bottom: 5px;
+            margin-top: 2px;
+            margin-bottom: 2px;
             padding-left: 18px;
         }
 
@@ -256,23 +256,24 @@
         }
 
         .sign-title {
-            font-size: 8pt;
+            font-size: 9pt;
             font-weight: bold;
             color: #000;
-            margin-bottom: 38px;
+            margin-bottom: 58px;
         }
 
         .sign-name {
-            font-size: 8.5pt;
+            font-size: 9pt;
             font-weight: bold;
             border-top: 1px solid #000;
             padding-top: 3px;
             display: inline-block;
-            min-width: 120px;
+            width: 92%;
+            min-width: 150px;
         }
 
         .sign-role {
-            font-size: 7.5pt;
+            font-size: 8.5pt;
             color: #000;
             margin-top: 2px;
         }
@@ -321,10 +322,9 @@
     <div class="doc-title-box">
         <div class="doc-title">Form Permintaan Tenaga Kerja (Manpower Request)</div>
         <div class="doc-meta">
-            <strong>No. Request:</strong> {{ $mpr->mprNumber }} &nbsp;|&nbsp;
+            {{ $mpr->mprNumber }} &nbsp;|&nbsp;
             <strong>Tanggal:</strong>
-            {{ $mpr->requestDate ? date('d F Y', strtotime($mpr->requestDate)) : date('d F Y') }} &nbsp;|&nbsp;
-            <strong>Status:</strong> {{ strtoupper($mpr->status ?? 'SUBMITTED') }}
+            {{ $mpr->requestDate ? date('d F Y', strtotime($mpr->requestDate)) : date('d F Y') }}
         </div>
     </div>
 
@@ -389,11 +389,6 @@
                         <td class="colon-col">:</td>
                         <td class="value-col value-col-half">{{ $mpr->workLocation ?: '-' }}</td>
                     </tr>
-                    <tr>
-                        <td class="label-col label-col-half">Benefits / Tunjangan</td>
-                        <td class="colon-col">:</td>
-                        <td class="value-col value-col-half">{{ $mpr->benefits ?: '-' }}</td>
-                    </tr>
                 </table>
             </td>
             <td>
@@ -409,7 +404,7 @@
                         <td class="value-col value-col-half"><strong>{{ $mpr->quantity ?: 1 }} Orang</strong></td>
                     </tr>
                     <tr>
-                        <td class="label-col label-col-half">Target Join Date</td>
+                        <td class="label-col label-col-half">Target Bergabung</td>
                         <td class="colon-col">:</td>
                         <td class="value-col value-col-half">
                             {{ $mpr->expectedJoinDate ? date('d F Y', strtotime($mpr->expectedJoinDate)) : '-' }}
@@ -425,6 +420,11 @@
                         <td class="colon-col">:</td>
                         <td class="value-col value-col-half">{{ $mpr->workingHours ?: '-' }}</td>
                     </tr>
+                    <tr>
+                        <td class="label-col label-col-half">Benefits / Tunjangan</td>
+                        <td class="colon-col">:</td>
+                        <td class="value-col value-col-half">{{ $mpr->benefits ?: '-' }}</td>
+                    </tr>
                      @if (!empty($mpr->shiftDetail))
                      <tr>
                         <td class="label-col label-col-half">Detail Shift</td>
@@ -436,11 +436,6 @@
             </td>
         </tr>
     </table>
-
-    <!-- Detail Shift & Benefits — full width agar tidak overflow -->
-    <!-- <table class="data-table" style="margin-top:2px;">
-       
-    </table> -->
 
     <!-- SECTION 3: ALASAN PERMINTAAN -->
     <div class="section-title">III. Alasan Permintaan Karyawan</div>
@@ -534,7 +529,7 @@
     <table class="grid-2">
         <tr>
             <td style="width:33.33%; vertical-align:top; padding: 0 3px;">
-                <strong style="font-size:8pt;">Kualifikasi &amp; Persyaratan:</strong>
+                <strong style="font-size:9pt;">Kualifikasi &amp; Persyaratan:</strong>
                 <div class="content-box" style="margin-top:2px;">
                     @if (!empty($requirementsHtml))
                         {!! $requirementsHtml !!}
@@ -544,7 +539,7 @@
                 </div>
             </td>
             <td style="width:33.33%; vertical-align:top; padding: 0 3px;">
-                <strong style="font-size:8pt;">Uraian Tugas / Tanggung Jawab:</strong>
+                <strong style="font-size:9pt;">Uraian Tugas / Tanggung Jawab:</strong>
                 <div class="content-box" style="margin-top:2px;">
                     @if (!empty($jobDescriptionHtml))
                         {!! $jobDescriptionHtml !!}
@@ -554,7 +549,7 @@
                 </div>
             </td>
             <td style="width:33.33%; vertical-align:top; padding: 0 3px;">
-                <strong style="font-size:8pt;">Key Results / Target Posisi:</strong>
+                <strong style="font-size:9pt;">Key Results / Target Posisi:</strong>
                 <div class="content-box" style="margin-top:2px;">
                     @if (!empty($keyResultsHtml))
                         {!! $keyResultsHtml !!}
