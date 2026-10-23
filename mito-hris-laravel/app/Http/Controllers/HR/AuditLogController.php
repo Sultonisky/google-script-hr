@@ -4,6 +4,7 @@ namespace App\Http\Controllers\HR;
 
 use App\Http\Controllers\Controller;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
+use App\Support\AuditLogPeople;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -54,7 +55,11 @@ class AuditLogController extends Controller
                 return str_contains(strtolower($l['Entity ID'] ?? $l['Recruitment ID'] ?? ''), $searchFilter)
                     || str_contains(strtolower($l['User'] ?? ''), $searchFilter)
                     || str_contains(strtolower($l['Action'] ?? ''), $searchFilter)
-                    || str_contains(strtolower($l['Entity Type'] ?? ''), $searchFilter);
+                    || str_contains(strtolower($l['Entity Type'] ?? ''), $searchFilter)
+                    || str_contains(strtolower($l['IP Address'] ?? ''), $searchFilter)
+                    || str_contains(strtolower($l['Browser'] ?? ''), $searchFilter)
+                    || str_contains(strtolower($l['Device'] ?? ''), $searchFilter)
+                    || str_contains(strtolower($l['Platform'] ?? ''), $searchFilter);
             });
         }
 
@@ -64,6 +69,7 @@ class AuditLogController extends Controller
         $lastPage = max(1, (int) ceil($total / $perPage));
         $currentPage = min($currentPage, $lastPage);
         $paginatedLogs = $logs->slice(($currentPage - 1) * $perPage, $perPage)->values();
+        $people = AuditLogPeople::forLogs($paginatedLogs);
 
         $stats = [
             'created' => $allLogs->filter(fn($l) => in_array(strtolower($l['Action'] ?? ''), ['created', 'create', 'apply']))->count(),
@@ -73,6 +79,7 @@ class AuditLogController extends Controller
 
         return view('hr.audit-logs.index', compact(
             'paginatedLogs',
+            'people',
             'total',
             'currentPage',
             'lastPage',
