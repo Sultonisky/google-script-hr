@@ -294,7 +294,7 @@ class MprFlowTest extends TestCase
         $response->assertSee('Total Pengajuan');
         $response->assertDontSee('Menunggu Review');
         $response->assertDontSee('>Disetujui</div>', false);
-        $response->assertDontSee('SUBMITTED');
+        $response->assertSee('SUBMITTED');
         $response->assertSee('Total Kebutuhan');
     }
 
@@ -1116,6 +1116,126 @@ class MprFlowTest extends TestCase
         ]));
 
         $response->assertStatus(201);
+    }
+
+    #[Test]
+    public function submitted_mpr_can_be_finished_from_the_action_column(): void
+    {
+        $email = 'owner.finish@mito.id';
+        $this->actingAsRole('Manpower', $email, 'Owner Finish');
+
+        $submitted = $this->makeMprData([
+            'mprNumber' => 'MPR-010',
+            'status' => 'Submitted',
+            'requestorEmail' => $email,
+            'createdBy' => $email,
+        ]);
+        $finished = $this->makeMprData([
+            'mprNumber' => 'MPR-011',
+            'status' => 'Finish',
+            'requestorEmail' => $email,
+            'createdBy' => $email,
+        ]);
+        $foreign = $this->makeMprData([
+            'mprNumber' => 'MPR-012',
+            'status' => 'Submitted',
+            'requestorEmail' => 'other.finish@mito.id',
+            'createdBy' => 'other.finish@mito.id',
+        ]);
+
+        $repo = Mockery::mock(MprRepositoryInterface::class);
+        $repo->shouldReceive('getAllForManager')->once()->with($email, Mockery::any())->andReturn(collect([$submitted, $finished]));
+        $repo->shouldReceive('findByMprNumber')->andReturnUsing(function (string $id) use ($submitted, $finished, $foreign) {
+            return match ($id) {
+                'MPR-010' => $submitted,
+                'MPR-011' => $finished,
+                'MPR-012' => $foreign,
+                default => null,
+            };
+        });
+        $repo->shouldReceive('update')->once()->withArgs(function (string $id, MprData $data) {
+            return $id === 'MPR-010' && $data->status === 'Finish' && $data->position === 'Backend Developer';
+        })->andReturnUsing(fn (string $id, MprData $data) => $data);
+        $this->app->instance(MprRepositoryInterface::class, $repo);
+
+        $history = $this->get(route('hr.mpr.history'));
+        $history->assertOk();
+        $history->assertSee('<button type="submit" class="btn btn-sm btn-success" data-mpr-finish="MPR-010"', false);
+        $history->assertSee('disabled data-mpr-finish="MPR-011"', false);
+        $history->assertSee('FINISH');
+
+        $this->from(route('hr.mpr.history'))
+            ->post(route('hr.mpr.finish', ['id' => 'MPR-010']))
+            ->assertRedirect(route('hr.mpr.history'))
+            ->assertSessionHas('success');
+
+        $this->from(route('hr.mpr.history'))
+            ->post(route('hr.mpr.finish', ['id' => 'MPR-011']))
+            ->assertRedirect(route('hr.mpr.history'))
+            ->assertSessionHas('error');
+
+        $this->post(route('hr.mpr.finish', ['id' => 'MPR-012']))->assertForbidden();
+    }
+
+    #[Test]
+    public function admin_can_finish_a_submitted_mpr_from_the_hr_list(): void
+    {
+        $this->actingAsRole('Admin', 'admin.finish@mito.id', 'HR Admin');
+
+        $submitted = $this->makeMprData(['mprNumber' => 'MPR-020', 'status' => 'Submitted']);
+        $finished = $this->makeMprData(['mprNumber' => 'MPR-021', 'status' => 'Finish']);
+
+        $list = Mockery::mock(MprRepositoryInterface::class);
+        $list->shouldReceive('getAll')->andReturn(collect([$submitted, $finished]));
+        $this->app->instance(MprRepositoryInterface::class, $list);
+
+        $page = $this->get(route('hr.mpr.index'));
+        $page->assertOk();
+        $page->assertSee('<button type="submit" class="btn btn-sm btn-success" data-mpr-finish="MPR-020"', false);
+        $page->assertSee('disabled data-mpr-finish="MPR-021"', false);
+        $page->assertSee('>FINISH</span>', false);
+
+        $finish = Mockery::mock(MprRepositoryInterface::class);
+        $finish->shouldReceive('findByMprNumber')->once()->with('MPR-020')->andReturn($submitted);
+        $finish->shouldReceive('update')->once()->withArgs(function (string $id, MprData $data) {
+            return $id === 'MPR-020' && $data->status === 'Finish';
+        })->andReturnUsing(fn (string $id, MprData $data) => $data);
+        $this->app->instance(MprRepositoryInterface::class, $finish);
+
+        $this->from(route('hr.mpr.index'))
+            ->post(route('hr.mpr.finish', ['id' => 'MPR-020']))
+            ->assertRedirect(route('hr.mpr.index'))
+            ->assertSessionHas('success');
+    }
+
+    #[Test]
+    public function requestor_portal_can_finish_own_mpr(): void
+    {
+        $owner = [
+            'email' => 'portal.finish@mito.id',
+            'fullName' => 'Portal Finish',
+            'role' => 'Manpower',
+            'auth_domain' => 'mpr_requestor',
+            'requestor_id' => 'MPR-REQ-FINISH',
+        ];
+        $existing = $this->makeMprData([
+            'mprNumber' => 'MPR-030',
+            'status' => 'Submitted',
+            'requestorEmail' => $owner['email'],
+            'createdBy' => $owner['email'],
+        ]);
+
+        $repo = Mockery::mock(MprRepositoryInterface::class);
+        $repo->shouldReceive('findByMprNumber')->once()->with('MPR-030')->andReturn($existing);
+        $repo->shouldReceive('update')->once()->withArgs(function (string $id, MprData $data) {
+            return $id === 'MPR-030' && $data->status === 'Finish';
+        })->andReturnUsing(fn (string $id, MprData $data) => $data);
+        $this->app->instance(MprRepositoryInterface::class, $repo);
+
+        $this->withSession([config('mpr.session_key', 'mpr_requestor_auth') => $owner])
+            ->post(route('mpr.auth.request.finish', ['id' => 'MPR-030']))
+            ->assertRedirect()
+            ->assertSessionHas('success');
     }
 
     /**
