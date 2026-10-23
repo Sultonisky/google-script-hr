@@ -61,10 +61,10 @@ class MprRequestorAuthService
 
         $role = trim((string) ($requestor['Role'] ?? ''));
         $normalizedRole = strtolower($role);
-        if (!in_array($normalizedRole, ['manpower', 'manager'], true)) {
+        if ($normalizedRole !== 'manpower') {
             return [
                 'success' => false,
-                'error'   => 'Akun ini tidak memiliki akses ke portal MPR.',
+                'error'   => 'Akun ini tidak memiliki akses ke portal MPR. Role akun harus Manpower.',
             ];
         }
 
@@ -114,7 +114,7 @@ class MprRequestorAuthService
                 'email'       => $requestor['Email'],
                 'fullName'    => $requestor['Full Name'] ?? $requestor['Email'],
                 'jobPosition' => trim((string) ($requestor['Job Position'] ?? '')),
-                'role'        => $role ?: 'Manager',
+                'role'        => 'Manpower',
                 'permissions' => ['view_mpr', 'create_mpr', 'export_mpr'],
                 'portal'      => 'mpr',
                 'auth_domain' => 'mpr_requestor',

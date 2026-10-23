@@ -5,6 +5,7 @@ namespace App\Repositories\Database;
 use App\DTOs\MprData;
 use App\Models\MprRequest;
 use App\Repositories\Contracts\MprRepositoryInterface;
+use App\Support\MprNumber;
 use Illuminate\Support\Collection;
 use RuntimeException;
 
@@ -77,7 +78,7 @@ class MprDatabaseRepository implements MprRepositoryInterface
         $now = now()->timezone('Asia/Jakarta');
 
         if (empty($data->mprNumber)) {
-            $data->mprNumber = 'MPR-' . $now->format('Ymd') . '-' . sprintf('%04d', random_int(1, 9999));
+            $data->mprNumber = $this->generateNextNumber();
         }
         if (empty($data->requestDate)) {
             $data->requestDate = $now->format('Y-m-d');
@@ -107,6 +108,15 @@ class MprDatabaseRepository implements MprRepositoryInterface
         $model->save();
 
         return $this->toData($model->fresh());
+    }
+
+    /**
+     * Document id for the current Jakarta year: MPR-2026-001, MPR-2026-002, …
+     * Older MPR-YYYYMMDD-XXXX values are left as-is and do not consume this sequence.
+     */
+    private function generateNextNumber(): string
+    {
+        return MprNumber::next(MprRequest::query()->pluck('mpr_number'));
     }
 
     /**

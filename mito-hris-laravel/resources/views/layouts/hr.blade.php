@@ -60,6 +60,7 @@
     @include('hr.recruitment.modals.action-modals')
     @include('hr.partials.employee-form-modal')
     @include('hr.partials.add-employee-modal')
+    @include('hr.partials.supplementary-docs-modal')
 
     <!-- 1:1 Drawer (Candidate/Employee/Outsource Profile) -->
     @include('components.hr-drawer')
@@ -178,8 +179,10 @@
 
             var btnPrint = document.getElementById('btnDrawerPrint');
             var btnEdit = document.getElementById('btnDrawerEdit');
+            var btnSupplementaryDocs = document.getElementById('btnDrawerSupplementaryDocs');
             if (btnPrint) btnPrint.style.display = (mode === 'candidate') ? '' : 'none';
             if (btnEdit) btnEdit.style.display = (mode !== 'candidate') ? '' : 'none';
+            if (btnSupplementaryDocs) btnSupplementaryDocs.style.display = (mode === 'employee') ? '' : 'none';
             if (btnEdit) btnEdit.classList.remove('d-none');
             var btnEntityEdit = document.getElementById('btnDrawerEntityEdit');
             if (btnEntityEdit) btnEntityEdit.classList.remove('d-none');

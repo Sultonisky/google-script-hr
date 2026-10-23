@@ -31,7 +31,7 @@
                                 style="right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #aaa; display: none"></i>
                         </div>
                         <div id="onboardingSearchDropdown" class="border rounded-3 mt-1 shadow-sm"
-                            style="display: none; max-height: 200px; overflow-y: auto; background: #fff; z-index: 9999; position: relative">
+                            style="display: none; max-height: 200px; overflow-y: auto; z-index: 9999; position: relative">
                         </div>
                     </div>
 
@@ -172,19 +172,14 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold" style="font-size: 13px">Ketentuan Jam Masuk
-                                        Kerja</label>
+                                        Kerja <span class="text-danger">*</span></label>
                                     <select class="form-select form-select-sm" id="onbJamMasuk">
                                         <option value="">— Pilih —</option>
-                                        <option value="mulai pukul 07.00 WIB" selected>Pukul 07.00 WIB</option>
-                                        <option
-                                            value="mulai pukul 07.00 WIB dan selambat-lambatnya sampai dengan pukul 07.15 WIB">
-                                            07.00 WIB (mlm 07.15 WIB)</option>
-                                        <option value="mulai pukul 08.00 WIB">Pukul 08.00 WIB</option>
-                                        <option
-                                            value="mulai pukul 08.00 WIB dan selambat-lambatnya sampai dengan pukul 08.15 WIB">
-                                            08.00 WIB (mlm 08.15 WIB)</option>
-                                        <option value="sesuai shift penempatan">Sesuai shift penempatan</option>
+                                        <option value="mulai pukul 08.00 WIB" selected>Jam 08.00</option>
+                                        <option value="mulai pukul 08.30 WIB">Jam 08.30</option>
+                                        <option value="mengikuti shift sesuai penempatan">Shift sesuai penempatan</option>
                                     </select>
+                                    <div class="form-text" style="font-size: 11px">Tercetak di Pasal 6 kontrak PKWT</div>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold" style="font-size: 13px">Jadwal Waktu
@@ -242,22 +237,22 @@
                                 placeholder="Ketik nama atau Recruitment ID..." autocomplete="off"
                                 style="font-size: 13px; padding-right: 36px" />
                             <i class="bi bi-x-circle-fill position-absolute" id="offeringSearchClear"
-                                style="right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #aaa; display: none"></i>
+                                style="right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #eb1c24; display: none"></i>
                         </div>
                         <div id="offeringSearchDropdown" class="border rounded-3 mt-1 shadow-sm"
-                            style="display: none; max-height: 200px; overflow-y: auto; background: #fff; z-index: 9999; position: relative">
+                            style="display: none; max-height: 200px; overflow-y: auto; z-index: 9999; position: relative">
                         </div>
                     </div>
 
                     <!-- Preview Info Kandidat -->
                     <div id="offeringCandPreview" style="display: none">
-                        <div class="p-3 rounded-3 mb-3" style="background: #fff5f5; border: 1px solid #fed7d7">
+                        <div class="p-3 rounded-3 mb-3" style="border: 1px solid #eb1c24">
                             <div class="d-flex align-items-center gap-3">
                                 <div class="avatar-sm" id="offeringCandAvatar"
                                     style="width: 44px; height: 44px; font-size: 16px; flex-shrink: 0; background: var(--color-primary, #eb1c24); color: #fff; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800">
                                     ?</div>
                                 <div class="flex-grow-1">
-                                    <div class="fw-bold text-navy" id="offeringCandName" style="font-size: 15px">-</div>
+                                    <div class="fw-bold text-primary" id="offeringCandName" style="font-size: 15px">-</div>
                                     <div class="text-muted" style="font-size: 12px">
                                         <span id="offeringCandPos">-</span> &bull; <span id="offeringCandEmail">-</span>
                                     </div>
@@ -994,8 +989,8 @@
         if (docDateEl && !docDateEl.value) docDateEl.value = new Date().toISOString().substring(0, 10);
 
         var jamEl = document.getElementById('onbJamMasuk');
-        if (jamEl && !jamEl.value) jamEl.value =
-            'mulai pukul 07.00 WIB dan selambat-lambatnya sampai dengan pukul 07.15 WIB';
+        if (jamEl && !jamEl.value) jamEl.value = 'mulai pukul 08.00 WIB';
+        _syncOnboardingWorkSchedule();
 
         var wsEl = document.getElementById('onbWorkSchedule');
         if (wsEl && !wsEl.value) wsEl.value = 'Normal';
@@ -1033,6 +1028,15 @@
         if (hintEl) hintEl.innerText = 'Auto-hitung dari durasi ' + durationEl.value;
     }
 
+    function _syncOnboardingWorkSchedule() {
+        var jamEl = document.getElementById('onbJamMasuk');
+        var wsEl = document.getElementById('onbWorkSchedule');
+        if (!jamEl || !wsEl) return;
+        var value = (jamEl.value || '').toLowerCase();
+        if (!value) return;
+        wsEl.value = value.indexOf('shift') !== -1 ? 'Shift Khusus' : 'Normal';
+    }
+
     function _updateOnboardingConfirmBtn() {
         var confirmBtn = document.getElementById('btnConfirmOnboarding');
         if (!confirmBtn) return;
@@ -1042,7 +1046,8 @@
         var hasPos = !!((document.getElementById('onbPosition') || {}).value);
         var hasDuration = !!((document.getElementById('onbContractDuration') || {}).value);
         var hasJoin = !!((document.getElementById('onbJoinDate') || {}).value);
-        confirmBtn.disabled = !(hasCand && hasBranch && hasDept && hasPos && hasDuration && hasJoin);
+        var hasJam = !!((document.getElementById('onbJamMasuk') || {}).value);
+        confirmBtn.disabled = !(hasCand && hasBranch && hasDept && hasPos && hasDuration && hasJoin && hasJam);
     }
 
     function clearOnboardingSearch() {
@@ -2255,7 +2260,7 @@
     // ============================================================
     document.addEventListener('DOMContentLoaded', function() {
         // Live validation field wajib
-        ['onbBranchName', 'onbDepartment', 'onbPosition', 'onbContractDuration', 'onbJoinDate'].forEach(
+        ['onbBranchName', 'onbDepartment', 'onbPosition', 'onbContractDuration', 'onbJoinDate', 'onbJamMasuk'].forEach(
             function(id) {
                 var el = document.getElementById(id);
                 if (el) {
@@ -2273,6 +2278,12 @@
         });
         if (joinDateEl) joinDateEl.addEventListener('change', function() {
             _calcOnboardingEndDate();
+            _updateOnboardingConfirmBtn();
+        });
+
+        var jamMasukEl = document.getElementById('onbJamMasuk');
+        if (jamMasukEl) jamMasukEl.addEventListener('change', function() {
+            _syncOnboardingWorkSchedule();
             _updateOnboardingConfirmBtn();
         });
 

@@ -5,6 +5,7 @@ namespace App\Repositories\Sheets;
 use App\DTOs\MprData;
 use App\Repositories\Contracts\MprRepositoryInterface;
 use App\Services\Google\GoogleSheetsService;
+use App\Support\MprNumber;
 use Illuminate\Support\Collection;
 
 class MprSheetsRepository implements MprRepositoryInterface
@@ -98,9 +99,7 @@ class MprSheetsRepository implements MprRepositoryInterface
         $now = now()->timezone('Asia/Jakarta');
 
         if (empty($data->mprNumber)) {
-            $datePart = $now->format('Ymd');
-            $randomPart = sprintf('%04d', rand(1, 9999));
-            $data->mprNumber = "MPR-{$datePart}-{$randomPart}";
+            $data->mprNumber = $this->generateNextNumber();
         }
 
         if (empty($data->requestDate)) {
@@ -189,5 +188,19 @@ class MprSheetsRepository implements MprRepositoryInterface
         }
 
         return $data;
+    }
+
+    /**
+     * Document id for the current Jakarta year: MPR-2026-001, MPR-2026-002, …
+     * Older MPR-YYYYMMDD-XXXX values are left as-is and do not consume this sequence.
+     */
+    private function generateNextNumber(): string
+    {
+        $numbers = [];
+        foreach ($this->sheets->getRowsAsAssoc($this->sheetName) as $row) {
+            $numbers[] = $row['MPR Number'] ?? '';
+        }
+
+        return MprNumber::next($numbers);
     }
 }

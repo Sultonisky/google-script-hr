@@ -1,67 +1,46 @@
 @extends('layouts.hr')
 
-@section('title', 'Formulir Pengajuan Manpower Request (MPR) - MITO HRIS')
-@section('page-title', 'Formulir Pengajuan Manpower Request')
-@section('page-subtitle', 'Isi kebutuhan tenaga kerja untuk diproses HR')
+@section('title', (isset($editingMpr) && $editingMpr) ? 'Edit Pengajuan Manpower Request - MITO HRIS' : 'Formulir Pengajuan Manpower Request (MPR) - MITO HRIS')
+@section('page-title', (isset($editingMpr) && $editingMpr) ? 'Edit Pengajuan Manpower Request' : 'Formulir Pengajuan Manpower Request')
+@section('page-subtitle', (isset($editingMpr) && $editingMpr) ? 'Perbarui pengajuan yang sudah Anda kirim' : 'Isi kebutuhan tenaga kerja untuk diproses HR')
 
 @section('content')
     <div class="container-fluid px-0">
         <div class="mpr-form-shell mx-auto">
-            <div id="mprSuccessAlert" class="alert alert-success alert-dismissible fade d-none shadow-sm" role="alert">
-                <div class="d-flex align-items-center">
-                    <i class="bi bi-check-circle-fill fs-4 me-3 text-success"></i>
-                    <div>
-                        <h6 class="alert-heading mb-1 fw-bold" id="mprSuccessTitle">Pengajuan MPR Berhasil Dibuat!</h6>
-                        <p class="mb-0" id="mprSuccessBody">Dokumen PDF resmi telah digenerate secara otomatis.</p>
-                    </div>
-                    <div class="ms-auto d-flex gap-2">
-                        <a id="btnAlertOpenPdf" href="#" target="_blank" class="btn btn-sm btn-success fw-semibold">
-                            <i class="bi bi-file-earmark-pdf-fill me-1"></i> Buka PDF MPR
-                        </a>
-                    </div>
-                </div>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-
-            @if (session('success'))
-                <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
-                    <div class="d-flex align-items-center">
-                        <i class="bi bi-check-circle-fill fs-4 me-3 text-success"></i>
-                        <div>
-                            <h6 class="alert-heading mb-1 fw-bold">Berhasil</h6>
-                            <p class="mb-0">{{ session('success') }}</p>
-                        </div>
-                        @if (session('mpr_pdf_url'))
-                            <div class="ms-auto">
-                                <a href="{{ session('mpr_pdf_url') }}" target="_blank"
-                                    class="btn btn-sm btn-success fw-semibold">
-                                    <i class="bi bi-file-earmark-pdf-fill me-1"></i> Unduh PDF
-                                </a>
-                            </div>
-                        @endif
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            @endif
             <div class="card border-0 shadow-sm rounded-4 mb-4">
                 <div
                     class="mpr-section-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
                     <div>
-                        <h5 class="mb-0"><i class="bi bi-file-earmark-plus-fill me-2"></i>Formulir Pengajuan Manpower Request</h5>
+                        <h5 class="mb-0">
+                            <i class="bi {{ (isset($editingMpr) && $editingMpr) ? 'bi-pencil-square' : 'bi-file-earmark-plus-fill' }} me-2"></i>
+                            {{ (isset($editingMpr) && $editingMpr) ? 'Edit Pengajuan Manpower Request' : 'Formulir Pengajuan Manpower Request' }}
+                        </h5>
+                        @if (isset($editingMpr) && $editingMpr)
+                            <div class="small mt-1">Nomor {{ $editingMpr->mprNumber }}</div>
+                        @endif
                     </div>
                 </div>
                 <div class="card-body p-0">
                     <div class="mpr-form-body">
                         <form id="formManagerMpr"
-                            action="{{ request()->routeIs('mpr.auth.*') ? route('mpr.auth.request.store') : route('hr.mpr.store') }}"
+                            data-editing="{{ (isset($editingMpr) && $editingMpr) ? '1' : '0' }}"
+                            action="{{ (isset($editingMpr) && $editingMpr) ? route('mpr.auth.request.update', ['id' => $editingMpr->mprNumber]) : (request()->routeIs('mpr.auth.*') ? route('mpr.auth.request.store') : route('hr.mpr.store')) }}"
                             method="POST">
                             @csrf
+                            @if (isset($editingMpr) && $editingMpr)
+                                @method('PUT')
+                            @endif
 
                             @php
                                 $mprOptions = config('hris.mpr_form_options', []);
-                                $oldWorkingDays = (array) old('working_days', []);
-                                $oldWorkingHours = (array) old('working_hours', []);
-                                $oldBenefits = (array) old('benefits', []);
+                                $formDefaults = isset($formDefaults) ? $formDefaults : [];
+                                $prefill = function (string $key, mixed $default = '') use ($formDefaults) {
+                                    return old($key, $formDefaults[$key] ?? $default);
+                                };
+                                $oldWorkingDays = (array) old('working_days', $formDefaults['working_days'] ?? []);
+                                $oldWorkingHours = (array) old('working_hours', $formDefaults['working_hours'] ?? []);
+                                $oldBenefits = (array) old('benefits', $formDefaults['benefits'] ?? []);
+                                $isEditing = isset($editingMpr) && $editingMpr;
                             @endphp
 
                             {{-- ===================== IDENTITAS PEMOHON ===================== --}}
@@ -131,7 +110,7 @@
                                             <option value="">-- Pilih Entitas --</option>
                                             @foreach ($entityOptions as $code => $label)
                                                 <option value="{{ $code }}"
-                                                    {{ old('entity') === $code ? 'selected' : '' }}>
+                                                    {{ $prefill('entity') === $code ? 'selected' : '' }}>
                                                     {{ $code }} - {{ $label }}</option>
                                             @endforeach
                                         </select>
@@ -140,7 +119,7 @@
                                         <label class="form-label">Posisi / Nama Jabatan yang Diminta <span
                                                 class="text-danger">*</span></label>
                                         <input type="text" name="position" class="form-control"
-                                            value="{{ old('position') }}"
+                                            value="{{ $prefill('position') }}"
                                             placeholder="Contoh: Frontend Developer, Sales Executive" required
                                             maxlength="255" data-sanitize-position="true">
                                     </div>
@@ -150,7 +129,7 @@
                                             <option value="">-- Pilih Departemen --</option>
                                             @foreach ($departments as $d)
                                                 <option value="{{ $d }}"
-                                                    {{ old('department') === $d ? 'selected' : '' }}>{{ $d }}
+                                                    {{ $prefill('department') === $d ? 'selected' : '' }}>{{ $d }}
                                                 </option>
                                             @endforeach
                                         </select>
@@ -158,7 +137,7 @@
                                     <div class="col-md-6">
                                         <label class="form-label">Divisi <span class="text-danger">*</span></label>
                                         <select name="division" class="form-select"
-                                            data-selected-division="{{ old('division') }}" required>
+                                            data-selected-division="{{ $prefill('division') }}" required>
                                             <option value="">-- Pilih Departemen terlebih dahulu --</option>
                                         </select>
                                     </div>
@@ -167,7 +146,7 @@
                                         <select name="approval_division" class="form-select" required>
                                             <option value="">-- Pilih Divisi --</option>
                                             @foreach (config('hris.mpr.approval_divisions', []) as $division)
-                                                <option value="{{ $division }}" {{ old('approval_division') === $division ? 'selected' : '' }}>
+                                                <option value="{{ $division }}" {{ $prefill('approval_division') === $division ? 'selected' : '' }}>
                                                     {{ $division }}
                                                 </option>
                                             @endforeach
@@ -179,7 +158,7 @@
                                             <option value="">-- Pilih Level Jabatan --</option>
                                             @foreach ($jobLevels as $jl)
                                                 <option value="{{ $jl }}"
-                                                    {{ old('job_level') === $jl ? 'selected' : '' }}>
+                                                    {{ $prefill('job_level') === $jl ? 'selected' : '' }}>
                                                     {{ $jl }}</option>
                                             @endforeach
                                         </select>
@@ -191,7 +170,7 @@
                                             <option value="">-- Pilih Lokasi Kerja --</option>
                                             @foreach ($workLocations as $wl)
                                                 <option value="{{ $wl }}"
-                                                    {{ old('work_location') === $wl ? 'selected' : '' }}>
+                                                    {{ $prefill('work_location') === $wl ? 'selected' : '' }}>
                                                     {{ $wl }}</option>
                                             @endforeach
                                         </select>
@@ -203,7 +182,7 @@
                                             <option value="">-- Pilih Status Kepegawaian --</option>
                                             @foreach ($employmentTypes as $et)
                                                 <option value="{{ $et }}"
-                                                    {{ old('employment_type') === $et ? 'selected' : '' }}>
+                                                    {{ $prefill('employment_type') === $et ? 'selected' : '' }}>
                                                     {{ $et }}</option>
                                             @endforeach
                                         </select>
@@ -212,13 +191,13 @@
                                         <label class="form-label">Jumlah Kebutuhan (Orang) <span
                                                 class="text-danger">*</span></label>
                                         <input type="number" name="quantity" class="form-control"
-                                            value="{{ old('quantity', 1) }}" min="1" max="100" required>
+                                            value="{{ $prefill('quantity', 1) }}" min="1" max="100" required>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Target Tanggal Bergabung (Join Date) <span
                                                 class="text-danger">*</span></label>
                                         <input type="date" name="expected_join_date" class="form-control"
-                                            value="{{ old('expected_join_date') }}" min="{{ date('Y-m-d') }}" required>
+                                            value="{{ $prefill('expected_join_date') }}" @unless($isEditing) min="{{ date('Y-m-d') }}" @endunless required>
                                     </div>
                                 </div>
                             </div>
@@ -267,7 +246,7 @@
                                         <textarea name="shift_detail" class="form-control" rows="2"
                                             id="shiftDetailField"
                                             placeholder="Contoh: Shift pagi 07:00-15:00, shift siang 15:00-23:00, rotasi mingguan..."
-                                            disabled>{{ old('shift_detail') }}</textarea>
+                                            disabled>{{ $prefill('shift_detail') }}</textarea>
                                         <div class="form-text text-muted small mt-1" id="shiftDetailNote">
                                             <i class="bi bi-info-circle me-1"></i>Pilih "Shifting" pada Hari Kerja untuk mengisi detail shift.
                                         </div>
@@ -308,7 +287,7 @@
                                             <option value="">-- Pilih Alasan Permintaan --</option>
                                             @foreach ($reasons as $r)
                                                 <option value="{{ $r }}"
-                                                    {{ old('reason') === $r ? 'selected' : '' }}>
+                                                    {{ $prefill('reason') === $r ? 'selected' : '' }}>
                                                     {{ $r }}</option>
                                             @endforeach
                                         </select>
@@ -317,15 +296,15 @@
                                         <label class="form-label" id="replacementForLabel">
                                             Nama Karyawan yang Digantikan
                                             <span class="text-danger d-none" id="replacementForRequiredMark">*</span>
-                                            <span class="text-muted fw-normal small" id="replacementForHint">(aktif jika alasan "Penggantian Karyawan")</span>
+                                            <span class="text-muted fw-normal small" id="replacementForHint">(aktif jika alasan "Penggantian Karyawan" atau "Restrukturisasi")</span>
                                         </label>
                                         <input type="text" name="replacement_for" class="form-control"
                                             id="replacementForField"
-                                            value="{{ old('replacement_for') }}"
+                                            value="{{ $prefill('replacement_for') }}"
                                             placeholder="Nama karyawan yang akan digantikan"
                                             disabled>
                                         <div class="form-text text-muted small mt-1" id="replacementForNote">
-                                            <i class="bi bi-info-circle me-1"></i>Pilih alasan "Penggantian Karyawan Resign / Mutasi / Demosi" untuk mengisi field ini.
+                                            <i class="bi bi-info-circle me-1"></i>Pilih alasan "Penggantian Karyawan Resign / Mutasi / Demosi" atau "Restrukturisasi" untuk mengisi field ini.
                                         </div>
                                     </div>
 
@@ -337,7 +316,7 @@
                                             <option value="">-- Pilih Pendidikan --</option>
                                             @foreach ($mprOptions['education_background'] ?? [] as $eduKey => $eduLabel)
                                                 <option value="{{ $eduKey }}"
-                                                    {{ old('education_background') === $eduKey ? 'selected' : '' }}>
+                                                    {{ $prefill('education_background') === $eduKey ? 'selected' : '' }}>
                                                     {{ $eduLabel }}</option>
                                             @endforeach
                                         </select>
@@ -349,7 +328,7 @@
                                             <option value="">-- Pilih Pengalaman --</option>
                                             @foreach ($mprOptions['work_experience'] ?? [] as $expKey => $expLabel)
                                                 <option value="{{ $expKey }}"
-                                                    {{ old('work_experience') === $expKey ? 'selected' : '' }}>
+                                                    {{ $prefill('work_experience') === $expKey ? 'selected' : '' }}>
                                                     {{ $expLabel }}</option>
                                             @endforeach
                                         </select>
@@ -359,14 +338,14 @@
                                     <div class="col-md-6">
                                         <label class="form-label">Skills &amp; Kompetensi</label>
                                         <textarea name="skills_competencies" class="form-control" rows="3"
-                                            placeholder="Contoh: Laravel, Excel lanjutan, leadership...">{{ old('skills_competencies') }}</textarea>
+                                            placeholder="Contoh: Laravel, Excel lanjutan, leadership...">{{ $prefill('skills_competencies') }}</textarea>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Bahasa yang Dikuasai</label>
                                         <textarea name="languages" class="form-control" rows="3"
                                             placeholder="Contoh: Bahasa Indonesia (aktif), Bahasa Inggris (pasif)..."
                                             maxlength="1000" data-sanitize-languages="true"
-                                            autocomplete="off">{{ old('languages') }}</textarea>
+                                            autocomplete="off">{{ $prefill('languages') }}</textarea>
                                         <div class="form-text text-muted small">Hanya huruf, spasi, koma, titik, dan kurung.</div>
                                     </div>
 
@@ -374,33 +353,33 @@
                                     <div class="col-12">
                                         <label class="form-label">Referensi Industri Sejenis</label>
                                         <textarea name="industry_reference" class="form-control" rows="2"
-                                            placeholder="Contoh: Pengalaman dari industri mining, logistik, atau FMCG...">{{ old('industry_reference') }}</textarea>
+                                            placeholder="Contoh: Pengalaman dari industri mining, logistik, atau FMCG...">{{ $prefill('industry_reference') }}</textarea>
                                     </div>
 
                                     {{-- Baris 5: Kualifikasi (full width) --}}
                                     <div class="col-12">
                                         <label class="form-label">Kualifikasi &amp; Persyaratan Khusus Kandidat</label>
                                         <textarea name="requirements" class="form-control" rows="3"
-                                            placeholder="Contoh: Pendidikan min. S1 Informatika, pengalaman min. 2 tahun di Laravel, komunikasi baik...">{{ old('requirements') }}</textarea>
+                                            placeholder="Contoh: Pendidikan min. S1 Informatika, pengalaman min. 2 tahun di Laravel, komunikasi baik...">{{ $prefill('requirements') }}</textarea>
                                     </div>
 
                                     {{-- Baris 6: Uraian Tugas + Key Results (2 kolom) --}}
                                     <div class="col-md-6">
                                         <label class="form-label">Uraian Tugas &amp; Tanggung Jawab Utama</label>
                                         <textarea name="job_description" class="form-control" rows="4"
-                                            placeholder="Contoh: Mengembangkan fitur web HRIS, melakukan code review, memastikan performa database...">{{ old('job_description') }}</textarea>
+                                            placeholder="Contoh: Mengembangkan fitur web HRIS, melakukan code review, memastikan performa database...">{{ $prefill('job_description') }}</textarea>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Key Results / Target Posisi Ini</label>
                                         <textarea name="key_results_targets" class="form-control" rows="4"
-                                            placeholder="Contoh: Mencapai target penjualan 100 unit/bulan, menyelesaikan integrasi ERP dalam 6 bulan...">{{ old('key_results_targets') }}</textarea>
+                                            placeholder="Contoh: Mencapai target penjualan 100 unit/bulan, menyelesaikan integrasi ERP dalam 6 bulan...">{{ $prefill('key_results_targets') }}</textarea>
                                     </div>
 
                                     {{-- Baris 7: Catatan Khusus (full width) --}}
                                     <div class="col-12">
                                         <label class="form-label">Catatan Khusus MPR <span class="text-muted fw-normal small">(Opsional)</span></label>
                                         <textarea name="special_notes" class="form-control" rows="2"
-                                            placeholder="Catatan khusus terkait kebutuhan ini...">{{ old('special_notes') }}</textarea>
+                                            placeholder="Catatan khusus terkait kebutuhan ini...">{{ $prefill('special_notes') }}</textarea>
                                     </div>
 
                                 </div>{{-- end row Alasan & Kualifikasi --}}
@@ -415,8 +394,8 @@
                                     class="btn btn-primary px-4 fw-semibold shadow-sm">
                                     <span class="spinner-border spinner-border-sm me-1 d-none"
                                         id="spinnerSubmitManager"></span>
-                                    <i class="bi bi-send-fill me-1" id="iconSubmitManager"></i> Kirim
-                                    Pengajuan &amp; Generate PDF
+                                    <i class="bi {{ $isEditing ? 'bi-check-circle-fill' : 'bi-send-fill' }} me-1" id="iconSubmitManager"></i>
+                                    {{ $isEditing ? 'Simpan Perubahan' : 'Kirim Pengajuan & Generate PDF' }}
                                 </button>
                             </div>
                         </form>
@@ -537,13 +516,9 @@
             }
 
             /**
-             * Logika Replacement:
-             * - Jika alasan = "Penggantian Karyawan Resign / Mutasi / Demosi":
-             *   → Input nama karyawan yang digantikan: enabled, required
-             * - Selain itu:
-             *   → Input disabled, not required, value dikosongkan
+             * Nama karyawan pengganti wajib untuk Penggantian dan Restrukturisasi.
              */
-            const REPLACEMENT_REASON_VALUE = 'Penggantian Karyawan Resign / Mutasi / Demosi';
+            const REPLACEMENT_REASONS = @json(array_values(config('hris.mpr_form_options.replacement_reasons', [])));
 
             function applyReplacementState(form) {
                 if (!form) return;
@@ -554,7 +529,7 @@
                 const noteText         = form.querySelector('#replacementForNote');
                 if (!reasonSelect || !replacementField) return;
 
-                const isReplacement = reasonSelect.value === REPLACEMENT_REASON_VALUE;
+                const isReplacement = REPLACEMENT_REASONS.includes(reasonSelect.value);
 
                 replacementField.disabled = !isReplacement;
                 replacementField.required = isReplacement;
@@ -613,24 +588,15 @@
                         return data;
                     })
                     .then(data => {
-                        formMpr.reset();
-                        const alertEl = document.getElementById('mprSuccessAlert');
-                        const alertTitle = document.getElementById('mprSuccessTitle');
-                        const alertBody = document.getElementById('mprSuccessBody');
-                        const btnPdf = document.getElementById('btnAlertOpenPdf');
-
-                        if (alertEl) {
-                            if (alertTitle) alertTitle.innerText =
-                                `Pengajuan MPR Berhasil! (${data.mpr_number})`;
-                            if (alertBody) alertBody.innerText =
-                                `Dokumen Manpower Request nomor ${data.mpr_number} telah berhasil disimpan dan PDF otomatis digenerate.`;
-                            if (btnPdf) btnPdf.href = data.pdf_url;
-                            alertEl.classList.remove('d-none');
-                            alertEl.classList.add('show');
-                            window.scrollTo({
-                                top: 0,
-                                behavior: 'smooth'
-                            });
+                        const isEditing = formMpr.dataset.editing === '1';
+                        if (!isEditing) formMpr.reset();
+                        if (typeof showToast === 'function') {
+                            showToast(
+                                isEditing
+                                    ? `Pengajuan MPR berhasil diperbarui (${data.mpr?.mpr_number || data.mpr_number || ''}).`
+                                    : `Pengajuan MPR berhasil dibuat (${data.mpr_number}).`,
+                                'success'
+                            );
                         }
 
                         if (data.pdf_url) {

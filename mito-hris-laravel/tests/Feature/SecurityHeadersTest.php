@@ -121,6 +121,8 @@ class SecurityHeadersTest extends TestCase
         $permissionsPolicy = $response->headers->get('Permissions-Policy');
         $this->assertNotNull($permissionsPolicy);
         $this->assertStringContainsString('geolocation=(self)', $permissionsPolicy);
+        $this->assertStringContainsString('Sec-CH-UA-Platform-Version', (string) $response->headers->get('Accept-CH'));
+        $this->assertStringContainsString('Sec-CH-UA-Model', (string) $response->headers->get('Accept-CH'));
     }
 
     public function test_hsts_header_absent_on_http_requests(): void

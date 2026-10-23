@@ -39,6 +39,7 @@ class UserDatabaseRepository implements UserRepositoryInterface
         User::create([
             'name'     => $data['fullName'] ?? $data['name'] ?? '',
             'email'    => $data['email'] ?? '',
+            'username' => $this->nullableUsername($data['username'] ?? null),
             'password' => $data['passwordHash'] ?? '',
             'role'     => $data['role'] ?? 'User',
             'status'   => $data['status'] ?? 'Active',
@@ -55,6 +56,15 @@ class UserDatabaseRepository implements UserRepositoryInterface
         $updates = [];
         if (isset($data['passwordHash'])) {
             $updates['password'] = $data['passwordHash'];
+        }
+        if (isset($data['email'])) {
+            $emailValue = trim((string) $data['email']);
+            if ($emailValue !== '') {
+                $updates['email'] = $emailValue;
+            }
+        }
+        if (array_key_exists('username', $data)) {
+            $updates['username'] = $this->nullableUsername($data['username']);
         }
         if (isset($data['fullName'])) {
             $updates['name'] = $data['fullName'];
@@ -94,7 +104,7 @@ class UserDatabaseRepository implements UserRepositoryInterface
     {
         return [
             'Email'         => $user->email,
-            'Username'      => $user->email,
+            'Username'      => ($user->username !== null && $user->username !== '') ? $user->username : $user->email,
             'Full Name'     => $user->name,
             'Role'          => $user->role ?? 'User',
             'Status'        => $user->status ?? 'Active',
@@ -104,5 +114,12 @@ class UserDatabaseRepository implements UserRepositoryInterface
             'Updated At'    => $user->updated_at?->toDateTimeString() ?? '',
             'Created By'    => 'system',
         ];
+    }
+
+    private function nullableUsername(mixed $username): ?string
+    {
+        $username = trim((string) $username);
+
+        return $username === '' ? null : $username;
     }
 }

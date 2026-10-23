@@ -96,6 +96,7 @@ class UserSheetsRepository implements UserRepositoryInterface
         foreach ($data as $key => $value) {
             $normalizedKey = strtolower(preg_replace('/[\s_\-]/', '', (string) $key));
             $colMap = [
+                'email'        => 'Email',
                 'passwordhash' => 'Password Hash',
                 'fullname'     => 'Full Name',
                 'username'     => 'Username',

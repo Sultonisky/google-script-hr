@@ -10,13 +10,15 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 use Illuminate\Validation\Rule;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
+use App\Repositories\Contracts\UserPermissionRepositoryInterface;
 use Illuminate\Http\JsonResponse;
 
 class UserController extends Controller
 {
     public function __construct(
         protected UserRepositoryInterface $userRepo,
-        protected AuditLogRepositoryInterface $auditRepo
+        protected AuditLogRepositoryInterface $auditRepo,
+        protected UserPermissionRepositoryInterface $permissionRepo,
     ) {}
 
     public function index(): View
@@ -42,11 +44,22 @@ class UserController extends Controller
             'password' => 'required|string|min:8|confirmed',
         ]);
 
+        $newEmail = trim($validated['email']);
+        $newUsername = trim($validated['username']);
+        foreach ($this->userRepo->getAll() as $user) {
+            if (strtolower(trim((string) ($user['Email'] ?? ''))) === strtolower($newEmail)) {
+                return back()->withInput()->withErrors(['email' => 'Email sudah digunakan.']);
+            }
+            if (strtolower(trim((string) ($user['Username'] ?? ''))) === strtolower($newUsername)) {
+                return back()->withInput()->withErrors(['username' => 'Username sudah digunakan.']);
+            }
+        }
+
         $timestamp = now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s');
 
         $this->userRepo->create([
-            'email' => $validated['email'],
-            'username' => $validated['username'],
+            'email' => $newEmail,
+            'username' => $newUsername,
             'fullName' => $validated['name'],
             'role' => $validated['role'],
             'status' => 'Active',
@@ -58,11 +71,11 @@ class UserController extends Controller
             'createdBy' => session('hr_user.email', 'HR Administrator'),
         ]);
 
-        if ($this->userRepo->findByEmail($validated['email']) === null) {
+        if ($this->userRepo->findByEmail($newEmail) === null) {
             return back()->withInput()->with('error', 'Pengguna gagal disimpan ke sheet Users.');
         }
 
-        $this->auditRepo->log('User', $validated['email'], 'created', null, null, [
+        $this->auditRepo->log('User', $newEmail, 'created', null, null, [
             'name' => $validated['name'],
             'role' => $validated['role'],
             'status' => 'Active'
@@ -80,36 +93,48 @@ class UserController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|min:3',
+            'email' => 'required|email',
             'username' => 'required|string|min:3',
             'role' => ['required', 'string', Rule::in(config('hris.auth.valid_roles', []))],
             'status' => ['required', 'string', Rule::in(['Active', 'Inactive'])],
             'password' => 'nullable|string|min:8|confirmed',
         ]);
 
+        $newEmail = trim($validated['email']);
+        $newUsername = trim($validated['username']);
+
         foreach ($this->userRepo->getAll() as $user) {
-            $sameUser = strtolower(trim($user['Email'] ?? '')) === strtolower(trim($email));
-            if (!$sameUser && strtolower(trim($user['Username'] ?? '')) === strtolower(trim($validated['username']))) {
+            $sameUser = strtolower(trim((string) ($user['Email'] ?? ''))) === strtolower(trim($email));
+            if (!$sameUser && strtolower(trim((string) ($user['Email'] ?? ''))) === strtolower($newEmail)) {
+                return $this->updateError($request, 'Email sudah digunakan.', 422, ['email' => ['Email sudah digunakan.']]);
+            }
+            if (!$sameUser && strtolower(trim((string) ($user['Username'] ?? ''))) === strtolower($newUsername)) {
                 return $this->updateError($request, 'Username sudah digunakan.', 422, ['username' => ['Username sudah digunakan.']]);
             }
         }
 
         $updates = [
             'fullName' => $validated['name'],
-            'username' => $validated['username'],
+            'username' => $newUsername,
             'role' => $validated['role'],
             'status' => $validated['status'],
             'updatedAt' => now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
             'updated_at' => now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
         ];
+        if (trim((string) ($existing['Email'] ?? '')) !== $newEmail) {
+            $updates['email'] = $newEmail;
+        }
         if (!empty($validated['password'])) {
             $updates['passwordHash'] = Hash::make($validated['password']);
         }
 
-        $hasChanges = false;
-        foreach (['Full Name' => 'fullName', 'Username' => 'username', 'Role' => 'role', 'Status' => 'status'] as $field => $key) {
-            if ((string) ($existing[$field] ?? '') !== (string) $updates[$key]) {
-                $hasChanges = true;
-                break;
+        $hasChanges = isset($updates['email']);
+        if (!$hasChanges) {
+            foreach (['Full Name' => 'fullName', 'Username' => 'username', 'Role' => 'role', 'Status' => 'status'] as $field => $key) {
+                if ((string) ($existing[$field] ?? '') !== (string) $updates[$key]) {
+                    $hasChanges = true;
+                    break;
+                }
             }
         }
         if (!$hasChanges && empty($validated['password'])) {
@@ -117,21 +142,50 @@ class UserController extends Controller
         }
 
         $this->userRepo->updateByEmail($email, $updates);
-        $updated = $this->userRepo->findByEmail($email);
+        $lookupEmail = $updates['email'] ?? $email;
+        $updated = $this->userRepo->findByEmail($lookupEmail);
         if ($updated === null) {
             return $this->updateError($request, 'Pengguna gagal diperbarui di sheet Users.', 500);
         }
 
         $auditFields = ['Full Name' => 'fullName', 'Username' => 'username', 'Role' => 'role', 'Status' => 'status'];
+        if (isset($updates['email'])) {
+            $auditFields = ['Email' => 'email'] + $auditFields;
+        }
         foreach ($auditFields as $field => $key) {
             $oldValue = $existing[$field] ?? '';
             $newValue = $updated[$field] ?? $updates[$key];
             if ((string) $oldValue !== (string) $newValue) {
-                $this->auditRepo->log('User', $email, 'UPDATE', $field, $oldValue, $newValue, session('hr_user.email', 'HR Administrator'), 'Dashboard');
+                $this->auditRepo->log('User', $lookupEmail, 'UPDATE', $field, $oldValue, $newValue, session('hr_user.email', 'HR Administrator'), 'Dashboard');
             }
         }
 
+        if (isset($updates['email'])) {
+            $this->permissionRepo->reassignEmail($email, (string) $updates['email']);
+        }
+        $this->syncEditedActorSession($email, $updated);
+
         return $this->updateSuccess($request, 'Pengguna berhasil diperbarui.');
+    }
+
+    /**
+     * @param  array<string, mixed>  $updated
+     */
+    private function syncEditedActorSession(string $previousEmail, array $updated): void
+    {
+        $actor = session('hr_user');
+        if (!is_array($actor)) {
+            return;
+        }
+        if (strtolower(trim((string) ($actor['email'] ?? ''))) !== strtolower(trim($previousEmail))) {
+            return;
+        }
+
+        $actor['email'] = (string) ($updated['Email'] ?? $actor['email']);
+        if (trim((string) ($updated['Full Name'] ?? '')) !== '') {
+            $actor['fullName'] = $updated['Full Name'];
+        }
+        session(['hr_user' => $actor]);
     }
 
     private function updateSuccess(Request $request, string $message): RedirectResponse|JsonResponse

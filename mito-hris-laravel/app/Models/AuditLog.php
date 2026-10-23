@@ -18,6 +18,12 @@ class AuditLog extends Model
         'new_value',
         'user',
         'source',
+        'ip_address',
+        'user_agent',
+        'browser',
+        'device',
+        'platform',
+        'referer',
         'logged_at',
     ];
 

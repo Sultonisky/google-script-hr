@@ -75,6 +75,80 @@ class MprController extends Controller
         return strtolower(trim((string) ($user['role'] ?? ''))) === 'manpower';
     }
 
+    protected function requestorOwnsMpr(array $user, MprData $mpr): bool
+    {
+        $email = strtolower(trim((string) ($user['email'] ?? '')));
+        if ($email === '') {
+            return false;
+        }
+
+        return $email === strtolower(trim((string) ($mpr->requestorEmail ?? '')))
+            || $email === strtolower(trim((string) ($mpr->createdBy ?? '')));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function formDefaultsFromMpr(MprData $mpr): array
+    {
+        $singleKey = function (?string $stored, string $group): string {
+            return $this->optionKeysFromLabels($stored, $group)[0] ?? '';
+        };
+
+        return [
+            'entity' => $mpr->entity ?? '',
+            'position' => $mpr->position ?? '',
+            'department' => $mpr->department ?? '',
+            'division' => $mpr->division ?? '',
+            'approval_division' => $mpr->approvalDivision ?? '',
+            'job_level' => $mpr->jobLevel ?? '',
+            'work_location' => $mpr->workLocation ?? '',
+            'employment_type' => $mpr->employmentType ?? '',
+            'quantity' => $mpr->quantity ?? 1,
+            'expected_join_date' => $mpr->expectedJoinDate ?? '',
+            'reason' => $mpr->reason ?? '',
+            'replacement_for' => $mpr->replacementFor ?? '',
+            'shift_detail' => $mpr->shiftDetail ?? '',
+            'working_days' => $this->optionKeysFromLabels($mpr->workingDays, 'working_days'),
+            'working_hours' => $this->optionKeysFromLabels($mpr->workingHours, 'working_hours'),
+            'benefits' => $this->optionKeysFromLabels($mpr->benefits, 'benefits'),
+            'education_background' => $singleKey($mpr->educationBackground, 'education_background'),
+            'work_experience' => $singleKey($mpr->workExperience, 'work_experience'),
+            'skills_competencies' => $mpr->skillsCompetencies ?? '',
+            'languages' => $mpr->languages ?? '',
+            'industry_reference' => $mpr->industryReference ?? '',
+            'requirements' => $mpr->requirements ?? '',
+            'job_description' => $mpr->jobDescription ?? '',
+            'key_results_targets' => $mpr->keyResultsTargets ?? '',
+            'special_notes' => $mpr->specialNotes ?? '',
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function optionKeysFromLabels(?string $stored, string $group): array
+    {
+        $map = config("hris.mpr_form_options.{$group}", []);
+        $labels = array_values(array_filter(
+            array_map('trim', explode(',', (string) $stored)),
+            static fn (string $value) => $value !== ''
+        ));
+        $keys = [];
+        foreach ($labels as $label) {
+            $found = array_search($label, $map, true);
+            if ($found !== false) {
+                $keys[] = (string) $found;
+                continue;
+            }
+            if (array_key_exists($label, $map)) {
+                $keys[] = $label;
+            }
+        }
+
+        return $keys;
+    }
+
     /**
      * Shared MPR page context for requestor pages while preserving existing business logic.
      */
@@ -120,11 +194,9 @@ class MprController extends Controller
                 ->unique()
                 ->sort()
                 ->values();
-            $thisMonthStr = now()->timezone('Asia/Jakarta')->format('Y-m');
-
             $stats = [
                 'total'           => $allMprs->count(),
-                'this_month'      => $allMprs->filter(fn($m) => str_starts_with($m->requestDate ?? $m->createdAt ?? '', $thisMonthStr))->count(),
+                'finish'          => $allMprs->filter(fn($m) => strtolower($m->status ?? '') === 'finish')->count(),
                 'total_quantity'  => $allMprs->sum(fn($m) => (int) ($m->quantity ?? 1)),
                 'submitted'       => $allMprs->filter(fn($m) => strtolower($m->status ?? '') === 'submitted')->count(),
             ];
@@ -142,7 +214,7 @@ class MprController extends Controller
             $perPage = 10;
             $stats = [
                 'total' => 0,
-                'this_month' => 0,
+                'finish' => 0,
                 'total_quantity' => 0,
                 'submitted' => 0,
             ];
@@ -240,11 +312,9 @@ class MprController extends Controller
             ->unique()
             ->sort()
             ->values();
-        $thisMonthStr = now()->timezone('Asia/Jakarta')->format('Y-m');
-
         $stats = [
             'total'           => $allMprs->count(),
-            'this_month'      => $allMprs->filter(fn($m) => str_starts_with($m->requestDate ?? $m->createdAt ?? '', $thisMonthStr))->count(),
+            'finish'          => $allMprs->filter(fn($m) => strtolower($m->status ?? '') === 'finish')->count(),
             'total_quantity'  => $allMprs->sum(fn($m) => (int) ($m->quantity ?? 1)),
             'submitted'       => $allMprs->filter(fn($m) => strtolower($m->status ?? '') === 'submitted')->count(),
         ];
@@ -307,6 +377,30 @@ class MprController extends Controller
         }
 
         return view('hr.mpr.create', $this->buildRequestorPageData($request, false));
+    }
+
+    public function edit(Request $request, string $id): View
+    {
+        $user = $this->currentRequestorUser();
+        if (!$this->isManpowerUser($user)) {
+            abort(403, 'Anda tidak memiliki akses untuk mengubah pengajuan MPR.');
+        }
+
+        $mpr = $this->mprRepo->findByMprNumber($id);
+        if (!$mpr) {
+            abort(404, 'Data MPR tidak ditemukan.');
+        }
+        if (!$this->requestorOwnsMpr($user, $mpr)) {
+            abort(403, 'Anda tidak memiliki akses untuk mengubah pengajuan MPR ini.');
+        }
+
+        return view('hr.mpr.create', array_merge(
+            $this->buildRequestorPageData($request, false),
+            [
+                'editingMpr' => $mpr,
+                'formDefaults' => $this->formDefaultsFromMpr($mpr),
+            ]
+        ));
     }
 
     public function history(Request $request): View
@@ -516,11 +610,23 @@ class MprController extends Controller
     /** Update editable MPR fields while preserving identity and workflow metadata. */
     public function update(UpdateMprRequest $request, string $id): JsonResponse
     {
-        Gate::authorize('update_mpr');
         $existing = $this->mprRepo->findByMprNumber($id);
 
         if (!$existing) {
             return response()->json(['success' => false, 'message' => 'Data MPR tidak ditemukan.'], 404);
+        }
+
+        $user = $this->currentRequestorUser();
+        $isRequestorUpdate = $request->routeIs('mpr.auth.request.update');
+        if ($isRequestorUpdate) {
+            if (!$this->isManpowerUser($user) || !$this->requestorOwnsMpr($user, $existing)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses untuk mengubah pengajuan MPR ini.',
+                ], 403);
+            }
+        } else {
+            Gate::authorize('update_mpr');
         }
 
         $validated = $request->validated();
@@ -536,13 +642,37 @@ class MprController extends Controller
         $benefitsLabels = $toLabels((array) ($validated['benefits'] ?? []), 'benefits');
         $educationLabel = $formOptions['education_background'][$validated['education_background'] ?? ''] ?? null;
         $experienceLabel = $formOptions['work_experience'][$validated['work_experience'] ?? ''] ?? null;
+        $submittedDayKeys = array_map(
+            static fn ($value) => strtolower(trim((string) $value)),
+            (array) ($validated['working_days'] ?? [])
+        );
+        $daysSubmitted = array_key_exists('working_days', $validated);
+        $hoursSubmitted = array_key_exists('working_hours', $validated);
+        $benefitsSubmitted = array_key_exists('benefits', $validated);
+        $isShifting = in_array('shifting', $submittedDayKeys, true);
+        $workingDaysValue = $daysSubmitted
+            ? ($workingDaysLabels !== '' ? $workingDaysLabels : null)
+            : ($existing->workingDays ?? null);
+        $workingHoursValue = $isShifting
+            ? null
+            : ($hoursSubmitted
+                ? ($workingHoursLabels !== '' ? $workingHoursLabels : null)
+                : ($existing->workingHours ?? null));
+        $shiftDetailValue = $daysSubmitted && ! $isShifting
+            ? null
+            : (array_key_exists('shift_detail', $validated)
+                ? $validated['shift_detail']
+                : $existing->shiftDetail);
+        $benefitsValue = $benefitsSubmitted
+            ? ($benefitsLabels !== '' ? $benefitsLabels : null)
+            : ($existing->benefits ?? null);
 
         $updated = new MprData(
             mprNumber: $existing->mprNumber,
             requestDate: $existing->requestDate,
             requestorName: $existing->requestorName,
             requestorEmail: $existing->requestorEmail,
-            entity: $existing->entity,
+            entity: $validated['entity'] ?? $existing->entity,
             department: $validated['department'],
             division: $validated['division'],
             approvalDivision: $validated['approval_division'] ?? $existing->approvalDivision,
@@ -560,11 +690,13 @@ class MprController extends Controller
             createdBy: $existing->createdBy,
             createdAt: $existing->createdAt,
             updatedAt: now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
-            requestorPosition: $validated['requestor_position'] ?? $existing->requestorPosition,
-            workingDays: $workingDaysLabels !== '' ? $workingDaysLabels : ($existing->workingDays ?? null),
-            workingHours: $workingHoursLabels !== '' ? $workingHoursLabels : ($existing->workingHours ?? null),
-            shiftDetail: $validated['shift_detail'] ?? $existing->shiftDetail,
-            benefits: $benefitsLabels !== '' ? $benefitsLabels : ($existing->benefits ?? null),
+            requestorPosition: $isRequestorUpdate
+                ? $existing->requestorPosition
+                : ($validated['requestor_position'] ?? $existing->requestorPosition),
+            workingDays: $workingDaysValue,
+            workingHours: $workingHoursValue,
+            shiftDetail: $shiftDetailValue,
+            benefits: $benefitsValue,
             educationBackground: $educationLabel ?? $existing->educationBackground,
             workExperience: $experienceLabel ?? $existing->workExperience,
             skillsCompetencies: $validated['skills_competencies'] ?? $existing->skillsCompetencies,
@@ -581,7 +713,10 @@ class MprController extends Controller
             return response()->json(['success' => false, 'message' => 'Terjadi kesalahan saat memperbarui MPR.'], 500);
         }
 
-        $actor = session('hr_user.email', session('hr_user.fullName', 'HR Administrator'));
+        $actor = $isRequestorUpdate
+            ? ($user['email'] ?? 'Manpower')
+            : session('hr_user.email', session('hr_user.fullName', 'HR Administrator'));
+        $auditSource = $isRequestorUpdate ? 'Public' : 'Dashboard';
         foreach ($validated as $field => $newValue) {
             $property = match ($field) {
                 'job_level' => 'jobLevel',
@@ -590,11 +725,23 @@ class MprController extends Controller
                 'expected_join_date' => 'expectedJoinDate',
                 'replacement_for' => 'replacementFor',
                 'job_description' => 'jobDescription',
+                'approval_division' => 'approvalDivision',
+                'requestor_position' => 'requestorPosition',
+                'working_days' => 'workingDays',
+                'working_hours' => 'workingHours',
+                'shift_detail' => 'shiftDetail',
+                'education_background' => 'educationBackground',
+                'work_experience' => 'workExperience',
+                'skills_competencies' => 'skillsCompetencies',
+                'industry_reference' => 'industryReference',
+                'special_notes' => 'specialNotes',
+                'key_results_targets' => 'keyResultsTargets',
                 default => $field,
             };
+            $comparableNew = is_array($newValue) ? $toLabels($newValue, $field) : $newValue;
             $oldValue = $existing->{$property} ?? null;
-            if ((string) $oldValue !== (string) $newValue) {
-                $this->auditRepo->log('MPR', $existing->mprNumber ?? $id, 'updated', $field, $oldValue, $newValue, $actor, 'Dashboard');
+            if ((string) $oldValue !== (string) $comparableNew) {
+                $this->auditRepo->log('MPR', $existing->mprNumber ?? $id, 'updated', $field, $oldValue, $comparableNew, $actor, $auditSource);
             }
         }
 
@@ -602,8 +749,63 @@ class MprController extends Controller
             'success' => true,
             'message' => 'MPR berhasil diperbarui.',
             'mpr' => $updated->toArray(),
-            'pdf_url' => route('hr.mpr.pdf', ['id' => $updated->mprNumber]),
+            'pdf_url' => $isRequestorUpdate
+                ? route('mpr.auth.pdf', ['id' => $updated->mprNumber])
+                : route('hr.mpr.pdf', ['id' => $updated->mprNumber]),
         ]);
+    }
+
+    /**
+     * Move a Submitted MPR to Finish. Requestors may finish only their own record.
+     */
+    public function finish(Request $request, string $id): RedirectResponse
+    {
+        $existing = $this->mprRepo->findByMprNumber($id);
+        if (!$existing) {
+            abort(404, "Data MPR dengan nomor '{$id}' tidak ditemukan.");
+        }
+
+        $user = $this->currentRequestorUser();
+        $isRequestorFinish = $request->routeIs('mpr.auth.request.finish') || $this->isManpowerUser($user);
+        if ($isRequestorFinish) {
+            if (!$this->isManpowerUser($user) || !$this->requestorOwnsMpr($user, $existing)) {
+                abort(403, 'Anda tidak memiliki akses untuk mengubah status pengajuan MPR ini.');
+            }
+        } else {
+            Gate::authorize('update_mpr');
+        }
+
+        if (strcasecmp(trim((string) $existing->status), 'Submitted') !== 0) {
+            return back()->with('error', 'Hanya pengajuan berstatus Submitted yang bisa diubah menjadi Finish.');
+        }
+
+        $updated = clone $existing;
+        $updated->status = 'Finish';
+        $updated->updatedAt = now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s');
+
+        try {
+            $this->mprRepo->update($existing->mprNumber ?? $id, $updated);
+        } catch (\Throwable $e) {
+            Log::error('Gagal mengubah status MPR menjadi Finish: ' . $e->getMessage());
+
+            return back()->with('error', 'Terjadi kesalahan saat mengubah status MPR.');
+        }
+
+        $actor = $isRequestorFinish
+            ? ($user['email'] ?? 'Manpower')
+            : session('hr_user.email', session('hr_user.fullName', 'HR Administrator'));
+        $this->auditRepo->log(
+            'MPR',
+            $updated->mprNumber ?? $id,
+            'updated',
+            'status',
+            $existing->status,
+            'Finish',
+            $actor,
+            $isRequestorFinish ? 'Public' : 'Dashboard'
+        );
+
+        return back()->with('success', 'Status MPR ' . ($updated->mprNumber ?? $id) . ' diubah menjadi Finish.');
     }
 
     /** Preview the current persisted MPR using the same PDF service as export. */
@@ -625,7 +827,7 @@ class MprController extends Controller
             }
         }
 
-        return $this->pdfService->generate($mpr)->stream("MPR-{$mpr->mprNumber}-preview.pdf");
+        return $this->pdfService->generate($mpr)->stream($this->pdfFileName($mpr->mprNumber, true));
     }
 
     /**
@@ -687,10 +889,18 @@ class MprController extends Controller
         }
 
         $pdf = $this->pdfService->generate($mpr);
-        $fileName = "MPR-{$mpr->mprNumber}.pdf";
+        $fileName = $this->pdfFileName($mpr->mprNumber);
 
         $this->auditRepo->log('MPR', $mpr->mprNumber, 'generated', 'document', null, 'MPR PDF', $user['email'] ?? 'Manpower', 'Dashboard');
 
         return $pdf->stream($fileName);
+    }
+
+    private function pdfFileName(?string $mprNumber, bool $preview = false): string
+    {
+        $number = trim((string) $mprNumber);
+        $stem = str_starts_with($number, 'MPR-') ? $number : 'MPR-'.$number;
+
+        return $preview ? "{$stem}-preview.pdf" : "{$stem}.pdf";
     }
 }

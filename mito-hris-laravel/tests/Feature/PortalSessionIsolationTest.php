@@ -281,8 +281,8 @@ class PortalSessionIsolationTest extends TestCase
         // MPR Manpower session is alive with its own permissions.
         Session::put(config('mpr.session_key', 'mpr_requestor_auth'), $this->makeMprRequestor());
 
-        // HRIS master-data route requires manage_settings — User role does not have it.
-        $response = $this->get('http://' . config('hris.domains.hris') . '/hr/master-data');
+        // User management requires manage_settings — User role does not have it.
+        $response = $this->get('http://' . config('hris.domains.hris') . '/hr/users');
         // Must be denied (403 or redirect to dashboard), NOT granted due to MPR session.
         $response->assertStatus(403);
     }

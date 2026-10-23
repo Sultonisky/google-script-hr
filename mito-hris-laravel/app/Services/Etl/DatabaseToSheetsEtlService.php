@@ -117,7 +117,7 @@ class DatabaseToSheetsEtlService
         foreach (DB::table('users')->orderBy('id')->get() as $user) {
             $rows[] = $this->valuesForHeaders($headers, [
                 'Email' => (string) $user->email,
-                'Username' => (string) $user->email,
+                'Username' => (string) (($user->username ?? '') !== '' ? $user->username : $user->email),
                 'Full Name' => (string) ($user->name ?? ''),
                 'Role' => (string) ($user->role ?? 'User'),
                 'Status' => (string) ($user->status ?? 'Active'),
@@ -324,6 +324,12 @@ class DatabaseToSheetsEtlService
                 'Timestamp' => optional($row->logged_at)?->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
                     ?? optional($row->created_at)?->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
                     ?? '',
+                'IP Address' => (string) ($row->ip_address ?? ''),
+                'User Agent' => (string) ($row->user_agent ?? ''),
+                'Browser' => (string) ($row->browser ?? ''),
+                'Device' => (string) ($row->device ?? ''),
+                'Platform' => (string) ($row->platform ?? ''),
+                'Referer' => (string) ($row->referer ?? ''),
             ]);
         }
 

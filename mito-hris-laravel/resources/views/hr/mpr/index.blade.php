@@ -256,44 +256,6 @@
 @section('content')
     <div class="container-fluid px-0">
 
-        <!-- ALERT SUCCESS WITH DIRECT PDF DOWNLOAD (Auto PDF Notification) -->
-        <div id="mprSuccessAlert" class="alert alert-success alert-dismissible fade d-none shadow-sm" role="alert">
-            <div class="d-flex align-items-center">
-                <i class="bi bi-check-circle-fill fs-4 me-3 text-success"></i>
-                <div>
-                    <h6 class="alert-heading mb-1 fw-bold" id="mprSuccessTitle">Pengajuan MPR Berhasil Dibuat!</h6>
-                    <p class="mb-0" id="mprSuccessBody">Dokumen PDF resmi telah digenerate secara otomatis.</p>
-                </div>
-                <div class="ms-auto d-flex gap-2">
-                    <a id="btnAlertOpenPdf" href="#" target="_blank" class="btn btn-sm btn-success fw-semibold">
-                        <i class="bi bi-file-earmark-pdf-fill me-1"></i> Buka PDF MPR
-                    </a>
-                </div>
-            </div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-
-        @if (session('success'))
-            <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
-                <div class="d-flex align-items-center">
-                    <i class="bi bi-check-circle-fill fs-4 me-3 text-success"></i>
-                    <div>
-                        <h6 class="alert-heading mb-1 fw-bold">Berhasil</h6>
-                        <p class="mb-0">{{ session('success') }}</p>
-                    </div>
-                    @if (session('mpr_pdf_url'))
-                        <div class="ms-auto">
-                            <a href="{{ session('mpr_pdf_url') }}" target="_blank"
-                                class="btn btn-sm btn-success fw-semibold">
-                                <i class="bi bi-file-earmark-pdf-fill me-1"></i> Unduh PDF
-                            </a>
-                        </div>
-                    @endif
-                </div>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        @endif
-
         @if ($isManager)
             {{-- ========================================================================= --}}
             {{-- MANAGER EXPERIENCE: SUBMISSION FORM + MY REQUESTS TABLE                   --}}
@@ -523,14 +485,14 @@
                                         <label class="form-label fw-semibold small">
                                             Nama Karyawan yang Digantikan
                                             <span class="text-danger d-none" id="mgReplacementForRequiredMark">*</span>
-                                            <span class="text-muted fw-normal small" id="mgReplacementForHint">(aktif jika alasan "Penggantian Karyawan")</span>
+                                            <span class="text-muted fw-normal small" id="mgReplacementForHint">(aktif jika alasan "Penggantian Karyawan" atau "Restrukturisasi")</span>
                                         </label>
                                         <input type="text" name="replacement_for" class="form-control"
                                             id="mgReplacementForField"
                                             placeholder="Nama karyawan yang akan digantikan"
                                             disabled>
                                         <div class="form-text text-muted small mt-1" id="mgReplacementForNote">
-                                            <i class="bi bi-info-circle me-1"></i>Pilih alasan "Penggantian Karyawan Resign / Mutasi / Demosi" untuk mengisi field ini.
+                                            <i class="bi bi-info-circle me-1"></i>Pilih alasan "Penggantian Karyawan Resign / Mutasi / Demosi" atau "Restrukturisasi" untuk mengisi field ini.
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -695,15 +657,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-6 col-md-3">
-                    <div class="stat-card">
-                        <div class="stat-icon bg-green"><i class="bi bi-calendar-check-fill"></i></div>
-                        <div>
-                            <div class="stat-label">Pengajuan Bulan Ini</div>
-                            <div class="stat-value text-navy">{{ $stats['this_month'] ?? 0 }}</div>
-                        </div>
-                    </div>
-                </div>
+
                 <div class="col-6 col-md-3">
                     <div class="stat-card">
                         <div class="stat-icon bg-purple"><i class="bi bi-people-fill"></i></div>
@@ -714,6 +668,17 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="col-6 col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-icon bg-green"><i class="bi bi-check-circle-fill"></i></div>
+                        <div>
+                            <div class="stat-label">Status Finish</div>
+                            <div class="stat-value text-navy">{{ $stats['finish'] ?? 0 }}</div>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="col-6 col-md-3">
                     <div class="stat-card">
                         <div class="stat-icon bg-gold"><i class="bi bi-send-check-fill"></i></div>
@@ -766,6 +731,7 @@
                             <option value="">Semua Status</option>
                             <option value="Submitted" {{ $status === 'Submitted' ? 'selected' : '' }}>Submitted
                             </option>
+                            <option value="Finish" {{ $status === 'Finish' ? 'selected' : '' }}>Finish</option>
                         </select>
                         <select class="filter-select" name="submit_by" id="mprSubmitByFilter" data-auto-submit="true">
                             <option value="">Submit By</option>
@@ -790,7 +756,7 @@
                             <thead>
                                 <tr>
                                     <th>No. MPR & Tanggal</th>
-                                    <th>Pemohon (Manager)</th>
+                                    <th>Pemohon (Manpower)</th>
                                     <th>Perusahaan & Dept</th>
                                     <th>Posisi & Level</th>
                                     <th class="text-center">Kebutuhan</th>
@@ -828,7 +794,8 @@
                                             <span>{{ $mpr->expectedJoinDate ? \Carbon\Carbon::parse($mpr->expectedJoinDate)->format('d M Y') : '-' }}</span>
                                         </td>
                                         <td>
-                                            <span class="badge-status accepted">SUBMITTED</span>
+                                            @php $mprStatusLabel = strtoupper(trim((string) ($mpr->status ?? 'Submitted'))); @endphp
+                                            <span class="badge-status {{ $mprStatusLabel === 'FINISH' ? 'hold' : 'accepted' }}">{{ $mprStatusLabel }}</span>
                                         </td>
                                         <td class="text-center">
                                             <div class="btn-group btn-group-sm">
@@ -851,6 +818,13 @@
                                                     @endif
                                                 @endcan
                                             </div>
+                                            @can('update_mpr')
+                                                @if (filled($mpr->mprNumber))
+                                                    @include('hr.mpr.partials.finish-button', [
+                                                        'action' => route('hr.mpr.finish', ['id' => $mpr->mprNumber]),
+                                                    ])
+                                                @endif
+                                            @endcan
                                         </td>
                                     </tr>
                                 @empty
@@ -1110,14 +1084,14 @@
                                         <div class="col-md-6">
                                             <label class="form-label fw-semibold small">Nama Karyawan yang Digantikan
                                                 <span class="text-danger d-none" id="hrReplacementForRequiredMark">*</span>
-                                                <span class="text-muted fw-normal" id="hrReplacementForHint">(aktif jika alasan "Penggantian Karyawan")</span>
+                                                <span class="text-muted fw-normal" id="hrReplacementForHint">(aktif jika alasan "Penggantian Karyawan" atau "Restrukturisasi")</span>
                                             </label>
                                             <input type="text" name="replacement_for" class="form-control form-control-sm"
                                                 id="hrReplacementForField"
                                                 placeholder="Nama karyawan yang akan digantikan"
                                                 disabled>
                                             <div class="form-text text-muted small mt-1" id="hrReplacementForNote">
-                                                <i class="bi bi-info-circle me-1"></i>Pilih alasan "Penggantian Karyawan Resign / Mutasi / Demosi" untuk mengisi field ini.
+                                                <i class="bi bi-info-circle me-1"></i>Pilih alasan "Penggantian Karyawan Resign / Mutasi / Demosi" atau "Restrukturisasi" untuk mengisi field ini.
                                             </div>
                                         </div>
                                         <div class="col-md-6">
@@ -1371,14 +1345,14 @@
                                         <label class="form-label small fw-semibold">
                                             Karyawan yang Digantikan
                                             <span class="text-danger d-none" id="editReplacementForRequiredMark">*</span>
-                                            <span class="text-muted fw-normal small" id="editReplacementForHint">(aktif jika alasan "Penggantian Karyawan")</span>
+                                            <span class="text-muted fw-normal small" id="editReplacementForHint">(aktif jika alasan "Penggantian Karyawan" atau "Restrukturisasi")</span>
                                         </label>
                                         <input name="replacement_for" class="form-control form-control-sm"
                                             id="editReplacementForField"
                                             placeholder="Nama karyawan yang akan digantikan"
                                             disabled>
                                         <div class="form-text text-muted small mt-1" id="editReplacementForNote">
-                                            <i class="bi bi-info-circle me-1"></i>Pilih alasan "Penggantian Karyawan" untuk mengisi field ini.
+                                            <i class="bi bi-info-circle me-1"></i>Pilih alasan "Penggantian Karyawan Resign / Mutasi / Demosi" atau "Restrukturisasi" untuk mengisi field ini.
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -1528,13 +1502,7 @@
                 if (hintNote)     hintNote.classList.toggle('d-none', isShifting);
             }
 
-            /**
-             * Logika Replacement:
-             * - Jika alasan = "Penggantian Karyawan Resign / Mutasi / Demosi":
-             *   → Input nama karyawan: enabled, required, border highlight
-             * - Selain itu: disabled, not required, value dikosongkan
-             */
-            const REPLACEMENT_REASON_VALUE = 'Penggantian Karyawan Resign / Mutasi / Demosi';
+            const REPLACEMENT_REASONS = @json(array_values(config('hris.mpr_form_options.replacement_reasons', [])));
 
             function applyReplacementState(form) {
                 if (!form) return;
@@ -1545,7 +1513,7 @@
                 const noteText         = form.querySelector('[id$="ReplacementForNote"]');
                 if (!reasonSelect || !replacementField) return;
 
-                const isReplacement = reasonSelect.value === REPLACEMENT_REASON_VALUE;
+                const isReplacement = REPLACEMENT_REASONS.includes(reasonSelect.value);
 
                 replacementField.disabled = !isReplacement;
                 replacementField.required = isReplacement;
@@ -1635,6 +1603,22 @@
                 return meta ? meta.getAttribute('content') : '';
             }
 
+            function formPayload(form) {
+                const payload = {};
+                new FormData(form).forEach((value, rawKey) => {
+                    const key = rawKey.endsWith('[]') ? rawKey.slice(0, -2) : rawKey;
+                    if (rawKey.endsWith('[]')) {
+                        if (!Array.isArray(payload[key])) {
+                            payload[key] = [];
+                        }
+                        payload[key].push(value);
+                        return;
+                    }
+                    payload[key] = value;
+                });
+                return payload;
+            }
+
             // Handle Form Submission (Fetch API + Anti-Double-Submit + Auto PDF Popup)
             function setupMprForm(formId, submitBtnId, spinnerId, iconId, modalIdToClose) {
                 const form = document.getElementById(formId);
@@ -1683,24 +1667,11 @@
                                 }
                             }
 
-                            // Show success alert banner with direct PDF link
-                            const alertEl = document.getElementById('mprSuccessAlert');
-                            const alertTitle = document.getElementById('mprSuccessTitle');
-                            const alertBody = document.getElementById('mprSuccessBody');
-                            const btnPdf = document.getElementById('btnAlertOpenPdf');
-
-                            if (alertEl) {
-                                if (alertTitle) alertTitle.innerText =
-                                    `Pengajuan MPR Berhasil! (${data.mpr_number})`;
-                                if (alertBody) alertBody.innerText =
-                                    `Dokumen Manpower Request nomor ${data.mpr_number} telah berhasil disimpan dan PDF otomatis digenerate.`;
-                                if (btnPdf) btnPdf.href = data.pdf_url;
-                                alertEl.classList.remove('d-none');
-                                alertEl.classList.add('show');
-                                window.scrollTo({
-                                    top: 0,
-                                    behavior: 'smooth'
-                                });
+                            if (typeof showToast === 'function') {
+                                showToast(
+                                    `Pengajuan MPR berhasil dibuat (${data.mpr_number}).`,
+                                    'success'
+                                );
                             }
 
                             // Auto open PDF in new tab/window
@@ -2042,7 +2013,7 @@
                             'Accept': 'application/json',
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify(Object.fromEntries(new FormData(editForm)))
+                        body: JSON.stringify(formPayload(editForm))
                     });
                     const data = await response.json();
                     if (!response.ok) {

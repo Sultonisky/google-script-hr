@@ -15,7 +15,7 @@ use Tests\TestCase;
  * Verifies that:
  * 1. MprRequestorAuthService authenticates against mpr_requestor sheet (NOT Users).
  * 2. Inactive requestors are rejected.
- * 3. Wrong role (non-Manager) in mpr_requestor is rejected.
+ * 3. Wrong role (anything other than Manpower) in mpr_requestor is rejected.
  * 4. Unknown identifier returns a hard-rejection error — no fallthrough to Users domain.
  * 5. Session built by MprRequestorAuthService has correct auth_domain marker.
  * 6. Entity and branch are correctly placed in the session.
@@ -159,6 +159,22 @@ class MprRequestorAuthTest extends TestCase
 
         $this->assertFalse($result['success']);
         $this->assertNotNull($result['error']);
+    }
+
+    #[Test]
+    public function legacy_manager_role_is_rejected(): void
+    {
+        $row = $this->makeRequestorRow(['Role' => 'Manager']);
+
+        $mockRepo = Mockery::mock(MprRequestorRepositoryInterface::class);
+        $mockRepo->shouldReceive('findByIdentifier')->andReturn($row);
+        $mockRepo->shouldNotReceive('updateLastLogin');
+
+        $service = new MprRequestorAuthService($mockRepo);
+        $result = $service->attemptLogin('manager@mito.co.id', 'password123');
+
+        $this->assertFalse($result['success']);
+        $this->assertStringContainsString('Manpower', $result['error']);
     }
 
     // =========================================================================

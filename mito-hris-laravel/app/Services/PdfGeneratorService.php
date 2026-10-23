@@ -228,6 +228,39 @@ class PdfGeneratorService
     }
 
     /**
+     * Surat Pakta Integritas. Print-only: does not change employee master data.
+     */
+    public function generateSuratPaktaIntegritasPdf(EmployeeData $employee, array $extraData = []): \Barryvdh\DomPDF\PDF
+    {
+        $company = $this->resolveCompany($this->getBranchName($employee, $extraData));
+
+        return Pdf::loadView('pdf.surat-pakta-integritas', compact('employee', 'extraData', 'company'))
+            ->setPaper('a4', 'portrait');
+    }
+
+    /**
+     * Surat Pernyataan NDA. Print-only: does not change employee master data.
+     */
+    public function generateSuratNdaPdf(EmployeeData $employee, array $extraData = []): \Barryvdh\DomPDF\PDF
+    {
+        $company = $this->resolveCompany($this->getBranchName($employee, $extraData));
+
+        return Pdf::loadView('pdf.surat-nda', compact('employee', 'extraData', 'company'))
+            ->setPaper('a4', 'portrait');
+    }
+
+    /**
+     * Perjanjian Bersama PHK. Print-only: does not change employee master data.
+     */
+    public function generateSuratPbPhkPdf(EmployeeData $employee, array $extraData = []): \Barryvdh\DomPDF\PDF
+    {
+        $company = $this->resolveCompany($this->getBranchName($employee, $extraData));
+
+        return Pdf::loadView('pdf.surat-pb-phk', compact('employee', 'extraData', 'company'))
+            ->setPaper('a4', 'portrait');
+    }
+
+    /**
      * Generate Surat Peringatan (SP-1 / SP-2 / SP-3) PDF.
      */
     public function generateWarningLetterPdf(EmployeeData $employee, array $extraData = []): \Barryvdh\DomPDF\PDF

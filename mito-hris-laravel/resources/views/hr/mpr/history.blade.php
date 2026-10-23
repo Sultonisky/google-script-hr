@@ -7,7 +7,7 @@
 @section('content')
     <section class="page-section active" id="pageMprHistory">
         <div class="row g-3 mb-4">
-            <div class="col-12 col-md-6 col-xl-3">
+            <div class="col-12 col-md-6">
                 <div class="stat-card">
                     <div class="stat-icon bg-blue"><i class="bi bi-file-earmark-text"></i></div>
                     <div>
@@ -16,25 +16,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-12 col-md-6 col-xl-3">
-                <div class="stat-card">
-                    <div class="stat-icon bg-gold"><i class="bi bi-hourglass-split"></i></div>
-                    <div>
-                        <div class="stat-label">Menunggu Review</div>
-                        <div class="stat-value">{{ $stats['submitted'] ?? 0 }}</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-12 col-md-6 col-xl-3">
-                <div class="stat-card">
-                    <div class="stat-icon bg-green"><i class="bi bi-check-circle"></i></div>
-                    <div>
-                        <div class="stat-label">Disetujui</div>
-                        <div class="stat-value">{{ $stats['approved'] ?? 0 }}</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-12 col-md-6 col-xl-3">
+            <div class="col-12 col-md-6">
                 <div class="stat-card">
                     <div class="stat-icon bg-navy"><i class="bi bi-people"></i></div>
                     <div>
@@ -79,6 +61,7 @@
                 <select name="status" class="filter-select" data-auto-submit="true">
                     <option value="">Semua Status</option>
                     <option value="Submitted" {{ $status === 'Submitted' ? 'selected' : '' }}>Submitted</option>
+                    <option value="Finish" {{ $status === 'Finish' ? 'selected' : '' }}>Finish</option>
                 </select>
 
                 <select name="sort" class="filter-select" data-auto-submit="true">
@@ -104,7 +87,7 @@
                 <table class="table hr-table">
                     <thead>
                         <tr>
-                            <th>MPR Number</th>
+                            <th>No.</th>
                             <th>Posisi</th>
                             <th>Departemen</th>
                             <th>Qty</th>
@@ -131,8 +114,9 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="badge bg-success-subtle text-success border rounded-pill px-2 py-1">
-                                        {{ strtoupper($mpr->status ?? 'SUBMITTED') }}
+                                    @php $mprStatusLabel = strtoupper(trim((string) ($mpr->status ?? 'Submitted'))); @endphp
+                                    <span class="badge {{ $mprStatusLabel === 'FINISH' ? 'bg-secondary-subtle text-secondary' : 'bg-success-subtle text-success' }} border rounded-pill px-2 py-1">
+                                        {{ $mprStatusLabel }}
                                     </span>
                                 </td>
                                 <td>
@@ -146,6 +130,12 @@
                                             <i class="bi bi-eye"></i>
                                         </button>
                                         @if (filled($mpr->mprNumber))
+                                            <a href="{{ route('mpr.auth.request.edit', ['id' => $mpr->mprNumber]) }}"
+                                                class="btn btn-outline-warning" title="Edit Pengajuan">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </a>
+                                        @endif
+                                        @if (filled($mpr->mprNumber))
                                             <a href="{{ request()->routeIs('mpr.auth.*') ? route('mpr.auth.pdf', ['id' => $mpr->mprNumber]) : route('hr.mpr.pdf', ['id' => $mpr->mprNumber]) }}" target="_blank"
                                                 class="btn btn-outline-danger" title="Unduh PDF">
                                                 <i class="bi bi-file-earmark-pdf"></i>
@@ -157,6 +147,13 @@
                                             </button>
                                         @endif
                                     </div>
+                                    @if (filled($mpr->mprNumber))
+                                        @include('hr.mpr.partials.finish-button', [
+                                            'action' => request()->routeIs('mpr.auth.*')
+                                                ? route('mpr.auth.request.finish', ['id' => $mpr->mprNumber])
+                                                : route('hr.mpr.finish', ['id' => $mpr->mprNumber]),
+                                        ])
+                                    @endif
                                 </td>
                             </tr>
                         @empty
@@ -226,7 +223,7 @@
                     loadingEl.classList.remove('d-none');
                     contentEl.classList.add('d-none');
                     errorEl.classList.add('d-none');
-                    detailMprNum.innerText = id;
+                    if (detailMprNum) detailMprNum.innerText = id;
                     detailModal.show();
 
                     // Route-aware base path: dedicated MPR domain vs HR dashboard

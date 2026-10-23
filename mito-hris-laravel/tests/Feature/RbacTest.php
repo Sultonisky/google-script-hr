@@ -360,18 +360,15 @@ class RbacTest extends TestCase
     }
 
     #[Test]
-    public function super_admin_can_access_master_data(): void
-    {
-        $this->actingAsRole('Super Admin');
-        $this->get('/hr/master-data')->assertOk();
-    }
-
-    #[Test]
     public function settings_page_is_removed(): void
     {
         $this->actingAsRole('Super Admin');
         $this->get('/hr/settings')->assertNotFound();
-        $this->get('/hr/dashboard')->assertOk()->assertDontSee('bi-gear-fill', false);
+        $this->get('/hr/master-data')->assertNotFound();
+        $this->get('/hr/dashboard')
+            ->assertOk()
+            ->assertDontSee('bi-gear-fill', false)
+            ->assertDontSee('/hr/master-data', false);
     }
 
     #[Test]
@@ -438,7 +435,6 @@ class RbacTest extends TestCase
     public function admin_cannot_access_system_settings(): void
     {
         $this->actingAsRole('Admin');
-        $this->get('/hr/master-data')->assertStatus(403);
         $this->get('/hr/users')->assertStatus(403);
         $this->get('/hr/audit-logs')->assertStatus(403);
     }
@@ -522,13 +518,6 @@ class RbacTest extends TestCase
     }
 
     #[Test]
-    public function hr_recruitment_cannot_access_settings_protected_routes(): void
-    {
-        $this->actingAsRole('User');
-        $this->get('/hr/master-data')->assertStatus(403);
-    }
-
-    #[Test]
     public function hr_staff_cannot_access_users(): void
     {
         $this->actingAsRole('User');
@@ -547,13 +536,6 @@ class RbacTest extends TestCase
     {
         $this->actingAsRole('User');
         $this->get('/hr/contracts')->assertStatus(403);
-    }
-
-    #[Test]
-    public function hr_staff_cannot_access_master_data(): void
-    {
-        $this->actingAsRole('User');
-        $this->get('/hr/master-data')->assertStatus(403);
     }
 
     #[Test]
@@ -650,7 +632,7 @@ class RbacTest extends TestCase
         foreach ([null, '', 'Unknown Role'] as $role) {
             Session::put('hr_user', ['role' => $role, 'permissions' => []]);
             $this->assertFalse(Gate::allows('view_recruitment'));
-            $this->get('/hr/master-data')->assertStatus(403);
+            $this->get('/hr/users')->assertStatus(403);
         }
     }
 
@@ -720,18 +702,6 @@ class RbacTest extends TestCase
             200,
             $response->getStatusCode(),
             'MPR Requestor must not access Employees'
-        );
-    }
-
-    #[Test]
-    public function mpr_requestor_is_blocked_from_settings(): void
-    {
-        $this->actingAsMprRequestor();
-        $response = $this->get('/hr/master-data');
-        $this->assertNotSame(
-            200,
-            $response->getStatusCode(),
-            'MPR Requestor must not access settings-protected routes'
         );
     }
 
@@ -1085,7 +1055,6 @@ class RbacTest extends TestCase
         $this->assertFalse(Gate::allows('view_mpr'),        'Invalid Users-sheet Manpower must not gain MPR access');
 
         // Protected HRIS routes enforce Gate checks.
-        $this->get('/hr/master-data')->assertStatus(403);
         $this->get('/hr/employees')->assertStatus(403);
         $this->get('/hr/recruitment')->assertStatus(403);
         $this->get('/hr/users')->assertStatus(403);

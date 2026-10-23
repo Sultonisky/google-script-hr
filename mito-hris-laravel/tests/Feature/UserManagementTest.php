@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\MprRequestorRepositoryInterface;
+use App\Repositories\Contracts\UserPermissionRepositoryInterface;
 use App\Repositories\Contracts\UserRepositoryInterface;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Hash;
@@ -49,7 +50,31 @@ class UserManagementTest extends TestCase
             ->assertOk()
             ->assertViewIs('hr.users.index')
             ->assertSee('Admin Test')
-            ->assertSee('admin@example.test');
+            ->assertSee('admin@example.test')
+            ->assertSee('id="userEditEmail" name="email"', false)
+            ->assertDontSee('id="userEditEmail" readonly', false);
+    }
+
+    public function test_user_management_shows_success_and_error_as_floating_toast(): void
+    {
+        $this->actingAsRole('Super Admin');
+        $repository = Mockery::mock(UserRepositoryInterface::class);
+        $repository->shouldReceive('getAll')->twice()->andReturn([]);
+        $this->app->instance(UserRepositoryInterface::class, $repository);
+
+        $this->withSession(['success' => 'Pengguna berhasil diperbarui.'])
+            ->get(route('hr.users.index'))
+            ->assertOk()
+            ->assertSee('window.__flashToasts', false)
+            ->assertSee('"type":"success"', false)
+            ->assertSee('Pengguna berhasil diperbarui.', false);
+
+        $this->withSession(['error' => 'Pengguna gagal disimpan ke sheet Users.'])
+            ->get(route('hr.users.index'))
+            ->assertOk()
+            ->assertSee('window.__flashToasts', false)
+            ->assertSee('"type":"error"', false)
+            ->assertSee('Pengguna gagal disimpan ke sheet Users.', false);
     }
 
     public function test_non_super_admin_cannot_access_user_management(): void
@@ -63,6 +88,7 @@ class UserManagementTest extends TestCase
     {
         $this->actingAsRole('Super Admin');
         $repository = Mockery::mock(UserRepositoryInterface::class);
+        $repository->shouldReceive('getAll')->once()->andReturn([]);
         $repository->shouldReceive('create')->once()->with(Mockery::on(function (array $data): bool {
             return $data['email'] === 'new.user@example.test'
                 && $data['fullName'] === 'New User'
@@ -143,6 +169,7 @@ class UserManagementTest extends TestCase
         $this->withoutMiddleware(VerifyCsrfToken::class)
             ->put(route('hr.users.update', ['email' => 'admin@example.test']), [
                 'name' => 'Admin Updated',
+                'email' => 'admin@example.test',
                 'username' => 'admin.updated',
                 'role' => 'Admin',
                 'status' => 'Inactive',
@@ -178,7 +205,24 @@ class UserManagementTest extends TestCase
         $this->get(route('hr.mpr-requestors.index'))
             ->assertOk()
             ->assertViewIs('hr.mpr-requestors.index')
-            ->assertSee('Manager Test');
+            ->assertSee('Manager Test')
+            ->assertSee('id="mprEditEmail" name="email"', false)
+            ->assertDontSee('id="mprEditEmail" readonly', false);
+    }
+
+    public function test_mpr_requestors_show_success_as_floating_toast(): void
+    {
+        $this->actingAsRole('Super Admin');
+        $repository = Mockery::mock(MprRequestorRepositoryInterface::class);
+        $repository->shouldReceive('getAll')->once()->andReturn([]);
+        $this->app->instance(MprRequestorRepositoryInterface::class, $repository);
+
+        $this->withSession(['success' => 'MPR requestor berhasil diperbarui.'])
+            ->get(route('hr.mpr-requestors.index'))
+            ->assertOk()
+            ->assertSee('window.__flashToasts', false)
+            ->assertSee('"type":"success"', false)
+            ->assertSee('MPR requestor berhasil diperbarui.', false);
     }
 
     public function test_non_super_admin_cannot_access_mpr_requestors(): void
@@ -192,6 +236,7 @@ class UserManagementTest extends TestCase
     {
         $this->actingAsRole('Super Admin');
         $repository = Mockery::mock(MprRequestorRepositoryInterface::class);
+        $repository->shouldReceive('findByEmail')->once()->with('new.requestor@example.test')->andReturn(null);
         $repository->shouldReceive('create')->once()->with(Mockery::on(function (array $data): bool {
             return $data['email'] === 'new.requestor@example.test'
                 && $data['username'] === 'newrequestor'
@@ -219,6 +264,31 @@ class UserManagementTest extends TestCase
             ])
             ->assertRedirect(route('hr.mpr-requestors.index'))
             ->assertSessionHas('success');
+    }
+
+    public function test_super_admin_cannot_add_mpr_requestor_with_existing_email(): void
+    {
+        $this->actingAsRole('Super Admin');
+        $repository = Mockery::mock(MprRequestorRepositoryInterface::class);
+        $repository->shouldReceive('findByEmail')->once()->with('new.requestor@example.test')->andReturn([
+            'Email' => 'new.requestor@example.test',
+        ]);
+        $repository->shouldNotReceive('create');
+        $this->app->instance(MprRequestorRepositoryInterface::class, $repository);
+
+        $this->withoutMiddleware(VerifyCsrfToken::class)
+            ->from(route('hr.mpr-requestors.index'))
+            ->post(route('hr.mpr-requestors.store'), [
+                'name' => 'New Requestor',
+                'email' => 'new.requestor@example.test',
+                'username' => 'newrequestor',
+                'job_position' => 'Regional Manager',
+                'role' => 'Manpower',
+                'password' => 'requestor-password',
+                'password_confirmation' => 'requestor-password',
+            ])
+            ->assertRedirect(route('hr.mpr-requestors.index'))
+            ->assertSessionHasErrors(['email' => 'Email sudah digunakan.']);
     }
 
     public function test_super_admin_can_edit_mpr_requestor_and_audits_changes(): void
@@ -255,6 +325,7 @@ class UserManagementTest extends TestCase
         $this->withoutMiddleware(VerifyCsrfToken::class)
             ->put(route('hr.mpr-requestors.update', ['email' => 'manager@example.test']), [
                 'name' => 'Manager Updated',
+                'email' => 'manager@example.test',
                 'username' => 'manager',
                 'job_position' => 'Regional Head',
                 'role' => 'Manpower',
@@ -270,5 +341,131 @@ class UserManagementTest extends TestCase
 
         $this->post(route('hr.mpr-requestors.store'), [])->assertForbidden();
         $this->put(route('hr.mpr-requestors.update', ['email' => 'manager@example.test']), [])->assertForbidden();
+    }
+
+    public function test_super_admin_can_change_user_email_and_reassign_permissions(): void
+    {
+        $this->actingAsRole('Super Admin');
+        $existing = [
+            'Email' => 'admin@example.test',
+            'Username' => 'admin',
+            'Full Name' => 'Admin Test',
+            'Role' => 'User',
+            'Status' => 'Active',
+        ];
+        $updated = array_merge($existing, ['Email' => 'admin.updated@example.test']);
+        $repository = Mockery::mock(UserRepositoryInterface::class);
+        $repository->shouldReceive('findByEmail')->once()->with('admin@example.test')->andReturn($existing);
+        $repository->shouldReceive('getAll')->once()->andReturn([$existing]);
+        $repository->shouldReceive('updateByEmail')->once()->with('admin@example.test', Mockery::on(function (array $data): bool {
+            return ($data['email'] ?? null) === 'admin.updated@example.test'
+                && $data['username'] === 'admin'
+                && $data['fullName'] === 'Admin Test';
+        }));
+        $repository->shouldReceive('findByEmail')->once()->with('admin.updated@example.test')->andReturn($updated);
+        $this->app->instance(UserRepositoryInterface::class, $repository);
+
+        $permissions = Mockery::mock(UserPermissionRepositoryInterface::class);
+        $permissions->shouldReceive('reassignEmail')->once()->with('admin@example.test', 'admin.updated@example.test');
+        $this->app->instance(UserPermissionRepositoryInterface::class, $permissions);
+
+        $audit = Mockery::mock(AuditLogRepositoryInterface::class);
+        $audit->shouldReceive('log')->once()->withArgs(function (...$args): bool {
+            return $args[0] === 'User'
+                && $args[1] === 'admin.updated@example.test'
+                && $args[2] === 'UPDATE'
+                && $args[3] === 'Email'
+                && $args[4] === 'admin@example.test'
+                && $args[5] === 'admin.updated@example.test';
+        })->andReturnTrue();
+        $this->app->instance(AuditLogRepositoryInterface::class, $audit);
+
+        $this->withoutMiddleware(VerifyCsrfToken::class)
+            ->put(route('hr.users.update', ['email' => 'admin@example.test']), [
+                'name' => 'Admin Test',
+                'email' => 'admin.updated@example.test',
+                'username' => 'admin',
+                'role' => 'User',
+                'status' => 'Active',
+            ])
+            ->assertRedirect(route('hr.users.index'))
+            ->assertSessionHas('success');
+    }
+
+    public function test_super_admin_cannot_change_user_email_to_an_existing_email(): void
+    {
+        $this->actingAsRole('Super Admin');
+        $existing = [
+            'Email' => 'admin@example.test',
+            'Username' => 'admin',
+            'Full Name' => 'Admin Test',
+            'Role' => 'User',
+            'Status' => 'Active',
+        ];
+        $repository = Mockery::mock(UserRepositoryInterface::class);
+        $repository->shouldReceive('findByEmail')->once()->with('admin@example.test')->andReturn($existing);
+        $repository->shouldReceive('getAll')->once()->andReturn([
+            $existing,
+            ['Email' => 'other@example.test', 'Username' => 'other'],
+        ]);
+        $repository->shouldNotReceive('updateByEmail');
+        $this->app->instance(UserRepositoryInterface::class, $repository);
+
+        $this->withoutMiddleware(VerifyCsrfToken::class)
+            ->from(route('hr.users.index'))
+            ->put(route('hr.users.update', ['email' => 'admin@example.test']), [
+                'name' => 'Admin Test',
+                'email' => 'other@example.test',
+                'username' => 'admin',
+                'role' => 'User',
+                'status' => 'Active',
+            ])
+            ->assertRedirect(route('hr.users.index'))
+            ->assertSessionHasErrors(['email' => 'Email sudah digunakan.']);
+    }
+
+    public function test_super_admin_can_change_mpr_requestor_email(): void
+    {
+        $this->actingAsRole('Super Admin');
+        $existing = [
+            'Requestor ID' => 'MPR-REQ-001',
+            'Email' => 'manager@example.test',
+            'Username' => 'manager',
+            'Full Name' => 'Manager Test',
+            'Job Position' => 'Manager Regional',
+            'Role' => 'Manpower',
+            'Status' => 'Active',
+        ];
+        $updated = array_merge($existing, ['Email' => 'manager.updated@example.test']);
+        $repository = Mockery::mock(MprRequestorRepositoryInterface::class);
+        $repository->shouldReceive('findByEmail')->once()->with('manager@example.test')->andReturn($existing);
+        $repository->shouldReceive('getAll')->once()->andReturn([$existing]);
+        $repository->shouldReceive('updateByEmail')->once()->with('manager@example.test', Mockery::on(fn (array $data): bool => $data === [
+            'fullName' => 'Manager Test',
+            'username' => 'manager',
+            'jobPosition' => 'Manager Regional',
+            'role' => 'Manpower',
+            'status' => 'Active',
+            'email' => 'manager.updated@example.test',
+        ]));
+        $repository->shouldReceive('findByEmail')->once()->with('manager.updated@example.test')->andReturn($updated);
+        $this->app->instance(MprRequestorRepositoryInterface::class, $repository);
+        $audit = Mockery::mock(AuditLogRepositoryInterface::class);
+        $audit->shouldReceive('log')->once()->withArgs(function (...$args): bool {
+            return $args[0] === 'MPR Requestor' && $args[3] === 'Email' && $args[5] === 'manager.updated@example.test';
+        })->andReturnTrue();
+        $this->app->instance(AuditLogRepositoryInterface::class, $audit);
+
+        $this->withoutMiddleware(VerifyCsrfToken::class)
+            ->put(route('hr.mpr-requestors.update', ['email' => 'manager@example.test']), [
+                'name' => 'Manager Test',
+                'email' => 'manager.updated@example.test',
+                'username' => 'manager',
+                'job_position' => 'Manager Regional',
+                'role' => 'Manpower',
+                'status' => 'Active',
+            ])
+            ->assertRedirect(route('hr.mpr-requestors.index'))
+            ->assertSessionHas('success');
     }
 }

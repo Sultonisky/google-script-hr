@@ -255,8 +255,9 @@
                     @method('PUT')
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label class="form-label" for="userEditEmail">Email Login</label>
-                            <input type="email" class="form-control" id="userEditEmail" readonly />
+                            <label class="form-label" for="userEditEmail">Email Login <span
+                                    class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="userEditEmail" name="email" required />
                         </div>
                         <div class="mb-3">
                             <label class="form-label" for="userEditName">Nama Lengkap <span

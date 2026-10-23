@@ -50,6 +50,12 @@ class MprRequestorController extends Controller
 
         $jobPosition = trim((string) $validated['job_position']);
 
+        if ($this->requestorRepo->findByEmail($validated['email']) !== null) {
+            return back()->withInput()->withErrors([
+                'email' => 'Email sudah digunakan.',
+            ]);
+        }
+
         $this->requestorRepo->create([
             'email' => $validated['email'],
             'username' => $validated['username'],
@@ -78,6 +84,7 @@ class MprRequestorController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|min:3',
+            'email' => 'required|email',
             'username' => 'required|string|min:3',
             'job_position' => 'required|string|min:2|max:255',
             'role' => ['required', 'string', Rule::in(config('hris.auth.valid_roles_requestor', []))],
@@ -85,33 +92,43 @@ class MprRequestorController extends Controller
             'password' => 'nullable|string|min:8|confirmed',
         ]);
 
+        $newEmail = trim($validated['email']);
+        $newUsername = trim($validated['username']);
         $jobPosition = trim((string) $validated['job_position']);
 
         foreach ($this->requestorRepo->getAll() as $requestor) {
-            $sameRequestor = strtolower(trim($requestor['Email'] ?? '')) === strtolower(trim($email));
-            if (!$sameRequestor && strtolower(trim($requestor['Username'] ?? '')) === strtolower(trim($validated['username']))) {
+            $sameRequestor = strtolower(trim((string) ($requestor['Email'] ?? ''))) === strtolower(trim($email));
+            if (!$sameRequestor && strtolower(trim((string) ($requestor['Email'] ?? ''))) === strtolower($newEmail)) {
+                return $this->updateError($request, 'Email sudah digunakan.', 422, ['email' => ['Email sudah digunakan.']]);
+            }
+            if (!$sameRequestor && strtolower(trim((string) ($requestor['Username'] ?? ''))) === strtolower($newUsername)) {
                 return $this->updateError($request, 'Username sudah digunakan.', 422, ['username' => ['Username sudah digunakan.']]);
             }
         }
 
         $updates = [
             'fullName' => $validated['name'],
-            'username' => $validated['username'],
+            'username' => $newUsername,
             'jobPosition' => $jobPosition,
             'role' => $validated['role'],
             'status' => $validated['status'],
         ];
+        if (trim((string) ($existing['Email'] ?? '')) !== $newEmail) {
+            $updates['email'] = $newEmail;
+        }
         if (!empty($validated['password'])) {
             $updates['passwordHash'] = Hash::make($validated['password']);
         }
 
-        $hasChanges = false;
-        foreach (['Full Name' => 'fullName', 'Username' => 'username', 'Job Position' => 'jobPosition', 'Role' => 'role', 'Status' => 'status'] as $field => $key) {
-            $oldValue = $existing[$field] ?? '';
-            $newValue = $updates[$key] ?? '';
-            if ((string) $oldValue !== (string) $newValue) {
-                $hasChanges = true;
-                break;
+        $hasChanges = isset($updates['email']);
+        if (!$hasChanges) {
+            foreach (['Full Name' => 'fullName', 'Username' => 'username', 'Job Position' => 'jobPosition', 'Role' => 'role', 'Status' => 'status'] as $field => $key) {
+                $oldValue = $existing[$field] ?? '';
+                $newValue = $updates[$key] ?? '';
+                if ((string) $oldValue !== (string) $newValue) {
+                    $hasChanges = true;
+                    break;
+                }
             }
         }
         if (!$hasChanges && empty($validated['password'])) {
@@ -119,12 +136,16 @@ class MprRequestorController extends Controller
         }
 
         $this->requestorRepo->updateByEmail($email, $updates);
-        $updated = $this->requestorRepo->findByEmail($email);
+        $lookupEmail = $updates['email'] ?? $email;
+        $updated = $this->requestorRepo->findByEmail($lookupEmail);
         if ($updated === null) {
             return $this->updateError($request, 'MPR requestor gagal diperbarui di sheet mpr_requestor.', 500);
         }
 
         $auditFields = ['Full Name' => 'fullName', 'Username' => 'username', 'Job Position' => 'jobPosition', 'Role' => 'role', 'Status' => 'status'];
+        if (isset($updates['email'])) {
+            $auditFields = ['Email' => 'email'] + $auditFields;
+        }
         foreach ($auditFields as $field => $key) {
             $oldValue = $existing[$field] ?? '';
             $newValue = $updated[$field] ?? $updates[$key] ?? '';

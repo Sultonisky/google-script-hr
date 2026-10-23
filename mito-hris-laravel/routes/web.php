@@ -17,7 +17,6 @@ use App\Http\Controllers\HR\WarningLetterController;
 use App\Http\Controllers\HR\ContractTrackingController;
 use App\Http\Controllers\HR\DocumentTrackingController;
 use App\Http\Controllers\HR\AuditLogController;
-use App\Http\Controllers\HR\MasterDataController;
 use App\Http\Controllers\HR\UserController;
 use App\Http\Controllers\HR\MprRequestorController;
 use App\Http\Controllers\HR\ExportController;
@@ -159,10 +158,6 @@ if (!app()->environment('local')) {
             Route::prefix('audit-logs')->name('audit-logs.')->middleware('can:view_reports')->group(function () {
                 Route::get('/', [AuditLogController::class, 'index'])->name('index');
             });
-            Route::prefix('master-data')->name('master-data.')->middleware('can:manage_settings')->group(function () {
-                Route::get('/', [MasterDataController::class, 'index'])->name('index');
-                Route::post('/', [MasterDataController::class, 'store'])->name('store');
-            });
             Route::prefix('users')->name('users.')->middleware(['can:manage_settings', 'role:Super Admin'])->group(function () {
                 Route::get('/', [UserController::class, 'index'])->name('index');
                 Route::post('/', [UserController::class, 'store'])->name('store');
@@ -211,6 +206,9 @@ if (!app()->environment('local')) {
             });
             Route::prefix('export')->name('export.')->middleware('can:view_employees')->group(function () {
                 Route::get('/employees-xlsx', [ExportController::class, 'exportEmployeesXlsx'])->name('employees-xlsx');
+                Route::get('/surat-pakta-integritas/{id}', [ExportController::class, 'suratPaktaIntegritasPdf'])->name('surat-pakta-integritas');
+                Route::get('/surat-nda/{id}', [ExportController::class, 'suratNdaPdf'])->name('surat-nda');
+                Route::get('/surat-pb-phk/{id}', [ExportController::class, 'suratPbPhkPdf'])->name('surat-pb-phk');
             });
             Route::prefix('export')->name('export.')->middleware('can:view_outsource')->group(function () {
                 Route::get('/outsource-xlsx', [ExportController::class, 'exportOutsourceXlsx'])->name('outsource-xlsx');
@@ -223,6 +221,7 @@ if (!app()->environment('local')) {
                 Route::get('/history', [MprController::class, 'history'])->name('history');
                 Route::post('/', [MprController::class, 'store'])->name('store')->middleware('can:create_mpr');
                 Route::put('/{id}', [MprController::class, 'update'])->name('update')->middleware('can:update_mpr');
+                Route::post('/{id}/finish', [MprController::class, 'finish'])->name('finish');
                 Route::get('/{id}/preview', [MprController::class, 'preview'])->name('preview');
                 Route::get('/{id}', [MprController::class, 'show'])->name('show');
                 Route::get('/{id}/json', [MprController::class, 'getJson'])->name('json');
@@ -241,6 +240,9 @@ if (!app()->environment('local')) {
             Route::get('/mpr/request', [MprController::class, 'create'])->name('mpr.auth.request');
             Route::get('/mpr/request/history', [MprController::class, 'history'])->name('mpr.auth.request.history');
             Route::post('/mpr/request', [MprController::class, 'store'])->name('mpr.auth.request.store');
+            Route::get('/mpr/request/{id}/edit', [MprController::class, 'edit'])->name('mpr.auth.request.edit');
+            Route::put('/mpr/request/{id}', [MprController::class, 'update'])->name('mpr.auth.request.update');
+            Route::post('/mpr/request/{id}/finish', [MprController::class, 'finish'])->name('mpr.auth.request.finish');
             Route::get('/mpr/request/{id}/pdf', [MprController::class, 'exportPdf'])->name('mpr.auth.pdf');
             Route::get('/mpr/request/{id}/json', [MprController::class, 'getJson'])->name('mpr.auth.json');
         });
@@ -436,11 +438,6 @@ if (app()->environment('local')) {
                 Route::get('/', [AuditLogController::class, 'index'])->name('index');
             });
 
-            Route::prefix('master-data')->name('master-data.')->middleware('can:manage_settings')->group(function () {
-                Route::get('/', [MasterDataController::class, 'index'])->name('index');
-                Route::post('/', [MasterDataController::class, 'store'])->name('store');
-            });
-
             Route::prefix('users')->name('users.')->middleware(['can:manage_settings', 'role:Super Admin'])->group(function () {
                 Route::get('/', [UserController::class, 'index'])->name('index');
                 Route::post('/', [UserController::class, 'store'])->name('store');
@@ -494,6 +491,9 @@ if (app()->environment('local')) {
             });
             Route::prefix('export')->name('export.')->middleware('can:view_employees')->group(function () {
                 Route::get('/employees-xlsx', [ExportController::class, 'exportEmployeesXlsx'])->name('employees-xlsx');
+                Route::get('/surat-pakta-integritas/{id}', [ExportController::class, 'suratPaktaIntegritasPdf'])->name('surat-pakta-integritas');
+                Route::get('/surat-nda/{id}', [ExportController::class, 'suratNdaPdf'])->name('surat-nda');
+                Route::get('/surat-pb-phk/{id}', [ExportController::class, 'suratPbPhkPdf'])->name('surat-pb-phk');
             });
             Route::prefix('export')->name('export.')->middleware('can:view_outsource')->group(function () {
                 Route::get('/outsource-xlsx', [ExportController::class, 'exportOutsourceXlsx'])->name('outsource-xlsx');
@@ -507,6 +507,7 @@ if (app()->environment('local')) {
                 Route::get('/history', [MprController::class, 'history'])->name('history');
                 Route::post('/', [MprController::class, 'store'])->name('store')->middleware('can:create_mpr');
                 Route::put('/{id}', [MprController::class, 'update'])->name('update')->middleware('can:update_mpr');
+                Route::post('/{id}/finish', [MprController::class, 'finish'])->name('finish');
                 Route::get('/{id}/preview', [MprController::class, 'preview'])->name('preview');
                 Route::get('/{id}', [MprController::class, 'show'])->name('show');
                 Route::get('/{id}/json', [MprController::class, 'getJson'])->name('json');
@@ -525,6 +526,9 @@ if (app()->environment('local')) {
                 Route::get('/request', [MprController::class, 'create'])->name('request');
                 Route::get('/request/history', [MprController::class, 'history'])->name('request.history');
                 Route::post('/request', [MprController::class, 'store'])->name('request.store');
+                Route::get('/request/{id}/edit', [MprController::class, 'edit'])->name('request.edit');
+                Route::put('/request/{id}', [MprController::class, 'update'])->name('request.update');
+                Route::post('/request/{id}/finish', [MprController::class, 'finish'])->name('request.finish');
                 Route::get('/request/{id}/pdf', [MprController::class, 'exportPdf'])->name('pdf');
                 Route::get('/request/{id}/json', [MprController::class, 'getJson'])->name('json');
             });

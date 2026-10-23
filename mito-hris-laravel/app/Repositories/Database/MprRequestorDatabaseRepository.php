@@ -56,6 +56,7 @@ class MprRequestorDatabaseRepository implements MprRequestorRepositoryInterface
         }
 
         $map = [
+            'email' => 'email',
             'passwordHash' => 'password_hash',
             'fullName' => 'full_name',
             'username' => 'username',

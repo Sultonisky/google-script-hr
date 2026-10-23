@@ -354,10 +354,34 @@
 
         // Pasal 6 — jam kerja
         $rawWS = $extraData['work_schedule'] ?? ($extraData['workSchedule'] ?? 'Normal');
-        $isShift = str_contains(strtolower($rawWS), 'shift');
-        $jamMasuk =
-            $extraData['jam_masuk'] ??
-            ($extraData['jamMasuk'] ?? 'mulai pukul 07.00 WIB dan selambat-lambatnya sampai dengan pukul 07.15 WIB');
+        $jamMasukRaw = trim((string) ($extraData['jam_masuk'] ?? ($extraData['jamMasuk'] ?? '')));
+        $jamMasukKey = mb_strtolower((string) preg_replace('/\s+/u', ' ', $jamMasukRaw));
+        $jamMasukPhrases = [
+            '08:00' => 'mulai pukul 08.00 WIB',
+            '08.00' => 'mulai pukul 08.00 WIB',
+            'jam 08:00' => 'mulai pukul 08.00 WIB',
+            'jam 08.00' => 'mulai pukul 08.00 WIB',
+            'pukul 08.00' => 'mulai pukul 08.00 WIB',
+            'pukul 08.00 wib' => 'mulai pukul 08.00 WIB',
+            'mulai pukul 08.00 wib' => 'mulai pukul 08.00 WIB',
+            '08:30' => 'mulai pukul 08.30 WIB',
+            '08.30' => 'mulai pukul 08.30 WIB',
+            'jam 08:30' => 'mulai pukul 08.30 WIB',
+            'jam 08.30' => 'mulai pukul 08.30 WIB',
+            'pukul 08.30' => 'mulai pukul 08.30 WIB',
+            'pukul 08.30 wib' => 'mulai pukul 08.30 WIB',
+            'mulai pukul 08.30 wib' => 'mulai pukul 08.30 WIB',
+            'shift' => 'mengikuti shift sesuai penempatan',
+            'shift sesuai penempatan' => 'mengikuti shift sesuai penempatan',
+            'sesuai shift penempatan' => 'mengikuti shift sesuai penempatan',
+            'mengikuti shift sesuai penempatan' => 'mengikuti shift sesuai penempatan',
+            'mulai pukul 07.00 wib' => 'mulai pukul 07.00 WIB',
+            'mulai pukul 07.00 wib dan selambat-lambatnya sampai dengan pukul 07.15 wib' => 'mulai pukul 07.00 WIB dan selambat-lambatnya sampai dengan pukul 07.15 WIB',
+            'mulai pukul 08.00 wib dan selambat-lambatnya sampai dengan pukul 08.15 wib' => 'mulai pukul 08.00 WIB dan selambat-lambatnya sampai dengan pukul 08.15 WIB',
+        ];
+        $jamMasuk = $jamMasukPhrases[$jamMasukKey] ?? 'mulai pukul 08.00 WIB';
+        $isShift = str_contains(strtolower((string) $rawWS), 'shift')
+            || str_contains(mb_strtolower($jamMasuk), 'shift');
         $scheduleAyat = $isShift
             ? 'Jadwal Waktu Kerja mengikuti pola shift khusus yang disesuaikan dengan kebutuhan operasional Perusahaan, atas kesepakatan antara Pekerja dan Kepala Divisi dari Pekerja yang bersangkutan;'
             : 'Jadwal Waktu Kerja adalah 5 (lima) hari kerja dalam 1 (satu) minggu, 8 (delapan) jam dalam 1 (satu) hari, dan 40 (empat puluh) jam dalam 1 (satu) minggu;';
