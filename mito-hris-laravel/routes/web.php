@@ -17,7 +17,6 @@ use App\Http\Controllers\HR\WarningLetterController;
 use App\Http\Controllers\HR\ContractTrackingController;
 use App\Http\Controllers\HR\DocumentTrackingController;
 use App\Http\Controllers\HR\AuditLogController;
-use App\Http\Controllers\HR\MasterDataController;
 use App\Http\Controllers\HR\UserController;
 use App\Http\Controllers\HR\MprRequestorController;
 use App\Http\Controllers\HR\ExportController;
@@ -159,10 +158,6 @@ if (!app()->environment('local')) {
             Route::prefix('audit-logs')->name('audit-logs.')->middleware('can:view_reports')->group(function () {
                 Route::get('/', [AuditLogController::class, 'index'])->name('index');
             });
-            Route::prefix('master-data')->name('master-data.')->middleware('can:manage_settings')->group(function () {
-                Route::get('/', [MasterDataController::class, 'index'])->name('index');
-                Route::post('/', [MasterDataController::class, 'store'])->name('store');
-            });
             Route::prefix('users')->name('users.')->middleware(['can:manage_settings', 'role:Super Admin'])->group(function () {
                 Route::get('/', [UserController::class, 'index'])->name('index');
                 Route::post('/', [UserController::class, 'store'])->name('store');
@@ -244,6 +239,8 @@ if (!app()->environment('local')) {
             Route::get('/mpr/request', [MprController::class, 'create'])->name('mpr.auth.request');
             Route::get('/mpr/request/history', [MprController::class, 'history'])->name('mpr.auth.request.history');
             Route::post('/mpr/request', [MprController::class, 'store'])->name('mpr.auth.request.store');
+            Route::get('/mpr/request/{id}/edit', [MprController::class, 'edit'])->name('mpr.auth.request.edit');
+            Route::put('/mpr/request/{id}', [MprController::class, 'update'])->name('mpr.auth.request.update');
             Route::get('/mpr/request/{id}/pdf', [MprController::class, 'exportPdf'])->name('mpr.auth.pdf');
             Route::get('/mpr/request/{id}/json', [MprController::class, 'getJson'])->name('mpr.auth.json');
         });
@@ -439,11 +436,6 @@ if (app()->environment('local')) {
                 Route::get('/', [AuditLogController::class, 'index'])->name('index');
             });
 
-            Route::prefix('master-data')->name('master-data.')->middleware('can:manage_settings')->group(function () {
-                Route::get('/', [MasterDataController::class, 'index'])->name('index');
-                Route::post('/', [MasterDataController::class, 'store'])->name('store');
-            });
-
             Route::prefix('users')->name('users.')->middleware(['can:manage_settings', 'role:Super Admin'])->group(function () {
                 Route::get('/', [UserController::class, 'index'])->name('index');
                 Route::post('/', [UserController::class, 'store'])->name('store');
@@ -531,6 +523,8 @@ if (app()->environment('local')) {
                 Route::get('/request', [MprController::class, 'create'])->name('request');
                 Route::get('/request/history', [MprController::class, 'history'])->name('request.history');
                 Route::post('/request', [MprController::class, 'store'])->name('request.store');
+                Route::get('/request/{id}/edit', [MprController::class, 'edit'])->name('request.edit');
+                Route::put('/request/{id}', [MprController::class, 'update'])->name('request.update');
                 Route::get('/request/{id}/pdf', [MprController::class, 'exportPdf'])->name('pdf');
                 Route::get('/request/{id}/json', [MprController::class, 'getJson'])->name('json');
             });
