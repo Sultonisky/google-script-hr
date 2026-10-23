@@ -27,6 +27,7 @@ class SecurityHeaders
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('X-Robots-Tag', 'noindex, nofollow, noarchive');
         $response->headers->set('Permissions-Policy', 'geolocation=(self), microphone=(), camera=(), display-capture=(), fullscreen=()');
+        $response->headers->set('Accept-CH', 'Sec-CH-UA-Platform-Version, Sec-CH-UA-Model, Sec-CH-UA-Full-Version-List, Sec-CH-UA-Arch, Sec-CH-UA-Bitness');
         $response->headers->remove('Content-Security-Policy-Report-Only');
         $response->headers->set('Content-Security-Policy', $this->buildCsp($nonce));
 
