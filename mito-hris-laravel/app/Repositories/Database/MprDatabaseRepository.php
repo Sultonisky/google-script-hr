@@ -5,6 +5,7 @@ namespace App\Repositories\Database;
 use App\DTOs\MprData;
 use App\Models\MprRequest;
 use App\Repositories\Contracts\MprRepositoryInterface;
+use App\Support\MprNumber;
 use Illuminate\Support\Collection;
 use RuntimeException;
 
@@ -110,19 +111,12 @@ class MprDatabaseRepository implements MprRepositoryInterface
     }
 
     /**
-     * Short document id: MPR-001, MPR-002, …
+     * Document id for the current Jakarta year: MPR-2026-001, MPR-2026-002, …
      * Older MPR-YYYYMMDD-XXXX values are left as-is and do not consume this sequence.
      */
     private function generateNextNumber(): string
     {
-        $max = 0;
-        foreach (MprRequest::query()->pluck('mpr_number') as $number) {
-            if (preg_match('/^MPR-(\d+)$/i', trim((string) $number), $match)) {
-                $max = max($max, (int) $match[1]);
-            }
-        }
-
-        return 'MPR-' . str_pad((string) ($max + 1), 3, '0', STR_PAD_LEFT);
+        return MprNumber::next(MprRequest::query()->pluck('mpr_number'));
     }
 
     /**
