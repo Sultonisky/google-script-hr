@@ -133,6 +133,7 @@ return [
         'GA' => ['General Affairs', 'Facility Management', 'Asset Management', 'Office Services', 'Security'],
         'Warehouse' => ['Warehouse Operations', 'Inventory Control', 'Receiving', 'Picking & Packing', 'Distribution'],
         'Purchasing' => ['Procurement', 'Strategic Sourcing', 'Purchasing Operations', 'Vendor Management'],
+        'Buyer/Import' => ['Buyer/Import'],
         'Quality Control' => ['Quality Assurance', 'Quality Control', 'Quality Management System', 'Quality Inspection'],
         'Customer Service' => ['Customer Service Operations', 'Customer Support', 'Customer Complaint', 'After Sales Service'],
         'Creative' => ['Graphic Design', 'Multimedia', 'Content Production', 'Creative Design', 'Photography & Videography'],
