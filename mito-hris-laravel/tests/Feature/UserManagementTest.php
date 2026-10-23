@@ -192,6 +192,7 @@ class UserManagementTest extends TestCase
     {
         $this->actingAsRole('Super Admin');
         $repository = Mockery::mock(MprRequestorRepositoryInterface::class);
+        $repository->shouldReceive('findByEmail')->once()->with('new.requestor@example.test')->andReturn(null);
         $repository->shouldReceive('create')->once()->with(Mockery::on(function (array $data): bool {
             return $data['email'] === 'new.requestor@example.test'
                 && $data['username'] === 'newrequestor'
@@ -219,6 +220,31 @@ class UserManagementTest extends TestCase
             ])
             ->assertRedirect(route('hr.mpr-requestors.index'))
             ->assertSessionHas('success');
+    }
+
+    public function test_super_admin_cannot_add_mpr_requestor_with_existing_email(): void
+    {
+        $this->actingAsRole('Super Admin');
+        $repository = Mockery::mock(MprRequestorRepositoryInterface::class);
+        $repository->shouldReceive('findByEmail')->once()->with('new.requestor@example.test')->andReturn([
+            'Email' => 'new.requestor@example.test',
+        ]);
+        $repository->shouldNotReceive('create');
+        $this->app->instance(MprRequestorRepositoryInterface::class, $repository);
+
+        $this->withoutMiddleware(VerifyCsrfToken::class)
+            ->from(route('hr.mpr-requestors.index'))
+            ->post(route('hr.mpr-requestors.store'), [
+                'name' => 'New Requestor',
+                'email' => 'new.requestor@example.test',
+                'username' => 'newrequestor',
+                'job_position' => 'Regional Manager',
+                'role' => 'Manpower',
+                'password' => 'requestor-password',
+                'password_confirmation' => 'requestor-password',
+            ])
+            ->assertRedirect(route('hr.mpr-requestors.index'))
+            ->assertSessionHasErrors(['email' => 'Email sudah digunakan.']);
     }
 
     public function test_super_admin_can_edit_mpr_requestor_and_audits_changes(): void
