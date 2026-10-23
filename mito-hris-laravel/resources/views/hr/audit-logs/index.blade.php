@@ -226,6 +226,73 @@
                 width: 100%;
             }
         }
+
+    #auditDetailModal .modal-dialog {
+        max-width: min(960px, calc(100vw - 1.5rem));
+    }
+
+    #auditDetailModal .modal-content {
+        border: 0;
+        border-radius: 16px;
+        overflow: hidden;
+    }
+
+    #auditDetailModal .modal-header {
+        align-items: center;
+        padding: 1rem 1.25rem;
+    }
+
+    #auditDetailModal .modal-body {
+        padding: 0 1.25rem 1.25rem;
+    }
+
+    #auditDetailModal .audit-detail-list {
+        display: grid;
+        gap: .75rem;
+    }
+
+    #auditDetailModal .audit-detail-item {
+        min-width: 0;
+    }
+
+    #auditDetailModal .audit-detail-label {
+        display: block;
+        margin-bottom: .35rem;
+        color: var(--text-muted, #64748b);
+        font-size: .68rem;
+        font-weight: 700;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+
+    #auditDetailModal .audit-detail-value {
+        margin: 0;
+        padding: .7rem .85rem;
+        border: 1px solid rgba(148, 163, 184, .38);
+        border-radius: 10px;
+        background: rgba(248, 250, 252, .92);
+        color: #0f172a;
+        font-size: .84rem;
+        line-height: 1.55;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    #auditDetailModal .audit-detail-value.is-empty {
+        color: #94a3b8;
+    }
+
+    @media (max-width: 600px) {
+        #auditDetailModal .modal-dialog {
+            max-width: calc(100vw - .75rem);
+            margin: .375rem auto;
+        }
+
+        #auditDetailModal .modal-body {
+            padding: 0 .85rem 1rem;
+        }
+    }
     </style>
 
     <section class="page-section active" id="pageAuditLog">
@@ -296,7 +363,7 @@
                     <div class="audit-filter-field">
                         <label for="auditSearchInput">Pencarian</label>
                         <input type="text" name="search" id="auditSearchInput" class="form-control"
-                            placeholder="Entity, ID, user, action" value="{{ request('search') }}" data-submit-on-enter="true" />
+                            placeholder="Entity, ID, user, IP, action" value="{{ request('search') }}" data-submit-on-enter="true" />
                     </div>
                     <div class="audit-filter-field">
                         <label for="auditEntityFilter">Entity</label>
@@ -374,18 +441,31 @@
                                         : 'audit-action-default';
                                     $oldValue = (string) ($log['Old Value'] ?? '');
                                     $newValue = (string) ($log['New Value'] ?? '');
+                                    $person = $people[$log['Audit ID'] ?? ''] ?? ['subject' => null, 'actor' => null];
                                     $detail = [
                                         'Audit ID' => $log['Audit ID'] ?? '-',
                                         'Entity' => $log['Entity Type'] ?? 'Candidate',
                                         'Entity ID' => $log['Entity ID'] ?? ($log['Recruitment ID'] ?? '-'),
-                                        'Action' => $log['Action'] ?? '-',
-                                        'Field' => $log['Field'] ?? '-',
-                                        'Old Value' => $oldValue ?: '-',
-                                        'New Value' => $newValue ?: '-',
-                                        'User' => $log['User'] ?? '-',
-                                        'Source' => $log['Source'] ?? 'Legacy',
-                                        'Timestamp' => $log['Timestamp'] ?? '-',
                                     ];
+                                    if (!empty($person['subject'])) {
+                                        $detail['Untuk'] = $person['subject'];
+                                    }
+                                    $detail['Action'] = $log['Action'] ?? '-';
+                                    $detail['Field'] = $log['Field'] ?? '-';
+                                    $detail['Old Value'] = $oldValue ?: '-';
+                                    $detail['New Value'] = $newValue ?: '-';
+                                    $detail['User'] = $log['User'] ?? '-';
+                                    if (!empty($person['actor'])) {
+                                        $detail['Oleh'] = $person['actor'];
+                                    }
+                                    $detail['IP Address'] = $log['IP Address'] ?? '-';
+                                    $detail['Browser'] = $log['Browser'] ?? '-';
+                                    $detail['Device'] = $log['Device'] ?? '-';
+                                    $detail['Platform'] = $log['Platform'] ?? '-';
+                                    $detail['User Agent'] = $log['User Agent'] ?? '-';
+                                    $detail['Referer'] = $log['Referer'] ?? '-';
+                                    $detail['Source'] = $log['Source'] ?? 'Legacy';
+                                    $detail['Timestamp'] = $log['Timestamp'] ?? '-';
                                 @endphp
                                 <td class="audit-id id-mono fw-semibold">{{ $detail['Audit ID'] }}</td>
                                 <td><span
@@ -453,7 +533,7 @@
 
     <div class="modal fade" id="auditDetailModal" tabindex="-1" aria-labelledby="auditDetailModalLabel"
         aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="auditDetailModalLabel"><i class="bi bi-clock-history text-primary me-2"
@@ -461,7 +541,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
                 <div class="modal-body">
-                    <dl class="row mb-0 small" id="auditDetailContent"></dl>
+                    <div class="audit-detail-list" id="auditDetailContent"></div>
                 </div>
             </div>
         </div>
@@ -473,21 +553,26 @@
                 var detail = JSON.parse(button.dataset.auditDetail);
                 var content = document.getElementById('auditDetailContent');
                 content.innerHTML = Object.entries(detail).map(function(entry) {
-                    var label = entry[0];
-                    var value = entry[1] || '-';
-                    return '<dt class="col-sm-3 text-muted fw-semibold mb-2">' + label +
-                        '</dt><dd class="col-sm-9 mb-2 text-break">' + value.replace(/[&<>"']/g,
-                            function(character) {
-                                return {
-                                    '&': '&amp;',
-                                    '<': '&lt;',
-                                    '>': '&gt;',
-                                    '"': '&quot;',
-                                    "'": '&#039;'
-                                } [character];
-                            }) + '</dd>';
+                    var label = escapeAuditDetail(entry[0]);
+                    var raw = entry[1] || '-';
+                    var empty = raw === '-';
+                    return '<div class="audit-detail-item"><div class="audit-detail-label">' + label +
+                        '</div><div class="audit-detail-value' + (empty ? ' is-empty' : '') + '">' +
+                        escapeAuditDetail(raw) + '</div></div>';
                 }).join('');
             });
         });
+
+        function escapeAuditDetail(value) {
+            return String(value).replace(/[&<>"']/g, function(character) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                } [character];
+            });
+        }
     </script>
 @endsection
