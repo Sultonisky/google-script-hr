@@ -1,4 +1,4 @@
-import * as bootstrap from 'bootstrap';
+import { Toast } from 'bootstrap';
 
 (function() {
     'use strict';
@@ -72,7 +72,7 @@ import * as bootstrap from 'bootstrap';
         `;
 
         container.appendChild(toastEl);
-        const bsToast = new bootstrap.Toast(toastEl, {
+        const bsToast = new Toast(toastEl, {
             autohide: true,
             delay: duration || getDuration(type)
         });
