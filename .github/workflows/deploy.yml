@@ -98,10 +98,12 @@ jobs:
               echo "Unable to read the hris-app compose config." >&2
               exit 1
             fi
-            python3 - <<'PY'
+            cat > /tmp/pin-hris-runtimes.py <<'PY'
             import json, os, re, sys
 
-            root = os.environ["COMPOSE_DIR"]
+            if len(sys.argv) != 2 or not sys.argv[1]:
+                sys.exit("Compose directory argument is required")
+            root = sys.argv[1]
             with open("/tmp/hris-compose.json", encoding="utf-8") as handle:
                 config = json.load(handle)
 
@@ -156,8 +158,14 @@ jobs:
                 updated, compose_args = compose_arg_re.subn(r"\g<1>8.4.27", updated)
                 updated, node_compose_args = node_compose_arg_re.subn(r"\g<1>24.22.1", updated)
                 if updated != original:
-                    with open(path, "w", encoding="utf-8", newline="\n") as handle:
-                        handle.write(updated)
+                    try:
+                        with open(path, "w", encoding="utf-8", newline="\n") as handle:
+                            handle.write(updated)
+                    except PermissionError:
+                        sys.exit(
+                            f"Cannot write {path}. The deploy user needs passwordless sudo "
+                            "or write access to the Docker files."
+                        )
                     print(f"Pinned PHP 8.4.27 and Node 24.22.1 in {path}")
                 else:
                     print(f"PHP 8.4.27 and Node 24.22.1 already set in {path}")
@@ -172,6 +180,11 @@ jobs:
             if pinned == 0:
                 sys.exit(f"No PHP image tag found in {dockerfile}")
             PY
+            if sudo -n true 2>/dev/null; then
+              sudo -n python3 /tmp/pin-hris-runtimes.py "$COMPOSE_DIR"
+            else
+              python3 /tmp/pin-hris-runtimes.py "$COMPOSE_DIR"
+            fi
 
             echo "== Building HRIS Docker image =="
             docker compose build --pull hris-app
