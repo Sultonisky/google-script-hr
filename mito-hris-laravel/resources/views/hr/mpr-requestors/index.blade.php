@@ -6,6 +6,12 @@
 
 @section('content')
     <section class="page-section active" id="pageMprRequestors">
+        @if ($errors->any())
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                {{ $errors->first() }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button>
+            </div>
+        @endif
         <div class="row g-3 mb-4" id="mprRequestorStatsPanel">
             <div class="col-6 col-md-3">
                 <div class="stat-card">
