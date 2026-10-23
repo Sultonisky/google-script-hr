@@ -194,11 +194,9 @@ class MprController extends Controller
                 ->unique()
                 ->sort()
                 ->values();
-            $thisMonthStr = now()->timezone('Asia/Jakarta')->format('Y-m');
-
             $stats = [
                 'total'           => $allMprs->count(),
-                'this_month'      => $allMprs->filter(fn($m) => str_starts_with($m->requestDate ?? $m->createdAt ?? '', $thisMonthStr))->count(),
+                'finish'          => $allMprs->filter(fn($m) => strtolower($m->status ?? '') === 'finish')->count(),
                 'total_quantity'  => $allMprs->sum(fn($m) => (int) ($m->quantity ?? 1)),
                 'submitted'       => $allMprs->filter(fn($m) => strtolower($m->status ?? '') === 'submitted')->count(),
             ];
@@ -216,7 +214,7 @@ class MprController extends Controller
             $perPage = 10;
             $stats = [
                 'total' => 0,
-                'this_month' => 0,
+                'finish' => 0,
                 'total_quantity' => 0,
                 'submitted' => 0,
             ];
@@ -314,11 +312,9 @@ class MprController extends Controller
             ->unique()
             ->sort()
             ->values();
-        $thisMonthStr = now()->timezone('Asia/Jakarta')->format('Y-m');
-
         $stats = [
             'total'           => $allMprs->count(),
-            'this_month'      => $allMprs->filter(fn($m) => str_starts_with($m->requestDate ?? $m->createdAt ?? '', $thisMonthStr))->count(),
+            'finish'          => $allMprs->filter(fn($m) => strtolower($m->status ?? '') === 'finish')->count(),
             'total_quantity'  => $allMprs->sum(fn($m) => (int) ($m->quantity ?? 1)),
             'submitted'       => $allMprs->filter(fn($m) => strtolower($m->status ?? '') === 'submitted')->count(),
         ];
