@@ -10,7 +10,7 @@ class StoreMprRequest extends FormRequest
 {
     private const NAME_REGEX = '/^[\p{L}]+(?:[ ]+[\p{L}]+)*$/u';
 
-    private const POSITION_REGEX = '/^[\p{L}]+(?:[ \-]+[\p{L}]+)*$/u';
+    private const POSITION_REGEX = '/^(?=.*\p{L})[\p{L}0-9](?:[\p{L}0-9]|[ \-&\/().])*$/u';
 
     private const LANGUAGES_REGEX = '/^[\p{L} ,.\(\)\r\n]+$/u';
 
@@ -33,15 +33,10 @@ class StoreMprRequest extends FormRequest
             'expected_join_date' => ['required', 'date'],
             'reason'             => ['required', 'string', 'max:255', Rule::in(array_values(config('hris.mpr_form_options.reasons', [])))],
             'replacement_for'    => [
-                'nullable', 'string', 'max:255',
-                function (string $attribute, mixed $value, \Closure $fail) {
-                    $reason = trim((string) $this->input('reason', ''));
-                    $replacementReasons = config('hris.mpr_form_options.replacement_reasons', ['Penambahan Karyawan Baru', 'Restrukturisasi']);
-                    $allowed = array_map('strval', $replacementReasons);
-                    if (in_array($reason, $allowed, true) && trim((string) $value) === '') {
-                        $fail('Nama karyawan yang digantikan wajib diisi ketika alasan permintaan memerlukan penggantian.');
-                    }
-                },
+                Rule::requiredIf(fn () => $this->reasonRequiresReplacement()),
+                'nullable',
+                'string',
+                'max:255',
             ],
             'job_description'    => ['nullable', 'string'],
             'requirements'       => ['nullable', 'string'],
@@ -108,9 +103,10 @@ class StoreMprRequest extends FormRequest
             'expected_join_date.date'     => 'Format tanggal target bergabung tidak valid.',
             'reason.required'             => 'Alasan permintaan manpower wajib dipilih.',
             'entity.required'             => 'Pilih entitas / perusahaan untuk pengajuan MPR ini.',
-            'position.regex'              => 'Posisi / nama jabatan hanya boleh huruf, spasi, dan tanda hubung.',
+            'position.regex'              => 'Posisi / nama jabatan hanya boleh huruf, angka, spasi, dan tanda - / & ( ) .',
             'manager_name.regex'          => 'Nama pemohon hanya boleh huruf dan spasi.',
-            'requestor_position.regex'    => 'Jabatan pemohon hanya boleh huruf, spasi, dan tanda hubung.',
+            'requestor_position.regex'    => 'Jabatan pemohon hanya boleh huruf, angka, spasi, dan tanda - / & ( ) .',
+            'replacement_for.required'    => 'Nama karyawan yang digantikan wajib diisi untuk alasan Penggantian atau Restrukturisasi.',
             'languages.regex'             => 'Bahasa yang dikuasai hanya boleh huruf, spasi, koma, titik, dan kurung.',
             'working_days.required'       => 'Hari Kerja wajib dipilih.',
             'working_days.max'            => 'Hari Kerja hanya boleh dipilih satu.',
@@ -126,6 +122,17 @@ class StoreMprRequest extends FormRequest
             'work_experience.required'    => 'Pengalaman Kerja wajib dipilih.',
             'work_experience.in'          => 'Pilihan Pengalaman Kerja tidak valid.',
         ];
+    }
+
+    private function reasonRequiresReplacement(): bool
+    {
+        $reason = trim((string) $this->input('reason', ''));
+        $reasons = array_map('strval', config('hris.mpr_form_options.replacement_reasons', [
+            'Penggantian Karyawan Resign / Mutasi / Demosi',
+            'Restrukturisasi',
+        ]));
+
+        return in_array($reason, $reasons, true);
     }
 
     private function isShiftingSelected(): bool

@@ -8,7 +8,7 @@ use Illuminate\Validation\Rule;
 
 class UpdateMprRequest extends FormRequest
 {
-    private const POSITION_REGEX = '/^[\p{L}]+(?:[ \-]+[\p{L}]+)*$/u';
+    private const POSITION_REGEX = '/^(?=.*\p{L})[\p{L}0-9](?:[\p{L}0-9]|[ \-&\/().])*$/u';
 
     private const LANGUAGES_REGEX = '/^[\p{L} ,.\(\)\r\n]+$/u';
 
@@ -31,14 +31,10 @@ class UpdateMprRequest extends FormRequest
             'expected_join_date' => ['sometimes', 'required', 'date'],
             'reason'             => ['sometimes', 'required', 'string', 'max:255', Rule::in(array_values(config('hris.mpr_form_options.reasons', [])))],
             'replacement_for'    => [
-                'nullable', 'string', 'max:255',
-                function (string $attribute, mixed $value, \Closure $fail) {
-                    $reason = trim((string) $this->input('reason', ''));
-                    $replacementReasons = config('hris.mpr_form_options.replacement_reasons', ['Penambahan Karyawan Baru', 'Restrukturisasi']);
-                    if (in_array($reason, $replacementReasons, true) && trim((string) $value) === '') {
-                        $fail('Nama karyawan yang digantikan wajib diisi untuk alasan ini.');
-                    }
-                },
+                Rule::requiredIf(fn () => $this->reasonRequiresReplacement()),
+                'nullable',
+                'string',
+                'max:255',
             ],
             'job_description'    => ['nullable', 'string'],
             'requirements'       => ['nullable', 'string'],
@@ -66,5 +62,25 @@ class UpdateMprRequest extends FormRequest
             'special_notes'         => ['nullable', 'string', 'max:2000'],
             'key_results_targets'   => ['nullable', 'string', 'max:4000'],
         ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'replacement_for.required' => 'Nama karyawan yang digantikan wajib diisi untuk alasan Penggantian atau Restrukturisasi.',
+            'position.regex' => 'Posisi / nama jabatan hanya boleh huruf, angka, spasi, dan tanda - / & ( ) .',
+            'requestor_position.regex' => 'Jabatan pemohon hanya boleh huruf, angka, spasi, dan tanda - / & ( ) .',
+        ];
+    }
+
+    private function reasonRequiresReplacement(): bool
+    {
+        $reason = trim((string) $this->input('reason', ''));
+        $reasons = array_map('strval', config('hris.mpr_form_options.replacement_reasons', [
+            'Penggantian Karyawan Resign / Mutasi / Demosi',
+            'Restrukturisasi',
+        ]));
+
+        return in_array($reason, $reasons, true);
     }
 }
