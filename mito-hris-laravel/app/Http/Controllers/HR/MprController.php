@@ -536,6 +536,30 @@ class MprController extends Controller
         $benefitsLabels = $toLabels((array) ($validated['benefits'] ?? []), 'benefits');
         $educationLabel = $formOptions['education_background'][$validated['education_background'] ?? ''] ?? null;
         $experienceLabel = $formOptions['work_experience'][$validated['work_experience'] ?? ''] ?? null;
+        $submittedDayKeys = array_map(
+            static fn ($value) => strtolower(trim((string) $value)),
+            (array) ($validated['working_days'] ?? [])
+        );
+        $daysSubmitted = array_key_exists('working_days', $validated);
+        $hoursSubmitted = array_key_exists('working_hours', $validated);
+        $benefitsSubmitted = array_key_exists('benefits', $validated);
+        $isShifting = in_array('shifting', $submittedDayKeys, true);
+        $workingDaysValue = $daysSubmitted
+            ? ($workingDaysLabels !== '' ? $workingDaysLabels : null)
+            : ($existing->workingDays ?? null);
+        $workingHoursValue = $isShifting
+            ? null
+            : ($hoursSubmitted
+                ? ($workingHoursLabels !== '' ? $workingHoursLabels : null)
+                : ($existing->workingHours ?? null));
+        $shiftDetailValue = $daysSubmitted && ! $isShifting
+            ? null
+            : (array_key_exists('shift_detail', $validated)
+                ? $validated['shift_detail']
+                : $existing->shiftDetail);
+        $benefitsValue = $benefitsSubmitted
+            ? ($benefitsLabels !== '' ? $benefitsLabels : null)
+            : ($existing->benefits ?? null);
 
         $updated = new MprData(
             mprNumber: $existing->mprNumber,
@@ -561,10 +585,10 @@ class MprController extends Controller
             createdAt: $existing->createdAt,
             updatedAt: now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
             requestorPosition: $validated['requestor_position'] ?? $existing->requestorPosition,
-            workingDays: $workingDaysLabels !== '' ? $workingDaysLabels : ($existing->workingDays ?? null),
-            workingHours: $workingHoursLabels !== '' ? $workingHoursLabels : ($existing->workingHours ?? null),
-            shiftDetail: $validated['shift_detail'] ?? $existing->shiftDetail,
-            benefits: $benefitsLabels !== '' ? $benefitsLabels : ($existing->benefits ?? null),
+            workingDays: $workingDaysValue,
+            workingHours: $workingHoursValue,
+            shiftDetail: $shiftDetailValue,
+            benefits: $benefitsValue,
             educationBackground: $educationLabel ?? $existing->educationBackground,
             workExperience: $experienceLabel ?? $existing->workExperience,
             skillsCompetencies: $validated['skills_competencies'] ?? $existing->skillsCompetencies,
@@ -590,11 +614,23 @@ class MprController extends Controller
                 'expected_join_date' => 'expectedJoinDate',
                 'replacement_for' => 'replacementFor',
                 'job_description' => 'jobDescription',
+                'approval_division' => 'approvalDivision',
+                'requestor_position' => 'requestorPosition',
+                'working_days' => 'workingDays',
+                'working_hours' => 'workingHours',
+                'shift_detail' => 'shiftDetail',
+                'education_background' => 'educationBackground',
+                'work_experience' => 'workExperience',
+                'skills_competencies' => 'skillsCompetencies',
+                'industry_reference' => 'industryReference',
+                'special_notes' => 'specialNotes',
+                'key_results_targets' => 'keyResultsTargets',
                 default => $field,
             };
+            $comparableNew = is_array($newValue) ? $toLabels($newValue, $field) : $newValue;
             $oldValue = $existing->{$property} ?? null;
-            if ((string) $oldValue !== (string) $newValue) {
-                $this->auditRepo->log('MPR', $existing->mprNumber ?? $id, 'updated', $field, $oldValue, $newValue, $actor, 'Dashboard');
+            if ((string) $oldValue !== (string) $comparableNew) {
+                $this->auditRepo->log('MPR', $existing->mprNumber ?? $id, 'updated', $field, $oldValue, $comparableNew, $actor, 'Dashboard');
             }
         }
 
@@ -625,7 +661,7 @@ class MprController extends Controller
             }
         }
 
-        return $this->pdfService->generate($mpr)->stream("MPR-{$mpr->mprNumber}-preview.pdf");
+        return $this->pdfService->generate($mpr)->stream($this->pdfFileName($mpr->mprNumber, true));
     }
 
     /**
@@ -687,10 +723,18 @@ class MprController extends Controller
         }
 
         $pdf = $this->pdfService->generate($mpr);
-        $fileName = "MPR-{$mpr->mprNumber}.pdf";
+        $fileName = $this->pdfFileName($mpr->mprNumber);
 
         $this->auditRepo->log('MPR', $mpr->mprNumber, 'generated', 'document', null, 'MPR PDF', $user['email'] ?? 'Manpower', 'Dashboard');
 
         return $pdf->stream($fileName);
+    }
+
+    private function pdfFileName(?string $mprNumber, bool $preview = false): string
+    {
+        $number = trim((string) $mprNumber);
+        $stem = str_starts_with($number, 'MPR-') ? $number : 'MPR-'.$number;
+
+        return $preview ? "{$stem}-preview.pdf" : "{$stem}.pdf";
     }
 }

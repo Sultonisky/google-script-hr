@@ -50,6 +50,12 @@ class MprRequestorController extends Controller
 
         $jobPosition = trim((string) $validated['job_position']);
 
+        if ($this->requestorRepo->findByEmail($validated['email']) !== null) {
+            return back()->withInput()->withErrors([
+                'email' => 'Email sudah digunakan.',
+            ]);
+        }
+
         $this->requestorRepo->create([
             'email' => $validated['email'],
             'username' => $validated['username'],
