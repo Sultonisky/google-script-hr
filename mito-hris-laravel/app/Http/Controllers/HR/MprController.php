@@ -759,6 +759,59 @@ class MprController extends Controller
         ]);
     }
 
+    /**
+     * Move a Submitted MPR to Finish. Requestors may finish only their own record.
+     */
+    public function finish(Request $request, string $id): RedirectResponse
+    {
+        $existing = $this->mprRepo->findByMprNumber($id);
+        if (!$existing) {
+            abort(404, "Data MPR dengan nomor '{$id}' tidak ditemukan.");
+        }
+
+        $user = $this->currentRequestorUser();
+        $isRequestorFinish = $request->routeIs('mpr.auth.request.finish') || $this->isManpowerUser($user);
+        if ($isRequestorFinish) {
+            if (!$this->isManpowerUser($user) || !$this->requestorOwnsMpr($user, $existing)) {
+                abort(403, 'Anda tidak memiliki akses untuk mengubah status pengajuan MPR ini.');
+            }
+        } else {
+            Gate::authorize('update_mpr');
+        }
+
+        if (strcasecmp(trim((string) $existing->status), 'Submitted') !== 0) {
+            return back()->with('error', 'Hanya pengajuan berstatus Submitted yang bisa diubah menjadi Finish.');
+        }
+
+        $updated = clone $existing;
+        $updated->status = 'Finish';
+        $updated->updatedAt = now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s');
+
+        try {
+            $this->mprRepo->update($existing->mprNumber ?? $id, $updated);
+        } catch (\Throwable $e) {
+            Log::error('Gagal mengubah status MPR menjadi Finish: ' . $e->getMessage());
+
+            return back()->with('error', 'Terjadi kesalahan saat mengubah status MPR.');
+        }
+
+        $actor = $isRequestorFinish
+            ? ($user['email'] ?? 'Manpower')
+            : session('hr_user.email', session('hr_user.fullName', 'HR Administrator'));
+        $this->auditRepo->log(
+            'MPR',
+            $updated->mprNumber ?? $id,
+            'updated',
+            'status',
+            $existing->status,
+            'Finish',
+            $actor,
+            $isRequestorFinish ? 'Public' : 'Dashboard'
+        );
+
+        return back()->with('success', 'Status MPR ' . ($updated->mprNumber ?? $id) . ' diubah menjadi Finish.');
+    }
+
     /** Preview the current persisted MPR using the same PDF service as export. */
     public function preview(string $id): Response
     {
