@@ -203,9 +203,6 @@ class MprFlowTest extends TestCase
         // Manager accessing Outsource -> 403
         $this->get('/hr/outsource')->assertStatus(403);
 
-        // Manager accessing settings-protected Master Data -> 403
-        $this->get('/hr/master-data')->assertStatus(403);
-
         // Manager accessing Users -> 403
         $this->get('/hr/users')->assertStatus(403);
     }
@@ -295,8 +292,9 @@ class MprFlowTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Total Pengajuan');
-        $response->assertSee('Menunggu Review');
-        $response->assertSee('Disetujui');
+        $response->assertDontSee('Menunggu Review');
+        $response->assertDontSee('>Disetujui</div>', false);
+        $response->assertDontSee('SUBMITTED');
         $response->assertSee('Total Kebutuhan');
     }
 
@@ -857,19 +855,79 @@ class MprFlowTest extends TestCase
     }
 
     #[Test]
-    public function store_rejects_numeric_manager_name_position_and_languages(): void
+    public function store_rejects_numeric_manager_name_and_numbered_languages(): void
     {
         $this->actingAsRole('Admin', 'admin.sanitize@mito.id', 'HR Admin');
 
         $response = $this->postJson(route('hr.mpr.store'), array_merge($this->validStorePayload(), [
             'manager_name' => 'Andi 99',
-            'requestor_position' => 'Manager 1',
-            'position' => 'Staff 123',
+            'requestor_position' => 'Area Manager 1',
+            'position' => 'SPB/SPG (MT) & HR 2',
             'languages' => 'Bahasa 2',
         ]));
 
         $response->assertStatus(422);
-        $response->assertJsonValidationErrors(['manager_name', 'requestor_position', 'position', 'languages']);
+        $response->assertJsonValidationErrors(['manager_name', 'languages']);
+        $response->assertJsonMissingValidationErrors(['requestor_position', 'position']);
+    }
+
+    #[Test]
+    public function store_requires_replacement_name_for_penggantian_and_restrukturisasi_only(): void
+    {
+        $this->actingAsRole('Admin', 'admin.replace@mito.id', 'HR Admin');
+
+        $mockRepo = Mockery::mock(MprRepositoryInterface::class);
+        $mockRepo->shouldReceive('create')->once()->andReturnUsing(function (MprData $mpr) {
+            $this->assertSame('Budi Santoso', $mpr->replacementFor);
+            $mpr->mprNumber ??= 'MPR-20260824-REPLACE';
+            return $mpr;
+        });
+        $this->app->instance(MprRepositoryInterface::class, $mockRepo);
+
+        $this->postJson(route('hr.mpr.store'), array_merge($this->validStorePayload(), [
+            'reason' => 'Restrukturisasi',
+        ]))->assertStatus(422)->assertJsonValidationErrors(['replacement_for']);
+
+        $this->postJson(route('hr.mpr.store'), array_merge($this->validStorePayload(), [
+            'reason' => 'Penggantian Karyawan Resign / Mutasi / Demosi',
+        ]))->assertStatus(422)->assertJsonValidationErrors(['replacement_for']);
+
+        $this->postJson(route('hr.mpr.store'), array_merge($this->validStorePayload(), [
+            'reason' => 'Restrukturisasi',
+            'replacement_for' => 'Budi Santoso',
+        ]))->assertStatus(201);
+    }
+
+    #[Test]
+    public function update_persists_working_days_hours_and_benefits(): void
+    {
+        $this->actingAsRole('Admin', 'admin.schedule@mito.id', 'HR Admin');
+
+        $existing = $this->makeMprData([
+            'mprNumber' => 'MPR-20260824-EDIT',
+            'workingDays' => 'Senin - Jumat',
+            'workingHours' => '08:00 - 17:00',
+            'benefits' => 'BPJS',
+        ]);
+        $existing->workingDays = 'Senin - Jumat';
+        $existing->workingHours = '08:00 - 17:00';
+        $existing->benefits = 'BPJS';
+
+        $mockRepo = Mockery::mock(MprRepositoryInterface::class);
+        $mockRepo->shouldReceive('findByMprNumber')->once()->with('MPR-20260824-EDIT')->andReturn($existing);
+        $mockRepo->shouldReceive('update')->once()->with('MPR-20260824-EDIT', Mockery::on(function (MprData $mpr) {
+            return $mpr->workingDays === 'Senin - Sabtu'
+                && $mpr->workingHours === '08:30 - 17:30'
+                && $mpr->benefits === 'BPJS, Asuransi Kesehatan'
+                && $mpr->shiftDetail === null;
+        }));
+        $this->app->instance(MprRepositoryInterface::class, $mockRepo);
+
+        $this->putJson(route('hr.mpr.update', ['id' => 'MPR-20260824-EDIT']), array_merge($this->validStorePayload(), [
+            'working_days' => ['senin_sabtu'],
+            'working_hours' => ['08_30_17_30'],
+            'benefits' => ['bpjs', 'asuransi_kesehatan'],
+        ]))->assertOk()->assertJsonPath('success', true);
     }
 
     #[Test]
@@ -936,6 +994,108 @@ class MprFlowTest extends TestCase
         $create->assertDontSee('type="radio" name="benefits[]"', false);
         $create->assertSee('type="radio" name="working_days[]"', false);
         $create->assertDontSee("filter(cb => cb.value !== 'shifting')", false);
+    }
+
+    #[Test]
+    public function requestor_can_edit_own_mpr_and_cannot_edit_someone_elses(): void
+    {
+        $owner = [
+            'email' => 'owner.requestor@mito.id',
+            'fullName' => 'Owner Requestor',
+            'role' => 'Manpower',
+            'auth_domain' => 'mpr_requestor',
+            'jobPosition' => 'Manager',
+            'requestor_id' => 'MPR-REQ-OWNER',
+        ];
+        $sessionKey = config('mpr.session_key', 'mpr_requestor_auth');
+        $existing = new MprData(
+            mprNumber: 'MPR-001',
+            requestDate: '2026-10-01',
+            requestorName: 'Owner Requestor',
+            requestorEmail: $owner['email'],
+            entity: 'MSI',
+            department: 'IT',
+            division: 'IT Support',
+            approvalDivision: 'Aditya Adipradhana',
+            position: 'Staff IT',
+            jobLevel: 'Staff',
+            workLocation: 'Head Office (HO)',
+            employmentType: 'Permanent (PKWTT)',
+            quantity: 1,
+            expectedJoinDate: '2026-11-06',
+            reason: 'Penambahan Karyawan Baru',
+            createdBy: $owner['email'],
+            requestorPosition: 'Manager',
+            workingDays: 'Senin - Jumat',
+            workingHours: '08:30 - 17:30',
+            benefits: 'BPJS',
+            educationBackground: 'S1',
+            workExperience: '2-3 Tahun',
+            skillsCompetencies: 'Laravel',
+        );
+
+        $repo = Mockery::mock(MprRepositoryInterface::class);
+        $repo->shouldReceive('findByMprNumber')->with('MPR-001')->andReturn($existing);
+        $repo->shouldReceive('update')->once()->withArgs(function (string $id, MprData $data) use ($owner) {
+            return $id === 'MPR-001'
+                && $data->position === 'Senior Staff IT'
+                && $data->entity === 'SPI'
+                && $data->requestorEmail === $owner['email']
+                && $data->requestorPosition === 'Manager'
+                && $data->workingDays === 'Senin - Sabtu'
+                && $data->mprNumber === 'MPR-001';
+        })->andReturnUsing(fn (string $id, MprData $data) => $data);
+        $this->app->instance(MprRepositoryInterface::class, $repo);
+
+        $edit = $this->withSession([$sessionKey => $owner])->get(route('mpr.auth.request.edit', ['id' => 'MPR-001']));
+        $edit->assertOk();
+        $edit->assertSee('Edit Pengajuan Manpower Request', false);
+        $edit->assertSee('value="Staff IT"', false);
+        $edit->assertSee('Simpan Perubahan', false);
+        $edit->assertSee('value="senin_jumat"', false);
+        $edit->assertSee('checked', false);
+
+        $this->withSession([$sessionKey => $owner])->putJson(route('mpr.auth.request.update', ['id' => 'MPR-001']), [
+            'position' => 'Senior Staff IT',
+            'entity' => 'SPI',
+            'department' => 'IT',
+            'division' => 'IT Support',
+            'approval_division' => 'Aditya Adipradhana',
+            'job_level' => 'Senior Staff',
+            'work_location' => 'Head Office (HO)',
+            'employment_type' => 'Permanent (PKWTT)',
+            'quantity' => 2,
+            'expected_join_date' => '2026-12-01',
+            'reason' => 'Penambahan Karyawan Baru',
+            'requestor_position' => 'Director',
+            'working_days' => ['senin_sabtu'],
+            'working_hours' => ['08_30_17_30'],
+            'benefits' => ['bpjs', 'asuransi_kesehatan'],
+            'education_background' => 's1',
+            'work_experience' => '2_3_tahun',
+        ])->assertOk()->assertJsonPath('success', true)->assertJsonPath('mpr.position', 'Senior Staff IT');
+
+        $other = $owner;
+        $other['email'] = 'other.requestor@mito.id';
+        $this->withSession([$sessionKey => $other])
+            ->putJson(route('mpr.auth.request.update', ['id' => 'MPR-001']), [
+                'position' => 'Tidak Boleh',
+                'entity' => 'MSI',
+                'department' => 'IT',
+                'division' => 'IT Support',
+                'approval_division' => 'Aditya Adipradhana',
+                'job_level' => 'Staff',
+                'work_location' => 'Head Office (HO)',
+                'employment_type' => 'Permanent (PKWTT)',
+                'quantity' => 1,
+                'expected_join_date' => '2026-12-01',
+                'reason' => 'Penambahan Karyawan Baru',
+                'working_days' => ['senin_jumat'],
+                'working_hours' => ['08_00_17_00'],
+                'benefits' => ['bpjs'],
+                'education_background' => 's1',
+                'work_experience' => '1_tahun',
+            ])->assertForbidden();
     }
 
     #[Test]

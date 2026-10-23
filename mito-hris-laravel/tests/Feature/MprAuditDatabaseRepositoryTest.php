@@ -65,7 +65,7 @@ class MprAuditDatabaseRepositoryTest extends TestCase
             specialNotes: 'Urgent',
         ));
 
-        $this->assertNotEmpty($created->mprNumber);
+        $this->assertSame('MPR-001', $created->mprNumber);
         $this->assertSame('Urgent', $created->specialNotes);
         $this->assertSame('PHP, Laravel', $created->skillsCompetencies);
 
@@ -82,6 +82,25 @@ class MprAuditDatabaseRepositoryTest extends TestCase
         $this->assertCount(1, $mprs->getAll(['search' => 'senior']));
         $this->assertCount(1, $mprs->getAllForManager('mgr@mito.id'));
         $this->assertCount(0, $mprs->getAllForManager('other@mito.id'));
+    }
+
+    public function test_mpr_number_sequence_ignores_legacy_long_ids(): void
+    {
+        /** @var MprRepositoryInterface $mprs */
+        $mprs = $this->app->make(MprRepositoryInterface::class);
+
+        $mprs->create(new MprData(
+            mprNumber: 'MPR-20261023-4272',
+            requestorName: 'Lama',
+            position: 'Staff',
+            quantity: 1,
+        ));
+
+        $first = $mprs->create(new MprData(requestorName: 'Baru', position: 'Staff', quantity: 1));
+        $second = $mprs->create(new MprData(requestorName: 'Baru Lagi', position: 'Staff', quantity: 1));
+
+        $this->assertSame('MPR-001', $first->mprNumber);
+        $this->assertSame('MPR-002', $second->mprNumber);
     }
 
     public function test_mpr_requestor_crud_and_id_sequence(): void
