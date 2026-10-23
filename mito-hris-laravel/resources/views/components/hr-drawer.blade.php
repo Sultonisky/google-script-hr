@@ -553,7 +553,7 @@
         </div>
         <div class="status-action-group">
             <button class="btn-status print" id="btnDrawerSupplementaryDocs" type="button" style="display:none">
-                <i class="bi bi-file-earmark-plus"></i> Dokumen Pelengkap
+                <i class="bi bi-file-earmark-person"></i> Surat Pernyataan
             </button>
             <button class="btn-status accept" id="btnDrawerEntityEdit" type="button"><i
                     class="bi bi-pencil-fill"></i> Edit</button>
