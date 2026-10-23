@@ -37,4 +37,22 @@ class ArrayUserPermissionRepository implements UserPermissionRepositoryInterface
 
         return true;
     }
+
+    public function reassignEmail(string $fromEmail, string $toEmail): void
+    {
+        $fromEmail = strtolower(trim($fromEmail));
+        $toEmail = strtolower(trim($toEmail));
+        if ($fromEmail === '' || $toEmail === '' || $fromEmail === $toEmail) {
+            return;
+        }
+
+        foreach ($this->mappings as &$mapping) {
+            if (strtolower(trim((string) ($mapping['User Email'] ?? ''))) !== $fromEmail) {
+                continue;
+            }
+            $mapping['User Email'] = $toEmail;
+            $mapping['Updated At'] = now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s');
+        }
+        unset($mapping);
+    }
 }
