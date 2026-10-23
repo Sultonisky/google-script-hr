@@ -296,6 +296,7 @@ class MprFlowTest extends TestCase
         $response->assertDontSee('>Disetujui</div>', false);
         $response->assertSee('SUBMITTED');
         $response->assertSee('Total Kebutuhan');
+        $response->assertDontSee('mprSuccessAlert', false);
     }
 
     #[Test]
@@ -994,6 +995,7 @@ class MprFlowTest extends TestCase
         $create->assertDontSee('type="radio" name="benefits[]"', false);
         $create->assertSee('type="radio" name="working_days[]"', false);
         $create->assertDontSee("filter(cb => cb.value !== 'shifting')", false);
+        $create->assertDontSee('mprSuccessAlert', false);
     }
 
     #[Test]
@@ -1160,7 +1162,7 @@ class MprFlowTest extends TestCase
 
         $history = $this->get(route('hr.mpr.history'));
         $history->assertOk();
-        $history->assertSee('<button type="submit" class="btn btn-sm btn-success" data-mpr-finish="MPR-010"', false);
+        $history->assertSee('<button type="submit" class="btn btn-sm btn-info text-white" data-mpr-finish="MPR-010"', false);
         $history->assertSee('disabled data-mpr-finish="MPR-011"', false);
         $history->assertSee('FINISH');
 
@@ -1191,9 +1193,12 @@ class MprFlowTest extends TestCase
 
         $page = $this->get(route('hr.mpr.index'));
         $page->assertOk();
-        $page->assertSee('<button type="submit" class="btn btn-sm btn-success" data-mpr-finish="MPR-020"', false);
+        $page->assertSee('<button type="submit" class="btn btn-sm btn-info text-white" data-mpr-finish="MPR-020"', false);
         $page->assertSee('disabled data-mpr-finish="MPR-021"', false);
         $page->assertSee('>FINISH</span>', false);
+        $page->assertSee('Status Finish');
+        $page->assertDontSee('Pengajuan Bulan Ini');
+        $page->assertDontSee('mprSuccessAlert', false);
 
         $finish = Mockery::mock(MprRepositoryInterface::class);
         $finish->shouldReceive('findByMprNumber')->once()->with('MPR-020')->andReturn($submitted);

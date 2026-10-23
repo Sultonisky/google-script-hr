@@ -10,6 +10,7 @@ use App\Repositories\Database\AuditLogDatabaseRepository;
 use App\Repositories\Database\MprDatabaseRepository;
 use App\Repositories\Database\MprRequestorDatabaseRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 /**
@@ -65,7 +66,7 @@ class MprAuditDatabaseRepositoryTest extends TestCase
             specialNotes: 'Urgent',
         ));
 
-        $this->assertSame('MPR-001', $created->mprNumber);
+        $this->assertMatchesRegularExpression('/^MPR-\d{4}-001$/', (string) $created->mprNumber);
         $this->assertSame('Urgent', $created->specialNotes);
         $this->assertSame('PHP, Laravel', $created->skillsCompetencies);
 
@@ -89,18 +90,30 @@ class MprAuditDatabaseRepositoryTest extends TestCase
         /** @var MprRepositoryInterface $mprs */
         $mprs = $this->app->make(MprRepositoryInterface::class);
 
-        $mprs->create(new MprData(
-            mprNumber: 'MPR-20261023-4272',
-            requestorName: 'Lama',
-            position: 'Staff',
-            quantity: 1,
-        ));
+        Carbon::setTestNow(Carbon::parse('2026-10-24 09:00:00', 'Asia/Jakarta'));
 
-        $first = $mprs->create(new MprData(requestorName: 'Baru', position: 'Staff', quantity: 1));
-        $second = $mprs->create(new MprData(requestorName: 'Baru Lagi', position: 'Staff', quantity: 1));
+        try {
+            $mprs->create(new MprData(
+                mprNumber: 'MPR-20261023-4272',
+                requestorName: 'Lama',
+                position: 'Staff',
+                quantity: 1,
+            ));
+            $mprs->create(new MprData(
+                mprNumber: 'MPR-2025-050',
+                requestorName: 'Tahun Lalu',
+                position: 'Staff',
+                quantity: 1,
+            ));
 
-        $this->assertSame('MPR-001', $first->mprNumber);
-        $this->assertSame('MPR-002', $second->mprNumber);
+            $first = $mprs->create(new MprData(requestorName: 'Baru', position: 'Staff', quantity: 1));
+            $second = $mprs->create(new MprData(requestorName: 'Baru Lagi', position: 'Staff', quantity: 1));
+
+            $this->assertSame('MPR-2026-001', $first->mprNumber);
+            $this->assertSame('MPR-2026-002', $second->mprNumber);
+        } finally {
+            Carbon::setTestNow();
+        }
     }
 
     public function test_mpr_requestor_crud_and_id_sequence(): void
