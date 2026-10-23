@@ -44,4 +44,17 @@ class UserPermissionDatabaseRepository implements UserPermissionRepositoryInterf
 
         return true;
     }
+
+    public function reassignEmail(string $fromEmail, string $toEmail): void
+    {
+        $fromEmail = strtolower(trim($fromEmail));
+        $toEmail = strtolower(trim($toEmail));
+        if ($fromEmail === '' || $toEmail === '' || $fromEmail === $toEmail) {
+            return;
+        }
+
+        UserPermission::query()
+            ->whereRaw('LOWER(user_email) = ?', [$fromEmail])
+            ->update(['user_email' => $toEmail]);
+    }
 }
