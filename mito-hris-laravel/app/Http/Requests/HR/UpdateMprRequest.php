@@ -20,6 +20,7 @@ class UpdateMprRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'entity'             => ['sometimes', 'required', 'string', 'max:255', Rule::in(array_keys(config('hris.mpr_form_options.target_entities', [])))],
             'position'           => ['sometimes', 'required', 'string', 'max:255', 'regex:' . self::POSITION_REGEX],
             'department'         => ['sometimes', 'required', 'string', 'max:255', Rule::in(array_keys(config('hris.mpr_department_divisions', [])))],
             'division'           => ['sometimes', 'required', 'string', 'max:255', new DivisionBelongsToDepartment((string) $this->input('department'))],
