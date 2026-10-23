@@ -92,7 +92,7 @@ jobs:
 
             echo "App directory: $APP_DIR"
 
-            echo "== Pinning hris-app PHP to 8.4.27 =="
+            echo "== Pinning hris-app PHP 8.4.27 and Node 24.22.1 =="
             cd "$COMPOSE_DIR"
             if ! docker compose config --format json > /tmp/hris-compose.json; then
               echo "Unable to read the hris-app compose config." >&2
@@ -124,29 +124,43 @@ jobs:
                 sys.exit(f"Dockerfile not found: {dockerfile}")
 
             image_re = re.compile(r"php:(\d+\.\d+(?:\.\d+)?)([^\s'\"]*)")
+            node_image_re = re.compile(r"node:(\d+(?:\.\d+){0,2})([^\s'\"]*)")
             arg_re = re.compile(
                 r"(?m)^(\s*ARG\s+[A-Z0-9_]*PHP[A-Z0-9_]*=)['\"]?(\d+\.\d+(?:\.\d+)?)['\"]?"
+            )
+            node_arg_re = re.compile(
+                r"(?m)^(\s*ARG\s+[A-Z0-9_]*NODE[A-Z0-9_]*=)['\"]?(\d+(?:\.\d+){0,2})['\"]?"
             )
             compose_arg_re = re.compile(
                 r"(PHP_VERSION\s*[:=]\s*['\"]?)(\d+\.\d+(?:\.\d+)?)"
             )
+            node_compose_arg_re = re.compile(
+                r"(NODE_VERSION\s*[:=]\s*['\"]?)(\d+(?:\.\d+){0,2})"
+            )
 
-            def pin_token(match):
+            def pin_php_token(match):
                 suffix = re.sub(r"@sha256:[0-9a-fA-F]+", "", match.group(2) or "")
                 return f"php:8.4.27{suffix}"
+
+            def pin_node_token(match):
+                suffix = re.sub(r"@sha256:[0-9a-fA-F]+", "", match.group(2) or "")
+                return f"node:24.22.1{suffix}"
 
             def pin_file(path):
                 with open(path, encoding="utf-8") as handle:
                     original = handle.read()
-                updated, images = image_re.subn(pin_token, original)
+                updated, images = image_re.subn(pin_php_token, original)
+                updated, node_images = node_image_re.subn(pin_node_token, updated)
                 updated, args = arg_re.subn(r"\g<1>8.4.27", updated)
+                updated, node_args = node_arg_re.subn(r"\g<1>24.22.1", updated)
                 updated, compose_args = compose_arg_re.subn(r"\g<1>8.4.27", updated)
+                updated, node_compose_args = node_compose_arg_re.subn(r"\g<1>24.22.1", updated)
                 if updated != original:
                     with open(path, "w", encoding="utf-8", newline="\n") as handle:
                         handle.write(updated)
-                    print(f"Pinned PHP 8.4.27 in {path}")
+                    print(f"Pinned PHP 8.4.27 and Node 24.22.1 in {path}")
                 else:
-                    print(f"PHP image already 8.4.27 in {path}")
+                    print(f"PHP 8.4.27 and Node 24.22.1 already set in {path}")
                 return images + args + compose_args
 
             pinned = pin_file(dockerfile)
@@ -187,6 +201,14 @@ jobs:
               FPM_RUNTIME="$(docker exec hris-app php-fpm -v | awk 'NR==1 { print $2 }')"
               echo "hris-app PHP FPM ${FPM_RUNTIME}"
               test "${FPM_RUNTIME}" = "8.4.27"
+            fi
+
+            if docker exec hris-app sh -c 'command -v node >/dev/null'; then
+              NODE_RUNTIME="$(docker exec hris-app node -p 'process.versions.node')"
+              echo "hris-app Node ${NODE_RUNTIME}"
+              test "${NODE_RUNTIME}" = "24.22.1"
+            else
+              echo "hris-app image has no node binary."
             fi
 
             echo "== Publishing Vite assets for nginx =="
