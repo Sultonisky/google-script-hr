@@ -61,59 +61,6 @@
         });
     }
 
-    function bindMasterDataHelpers() {
-        const searchInput = document.getElementById("mdSearch");
-        const tableBody = document.getElementById("mdTableBody");
-        const countInfo = document.getElementById("mdCountInfo");
-        if (!searchInput || !tableBody || !countInfo) {
-            return;
-        }
-
-        const filterMasterTable = function () {
-            const query = searchInput.value.trim().toLowerCase();
-            const rows = tableBody.querySelectorAll("tr");
-            let visible = 0;
-
-            rows.forEach(function (row) {
-                const name = (
-                    row.querySelector(".item-name")?.textContent || ""
-                ).toLowerCase();
-                const description = (
-                    row.querySelector(".item-desc")?.textContent || ""
-                ).toLowerCase();
-                const matches =
-                    name.includes(query) || description.includes(query);
-                row.style.display = matches ? "" : "none";
-                if (matches) {
-                    visible++;
-                }
-            });
-
-            countInfo.textContent = `${visible} item`;
-        };
-
-        searchInput.addEventListener("keyup", filterMasterTable);
-        filterMasterTable();
-    }
-
-    function bindMasterDataWarnings() {
-        document.addEventListener("click", function (event) {
-            const trigger = event.target.closest(
-                "[data-master-delete-warning]",
-            );
-            if (!trigger) {
-                return;
-            }
-
-            if (typeof window.showToast === "function") {
-                window.showToast(
-                    "Item referensi master terproteksi dari spreadsheet.",
-                    "warning",
-                );
-            }
-        });
-    }
-
     function bindOutsourceFieldSanitization() {
         document
             .querySelectorAll("[data-sanitize-name]")
@@ -174,7 +121,7 @@
             .forEach(function (field) {
                 const sanitize = function () {
                     field.value = field.value
-                        .replace(/[^\p{L} \-]/gu, "")
+                        .replace(/[^\p{L}0-9 \-&\/().]/gu, "")
                         .replace(/ {2,}/g, " ");
                 };
 
@@ -523,8 +470,6 @@
             enablePagination();
             displayFlashToasts();
             bindPublicCareerFormHelpers();
-            bindMasterDataHelpers();
-            bindMasterDataWarnings();
             bindOutsourceFieldSanitization();
             bindOutsourceAddressCopy();
             bindHrAutoSubmitFilters();
@@ -545,8 +490,6 @@
     enablePagination();
     displayFlashToasts();
     bindPublicCareerFormHelpers();
-    bindMasterDataHelpers();
-    bindMasterDataWarnings();
     bindOutsourceFieldSanitization();
     bindOutsourceAddressCopy();
     bindHrAutoSubmitFilters();
