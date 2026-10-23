@@ -77,7 +77,7 @@ class MprDatabaseRepository implements MprRepositoryInterface
         $now = now()->timezone('Asia/Jakarta');
 
         if (empty($data->mprNumber)) {
-            $data->mprNumber = 'MPR-' . $now->format('Ymd') . '-' . sprintf('%04d', random_int(1, 9999));
+            $data->mprNumber = $this->generateNextNumber();
         }
         if (empty($data->requestDate)) {
             $data->requestDate = $now->format('Y-m-d');
@@ -107,6 +107,22 @@ class MprDatabaseRepository implements MprRepositoryInterface
         $model->save();
 
         return $this->toData($model->fresh());
+    }
+
+    /**
+     * Short document id: MPR-001, MPR-002, …
+     * Older MPR-YYYYMMDD-XXXX values are left as-is and do not consume this sequence.
+     */
+    private function generateNextNumber(): string
+    {
+        $max = 0;
+        foreach (MprRequest::query()->pluck('mpr_number') as $number) {
+            if (preg_match('/^MPR-(\d+)$/i', trim((string) $number), $match)) {
+                $max = max($max, (int) $match[1]);
+            }
+        }
+
+        return 'MPR-' . str_pad((string) ($max + 1), 3, '0', STR_PAD_LEFT);
     }
 
     /**
