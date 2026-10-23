@@ -1,5 +1,4 @@
 
-
 @if ($errors->any())
     <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4" role="alert">
         <div class="d-flex align-items-center mb-1">
