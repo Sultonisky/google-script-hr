@@ -23,6 +23,8 @@ class OutsourcePayslipController extends Controller
 
     private const PER_PAGE = 15;
 
+    private const SORTS = ['name_asc', 'name_desc', 'nomor_asc', 'nomor_desc'];
+
     public function __construct(
         protected OutsourcePayslipImportService $importer,
         protected AuditLogRepositoryInterface $auditRepo
@@ -44,11 +46,12 @@ class OutsourcePayslipController extends Controller
         }
 
         $searchFilter = trim((string) $request->query('search', ''));
+        $sortFilter = $this->sortFilter($request);
 
         $query = $this->payslipQuery($periodFilter, $searchFilter);
 
         $total = (clone $query)->count();
-        $payslips = $query->orderBy('full_name')->forPage($currentPage, $perPage)->get();
+        $payslips = $this->applySort($query, $sortFilter)->forPage($currentPage, $perPage)->get();
 
         return view('hr.outsource-payslip.index', compact(
             'payslips',
@@ -57,7 +60,8 @@ class OutsourcePayslipController extends Controller
             'currentPage',
             'perPage',
             'periodFilter',
-            'searchFilter'
+            'searchFilter',
+            'sortFilter'
         ));
     }
 
@@ -68,7 +72,7 @@ class OutsourcePayslipController extends Controller
             $period = (string) (OutsourcePayslip::query()->orderByDesc('period')->value('period') ?? now()->timezone('Asia/Jakarta')->format('Y-m'));
         }
         $search = trim((string) $request->query('search', ''));
-        $payslips = $this->payslipQuery($period, $search)->orderBy('full_name')->get();
+        $payslips = $this->applySort($this->payslipQuery($period, $search), $this->sortFilter($request))->get();
 
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
@@ -125,6 +129,23 @@ class OutsourcePayslipController extends Controller
                 $like = '%' . mb_strtolower($search) . '%';
                 $query->where(fn ($where) => $where->whereRaw('LOWER(outsource_id) LIKE ?', [$like])->orWhereRaw('LOWER(full_name) LIKE ?', [$like]));
             });
+    }
+
+    private function sortFilter(Request $request): string
+    {
+        $sort = (string) $request->query('sort', 'name_asc');
+
+        return in_array($sort, self::SORTS, true) ? $sort : 'name_asc';
+    }
+
+    private function applySort(\Illuminate\Database\Eloquent\Builder $query, string $sort): \Illuminate\Database\Eloquent\Builder
+    {
+        return match ($sort) {
+            'name_desc' => $query->orderByDesc('full_name')->orderBy('outsource_id'),
+            'nomor_asc' => $query->orderBy('outsource_id')->orderBy('full_name'),
+            'nomor_desc' => $query->orderByDesc('outsource_id')->orderBy('full_name'),
+            default => $query->orderBy('full_name')->orderBy('outsource_id'),
+        };
     }
 
     /**
