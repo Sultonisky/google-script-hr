@@ -298,4 +298,44 @@ class OutsourceIncentiveImportTest extends TestCase
 
         $this->assertSame(0, OutsourceIncentive::count());
     }
+
+    public function test_index_sorts_by_name_and_outsource_id(): void
+    {
+        $this->actingWithPermissions(['view_outsource_incentive']);
+        foreach ([
+            ['DM20260010', 'Citra Lestari'],
+            ['DM20260002', 'Bayu Saputra'],
+            ['DM20260001', 'Andi Wijaya'],
+        ] as [$outsourceId, $fullName]) {
+            OutsourceIncentive::query()->create([
+                'period' => '2026-09',
+                'outsource_id' => $outsourceId,
+                'full_name' => $fullName,
+                'vendor' => 'Damarindo',
+                'incentive_amount' => 100000,
+            ]);
+        }
+
+        $this->get('/hr/outsource-incentives?period=2026-09')
+            ->assertOk()
+            ->assertSee('Nama A-Z')
+            ->assertSee('Nomor Z-A')
+            ->assertSeeInOrder(['Andi Wijaya', 'Bayu Saputra', 'Citra Lestari']);
+
+        $this->get('/hr/outsource-incentives?period=2026-09&sort=name_desc')
+            ->assertOk()
+            ->assertSeeInOrder(['Citra Lestari', 'Bayu Saputra', 'Andi Wijaya']);
+
+        $this->get('/hr/outsource-incentives?period=2026-09&sort=nomor_asc')
+            ->assertOk()
+            ->assertSeeInOrder(['DM20260001', 'DM20260002', 'DM20260010']);
+
+        $this->get('/hr/outsource-incentives?period=2026-09&sort=nomor_desc')
+            ->assertOk()
+            ->assertSeeInOrder(['DM20260010', 'DM20260002', 'DM20260001']);
+
+        $this->get('/hr/outsource-incentives?period=2026-09&sort=invalid')
+            ->assertOk()
+            ->assertSeeInOrder(['Andi Wijaya', 'Bayu Saputra', 'Citra Lestari']);
+    }
 }
