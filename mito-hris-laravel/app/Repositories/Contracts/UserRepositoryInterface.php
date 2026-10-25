@@ -16,6 +16,11 @@ interface UserRepositoryInterface
 
     public function deleteByEmail(string $email): void;
 
+    /**
+     * Permanently remove the user row. This does not change Status to Inactive.
+     */
+    public function forceDeleteByEmail(string $email): void;
+
     public function isEmpty(): bool;
 
     public function updateLastLogin(string $email): void;

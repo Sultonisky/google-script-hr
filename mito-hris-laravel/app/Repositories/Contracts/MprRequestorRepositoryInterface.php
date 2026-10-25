@@ -42,6 +42,11 @@ interface MprRequestorRepositoryInterface
     public function deleteByEmail(string $email): void;
 
     /**
+     * Permanently remove the requestor row. This does not change Status to Inactive.
+     */
+    public function forceDeleteByEmail(string $email): void;
+
+    /**
      * Returns true when the sheet has no data rows.
      */
     public function isEmpty(): bool;
