@@ -147,6 +147,9 @@ class MprAuditDatabaseRepositoryTest extends TestCase
 
         $repo->deleteByEmail('mgr@mito.id');
         $this->assertSame('Inactive', $repo->findByEmail('mgr@mito.id')['Status'] ?? null);
+
+        $repo->forceDeleteByEmail('mgr@mito.id');
+        $this->assertNull($repo->findByEmail('mgr@mito.id'));
     }
 
     public function test_pgsql_driver_binds_mpr_and_audit_database_repositories(): void

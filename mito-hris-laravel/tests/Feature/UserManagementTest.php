@@ -512,4 +512,158 @@ class UserManagementTest extends TestCase
             ->assertRedirect(route('hr.mpr-requestors.index'))
             ->assertSessionHas('success');
     }
+
+    public function test_force_delete_is_super_admin_only_and_removes_the_user(): void
+    {
+        $this->actingAsRole('Admin');
+        $this->withoutMiddleware(VerifyCsrfToken::class)
+            ->delete(route('hr.users.force-delete', ['email' => 'staff@example.test']))
+            ->assertForbidden();
+
+        $this->actingAsRole('Super Admin');
+        $user = [
+            'Email' => 'staff@example.test',
+            'Full Name' => 'Staff Uji',
+            'Role' => 'Staff',
+            'Status' => 'Active',
+        ];
+        $users = Mockery::mock(UserRepositoryInterface::class);
+        $users->shouldReceive('getAll')->once()->andReturn([
+            $user,
+            ['Email' => 'super.admin@mito.test', 'Full Name' => 'Super Admin Test', 'Role' => 'Super Admin', 'Status' => 'Active'],
+        ]);
+        $this->app->instance(UserRepositoryInterface::class, $users);
+        $this->get(route('hr.users.index'))
+            ->assertOk()
+            ->assertSee('data-bs-target="#userForceDeleteModal"', false)
+            ->assertSee('data-email="staff@example.test"', false)
+            ->assertSee('Force delete pengguna', false);
+
+        $users = Mockery::mock(UserRepositoryInterface::class);
+        $users->shouldReceive('findByEmail')->twice()->with('staff@example.test')->andReturn($user, null);
+        $users->shouldReceive('forceDeleteByEmail')->once()->with('staff@example.test');
+        $users->shouldNotReceive('getAll');
+        $this->app->instance(UserRepositoryInterface::class, $users);
+        $permissions = Mockery::mock(UserPermissionRepositoryInterface::class);
+        $permissions->shouldReceive('forceDeleteByEmail')->once()->with('staff@example.test')->andReturn(2);
+        $this->app->instance(UserPermissionRepositoryInterface::class, $permissions);
+        $this->mockAuditLog();
+
+        $this->withoutMiddleware(VerifyCsrfToken::class)
+            ->delete(route('hr.users.force-delete', ['email' => 'staff@example.test']))
+            ->assertRedirect(route('hr.users.index'))
+            ->assertSessionHas('success');
+    }
+
+    public function test_super_admin_cannot_force_delete_the_logged_in_account(): void
+    {
+        $this->actingAsRole('Super Admin');
+        $users = Mockery::mock(UserRepositoryInterface::class);
+        $users->shouldReceive('findByEmail')->once()->with('super.admin@mito.test')->andReturn([
+            'Email' => 'super.admin@mito.test',
+            'Full Name' => 'Super Admin Test',
+            'Role' => 'Super Admin',
+            'Status' => 'Active',
+        ]);
+        $users->shouldNotReceive('forceDeleteByEmail');
+        $this->app->instance(UserRepositoryInterface::class, $users);
+
+        $this->withoutMiddleware(VerifyCsrfToken::class)
+            ->delete(route('hr.users.force-delete', ['email' => 'super.admin@mito.test']))
+            ->assertRedirect(route('hr.users.index'))
+            ->assertSessionHas('error', 'Akun yang sedang login tidak bisa di-force delete.');
+    }
+
+    public function test_super_admin_cannot_force_delete_the_last_active_super_admin(): void
+    {
+        $this->actingAsRole('Super Admin');
+        $users = Mockery::mock(UserRepositoryInterface::class);
+        $users->shouldReceive('findByEmail')->once()->with('root@example.test')->andReturn([
+            'Email' => 'root@example.test',
+            'Full Name' => 'Root',
+            'Role' => 'Super Admin',
+            'Status' => 'Active',
+        ]);
+        $users->shouldReceive('getAll')->once()->andReturn([
+            ['Email' => 'root@example.test', 'Role' => 'Super Admin', 'Status' => 'Active'],
+        ]);
+        $users->shouldNotReceive('forceDeleteByEmail');
+        $this->app->instance(UserRepositoryInterface::class, $users);
+
+        $this->withoutMiddleware(VerifyCsrfToken::class)
+            ->delete(route('hr.users.force-delete', ['email' => 'root@example.test']))
+            ->assertRedirect(route('hr.users.index'))
+            ->assertSessionHas('error', 'Super Admin aktif terakhir tidak bisa di-force delete.');
+    }
+
+    public function test_force_delete_removes_mpr_requestor_for_super_admin_only(): void
+    {
+        $this->actingAsRole('Admin');
+        $this->withoutMiddleware(VerifyCsrfToken::class)
+            ->delete(route('hr.mpr-requestors.force-delete', ['email' => 'manager@example.test']))
+            ->assertForbidden();
+
+        $this->actingAsRole('Super Admin');
+        $requestor = [
+            'Requestor ID' => 'MPR-REQ-009',
+            'Email' => 'manager@example.test',
+            'Full Name' => 'Manager Uji',
+            'Role' => 'Manpower',
+            'Status' => 'Active',
+        ];
+        $repository = Mockery::mock(MprRequestorRepositoryInterface::class);
+        $repository->shouldReceive('getAll')->once()->andReturn([$requestor]);
+        $this->app->instance(MprRequestorRepositoryInterface::class, $repository);
+        $this->get(route('hr.mpr-requestors.index'))
+            ->assertOk()
+            ->assertSee('data-bs-target="#mprRequestorForceDeleteModal"', false)
+            ->assertSee('Force delete MPR requestor', false);
+
+        $repository = Mockery::mock(MprRequestorRepositoryInterface::class);
+        $repository->shouldReceive('findByEmail')->twice()->with('manager@example.test')->andReturn($requestor, null);
+        $repository->shouldReceive('forceDeleteByEmail')->once()->with('manager@example.test');
+        $this->app->instance(MprRequestorRepositoryInterface::class, $repository);
+        $audit = Mockery::mock(AuditLogRepositoryInterface::class);
+        $audit->shouldReceive('log')->once()->withArgs(function (...$args): bool {
+            return $args[0] === 'MPR Requestor' && $args[1] === 'MPR-REQ-009' && $args[2] === 'FORCE_DELETE';
+        })->andReturnTrue();
+        $this->app->instance(AuditLogRepositoryInterface::class, $audit);
+
+        $this->withoutMiddleware(VerifyCsrfToken::class)
+            ->delete(route('hr.mpr-requestors.force-delete', ['email' => 'manager@example.test']))
+            ->assertRedirect(route('hr.mpr-requestors.index'))
+            ->assertSessionHas('success');
+    }
+
+    public function test_force_delete_clears_user_permission_overrides_for_super_admin_only(): void
+    {
+        $this->actingAsRole('Admin');
+        $this->withoutMiddleware(VerifyCsrfToken::class)
+            ->deleteJson(route('hr.permissions.force-delete', ['email' => 'staff@example.test']))
+            ->assertForbidden();
+
+        $this->actingAsRole('Super Admin');
+        $users = Mockery::mock(UserRepositoryInterface::class);
+        $users->shouldReceive('findByEmail')->once()->with('staff@example.test')->andReturn([
+            'Email' => 'staff@example.test',
+            'Full Name' => 'Staff Uji',
+            'Role' => 'Staff',
+            'Status' => 'Active',
+        ]);
+        $this->app->instance(UserRepositoryInterface::class, $users);
+        $permissions = Mockery::mock(UserPermissionRepositoryInterface::class);
+        $permissions->shouldReceive('forceDeleteByEmail')->once()->with('staff@example.test')->andReturn(2);
+        $this->app->instance(UserPermissionRepositoryInterface::class, $permissions);
+        $audit = Mockery::mock(AuditLogRepositoryInterface::class);
+        $audit->shouldReceive('log')->once()->withArgs(function (...$args): bool {
+            return $args[0] === 'User Permission' && $args[2] === 'FORCE_DELETE' && $args[4] === 2;
+        })->andReturnTrue();
+        $this->app->instance(AuditLogRepositoryInterface::class, $audit);
+
+        $this->withoutMiddleware(VerifyCsrfToken::class)
+            ->deleteJson(route('hr.permissions.force-delete', ['email' => 'staff@example.test']))
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('deleted', 2);
+    }
 }
