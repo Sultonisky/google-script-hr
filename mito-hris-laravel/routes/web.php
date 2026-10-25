@@ -161,17 +161,20 @@ if (!app()->environment('local')) {
             Route::prefix('users')->name('users.')->middleware(['can:manage_settings', 'role:Super Admin'])->group(function () {
                 Route::get('/', [UserController::class, 'index'])->name('index');
                 Route::post('/', [UserController::class, 'store'])->name('store');
+                Route::delete('/{email}/force-delete', [UserController::class, 'forceDelete'])->name('force-delete');
                 Route::put('/{email}', [UserController::class, 'update'])->name('update');
             });
             Route::prefix('permissions')->name('permissions.')->middleware(['can:manage_permissions', 'role:Super Admin'])->group(function () {
                 Route::get('/', [PermissionController::class, 'index'])->name('index');
                 Route::get('/users', [PermissionController::class, 'users'])->name('users');
+                Route::delete('/{email}/force-delete', [PermissionController::class, 'forceDelete'])->name('force-delete');
                 Route::get('/{email}', [PermissionController::class, 'show'])->name('show');
                 Route::put('/{email}', [PermissionController::class, 'update'])->name('update');
             });
             Route::prefix('mpr-requestors')->name('mpr-requestors.')->middleware(['can:manage_settings', 'role:Super Admin'])->group(function () {
                 Route::get('/', [MprRequestorController::class, 'index'])->name('index');
                 Route::post('/', [MprRequestorController::class, 'store'])->name('store');
+                Route::delete('/{email}/force-delete', [MprRequestorController::class, 'forceDelete'])->name('force-delete');
                 Route::put('/{email}', [MprRequestorController::class, 'update'])->name('update');
             });
             Route::prefix('export')->name('export.')->middleware('can:view_recruitment')->group(function () {
@@ -441,11 +444,13 @@ if (app()->environment('local')) {
             Route::prefix('users')->name('users.')->middleware(['can:manage_settings', 'role:Super Admin'])->group(function () {
                 Route::get('/', [UserController::class, 'index'])->name('index');
                 Route::post('/', [UserController::class, 'store'])->name('store');
+                Route::delete('/{email}/force-delete', [UserController::class, 'forceDelete'])->name('force-delete');
                 Route::put('/{email}', [UserController::class, 'update'])->name('update');
             });
             Route::prefix('permissions')->name('permissions.')->middleware(['can:manage_permissions', 'role:Super Admin'])->group(function () {
                 Route::get('/', [PermissionController::class, 'index'])->name('index');
                 Route::get('/users', [PermissionController::class, 'users'])->name('users');
+                Route::delete('/{email}/force-delete', [PermissionController::class, 'forceDelete'])->name('force-delete');
                 Route::get('/{email}', [PermissionController::class, 'show'])->name('show');
                 Route::put('/{email}', [PermissionController::class, 'update'])->name('update');
             });
@@ -453,6 +458,7 @@ if (app()->environment('local')) {
             Route::prefix('mpr-requestors')->name('mpr-requestors.')->middleware(['can:manage_settings', 'role:Super Admin'])->group(function () {
                 Route::get('/', [MprRequestorController::class, 'index'])->name('index');
                 Route::post('/', [MprRequestorController::class, 'store'])->name('store');
+                Route::delete('/{email}/force-delete', [MprRequestorController::class, 'forceDelete'])->name('force-delete');
                 Route::put('/{email}', [MprRequestorController::class, 'update'])->name('update');
             });
 
