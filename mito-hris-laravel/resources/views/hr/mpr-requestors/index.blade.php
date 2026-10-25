@@ -63,27 +63,35 @@
                 </div>
             </div>
 
-            <div class="filter-bar">
-                <div class="table-search">
-                    <i class="bi bi-search"></i>
-                    <input type="search" id="mprRequestorSearch"
-                        placeholder="Cari nama, email, username, atau job position..." aria-label="Cari MPR requestor"
-                        autocomplete="off" />
+            <form action="{{ route('hr.mpr-requestors.index') }}" method="GET" id="mprRequestorFilterForm">
+                <input type="hidden" name="page" value="1">
+                <div class="filter-bar">
+                    <div class="table-search">
+                        <i class="bi bi-search"></i>
+                        <input type="search" id="mprRequestorSearch" name="search"
+                            placeholder="Cari nama, email, username, atau job position..." aria-label="Cari MPR requestor"
+                            value="{{ $searchFilter }}" autocomplete="off" />
+                    </div>
+                    <select class="filter-select" id="mprRequestorStatusFilter" name="status"
+                        aria-label="Filter status requestor" data-auto-submit="true">
+                        <option value="">Semua Status</option>
+                        <option value="active" {{ $statusFilter === 'active' ? 'selected' : '' }}>Active</option>
+                        <option value="inactive" {{ $statusFilter === 'inactive' ? 'selected' : '' }}>Inactive</option>
+                    </select>
+                    <select class="filter-select" name="per_page" aria-label="Jumlah data per halaman"
+                        data-auto-submit="true">
+                        @foreach ([10, 20, 50] as $pageSize)
+                            <option value="{{ $pageSize }}" {{ $perPage === $pageSize ? 'selected' : '' }}>
+                                {{ $pageSize }} / hal
+                            </option>
+                        @endforeach
+                    </select>
+                    <a href="{{ route('hr.mpr-requestors.index') }}" class="btn-reset-filter text-decoration-none"
+                        title="Reset filter">
+                        <i class="bi bi-arrow-counterclockwise"></i> Reset
+                    </a>
                 </div>
-                <select class="filter-select" id="mprRequestorStatusFilter" aria-label="Filter status requestor">
-                    <option value="">Semua Status</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                </select>
-                <select class="filter-select" aria-label="Jumlah data per halaman"
-                    data-per-page-url="{{ route('hr.mpr-requestors.index') }}">
-                    @foreach ([10, 20, 50] as $pageSize)
-                        <option value="{{ $pageSize }}" {{ $perPage === $pageSize ? 'selected' : '' }}>
-                            {{ $pageSize }} / hal
-                        </option>
-                    @endforeach
-                </select>
-            </div>
+            </form>
 
             <div class="table-responsive">
                 <table class="table hr-table table-hover mb-0">
@@ -133,6 +141,15 @@
                                             data-role="{{ $requestor['Role'] ?? '' }}" data-status="{{ $status }}">
                                             <i class="bi bi-pencil-fill" aria-hidden="true"></i>
                                         </button>
+                                        @if (\App\Support\Rbac::normalizeRole(session('hr_user.role')) === 'Super Admin')
+                                            <button type="button" class="btn btn-sm btn-outline-danger ms-1"
+                                                title="Force Delete" aria-label="Force delete MPR requestor"
+                                                data-bs-toggle="modal" data-bs-target="#mprRequestorForceDeleteModal"
+                                                data-email="{{ $requestor['Email'] ?? '' }}"
+                                                data-name="{{ $requestor['Full Name'] ?? '' }}">
+                                                <i class="bi bi-trash-fill" aria-hidden="true"></i>
+                                            </button>
+                                        @endif
                                     @endcan
                                 </td>
                             </tr>
@@ -140,20 +157,14 @@
                             <tr id="mprRequestorEmptyRow">
                                 <td colspan="9">
                                     <div class="table-empty">
-                                        <i class="bi bi-person-x"></i>
-                                        <p class="mb-0">Belum ada MPR requestor.</p>
+                                        <i class="bi {{ ($searchFilter !== '' || $statusFilter !== '') ? 'bi-search' : 'bi-person-x' }}"></i>
+                                        <p class="mb-0">
+                                            {{ ($searchFilter !== '' || $statusFilter !== '') ? 'Tidak ada requestor yang sesuai filter.' : 'Belum ada MPR requestor.' }}
+                                        </p>
                                     </div>
                                 </td>
                             </tr>
                         @endforelse
-                        <tr id="mprRequestorSearchEmptyRow" class="d-none">
-                            <td colspan="9">
-                                <div class="table-empty">
-                                    <i class="bi bi-search"></i>
-                                    <p class="mb-0">Tidak ada requestor yang sesuai filter.</p>
-                                </div>
-                            </td>
-                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -162,6 +173,8 @@
                     @if ($total > 0)
                         Menampilkan {{ ($currentPage - 1) * $perPage + 1 }}–{{ min($currentPage * $perPage, $total) }}
                         dari {{ $total }} requestor
+                    @elseif ($searchFilter !== '' || $statusFilter !== '')
+                        Tidak ada requestor yang sesuai filter
                     @else
                         Tidak ada requestor
                     @endif
@@ -169,7 +182,8 @@
                 <div class="d-flex align-items-center gap-3">
                     <span class="small text-muted">Sumber: {{ \App\Support\HrisDataDriver::usesSheets() ? 'sheet mpr_requestor' : 'database HRIS' }}</span>
                     @if ($total > $perPage)
-                        <x-pagination :currentPage="$currentPage" :total="$total" :perPage="$perPage" :route="'hr.mpr-requestors.index'" />
+                        <x-pagination :currentPage="$currentPage" :total="$total" :perPage="$perPage" :route="'hr.mpr-requestors.index'"
+                            :queryParams="array_filter(['search' => $searchFilter, 'status' => $statusFilter])" />
                     @endif
                 </div>
             </div>
@@ -351,6 +365,37 @@
             </div>
         </div>
     </div>
+
+    @if (\App\Support\Rbac::normalizeRole(session('hr_user.role')) === 'Super Admin')
+        <div class="modal fade" id="mprRequestorForceDeleteModal" tabindex="-1"
+            aria-labelledby="mprRequestorForceDeleteModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title text-danger" id="mprRequestorForceDeleteModalLabel">
+                            <i class="bi bi-trash me-2"></i>Force Delete MPR Requestor
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                    </div>
+                    <form id="mprRequestorForceDeleteForm" method="POST"
+                        data-delete-url="{{ route('hr.mpr-requestors.force-delete', ['email' => '__EMAIL__']) }}">
+                        @csrf
+                        @method('DELETE')
+                        <div class="modal-body">
+                            <p class="mb-2">MPR requestor <strong id="mprRequestorForceDeleteName">-</strong> akan dihapus permanen.</p>
+                            <p class="mb-0 small text-muted">Tindakan ini tidak bisa dibatalkan. Data MPR yang sudah dibuat tetap tersimpan.</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-1"></i>Force Delete
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endif
 @endsection
 
 @section('scripts')
@@ -382,13 +427,11 @@
             });
 
             const search = document.getElementById('mprRequestorSearch');
-            const statusFilter = document.getElementById('mprRequestorStatusFilter');
-            const body = document.getElementById('mprRequestorsTableBody');
-            const emptyRow = document.getElementById('mprRequestorSearchEmptyRow');
-            const resultCount = document.getElementById('mprRequestorResultCount');
+            const filterForm = document.getElementById('mprRequestorFilterForm');
             const editModal = document.getElementById('mprRequestorEditModal');
             const editForm = document.getElementById('mprRequestorEditForm');
-            if (!search || !body) return;
+            const forceDeleteModal = document.getElementById('mprRequestorForceDeleteModal');
+            const forceDeleteForm = document.getElementById('mprRequestorForceDeleteForm');
 
             editModal?.addEventListener('show.bs.modal', function(event) {
                 const button = event.relatedTarget;
@@ -406,35 +449,38 @@
                 document.getElementById('mprEditPasswordConfirmation').value = '';
             });
 
-            function applyFilters() {
-                const query = search.value.trim().toLowerCase();
-                const selectedStatus = statusFilter?.value || '';
-                const rows = Array.from(body.querySelectorAll(
-                    'tr:not(#mprRequestorSearchEmptyRow):not(#mprRequestorEmptyRow)'));
-                let visible = 0;
-
-                rows.forEach(function(row) {
-                    const searchable = row.textContent.toLowerCase();
-                    const status = row.querySelector('.requestor-status')?.textContent.toLowerCase()
-                        .trim() || '';
-                    const matches = searchable.includes(query) && (!selectedStatus || status ===
-                        selectedStatus);
-                    row.classList.toggle('d-none', !matches);
-                    if (matches) visible++;
-                });
-
-                const hasFilter = query || selectedStatus;
-                if (emptyRow) emptyRow.classList.toggle('d-none', visible !== 0 || !hasFilter);
-                if (resultCount) {
-                    resultCount.textContent = hasFilter ?
-                        'Menampilkan ' + visible + ' dari ' + rows.length + ' requestor' :
-                        (rows.length ? 'Menampilkan 1–' + rows.length + ' dari ' + rows.length + ' requestor' :
-                            'Tidak ada requestor');
+            forceDeleteModal?.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                const email = button?.dataset.email || '';
+                const name = button?.dataset.name || email;
+                if (forceDeleteForm) {
+                    forceDeleteForm.action = forceDeleteForm.dataset.deleteUrl.replace('__EMAIL__', encodeURIComponent(email));
                 }
-            }
+                const nameEl = document.getElementById('mprRequestorForceDeleteName');
+                if (nameEl) nameEl.textContent = name + (email ? ' (' + email + ')' : '');
+            });
 
-            search.addEventListener('input', applyFilters);
-            statusFilter?.addEventListener('change', applyFilters);
+            if (search && filterForm) {
+                if (search.value) {
+                    search.focus();
+                    const end = search.value.length;
+                    if (typeof search.setSelectionRange === 'function') {
+                        search.setSelectionRange(end, end);
+                    }
+                }
+
+                let searchTimer = null;
+                search.addEventListener('input', function() {
+                    clearTimeout(searchTimer);
+                    searchTimer = setTimeout(function() {
+                        filterForm.submit();
+                    }, 400);
+                });
+                search.addEventListener('search', function() {
+                    clearTimeout(searchTimer);
+                    filterForm.submit();
+                });
+            }
         });
     </script>
 @endsection
