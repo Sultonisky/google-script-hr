@@ -130,6 +130,16 @@
                                             data-status="{{ $status }}">
                                             <i class="bi bi-pencil-fill" aria-hidden="true"></i>
                                         </button>
+                                        @if (\App\Support\Rbac::normalizeRole(session('hr_user.role')) === 'Super Admin'
+                                            && strtolower(trim((string) ($user['Email'] ?? ''))) !== strtolower(trim((string) session('hr_user.email', ''))))
+                                            <button type="button" class="btn btn-sm btn-outline-danger ms-1"
+                                                title="Force Delete" aria-label="Force delete pengguna"
+                                                data-bs-toggle="modal" data-bs-target="#userForceDeleteModal"
+                                                data-email="{{ $user['Email'] ?? '' }}"
+                                                data-name="{{ $user['Full Name'] ?? '' }}">
+                                                <i class="bi bi-trash-fill" aria-hidden="true"></i>
+                                            </button>
+                                        @endif
                                     @endcan
                                 </td>
                             </tr>
@@ -329,6 +339,37 @@
             </div>
         </div>
     </div>
+
+    @if (\App\Support\Rbac::normalizeRole(session('hr_user.role')) === 'Super Admin')
+        <div class="modal fade" id="userForceDeleteModal" tabindex="-1" aria-labelledby="userForceDeleteModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title text-danger" id="userForceDeleteModalLabel">
+                            <i class="bi bi-trash me-2"></i>Force Delete Pengguna
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                    </div>
+                    <form id="userForceDeleteForm" method="POST"
+                        data-delete-url="{{ route('hr.users.force-delete', ['email' => '__EMAIL__']) }}">
+                        @csrf
+                        @method('DELETE')
+                        <div class="modal-body">
+                            <p class="mb-2">Pengguna <strong id="userForceDeleteName">-</strong> akan dihapus permanen, termasuk permission khusus.</p>
+                            <p class="mb-0 small text-muted">Tindakan ini tidak bisa dibatalkan. Akun yang sedang login dan Super Admin aktif terakhir tidak bisa dihapus.</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-1"></i>Force Delete
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endif
 @endsection
 
 @section('scripts')
@@ -367,6 +408,8 @@
             const statusFilter = document.getElementById('userStatusFilter');
             const editModal = document.getElementById('userEditModal');
             const editForm = document.getElementById('userEditForm');
+            const forceDeleteModal = document.getElementById('userForceDeleteModal');
+            const forceDeleteForm = document.getElementById('userForceDeleteForm');
             if (!search || !body) return;
 
             editModal?.addEventListener('show.bs.modal', function(event) {
@@ -381,6 +424,17 @@
                 document.getElementById('userEditStatus').value = button?.dataset.status || 'Active';
                 document.getElementById('userEditPassword').value = '';
                 document.getElementById('userEditPasswordConfirmation').value = '';
+            });
+
+            forceDeleteModal?.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                const email = button?.dataset.email || '';
+                const name = button?.dataset.name || email;
+                if (forceDeleteForm) {
+                    forceDeleteForm.action = forceDeleteForm.dataset.deleteUrl.replace('__EMAIL__', encodeURIComponent(email));
+                }
+                const nameEl = document.getElementById('userForceDeleteName');
+                if (nameEl) nameEl.textContent = name + (email ? ' (' + email + ')' : '');
             });
 
             function applyUserFilters() {
