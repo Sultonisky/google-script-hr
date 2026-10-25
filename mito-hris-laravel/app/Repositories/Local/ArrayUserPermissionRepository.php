@@ -55,4 +55,16 @@ class ArrayUserPermissionRepository implements UserPermissionRepositoryInterface
         }
         unset($mapping);
     }
+
+    public function forceDeleteByEmail(string $email): int
+    {
+        $email = strtolower(trim($email));
+        $before = count($this->mappings);
+        $this->mappings = array_values(array_filter(
+            $this->mappings,
+            fn (array $mapping): bool => strtolower(trim((string) ($mapping['User Email'] ?? ''))) !== $email
+        ));
+
+        return $before - count($this->mappings);
+    }
 }
