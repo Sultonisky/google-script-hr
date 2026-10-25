@@ -11,6 +11,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Illuminate\Http\JsonResponse;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
+use App\Support\Rbac;
 
 class MprRequestorController extends Controller
 {
@@ -22,19 +23,49 @@ class MprRequestorController extends Controller
     public function index(Request $request): View
     {
         $allRequestors = $this->requestorRepo->getAll();
+        $searchFilter = trim((string) $request->query('search', ''));
+        $statusFilter = strtolower(trim((string) $request->query('status', '')));
+        if (!in_array($statusFilter, ['active', 'inactive'], true)) {
+            $statusFilter = '';
+        }
+
+        $filtered = $allRequestors;
+        if ($searchFilter !== '') {
+            $needle = mb_strtolower($searchFilter);
+            $filtered = array_values(array_filter(
+                $filtered,
+                fn (array $requestor): bool => str_contains($this->requestorSearchText($requestor), $needle)
+            ));
+        }
+        if ($statusFilter !== '') {
+            $filtered = array_values(array_filter(
+                $filtered,
+                fn (array $requestor): bool => strtolower(trim((string) ($requestor['Status'] ?? ''))) === $statusFilter
+            ));
+        }
+
         $perPage = max(1, min(100, (int) $request->query('per_page', 10)));
-        $total = count($allRequestors);
+        $total = count($filtered);
         $lastPage = max(1, (int) ceil($total / $perPage));
         $currentPage = min(max(1, (int) $request->query('page', 1)), $lastPage);
-        $requestors = array_values(array_slice($allRequestors, ($currentPage - 1) * $perPage, $perPage));
+        $requestors = array_values(array_slice($filtered, ($currentPage - 1) * $perPage, $perPage));
         $stats = [
-            'total' => $total,
+            'total' => count($allRequestors),
             'active' => count(array_filter($allRequestors, fn(array $requestor): bool => strtolower(trim($requestor['Status'] ?? '')) === 'active')),
             'inactive' => count(array_filter($allRequestors, fn(array $requestor): bool => strtolower(trim($requestor['Status'] ?? '')) !== 'active')),
             'job_positions' => count(array_filter($allRequestors, fn(array $requestor): bool => trim((string) ($requestor['Job Position'] ?? '')) !== '')),
         ];
 
-        return view('hr.mpr-requestors.index', compact('requestors', 'stats', 'total', 'perPage', 'currentPage', 'lastPage'));
+        return view('hr.mpr-requestors.index', compact(
+            'requestors',
+            'stats',
+            'total',
+            'perPage',
+            'currentPage',
+            'lastPage',
+            'searchFilter',
+            'statusFilter'
+        ));
     }
 
     public function store(Request $request): RedirectResponse
@@ -155,6 +186,60 @@ class MprRequestorController extends Controller
         }
 
         return $this->updateSuccess($request, 'MPR requestor berhasil diperbarui.');
+    }
+
+    public function forceDelete(Request $request, string $email): RedirectResponse|JsonResponse
+    {
+        abort_unless(
+            Rbac::normalizeRole(session('hr_user.role')) === 'Super Admin',
+            403,
+            'Force delete hanya tersedia untuk Super Admin.'
+        );
+
+        $existing = $this->requestorRepo->findByEmail($email);
+        if ($existing === null) {
+            return $this->forceDeleteResponse($request, false, 'MPR requestor tidak ditemukan.', 404);
+        }
+
+        $targetEmail = strtolower(trim((string) ($existing['Email'] ?? $email)));
+        $this->requestorRepo->forceDeleteByEmail($targetEmail);
+        if ($this->requestorRepo->findByEmail($targetEmail) !== null) {
+            return $this->forceDeleteResponse($request, false, 'MPR requestor gagal dihapus.', 500);
+        }
+
+        $this->auditRepo->log(
+            'MPR Requestor',
+            $existing['Requestor ID'] ?? $targetEmail,
+            'FORCE_DELETE',
+            null,
+            $existing['Full Name'] ?? $targetEmail,
+            null,
+            session('hr_user.email', 'HR Administrator'),
+            'Dashboard'
+        );
+
+        $name = trim((string) ($existing['Full Name'] ?? $targetEmail));
+
+        return $this->forceDeleteResponse($request, true, "MPR requestor '{$name}' berhasil dihapus permanen.");
+    }
+
+    private function forceDeleteResponse(Request $request, bool $ok, string $message, int $status = 200): RedirectResponse|JsonResponse
+    {
+        if ($request->expectsJson()) {
+            return response()->json(['success' => $ok, 'message' => $message], $ok ? 200 : $status);
+        }
+
+        return redirect()->route('hr.mpr-requestors.index')->with($ok ? 'success' : 'error', $message);
+    }
+
+    private function requestorSearchText(array $requestor): string
+    {
+        return mb_strtolower(implode(' ', [
+            $requestor['Full Name'] ?? '',
+            $requestor['Email'] ?? '',
+            $requestor['Username'] ?? '',
+            $requestor['Job Position'] ?? '',
+        ]));
     }
 
     private function updateSuccess(Request $request, string $message): RedirectResponse|JsonResponse
