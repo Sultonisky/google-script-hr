@@ -225,6 +225,50 @@ class UserManagementTest extends TestCase
             ->assertSee('MPR requestor berhasil diperbarui.', false);
     }
 
+    public function test_mpr_requestor_search_includes_records_outside_the_current_page(): void
+    {
+        $this->actingAsRole('Super Admin');
+        $requestors = [];
+        for ($i = 1; $i <= 10; $i++) {
+            $requestors[] = [
+                'Email' => "req{$i}@example.test",
+                'Username' => "req{$i}",
+                'Full Name' => "Requestor {$i}",
+                'Job Position' => 'Staff',
+                'Role' => 'Manpower',
+                'Status' => 'Active',
+            ];
+        }
+        $requestors[] = [
+            'Email' => 'zebra@example.test',
+            'Username' => 'zebra.user',
+            'Full Name' => 'Zebra Khusus',
+            'Job Position' => 'Analyst',
+            'Role' => 'Manpower',
+            'Status' => 'Inactive',
+        ];
+
+        $repository = Mockery::mock(MprRequestorRepositoryInterface::class);
+        $repository->shouldReceive('getAll')->andReturn($requestors);
+        $this->app->instance(MprRequestorRepositoryInterface::class, $repository);
+
+        $this->get(route('hr.mpr-requestors.index', ['per_page' => 10]))
+            ->assertOk()
+            ->assertSee('Requestor 1')
+            ->assertDontSee('Zebra Khusus');
+
+        $this->get(route('hr.mpr-requestors.index', ['search' => 'Zebra', 'per_page' => 10]))
+            ->assertOk()
+            ->assertSee('Zebra Khusus')
+            ->assertSee('zebra@example.test')
+            ->assertDontSee('Requestor 1');
+
+        $this->get(route('hr.mpr-requestors.index', ['status' => 'inactive', 'per_page' => 10]))
+            ->assertOk()
+            ->assertSee('Zebra Khusus')
+            ->assertDontSee('Requestor 1');
+    }
+
     public function test_non_super_admin_cannot_access_mpr_requestors(): void
     {
         $this->actingAsRole('Admin');
