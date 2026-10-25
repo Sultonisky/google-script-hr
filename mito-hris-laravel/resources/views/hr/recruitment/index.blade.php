@@ -69,6 +69,10 @@
                         <option value="Perempuan" {{ request('gender') === 'Perempuan' ? 'selected' : '' }}>Perempuan
                         </option>
                     </select>
+                    <a href="{{ route('hr.recruitment.index') }}" class="btn-reset-filter text-decoration-none"
+                        title="Reset filter">
+                        <i class="bi bi-arrow-counterclockwise"></i> Reset
+                    </a>
                 </div>
             </form>
 

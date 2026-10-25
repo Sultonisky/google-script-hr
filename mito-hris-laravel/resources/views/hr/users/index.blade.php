@@ -82,6 +82,9 @@
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
                 </select>
+                <button class="btn-reset-filter" id="userFilterReset" type="button" title="Reset filter">
+                    <i class="bi bi-arrow-counterclockwise"></i> Reset
+                </button>
             </div>
 
             <div class="table-responsive">
@@ -412,6 +415,12 @@
             search.addEventListener('input', applyUserFilters);
             roleFilter?.addEventListener('change', applyUserFilters);
             statusFilter?.addEventListener('change', applyUserFilters);
+            document.getElementById('userFilterReset')?.addEventListener('click', function() {
+                search.value = '';
+                if (roleFilter) roleFilter.value = '';
+                if (statusFilter) statusFilter.value = '';
+                applyUserFilters();
+            });
         });
     </script>
 @endsection
