@@ -372,6 +372,52 @@ class GoogleSheetsService
     /**
      * Update an entire row by 1-indexed row number.
      */
+    /**
+     * Permanently remove one data row. Row 1 is the header and is never deleted.
+     */
+    public function deleteRow(string $sheetName, int $rowNumber): bool
+    {
+        if ($rowNumber < 2) {
+            return false;
+        }
+
+        try {
+            $service = $this->factory->getSheetsService();
+            $spreadsheet = $service->spreadsheets->get($this->spreadsheetId);
+            $sheetId = null;
+            foreach ($spreadsheet->getSheets() as $sheet) {
+                if ($sheet->getProperties()->getTitle() === $sheetName) {
+                    $sheetId = $sheet->getProperties()->getSheetId();
+                    break;
+                }
+            }
+            if ($sheetId === null) {
+                return false;
+            }
+
+            $batchUpdateRequest = new \Google\Service\Sheets\BatchUpdateSpreadsheetRequest([
+                'requests' => [[
+                    'deleteDimension' => [
+                        'range' => [
+                            'sheetId' => $sheetId,
+                            'dimension' => 'ROWS',
+                            'startIndex' => $rowNumber - 1,
+                            'endIndex' => $rowNumber,
+                        ],
+                    ],
+                ]],
+            ]);
+            $service->spreadsheets->batchUpdate($this->spreadsheetId, $batchUpdateRequest);
+            $this->clearCache($sheetName);
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::warning("GoogleSheetsService::deleteRow({$sheetName}, {$rowNumber}): " . $e->getMessage());
+
+            return false;
+        }
+    }
+
     public function updateRow(string $sheetName, int $rowNumber, array $rowValues): bool
     {
         try {
