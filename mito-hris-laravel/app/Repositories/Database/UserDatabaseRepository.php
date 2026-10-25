@@ -83,7 +83,12 @@ class UserDatabaseRepository implements UserRepositoryInterface
 
     public function deleteByEmail(string $email): void
     {
-        User::whereRaw('LOWER(email) = ?', [strtolower(trim($email))])->delete();
+        $this->forceDeleteByEmail($email);
+    }
+
+    public function forceDeleteByEmail(string $email): void
+    {
+        User::query()->whereRaw('LOWER(email) = ?', [strtolower(trim($email))])->delete();
     }
 
     public function isEmpty(): bool
