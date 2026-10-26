@@ -172,6 +172,7 @@ class DocumentTrackingController extends Controller
                 $employee = $employees->get($employeeId);
                 $docCode = strtoupper(trim((string) ($row['Doc Code'] ?? '')));
                 $issuedAt = trim((string) ($row['Issued At'] ?? '')) ?: trim((string) ($row['Created At'] ?? ''));
+                $issuedAtParsed = $this->issuedAtForDisplay($issuedAt, trim((string) ($row['Created At'] ?? '')));
 
                 return (object) [
                     'documentId' => trim((string) ($row['Document ID'] ?? '')),
@@ -185,13 +186,33 @@ class DocumentTrackingController extends Controller
                     'nomor' => trim((string) ($row['Nomor'] ?? '')),
                     'entity' => strtoupper(trim((string) ($row['Entity'] ?? ''))),
                     'issuedAt' => $issuedAt,
-                    'issuedAtParsed' => $this->parseDate($issuedAt),
+                    'issuedAtParsed' => $issuedAtParsed,
+                    'issuedAtHasTime' => $issuedAtParsed !== null && $issuedAtParsed->format('H:i:s') !== '00:00:00',
                     'issuedBy' => trim((string) ($row['Issued By'] ?? '')),
                     'reference' => trim((string) ($row['Reference'] ?? '')),
                     'notes' => trim((string) ($row['Notes'] ?? '')),
                 ];
             })
             ->values();
+    }
+
+    /**
+     * A date-only document date is stored as midnight. Use the creation clock
+     * so Tanggal Terbit does not show a fake 00:00.
+     */
+    private function issuedAtForDisplay(string $issuedAt, string $createdAt): ?Carbon
+    {
+        $parsed = $this->parseDate($issuedAt);
+        if ($parsed === null || $parsed->format('H:i:s') !== '00:00:00') {
+            return $parsed;
+        }
+
+        $created = $this->parseDate($createdAt);
+        if ($created === null || $created->format('H:i:s') === '00:00:00') {
+            return $parsed;
+        }
+
+        return $parsed->setTime($created->hour, $created->minute, $created->second);
     }
 
     private function parseDate(string $value): ?Carbon
