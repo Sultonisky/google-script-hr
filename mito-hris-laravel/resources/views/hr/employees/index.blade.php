@@ -78,7 +78,7 @@
                         @endcan
                         @can('manage_warning_letters')
                             <button class="btn btn-sm text-white fw-semibold"
-                                style="background:#eb1c24;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
+                                style="background:#960000;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
                                 type="button" data-bs-toggle="modal" data-bs-target="#warningLetterModal"
                                 id="btnWarningLetter">
                                 <i class="bi bi-exclamation-triangle-fill me-1"></i>Surat Peringatan
@@ -113,13 +113,13 @@
                             </button>
                         @endcan
                         <button class="btn btn-sm fw-semibold text-white"
-                            style="background:#0B2540;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
+                            style="background:#666;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
                             type="button" data-bs-toggle="modal" data-bs-target="#exitClearanceModal">
                             <i class="bi bi-clipboard-check me-1"></i>Exit Clearance
                         </button>
                         <a href="{{ route('hr.export.employees-xlsx') }}"
                             class="btn btn-sm fw-semibold text-white"
-                            style="background:#005BAC;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
+                            style="background:#0c8764;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
                             id="btnExportEmployeeXlsx"
                             title="Export seluruh data karyawan ke Excel (XLSX)">
                             <i class="bi bi-download me-1"></i>Export
