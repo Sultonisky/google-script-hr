@@ -129,27 +129,29 @@
                                 </td>
                                 <td class="id-mono">{{ $requestor['Last Login'] ?? '-' }}</td>
                                 <td class="id-mono">{{ $requestor['Created At'] ?? '-' }}</td>
-                                <td>
+                                <td class="text-nowrap">
                                     @can('manage_settings')
-                                        <button type="button" class="btn btn-sm btn-primary" title="Edit MPR Requestor"
-                                            aria-label="Edit MPR requestor" data-bs-toggle="modal"
-                                            data-bs-target="#mprRequestorEditModal"
-                                            data-email="{{ $requestor['Email'] ?? '' }}"
-                                            data-name="{{ $requestor['Full Name'] ?? '' }}"
-                                            data-username="{{ $requestor['Username'] ?? '' }}"
-                                            data-job-position="{{ $requestor['Job Position'] ?? '' }}"
-                                            data-role="{{ $requestor['Role'] ?? '' }}" data-status="{{ $status }}">
-                                            <i class="bi bi-pencil-fill" aria-hidden="true"></i>
-                                        </button>
-                                        @if (\App\Support\Rbac::normalizeRole(session('hr_user.role')) === 'Super Admin')
-                                            <button type="button" class="btn btn-sm btn-outline-danger ms-1"
-                                                title="Force Delete" aria-label="Force delete MPR requestor"
-                                                data-bs-toggle="modal" data-bs-target="#mprRequestorForceDeleteModal"
+                                        <div class="d-inline-flex flex-nowrap align-items-center gap-1">
+                                            <button type="button" class="btn btn-sm btn-primary" title="Edit MPR Requestor"
+                                                aria-label="Edit MPR requestor" data-bs-toggle="modal"
+                                                data-bs-target="#mprRequestorEditModal"
                                                 data-email="{{ $requestor['Email'] ?? '' }}"
-                                                data-name="{{ $requestor['Full Name'] ?? '' }}">
-                                                <i class="bi bi-trash-fill" aria-hidden="true"></i>
+                                                data-name="{{ $requestor['Full Name'] ?? '' }}"
+                                                data-username="{{ $requestor['Username'] ?? '' }}"
+                                                data-job-position="{{ $requestor['Job Position'] ?? '' }}"
+                                                data-role="{{ $requestor['Role'] ?? '' }}" data-status="{{ $status }}">
+                                                <i class="bi bi-pencil-fill" aria-hidden="true"></i>
                                             </button>
-                                        @endif
+                                            @if (\App\Support\Rbac::normalizeRole(session('hr_user.role')) === 'Super Admin')
+                                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                                    title="Force Delete" aria-label="Force delete MPR requestor"
+                                                    data-bs-toggle="modal" data-bs-target="#mprRequestorForceDeleteModal"
+                                                    data-email="{{ $requestor['Email'] ?? '' }}"
+                                                    data-name="{{ $requestor['Full Name'] ?? '' }}">
+                                                    <i class="bi bi-trash-fill" aria-hidden="true"></i>
+                                                </button>
+                                            @endif
+                                        </div>
                                     @endcan
                                 </td>
                             </tr>
