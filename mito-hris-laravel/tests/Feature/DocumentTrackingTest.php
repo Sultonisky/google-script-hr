@@ -77,7 +77,22 @@ class DocumentTrackingTest extends TestCase
             ->assertSee('002/SKP/SPI/IX/2026')
             ->assertSee('Citra Lestari')
             ->assertSee('Dimas Pratama')
+            ->assertSee('09:00')
+            ->assertSee('10:30')
             ->assertSee('href="' . route('hr.documents.index') . '"', false);
+    }
+
+    public function test_midnight_issue_time_uses_the_creation_clock(): void
+    {
+        $this->actingAsRole('Admin');
+        EmployeeDocument::query()->where('document_id', 'DOC-20260901-001-PKWT')->update([
+            'issued_at' => '2026-10-26 00:00:00',
+            'created_at' => '2026-10-26 18:30:28',
+        ]);
+
+        $this->get('/hr/documents')
+            ->assertOk()
+            ->assertSeeInOrder(['26 Oct 2026', '18:30']);
     }
 
     public function test_filters_by_type_entity_and_search(): void
