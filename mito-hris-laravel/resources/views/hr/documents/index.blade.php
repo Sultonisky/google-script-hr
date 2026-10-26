@@ -157,7 +157,7 @@
                             <tr>
                                 <td class="id-mono">
                                     <small>{{ $row->issuedAtParsed?->format('d M Y') ?? ($row->issuedAt ?: '-') }}</small>
-                                    @if ($row->issuedAtParsed)
+                                    @if ($row->issuedAtParsed && $row->issuedAtHasTime)
                                         <small class="text-muted d-block">{{ $row->issuedAtParsed->format('H:i') }}</small>
                                     @endif
                                 </td>

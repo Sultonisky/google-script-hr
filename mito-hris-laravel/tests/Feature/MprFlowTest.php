@@ -151,6 +151,80 @@ class MprFlowTest extends TestCase
         $response->assertRedirect('/hr/mpr');
     }
 
+    #[Test]
+    public function other_work_location_stores_the_free_text(): void
+    {
+        $this->actingAsRole('Admin', 'admin.location@mito.id', 'HR Admin');
+
+        $mockRepo = Mockery::mock(MprRepositoryInterface::class);
+        $mockRepo->shouldReceive('create')->once()->withArgs(function (MprData $mpr) {
+            $this->assertSame('Depo Yogyakarta', $mpr->workLocation);
+            return true;
+        })->andReturnUsing(function (MprData $mpr) {
+            $mpr->mprNumber ??= 'MPR-20261026-0001';
+            return $mpr;
+        });
+        $this->app->instance(MprRepositoryInterface::class, $mockRepo);
+
+        $response = $this->from('/hr/mpr/history')->post(route('hr.mpr.store'), [
+            'position' => 'Backend Developer',
+            'department' => 'IT',
+            'division' => 'IT Support',
+            'job_level' => 'Staff',
+            'work_location' => 'Lainnya',
+            'work_location_custom' => 'Depo Yogyakarta',
+            'employment_type' => 'Permanent (PKWTT)',
+            'quantity' => 1,
+            'expected_join_date' => '2026-09-15',
+            'reason' => 'Penambahan Karyawan Baru',
+            'entity' => 'MSI',
+            'manager_name' => 'HR Admin',
+            'manager_email' => 'admin.location@mito.id',
+            'requestor_position' => 'HR Manager',
+            'working_days' => ['senin_jumat'],
+            'working_hours' => ['08_00_17_00'],
+            'benefits' => ['bpjs'],
+            'education_background' => 's1',
+            'work_experience' => '1_tahun',
+            'skills_competencies' => 'PHP, Laravel, SQL',
+            'approval_division' => config('hris.mpr.approval_divisions.0', 'IT'),
+        ]);
+
+        $response->assertRedirect('/hr/mpr');
+    }
+
+    #[Test]
+    public function other_work_location_requires_free_text(): void
+    {
+        $this->actingAsRole('Admin', 'admin.location@mito.id', 'HR Admin');
+
+        $response = $this->from('/hr/mpr/history')->post(route('hr.mpr.store'), [
+            'position' => 'Backend Developer',
+            'department' => 'IT',
+            'division' => 'IT Support',
+            'job_level' => 'Staff',
+            'work_location' => 'Lainnya',
+            'work_location_custom' => '',
+            'employment_type' => 'Permanent (PKWTT)',
+            'quantity' => 1,
+            'expected_join_date' => '2026-09-15',
+            'reason' => 'Penambahan Karyawan Baru',
+            'entity' => 'MSI',
+            'manager_name' => 'HR Admin',
+            'manager_email' => 'admin.location@mito.id',
+            'requestor_position' => 'HR Manager',
+            'working_days' => ['senin_jumat'],
+            'working_hours' => ['08_00_17_00'],
+            'benefits' => ['bpjs'],
+            'education_background' => 's1',
+            'work_experience' => '1_tahun',
+            'skills_competencies' => 'PHP, Laravel, SQL',
+            'approval_division' => config('hris.mpr.approval_divisions.0', 'IT'),
+        ]);
+
+        $response->assertSessionHasErrors('work_location_custom');
+    }
+
     public function invalid_approval_division_is_rejected(): void
     {
         $this->actingAsRole('Admin', 'admin.invalid@mito.id', 'HR Admin');
@@ -1098,6 +1172,75 @@ class MprFlowTest extends TestCase
                 'education_background' => 's1',
                 'work_experience' => '1_tahun',
             ])->assertForbidden();
+    }
+
+    #[Test]
+    public function finished_mpr_cannot_be_edited(): void
+    {
+        $owner = [
+            'email' => 'owner.requestor@mito.id',
+            'fullName' => 'Owner Requestor',
+            'role' => 'Manpower',
+            'auth_domain' => 'mpr_requestor',
+            'jobPosition' => 'Manager',
+            'requestor_id' => 'MPR-REQ-OWNER',
+        ];
+        $sessionKey = config('mpr.session_key', 'mpr_requestor_auth');
+        $finished = new MprData(
+            mprNumber: 'MPR-FIN',
+            requestorName: 'Owner Requestor',
+            requestorEmail: $owner['email'],
+            entity: 'MSI',
+            department: 'IT',
+            division: 'IT Support',
+            position: 'Staff IT',
+            jobLevel: 'Staff',
+            workLocation: 'Head Office (HO)',
+            employmentType: 'Permanent (PKWTT)',
+            quantity: 1,
+            expectedJoinDate: '2026-11-06',
+            reason: 'Penambahan Karyawan Baru',
+            status: 'Finish',
+            createdBy: $owner['email'],
+        );
+
+        $repo = Mockery::mock(MprRepositoryInterface::class);
+        $repo->shouldReceive('findByMprNumber')->with('MPR-FIN')->andReturn($finished);
+        $repo->shouldNotReceive('update');
+        $this->app->instance(MprRepositoryInterface::class, $repo);
+
+        $this->withSession([$sessionKey => $owner])
+            ->get(route('mpr.auth.request.edit', ['id' => 'MPR-FIN']))
+            ->assertForbidden();
+
+        $payload = [
+            'position' => 'Senior Staff IT',
+            'entity' => 'MSI',
+            'department' => 'IT',
+            'division' => 'IT Support',
+            'approval_division' => 'Aditya Adipradhana',
+            'job_level' => 'Staff',
+            'work_location' => 'Head Office (HO)',
+            'employment_type' => 'Permanent (PKWTT)',
+            'quantity' => 1,
+            'expected_join_date' => '2026-12-01',
+            'reason' => 'Penambahan Karyawan Baru',
+            'working_days' => ['senin_jumat'],
+            'working_hours' => ['08_00_17_00'],
+            'benefits' => ['bpjs'],
+            'education_background' => 's1',
+            'work_experience' => '1_tahun',
+        ];
+
+        $this->withSession([$sessionKey => $owner])
+            ->putJson(route('mpr.auth.request.update', ['id' => 'MPR-FIN']), $payload)
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Hanya pengajuan berstatus Submitted yang bisa diedit.');
+
+        $this->actingAsRole('Admin', 'admin.finish@mito.id', 'HR Admin');
+        $this->putJson('/hr/mpr/MPR-FIN', $payload)
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Hanya pengajuan berstatus Submitted yang bisa diedit.');
     }
 
     #[Test]

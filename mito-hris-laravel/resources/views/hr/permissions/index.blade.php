@@ -358,9 +358,16 @@
                         </div>
                         <div class="permission-save-footer d-flex flex-wrap justify-content-between align-items-center gap-3">
                             <div class="small text-muted" aria-live="polite"><i class="bi bi-info-circle me-1"></i><span id="permission-save-hint">Pilih pengguna untuk mulai mengatur akses.</span></div>
-                            <button type="button" class="btn btn-primary" id="permission-save" disabled>
-                                <i class="bi bi-save me-1"></i><span id="permission-save-label">Save permissions</span>
-                            </button>
+                            <div class="d-flex flex-wrap gap-2">
+                                @if (\App\Support\Rbac::normalizeRole(session('hr_user.role')) === 'Super Admin')
+                                    <button type="button" class="btn btn-outline-danger" id="permission-force-delete" disabled>
+                                        <i class="bi bi-trash me-1"></i>Force Delete
+                                    </button>
+                                @endif
+                                <button type="button" class="btn btn-primary" id="permission-save" disabled>
+                                    <i class="bi bi-save me-1"></i><span id="permission-save-label">Save permissions</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -368,6 +375,29 @@
         </div>
     </div>
 </div>
+
+@if (\App\Support\Rbac::normalizeRole(session('hr_user.role')) === 'Super Admin')
+<div class="modal fade" id="permission-force-delete-modal" tabindex="-1" aria-labelledby="permission-force-delete-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger" id="permission-force-delete-title"><i class="bi bi-trash me-2"></i>Force Delete Permission</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2">Permission khusus <strong id="permission-force-delete-name">-</strong> akan dihapus permanen.</p>
+                <p class="mb-0 small text-muted">Akun pengguna tidak dihapus. Akses kembali mengikuti role. Tindakan ini tidak bisa dibatalkan.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-danger" id="permission-force-delete-confirm">
+                    <i class="bi bi-trash me-1"></i>Force Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
 
 <div class="modal fade" id="permission-detail-modal" tabindex="-1" aria-labelledby="permission-detail-title" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -397,6 +427,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const search = document.getElementById('permission-user-search');
     const groups = document.getElementById('permission-groups');
     const save = document.getElementById('permission-save');
+    const forceDelete = document.getElementById('permission-force-delete');
+    const forceDeleteModalElement = document.getElementById('permission-force-delete-modal');
+    const forceDeleteModal = forceDeleteModalElement && window.bootstrap ? new bootstrap.Modal(forceDeleteModalElement) : null;
+    const forceDeleteName = document.getElementById('permission-force-delete-name');
+    const forceDeleteConfirm = document.getElementById('permission-force-delete-confirm');
     const saveLabel = document.getElementById('permission-save-label');
     const saveHint = document.getElementById('permission-save-hint');
     const loading = document.getElementById('permission-loading');
@@ -478,6 +513,7 @@ document.addEventListener('DOMContentLoaded', function () {
             : 'No unsaved changes';
         status.className = dirty ? 'permission-status small text-warning fw-semibold mb-3' : 'permission-status small text-muted mb-3';
         save.disabled = !selectedUser || isSuperAdmin || !dirty || isSaving || isLoading;
+        if (forceDelete) forceDelete.disabled = !selectedUser || isSaving || isLoading;
         saveHint.textContent = dirty ? 'Review the changes above, then save.' : 'Changes are saved as user permissions.';
     }
 
@@ -716,6 +752,37 @@ document.addEventListener('DOMContentLoaded', function () {
         detailGroup.textContent = detailButton.dataset.group;
         if (detailModal) detailModal.show();
     });
+
+    if (forceDelete && forceDeleteModal) {
+        forceDelete.addEventListener('click', function () {
+            if (!selectedUser || forceDelete.disabled) return;
+            if (forceDeleteName) forceDeleteName.textContent = selectedUser.fullName + ' (' + selectedUser.email + ')';
+            forceDeleteModal.show();
+        });
+        forceDeleteConfirm?.addEventListener('click', async function () {
+            if (!selectedEmail || isSaving) return;
+            isSaving = true;
+            forceDelete.disabled = true;
+            forceDeleteConfirm.disabled = true;
+            try {
+                const response = await fetch(`{{ url('/hr/permissions') }}/${encodeURIComponent(selectedEmail)}/force-delete`, {
+                    method: 'DELETE',
+                    headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrf }
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(response.status === 403 ? 'Force delete hanya tersedia untuk Super Admin.' : data.message || 'Force delete gagal.');
+                forceDeleteModal.hide();
+                await loadUser(selectedEmail, { skipConfirm: true });
+                showAlert(data.message || 'Permission khusus berhasil dihapus.', 'success');
+            } catch (error) {
+                showAlert(error.message, 'danger');
+            } finally {
+                isSaving = false;
+                forceDeleteConfirm.disabled = false;
+                updateDirtyState();
+            }
+        });
+    }
 
     save.addEventListener('click', async function () {
         if (!selectedEmail || !hasDirtyChanges() || isSaving || isSuperAdmin) return;

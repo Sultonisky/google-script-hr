@@ -150,6 +150,42 @@ class PermissionController extends Controller
         return response()->json(['success' => true, 'message' => $message]);
     }
 
+    public function forceDelete(string $email): JsonResponse
+    {
+        Gate::authorize('manage_permissions');
+        abort_unless(
+            Rbac::normalizeRole(session('hr_user.role')) === 'Super Admin',
+            403,
+            'Force delete hanya tersedia untuk Super Admin.'
+        );
+
+        $user = $this->findUser($email);
+        if ($user === null) {
+            return response()->json(['success' => false, 'message' => 'Pengguna tidak ditemukan.'], 404);
+        }
+
+        $targetEmail = strtolower(trim((string) ($user['Email'] ?? $email)));
+        $deleted = $this->userPermissionRepository->forceDeleteByEmail($targetEmail);
+        $this->resolver->forget($targetEmail);
+        $actor = strtolower(trim((string) session('hr_user.email', '')));
+        $this->auditRepository->log(
+            'User Permission',
+            $targetEmail,
+            'FORCE_DELETE',
+            null,
+            $deleted,
+            null,
+            $actor,
+            'Permission Management'
+        );
+
+        $message = $deleted > 0
+            ? "Permission khusus {$targetEmail} dihapus permanen. Akses kembali mengikuti role."
+            : "Tidak ada permission khusus untuk {$targetEmail}. Akses tetap mengikuti role.";
+
+        return response()->json(['success' => true, 'message' => $message, 'deleted' => $deleted]);
+    }
+
     private function findUser(string $email): ?array
     {
         return $this->userRepository->findByEmail(strtolower(trim($email)));

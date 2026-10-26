@@ -393,6 +393,9 @@ class MprController extends Controller
         if (!$this->requestorOwnsMpr($user, $mpr)) {
             abort(403, 'Anda tidak memiliki akses untuk mengubah pengajuan MPR ini.');
         }
+        if (!$this->mprIsSubmitted($mpr)) {
+            abort(403, 'Hanya pengajuan berstatus Submitted yang bisa diedit.');
+        }
 
         return view('hr.mpr.create', array_merge(
             $this->buildRequestorPageData($request, false),
@@ -436,7 +439,7 @@ class MprController extends Controller
         $role    = $user['role'] ?? 'Viewer';
         $isManager = $this->isManpowerUser($user);
 
-        $validated = $request->validated();
+        $validated = $this->resolveWorkLocation($request->validated());
 
         // ==============================================================
         // RESOLVE REQUESTOR IDENTITY & TARGET ENTITY
@@ -615,6 +618,12 @@ class MprController extends Controller
         if (!$existing) {
             return response()->json(['success' => false, 'message' => 'Data MPR tidak ditemukan.'], 404);
         }
+        if (!$this->mprIsSubmitted($existing)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya pengajuan berstatus Submitted yang bisa diedit.',
+            ], 422);
+        }
 
         $user = $this->currentRequestorUser();
         $isRequestorUpdate = $request->routeIs('mpr.auth.request.update');
@@ -629,7 +638,7 @@ class MprController extends Controller
             Gate::authorize('update_mpr');
         }
 
-        $validated = $request->validated();
+        $validated = $this->resolveWorkLocation($request->validated());
         $formOptions = config('hris.mpr_form_options', []);
         $toLabels = function (array $values, string $group) use ($formOptions): string {
             $map = $formOptions[$group] ?? [];
@@ -894,6 +903,33 @@ class MprController extends Controller
         $this->auditRepo->log('MPR', $mpr->mprNumber, 'generated', 'document', null, 'MPR PDF', $user['email'] ?? 'Manpower', 'Dashboard');
 
         return $pdf->stream($fileName);
+    }
+
+    private function mprIsSubmitted(MprData $mpr): bool
+    {
+        return strcasecmp(trim((string) $mpr->status), 'Submitted') === 0;
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     * @return array<string, mixed>
+     */
+    private function resolveWorkLocation(array $validated): array
+    {
+        if (!array_key_exists('work_location', $validated)) {
+            unset($validated['work_location_custom']);
+
+            return $validated;
+        }
+
+        $other = (string) config('hris.mpr_form_options.work_location_other', 'Lainnya');
+        $location = trim((string) $validated['work_location']);
+        if (strcasecmp($location, $other) === 0) {
+            $validated['work_location'] = trim((string) ($validated['work_location_custom'] ?? ''));
+        }
+        unset($validated['work_location_custom']);
+
+        return $validated;
     }
 
     private function pdfFileName(?string $mprNumber, bool $preview = false): string

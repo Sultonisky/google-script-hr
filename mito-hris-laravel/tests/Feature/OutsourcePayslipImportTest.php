@@ -349,6 +349,48 @@ class OutsourcePayslipImportTest extends TestCase
             ->assertDontSee('Karyawan 15');
     }
 
+    public function test_index_sorts_by_name_and_outsource_id(): void
+    {
+        $this->actingWithPermissions(['view_outsource_payslip']);
+        foreach ([
+            ['DM20260010', 'Citra Lestari'],
+            ['DM20260002', 'Bayu Saputra'],
+            ['DM20260001', 'Andi Wijaya'],
+        ] as [$outsourceId, $fullName]) {
+            OutsourcePayslip::query()->create([
+                'period' => '2026-09',
+                'outsource_id' => $outsourceId,
+                'full_name' => $fullName,
+                'vendor' => 'Damarindo',
+                'hke' => 26,
+                'basic_salary' => 3500000,
+                'take_home_pay' => 3465000,
+            ]);
+        }
+
+        $this->get('/hr/outsource-payslips?period=2026-09')
+            ->assertOk()
+            ->assertSee('Nama A-Z')
+            ->assertSee('Nomor Z-A')
+            ->assertSeeInOrder(['Andi Wijaya', 'Bayu Saputra', 'Citra Lestari']);
+
+        $this->get('/hr/outsource-payslips?period=2026-09&sort=name_desc')
+            ->assertOk()
+            ->assertSeeInOrder(['Citra Lestari', 'Bayu Saputra', 'Andi Wijaya']);
+
+        $this->get('/hr/outsource-payslips?period=2026-09&sort=nomor_asc')
+            ->assertOk()
+            ->assertSeeInOrder(['DM20260001', 'DM20260002', 'DM20260010']);
+
+        $this->get('/hr/outsource-payslips?period=2026-09&sort=nomor_desc')
+            ->assertOk()
+            ->assertSeeInOrder(['DM20260010', 'DM20260002', 'DM20260001']);
+
+        $this->get('/hr/outsource-payslips?period=2026-09&sort=invalid')
+            ->assertOk()
+            ->assertSeeInOrder(['Andi Wijaya', 'Bayu Saputra', 'Citra Lestari']);
+    }
+
     public function test_row_errors_block_the_whole_import(): void
     {
         $this->actingWithPermissions(['view_outsource_payslip', 'manage_outsource_payslip']);

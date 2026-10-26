@@ -14,20 +14,47 @@ class StoreMprRequest extends FormRequest
 
     private const LANGUAGES_REGEX = '/^[\p{L} ,.\(\)\r\n]+$/u';
 
+    private const LOCATION_REGEX = '/^(?=.*\p{L})[\p{L}0-9](?:[\p{L}0-9]|[ .,\&\/()\-])*$/u';
+
     public function authorize(): bool
     {
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $merge = [];
+        if ($this->has('work_location')) {
+            $merge['work_location'] = trim((string) $this->input('work_location'));
+        }
+        if ($this->has('work_location_custom')) {
+            $merge['work_location_custom'] = trim((string) $this->input('work_location_custom'));
+        }
+        if ($merge !== []) {
+            $this->merge($merge);
+        }
+    }
+
     public function rules(): array
     {
+        $locations = array_values(config('hris.mpr_form_options.work_locations', []));
+        $other = (string) config('hris.mpr_form_options.work_location_other', 'Lainnya');
+
         return [
             'position'           => ['required', 'string', 'max:255', 'regex:' . self::POSITION_REGEX],
             'department'         => ['required', 'string', 'max:255', Rule::in(array_keys(config('hris.mpr_department_divisions', [])))],
             'division'           => ['required', 'string', 'max:255', new DivisionBelongsToDepartment((string) $this->input('department'))],
             'approval_division'  => ['nullable', 'string', 'max:255', Rule::in(config('hris.mpr.approval_divisions', []))],
             'job_level'          => ['required', 'string', 'max:255'],
-            'work_location'      => ['required', 'string', 'max:255'],
+            'work_location'      => ['required', 'string', 'max:255', Rule::in(array_merge($locations, [$other]))],
+            'work_location_custom' => [
+                Rule::requiredIf(fn () => strcasecmp(trim((string) $this->input('work_location')), $other) === 0),
+                'nullable',
+                'string',
+                'min:2',
+                'max:255',
+                'regex:' . self::LOCATION_REGEX,
+            ],
             'employment_type'    => ['required', 'string', 'max:255'],
             'quantity'           => ['required', 'integer', 'min:1', 'max:100'],
             'expected_join_date' => ['required', 'date'],
@@ -95,6 +122,10 @@ class StoreMprRequest extends FormRequest
             'division.*'                  => 'Divisi yang dipilih tidak sesuai dengan departemen.',
             'job_level.required'          => 'Level jabatan wajib dipilih.',
             'work_location.required'      => 'Lokasi kerja penempatan wajib dipilih.',
+            'work_location.in'            => 'Lokasi kerja penempatan tidak valid.',
+            'work_location_custom.required' => 'Isi lokasi penempatan jika memilih Lainnya.',
+            'work_location_custom.min'    => 'Lokasi penempatan minimal 2 karakter.',
+            'work_location_custom.regex'  => 'Lokasi penempatan hanya boleh huruf, angka, spasi, dan tanda . , & ( ) - /',
             'employment_type.required'    => 'Status kepegawaian wajib dipilih.',
             'quantity.required'           => 'Jumlah kebutuhan manpower wajib diisi.',
             'quantity.integer'            => 'Jumlah kebutuhan manpower harus berupa angka.',

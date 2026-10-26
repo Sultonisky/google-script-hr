@@ -11,6 +11,7 @@ use Illuminate\View\View;
 use Illuminate\Validation\Rule;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use App\Repositories\Contracts\UserPermissionRepositoryInterface;
+use App\Support\Rbac;
 use Illuminate\Http\JsonResponse;
 
 class UserController extends Controller
@@ -166,6 +167,89 @@ class UserController extends Controller
         $this->syncEditedActorSession($email, $updated);
 
         return $this->updateSuccess($request, 'Pengguna berhasil diperbarui.');
+    }
+
+    public function forceDelete(Request $request, string $email): RedirectResponse|JsonResponse
+    {
+        $this->ensureSuperAdmin();
+
+        $existing = $this->userRepo->findByEmail($email);
+        if ($existing === null) {
+            return $this->forceDeleteResponse($request, false, 'Pengguna tidak ditemukan.', 404);
+        }
+
+        $targetEmail = strtolower(trim((string) ($existing['Email'] ?? $email)));
+        $actorEmail = strtolower(trim((string) session('hr_user.email', '')));
+        if ($targetEmail !== '' && $targetEmail === $actorEmail) {
+            return $this->forceDeleteResponse($request, false, 'Akun yang sedang login tidak bisa di-force delete.', 422);
+        }
+        if ($this->isLastActiveSuperAdmin($existing)) {
+            return $this->forceDeleteResponse($request, false, 'Super Admin aktif terakhir tidak bisa di-force delete.', 422);
+        }
+
+        $this->permissionRepo->forceDeleteByEmail($targetEmail);
+        $this->userRepo->forceDeleteByEmail($targetEmail);
+        if ($this->userRepo->findByEmail($targetEmail) !== null) {
+            return $this->forceDeleteResponse($request, false, 'Pengguna gagal dihapus.', 500);
+        }
+
+        $this->auditRepo->log(
+            'User',
+            $targetEmail,
+            'FORCE_DELETE',
+            null,
+            $existing['Full Name'] ?? $targetEmail,
+            null,
+            session('hr_user.email', 'HR Administrator'),
+            'Dashboard'
+        );
+
+        $name = trim((string) ($existing['Full Name'] ?? $targetEmail));
+
+        return $this->forceDeleteResponse($request, true, "Pengguna '{$name}' berhasil dihapus permanen.");
+    }
+
+    private function ensureSuperAdmin(): void
+    {
+        abort_unless(
+            Rbac::normalizeRole(session('hr_user.role')) === 'Super Admin',
+            403,
+            'Force delete hanya tersedia untuk Super Admin.'
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $existing
+     */
+    private function isLastActiveSuperAdmin(array $existing): bool
+    {
+        if (Rbac::normalizeRole($existing['Role'] ?? null) !== 'Super Admin') {
+            return false;
+        }
+        if (strtolower(trim((string) ($existing['Status'] ?? ''))) !== 'active') {
+            return false;
+        }
+
+        $activeSuperAdmins = 0;
+        foreach ($this->userRepo->getAll() as $user) {
+            if (Rbac::normalizeRole($user['Role'] ?? null) !== 'Super Admin') {
+                continue;
+            }
+            if (strtolower(trim((string) ($user['Status'] ?? ''))) === 'active') {
+                $activeSuperAdmins++;
+            }
+        }
+
+        return $activeSuperAdmins <= 1;
+    }
+
+    private function forceDeleteResponse(Request $request, bool $ok, string $message, int $status = 200): RedirectResponse|JsonResponse
+    {
+        if ($request->expectsJson()) {
+            return response()->json(['success' => $ok, 'message' => $message], $ok ? 200 : $status);
+        }
+
+        return redirect()->route('hr.users.index')->with($ok ? 'success' : 'error', $message);
     }
 
     /**

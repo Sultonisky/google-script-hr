@@ -152,6 +152,25 @@ class MprRequestorSheetsRepository implements MprRequestorRepositoryInterface
         $this->updateByEmail($email, ['status' => 'Inactive']);
     }
 
+    public function forceDeleteByEmail(string $email): void
+    {
+        $needle = strtolower(trim($email));
+        $rowNumbers = [];
+        foreach ($this->sheets->getRowsAsAssoc($this->sheetName, false) as $row) {
+            if (strtolower(trim((string) ($row['Email'] ?? ''))) !== $needle) {
+                continue;
+            }
+            $rowNumber = (int) ($row['_row_number'] ?? 0);
+            if ($rowNumber >= 2) {
+                $rowNumbers[] = $rowNumber;
+            }
+        }
+        rsort($rowNumbers);
+        foreach ($rowNumbers as $rowNumber) {
+            $this->sheets->deleteRow($this->sheetName, $rowNumber);
+        }
+    }
+
     public function updateLastLogin(string $email): void
     {
         $this->updateByEmail($email, [

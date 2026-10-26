@@ -28,7 +28,7 @@
                 <div class="export-btns d-flex flex-wrap gap-2">
                     <a class="btn btn-sm fw-semibold text-white"
                         style="background:#005bac;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
-                        href="{{ route('hr.outsource-payslips.export', ['period' => $periodFilter, 'search' => $searchFilter]) }}">
+                        href="{{ route('hr.outsource-payslips.export', ['period' => $periodFilter, 'search' => $searchFilter, 'sort' => $sortFilter]) }}">
                         <i class="bi bi-download me-1"></i>Export Excel
                     </a>
                     @can('manage_outsource_payslip')
@@ -58,7 +58,17 @@
                             </option>
                         @endforeach
                     </select>
-                    <button class="btn-reset-filter" type="submit"><i class="bi bi-search"></i> Cari</button>
+                    <select class="filter-select" name="sort" id="opsSortSelect" data-auto-submit="true"
+                        aria-label="Urutkan payslip">
+                        <option value="name_asc" @selected($sortFilter === 'name_asc')>Nama A-Z</option>
+                        <option value="name_desc" @selected($sortFilter === 'name_desc')>Nama Z-A</option>
+                        <option value="nomor_asc" @selected($sortFilter === 'nomor_asc')>Nomor A-Z</option>
+                        <option value="nomor_desc" @selected($sortFilter === 'nomor_desc')>Nomor Z-A</option>
+                    </select>
+                    <a href="{{ route('hr.outsource-payslips.index') }}" class="btn-reset-filter text-decoration-none"
+                        title="Reset filter">
+                        <i class="bi bi-arrow-counterclockwise"></i> Reset
+                    </a>
                 </div>
             </form>
 
@@ -133,7 +143,7 @@
                 </span>
                 @if ($total > $perPage)
                     <x-pagination :currentPage="$currentPage" :total="$total" :perPage="$perPage" :route="'hr.outsource-payslips.index'"
-                        :queryParams="['search' => $searchFilter, 'period' => $periodFilter, 'per_page' => $perPage]" />
+                        :queryParams="['search' => $searchFilter, 'period' => $periodFilter, 'per_page' => $perPage, 'sort' => $sortFilter]" />
                 @endif
             </div>
         </div>

@@ -163,18 +163,11 @@
                                             @endforeach
                                         </select>
                                     </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Lokasi Kerja Penempatan <span
-                                                class="text-danger">*</span></label>
-                                        <select name="work_location" class="form-select" required>
-                                            <option value="">-- Pilih Lokasi Kerja --</option>
-                                            @foreach ($workLocations as $wl)
-                                                <option value="{{ $wl }}"
-                                                    {{ $prefill('work_location') === $wl ? 'selected' : '' }}>
-                                                    {{ $wl }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
+                                    @include('hr.mpr.partials.work-location-field', [
+                                        'locations' => $workLocations,
+                                        'selected' => $prefill('work_location'),
+                                        'custom' => old('work_location_custom', ''),
+                                    ])
                                     <div class="col-md-6">
                                         <label class="form-label">Status Kepegawaian <span
                                                 class="text-danger">*</span></label>

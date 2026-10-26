@@ -375,16 +375,10 @@
                                             @endforeach
                                         </select>
                                     </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-semibold small">Lokasi Kerja Penempatan <span
-                                                class="text-danger">*</span></label>
-                                        <select name="work_location" class="form-select" required>
-                                            <option value="">-- Pilih Lokasi Kerja --</option>
-                                            @foreach ($workLocations as $wl)
-                                                <option value="{{ $wl }}">{{ $wl }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
+                                    @include('hr.mpr.partials.work-location-field', [
+                                        'locations' => $workLocations,
+                                        'labelClass' => 'form-label fw-semibold small',
+                                    ])
                                     <div class="col-md-6">
                                         <label class="form-label fw-semibold small">Status Kepegawaian <span
                                                 class="text-danger">*</span></label>
@@ -806,7 +800,7 @@
                                                 @can('export_mpr')
                                                     @if (filled($mpr->mprNumber))
                                                         <a href="{{ route('hr.mpr.pdf', ['id' => $mpr->mprNumber]) }}"
-                                                            target="_blank" class="btn btn-sm btn-outline-danger"
+                                                            target="_blank" class="btn btn-sm btn-outline-success"
                                                             title="Unduh PDF Resmi">
                                                             <i class="bi bi-download"></i>
                                                         </a>
@@ -967,16 +961,12 @@
                                                 @endforeach
                                             </select>
                                         </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label fw-semibold small">Lokasi Penempatan <span
-                                                    class="text-danger">*</span></label>
-                                            <select name="work_location" class="form-select form-select-sm" required>
-                                                <option value="">-- Pilih Lokasi Kerja --</option>
-                                                @foreach ($workLocations as $wl)
-                                                    <option value="{{ $wl }}">{{ $wl }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
+                                        @include('hr.mpr.partials.work-location-field', [
+                                            'locations' => $workLocations,
+                                            'label' => 'Lokasi Penempatan',
+                                            'labelClass' => 'form-label fw-semibold small',
+                                            'selectClass' => 'form-select form-select-sm',
+                                        ])
                                         <div class="col-md-6">
                                             <label class="form-label fw-semibold small">Status Kepegawaian <span
                                                     class="text-danger">*</span></label>
@@ -1243,15 +1233,13 @@
                                             @endforeach
                                         </select>
                                     </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label small fw-semibold">Lokasi Penempatan <span class="text-danger">*</span></label>
-                                        <select name="work_location" class="form-select form-select-sm" required>
-                                            <option value="">-- Pilih --</option>
-                                            @foreach ($workLocations as $d)
-                                                <option value="{{ $d }}">{{ $d }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
+                                    @include('hr.mpr.partials.work-location-field', [
+                                        'locations' => $workLocations,
+                                        'label' => 'Lokasi Penempatan',
+                                        'labelClass' => 'form-label small fw-semibold',
+                                        'selectClass' => 'form-select form-select-sm',
+                                        'placeholder' => '-- Pilih --',
+                                    ])
                                     <div class="col-md-6">
                                         <label class="form-label small fw-semibold">Status Kepegawaian <span class="text-danger">*</span></label>
                                         <select name="employment_type" class="form-select form-select-sm" required>
@@ -1818,8 +1806,10 @@
                             }
 
                             const btnEdit = document.getElementById('btnEditMpr');
+                            const canEditMpr = String(m.status || 'Submitted').trim().toLowerCase() === 'submitted';
                             if (btnEdit) {
-                                btnEdit.onclick = function() {
+                                btnEdit.classList.toggle('d-none', !canEditMpr);
+                                btnEdit.onclick = canEditMpr ? function() {
                                     const editForm = document.getElementById('formEditMpr');
                                     document.getElementById('editMprNumber').innerText = m
                                         .mpr_number || id;
@@ -1834,10 +1824,27 @@
                                         if (field && !key.endsWith('_html') &&
                                             key !== 'department' && key !== 'division' &&
                                             key !== 'working_days' && key !== 'working_hours' && key !== 'benefits' &&
-                                            key !== 'education_background' && key !== 'work_experience') {
+                                            key !== 'education_background' && key !== 'work_experience' &&
+                                            key !== 'work_location') {
                                             field.value = m[key] ?? '';
                                         }
                                     });
+
+                                    const locationSelect = editForm.elements.work_location;
+                                    const locationValue = m.work_location || '';
+                                    if (locationSelect) {
+                                        const hasOption = Array.from(locationSelect.options).some(option => option.value === locationValue);
+                                        const otherValue = locationSelect.dataset.otherValue || 'Lainnya';
+                                        if (locationValue && !hasOption) {
+                                            locationSelect.value = otherValue;
+                                            if (editForm.elements.work_location_custom) {
+                                                editForm.elements.work_location_custom.value = locationValue;
+                                            }
+                                        } else {
+                                            locationSelect.value = locationValue;
+                                        }
+                                        locationSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                                    }
                                     
                                     editForm.elements.department.value = m.department || '';
                                     const approvalSelect = editForm.elements.approval_division;
@@ -1981,7 +1988,7 @@
                                         .getElementById('modalMprDetail')).hide();
                                     bootstrap.Modal.getOrCreateInstance(document
                                         .getElementById('modalEditMpr')).show();
-                                };
+                                } : null;
                             }
 
                             loadingEl.classList.add('d-none');

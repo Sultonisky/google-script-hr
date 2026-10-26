@@ -129,7 +129,7 @@
                                             data-id="{{ $mpr->mprNumber }}" title="Lihat Detail">
                                             <i class="bi bi-eye"></i>
                                         </button>
-                                        @if (filled($mpr->mprNumber))
+                                        @if (filled($mpr->mprNumber) && strcasecmp(trim((string) ($mpr->status ?? 'Submitted')), 'Submitted') === 0)
                                             <a href="{{ route('mpr.auth.request.edit', ['id' => $mpr->mprNumber]) }}"
                                                 class="btn btn-outline-warning" title="Edit Pengajuan">
                                                 <i class="bi bi-pencil-square"></i>
@@ -322,6 +322,12 @@
 
                             if (btnPdf) {
                                 btnPdf.href = `${basePath}/${encodeURIComponent(m.mpr_number)}/pdf`;
+                            }
+
+                            const btnEdit = document.getElementById('btnEditMpr');
+                            if (btnEdit) {
+                                const canEditMpr = String(m.status || 'Submitted').trim().toLowerCase() === 'submitted';
+                                btnEdit.classList.toggle('d-none', !canEditMpr);
                             }
 
                             loadingEl.classList.add('d-none');

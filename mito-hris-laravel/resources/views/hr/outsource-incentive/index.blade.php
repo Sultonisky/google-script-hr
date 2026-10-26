@@ -15,7 +15,7 @@
                 <div class="export-btns d-flex flex-wrap gap-2">
                     <a class="btn btn-sm fw-semibold text-white"
                         style="background:#005bac;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
-                        href="{{ route('hr.outsource-incentives.export', ['period' => $period, 'search' => $search]) }}">
+                        href="{{ route('hr.outsource-incentives.export', ['period' => $period, 'search' => $search, 'sort' => $sort]) }}">
                         <i class="bi bi-download me-1"></i>Export Excel
                     </a>
                     @can('manage_outsource_incentive')
@@ -30,7 +30,7 @@
                 </div>
             </div>
 
-            <form action="{{ route('hr.outsource-incentives.index') }}" method="GET">
+            <form action="{{ route('hr.outsource-incentives.index') }}" method="GET" id="incentiveFilterForm">
                 <div class="filter-bar">
                     <div class="table-search">
                         <i class="bi bi-search"></i>
@@ -43,7 +43,17 @@
                             </option>
                         @endforeach
                     </select>
-                    <button class="btn-reset-filter" type="submit"><i class="bi bi-search"></i> Cari</button>
+                    <select class="filter-select" name="sort" id="incentiveSort" data-auto-submit="true"
+                        aria-label="Urutkan incentive">
+                        <option value="name_asc" @selected($sort === 'name_asc')>Nama A-Z</option>
+                        <option value="name_desc" @selected($sort === 'name_desc')>Nama Z-A</option>
+                        <option value="nomor_asc" @selected($sort === 'nomor_asc')>Nomor A-Z</option>
+                        <option value="nomor_desc" @selected($sort === 'nomor_desc')>Nomor Z-A</option>
+                    </select>
+                    <a href="{{ route('hr.outsource-incentives.index') }}" class="btn-reset-filter text-decoration-none"
+                        title="Reset filter">
+                        <i class="bi bi-arrow-counterclockwise"></i> Reset
+                    </a>
                 </div>
             </form>
 
@@ -86,7 +96,7 @@
                 <span>Menampilkan {{ $incentives->firstItem() ?? 0 }}–{{ $incentives->lastItem() ?? 0 }} dari {{ $incentives->total() }} data</span>
                 @if ($incentives->total() > $incentives->perPage())
                     <x-pagination :currentPage="$incentives->currentPage()" :total="$incentives->total()" :perPage="$incentives->perPage()"
-                        :route="'hr.outsource-incentives.index'" :queryParams="['search' => $search, 'period' => $period]" />
+                        :route="'hr.outsource-incentives.index'" :queryParams="['search' => $search, 'period' => $period, 'sort' => $sort]" />
                 @endif
             </div>
         </div>
@@ -189,10 +199,21 @@
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         document.addEventListener('DOMContentLoaded', function () {
             var period = document.getElementById('incentivePeriod');
-            if (!period) return;
-            period.addEventListener('change', function () {
-                if (this.form) this.form.submit();
-            });
+            if (period) {
+                period.addEventListener('change', function () {
+                    if (this.form) this.form.submit();
+                });
+            }
+
+            var search = document.querySelector('#incentiveFilterForm input[name="search"]');
+            if (search) {
+                search.addEventListener('keydown', function (event) {
+                    if (event.key === 'Enter' && search.form) {
+                        event.preventDefault();
+                        search.form.submit();
+                    }
+                });
+            }
         });
     </script>
     @can('manage_outsource_incentive')

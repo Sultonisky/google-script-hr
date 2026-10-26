@@ -98,4 +98,33 @@ class UserPermissionSheetsRepository implements UserPermissionRepositoryInterfac
             $this->sheets->updateRow($sheet, $rowNumber, $values);
         }
     }
+
+    public function forceDeleteByEmail(string $email): int
+    {
+        $email = strtolower(trim($email));
+        if ($email === '') {
+            return 0;
+        }
+
+        $sheet = config('google.sheets.user_permissions', 'User_Permissions');
+        $rowNumbers = [];
+        foreach ($this->sheets->getRowsAsAssoc($sheet, false) as $row) {
+            if (strtolower(trim((string) ($row['User Email'] ?? ''))) !== $email) {
+                continue;
+            }
+            $rowNumber = (int) ($row['_row_number'] ?? 0);
+            if ($rowNumber >= 2) {
+                $rowNumbers[] = $rowNumber;
+            }
+        }
+        rsort($rowNumbers);
+        $deleted = 0;
+        foreach ($rowNumbers as $rowNumber) {
+            if ($this->sheets->deleteRow($sheet, $rowNumber)) {
+                $deleted++;
+            }
+        }
+
+        return $deleted;
+    }
 }

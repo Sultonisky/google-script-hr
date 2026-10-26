@@ -454,6 +454,36 @@
         }
     }
 
+    function bindWorkLocationOther() {
+        const sync = function (select) {
+            const form = select.closest("form");
+            const wrap = form ? form.querySelector("[data-work-location-other]") : null;
+            const input = wrap ? wrap.querySelector("[name='work_location_custom']") : null;
+            if (!wrap || !(input instanceof HTMLInputElement)) {
+                return;
+            }
+
+            const otherValue = select.getAttribute("data-other-value") || "Lainnya";
+            const isOther = select.value === otherValue;
+            wrap.classList.toggle("d-none", !isOther);
+            input.required = isOther;
+            if (!isOther) {
+                input.value = "";
+            }
+        };
+
+        document.querySelectorAll("select[name='work_location']").forEach(function (select) {
+            sync(select);
+        });
+
+        document.addEventListener("change", function (event) {
+            const target = event.target;
+            if (target instanceof HTMLSelectElement && target.name === "work_location") {
+                sync(target);
+            }
+        });
+    }
+
     function displayFlashToasts() {
         const flashToasts = window.__flashToasts || [];
         flashToasts.forEach(function (toast) {
@@ -481,6 +511,7 @@
             bindEntityModalSearchHandlers();
             bindStatusPageModalHandlers();
             bindOffContractAndRotationSearchHandlers();
+            bindWorkLocationOther();
         });
         return;
     }
@@ -501,4 +532,5 @@
     bindEntityModalSearchHandlers();
     bindStatusPageModalHandlers();
     bindOffContractAndRotationSearchHandlers();
+    bindWorkLocationOther();
 })();

@@ -47,7 +47,7 @@
                         <h6 class="detail-section-title"><i class="bi bi-person-badge"></i>Informasi Pemohon</h6>
                         <div class="row g-3">
                             <div class="col-sm-6 detail-field">
-                                <label>Pemohon (Manager)</label>
+                                <label>Pemohon (Manpower)</label>
                                 <div class="detail-value" id="detManagerName">-</div>
                                 <div class="detail-meta" id="detManagerEmail">-</div>
                                 <div class="detail-meta" id="detRequestorPosition">-</div>
@@ -77,7 +77,7 @@
                                 <div class="detail-value" id="detLocation">-</div>
                             </div>
                             <div class="col-sm-6 detail-field">
-                                <label>Target Join Date</label>
+                                <label>Target Join</label>
                                 <div class="detail-value" id="detJoinDate">-</div>
                             </div>
                         </div>

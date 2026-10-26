@@ -189,9 +189,18 @@ return [
             'Head Office (HO)',
             'Depo Jakarta',
             'Depo Bandung',
+            'Depo Banjarmasin',
+            'Depo Lampung',
+            'Depo Makassar',
+            'Depo Medan',
+            'Depo Palembang',
+            'Depo Samarinda',
+            'Depo Semarang',
             'Depo Surabaya',
             'Pabrik',
         ],
+        // Nilai select yang membuka input teks bebas. Tidak disimpan apa adanya.
+        'work_location_other' => 'Lainnya',
         // Status kepegawaian (statis)
         'employment_types' => [
             'Permanent (PKWTT)',

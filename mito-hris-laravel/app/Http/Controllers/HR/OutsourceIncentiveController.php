@@ -21,6 +21,8 @@ class OutsourceIncentiveController extends Controller
 {
     private const PERIOD_REGEX = '/^\d{4}-(0[1-9]|1[0-2])$/';
 
+    private const SORTS = ['name_asc', 'name_desc', 'nomor_asc', 'nomor_desc'];
+
     public function __construct(
         protected OutsourceIncentiveImportService $importer,
         protected AuditLogRepositoryInterface $auditRepo
@@ -35,9 +37,12 @@ class OutsourceIncentiveController extends Controller
         }
 
         $search = trim((string) $request->query('search', ''));
-        $incentives = $this->incentiveQuery($period, $search)->paginate(15)->withQueryString();
+        $sort = $this->sortFilter($request);
+        $incentives = $this->applySort($this->incentiveQuery($period, $search), $sort)
+            ->paginate(15)
+            ->withQueryString();
 
-        return view('hr.outsource-incentive.index', compact('incentives', 'periods', 'period', 'search'));
+        return view('hr.outsource-incentive.index', compact('incentives', 'periods', 'period', 'search', 'sort'));
     }
 
     public function export(Request $request): StreamedResponse
@@ -47,7 +52,7 @@ class OutsourceIncentiveController extends Controller
             $period = (string) (OutsourceIncentive::query()->orderByDesc('period')->value('period') ?? now()->timezone('Asia/Jakarta')->format('Y-m'));
         }
         $search = trim((string) $request->query('search', ''));
-        $incentives = $this->incentiveQuery($period, $search)->orderBy('full_name')->get();
+        $incentives = $this->applySort($this->incentiveQuery($period, $search), $this->sortFilter($request))->get();
 
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
@@ -114,6 +119,23 @@ class OutsourceIncentiveController extends Controller
                 $like = '%' . mb_strtolower($search) . '%';
                 $query->where(fn ($where) => $where->whereRaw('LOWER(outsource_id) LIKE ?', [$like])->orWhereRaw('LOWER(full_name) LIKE ?', [$like]));
             });
+    }
+
+    private function sortFilter(Request $request): string
+    {
+        $sort = (string) $request->query('sort', 'name_asc');
+
+        return in_array($sort, self::SORTS, true) ? $sort : 'name_asc';
+    }
+
+    private function applySort(\Illuminate\Database\Eloquent\Builder $query, string $sort): \Illuminate\Database\Eloquent\Builder
+    {
+        return match ($sort) {
+            'name_desc' => $query->orderByDesc('full_name')->orderBy('outsource_id'),
+            'nomor_asc' => $query->orderBy('outsource_id')->orderBy('full_name'),
+            'nomor_desc' => $query->orderByDesc('outsource_id')->orderBy('full_name'),
+            default => $query->orderBy('full_name')->orderBy('outsource_id'),
+        };
     }
 
     public function template(): StreamedResponse

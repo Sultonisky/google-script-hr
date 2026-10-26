@@ -84,6 +84,11 @@ class MprRequestorDatabaseRepository implements MprRequestorRepositoryInterface
         $this->updateByEmail($email, ['status' => 'Inactive']);
     }
 
+    public function forceDeleteByEmail(string $email): void
+    {
+        MprRequestor::query()->whereRaw('LOWER(email) = ?', [strtolower(trim($email))])->delete();
+    }
+
     public function isEmpty(): bool
     {
         return MprRequestor::query()->count() === 0;

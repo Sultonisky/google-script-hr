@@ -57,4 +57,14 @@ class UserPermissionDatabaseRepository implements UserPermissionRepositoryInterf
             ->whereRaw('LOWER(user_email) = ?', [$fromEmail])
             ->update(['user_email' => $toEmail]);
     }
+
+    public function forceDeleteByEmail(string $email): int
+    {
+        $email = strtolower(trim($email));
+        if ($email === '') {
+            return 0;
+        }
+
+        return UserPermission::query()->whereRaw('LOWER(user_email) = ?', [$email])->delete();
+    }
 }
