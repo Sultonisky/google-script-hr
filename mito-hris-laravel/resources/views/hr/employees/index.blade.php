@@ -112,6 +112,11 @@
                                 <i class="bi bi-box-arrow-right me-1"></i>Offboarding
                             </button>
                         @endcan
+                        <button class="btn btn-sm fw-semibold text-white"
+                            style="background:#0B2540;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
+                            type="button" data-bs-toggle="modal" data-bs-target="#exitClearanceModal">
+                            <i class="bi bi-clipboard-check me-1"></i>Exit Clearance
+                        </button>
                         <a href="{{ route('hr.export.employees-xlsx') }}"
                             class="btn btn-sm fw-semibold text-white"
                             style="background:#005BAC;border:none;border-radius:8px;padding:6px 14px;font-size:13px"
@@ -361,6 +366,8 @@
     @can('manage_warning_letters')
         @include('hr.partials.warning-letter-modal')
     @endcan
+
+    @include('hr.partials.exit-clearance-modal')
 @endsection
 
 @section('scripts')
