@@ -209,6 +209,7 @@ if (!app()->environment('local')) {
                 Route::get('/surat-pakta-integritas/{id}', [ExportController::class, 'suratPaktaIntegritasPdf'])->name('surat-pakta-integritas');
                 Route::get('/surat-nda/{id}', [ExportController::class, 'suratNdaPdf'])->name('surat-nda');
                 Route::get('/surat-pb-phk/{id}', [ExportController::class, 'suratPbPhkPdf'])->name('surat-pb-phk');
+                Route::post('/exit-clearance/{id}', [ExportController::class, 'exitClearancePdf'])->name('exit-clearance');
             });
             Route::prefix('export')->name('export.')->middleware('can:view_outsource')->group(function () {
                 Route::get('/outsource-xlsx', [ExportController::class, 'exportOutsourceXlsx'])->name('outsource-xlsx');
@@ -494,6 +495,7 @@ if (app()->environment('local')) {
                 Route::get('/surat-pakta-integritas/{id}', [ExportController::class, 'suratPaktaIntegritasPdf'])->name('surat-pakta-integritas');
                 Route::get('/surat-nda/{id}', [ExportController::class, 'suratNdaPdf'])->name('surat-nda');
                 Route::get('/surat-pb-phk/{id}', [ExportController::class, 'suratPbPhkPdf'])->name('surat-pb-phk');
+                Route::post('/exit-clearance/{id}', [ExportController::class, 'exitClearancePdf'])->name('exit-clearance');
             });
             Route::prefix('export')->name('export.')->middleware('can:view_outsource')->group(function () {
                 Route::get('/outsource-xlsx', [ExportController::class, 'exportOutsourceXlsx'])->name('outsource-xlsx');
