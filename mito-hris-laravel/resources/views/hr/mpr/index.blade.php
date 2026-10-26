@@ -800,7 +800,7 @@
                                                 @can('export_mpr')
                                                     @if (filled($mpr->mprNumber))
                                                         <a href="{{ route('hr.mpr.pdf', ['id' => $mpr->mprNumber]) }}"
-                                                            target="_blank" class="btn btn-sm btn-outline-danger"
+                                                            target="_blank" class="btn btn-sm btn-outline-success"
                                                             title="Unduh PDF Resmi">
                                                             <i class="bi bi-download"></i>
                                                         </a>
