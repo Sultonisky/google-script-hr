@@ -111,7 +111,6 @@ body {
 /* Dark Mode Overrides */
 :root[data-theme="dark"] {
     .btn-primary,
-    .btn-outline-primary,
     .bg-primary,
     .bg-primary-subtle,
     .badge.bg-primary,
@@ -144,7 +143,11 @@ body {
     }
 
     .btn-outline-primary {
-        color: var(--color-primary) !important;
+        --bs-btn-color: #f8d0d2;
+        --bs-btn-bg: transparent;
+        --bs-btn-border-color: var(--color-primary);
+        color: #f8d0d2 !important;
+        background-color: transparent !important;
         border-color: var(--color-primary) !important;
     }
 
