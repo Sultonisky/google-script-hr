@@ -17,7 +17,6 @@ use App\Support\PublicApplicationProbe;
 use App\Support\PublicApplicationRejection;
 use App\Services\Google\GoogleDriveService;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use RuntimeException;
@@ -483,14 +482,7 @@ class RecruitmentService
         if ($manualContractNumber !== '') {
             $contractNumber = $manualContractNumber;
         } else {
-            $docAt = $now;
-            if (!empty($contractData['doc_date'])) {
-                try {
-                    $docAt = Carbon::parse($contractData['doc_date'])->timezone('Asia/Jakarta');
-                } catch (\Throwable) {
-                    $docAt = $now;
-                }
-            }
+            $docAt = $this->skNumbers->issuedAtFrom($contractData['doc_date'] ?? null);
             $issued = $this->skNumbers->issue(
                 employeeId: $employeeId,
                 type: SkDocumentType::PKWT,
