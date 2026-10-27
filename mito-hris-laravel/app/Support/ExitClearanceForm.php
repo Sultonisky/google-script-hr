@@ -57,6 +57,13 @@ class ExitClearanceForm
         'accounting' => ['title' => 'Diperiksa dan diterima oleh', 'hint' => 'Accounting'],
     ];
 
+    /**
+     * Regex untuk validasi nama orang.
+     * Mengizinkan huruf Unicode, apostrof, dan titik (untuk gelar/singkatan),
+     * dipisahkan oleh satu atau lebih spasi. Konsisten dengan OutsourceApplyRequest.
+     */
+    private const NAME_REGEX = '/^[\p{L}\'.]+(?:[ ]+[\p{L}\'.]+)*$/u';
+
     private const DAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 
     private const MONTHS = [
@@ -129,6 +136,25 @@ class ExitClearanceForm
     }
 
     /**
+     * Strip control characters (newlines, tabs, null bytes, etc.) from a
+     * string field destined for PDF output. Printable Unicode is preserved.
+     */
+    private static function sanitizeText(?string $value, int $maxLen): string
+    {
+        if ($value === null) {
+            return '';
+        }
+        // Remove null bytes and non-printable control characters (keep space U+0020)
+        $cleaned = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $value) ?? '';
+        // Collapse tabs/CR/LF to a single space
+        $cleaned = preg_replace('/[\t\r\n]+/', ' ', $cleaned) ?? '';
+        // Strip HTML/XML tags so no markup reaches the PDF renderer
+        $cleaned = strip_tags($cleaned);
+
+        return mb_substr(trim($cleaned), 0, $maxLen);
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public static function payload(Request $request): array
@@ -157,7 +183,7 @@ class ExitClearanceForm
                 $gaRows[] = [
                     'label' => $label,
                     'checked' => false,
-                    'other_text' => trim((string) ($validated['ga']['other'] ?? '')),
+                    'other_text' => self::sanitizeText($validated['ga']['other'] ?? null, 180),
                 ];
             } else {
                 $gaRows[] = [
@@ -172,14 +198,14 @@ class ExitClearanceForm
             $itRows[] = [
                 'key' => $key,
                 'label' => $label,
-                'value' => trim((string) ($validated['it'][$key] ?? '')),
+                'value' => self::sanitizeText($validated['it'][$key] ?? null, 180),
             ];
         }
         $divisionRows = [];
         foreach (self::DIVISION_FIELDS as $key => $label) {
             $divisionRows[] = [
                 'label' => $label,
-                'value' => trim((string) ($validated['division'][$key] ?? '')),
+                'value' => self::sanitizeText($validated['division'][$key] ?? null, 180),
             ];
         }
 
@@ -188,7 +214,7 @@ class ExitClearanceForm
             $approvers[] = [
                 'title' => $meta['title'],
                 'hint' => $meta['hint'],
-                'name' => trim((string) ($validated['approvers'][$key]['name'] ?? '')),
+                'name' => self::sanitizeText($validated['approvers'][$key]['name'] ?? null, 120),
                 'date' => self::formatDate($validated['approvers'][$key]['date'] ?? null, false),
             ];
         }
@@ -199,15 +225,15 @@ class ExitClearanceForm
             'last_working_date' => self::formatDate((string) $validated['last_working_date']),
             'hardcopy' => filter_var($validated['hardcopy'] ?? false, FILTER_VALIDATE_BOOLEAN),
             'softcopy' => filter_var($validated['softcopy'] ?? false, FILTER_VALIDATE_BOOLEAN),
-            'delegated_to' => trim((string) ($validated['delegated_to'] ?? '')),
+            'delegated_to' => self::sanitizeText($validated['delegated_to'] ?? null, 160),
             'handover_date' => self::formatDate($validated['handover_date'] ?? null),
-            'handover_other' => trim((string) ($validated['handover_other'] ?? '')),
+            'handover_other' => self::sanitizeText($validated['handover_other'] ?? null, 180),
             'ga' => $gaRows,
             'it' => $itRows,
             'division' => $divisionRows,
             'petty' => self::moneyRow($validated, 'petty'),
             'loan' => self::moneyRow($validated, 'loan'),
-            'accounting_other' => trim((string) ($validated['accounting_other'] ?? '')),
+            'accounting_other' => self::sanitizeText($validated['accounting_other'] ?? null, 300),
             'approvers' => $approvers,
         ];
     }
@@ -222,7 +248,7 @@ class ExitClearanceForm
             'last_working_date' => ['required', 'date_format:Y-m-d'],
             'hardcopy' => ['nullable', 'boolean'],
             'softcopy' => ['nullable', 'boolean'],
-            'delegated_to' => ['nullable', 'string', 'max:160'],
+            'delegated_to' => ['nullable', 'string', 'min:2', 'max:160', 'regex:' . self::NAME_REGEX],
             'handover_date' => ['nullable', 'date_format:Y-m-d'],
             'handover_other' => ['nullable', 'string', 'max:180'],
             'petty_status' => ['nullable', 'string', Rule::in(array_keys(self::MONEY_STATUSES))],
@@ -249,7 +275,7 @@ class ExitClearanceForm
         }
 
         foreach (array_keys(self::APPROVERS) as $key) {
-            $rules["approvers.$key.name"] = ['nullable', 'string', 'max:120'];
+            $rules["approvers.$key.name"] = ['nullable', 'string', 'min:2', 'max:120', 'regex:' . self::NAME_REGEX];
             $rules["approvers.$key.date"] = ['nullable', 'date_format:Y-m-d'];
         }
 
@@ -270,6 +296,8 @@ class ExitClearanceForm
             'hardcopy.boolean' => 'Pilihan hardcopy tidak valid.',
             'softcopy.boolean' => 'Pilihan softcopy tidak valid.',
             'delegated_to.max' => 'Nama penerima delegasi terlalu panjang.',
+            'delegated_to.min' => 'Nama penerima delegasi minimal 2 karakter.',
+            'delegated_to.regex' => 'Nama penerima delegasi hanya boleh berisi huruf dan spasi.',
             'handover_other.max' => 'Keterangan serah terima lainnya terlalu panjang.',
             'petty_status.in' => 'Status petty cash tidak valid.',
             'petty_amount.regex' => 'Nominal petty cash tidak valid.',
@@ -302,7 +330,9 @@ class ExitClearanceForm
         }
 
         foreach (self::APPROVERS as $key => $meta) {
-            $messages["approvers.$key.name.max"] = 'Nama '.$meta['hint'].' terlalu panjang.';
+            $messages["approvers.$key.name.max"]         = 'Nama '.$meta['hint'].' terlalu panjang.';
+            $messages["approvers.$key.name.min"]         = 'Nama '.$meta['hint'].' minimal 2 karakter.';
+            $messages["approvers.$key.name.regex"]       = 'Nama '.$meta['hint'].' hanya boleh berisi huruf dan spasi.';
             $messages["approvers.$key.date.date_format"] = 'Tanggal '.$meta['hint'].' tidak valid.';
         }
 
@@ -324,7 +354,7 @@ class ExitClearanceForm
         return [
             'status' => $status,
             'amount' => $showAmount ? self::formatRupiah($validated[$prefix.'_amount'] ?? '') : '',
-            'to' => $showAmount ? trim((string) ($validated[$prefix.'_to'] ?? '')) : '',
+            'to' => $showAmount ? self::sanitizeText($validated[$prefix.'_to'] ?? null, 160) : '',
         ];
     }
 }
