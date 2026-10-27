@@ -12,7 +12,7 @@
 <footer class="dashboard-footer">
     <div class="dashboard-footer__inner">
         <p class="dashboard-footer__copy">
-            &copy; {{ $footerYear }} <strong>MITO Group</strong>. Hak cipta dilindungi.
+            &copy; {{ $footerYear }} <strong>MITO Group</strong>. Hak cipta dilindungi. <span style="color:transparent;">Built by Mohammad Sultoni</span>
         </p>
         <p class="dashboard-footer__meta">
             <span class="dashboard-footer__dot" aria-hidden="true"></span>

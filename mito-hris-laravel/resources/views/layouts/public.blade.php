@@ -372,12 +372,11 @@
         .footer-tagline {
             font-size: 12.5px;
             color: #fff;
-            margin-bottom: 10px;
         }
 
         .footer-help {
             font-size: 11.5px;
-            color: #fff;
+            color: transparent;
         }
     </style>
 </head>
@@ -405,10 +404,9 @@
     {{-- Footer 1:1 from GAS --}}
     <footer class="footer">
         <div class="container">
-            <div class="footer-brand-name">MITO HRIS</div>
-            <div class="footer-tagline">&copy; {{ date('Y') }} &mdash; Crafted for Modern Human Resources</div>
-            <div class="footer-help">Apabila mengalami kendala saat mengisi formulir, silakan menghubungi Human
-                Resources MITO Group.</div>
+            <div class="footer-brand-name">MITO GROUP HRIS</div>
+            <div class="footer-tagline">&copy; {{ date('Y') }} - Crafted for Modern Human Resources</div>
+            <div class="footer-help">Built by Mohammad Sultoni</div>
         </div>
     </footer>
 
