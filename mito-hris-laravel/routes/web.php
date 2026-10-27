@@ -41,7 +41,7 @@ if (!app()->environment('local')) {
         Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
         Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:login')->name('login.post');
         Route::any('/logout', [LoginController::class, 'logout'])->name('logout');
-        Route::get('/exit-clearance', [ExitClearanceController::class, 'show'])->name('public.exit-clearance');
+        Route::get('/exit-clearance', [ExitClearanceController::class, 'show'])->middleware('throttle:exit-clearance-show')->name('public.exit-clearance');
         Route::post('/exit-clearance/{id}', [ExitClearanceController::class, 'pdf'])->middleware('throttle:exit-clearance')->name('public.exit-clearance.pdf');
 
         Route::prefix('hr')->name('hr.')->middleware(['portal.access', 'hr.auth', 'mpr.auth'])->group(function () {
@@ -316,7 +316,7 @@ if (app()->environment('local')) {
         Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
         Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:login')->name('login.post');
         Route::any('/logout', [LoginController::class, 'logout'])->name('logout');
-        Route::get('/exit-clearance', [ExitClearanceController::class, 'show'])->name('public.exit-clearance');
+        Route::get('/exit-clearance', [ExitClearanceController::class, 'show'])->middleware('throttle:exit-clearance-show')->name('public.exit-clearance');
         Route::post('/exit-clearance/{id}', [ExitClearanceController::class, 'pdf'])->middleware('throttle:exit-clearance')->name('public.exit-clearance.pdf');
 
         Route::prefix('hr')->name('hr.')->middleware(['portal.access', 'hr.auth', 'mpr.auth'])->group(function () {
