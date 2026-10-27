@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\MprAuthController;
 use App\Http\Controllers\Public\CareerController;
+use App\Http\Controllers\Public\ExitClearanceController;
 use App\Http\Controllers\Public\OutsourceApplyController;
 use App\Http\Controllers\Public\SeoController;
 use App\Http\Controllers\HR\DashboardController;
@@ -40,6 +41,8 @@ if (!app()->environment('local')) {
         Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
         Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:login')->name('login.post');
         Route::any('/logout', [LoginController::class, 'logout'])->name('logout');
+        Route::get('/exit-clearance', [ExitClearanceController::class, 'show'])->name('public.exit-clearance');
+        Route::post('/exit-clearance/{id}', [ExitClearanceController::class, 'pdf'])->middleware('throttle:exit-clearance')->name('public.exit-clearance.pdf');
 
         Route::prefix('hr')->name('hr.')->middleware(['portal.access', 'hr.auth', 'mpr.auth'])->group(function () {
             Route::post('/refresh-data', [\App\Http\Controllers\HR\RefreshController::class, 'refreshData'])->name('refresh-data');
@@ -313,6 +316,8 @@ if (app()->environment('local')) {
         Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
         Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:login')->name('login.post');
         Route::any('/logout', [LoginController::class, 'logout'])->name('logout');
+        Route::get('/exit-clearance', [ExitClearanceController::class, 'show'])->name('public.exit-clearance');
+        Route::post('/exit-clearance/{id}', [ExitClearanceController::class, 'pdf'])->middleware('throttle:exit-clearance')->name('public.exit-clearance.pdf');
 
         Route::prefix('hr')->name('hr.')->middleware(['portal.access', 'hr.auth', 'mpr.auth'])->group(function () {
             Route::post('/refresh-data', [\App\Http\Controllers\HR\RefreshController::class, 'refreshData'])->name('refresh-data');
