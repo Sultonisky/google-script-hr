@@ -11,7 +11,7 @@ class PublicExitClearanceTest extends TestCase
         $response = $this->get('/exit-clearance');
 
         $response->assertOk();
-        $response->assertSee('Cari Karyawan', false);
+        $response->assertSee('Identitas Anda', false);
         $response->assertSee('id="formExitClearance"', false);
         $response->assertSee('exit-clearance/__ID__', false);
         $response->assertSee('btnExitClearanceReset', false);
