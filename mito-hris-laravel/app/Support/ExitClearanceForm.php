@@ -153,10 +153,19 @@ class ExitClearanceForm
         $company = (string) $validated['company'];
         $gaRows = [];
         foreach (self::GA_ASSETS as $key => $label) {
-            $gaRows[] = [
-                'label' => $label,
-                'checked' => filter_var($validated['ga'][$key] ?? false, FILTER_VALIDATE_BOOLEAN),
-            ];
+            if ($key === 'other') {
+                $gaRows[] = [
+                    'label' => $label,
+                    'checked' => false,
+                    'other_text' => trim((string) ($validated['ga']['other'] ?? '')),
+                ];
+            } else {
+                $gaRows[] = [
+                    'label' => $label,
+                    'checked' => filter_var($validated['ga'][$key] ?? false, FILTER_VALIDATE_BOOLEAN),
+                    'other_text' => null,
+                ];
+            }
         }
         $itRows = [];
         foreach (self::IT_FIELDS as $key => $label) {
@@ -226,7 +235,9 @@ class ExitClearanceForm
         ];
 
         foreach (array_keys(self::GA_ASSETS) as $key) {
-            $rules["ga.$key"] = ['nullable', 'boolean'];
+            $rules["ga.$key"] = $key === 'other'
+                ? ['nullable', 'string', 'max:180']
+                : ['nullable', 'boolean'];
         }
         $rules['it.email'] = ['nullable', 'string', 'email', 'max:160'];
         $rules['it.password'] = ['nullable', 'string', 'max:120'];
@@ -274,7 +285,11 @@ class ExitClearanceForm
         ];
 
         foreach (self::GA_ASSETS as $key => $label) {
-            $messages["ga.$key.boolean"] = 'Pilihan '.$label.' tidak valid.';
+            if ($key === 'other') {
+                $messages["ga.$key.max"] = 'Keterangan aset lainnya terlalu panjang.';
+            } else {
+                $messages["ga.$key.boolean"] = 'Pilihan '.$label.' tidak valid.';
+            }
         }
         $messages['it.email.email'] = 'Email tidak valid.';
         $messages['it.email.max'] = 'Email terlalu panjang.';
