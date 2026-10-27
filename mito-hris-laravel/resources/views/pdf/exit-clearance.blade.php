@@ -75,6 +75,74 @@
             padding-left: 5px;
         }
 
+        .pair {
+            margin-top: 6px;
+            table-layout: fixed;
+        }
+
+        .pair col.col-label,
+        .pair col.col-value {
+            width: 24.8%;
+        }
+
+        .pair col.col-gap {
+            width: 0.8%;
+        }
+
+        .pair td.gap {
+            width: 0.8%;
+            border: none;
+            padding: 0;
+            background: #fff;
+            font-size: 0;
+            line-height: 0;
+        }
+
+        .pair td.pair-title {
+            border: none;
+            border-bottom: 1px solid #f3c3c5;
+            color: #eb1c24;
+            font-size: 9pt;
+            font-weight: bold;
+            padding: 2px 0 2px;
+            background: #fff;
+        }
+
+        .pair td.data {
+            height: 16px;
+        }
+
+        .pair .label,
+        .pair .item {
+            width: auto;
+            white-space: normal;
+        }
+
+        .pair td.blank {
+            border: none;
+            background: #fff;
+            padding: 0;
+        }
+
+        .pair td.pair-title-next {
+            padding-top: 8px;
+        }
+
+        .pair td.head {
+            background: #f9fafb;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .pair td.status {
+            white-space: nowrap;
+            font-size: 8pt;
+        }
+
+        .pair td.status .box {
+            margin-right: 3px;
+        }
+
         .sheet td,
         .sheet th {
             border: 1px solid #d1d5db;
@@ -154,22 +222,28 @@
             margin: 6px 0 6px;
         }
 
-        .sign-meta {
-            width: 100%;
-            margin-top: 2px;
-        }
-
-        .sign-meta td {
-            border: none;
-            padding: 1px 0 0;
-            vertical-align: baseline;
+        .sign-line {
             font-size: 7.5pt;
+            line-height: 1.2;
+            white-space: nowrap;
         }
 
-        .sign-key {
-            width: 48px;
+        .sign-line .sign-key,
+        .sign-line .sign-sep {
+            display: inline-block;
+            vertical-align: bottom;
+            line-height: 1.2;
+        }
+
+        .sign-line .sign-key {
+            width: 46px;
             color: #4b5563;
-            padding-right: 6px;
+            text-align: left;
+        }
+
+        .sign-line .sign-sep {
+            width: 10px;
+            text-align: center;
         }
 
         .sign-date {
@@ -182,6 +256,24 @@
         $position = $employee->jobPosition ?: ($employee->jobPositionLocation ?: '');
         $division = $employee->division ?: ($employee->department ?: '');
         $moneyStatuses = \App\Support\ExitClearanceForm::MONEY_STATUSES;
+        $employeeRows = [
+            ['label' => 'Nama', 'value' => $employee->fullName ?: '-'],
+            ['label' => 'NIK', 'value' => $employee->nikNpwp ?: '-'],
+            ['label' => 'Employee ID', 'value' => $employee->employeeId ?: '-'],
+            ['label' => 'Posisi', 'value' => $position !== '' ? $position : '-'],
+            ['label' => 'Divisi', 'value' => $division !== '' ? $division : '-'],
+            ['label' => 'Perusahaan', 'value' => $extraData['company_name'] ?: '-'],
+            ['label' => 'Berakhir bekerja', 'value' => $extraData['last_working_date'] ?: '-'],
+        ];
+        $gaRows = array_values($extraData['ga']);
+        $handoverRows = [
+            ['label' => 'Hardcopy', 'check' => (bool) $extraData['hardcopy']],
+            ['label' => 'Softcopy', 'check' => (bool) $extraData['softcopy']],
+            ['label' => 'Didelegasi kepada', 'value' => $extraData['delegated_to'] ?: '-'],
+            ['label' => 'Tanggal penyerahan', 'value' => $extraData['handover_date'] ?: '-'],
+            ['label' => 'Lainnya', 'value' => ($extraData['handover_other'] ?? '') !== '' ? $extraData['handover_other'] : '-'],
+        ];
+        $itRows = array_values($extraData['it']);
         $mitoLogoPath = public_path('assets/mito-group.png');
         $mitoLogo = is_file($mitoLogoPath)
             ? 'data:image/png;base64,'.base64_encode((string) file_get_contents($mitoLogoPath))
@@ -199,137 +291,93 @@
         </tr>
     </table>
 
-    <table class="split">
+    <table class="sheet pair">
+        <colgroup>
+            <col class="col-label">
+            <col class="col-value">
+            <col class="col-gap">
+            <col class="col-label">
+            <col class="col-value">
+        </colgroup>
         <tr>
-            <td class="col col-left">
-                <div class="section">
-                    <div class="section-title">Data Karyawan</div>
-                    <table class="sheet">
-                        <tr>
-                            <td class="label">Nama</td>
-                            <td>{{ $employee->fullName ?: '—' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label">NIK</td>
-                            <td>{{ $employee->nikNpwp ?: '—' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label">Employee ID</td>
-                            <td>{{ $employee->employeeId ?: '—' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label">Posisi</td>
-                            <td>{{ $position !== '' ? $position : '—' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label">Divisi</td>
-                            <td>{{ $division !== '' ? $division : '—' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label">Perusahaan</td>
-                            <td>{{ $extraData['company_name'] ?: '—' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label">Berakhir bekerja</td>
-                            <td>{{ $extraData['last_working_date'] ?: '—' }}</td>
-                        </tr>
-                    </table>
-                </div>
-
-                <div class="section">
-                    <div class="section-title">Serah Terima Berkas/Dokumen</div>
-                    <table class="sheet">
-                        <tr>
-                            <td class="label">Hardcopy</td>
-                            <td class="check">@if ($extraData['hardcopy'])<span class="tick">✓</span>@else-@endif</td>
-                        </tr>
-                        <tr>
-                            <td class="label">Softcopy</td>
-                            <td class="check">@if ($extraData['softcopy'])<span class="tick">✓</span>@else-@endif</td>
-                        </tr>
-                        <tr>
-                            <td class="label">Didelegasi kepada</td>
-                            <td>{{ $extraData['delegated_to'] ?: '—' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label">Tanggal penyerahan</td>
-                            <td>{{ $extraData['handover_date'] ?: '—' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label">Lainnya</td>
-                            <td>{{ ($extraData['handover_other'] ?? '') !== '' ? $extraData['handover_other'] : '-' }}</td>
-                        </tr>
-                    </table>
-                </div>
-
-                <div class="section">
-                    <div class="section-title">Aset Divisi</div>
-                    <table class="sheet">
-                        @foreach ($extraData['division'] as $row)
-                            <tr>
-                                <td class="label">{{ $row['label'] }}</td>
-                                <td>{{ $row['value'] !== '' ? $row['value'] : '-' }}</td>
-                            </tr>
-                        @endforeach
-                    </table>
-                </div>
-            </td>
-            <td class="col col-right">
-                <div class="section">
-                    <div class="section-title">Aset HR &amp; GA</div>
-                    <table class="sheet">
-                        @foreach ($extraData['ga'] as $row)
-                            <tr>
-                                <td class="item">{{ $row['label'] }}</td>
-                                <td class="check">@if ($row['checked'])<span class="tick">✓</span>@else-@endif</td>
-                            </tr>
-                        @endforeach
-                    </table>
-                </div>
-
-                <div class="section">
-                    <div class="section-title">IT</div>
-                    <table class="sheet">
-                        @foreach ($extraData['it'] as $row)
-                            <tr>
-                                <td class="label">{{ $row['label'] }}</td>
-                                <td>{{ $row['value'] !== '' ? $row['value'] : '-' }}</td>
-                            </tr>
-                        @endforeach
-                    </table>
-                </div>
-            </td>
+            <td class="pair-title" colspan="2">Data Karyawan</td>
+            <td class="gap"></td>
+            <td class="pair-title" colspan="2">Aset HR &amp; GA</td>
+        </tr>
+        @foreach ($employeeRows as $index => $row)
+            <tr>
+                <td class="data label">{{ $row['label'] }}</td>
+                <td class="data">{{ $row['value'] }}</td>
+                <td class="gap"></td>
+                <td class="data label">{{ $gaRows[$index]['label'] ?? '' }}</td>
+                <td class="data">
+                    @if ($gaRows[$index]['checked'] ?? false)
+                        <span class="tick">✓</span>
+                    @else
+                        -
+                    @endif
+                </td>
+            </tr>
+        @endforeach
+        <tr>
+            <td class="pair-title pair-title-next" colspan="2">Serah Terima Berkas/Dokumen</td>
+            <td class="gap"></td>
+            <td class="pair-title pair-title-next" colspan="2">IT</td>
+        </tr>
+        @foreach ($handoverRows as $index => $row)
+            <tr>
+                <td class="data label">{{ $row['label'] }}</td>
+                <td class="data">
+                    @if (array_key_exists('check', $row))
+                        @if ($row['check'])<span class="tick">✓</span>@else-@endif
+                    @else
+                        {{ $row['value'] }}
+                    @endif
+                </td>
+                <td class="gap"></td>
+                <td class="data label">{{ $itRows[$index]['label'] ?? '' }}</td>
+                <td class="data">{{ ($itRows[$index]['value'] ?? '') !== '' ? $itRows[$index]['value'] : '-' }}</td>
+            </tr>
+        @endforeach
+        <tr>
+            <td class="pair-title pair-title-next" colspan="2">Aset Divisi</td>
+            <td class="gap"></td>
+            <td class="blank" colspan="2"></td>
+        </tr>
+        @foreach ($extraData['division'] as $row)
+            <tr>
+                <td class="data label">{{ $row['label'] }}</td>
+                <td class="data">{{ $row['value'] !== '' ? $row['value'] : '-' }}</td>
+                <td class="gap"></td>
+                <td class="blank" colspan="2"></td>
+            </tr>
+        @endforeach
+        <tr>
+            <td class="pair-title pair-title-next" colspan="5">Accounting</td>
+        </tr>
+        <tr>
+            <td class="data head">Item</td>
+            <td class="data head" colspan="2">Status</td>
+            <td class="data head">Nominal</td>
+            <td class="data head">Telah diserahkan kepada</td>
+        </tr>
+        @foreach (['petty' => 'Petty Cash', 'loan' => 'Pinjaman'] as $key => $label)
+            <tr>
+                <td class="data label">{{ $label }}</td>
+                <td class="data status" colspan="2">
+                    @foreach ($moneyStatuses as $statusKey => $statusLabel)
+                        <span class="box">@if (($extraData[$key]['status'] ?? '') === $statusKey)<span class="tick">✓</span>@endif</span>{{ $statusLabel }}@if (! $loop->last) &nbsp; @endif
+                    @endforeach
+                </td>
+                <td class="data">{{ $extraData[$key]['amount'] ?: '-' }}</td>
+                <td class="data">{{ $extraData[$key]['to'] ?: '-' }}</td>
+            </tr>
+        @endforeach
+        <tr>
+            <td class="data label">Lainnya</td>
+            <td class="data" colspan="4">{{ $extraData['accounting_other'] ?: '-' }}</td>
         </tr>
     </table>
-
-    <div class="section">
-        <div class="section-title">Accounting</div>
-        <table class="sheet">
-            <tr>
-                <th class="money-label">Item</th>
-                <th>Status</th>
-                <th>Nominal</th>
-                <th>Telah diserahkan kepada</th>
-            </tr>
-            @foreach (['petty' => 'Petty Cash', 'loan' => 'Pinjaman'] as $key => $label)
-                <tr>
-                    <td class="money-label">{{ $label }}</td>
-                    <td>
-                        @foreach ($moneyStatuses as $statusKey => $statusLabel)
-                            <span class="box">@if (($extraData[$key]['status'] ?? '') === $statusKey)<span class="tick">✓</span>@endif</span>{{ $statusLabel }}
-                            &nbsp;
-                        @endforeach
-                    </td>
-                    <td>{{ $extraData[$key]['amount'] ?: '—' }}</td>
-                    <td>{{ $extraData[$key]['to'] ?: '—' }}</td>
-                </tr>
-            @endforeach
-            <tr>
-                <td class="money-label">Lainnya</td>
-                <td colspan="3">{{ $extraData['accounting_other'] ?: '—' }}</td>
-            </tr>
-        </table>
-    </div>
 
     <div class="section approval">
         <div class="section-title">Approval</div>
@@ -341,16 +389,8 @@
                             <div class="sign-title">{{ $approver['title'] }}</div>
                             <div class="sign-hint">({{ $approver['hint'] }})</div>
                             <div class="sign-space"></div>
-                            <table class="sign-meta">
-                                <tr>
-                                    <td class="sign-key">Nama</td>
-                                    <td>{{ $approver['name'] !== '' ? $approver['name'] : '—' }}</td>
-                                </tr>
-                                <tr>
-                                    <td class="sign-key">Tanggal</td>
-                                    <td class="sign-date">{{ $approver['date'] !== '' ? $approver['date'] : '—' }}</td>
-                                </tr>
-                            </table>
+                            <div class="sign-line"><span class="sign-key">Nama</span><span class="sign-sep">:</span>&nbsp;{{ $approver['name'] !== '' ? $approver['name'] : '-' }}</div>
+                            <div class="sign-line"><span class="sign-key">Tanggal</span><span class="sign-sep">:</span>&nbsp;<span class="sign-date">{{ $approver['date'] !== '' ? $approver['date'] : '-' }}</span></div>
                         </td>
                     @endforeach
                 </tr>
