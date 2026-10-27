@@ -27,6 +27,12 @@ class ExitClearanceController extends Controller
 
     public function pdf(Request $request, string $id)
     {
+        // Sanitize route parameter — hanya alfanumerik, dash, underscore yang valid
+        $id = preg_replace('/[^a-zA-Z0-9_-]/', '', $id);
+        if ($id === '') {
+            abort(404, 'Data karyawan tidak ditemukan.');
+        }
+
         $employee = $this->employeeRepo->findById($id);
         if (!$employee) {
             abort(404, 'Data karyawan tidak ditemukan.');
