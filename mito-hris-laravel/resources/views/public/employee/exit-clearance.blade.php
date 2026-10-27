@@ -1,7 +1,7 @@
 @extends('layouts.public')
 
 @section('title', 'Exit Clearance')
-@section('description', 'Formulir exit clearance MITO. Cetak PDF tanpa mengubah data karyawan.')
+@section('description', 'Formulir exit clearance MITO. Cetak PDF untuk keperluan proses keluar Anda.')
 @section('robots', 'noindex, nofollow, noarchive')
 
 @section('styles')
@@ -85,7 +85,7 @@
                     <div class="hero-org">MITO Group</div>
                     <div class="hero-dept">Human Resources Department</div>
                     <h1 class="hero-title">Exit Clearance</h1>
-                    <p class="hero-subtitle">Cari karyawan, lengkapi formulir, lalu unduh PDF. Data master karyawan tidak diubah.</p>
+                    <p class="hero-subtitle">Lengkapi formulir exit clearance Anda dan unduh PDF untuk keperluan proses pengunduran diri.</p>
                 </div>
                 <div class="col-lg-4 col-md-5 d-none d-md-flex justify-content-end align-items-center">
                     <img src="{{ asset('assets/mito.png') }}" alt="MITO Official" class="hero-avatar-img" loading="lazy">
@@ -102,16 +102,14 @@
             $ecEmployees = collect($employees)
                 ->map(function ($e) {
                     return [
-                        'employeeId'    => $e->employeeId ?? null,
-                        'fullName'      => $e->fullName ?? null,
-                        'jobPosition'   => $e->jobPosition ?? null,
-                        'division'      => ($e->division ?? '') !== '' ? $e->division : ($e->department ?? null),
-                        'branchName'    => $e->branchName ?? null,
-                        'company'       => \App\Support\ExitClearanceForm::matchCompany((string) ($e->branchName ?? '')),
-                        'nikNpwp'       => $e->nikNpwp ?? null,
-                        'resignDate'    => $e->resignDate ?? null,
-                        'workingEmail'  => $e->workingEmail ?? null,
-                        'directSuperior'=> $e->directSuperior ?? null,
+                        'employeeId'  => $e->employeeId ?? null,
+                        'fullName'    => $e->fullName ?? null,
+                        'jobPosition' => $e->jobPosition ?? null,
+                        'division'    => ($e->division ?? '') !== '' ? $e->division : ($e->department ?? null),
+                        'branchName'  => $e->branchName ?? null,
+                        'company'     => \App\Support\ExitClearanceForm::matchCompany((string) ($e->branchName ?? '')),
+                        // nikNpwp, workingEmail, resignDate, directSuperior
+                        // sengaja tidak di-expose - diambil server-side saat POST pdf()
                     ];
                 })
                 ->values();
@@ -121,25 +119,25 @@
             data-action="{{ $pdfAction }}" autocomplete="off">
             @csrf
 
-            {{-- ── Cari Karyawan ─────────────────────────── --}}
+            {{-- ── Identitas Anda ─────────────────────────── --}}
             <div class="form-section">
                 <div class="form-section-header">
                     <i class="bi bi-search"></i>
                     <div>
-                        <h5>Cari Karyawan</h5>
-                        <p>Ketik nama, NIK, atau Employee ID untuk memilih karyawan</p>
+                        <h5>Identitas Anda</h5>
+                        <p>Ketik nama atau Employee ID Anda untuk memulai</p>
                     </div>
                 </div>
                 <div class="p-3 p-md-4">
                     <label class="form-label fw-semibold mb-1" style="font-size:13px" for="ecEmpSearch">
-                        Karyawan <span class="text-danger">*</span>
+                        Nama Anda <span class="text-danger">*</span>
                     </label>
                     <div class="position-relative" id="ecEmpSearchWrap">
                         <span class="position-absolute" style="left:11px;top:50%;transform:translateY(-50%);color:#9ca3af;pointer-events:none;font-size:13px">
                             <i class="bi bi-search"></i>
                         </span>
                         <input type="text" class="form-control" id="ecEmpSearch"
-                            placeholder="Ketik nama, NIK, atau Employee ID..." autocomplete="off">
+                            placeholder="Ketik nama atau Employee ID Anda..." autocomplete="off">
                         <i class="bi bi-x-circle-fill position-absolute" id="ecEmpSearchClear"
                             style="right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:#eb1c24;display:none;font-size:14px"></i>
                     </div>
@@ -161,10 +159,6 @@
                                 <span id="ecEmpDivision">-</span>
                             </div>
                         </div>
-                        <div class="text-end flex-shrink-0 ms-2" style="font-size:11.5px">
-                            <div class="text-muted">NIK</div>
-                            <div class="fw-semibold" id="ecEmpNik" style="color:#eb1c24">-</div>
-                        </div>
                     </div>
                 </div>
 
@@ -172,12 +166,12 @@
 
             <fieldset id="ecFields" disabled>
 
-                {{-- ── Data Karyawan ──────────────────────── --}}
+                {{-- ── Data Anda ──────────────────────────── --}}
                 <div class="form-section">
                     <div class="form-section-header">
                         <i class="bi bi-person-vcard-fill"></i>
                         <div>
-                            <h5>Data Karyawan</h5>
+                            <h5>Data Anda</h5>
                             <p>Perusahaan dan tanggal berakhir bekerja</p>
                         </div>
                     </div>
@@ -238,7 +232,8 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold mb-1" style="font-size:13px" for="ecDelegate">Didelegasi kepada</label>
                                 <input type="text" class="form-control form-control-sm" id="ecDelegate"
-                                    name="delegated_to" maxlength="160">
+                                    name="delegated_to" maxlength="160"
+                                    inputmode="text" autocomplete="off">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold mb-1" style="font-size:13px" for="ecHandoverDate">Tanggal Penyerahan</label>
@@ -260,7 +255,7 @@
                         <i class="bi bi-shield-fill-check"></i>
                         <div>
                             <h5>Aset HR &amp; GA</h5>
-                            <p>Item tidak dicentang akan tercetak sebagai tanda strip di PDF</p>
+                            <p>Aset yang tidak dicentang akan tercetak sebagai tanda strip di PDF</p>
                         </div>
                     </div>
                     <div class="p-3 p-md-4">
@@ -406,7 +401,7 @@
                         <i class="bi bi-pen-fill"></i>
                         <div>
                             <h5>Approval</h5>
-                            <p>Nama dan tanggal tercetak di PDF — kotak tanda tangan dikosongkan untuk ditandatangani di kertas</p>
+                            <p>Nama dan tanggal tercetak di PDF - kotak tanda tangan dikosongkan untuk ditandatangani di kertas</p>
                         </div>
                     </div>
                     <div class="p-3 p-md-4">
@@ -419,7 +414,8 @@
                                         <label class="form-label mb-1" style="font-size:12px" for="ecApprover{{ $key }}Name">Nama</label>
                                         <input type="text" class="form-control form-control-sm mb-2"
                                             id="ecApprover{{ $key }}Name"
-                                            name="approvers[{{ $key }}][name]" maxlength="120">
+                                            name="approvers[{{ $key }}][name]" maxlength="120"
+                                            inputmode="text" autocomplete="off">
                                         <label class="form-label mb-1" style="font-size:12px" for="ecApprover{{ $key }}Date">Tanggal</label>
                                         <input type="date" class="form-control form-control-sm"
                                             id="ecApprover{{ $key }}Date"
@@ -593,7 +589,6 @@
         setText('ecEmpName', emp.fullName);
         setText('ecEmpPosition', emp.jobPosition);
         setText('ecEmpDivision', emp.division);
-        setText('ecEmpNik', emp.nikNpwp);
         document.getElementById('ecEmpAvatar').textContent = (emp.fullName || 'K').substring(0, 2).toUpperCase();
         preview.style.display = 'block';
 
@@ -601,10 +596,8 @@
             var radio = form.querySelector('input[name="company"][value="' + emp.company + '"]');
             if (radio) radio.checked = true;
         }
-        document.getElementById('ecLastDate').value = toDateInput(emp.resignDate);
-        document.getElementById('ecItEmail').value = emp.workingEmail || '';
-        document.getElementById('ecApproveremployeeName').value = emp.fullName || '';
-        document.getElementById('ecApproversupervisorName').value = emp.directSuperior || '';
+        // resignDate, workingEmail, directSuperior tidak di-expose di client -
+        // field-field ini diisi server saat PDF di-generate dari findById()
         syncMoneyFields('petty');
         syncMoneyFields('loan');
     }
@@ -615,7 +608,7 @@
         if (!list.length) {
             var empty = document.createElement('div');
             empty.className = 'p-3 text-center ec-search-empty';
-            empty.textContent = 'Tidak ada karyawan yang cocok';
+            empty.textContent = 'Nama tidak ditemukan. Coba kata kunci lain.';
             dropdown.appendChild(empty);
             showDropdown();
             return;
@@ -646,7 +639,6 @@
         var matched = (employees || []).filter(function (emp) {
             return (emp.fullName || '').toLowerCase().indexOf(q) !== -1
                 || (emp.employeeId || '').toLowerCase().indexOf(q) !== -1
-                || (emp.nikNpwp || '').toLowerCase().indexOf(q) !== -1
                 || (emp.jobPosition || '').toLowerCase().indexOf(q) !== -1;
         }).slice(0, 8);
         renderDropdown(matched);
@@ -662,9 +654,57 @@
     });
 
     /* ── Submit validation ──────────────────────── */
+    // Regex nama orang — konsisten dengan NAME_REGEX di ExitClearanceForm.php
+    // Huruf Unicode, apostrof, titik (gelar); dipisah spasi
+    var nameRegex = /^[\p{L}'.]+(?:[ ]+[\p{L}'.]+)*$/u;
+
+    function validateName(el, label) {
+        var val = (el.value || '').trim();
+        if (val === '') return true; // nullable — kosong diizinkan
+        if (val.length < 2) {
+            el.classList.add('is-invalid');
+            toast(label + ' minimal 2 karakter.'); return false;
+        }
+        if (!nameRegex.test(val)) {
+            el.classList.add('is-invalid');
+            toast(label + ' hanya boleh berisi huruf dan spasi.'); return false;
+        }
+        return true;
+    }
+
+    // Strip karakter non-nama secara realtime (angka, simbol, dll)
+    // Hanya izinkan huruf Unicode, apostrof, titik, dan spasi
+    function enforceNameInput(el) {
+        el.addEventListener('input', function () {
+            var pos   = el.selectionStart;
+            var raw   = el.value;
+            // Buang semua karakter selain huruf Unicode, apostrof, titik, spasi
+            var clean = raw.replace(/[^\p{L}'. ]/gu, '');
+            // Cegah spasi berturutan dan spasi di awal
+            clean = clean.replace(/  +/g, ' ').replace(/^ /, '');
+            if (clean !== raw) {
+                el.value = clean;
+                // Pertahankan posisi cursor setelah strip
+                var diff = raw.length - clean.length;
+                el.setSelectionRange(Math.max(0, pos - diff), Math.max(0, pos - diff));
+            }
+            el.classList.remove('is-invalid');
+        });
+    }
+
+    var delegateInput = document.getElementById('ecDelegate');
+    if (delegateInput) enforceNameInput(delegateInput);
+
+    @foreach (\App\Support\ExitClearanceForm::APPROVERS as $key => $approver)
+    (function () {
+        var el = document.getElementById('ecApprover{{ $key }}Name');
+        if (el) enforceNameInput(el);
+    })();
+    @endforeach
+
     form.addEventListener('submit', function (e) {
         if (!selected || !selected.employeeId) {
-            e.preventDefault(); toast('Pilih karyawan terlebih dahulu.'); return;
+            e.preventDefault(); toast('Ketik nama Anda dan pilih dari daftar terlebih dahulu.'); return;
         }
         if (!form.querySelector('input[name="company"]:checked')) {
             e.preventDefault(); toast('Pilih perusahaan.'); return;
@@ -672,6 +712,13 @@
         if (!document.getElementById('ecLastDate').value) {
             e.preventDefault(); toast('Tanggal berakhir bekerja wajib diisi.'); return;
         }
+
+        // Validasi nama — delegasi & semua approver
+        if (!validateName(delegateInput, 'Nama penerima delegasi')) { e.preventDefault(); return; }
+        @foreach (\App\Support\ExitClearanceForm::APPROVERS as $key => $approver)
+        if (!validateName(document.getElementById('ecApprover{{ $key }}Name'), "Nama {{ $approver['hint'] }}")) { e.preventDefault(); return; }
+        @endforeach
+
         var email = (emailInput.value || '').trim();
         if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             e.preventDefault();
