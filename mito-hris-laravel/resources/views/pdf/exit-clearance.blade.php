@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Exit Clearance - {{ $employee->fullName }}</title>
+    <title>Exit Clearance - {{ $extraData['full_name'] }}</title>
     <style>
         @page {
             margin: 10mm 11mm 10mm 11mm;
@@ -256,8 +256,6 @@
         $moneyStatuses = \App\Support\ExitClearanceForm::MONEY_STATUSES;
         $employeeRows = [
             ['label' => 'Nama',             'value' => $extraData['full_name'] ?: '-'],
-            ['label' => 'NIK',              'value' => $extraData['nik'] ?: '-'],
-            ['label' => 'Employee ID',      'value' => $extraData['employee_id'] ?: '-'],
             ['label' => 'Posisi',           'value' => $extraData['position'] ?: '-'],
             ['label' => 'Divisi',           'value' => $extraData['division'] ?: '-'],
             ['label' => 'Perusahaan',       'value' => $extraData['company_name'] ?: '-'],
@@ -302,14 +300,20 @@
             <td class="gap"></td>
             <td class="pair-title" colspan="2">Aset HR &amp; GA</td>
         </tr>
-        @foreach ($employeeRows as $index => $row)
+        @foreach ($gaRows as $index => $gaRow)
             <tr>
-                <td class="data label">{{ $row['label'] }}</td>
-                <td class="data">{{ $row['value'] }}</td>
+                @if (isset($employeeRows[$index]))
+                    <td class="data label">{{ $employeeRows[$index]['label'] }}</td>
+                    <td class="data">{{ $employeeRows[$index]['value'] }}</td>
+                @else
+                    <td class="blank asset-row-spacer" colspan="2"></td>
+                @endif
                 <td class="gap"></td>
-                <td class="data label">{{ $gaRows[$index]['label'] ?? '' }}</td>
+                <td class="data label">{{ $gaRow['label'] }}</td>
                 <td class="data">
-                    @if ($gaRows[$index]['checked'] ?? false)
+                    @if (($gaRow['other_text'] ?? '') !== '')
+                        {{ $gaRow['other_text'] }}
+                    @elseif ($gaRow['checked'] ?? false)
                         <span class="tick">✓</span>
                     @else
                         -
