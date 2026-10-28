@@ -160,6 +160,11 @@
                         <option value="other_active" {{ ($statusFilter ?? '') === 'other_active' ? 'selected' : '' }}>
                             Status Lainnya ({{ $stats['other_active'] ?? 0 }})
                         </option>
+                        @can('manage_warning_letters')
+                            <option value="warning_letter" {{ ($statusFilter ?? '') === 'warning_letter' ? 'selected' : '' }}>
+                                Surat Peringatan ({{ $stats['warning_letter'] ?? 0 }})
+                            </option>
+                        @endcan
                         <option value="Resigned" {{ ($statusFilter ?? '') === 'Resigned' ? 'selected' : '' }}>
                             Resigned ({{ $stats['resigned'] ?? 0 }})
                         </option>
@@ -294,6 +299,13 @@
                                     <div class="cand-name fw-bold text-primary text-decoration-underline">
                                         {{ $emp->fullName }}</div>
                                     <div class="cand-sub">{{ $emp->personalEmail ?? $emp->workingEmail }}</div>
+                                    @if ($sanction = ($activeSanctions[$emp->employeeId] ?? null))
+                                        <div class="mt-1">
+                                            <span class="badge-status blacklist sp-sanction" title="Sanksi Surat Peringatan masih berlaku">
+                                                {{ $sanction['level'] }} · s.d. {{ $sanction['valid_until_label'] }}
+                                            </span>
+                                        </div>
+                                    @endif
                                 </td>
                                 <td class="id-mono">{{ $emp->nikNpwp ?? '-' }}</td>
                                 <td>{{ $emp->department ?? '-' }}</td>
