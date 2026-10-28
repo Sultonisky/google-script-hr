@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\HR;
 
 use App\Enums\SkDocumentType;
+use App\Enums\WarningLetterLevel;
 use App\Http\Controllers\Controller;
 use App\Repositories\Contracts\EmployeeDocumentRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
@@ -30,6 +31,8 @@ class DocumentTrackingController extends Controller
     private const SORTS = ['issued_desc', 'issued_asc', 'nomor_asc', 'nomor_desc', 'name_asc', 'name_desc'];
 
     private const WARNING_LETTER_SORTS = ['issued_desc', 'issued_asc', 'nomor_asc', 'nomor_desc', 'name_asc', 'name_desc'];
+
+    private const WARNING_LETTER_STATUSES = ['active', 'superseded', 'ended'];
 
     public function __construct(
         protected EmployeeDocumentRepositoryInterface $documentRepo,
@@ -175,6 +178,10 @@ class DocumentTrackingController extends Controller
         $searchFilter = trim((string) $request->query('search', ''));
         $sortFilter = (string) $request->query('sort', 'issued_desc');
         $sortFilter = in_array($sortFilter, self::WARNING_LETTER_SORTS, true) ? $sortFilter : 'issued_desc';
+        $statusFilter = (string) $request->query('status', '');
+        $statusFilter = in_array($statusFilter, self::WARNING_LETTER_STATUSES, true) ? $statusFilter : '';
+        $levelFilter = strtoupper(trim((string) $request->query('level', '')));
+        $levelFilter = WarningLetterLevel::tryFrom($levelFilter)?->value ?? '';
         $now = now()->timezone('Asia/Jakarta');
 
         $allWarningLetters = $this->loadDocuments()
@@ -197,6 +204,14 @@ class DocumentTrackingController extends Controller
             $document->validUntilLabel = $state['valid_until_label'];
             $document->sanctionActive = $state['active'];
             $document->sanctionSuperseded = $state['superseded'];
+            $document->sanctionStatus = $state['superseded']
+                ? 'superseded'
+                : ($state['active'] ? 'active' : ($state['valid_until_label'] !== '' ? 'ended' : ''));
+            $document->levelCode = WarningLetterLevel::resolve(
+                $document->reference,
+                $document->docType,
+                $document->nomor
+            )?->value ?? '';
         });
         $activeEmployees = $this->sanctions->activeBadgesFromLetters($allWarningLetters
             ->map(fn ($document) => [
@@ -216,7 +231,27 @@ class DocumentTrackingController extends Controller
             'employees' => $allWarningLetters->pluck('employeeId')->filter()->unique()->count(),
             'active' => count($activeEmployees),
         ];
+        $statusCounts = [
+            'active' => $allWarningLetters->where('sanctionStatus', 'active')->count(),
+            'superseded' => $allWarningLetters->where('sanctionStatus', 'superseded')->count(),
+            'ended' => $allWarningLetters->where('sanctionStatus', 'ended')->count(),
+        ];
+        $levelOptions = collect(WarningLetterLevel::cases())
+            ->map(fn (WarningLetterLevel $level) => [
+                'value' => $level->value,
+                'label' => $level->shortLabel(),
+                'count' => $allWarningLetters->where('levelCode', $level->value)->count(),
+            ])
+            ->all();
         $documents = $allWarningLetters;
+
+        if ($statusFilter !== '') {
+            $documents = $documents->filter(fn ($document) => $document->sanctionStatus === $statusFilter);
+        }
+
+        if ($levelFilter !== '') {
+            $documents = $documents->filter(fn ($document) => $document->levelCode === $levelFilter);
+        }
 
         if ($searchFilter !== '') {
             $search = mb_strtolower($searchFilter);
@@ -249,7 +284,11 @@ class DocumentTrackingController extends Controller
             'currentPage',
             'perPage',
             'searchFilter',
-            'sortFilter'
+            'sortFilter',
+            'statusFilter',
+            'levelFilter',
+            'statusCounts',
+            'levelOptions'
         ));
     }
 
