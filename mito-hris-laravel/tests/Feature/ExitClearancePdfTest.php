@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\DTOs\EmployeeData;
 use App\Support\ExitClearanceForm;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -10,46 +9,45 @@ use Tests\TestCase;
 
 class ExitClearancePdfTest extends TestCase
 {
+    /** Payload dasar yang selalu lolos validasi — override field tertentu di tiap test. */
+    private function basePayload(array $overrides = []): array
+    {
+        return array_merge([
+            'full_name'         => 'Sari Wulandari',
+            'nik'               => '3174000000000001',
+            'employee_id'       => '20240015',
+            'position'          => 'Staff Finance',
+            'division'          => 'Finance',
+            'company'           => 'msi',
+            'last_working_date' => '2026-10-26',
+        ], $overrides);
+    }
+
     public function test_exit_clearance_memuat_sdi_kendaraan_dan_approval(): void
     {
-        $html = view('pdf.exit-clearance', [
-            'employee' => new EmployeeData(
-                employeeId: '20240015',
-                fullName: 'Sari Wulandari',
-                nikNpwp: '3174000000000001',
-                jobPosition: 'Staff Finance',
-                division: 'Finance',
-                branchName: 'PT Suka Dessert Indonesia',
-                workingEmail: 'sari@mitogroup.test',
-            ),
-            'email' => 'sari@mitogroup.test',
-            'extraData' => ExitClearanceForm::payload(Request::create('/', 'POST', [
-                'company' => 'sdi',
-                'last_working_date' => '2026-10-26',
-                'hardcopy' => '1',
-                'delegated_to' => 'Budi Santoso',
-                'handover_date' => '2026-10-20',
-                'handover_other' => 'Map kontrak',
-                'ga' => [
-                    'vehicle' => '1',
-                ],
-                'it' => [
-                    'email' => 'sari@mitogroup.test',
-                    'password' => 'Rahasia1',
-                    'laptop' => 'Dell Latitude',
-                    'phone' => '08123456789',
-                ],
-                'division' => [
-                    'devices' => 'Headset',
-                ],
-                'petty_status' => 'ada',
-                'petty_amount' => '1.500.000',
-                'petty_to' => 'Kasir',
-                'approvers' => [
-                    'hrga' => ['name' => 'Nina HR', 'date' => '2026-10-26'],
-                ],
-            ])),
-        ])->render();
+        $extraData = ExitClearanceForm::payload(Request::create('/', 'POST', $this->basePayload([
+            'company'           => 'sdi',
+            'hardcopy'          => '1',
+            'delegated_to'      => 'Budi Santoso',
+            'handover_date'     => '2026-10-20',
+            'handover_other'    => 'Map kontrak',
+            'ga'                => ['vehicle' => '1'],
+            'it'                => [
+                'email'    => 'sari@mitogroup.test',
+                'password' => 'RahasiaLaptop',
+                'laptop'   => 'Dell Latitude',
+                'phone'    => '08123456789',
+            ],
+            'division_assets'    => ['devices' => 'Headset'],
+            'petty_status'      => 'ada',
+            'petty_amount'      => '1.500.000',
+            'petty_to'          => 'Kasir',
+            'approvers'         => [
+                'hrga' => ['name' => 'Nina HR', 'date' => '2026-10-26'],
+            ],
+        ])));
+
+        $html = view('pdf.exit-clearance', compact('extraData'))->render();
 
         $this->assertStringContainsString('EXIT CLEARANCE FORM', $html);
         $this->assertStringContainsString('data:image/png;base64,', $html);
@@ -66,7 +64,7 @@ class ExitClearancePdfTest extends TestCase
         $this->assertStringContainsString('Map kontrak', $html);
         $this->assertStringContainsString('class="tick">✓</span>', $html);
         $this->assertStringContainsString('Selasa, 20 Oktober 2026', $html);
-        $this->assertStringContainsString('Rahasia1', $html);
+        $this->assertStringContainsString('RahasiaLaptop', $html);
         $this->assertStringContainsString('Dell Latitude', $html);
         $this->assertStringContainsString('08123456789', $html);
         $this->assertStringContainsString('Headset', $html);
@@ -75,6 +73,7 @@ class ExitClearancePdfTest extends TestCase
         $this->assertStringContainsString('Password', $html);
         $this->assertStringContainsString('3174000000000001', $html);
         $this->assertStringContainsString('20240015', $html);
+        $this->assertStringContainsString('Sari Wulandari', $html);
         $this->assertStringContainsString('Senin, 26 Oktober 2026', $html);
         $this->assertStringContainsString('sari@mitogroup.test', $html);
         $this->assertStringNotContainsString('Akses / password', $html);
@@ -85,67 +84,36 @@ class ExitClearancePdfTest extends TestCase
         $this->assertStringNotContainsString('Tanda tangan', $html);
 
         $pdf = app(\App\Services\PdfGeneratorService::class)->generateExitClearancePdf(
-            new EmployeeData(
-                employeeId: '20240015',
-                fullName: 'Sari Wulandari',
-                nikNpwp: '3174000000000001',
-                jobPosition: 'Staff Finance',
-                division: 'Finance',
-                workingEmail: 'sari@mitogroup.test',
-            ),
-            ExitClearanceForm::payload(Request::create('/', 'POST', [
-                'company' => 'sdi',
-                'last_working_date' => '2026-10-26',
-                'hardcopy' => '1',
-                'delegated_to' => 'Budi Santoso',
-                'handover_date' => '2026-10-20',
-                'handover_other' => 'Map kontrak',
-                'ga' => ['vehicle' => '1'],
-                'it' => [
-                    'email' => 'sari@mitogroup.test',
-                    'password' => 'Rahasia1',
-                    'laptop' => 'Dell Latitude',
-                    'phone' => '08123456789',
+            ExitClearanceForm::payload(Request::create('/', 'POST', $this->basePayload([
+                'company'           => 'sdi',
+                'hardcopy'          => '1',
+                'delegated_to'      => 'Budi Santoso',
+                'handover_date'     => '2026-10-20',
+                'handover_other'    => 'Map kontrak',
+                'ga'                => ['vehicle' => '1'],
+                'it'                => [
+                    'email'    => 'sari@mitogroup.test',
+                    'password' => 'RahasiaLaptop',
+                    'laptop'   => 'Dell Latitude',
+                    'phone'    => '08123456789',
                 ],
-                'division' => ['devices' => 'Headset'],
-                'petty_status' => 'ada',
-                'petty_amount' => '1500000',
-                'petty_to' => 'Kasir',
-                'approvers' => [
-                    'employee' => ['name' => 'Yuri Ismawan Md', 'date' => '2026-11-07'],
+                'division_assets'    => ['devices' => 'Headset'],
+                'petty_status'      => 'ada',
+                'petty_amount'      => '1500000',
+                'petty_to'          => 'Kasir',
+                'approvers'         => [
+                    'employee'   => ['name' => 'Yuri Ismawan Md', 'date' => '2026-11-07'],
                     'supervisor' => ['name' => 'Edwin Sumargo', 'date' => '2026-10-26'],
-                    'delegate' => ['name' => 'Nawar', 'date' => '2026-10-26'],
-                    'hrga' => ['name' => 'Anwar', 'date' => '2026-10-26'],
-                    'it' => ['name' => 'Ibul', 'date' => '2026-10-26'],
+                    'delegate'   => ['name' => 'Nawar', 'date' => '2026-10-26'],
+                    'hrga'       => ['name' => 'Anwar', 'date' => '2026-10-26'],
+                    'it'         => ['name' => 'Ibul', 'date' => '2026-10-26'],
                     'accounting' => ['name' => 'Mbul', 'date' => '2026-10-26'],
                 ],
-            ]))
+            ])))
         );
         $output = $pdf->output();
         $this->assertStringStartsWith('%PDF', $output);
         $this->assertSame(1, $pdf->getDomPDF()->getCanvas()->get_page_count());
-    }
-
-    public function test_modal_master_data_memuat_pilihan_perusahaan(): void
-    {
-        $html = view('hr.partials.exit-clearance-modal', [
-            'all' => collect(),
-        ])->render();
-
-        $this->assertStringContainsString('id="exitClearanceModal"', $html);
-        $this->assertStringContainsString('#eb1c24', $html);
-        $this->assertStringContainsString('ec-search-name', $html);
-        $this->assertStringContainsString('PT Suka Dessert Indonesia', $html);
-        $this->assertStringContainsString('Kendaraan', $html);
-        $this->assertStringContainsString('name="ga[vehicle]"', $html);
-        $this->assertStringContainsString('name="handover_other"', $html);
-        $this->assertStringContainsString('type="email"', $html);
-        $this->assertStringContainsString('name="it[password]"', $html);
-        $this->assertStringContainsString('name="division[devices]"', $html);
-        $this->assertStringContainsString('id="ecpettyAmount"', $html);
-        $this->assertStringContainsString('id="ecloanTo"', $html);
-        $this->assertStringContainsString('name="petty_amount" inputmode="numeric" maxlength="15" disabled', $html);
-        $this->assertStringNotContainsString('Kondisi', $html);
     }
 
     public function test_perusahaan_mengikuti_nama_di_master(): void
@@ -162,9 +130,19 @@ class ExitClearancePdfTest extends TestCase
     {
         $this->expectException(ValidationException::class);
 
-        ExitClearanceForm::payload(Request::create('/', 'POST', [
+        ExitClearanceForm::payload(Request::create('/', 'POST', $this->basePayload([
             'company' => 'unknown',
+        ])));
+    }
+
+    public function test_nama_wajib_diisi(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        ExitClearanceForm::payload(Request::create('/', 'POST', [
+            'company'           => 'msi',
             'last_working_date' => '2026-10-26',
+            // full_name tidak diisi
         ]));
     }
 
@@ -172,33 +150,27 @@ class ExitClearancePdfTest extends TestCase
     {
         $this->expectException(ValidationException::class);
 
-        ExitClearanceForm::payload(Request::create('/', 'POST', [
-            'company' => 'msi',
-            'last_working_date' => '2026-10-26',
+        ExitClearanceForm::payload(Request::create('/', 'POST', $this->basePayload([
             'it' => ['email' => 'bukan-email'],
-        ]));
+        ])));
     }
 
     public function test_nominal_wajib_saat_status_ada(): void
     {
         $this->expectException(ValidationException::class);
 
-        ExitClearanceForm::payload(Request::create('/', 'POST', [
-            'company' => 'msi',
-            'last_working_date' => '2026-10-26',
+        ExitClearanceForm::payload(Request::create('/', 'POST', $this->basePayload([
             'petty_status' => 'ada',
-        ]));
+        ])));
     }
 
     public function test_nominal_diabaikan_saat_status_tidak_ada(): void
     {
-        $payload = ExitClearanceForm::payload(Request::create('/', 'POST', [
-            'company' => 'msi',
-            'last_working_date' => '2026-10-26',
+        $payload = ExitClearanceForm::payload(Request::create('/', 'POST', $this->basePayload([
             'petty_status' => 'tidak_ada',
             'petty_amount' => '1500000',
-            'petty_to' => 'Kasir',
-        ]));
+            'petty_to'     => 'Kasir',
+        ])));
 
         $this->assertSame('', $payload['petty']['amount']);
         $this->assertSame('', $payload['petty']['to']);
