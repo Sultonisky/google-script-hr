@@ -253,25 +253,23 @@
 </head>
 <body>
     @php
-        $position = $employee->jobPosition ?: ($employee->jobPositionLocation ?: '');
-        $division = $employee->division ?: ($employee->department ?: '');
         $moneyStatuses = \App\Support\ExitClearanceForm::MONEY_STATUSES;
         $employeeRows = [
-            ['label' => 'Nama', 'value' => $employee->fullName ?: '-'],
-            ['label' => 'NIK', 'value' => $employee->nikNpwp ?: '-'],
-            ['label' => 'Employee ID', 'value' => $employee->employeeId ?: '-'],
-            ['label' => 'Posisi', 'value' => $position !== '' ? $position : '-'],
-            ['label' => 'Divisi', 'value' => $division !== '' ? $division : '-'],
-            ['label' => 'Perusahaan', 'value' => $extraData['company_name'] ?: '-'],
+            ['label' => 'Nama',             'value' => $extraData['full_name'] ?: '-'],
+            ['label' => 'NIK',              'value' => $extraData['nik'] ?: '-'],
+            ['label' => 'Employee ID',      'value' => $extraData['employee_id'] ?: '-'],
+            ['label' => 'Posisi',           'value' => $extraData['position'] ?: '-'],
+            ['label' => 'Divisi',           'value' => $extraData['division'] ?: '-'],
+            ['label' => 'Perusahaan',       'value' => $extraData['company_name'] ?: '-'],
             ['label' => 'Berakhir bekerja', 'value' => $extraData['last_working_date'] ?: '-'],
         ];
         $gaRows = array_values($extraData['ga']);
         $handoverRows = [
-            ['label' => 'Hardcopy', 'check' => (bool) $extraData['hardcopy']],
-            ['label' => 'Softcopy', 'check' => (bool) $extraData['softcopy']],
+            ['label' => 'Hardcopy',          'check' => (bool) $extraData['hardcopy']],
+            ['label' => 'Softcopy',          'check' => (bool) $extraData['softcopy']],
             ['label' => 'Didelegasi kepada', 'value' => $extraData['delegated_to'] ?: '-'],
-            ['label' => 'Tanggal penyerahan', 'value' => $extraData['handover_date'] ?: '-'],
-            ['label' => 'Lainnya', 'value' => ($extraData['handover_other'] ?? '') !== '' ? $extraData['handover_other'] : '-'],
+            ['label' => 'Tanggal penyerahan','value' => $extraData['handover_date'] ?: '-'],
+            ['label' => 'Lainnya',           'value' => ($extraData['handover_other'] ?? '') !== '' ? $extraData['handover_other'] : '-'],
         ];
         $itRows = array_values($extraData['it']);
         $mitoLogoPath = public_path('assets/mito-group.png');
@@ -344,7 +342,7 @@
             <td class="gap"></td>
             <td class="blank" colspan="2"></td>
         </tr>
-        @foreach ($extraData['division'] as $row)
+        @foreach ($extraData['division_assets'] as $row)
             <tr>
                 <td class="data label">{{ $row['label'] }}</td>
                 <td class="data">{{ $row['value'] !== '' ? $row['value'] : '-' }}</td>
