@@ -14,8 +14,6 @@ class ExitClearancePdfTest extends TestCase
     {
         return array_merge([
             'full_name'         => 'Sari Wulandari',
-            'nik'               => '3174000000000001',
-            'employee_id'       => '20240015',
             'position'          => 'Staff Finance',
             'division'          => 'Finance',
             'company'           => 'msi',
@@ -31,7 +29,11 @@ class ExitClearancePdfTest extends TestCase
             'delegated_to'      => 'Budi Santoso',
             'handover_date'     => '2026-10-20',
             'handover_other'    => 'Map kontrak',
-            'ga'                => ['vehicle' => '1'],
+            'ga'                => [
+                'vehicle' => '1',
+                'vehicle_docs' => '1',
+                'other' => 'Kunci gudang',
+            ],
             'it'                => [
                 'email'    => 'sari@mitogroup.test',
                 'password' => 'RahasiaLaptop',
@@ -40,7 +42,7 @@ class ExitClearancePdfTest extends TestCase
             ],
             'division_assets'    => ['devices' => 'Headset'],
             'petty_status'      => 'ada',
-            'petty_amount'      => '1.500.000',
+            'petty_amount'      => '1500000',
             'petty_to'          => 'Kasir',
             'approvers'         => [
                 'hrga' => ['name' => 'Nina HR', 'date' => '2026-10-26'],
@@ -49,6 +51,7 @@ class ExitClearancePdfTest extends TestCase
 
         $html = view('pdf.exit-clearance', compact('extraData'))->render();
 
+        $this->assertSame(2, substr_count($html, 'class="blank asset-row-spacer" colspan="2"'));
         $this->assertStringContainsString('EXIT CLEARANCE FORM', $html);
         $this->assertStringContainsString('data:image/png;base64,', $html);
         $this->assertStringContainsString('alt="MITO group"', $html);
@@ -60,6 +63,7 @@ class ExitClearancePdfTest extends TestCase
         $this->assertStringNotContainsString('PT Mahakarya Sukses Indonesia', $html);
         $this->assertStringContainsString('Kendaraan', $html);
         $this->assertStringContainsString('Surat-surat Kendaraan', $html);
+        $this->assertStringContainsString('Kunci gudang', $html);
         $this->assertStringNotContainsString('Kondisi', $html);
         $this->assertStringContainsString('Map kontrak', $html);
         $this->assertStringContainsString('class="tick">✓</span>', $html);
@@ -71,8 +75,8 @@ class ExitClearancePdfTest extends TestCase
         $this->assertStringContainsString('Perangkat lainnya', $html);
         $this->assertStringContainsString('Akun-akun lainnya', $html);
         $this->assertStringContainsString('Password', $html);
-        $this->assertStringContainsString('3174000000000001', $html);
-        $this->assertStringContainsString('20240015', $html);
+        $this->assertStringNotContainsString('NIK', $html);
+        $this->assertStringNotContainsString('Employee ID', $html);
         $this->assertStringContainsString('Sari Wulandari', $html);
         $this->assertStringContainsString('Senin, 26 Oktober 2026', $html);
         $this->assertStringContainsString('sari@mitogroup.test', $html);
@@ -146,12 +150,75 @@ class ExitClearancePdfTest extends TestCase
         ]));
     }
 
+    public function test_penerima_delegasi_harus_berupa_nama(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        ExitClearanceForm::payload(Request::create('/', 'POST', $this->basePayload([
+            'delegated_to' => 'Budi 123',
+        ])));
+    }
+
+    public function test_nama_karyawan_dan_approver_harus_berupa_nama(): void
+    {
+        foreach ([
+            ['full_name' => 'Sari 123'],
+            ['approvers' => ['employee' => ['name' => 'Yuri 123']]],
+        ] as $invalidName) {
+            try {
+                ExitClearanceForm::payload(Request::create('/', 'POST', $this->basePayload($invalidName)));
+                $this->fail('Nama dengan angka harus ditolak.');
+            } catch (ValidationException) {
+                $this->addToAssertionCount(1);
+            }
+        }
+    }
+
+    public function test_input_teks_menolak_nilai_di_atas_batas_pdf(): void
+    {
+        $longInputs = [
+            ['full_name' => str_repeat('A', 81)],
+            ['position' => str_repeat('A', 61)],
+            ['division' => str_repeat('A', 61)],
+            ['delegated_to' => str_repeat('A', 81)],
+            ['handover_other' => str_repeat('x', 101)],
+            ['ga' => ['other' => str_repeat('x', 81)]],
+            ['it' => ['email' => 'a@'.str_repeat('b', 60).'.'.str_repeat('c', 35).'.co']],
+            ['it' => ['password' => str_repeat('x', 61)]],
+            ['it' => ['laptop' => str_repeat('x', 81)]],
+            ['it' => ['other' => str_repeat('x', 81)]],
+            ['division_assets' => ['devices' => str_repeat('x', 101)]],
+            ['petty_status' => 'ada', 'petty_amount' => '1', 'petty_to' => str_repeat('A', 81)],
+            ['loan_status' => 'ada', 'loan_amount' => '1', 'loan_to' => str_repeat('A', 81)],
+            ['accounting_other' => str_repeat('x', 121)],
+            ['approvers' => ['employee' => ['name' => str_repeat('A', 41)]]],
+        ];
+
+        foreach ($longInputs as $overrides) {
+            try {
+                ExitClearanceForm::payload(Request::create('/', 'POST', $this->basePayload($overrides)));
+                $this->fail('Input yang melebihi batas harus ditolak.');
+            } catch (ValidationException) {
+                $this->addToAssertionCount(1);
+            }
+        }
+    }
+
     public function test_email_dan_nominal_tidak_valid_ditolak(): void
     {
         $this->expectException(ValidationException::class);
 
         ExitClearanceForm::payload(Request::create('/', 'POST', $this->basePayload([
             'it' => ['email' => 'bukan-email'],
+        ])));
+    }
+
+    public function test_nomor_handphone_harus_berisi_digit_saja(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        ExitClearanceForm::payload(Request::create('/', 'POST', $this->basePayload([
+            'it' => ['phone' => '+628123456789'],
         ])));
     }
 
@@ -162,6 +229,28 @@ class ExitClearancePdfTest extends TestCase
         ExitClearanceForm::payload(Request::create('/', 'POST', $this->basePayload([
             'petty_status' => 'ada',
         ])));
+    }
+
+    public function test_nominal_harus_berupa_angka(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        ExitClearanceForm::payload(Request::create('/', 'POST', $this->basePayload([
+            'petty_status' => 'ada',
+            'petty_amount' => '1500abc',
+            'petty_to'     => 'Kasir',
+        ])));
+    }
+
+    public function test_nominal_dengan_pemisah_koma_diterima(): void
+    {
+        $payload = ExitClearanceForm::payload(Request::create('/', 'POST', $this->basePayload([
+            'petty_status' => 'ada',
+            'petty_amount' => '1,500,000',
+            'petty_to'     => 'Kasir',
+        ])));
+
+        $this->assertSame('Rp 1.500.000', $payload['petty']['amount']);
     }
 
     public function test_nominal_diabaikan_saat_status_tidak_ada(): void
