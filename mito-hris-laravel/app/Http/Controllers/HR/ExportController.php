@@ -639,32 +639,6 @@ class ExportController extends Controller
         return $pdf->download('Perjanjian_Bersama_PHK_' . $this->employeeDownloadStem($employee) . '.pdf');
     }
 
-    /**
-     * Exit Clearance. Cetak saja, tidak mengubah data karyawan.
-     */
-    public function exitClearancePdf(Request $request, string $id)
-    {
-        $employee = $this->employeeRepo->findById($id);
-        if (!$employee) {
-            abort(404, 'Data karyawan tidak ditemukan.');
-        }
-
-        $extraData = ExitClearanceForm::payload($request);
-        $pdf = $this->pdfService->generateExitClearancePdf($employee, $extraData);
-        $this->auditRepo->log(
-            'Employee',
-            $employee->employeeId,
-            'generated',
-            'exit_clearance',
-            null,
-            'PDF',
-            session('hr_user.email', 'HR Administrator'),
-            'Export'
-        );
-
-        return $pdf->download('Exit_Clearance_' . $this->employeeDownloadStem($employee) . '.pdf');
-    }
-
     private function statementDocDate(Request $request, string $key = 'doc_date', string $label = 'Tanggal surat'): string
     {
         $docDate = trim((string) $request->query($key, ''));
