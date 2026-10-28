@@ -2,6 +2,7 @@
 
 namespace App\Repositories\Database;
 
+use App\Enums\SkDocumentType;
 use App\Models\EmployeeDocument;
 use App\Repositories\Contracts\EmployeeDocumentRepositoryInterface;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -97,7 +98,9 @@ class EmployeeDocumentDatabaseRepository implements EmployeeDocumentRepositoryIn
 
     public function maxSequence(): int
     {
-        return (int) (EmployeeDocument::query()->max('sequence') ?? 0);
+        return (int) (EmployeeDocument::query()
+            ->whereRaw('UPPER(TRIM(doc_code)) <> ?', [SkDocumentType::SURAT_PERINGATAN->value])
+            ->max('sequence') ?? 0);
     }
 
     public function sequenceForEmployee(string $employeeId): ?int
@@ -106,6 +109,8 @@ class EmployeeDocumentDatabaseRepository implements EmployeeDocumentRepositoryIn
         $seq = EmployeeDocument::query()
             ->where('employee_id', $target)
             ->where('sequence', '>', 0)
+            ->whereRaw('UPPER(TRIM(doc_code)) <> ?', [SkDocumentType::SURAT_PERINGATAN->value])
+            ->orderBy('id')
             ->value('sequence');
 
         return $seq !== null ? (int) $seq : null;
