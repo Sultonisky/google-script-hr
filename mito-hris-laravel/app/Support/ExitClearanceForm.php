@@ -64,6 +64,11 @@ class ExitClearanceForm
      */
     private const NAME_REGEX = '/^[\p{L}\'.]+(?:[ ]+[\p{L}\'.]+)*$/u';
 
+    /**
+     * Regex untuk posisi/divisi — huruf, angka, spasi, dan tanda - / & ( )
+     */
+    private const LABEL_REGEX = '/^(?=.*\p{L})[\p{L}0-9](?:[\p{L}0-9]|[ \-&\/().])*$/u';
+
     private const DAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 
     private const MONTHS = [
@@ -176,8 +181,7 @@ class ExitClearanceForm
 
         $validated = validator($request->all(), self::rules(), self::messages())->validate();
 
-        $company = (string) $validated['company'];
-        $gaRows = [];
+        $company = (string) $validated['company'];        $gaRows = [];
         foreach (self::GA_ASSETS as $key => $label) {
             if ($key === 'other') {
                 $gaRows[] = [
@@ -205,7 +209,7 @@ class ExitClearanceForm
         foreach (self::DIVISION_FIELDS as $key => $label) {
             $divisionRows[] = [
                 'label' => $label,
-                'value' => self::sanitizeText($validated['division'][$key] ?? null, 180),
+                'value' => self::sanitizeText($validated['division_assets'][$key] ?? null, 180),
             ];
         }
 
@@ -220,21 +224,26 @@ class ExitClearanceForm
         }
 
         return [
-            'company' => $company,
-            'company_name' => self::COMPANIES[$company],
-            'last_working_date' => self::formatDate((string) $validated['last_working_date']),
-            'hardcopy' => filter_var($validated['hardcopy'] ?? false, FILTER_VALIDATE_BOOLEAN),
-            'softcopy' => filter_var($validated['softcopy'] ?? false, FILTER_VALIDATE_BOOLEAN),
-            'delegated_to' => self::sanitizeText($validated['delegated_to'] ?? null, 160),
-            'handover_date' => self::formatDate($validated['handover_date'] ?? null),
-            'handover_other' => self::sanitizeText($validated['handover_other'] ?? null, 180),
-            'ga' => $gaRows,
-            'it' => $itRows,
-            'division' => $divisionRows,
-            'petty' => self::moneyRow($validated, 'petty'),
-            'loan' => self::moneyRow($validated, 'loan'),
+            'full_name'        => self::sanitizeText($validated['full_name'] ?? null, 160),
+            'nik'              => trim((string) ($validated['nik'] ?? '')),
+            'employee_id'      => trim((string) ($validated['employee_id'] ?? '')),
+            'position'         => self::sanitizeText($validated['position'] ?? null, 160),
+            'division'         => self::sanitizeText($validated['division'] ?? null, 160),
+            'company'          => $company,
+            'company_name'     => self::COMPANIES[$company],
+            'last_working_date'=> self::formatDate((string) $validated['last_working_date']),
+            'hardcopy'         => filter_var($validated['hardcopy'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            'softcopy'         => filter_var($validated['softcopy'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            'delegated_to'     => self::sanitizeText($validated['delegated_to'] ?? null, 160),
+            'handover_date'    => self::formatDate($validated['handover_date'] ?? null),
+            'handover_other'   => self::sanitizeText($validated['handover_other'] ?? null, 180),
+            'ga'               => $gaRows,
+            'it'               => $itRows,
+            'division_assets'  => $divisionRows,
+            'petty'            => self::moneyRow($validated, 'petty'),
+            'loan'             => self::moneyRow($validated, 'loan'),
             'accounting_other' => self::sanitizeText($validated['accounting_other'] ?? null, 300),
-            'approvers' => $approvers,
+            'approvers'        => $approvers,
         ];
     }
 
@@ -244,7 +253,12 @@ class ExitClearanceForm
     private static function rules(): array
     {
         $rules = [
-            'company' => ['required', 'string', Rule::in(array_keys(self::COMPANIES))],
+            'full_name'   => ['required', 'string', 'min:2', 'max:160', 'regex:' . self::NAME_REGEX],
+            'nik'         => ['required', 'string', 'max:20', 'regex:/^[0-9]{10,20}$/'],
+            'employee_id' => ['required', 'string', 'max:30', 'regex:/^[a-zA-Z0-9_-]+$/'],
+            'position'    => ['required', 'string', 'min:2', 'max:160', 'regex:' . self::LABEL_REGEX],
+            'division'    => ['required', 'string', 'min:2', 'max:160', 'regex:' . self::LABEL_REGEX],
+            'company'     => ['required', 'string', Rule::in(array_keys(self::COMPANIES))],
             'last_working_date' => ['required', 'date_format:Y-m-d'],
             'hardcopy' => ['nullable', 'boolean'],
             'softcopy' => ['nullable', 'boolean'],
@@ -271,7 +285,7 @@ class ExitClearanceForm
         $rules['it.phone'] = ['nullable', 'regex:/^\+?[0-9]{8,15}$/'];
         $rules['it.other'] = ['nullable', 'string', 'max:180'];
         foreach (array_keys(self::DIVISION_FIELDS) as $key) {
-            $rules["division.$key"] = ['nullable', 'string', 'max:180'];
+            $rules["division_assets.$key"] = ['nullable', 'string', 'max:180'];
         }
 
         foreach (array_keys(self::APPROVERS) as $key) {
@@ -288,8 +302,23 @@ class ExitClearanceForm
     private static function messages(): array
     {
         $messages = [
-            'company.required' => 'Perusahaan wajib dipilih.',
-            'company.in' => 'Perusahaan tidak dikenal.',
+            'full_name.required'  => 'Nama lengkap wajib diisi.',
+            'full_name.min'       => 'Nama lengkap minimal 2 karakter.',
+            'full_name.regex'     => 'Nama lengkap hanya boleh berisi huruf dan spasi.',
+            'nik.required'        => 'NIK wajib diisi.',
+            'nik.regex'           => 'NIK harus berupa 10–20 digit angka.',
+            'nik.max'             => 'NIK terlalu panjang.',
+            'employee_id.required'=> 'Employee ID wajib diisi.',
+            'employee_id.regex'   => 'Employee ID hanya boleh berisi huruf, angka, dash, dan underscore.',
+            'employee_id.max'     => 'Employee ID terlalu panjang.',
+            'position.required'   => 'Posisi / jabatan wajib diisi.',
+            'position.min'        => 'Posisi minimal 2 karakter.',
+            'position.regex'      => 'Posisi hanya boleh berisi huruf, angka, spasi, dan tanda - / & ( ) .',
+            'division.required'   => 'Divisi / departemen wajib diisi.',
+            'division.min'        => 'Divisi minimal 2 karakter.',
+            'division.regex'      => 'Divisi hanya boleh berisi huruf, angka, spasi, dan tanda - / & ( ) .',
+            'company.required'    => 'Perusahaan wajib dipilih.',
+            'company.in'          => 'Perusahaan tidak dikenal.',
             'last_working_date.required' => 'Tanggal berakhir bekerja wajib diisi.',
             'last_working_date.date_format' => 'Tanggal berakhir bekerja tidak valid.',
             'handover_date.date_format' => 'Tanggal penyerahan tidak valid.',
@@ -326,7 +355,7 @@ class ExitClearanceForm
         $messages['it.phone.regex'] = 'Nomor handphone harus 8–15 digit.';
         $messages['it.other.max'] = 'Keterangan IT lainnya terlalu panjang.';
         foreach (self::DIVISION_FIELDS as $key => $label) {
-            $messages["division.$key.max"] = $label.' terlalu panjang.';
+            $messages["division_assets.$key.max"] = $label.' terlalu panjang.';
         }
 
         foreach (self::APPROVERS as $key => $meta) {
