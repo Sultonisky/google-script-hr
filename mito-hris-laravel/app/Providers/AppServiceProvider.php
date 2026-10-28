@@ -130,13 +130,8 @@ class AppServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('exit-clearance', function (Request $request) {
-            // Dual key: per-IP global + per-employee per-IP
-            // Mencegah bulk enumeration dari satu IP maupun per-employee farming
-            $id = (string) $request->route('id', '');
-            return [
-                Limit::perMinute(10)->by('exit-clearance-ip|' . $request->ip()),
-                Limit::perMinute(3)->by('exit-clearance-emp|' . $id . '|' . $request->ip()),
-            ];
+            // Per-IP global limit — tidak ada per-employee key karena data diisi manual
+            return Limit::perMinute(10)->by('exit-clearance-ip|' . $request->ip());
         });
 
         RateLimiter::for('exit-clearance-show', function (Request $request) {
