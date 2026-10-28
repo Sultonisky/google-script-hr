@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\SkDocumentType;
+use App\Enums\WarningLetterLevel;
 use App\Repositories\Contracts\EmployeeDocumentRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use Illuminate\Support\Carbon;
@@ -12,6 +13,7 @@ use RuntimeException;
 
 /**
  * Issues official HRIS document numbers with a fixed per-employee sequence.
+ * Surat Peringatan has its own sequence and encodes the level as SP-1, SP-2, SP-3, or SP-F.
  *
  * Format: {seq}/{CODE}/{ENTITY}/{ROMAN}/{YEAR}
  * Sequence is lifetime-stable per employee (001 sticks forever); only CODE changes.
@@ -55,8 +57,13 @@ class SkNumberService
 
         $now = ($issuedAt ?? now())->timezone('Asia/Jakarta');
         $entity = $this->resolveEntityCode($branchName);
-        $sequence = $this->resolveFixedSequence($employeeId);
-        $nomor = $this->format($sequence, $type->value, $entity, $now, $numberSuffix);
+        $sequence = $type === SkDocumentType::SURAT_PERINGATAN
+            ? $this->resolveWarningLetterSequence($employeeId)
+            : $this->resolveFixedSequence($employeeId);
+        $code = $type === SkDocumentType::SURAT_PERINGATAN
+            ? (WarningLetterLevel::tryFrom(trim($reference))?->numberCode() ?? $type->value)
+            : $type->value;
+        $nomor = $this->format($sequence, $code, $entity, $now, $numberSuffix);
         $documentId = $this->appendHistory($employeeId, $type, $sequence, $nomor, $entity, $now, $issuedBy, $reference, $notes, $docTypeLabel);
 
         if (!$type->updatesEmployeeNomorSk()) {
@@ -320,5 +327,53 @@ class SkNumberService
         } finally {
             optional($lock)->release();
         }
+    }
+
+    /**
+     * One SP sequence per employee, counted only from Surat Peringatan rows.
+     * The next new employee receives the smallest unused SP number.
+     */
+    private function resolveWarningLetterSequence(string $employeeId): int
+    {
+        $existing = $this->warningLetterSequenceForEmployee($employeeId);
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        $lock = Cache::lock('lock_sp_employee_seq_alloc', 15);
+        try {
+            $lock->block(15);
+
+            $existing = $this->warningLetterSequenceForEmployee($employeeId);
+            if ($existing !== null) {
+                return $existing;
+            }
+
+            $used = $this->documents->getAll()
+                ->filter(fn (array $row) => strtoupper(trim((string) ($row['Doc Code'] ?? ''))) === SkDocumentType::SURAT_PERINGATAN->value)
+                ->map(fn (array $row) => (int) ($row['Sequence'] ?? 0))
+                ->filter(fn (int $sequence) => $sequence > 0)
+                ->flip();
+
+            $sequence = 1;
+            while ($used->has($sequence)) {
+                $sequence++;
+            }
+
+            return $sequence;
+        } finally {
+            optional($lock)->release();
+        }
+    }
+
+    private function warningLetterSequenceForEmployee(string $employeeId): ?int
+    {
+        $row = $this->documents->getByEmployeeId($employeeId)
+            ->filter(fn (array $row) => strtoupper(trim((string) ($row['Doc Code'] ?? ''))) === SkDocumentType::SURAT_PERINGATAN->value)
+            ->sortByDesc(fn (array $row) => (string) ($row['Issued At'] ?? $row['Created At'] ?? ''))
+            ->first();
+        $sequence = (int) ($row['Sequence'] ?? 0);
+
+        return $sequence > 0 ? $sequence : null;
     }
 }
