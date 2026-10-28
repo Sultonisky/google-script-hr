@@ -20,8 +20,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link rel="icon" type="image/png" href="{{ asset('assets/logo-favicon.png') }}">
-    <link rel="preload" as="image" href="{{ asset('assets/mito-red-load.png') }}" fetchpriority="high">
+    <link rel="icon" type="image/png" href="/assets/logo-favicon.png">
+    <link rel="preload" as="image" href="/assets/mito-red-load.png" fetchpriority="high">
 
     <style>
         .public-loader {
