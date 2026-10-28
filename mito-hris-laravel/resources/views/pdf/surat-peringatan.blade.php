@@ -139,18 +139,6 @@
             height: 50px;
         }
 
-        .sign-image-area {
-            height: 50px;
-            margin: 2px 0 2px auto;
-        }
-
-        .sign-image-area .hr-sign-img {
-            height: 48px !important;
-            width: auto;
-            max-width: 125px;
-            margin: 0 0 4px auto;
-        }
-
         .cc {
             margin-top: 8px;
             font-size: 12pt;
@@ -161,10 +149,26 @@
         .cc ol {
             margin: 1px 0 0;
         }
+
+        .draft-watermark {
+            position: fixed;
+            top: 38%;
+            left: 0;
+            right: 0;
+            color: rgba(235, 28, 36, 0.16);
+            font-size: 96pt;
+            font-weight: bold;
+            letter-spacing: 12px;
+            text-align: center;
+            transform: rotate(-35deg);
+        }
     </style>
 </head>
 
 <body>
+    @if (! empty($extraData['draft']))
+        <div class="draft-watermark">DRAFT</div>
+    @endif
 
     @include('pdf.components.kop-surat')
 
@@ -182,9 +186,9 @@
         };
         $angka = [1 => 'satu', 2 => 'dua', 3 => 'tiga', 4 => 'empat', 5 => 'lima', 6 => 'enam'];
 
-        // Nomor Surat Peringatan: {seq}/SP/{ENTITY}/{ROMAN}/{YEAR}; nomor dokumen lain tidak dicetak.
+        // Nomor Surat Peringatan: {seq}/SP-1|SP-2|SP-3|SP-F/{ENTITY}/{ROMAN}/{YEAR}. Nomor lama {seq}/SP/... tetap dicetak.
         $spNumber = trim((string) ($extraData['sk_number'] ?? ($extraData['letter_number'] ?? '')));
-        if (!preg_match('#^\d+/SP/#i', $spNumber)) {
+        if (!preg_match('#^\d+/SP(?:-[123F])?/#i', $spNumber)) {
             $spNumber = '';
         }
 
@@ -193,8 +197,10 @@
 
         $docDate = (string) ($extraData['doc_date'] ?? date('Y-m-d'));
         $docDateFmt = $fmtDateId($docDate);
-        $validMonths = max(1, (int) ($extraData['validity_months'] ?? 6));
-        $validMonthsText = $validMonths . ' (' . ($angka[$validMonths] ?? $validMonths) . ') bulan';
+        $validMonths = max(1, (int) ($extraData['validity_months'] ?? $level->validityMonths()));
+        $validMonthsText = $validMonths % 12 === 0
+            ? ($validMonths / 12) . ' (' . ($angka[$validMonths / 12] ?? $validMonths / 12) . ') tahun'
+            : $validMonths . ' (' . ($angka[$validMonths] ?? $validMonths) . ') bulan';
         $validUntilFmt = $fmtDateId($extraData['valid_until'] ?? null);
 
         $statusLabel = \App\Enums\EmployeeStatus::matches($employee->statusEmployee ?? null, \App\Enums\EmployeeStatus::PERMANENT)
@@ -352,9 +358,7 @@
                 {{ $companyCity }}, {{ $docDateFmt }}<br>
                 Hormat kami,<br>
                 <strong>{{ $companyName }}</strong>
-                <div class="sign-image-area">
-                    @include('pdf.components.hr-sign')
-                </div>
+                <div class="sign-space"></div>
                 <strong><u>Hisar Hesti</u></strong><br>
                 Human Resources (HR) &amp; Legal Manager
             </td>
