@@ -8,7 +8,7 @@ namespace App\Enums;
  * Format: {seq}/{CODE}/{ENTITY}/{ROMAN}/{YEAR}, e.g. 001/SKPR/MSI/IX/2026.
  * Kontrak PKWT TAD (outsource) also uses PKWT.
  * SURAT_BPJS is tracked in Employee_Documents without a number (Nomor kosong).
- * SURAT_PERINGATAN (SP-1/2/3) is numbered but never replaces Employee.Nomor SK.
+ * Surat Peringatan (SP-1/2/3) is numbered but never replaces Employee.Nomor SK.
  */
 enum SkDocumentType: string
 {
