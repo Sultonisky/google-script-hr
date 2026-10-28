@@ -263,9 +263,9 @@ class PdfGeneratorService
     /**
      * Exit clearance checklist. Print-only: does not change employee master data.
      */
-    public function generateExitClearancePdf(EmployeeData $employee, array $extraData = []): \Barryvdh\DomPDF\PDF
+    public function generateExitClearancePdf(array $extraData = []): \Barryvdh\DomPDF\PDF
     {
-        $pdf = Pdf::loadView('pdf.exit-clearance', compact('employee', 'extraData'))
+        $pdf = Pdf::loadView('pdf.exit-clearance', compact('extraData'))
             ->setPaper('a4', 'portrait');
 
         $pdf->getDomPDF()->setCallbacks([
