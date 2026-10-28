@@ -90,40 +90,32 @@
                                 Nama Lengkap <span class="text-danger">*</span>
                             </label>
                             <input type="text" class="form-control form-control-sm" id="ecFullName"
-                                name="full_name" maxlength="160" inputmode="text" autocomplete="name"
-                                placeholder="Sesuai KTP / dokumen kepegawaian" required>
+                                name="full_name" maxlength="80" inputmode="text" autocomplete="name"
+                                placeholder="Sesuai KTP / dokumen kepegawaian" required
+                                data-person-name>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold mb-1" style="font-size:13px" for="ecNik">
-                                NIK <span class="text-danger">*</span>
-                            </label>
-                            <input type="text" class="form-control form-control-sm" id="ecNik"
-                                name="nik" maxlength="20" inputmode="numeric" autocomplete="off"
-                                placeholder="Nomor Induk Kependudukan" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold mb-1" style="font-size:13px" for="ecEmployeeId">
-                                Employee ID <span class="text-danger">*</span>
-                            </label>
-                            <input type="text" class="form-control form-control-sm" id="ecEmployeeId"
-                                name="employee_id" maxlength="30" autocomplete="off"
-                                placeholder="Contoh: 20210301" required>
-                        </div>
-                        <div class="col-md-4">
                             <label class="form-label fw-semibold mb-1" style="font-size:13px" for="ecPosition">
                                 Posisi / Jabatan <span class="text-danger">*</span>
                             </label>
                             <input type="text" class="form-control form-control-sm" id="ecPosition"
-                                name="position" maxlength="160" autocomplete="off" required
+                                name="position" maxlength="60" autocomplete="off" required
                                 placeholder="Contoh: Staff Finance">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label class="form-label fw-semibold mb-1" style="font-size:13px" for="ecDivision">
                                 Divisi / Departemen <span class="text-danger">*</span>
                             </label>
                             <input type="text" class="form-control form-control-sm" id="ecDivision"
-                                name="division" maxlength="160" autocomplete="off" required
+                                name="division" maxlength="60" autocomplete="off" required
                                 placeholder="Contoh: Finance & Accounting">
+                        </div>
+                        <div  class="col-md-6">
+                            <label class="form-label fw-semibold mb-1" style="font-size:13px" for="ecLastDate">
+                                Hari/Tanggal Berakhir Bekerja <span class="text-danger">*</span>
+                            </label>
+                            <input type="date" class="form-control form-control-sm" id="ecLastDate"
+                                name="last_working_date" required>
                         </div>
                     </div>
 
@@ -145,14 +137,6 @@
                         </div>
                     </div>
 
-                    {{-- Tanggal --}}
-                    <div>
-                        <label class="form-label fw-semibold mb-1" style="font-size:13px" for="ecLastDate">
-                            Hari/Tanggal Berakhir Bekerja <span class="text-danger">*</span>
-                        </label>
-                        <input type="date" class="form-control form-control-sm" id="ecLastDate"
-                            name="last_working_date" style="max-width:220px" required>
-                    </div>
                 </div>
             </div>
 
@@ -188,7 +172,7 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold mb-1" style="font-size:13px" for="ecDelegate">Didelegasi kepada</label>
                                 <input type="text" class="form-control form-control-sm" id="ecDelegate"
-                                    name="delegated_to" maxlength="160"
+                                    name="delegated_to" maxlength="80"
                                     inputmode="text" autocomplete="off">
                             </div>
                             <div class="col-md-6">
@@ -199,7 +183,7 @@
                             <div class="col-12">
                                 <label class="form-label fw-semibold mb-1" style="font-size:13px" for="ecHandoverOther">Lainnya</label>
                                 <input type="text" class="form-control form-control-sm" id="ecHandoverOther"
-                                    name="handover_other" maxlength="180">
+                                    name="handover_other" maxlength="100">
                             </div>
                         </div>
                     </div>
@@ -230,7 +214,7 @@
                         <div>
                             <label class="form-label fw-semibold mb-1" style="font-size:13px" for="ecGaOther">Lainnya</label>
                             <input type="text" class="form-control form-control-sm" id="ecGaOther"
-                                name="ga[other]" maxlength="180" placeholder="Sebutkan aset lainnya jika ada">
+                                name="ga[other]" maxlength="80" placeholder="Sebutkan aset lainnya jika ada">
                         </div>
                     </div>
                 </div>
@@ -249,27 +233,28 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold mb-1" style="font-size:13px" for="ecItEmail">Email</label>
                                 <input type="email" class="form-control form-control-sm" id="ecItEmail"
-                                    name="it[email]" maxlength="160">
+                                    name="it[email]" maxlength="100">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold mb-1" style="font-size:13px" for="ecItPassword">Password</label>
                                 <input type="text" class="form-control form-control-sm" id="ecItPassword"
-                                    name="it[password]" maxlength="120" autocomplete="off">
+                                    name="it[password]" maxlength="60" autocomplete="off">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold mb-1" style="font-size:13px" for="ecItLaptop">Laptop</label>
                                 <input type="text" class="form-control form-control-sm" id="ecItLaptop"
-                                    name="it[laptop]" maxlength="180">
+                                    name="it[laptop]" maxlength="80">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold mb-1" style="font-size:13px" for="ecItPhone">Handphone</label>
                                 <input type="text" class="form-control form-control-sm" id="ecItPhone"
-                                    name="it[phone]" maxlength="16" inputmode="numeric" placeholder="08xxxxxxxxxx">
+                                    name="it[phone]" maxlength="15" inputmode="numeric" pattern="[0-9]{8,15}"
+                                    placeholder="08xxxxxxxxxx" data-digits-only>
                             </div>
                             <div class="col-12">
                                 <label class="form-label fw-semibold mb-1" style="font-size:13px" for="ecItOther">Lainnya</label>
                                 <input type="text" class="form-control form-control-sm" id="ecItOther"
-                                    name="it[other]" maxlength="180">
+                                    name="it[other]" maxlength="80">
                             </div>
                         </div>
                     </div>
@@ -291,7 +276,7 @@
                                     <label class="form-label fw-semibold mb-1" style="font-size:13px"
                                         for="ecDivision{{ $key }}">{{ $label }}</label>
                                     <input type="text" class="form-control form-control-sm"
-                                        id="ecDivision{{ $key }}" name="division_assets[{{ $key }}]" maxlength="180">
+                                        id="ecDivision{{ $key }}" name="division_assets[{{ $key }}]" maxlength="100">
                                 </div>
                             @endforeach
                         </div>
@@ -320,7 +305,8 @@
                                                     <input class="form-check-input m-0" type="radio"
                                                         name="{{ $moneyKey }}_status"
                                                         id="ec{{ $moneyKey }}{{ $status }}"
-                                                        value="{{ $status }}">
+                                                        value="{{ $status }}"
+                                                        data-money-status="{{ $moneyKey }}">
                                                     {{ $statusLabel }}
                                                 </label>
                                             @endforeach
@@ -330,14 +316,19 @@
                                                 for="ec{{ $moneyKey }}Amount">Nominal (Rp)</label>
                                             <input type="text" class="form-control form-control-sm"
                                                 id="ec{{ $moneyKey }}Amount" name="{{ $moneyKey }}_amount"
-                                                inputmode="numeric" maxlength="15" disabled>
+                                                inputmode="numeric" pattern="[0-9]{1,3}(,[0-9]{3})*|[0-9]{1,12}"
+                                                maxlength="15" disabled
+                                                data-money-fields="{{ $moneyKey }}"
+                                                data-numeric-only>
                                         </div>
                                         <div>
                                             <label class="form-label mb-1" style="font-size:12px"
                                                 for="ec{{ $moneyKey }}To">Telah diserahkan kepada</label>
                                             <input type="text" class="form-control form-control-sm"
                                                 id="ec{{ $moneyKey }}To" name="{{ $moneyKey }}_to"
-                                                maxlength="160" disabled>
+                                                maxlength="80" disabled
+                                                data-money-fields="{{ $moneyKey }}"
+                                                data-person-name>
                                         </div>
                                     </div>
                                 </div>
@@ -346,7 +337,7 @@
                         <div>
                             <label class="form-label fw-semibold mb-1" style="font-size:13px" for="ecAccountingOther">Lainnya</label>
                             <input type="text" class="form-control form-control-sm" id="ecAccountingOther"
-                                name="accounting_other" maxlength="300">
+                                name="accounting_other" maxlength="120">
                         </div>
                     </div>
                 </div>
@@ -370,8 +361,8 @@
                                         <label class="form-label mb-1" style="font-size:12px" for="ecApprover{{ $key }}Name">Nama</label>
                                         <input type="text" class="form-control form-control-sm mb-2"
                                             id="ecApprover{{ $key }}Name"
-                                            name="approvers[{{ $key }}][name]" maxlength="120"
-                                            inputmode="text" autocomplete="off">
+                                            name="approvers[{{ $key }}][name]" maxlength="40"
+                                            inputmode="text" autocomplete="off" data-person-name>
                                         <label class="form-label mb-1" style="font-size:12px" for="ecApprover{{ $key }}Date">Tanggal</label>
                                         <input type="date" class="form-control form-control-sm"
                                             id="ecApprover{{ $key }}Date"
@@ -398,3 +389,65 @@
 
         </form>
     </div>
+@endsection
+
+@section('scripts')
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        (function() {
+            const form = document.getElementById('formExitClearance');
+            if (!form) return;
+
+            const updateMoneyFields = function(moneyKey) {
+                const selectedStatus = form.querySelector(
+                    'input[name="' + moneyKey + '_status"]:checked'
+                );
+                const isAvailable = selectedStatus && selectedStatus.value === 'ada';
+
+                form.querySelectorAll('[data-money-fields="' + moneyKey + '"]').forEach(function(field) {
+                    field.disabled = !isAvailable;
+                });
+            };
+
+            form.querySelectorAll('[data-money-status]').forEach(function(radio) {
+                radio.addEventListener('change', function() {
+                    updateMoneyFields(radio.dataset.moneyStatus);
+                });
+
+                updateMoneyFields(radio.dataset.moneyStatus);
+            });
+
+            form.querySelectorAll('[data-numeric-only]').forEach(function(field) {
+                field.addEventListener('input', function() {
+                    const caret = field.selectionStart;
+                    const digitsBeforeCaret = field.value.slice(0, caret).replace(/\D/g, '').length;
+                    const digits = field.value.replace(/\D/g, '').slice(0, 12);
+                    const formatted = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+                    field.value = formatted;
+
+                    let nextCaret = 0;
+                    let digitCount = 0;
+                    while (nextCaret < formatted.length && digitCount < digitsBeforeCaret) {
+                        if (/[0-9]/.test(formatted.charAt(nextCaret))) {
+                            digitCount++;
+                        }
+                        nextCaret++;
+                    }
+                    field.setSelectionRange(nextCaret, nextCaret);
+                });
+            });
+
+            form.querySelectorAll('[data-digits-only]').forEach(function(field) {
+                field.addEventListener('input', function() {
+                    field.value = field.value.replace(/\D/g, '').slice(0, 15);
+                });
+            });
+
+            form.querySelectorAll('[data-person-name]').forEach(function(field) {
+                field.addEventListener('input', function() {
+                    field.value = field.value.replace(/[^\p{L}'. ]/gu, '');
+                });
+            });
+        })();
+    </script>
+@endsection
