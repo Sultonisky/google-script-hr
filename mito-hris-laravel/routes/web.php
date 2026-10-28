@@ -79,6 +79,8 @@ if (!app()->environment('local')) {
                 Route::post('/{id}/offboard', [EmployeeController::class, 'offboard'])->name('offboard')->middleware('can:offboard_employees');
                 Route::post('/{id}/off-contract', [EmployeeController::class, 'offContract'])->name('off-contract')->middleware('can:off_contract_employees');
                 Route::post('/{id}/warning-letter', [WarningLetterController::class, 'store'])->name('warning-letter')->middleware('can:manage_warning_letters');
+                Route::post('/{id}/warning-letter/preview', [WarningLetterController::class, 'preview'])->name('warning-letter.preview')->middleware('can:manage_warning_letters');
+                Route::get('/{id}/warning-letter/preview/{token}', [WarningLetterController::class, 'showPreview'])->name('warning-letter.preview.show')->middleware('can:manage_warning_letters');
                 Route::get('/{id}/warning-letter/{documentId}', [WarningLetterController::class, 'download'])->name('warning-letter.download')->middleware('can:manage_warning_letters');
                 Route::get('/{id}/json', [EmployeeController::class, 'getJson'])->name('json');
             });
@@ -155,6 +157,9 @@ if (!app()->environment('local')) {
                     ->name('download')
                     ->middleware('can:download_documents');
             });
+            Route::get('/sp-tracking', [DocumentTrackingController::class, 'warningLetters'])
+                ->middleware('can:manage_warning_letters')
+                ->name('sp-tracking');
             Route::prefix('audit-logs')->name('audit-logs.')->middleware('can:view_reports')->group(function () {
                 Route::get('/', [AuditLogController::class, 'index'])->name('index');
             });
@@ -356,6 +361,8 @@ if (app()->environment('local')) {
                 Route::post('/{id}/offboard', [EmployeeController::class, 'offboard'])->name('offboard')->middleware('can:offboard_employees');
                 Route::post('/{id}/off-contract', [EmployeeController::class, 'offContract'])->name('off-contract')->middleware('can:off_contract_employees');
                 Route::post('/{id}/warning-letter', [WarningLetterController::class, 'store'])->name('warning-letter')->middleware('can:manage_warning_letters');
+                Route::post('/{id}/warning-letter/preview', [WarningLetterController::class, 'preview'])->name('warning-letter.preview')->middleware('can:manage_warning_letters');
+                Route::get('/{id}/warning-letter/preview/{token}', [WarningLetterController::class, 'showPreview'])->name('warning-letter.preview.show')->middleware('can:manage_warning_letters');
                 Route::get('/{id}/warning-letter/{documentId}', [WarningLetterController::class, 'download'])->name('warning-letter.download')->middleware('can:manage_warning_letters');
                 Route::get('/{id}/json', [EmployeeController::class, 'getJson'])->name('json');
             });
@@ -436,7 +443,9 @@ if (app()->environment('local')) {
                     ->name('download')
                     ->middleware('can:download_documents');
             });
-
+            Route::get('/sp-tracking', [DocumentTrackingController::class, 'warningLetters'])
+                ->middleware('can:manage_warning_letters')
+                ->name('sp-tracking');
             Route::prefix('audit-logs')->name('audit-logs.')->middleware('can:view_reports')->group(function () {
                 Route::get('/', [AuditLogController::class, 'index'])->name('index');
             });
