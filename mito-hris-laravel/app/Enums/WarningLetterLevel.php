@@ -84,4 +84,35 @@ enum WarningLetterLevel: string
     {
         return $this === self::SP1_FINAL;
     }
+
+    /**
+     * Tingkat dari kolom Reference, atau dari judul/nomor surat lama yang belum memakai kode SP1.
+     */
+    public static function resolve(string $reference, string $docType = '', string $nomor = ''): ?self
+    {
+        $direct = self::tryFrom(strtoupper(trim($reference)));
+        if ($direct !== null) {
+            return $direct;
+        }
+
+        $text = mb_strtolower(trim($reference.' '.$docType.' '.$nomor));
+        if ($text === '') {
+            return null;
+        }
+
+        if (str_contains($text, 'sp1t') || str_contains($text, 'sp-f') || str_contains($text, 'terakhir')) {
+            return self::SP1_FINAL;
+        }
+        if (str_contains($text, 'sp-3') || str_contains($text, 'sp3') || str_contains($text, 'ketiga')) {
+            return self::SP3;
+        }
+        if (str_contains($text, 'sp-2') || str_contains($text, 'sp2') || str_contains($text, 'kedua')) {
+            return self::SP2;
+        }
+        if (str_contains($text, 'sp-1') || str_contains($text, 'sp1') || str_contains($text, 'pertama')) {
+            return self::SP1;
+        }
+
+        return null;
+    }
 }
