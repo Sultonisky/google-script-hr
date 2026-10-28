@@ -164,12 +164,13 @@ class ExitClearanceForm
      */
     public static function payload(Request $request): array
     {
-        $amounts = [];
         foreach (['petty_amount', 'loan_amount'] as $key) {
-            $digits = preg_replace('/\D/', '', (string) $request->input($key, ''));
-            $amounts[$key] = $digits === '' ? null : $digits;
+            $amount = (string) $request->input($key, '');
+            if (preg_match('/^\d{1,3}(?:,\d{3})+$/D', $amount) === 1) {
+                $request->merge([$key => str_replace(',', '', $amount)]);
+            }
         }
-        $request->merge($amounts);
+
         foreach (['petty', 'loan'] as $prefix) {
             if ($request->input($prefix.'_status') !== 'ada') {
                 $request->merge([
@@ -187,7 +188,7 @@ class ExitClearanceForm
                 $gaRows[] = [
                     'label' => $label,
                     'checked' => false,
-                    'other_text' => self::sanitizeText($validated['ga']['other'] ?? null, 180),
+                    'other_text' => self::sanitizeText($validated['ga']['other'] ?? null, 80),
                 ];
             } else {
                 $gaRows[] = [
@@ -202,14 +203,18 @@ class ExitClearanceForm
             $itRows[] = [
                 'key' => $key,
                 'label' => $label,
-                'value' => self::sanitizeText($validated['it'][$key] ?? null, 180),
+                'value' => self::sanitizeText($validated['it'][$key] ?? null, match ($key) {
+                    'email' => 100,
+                    'password' => 60,
+                    default => 80,
+                }),
             ];
         }
         $divisionRows = [];
         foreach (self::DIVISION_FIELDS as $key => $label) {
             $divisionRows[] = [
                 'label' => $label,
-                'value' => self::sanitizeText($validated['division_assets'][$key] ?? null, 180),
+                'value' => self::sanitizeText($validated['division_assets'][$key] ?? null, 100),
             ];
         }
 
@@ -218,31 +223,29 @@ class ExitClearanceForm
             $approvers[] = [
                 'title' => $meta['title'],
                 'hint' => $meta['hint'],
-                'name' => self::sanitizeText($validated['approvers'][$key]['name'] ?? null, 120),
+                'name' => self::sanitizeText($validated['approvers'][$key]['name'] ?? null, 40),
                 'date' => self::formatDate($validated['approvers'][$key]['date'] ?? null, false),
             ];
         }
 
         return [
-            'full_name'        => self::sanitizeText($validated['full_name'] ?? null, 160),
-            'nik'              => trim((string) ($validated['nik'] ?? '')),
-            'employee_id'      => trim((string) ($validated['employee_id'] ?? '')),
-            'position'         => self::sanitizeText($validated['position'] ?? null, 160),
-            'division'         => self::sanitizeText($validated['division'] ?? null, 160),
+            'full_name'        => self::sanitizeText($validated['full_name'] ?? null, 80),
+            'position'         => self::sanitizeText($validated['position'] ?? null, 60),
+            'division'         => self::sanitizeText($validated['division'] ?? null, 60),
             'company'          => $company,
             'company_name'     => self::COMPANIES[$company],
             'last_working_date'=> self::formatDate((string) $validated['last_working_date']),
             'hardcopy'         => filter_var($validated['hardcopy'] ?? false, FILTER_VALIDATE_BOOLEAN),
             'softcopy'         => filter_var($validated['softcopy'] ?? false, FILTER_VALIDATE_BOOLEAN),
-            'delegated_to'     => self::sanitizeText($validated['delegated_to'] ?? null, 160),
+            'delegated_to'     => self::sanitizeText($validated['delegated_to'] ?? null, 80),
             'handover_date'    => self::formatDate($validated['handover_date'] ?? null),
-            'handover_other'   => self::sanitizeText($validated['handover_other'] ?? null, 180),
+            'handover_other'   => self::sanitizeText($validated['handover_other'] ?? null, 100),
             'ga'               => $gaRows,
             'it'               => $itRows,
             'division_assets'  => $divisionRows,
             'petty'            => self::moneyRow($validated, 'petty'),
             'loan'             => self::moneyRow($validated, 'loan'),
-            'accounting_other' => self::sanitizeText($validated['accounting_other'] ?? null, 300),
+            'accounting_other' => self::sanitizeText($validated['accounting_other'] ?? null, 120),
             'approvers'        => $approvers,
         ];
     }
@@ -253,43 +256,41 @@ class ExitClearanceForm
     private static function rules(): array
     {
         $rules = [
-            'full_name'   => ['required', 'string', 'min:2', 'max:160', 'regex:' . self::NAME_REGEX],
-            'nik'         => ['required', 'string', 'max:20', 'regex:/^[0-9]{10,20}$/'],
-            'employee_id' => ['required', 'string', 'max:30', 'regex:/^[a-zA-Z0-9_-]+$/'],
-            'position'    => ['required', 'string', 'min:2', 'max:160', 'regex:' . self::LABEL_REGEX],
-            'division'    => ['required', 'string', 'min:2', 'max:160', 'regex:' . self::LABEL_REGEX],
+            'full_name'   => ['required', 'string', 'min:2', 'max:80', 'regex:' . self::NAME_REGEX],
+            'position'    => ['required', 'string', 'min:2', 'max:60', 'regex:' . self::LABEL_REGEX],
+            'division'    => ['required', 'string', 'min:2', 'max:60', 'regex:' . self::LABEL_REGEX],
             'company'     => ['required', 'string', Rule::in(array_keys(self::COMPANIES))],
             'last_working_date' => ['required', 'date_format:Y-m-d'],
             'hardcopy' => ['nullable', 'boolean'],
             'softcopy' => ['nullable', 'boolean'],
-            'delegated_to' => ['nullable', 'string', 'min:2', 'max:160', 'regex:' . self::NAME_REGEX],
+            'delegated_to' => ['nullable', 'string', 'min:2', 'max:80', 'regex:' . self::NAME_REGEX],
             'handover_date' => ['nullable', 'date_format:Y-m-d'],
-            'handover_other' => ['nullable', 'string', 'max:180'],
+            'handover_other' => ['nullable', 'string', 'max:100'],
             'petty_status' => ['nullable', 'string', Rule::in(array_keys(self::MONEY_STATUSES))],
             'petty_amount' => ['nullable', 'required_if:petty_status,ada', 'regex:/^\d{1,12}$/'],
-            'petty_to' => ['nullable', 'required_if:petty_status,ada', 'string', 'max:160'],
+            'petty_to' => ['nullable', 'required_if:petty_status,ada', 'string', 'max:80'],
             'loan_status' => ['nullable', 'string', Rule::in(array_keys(self::MONEY_STATUSES))],
             'loan_amount' => ['nullable', 'required_if:loan_status,ada', 'regex:/^\d{1,12}$/'],
-            'loan_to' => ['nullable', 'required_if:loan_status,ada', 'string', 'max:160'],
-            'accounting_other' => ['nullable', 'string', 'max:300'],
+            'loan_to' => ['nullable', 'required_if:loan_status,ada', 'string', 'max:80'],
+            'accounting_other' => ['nullable', 'string', 'max:120'],
         ];
 
         foreach (array_keys(self::GA_ASSETS) as $key) {
             $rules["ga.$key"] = $key === 'other'
-                ? ['nullable', 'string', 'max:180']
+                ? ['nullable', 'string', 'max:80']
                 : ['nullable', 'boolean'];
         }
-        $rules['it.email'] = ['nullable', 'string', 'email', 'max:160'];
-        $rules['it.password'] = ['nullable', 'string', 'max:120'];
-        $rules['it.laptop'] = ['nullable', 'string', 'max:180'];
-        $rules['it.phone'] = ['nullable', 'regex:/^\+?[0-9]{8,15}$/'];
-        $rules['it.other'] = ['nullable', 'string', 'max:180'];
+        $rules['it.email'] = ['nullable', 'string', 'email', 'max:100'];
+        $rules['it.password'] = ['nullable', 'string', 'max:60'];
+        $rules['it.laptop'] = ['nullable', 'string', 'max:80'];
+        $rules['it.phone'] = ['nullable', 'regex:/^[0-9]{8,15}$/'];
+        $rules['it.other'] = ['nullable', 'string', 'max:80'];
         foreach (array_keys(self::DIVISION_FIELDS) as $key) {
-            $rules["division_assets.$key"] = ['nullable', 'string', 'max:180'];
+            $rules["division_assets.$key"] = ['nullable', 'string', 'max:100'];
         }
 
         foreach (array_keys(self::APPROVERS) as $key) {
-            $rules["approvers.$key.name"] = ['nullable', 'string', 'min:2', 'max:120', 'regex:' . self::NAME_REGEX];
+            $rules["approvers.$key.name"] = ['nullable', 'string', 'min:2', 'max:40', 'regex:' . self::NAME_REGEX];
             $rules["approvers.$key.date"] = ['nullable', 'date_format:Y-m-d'];
         }
 
@@ -305,12 +306,6 @@ class ExitClearanceForm
             'full_name.required'  => 'Nama lengkap wajib diisi.',
             'full_name.min'       => 'Nama lengkap minimal 2 karakter.',
             'full_name.regex'     => 'Nama lengkap hanya boleh berisi huruf dan spasi.',
-            'nik.required'        => 'NIK wajib diisi.',
-            'nik.regex'           => 'NIK harus berupa 10–20 digit angka.',
-            'nik.max'             => 'NIK terlalu panjang.',
-            'employee_id.required'=> 'Employee ID wajib diisi.',
-            'employee_id.regex'   => 'Employee ID hanya boleh berisi huruf, angka, dash, dan underscore.',
-            'employee_id.max'     => 'Employee ID terlalu panjang.',
             'position.required'   => 'Posisi / jabatan wajib diisi.',
             'position.min'        => 'Posisi minimal 2 karakter.',
             'position.regex'      => 'Posisi hanya boleh berisi huruf, angka, spasi, dan tanda - / & ( ) .',
@@ -352,7 +347,7 @@ class ExitClearanceForm
         $messages['it.email.max'] = 'Email terlalu panjang.';
         $messages['it.password.max'] = 'Password terlalu panjang.';
         $messages['it.laptop.max'] = 'Keterangan laptop terlalu panjang.';
-        $messages['it.phone.regex'] = 'Nomor handphone harus 8–15 digit.';
+        $messages['it.phone.regex'] = 'Nomor handphone harus 8–15 digit angka.';
         $messages['it.other.max'] = 'Keterangan IT lainnya terlalu panjang.';
         foreach (self::DIVISION_FIELDS as $key => $label) {
             $messages["division_assets.$key.max"] = $label.' terlalu panjang.';
@@ -383,7 +378,7 @@ class ExitClearanceForm
         return [
             'status' => $status,
             'amount' => $showAmount ? self::formatRupiah($validated[$prefix.'_amount'] ?? '') : '',
-            'to' => $showAmount ? self::sanitizeText($validated[$prefix.'_to'] ?? null, 160) : '',
+            'to' => $showAmount ? self::sanitizeText($validated[$prefix.'_to'] ?? null, 80) : '',
         ];
     }
 }

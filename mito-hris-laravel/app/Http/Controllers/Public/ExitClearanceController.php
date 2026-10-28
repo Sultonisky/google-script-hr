@@ -29,7 +29,7 @@ class ExitClearanceController extends Controller
 
         $this->auditRepo->log(
             'Employee',
-            $extraData['employee_id'] ?: '-',
+            '-',
             'generated',
             'exit_clearance',
             null,
@@ -37,10 +37,9 @@ class ExitClearanceController extends Controller
             'Publik',
             'Export'
         );
-
         $name     = trim((string) preg_replace('/[^a-zA-Z0-9]+/', '_', $extraData['full_name'] ?: 'Karyawan'), '_');
-        $empId    = trim((string) preg_replace('/[^a-zA-Z0-9_-]+/', '_', $extraData['employee_id'] ?: ''), '_');
-        $stem     = $empId !== '' ? $name . '_' . $empId : ($name ?: 'Karyawan');
+        $name     = trim((string) preg_replace('/[^a-zA-Z0-9]+/', '_', $extraData['full_name'] ?: 'Karyawan'), '_');
+        $stem     = $name ?: 'Karyawan';
 
         return $pdf->download('Exit_Clearance_' . $stem . '.pdf');
     }
