@@ -114,7 +114,7 @@
                         <p class="fw-bold mb-3" style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#eb1c24">
                             <i class="bi bi-file-earmark-text me-1"></i>Detail Surat
                         </p>
-                        <div class="row g-3 mb-4">
+                        <div class="row g-3 mb-2">
                             <div class="col-md-4">
                                 <label class="form-label fw-semibold" style="font-size:13px" for="wlLevel">Tingkat SP <span class="text-danger">*</span></label>
                                 <select class="form-select form-select-sm" name="level" id="wlLevel" required>
@@ -133,6 +133,22 @@
                                 <input type="text" class="form-control form-control-sm bg-light" id="wlValidity" value="6 bulan" readonly tabindex="-1" />
                                 <div class="form-text" style="font-size:11px">Berlaku s.d. <strong id="wlValidUntil">-</strong></div>
                             </div>
+                        </div>
+                        <div class="row g-3 mb-4" id="wlSuperiorPositionField">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold" style="font-size:13px" for="wlSuperiorName">Nama Atasan <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control form-control-sm" name="superior_name" id="wlSuperiorName"
+                                            maxlength="150" list="wlSuperiorOptions" autocomplete="off"
+                                            placeholder="Ketik nama atasan..." />
+                                        <datalist id="wlSuperiorOptions"></datalist>
+                                        <div class="form-text" style="font-size:11px">Terisi otomatis dari Direct Superior karyawan, bisa diubah.</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold" style="font-size:13px" for="wlSuperiorPosition">Jabatan Atasan <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control form-control-sm" name="superior_position" id="wlSuperiorPosition"
+                                            maxlength="150" placeholder="Misal: Branch Manager Lampung" />
+                                        <div class="form-text" style="font-size:11px" id="wlSuperiorPositionHelp">Terisi otomatis bila nama atasan ditemukan di data karyawan.</div>
+                                    </div>
                         </div>
 
                         <p class="fw-bold mb-3" style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#eb1c24">
@@ -387,24 +403,6 @@
                                     <ol class="small mt-2 mb-0 ps-3 text-muted" id="wlRegulationPreview" aria-live="polite"></ol>
                                 </div>
                             </div>
-                            <div class="col-12" id="wlSuperiorPositionField">
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-semibold" style="font-size:13px" for="wlSuperiorName">Nama Atasan <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control form-control-sm" name="superior_name" id="wlSuperiorName"
-                                            maxlength="150" list="wlSuperiorOptions" autocomplete="off"
-                                            placeholder="Ketik nama atasan..." />
-                                        <datalist id="wlSuperiorOptions"></datalist>
-                                        <div class="form-text" style="font-size:11px">Terisi otomatis dari Direct Superior karyawan, bisa diubah.</div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-semibold" style="font-size:13px" for="wlSuperiorPosition">Jabatan Atasan <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control form-control-sm" name="superior_position" id="wlSuperiorPosition"
-                                            maxlength="150" placeholder="Misal: Branch Manager Lampung" />
-                                        <div class="form-text" style="font-size:11px" id="wlSuperiorPositionHelp">Terisi otomatis bila nama atasan ditemukan di data karyawan.</div>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
 
                         <div id="wlCorrectiveSection">
@@ -455,6 +453,7 @@
             'branchName' => $e->branchName ?? null,
             'directSuperior' => trim((string) ($e->directSuperior ?? '')) ?: null,
             'lastSp' => $__wlLatest[$e->employeeId ?? ''] ?? null,
+            'spCount' => (int) (($sanctionCounts ?? [])[$e->employeeId ?? ''] ?? 0),
         ])
         ->values()
         ->all();
@@ -958,11 +957,100 @@
         }
 
         function downloadPdf(url) {
+            if (typeof window.mitoFinishPageLoader === 'function') window.mitoFinishPageLoader();
             var iframe = document.createElement('iframe');
             iframe.style.cssText = 'display:none;width:0;height:0;border:0';
             iframe.src = url;
             document.body.appendChild(iframe);
-            setTimeout(function() { try { document.body.removeChild(iframe); } catch (_) {} }, 15000);
+            var remove = function() { try { document.body.removeChild(iframe); } catch (_) {} };
+            iframe.addEventListener('load', function() { setTimeout(remove, 1000); });
+            setTimeout(remove, 4000);
+        }
+
+        function todayStamp() {
+            var today = new Date();
+            var month = String(today.getMonth() + 1).padStart(2, '0');
+            var day = String(today.getDate()).padStart(2, '0');
+            return today.getFullYear() + '-' + month + '-' + day;
+        }
+
+        function employeeRow(empId) {
+            var row = null;
+            document.querySelectorAll('#empTableBody tr[data-drawer-id]').forEach(function(tr) {
+                if (tr.getAttribute('data-drawer-id') === empId) row = tr;
+            });
+            return row;
+        }
+
+        function bumpWarningLetterFilter() {
+            var option = document.querySelector('#empStatusFilter option[value="warning_letter"]');
+            if (!option) return;
+            var match = option.textContent.match(/\((\d+)\)/);
+            var count = match ? Number(match[1]) + 1 : 1;
+            option.textContent = 'Surat Peringatan (' + count + ')';
+        }
+
+        function refreshEmployeeSanction(empId, data, letterCount, replaceLabel) {
+            var row = employeeRow(empId);
+            var nameCell = row ? row.children[2] : null;
+            if (!nameCell) return;
+
+            var extra = Math.max(0, letterCount - 1);
+            var showNew = replaceLabel && String(data.valid_until || '') >= todayStamp();
+            var badge = nameCell.querySelector('.sp-sanction');
+            var wrap = badge ? badge.parentElement : null;
+            if (!badge && !showNew) return;
+
+            if (!wrap) {
+                wrap = document.createElement('div');
+                wrap.className = 'mt-1 d-inline-flex align-items-center gap-1';
+                nameCell.appendChild(wrap);
+            }
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'badge-status blacklist sp-sanction';
+                badge.title = 'Sanksi Surat Peringatan masih berlaku';
+                wrap.appendChild(badge);
+            }
+            if (showNew) {
+                badge.textContent = (data.short_label || levelLabels[data.level] || data.level) +
+                    ' · s.d. ' + (data.valid_until_label || '');
+            }
+
+            var more = wrap.querySelector('.sp-sanction-more');
+            if (extra > 0) {
+                if (!more) {
+                    more = document.createElement('span');
+                    more.className = 'sp-sanction-more fw-bold text-danger';
+                    wrap.appendChild(more);
+                }
+                more.textContent = '+' + extra;
+                more.title = 'Ada ' + extra + ' Surat Peringatan lain';
+                more.setAttribute('aria-label', more.title);
+            } else if (more) {
+                more.remove();
+            }
+        }
+
+        function rememberIssuedLetter(empId, data) {
+            if (!data || !data.level) return;
+            var found = employees.find(function(employee) { return employee.employeeId === empId; });
+            var previousCount = found ? (Number(found.spCount) || 0) : 0;
+            var previousAt = found && found.lastSp && found.lastSp.issued_at
+                ? String(found.lastSp.issued_at).slice(0, 10) : '';
+            var incomingAt = String(data.issued_at || '').slice(0, 10);
+            if (found) {
+                if (!found.lastSp || incomingAt >= previousAt) {
+                    found.lastSp = {
+                        level: data.level,
+                        issued_at: incomingAt,
+                        nomor: data.nomor || ''
+                    };
+                }
+                found.spCount = previousCount + 1;
+            }
+            if (previousCount === 0) bumpWarningLetterFilter();
+            refreshEmployeeSanction(empId, data, previousCount + 1, !previousAt || incomingAt >= previousAt);
         }
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -1096,6 +1184,7 @@
                         btn.innerHTML = origHtml;
 
                         if (res.ok && res.data.success) {
+                            rememberIssuedLetter(empId, res.data);
                             if (res.data.pdf_url) downloadPdf(res.data.pdf_url);
                             showToast(res.data.message || 'Surat Peringatan berhasil diterbitkan.', 'success', 5000);
                             var modal = bootstrap.Modal.getInstance(el('warningLetterModal'));
