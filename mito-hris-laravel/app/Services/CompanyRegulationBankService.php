@@ -71,6 +71,20 @@ class CompanyRegulationBankService
     }
 
     /**
+     * Pilihan form SP. Halaman karyawan tetap terbuka bila file bank belum ada.
+     *
+     * @return array<int, array{number:string, title:string, articles:array<int, array{number:string, title:string, text:string, paragraphs:array<int, array{number:string, text:string, sub:array<int, array{number:string, text:string, sub:array}>}>}>}>
+     */
+    public function chaptersOrEmpty(): array
+    {
+        try {
+            return $this->chapters();
+        } catch (UnexpectedValueException) {
+            return [];
+        }
+    }
+
+    /**
      * @return array{chapter_number:string, chapter_title:string, article_number:string, article_title:string, paragraph_number:string, article_letter:string, subparagraph_number:string, article_text:string}|null
      */
     public function resolveReference(array $reference): ?array
