@@ -4,8 +4,8 @@ namespace App\Enums;
 
 /**
  * Tingkat Surat Peringatan. Nomor memakai urutan SP sendiri, terpisah dari SK,
- * dengan kode SP-1, SP-2, SP-3, atau SP-F. Satu karyawan memakai angka SP yang sama
- * untuk setiap tingkat. Kolom Reference tetap menyimpan SP1, SP2, SP3, atau SP1T.
+ * dengan kode SP-1, SP-2, SP-3, atau SP-F. Setiap surat mengambil nomor SP berikutnya,
+ * tanpa diikat ke karyawan atau tingkat. Kolom Reference tetap menyimpan SP1, SP2, SP3, atau SP1T.
  */
 enum WarningLetterLevel: string
 {
@@ -35,7 +35,7 @@ enum WarningLetterLevel: string
     }
 
     /**
-     * Kode di nomor surat. Angka depannya tetap nomor SK karyawan.
+     * Kode tingkat di nomor surat. Angka depannya adalah nomor urut SP.
      */
     public function numberCode(): string
     {
