@@ -145,7 +145,7 @@ class WarningLetterService
      *               incident_date?:?string, regulation_reference?:?string, corrective_actions?:?string,
      *               superior_name?:?string, superior_position?:?string,
      *               violations?:array<int, array{description:string, references:array<int, array<string, string>>}>}  $data
-     * @return array{success:bool, message:string, status:int, document_id?:string, nomor?:string, file_name?:string}
+     * @return array{success:bool, message:string, status:int, document_id?:string, nomor?:string, file_name?:string, level?:string, issued_at?:string, short_label?:string, valid_until?:string, valid_until_label?:string}
      */
     public function generate(string $employeeId, array $data, string $issuedBy, ?string $archivedBy = null): array
     {
@@ -216,6 +216,11 @@ class WarningLetterService
             'document_id' => $file->document_id,
             'nomor' => $nomor,
             'file_name' => $fileName,
+            'level' => $level->value,
+            'issued_at' => $docDate->format('Y-m-d'),
+            'short_label' => $level->shortLabel(),
+            'valid_until' => $validUntil->format('Y-m-d'),
+            'valid_until_label' => $validUntil->format('d M Y'),
         ];
     }
 }
