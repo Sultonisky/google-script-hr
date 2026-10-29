@@ -9,6 +9,9 @@
 // does not touch any existing AJAX/table/modal/form/spinner
 // loading indicators used elsewhere in the app. It only reacts
 // to actual document navigation lifecycle events.
+//
+// File downloads and AJAX submits do not replace the document.
+// Those actions complete the bar instead of leaving it running.
 // ============================================================
 
 (function () {
@@ -22,6 +25,9 @@
     var activatedAt = 0;
     var progressTimer = null;
     var finishTimer = null;
+    var stayTimer = null;
+    var stayToken = 0;
+    var fileActionUntil = 0;
     var isActive = false;
 
     function ensureBar() {
@@ -107,6 +113,42 @@
         );
     }
 
+    function isFileLink(anchor, url) {
+        if (anchor.hasAttribute('download') || anchor.closest('.export-btns')) {
+            return true;
+        }
+
+        var path = (url.pathname || '').toLowerCase();
+        if (/\/(export|download|template)(\/|$)/.test(path)) {
+            return true;
+        }
+        if (/\/warning-letter\/[^/]+$/.test(path)) {
+            return true;
+        }
+
+        return /\.(pdf|xlsx|xls|csv|zip|doc|docx)$/.test(path);
+    }
+
+    function markFileAction() {
+        fileActionUntil = Date.now() + 10000;
+        start();
+        finish();
+    }
+
+    function armStayWatch() {
+        var token = ++stayToken;
+        clearTimeout(stayTimer);
+        stayTimer = window.setTimeout(function () {
+            if (token !== stayToken) {
+                return;
+            }
+            if (document.visibilityState === 'hidden') {
+                return;
+            }
+            finish();
+        }, 1200);
+    }
+
     function isExcludedLink(anchor, href) {
         if (!href) {
             return true;
@@ -170,6 +212,19 @@
                 return;
             }
 
+            var url;
+            try {
+                url = new URL(anchor.href, window.location.href);
+            } catch (e) {
+                return;
+            }
+
+            if (isFileLink(anchor, url)) {
+                markFileAction();
+                return;
+            }
+
+            fileActionUntil = 0;
             start();
         },
         true,
@@ -188,13 +243,24 @@
             if (form.target && form.target !== '' && form.target !== '_self') {
                 return;
             }
+            fileActionUntil = 0;
             start();
         },
-        true,
+        false,
     );
 
     window.addEventListener('beforeunload', function () {
+        if (Date.now() < fileActionUntil) {
+            markFileAction();
+            return;
+        }
         start();
+        armStayWatch();
+    });
+
+    window.addEventListener('pagehide', function () {
+        stayToken += 1;
+        clearTimeout(stayTimer);
     });
 
     window.addEventListener('pageshow', function (event) {
@@ -218,4 +284,6 @@
         ensureBar();
         finish();
     }
+
+    window.mitoFinishPageLoader = finish;
 })();
