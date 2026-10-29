@@ -81,7 +81,7 @@ class EmployeeController extends Controller
         $canManageWarningLetters = Gate::allows('manage_warning_letters');
         $warningLetterIndex = $canManageWarningLetters
             ? $this->warningSanctions->employeeIndex()
-            : ['badges' => [], 'employee_ids' => []];
+            : ['badges' => [], 'employee_ids' => [], 'letter_counts' => []];
         $warningLetterIds = $warningLetterIndex['employee_ids'];
         $stats['warning_letter'] = $all->filter(function ($employee) use ($warningLetterIds) {
             $employeeId = ltrim(trim((string) ($employee->employeeId ?? '')), "'");
@@ -184,6 +184,7 @@ class EmployeeController extends Controller
             ? $this->regulationBank->chaptersOrEmpty()
             : [];
         $activeSanctions = $warningLetterIndex['badges'];
+        $sanctionCounts = $warningLetterIndex['letter_counts'];
 
         return view('hr.employees.index', compact(
             'employees',
@@ -200,7 +201,8 @@ class EmployeeController extends Controller
             'departmentFilter',
             'sortFilter',
             'regulationChapters',
-            'activeSanctions'
+            'activeSanctions',
+            'sanctionCounts'
         ));
     }
 
@@ -997,6 +999,9 @@ class EmployeeController extends Controller
             'isActiveProbation' => $this->probationService->canEvaluate((string) $employee->employeeId),
             'auditLogs' => $auditLogs,
             'skDocuments' => $skDocuments,
+            'warningLetter' => Gate::allows('manage_warning_letters')
+                ? $this->warningSanctions->drawerSummary((string) $employee->employeeId)
+                : null,
         ]);
     }
 
