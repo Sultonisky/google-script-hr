@@ -70,6 +70,7 @@ class OutsourcePayrollApiTest extends TestCase
             'umk_amount' => null,
             'incentive_pokok_amount' => 1000000,
             'incentive_amount' => 1250000,
+            'promotor_product_race_amount' => 400000,
             'total_amount' => 2250000,
         ]);
         OutsourceIncentive::query()->create([
@@ -91,6 +92,7 @@ class OutsourcePayrollApiTest extends TestCase
             ->assertJsonPath('data.0.umk_amount', 1000000)
             ->assertJsonPath('data.0.incentive_pokok_amount', 1000000)
             ->assertJsonPath('data.0.incentive_amount', 1250000)
+            ->assertJsonPath('data.0.promotor_product_race_amount', 400000)
             ->assertJsonPath('data.0.total_amount', 2250000)
             ->assertJsonPath('meta.count', 1);
 
@@ -99,6 +101,7 @@ class OutsourcePayrollApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.0.period', '2026-09')
             ->assertJsonPath('data.1.period', '2026-08')
+            ->assertJsonPath('data.1.promotor_product_race_amount', 0)
             ->assertJsonPath('meta.count', 2);
     }
 
