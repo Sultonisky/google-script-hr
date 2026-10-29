@@ -16,11 +16,12 @@ use RuntimeException;
 
 class OutsourceIncentiveImportService
 {
-    private const HEADERS = ['Outsource ID', 'Nama', 'Incentive Pokok', 'Incentive', 'Total'];
+    private const HEADERS = ['Outsource ID', 'Nama', 'Incentive Pokok', 'Incentive', 'Promotor & Product Race', 'Total'];
     private const AMOUNT_COLUMNS = [
         'C' => ['incentive_pokok_amount', 'Incentive Pokok'],
         'D' => ['incentive_amount', 'Incentive'],
-        'E' => ['total_amount', 'Total'],
+        'E' => ['promotor_product_race_amount', 'Promotor & Product Race'],
+        'F' => ['total_amount', 'Total'],
     ];
 
     public function __construct(
@@ -41,7 +42,7 @@ class OutsourceIncentiveImportService
             $sheet->setCellValue($column . '1', $header);
             $sheet->getColumnDimension($column)->setAutoSize(true);
         }
-        $sheet->getStyle('A1:E1')->applyFromArray([
+        $sheet->getStyle('A1:F1')->applyFromArray([
             'font' => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF']],
             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF005BAC']],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
@@ -53,7 +54,7 @@ class OutsourceIncentiveImportService
             $sheet->getCell('A' . $row)->setValueExplicit((string) $employee->outsourceId, DataType::TYPE_STRING);
             $sheet->setCellValue('B' . $row, $employee->fullName ?? '');
         }
-        $sheet->getStyle('C2:E' . max(2, $employees->count() + 1))->getNumberFormat()->setFormatCode('#,##0');
+        $sheet->getStyle('C2:F' . max(2, $employees->count() + 1))->getNumberFormat()->setFormatCode('#,##0');
         $spreadsheet->getProperties()->setCreator('MITO HRIS')->setTitle('Template Outsource Incentive');
 
         return $spreadsheet;
@@ -169,12 +170,15 @@ class OutsourceIncentiveImportService
                 'vendor' => $employee->vendor,
                 'incentive_pokok_amount' => $row['incentive_pokok_amount'],
                 'incentive_amount' => $row['incentive_amount'],
+                'promotor_product_race_amount' => $row['promotor_product_race_amount'],
                 'total_amount' => $row['total_amount'],
                 'status' => !$current ? 'created' : (
                     $current->incentive_pokok_amount !== null
                     && round((float) $current->incentive_pokok_amount, 2) === round($row['incentive_pokok_amount'], 2)
                     && $current->incentive_amount !== null
                     && round((float) $current->incentive_amount, 2) === round($row['incentive_amount'], 2)
+                    && $current->promotor_product_race_amount !== null
+                    && round((float) $current->promotor_product_race_amount, 2) === round($row['promotor_product_race_amount'], 2)
                     && $current->total_amount !== null
                     && round((float) $current->total_amount, 2) === round($row['total_amount'], 2)
                         ? 'unchanged'
