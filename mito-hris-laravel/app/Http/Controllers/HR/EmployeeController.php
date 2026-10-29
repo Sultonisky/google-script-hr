@@ -181,7 +181,7 @@ class EmployeeController extends Controller
         $contractEmployees = $all->filter(fn($e) => EmployeeStatus::matches($e->statusEmployee, EmployeeStatus::CONTRACT));
         $departments = $all->pluck('department')->filter()->unique()->sort()->values();
         $regulationChapters = $canManageWarningLetters
-            ? $this->regulationBank->chapters()
+            ? $this->regulationBank->chaptersOrEmpty()
             : [];
         $activeSanctions = $warningLetterIndex['badges'];
 
