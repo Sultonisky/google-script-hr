@@ -1444,7 +1444,7 @@ class WarningLetterTest extends TestCase
     {
         $this->actingAsRole('Admin');
         $regulationBank = Mockery::mock(CompanyRegulationBankService::class);
-        $regulationBank->shouldReceive('chapters')->atLeast()->once()->andReturn([[
+        $regulationBank->shouldReceive('chaptersOrEmpty')->atLeast()->once()->andReturn([[
             'number' => 'IX',
             'title' => 'Bab Disiplin Uji',
             'articles' => [[
