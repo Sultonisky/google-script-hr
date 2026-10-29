@@ -98,7 +98,12 @@ class WarningLetterTest extends TestCase
 
         $response = $this->postJson('/hr/employees/EMP-SP-1/warning-letter', $this->payload())
             ->assertCreated()
-            ->assertJson(['success' => true, 'nomor' => '001/SP-1/MSI/IX/2026']);
+            ->assertJson(['success' => true, 'nomor' => '001/SP-1/MSI/IX/2026'])
+            ->assertJsonPath('level', 'SP1')
+            ->assertJsonPath('issued_at', '2026-09-29')
+            ->assertJsonPath('short_label', 'SP-1')
+            ->assertJsonPath('valid_until', '2027-03-28')
+            ->assertJsonPath('valid_until_label', '28 Mar 2027');
 
         $document = EmployeeDocument::query()->where('employee_id', 'EMP-SP-1')->where('doc_code', 'SP')->firstOrFail();
         $this->assertSame('001/SP-1/MSI/IX/2026', $document->nomor);
@@ -131,7 +136,7 @@ class WarningLetterTest extends TestCase
         $this->assertSame($download->getContent(), $tracking->getContent());
     }
 
-    public function test_sp_number_is_independent_from_sk_and_stays_with_the_employee(): void
+    public function test_each_sp_letter_takes_the_next_free_number(): void
     {
         $this->actingAsRole('Admin');
 
@@ -140,21 +145,45 @@ class WarningLetterTest extends TestCase
             ->assertJson(['nomor' => '001/SP-1/MSI/IX/2026']);
 
         $this->postJson('/hr/employees/EMP-SP-1/warning-letter', $this->payload([
-            'level' => 'SP2',
-            'doc_date' => '2026-10-01',
+            'doc_date' => '2026-10-15',
         ]))
             ->assertCreated()
-            ->assertJson(['nomor' => '001/SP-2/MSI/X/2026']);
+            ->assertJson(['nomor' => '002/SP-1/MSI/X/2026']);
+
+        $this->get('/hr/sp-tracking?search=EMP-SP-1')
+            ->assertOk()
+            ->assertSee('001/SP-1/MSI/IX/2026')
+            ->assertSee('002/SP-1/MSI/X/2026')
+            ->assertSee('Hangus (0)', false);
+
+        $this->get('/hr/employees?search=Rina')
+            ->assertOk()
+            ->assertSee('SP-1 · s.d. 14 Apr 2027')
+            ->assertSee('sp-sanction-more', false)
+            ->assertSee('>+1<', false)
+            ->assertDontSee('28 Mar 2027');
+
+        $this->getJson('/hr/employees/EMP-SP-1/json')
+            ->assertOk()
+            ->assertJsonPath('warningLetter.label', 'SP-1 · s.d. 14 Apr 2027')
+            ->assertJsonPath('warningLetter.extra', 1);
+
+        $this->postJson('/hr/employees/EMP-SP-1/warning-letter', $this->payload([
+            'level' => 'SP2',
+            'doc_date' => '2026-10-20',
+        ]))
+            ->assertCreated()
+            ->assertJson(['nomor' => '003/SP-2/MSI/X/2026']);
 
         $this->postJson('/hr/employees/EMP-SP-1/warning-letter', $this->payload([
             'level' => 'SP1T',
             'doc_date' => '2027-01-03',
         ]))
             ->assertCreated()
-            ->assertJson(['nomor' => '001/SP-F/MSI/I/2027']);
+            ->assertJson(['nomor' => '004/SP-F/MSI/I/2027']);
 
         $this->assertSame(
-            ['SP1', 'SP2', 'SP1T'],
+            ['SP1', 'SP1', 'SP2', 'SP1T'],
             EmployeeDocument::query()->where('employee_id', 'EMP-SP-1')->where('doc_code', 'SP')->orderBy('issued_at')->pluck('reference')->all()
         );
         $this->assertSame(
@@ -176,14 +205,14 @@ class WarningLetterTest extends TestCase
             'doc_date' => '2026-10-01',
         ]))
             ->assertCreated()
-            ->assertJson(['nomor' => '002/SP-3/MSI/X/2026']);
+            ->assertJson(['nomor' => '005/SP-3/MSI/X/2026']);
 
         $this->postJson('/hr/employees/EMP-SP-2/warning-letter', $this->payload([
             'level' => 'SP1',
             'doc_date' => '2026-11-02',
         ]))
             ->assertCreated()
-            ->assertJson(['nomor' => '002/SP-1/MSI/XI/2026']);
+            ->assertJson(['nomor' => '006/SP-1/MSI/XI/2026']);
 
         $sk = $this->app->make(SkNumberService::class);
         $this->assertSame('007/SKM/MSI/IX/2026', $sk->issue(
@@ -248,7 +277,7 @@ class WarningLetterTest extends TestCase
             'doc_date' => '2026-10-01',
         ]))
             ->assertCreated()
-            ->assertJson(['nomor' => '028/SP-2/MSI/X/2026']);
+            ->assertJson(['nomor' => '003/SP-2/MSI/X/2026']);
     }
 
     public function test_expired_warning_letter_is_marked_finished_and_does_not_badge_the_employee(): void
@@ -1502,7 +1531,8 @@ class WarningLetterTest extends TestCase
             ->assertDontSee('id="wlArticleNumber"', false)
             ->assertDontSee('id="wlParagraphNumber"', false)
             ->assertDontSee('id="wlArticleLetter"', false)
-            ->assertSee('Surat Peringatan Pertama (SP-1)');
+            ->assertSee('Surat Peringatan Pertama (SP-1)')
+            ->assertSee('rememberIssuedLetter', false);
 
         $this->postJson('/hr/employees/EMP-SP-1/warning-letter', $this->payload())->assertCreated();
 
@@ -1515,10 +1545,18 @@ class WarningLetterTest extends TestCase
             ->assertSee('Aktif')
             ->assertSee('id="spStatActive">1', false);
 
-        $this->get('/hr/employees?search=Rina')
+        $employeePage = $this->get('/hr/employees?search=Rina')
             ->assertOk()
             ->assertSee('SP-1 · s.d. 28 Mar 2027')
-            ->assertSee('badge-status blacklist sp-sanction', false);
+            ->assertSee('badge-status blacklist sp-sanction', false)
+            ->assertSee('Surat Peringatan<strong>', false);
+        preg_match('/<tbody id="empTableBody">(.*?)<\/tbody>/s', $employeePage->getContent(), $tableBody);
+        $this->assertStringNotContainsString('sp-sanction-more', $tableBody[1] ?? '');
+
+        $this->getJson('/hr/employees/EMP-SP-1/json')
+            ->assertOk()
+            ->assertJsonPath('warningLetter.label', 'SP-1 · s.d. 28 Mar 2027')
+            ->assertJsonPath('warningLetter.extra', 0);
 
         Employee::query()->create([
             'employee_id' => 'EMP-SP-CLEAR',
