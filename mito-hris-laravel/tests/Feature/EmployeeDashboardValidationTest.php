@@ -6,6 +6,7 @@ use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Repositories\Local\LocalEmployeeRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -48,6 +49,17 @@ class EmployeeDashboardValidationTest extends TestCase
         $response->assertSee('function validateJobPosition', false);
         $response->assertSee('function validateJobPositionLocation', false);
         $response->assertDontSee('resources/js/csp-hardening.js', false);
+    }
+
+    #[Test]
+    public function employee_index_loads_when_the_company_regulation_bank_is_missing(): void
+    {
+        Storage::fake('local');
+        $this->actingAsAdmin();
+
+        $this->get('/hr/employees')
+            ->assertOk()
+            ->assertSee('id="btnWarningLetter"', false);
     }
 
     #[Test]

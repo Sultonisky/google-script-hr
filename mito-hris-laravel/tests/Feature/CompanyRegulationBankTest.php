@@ -80,6 +80,13 @@ class CompanyRegulationBankTest extends TestCase
         app(CompanyRegulationBankService::class)->chapters();
     }
 
+    public function test_missing_private_company_regulation_bank_leaves_the_form_empty(): void
+    {
+        Storage::fake('local');
+
+        $this->assertSame([], app(CompanyRegulationBankService::class)->chaptersOrEmpty());
+    }
+
     public function test_nested_numbered_subparagraphs_are_preserved_and_resolved(): void
     {
         Storage::fake('local');
