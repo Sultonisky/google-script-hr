@@ -194,6 +194,7 @@ class DocumentTrackingController extends Controller
                 'reference' => $document->reference,
                 'notes' => $document->notes,
                 'doc_type' => $document->docType,
+                'nomor' => $document->nomor,
                 'issued_at' => $document->issuedAtParsed,
             ])
             ->all());
@@ -219,6 +220,7 @@ class DocumentTrackingController extends Controller
                 'reference' => $document->reference,
                 'notes' => $document->notes,
                 'doc_type' => $document->docType,
+                'nomor' => $document->nomor,
                 'issued_at' => $document->issuedAtParsed,
             ])
             ->values()
