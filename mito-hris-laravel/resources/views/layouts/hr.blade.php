@@ -499,8 +499,18 @@
                     renderEntityNotes('empDrUnifiedNotes', e.notes, e.hrNotes);
                     renderEntityTimeline('empDrTimeline', data.auditLogs);
                     var metaEl = document.getElementById('drawerIdMeta');
-                    if (metaEl) metaEl.innerHTML = '<span>Employee ID<strong>' + (e.employeeId || '-') +
-                        '</strong></span><span>Tanggal Masuk<strong>' + (e.joinDate || '-') + '</strong></span>';
+                    if (metaEl) {
+                        var metaHtml = '<span>Employee ID<strong>' + escapeDrawerHtml(e.employeeId || '-') +
+                            '</strong></span><span>Tanggal Masuk<strong>' + escapeDrawerHtml(e.joinDate || '-') +
+                            '</strong></span>';
+                        var warningLetter = data.warningLetter;
+                        if (warningLetter && warningLetter.label) {
+                            var extraSanctions = Number(warningLetter.extra) || 0;
+                            metaHtml += '<span>Surat Peringatan<strong>' + escapeDrawerHtml(warningLetter.label) +
+                                (extraSanctions > 0 ? ' +' + extraSanctions : '') + '</strong></span>';
+                        }
+                        metaEl.innerHTML = metaHtml;
+                    }
 
                     // Tombol Edit di footer — wire ke empOpenEdit()
                     var btnEdit = document.getElementById('btnDrawerEntityEdit');
