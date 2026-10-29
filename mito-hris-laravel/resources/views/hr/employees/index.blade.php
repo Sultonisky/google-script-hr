@@ -299,11 +299,18 @@
                                     <div class="cand-name fw-bold text-primary text-decoration-underline">
                                         {{ $emp->fullName }}</div>
                                     <div class="cand-sub">{{ $emp->personalEmail ?? $emp->workingEmail }}</div>
-                                    @if ($sanction = ($activeSanctions[$emp->employeeId] ?? null))
-                                        <div class="mt-1">
+                                    @php
+                                        $sanctions = $activeSanctions[$emp->employeeId] ?? [];
+                                        $extraSanctions = max(0, ($sanctionCounts[$emp->employeeId] ?? count($sanctions)) - 1);
+                                    @endphp
+                                    @if ($sanctions !== [])
+                                        <div class="mt-1 d-inline-flex align-items-center gap-1">
                                             <span class="badge-status blacklist sp-sanction" title="Sanksi Surat Peringatan masih berlaku">
-                                                {{ $sanction['level'] }} · s.d. {{ $sanction['valid_until_label'] }}
+                                                {{ $sanctions[0]['level'] }} · s.d. {{ $sanctions[0]['valid_until_label'] }}
                                             </span>
+                                            @if ($extraSanctions > 0)
+                                                <span class="sp-sanction-more fw-bold text-danger" title="Ada {{ $extraSanctions }} Surat Peringatan lain" aria-label="Ada {{ $extraSanctions }} Surat Peringatan lain">+{{ $extraSanctions }}</span>
+                                            @endif
                                         </div>
                                     @endif
                                 </td>
