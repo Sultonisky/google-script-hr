@@ -1323,6 +1323,40 @@ class MprFlowTest extends TestCase
     }
 
     #[Test]
+    public function hr_mpr_list_pagination_uses_the_shared_panel_footer(): void
+    {
+        $this->actingAsRole('Admin', 'admin.pagination@mito.id', 'HR Admin');
+
+        $mprs = collect();
+        for ($index = 1; $index <= 15; $index++) {
+            $mprs->push($this->makeMprData([
+                'mprNumber' => sprintf('MPR-LIST-%02d', $index),
+            ]));
+        }
+
+        $repo = Mockery::mock(MprRepositoryInterface::class);
+        $repo->shouldReceive('getAll')->andReturn($mprs);
+        $this->app->instance(MprRepositoryInterface::class, $repo);
+
+        $response = $this->get(route('hr.mpr.index'));
+        $response->assertOk();
+        $response->assertSee('Menampilkan 1–10 dari 15 data', false);
+        $response->assertSee('class="pagination-ui"', false);
+
+        $dom = new \DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML($response->getContent());
+        libxml_clear_errors();
+
+        $xpath = new \DOMXPath($dom);
+        $matches = $xpath->query(
+            '//div[contains(concat(" ", normalize-space(@class), " "), " panel ")][.//h6[contains(., "Daftar Manpower Request")]]//div[contains(concat(" ", normalize-space(@class), " "), " panel-footer ")]//nav[contains(concat(" ", normalize-space(@class), " "), " pagination-ui ")]'
+        );
+
+        $this->assertSame(1, $matches->length);
+    }
+
+    #[Test]
     public function admin_can_finish_a_submitted_mpr_from_the_hr_list(): void
     {
         $this->actingAsRole('Admin', 'admin.finish@mito.id', 'HR Admin');
