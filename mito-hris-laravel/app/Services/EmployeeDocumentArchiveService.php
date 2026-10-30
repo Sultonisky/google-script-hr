@@ -28,8 +28,8 @@ class EmployeeDocumentArchiveService
     ) {}
 
     /**
-     * Archive a freshly rendered PDF for the latest document of $type when its
-     * nomor matches the number printed on the PDF. Never breaks the export.
+     * Archive a freshly rendered PDF for the selected or latest document of $type
+     * when its nomor matches the number printed on the PDF.
      *
      * @param  string|Closure():string  $content
      */
@@ -62,6 +62,9 @@ class EmployeeDocumentArchiveService
                 )
                 : $this->documents->getLatestByEmployeeAndType($employeeId, $type->value);
             if (!$document) {
+                return null;
+            }
+            if (strtoupper(trim((string) ($document['Doc Code'] ?? ''))) !== $type->value) {
                 return null;
             }
             if ($type->isNumbered() && trim((string) ($document['Nomor'] ?? '')) !== $nomor) {

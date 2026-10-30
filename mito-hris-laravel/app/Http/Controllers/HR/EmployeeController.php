@@ -6,12 +6,15 @@ use App\Enums\EmployeeStatus;
 use App\Http\Controllers\Controller;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
+use App\Services\CompanyRegulationBankService;
 use App\Services\EmployeeService;
 use App\Services\ProbationService;
 use App\Services\SkNumberService;
+use App\Services\WarningLetterSanctionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -22,19 +25,25 @@ class EmployeeController extends Controller
     protected AuditLogRepositoryInterface $auditRepo;
     protected ProbationService $probationService;
     protected SkNumberService $skNumbers;
+    protected CompanyRegulationBankService $regulationBank;
+    protected WarningLetterSanctionService $warningSanctions;
 
     public function __construct(
         EmployeeRepositoryInterface $employeeRepo,
         EmployeeService $employeeService,
         AuditLogRepositoryInterface $auditRepo,
         ProbationService $probationService,
-        SkNumberService $skNumbers
+        SkNumberService $skNumbers,
+        CompanyRegulationBankService $regulationBank,
+        WarningLetterSanctionService $warningSanctions,
     ) {
         $this->employeeRepo       = $employeeRepo;
         $this->employeeService    = $employeeService;
         $this->auditRepo          = $auditRepo;
         $this->probationService   = $probationService;
         $this->skNumbers          = $skNumbers;
+        $this->regulationBank     = $regulationBank;
+        $this->warningSanctions   = $warningSanctions;
     }
 
     public function index(Request $request): View
@@ -69,6 +78,17 @@ class EmployeeController extends Controller
             'inactive'     => $all->filter(fn($e) => strtolower(trim($e->statusEmployee ?? '')) === 'inactive')->count(),
         ];
 
+        $canManageWarningLetters = Gate::allows('manage_warning_letters');
+        $warningLetterIndex = $canManageWarningLetters
+            ? $this->warningSanctions->employeeIndex()
+            : ['badges' => [], 'employee_ids' => [], 'letter_counts' => []];
+        $warningLetterIds = $warningLetterIndex['employee_ids'];
+        $stats['warning_letter'] = $all->filter(function ($employee) use ($warningLetterIds) {
+            $employeeId = ltrim(trim((string) ($employee->employeeId ?? '')), "'");
+
+            return $employeeId !== '' && isset($warningLetterIds[$employeeId]);
+        })->count();
+
         // Apply search/filter to full dataset
         $filtered = $all;
 
@@ -81,7 +101,13 @@ class EmployeeController extends Controller
         $statusFilter = $request->query('status');
         if ($statusFilter) {
             $st = strtolower(trim($statusFilter));
-            if ($st === 'other_active') {
+            if ($st === 'warning_letter' && $canManageWarningLetters) {
+                $filtered = $filtered->filter(function ($employee) use ($warningLetterIds) {
+                    $employeeId = ltrim(trim((string) ($employee->employeeId ?? '')), "'");
+
+                    return isset($warningLetterIds[$employeeId]);
+                });
+            } elseif ($st === 'other_active') {
                 $filtered = $filtered->filter(
                     fn($e) => !EmployeeStatus::fromValue($e->statusEmployee)
                         && !EmployeeStatus::isTerminal($e->statusEmployee)
@@ -154,6 +180,11 @@ class EmployeeController extends Controller
 
         $contractEmployees = $all->filter(fn($e) => EmployeeStatus::matches($e->statusEmployee, EmployeeStatus::CONTRACT));
         $departments = $all->pluck('department')->filter()->unique()->sort()->values();
+        $regulationChapters = $canManageWarningLetters
+            ? $this->regulationBank->chaptersOrEmpty()
+            : [];
+        $activeSanctions = $warningLetterIndex['badges'];
+        $sanctionCounts = $warningLetterIndex['letter_counts'];
 
         return view('hr.employees.index', compact(
             'employees',
@@ -168,7 +199,10 @@ class EmployeeController extends Controller
             'searchFilter',
             'statusFilter',
             'departmentFilter',
-            'sortFilter'
+            'sortFilter',
+            'regulationChapters',
+            'activeSanctions',
+            'sanctionCounts'
         ));
     }
 
@@ -965,6 +999,12 @@ class EmployeeController extends Controller
             'isActiveProbation' => $this->probationService->canEvaluate((string) $employee->employeeId),
             'auditLogs' => $auditLogs,
             'skDocuments' => $skDocuments,
+            'warningLetter' => Gate::allows('manage_warning_letters')
+                ? $this->warningSanctions->drawerSummary((string) $employee->employeeId)
+                : null,
+            'warningLetterPoints' => Gate::allows('manage_warning_letters')
+                ? $this->warningSanctions->pointsTotal((string) $employee->employeeId)
+                : null,
         ]);
     }
 

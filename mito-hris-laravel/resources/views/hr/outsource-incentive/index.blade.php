@@ -66,6 +66,7 @@
                             <th>Vendor</th>
                             <th>Incentive Pokok</th>
                             <th>Incentive</th>
+                            <th>Promotor &amp; Product Race</th>
                             <th>Total</th>
                         </tr>
                     </thead>
@@ -77,11 +78,12 @@
                                 <td>{{ $incentive->vendor ?? '-' }}</td>
                                 <td class="id-mono">{{ $incentive->incentive_pokok_amount === null ? '-' : 'Rp ' . number_format((float) $incentive->incentive_pokok_amount, 0, ',', '.') }}</td>
                                 <td class=" id-mono fw-semibold">Rp {{ number_format((float) $incentive->incentive_amount, 0, ',', '.') }}</td>
+                                <td class="id-mono">{{ $incentive->promotor_product_race_amount === null ? '-' : 'Rp ' . number_format((float) $incentive->promotor_product_race_amount, 0, ',', '.') }}</td>
                                 <td class="id-mono fw-semibold">{{ $incentive->total_amount === null ? '-' : 'Rp ' . number_format((float) $incentive->total_amount, 0, ',', '.') }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6">
+                                <td colspan="7">
                                     <div class="table-empty">
                                         <i class="bi bi-inbox"></i>
                                         <p>Belum ada data incentive untuk periode ini.</p>
@@ -112,7 +114,7 @@
                     </div>
                     <div class="modal-body">
                         <div class="alert alert-light border small">
-                            <div>Gunakan file <strong>.xlsx</strong> maksimal 10 MB. Header dan urutan kolom A–E harus sesuai template: Outsource ID, Nama, Incentive Pokok, Incentive, dan Total. Jangan mengganti nama atau memindahkan kolom. Isi ketiga nominal sesuai file; nilai Total diimpor apa adanya dan tidak dihitung otomatis. ID yang tidak ada di master outsource dilewati.</div>
+                            <div>Gunakan file <strong>.xlsx</strong> maksimal 10 MB. Header dan urutan kolom A–F harus sesuai template: Outsource ID, Nama, Incentive Pokok, Incentive, Promotor &amp; Product Race, dan Total. Jangan mengganti nama atau memindahkan kolom. Isi keempat nominal sesuai file; nilai Total diimpor apa adanya dan tidak dihitung otomatis. ID yang tidak ada di master outsource dilewati.</div>
                             <a href="{{ route('hr.outsource-incentives.template') }}" class="btn btn-primary btn-sm mt-2">
                                 <i class="bi bi-download me-1"></i>Download Template
                             </a>
@@ -139,6 +141,7 @@
                                         <th>Vendor</th>
                                         <th class="text-end">Incentive Pokok</th>
                                         <th class="text-end">Incentive</th>
+                                        <th class="text-end">Promotor &amp; Product Race</th>
                                         <th class="text-end">Total</th>
                                         <th>Status</th>
                                     </tr>
@@ -266,12 +269,13 @@
                     previewBody.innerHTML = rows.map(function(row) {
                         var incentivePokok = 'Rp ' + Number(row.incentive_pokok_amount || 0).toLocaleString('id-ID', { maximumFractionDigits: 0 });
                         var incentive = 'Rp ' + Number(row.incentive_amount || 0).toLocaleString('id-ID', { maximumFractionDigits: 0 });
+                        var promotorProductRace = 'Rp ' + Number(row.promotor_product_race_amount || 0).toLocaleString('id-ID', { maximumFractionDigits: 0 });
                         var total = 'Rp ' + Number(row.total_amount || 0).toLocaleString('id-ID', { maximumFractionDigits: 0 });
                         var status = row.status === 'updated' ? 'Diperbarui' : (row.status === 'unchanged' ? 'Tidak berubah' : 'Baru');
                         return '<tr><td>' + escapeHtml(row.outsource_id) + '</td><td>' + escapeHtml(row.full_name || '-') +
                             '</td><td>' + escapeHtml(row.vendor || '-') + '</td><td class="text-end">' + escapeHtml(incentivePokok) +
-                            '</td><td class="text-end">' + escapeHtml(incentive) + '</td><td class="text-end">' + escapeHtml(total) +
-                            '</td><td>' + status + '</td></tr>';
+                            '</td><td class="text-end">' + escapeHtml(incentive) + '</td><td class="text-end">' + escapeHtml(promotorProductRace) +
+                            '</td><td class="text-end">' + escapeHtml(total) + '</td><td>' + status + '</td></tr>';
                     }).join('');
                     previewRowsEl.hidden = rows.length === 0;
                     saveButton.disabled = !data.success || (summary.created || 0) + (summary.updated || 0) === 0;

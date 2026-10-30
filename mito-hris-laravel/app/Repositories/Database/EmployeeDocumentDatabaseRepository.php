@@ -2,6 +2,7 @@
 
 namespace App\Repositories\Database;
 
+use App\Enums\SkDocumentType;
 use App\Models\EmployeeDocument;
 use App\Repositories\Contracts\EmployeeDocumentRepositoryInterface;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -67,6 +68,7 @@ class EmployeeDocumentDatabaseRepository implements EmployeeDocumentRepositoryIn
             'issued_by' => (string) ($row['Issued By'] ?? ''),
             'reference' => (string) ($row['Reference'] ?? ''),
             'notes' => (string) ($row['Notes'] ?? ''),
+            'violation_points' => max(0, (int) ($row['Points'] ?? 0)),
         ];
 
         for ($attempt = 1; $attempt <= self::MAX_ID_ATTEMPTS; $attempt++) {
@@ -97,7 +99,9 @@ class EmployeeDocumentDatabaseRepository implements EmployeeDocumentRepositoryIn
 
     public function maxSequence(): int
     {
-        return (int) (EmployeeDocument::query()->max('sequence') ?? 0);
+        return (int) (EmployeeDocument::query()
+            ->whereRaw('UPPER(TRIM(doc_code)) <> ?', [SkDocumentType::SURAT_PERINGATAN->value])
+            ->max('sequence') ?? 0);
     }
 
     public function sequenceForEmployee(string $employeeId): ?int
@@ -106,6 +110,8 @@ class EmployeeDocumentDatabaseRepository implements EmployeeDocumentRepositoryIn
         $seq = EmployeeDocument::query()
             ->where('employee_id', $target)
             ->where('sequence', '>', 0)
+            ->whereRaw('UPPER(TRIM(doc_code)) <> ?', [SkDocumentType::SURAT_PERINGATAN->value])
+            ->orderBy('id')
             ->value('sequence');
 
         return $seq !== null ? (int) $seq : null;
@@ -128,6 +134,7 @@ class EmployeeDocumentDatabaseRepository implements EmployeeDocumentRepositoryIn
             'Issued By' => (string) ($row->issued_by ?? ''),
             'Reference' => (string) ($row->reference ?? ''),
             'Notes' => (string) ($row->notes ?? ''),
+            'Points' => (string) ($row->violation_points ?? 0),
             'Created At' => optional($row->created_at)?->timezone('Asia/Jakarta')->format('Y-m-d H:i:s') ?? '',
         ];
     }

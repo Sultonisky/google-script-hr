@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\HR;
 
 use App\Enums\SkDocumentType;
+use App\Enums\WarningLetterLevel;
 use App\Http\Controllers\Controller;
 use App\Repositories\Contracts\EmployeeDocumentRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Repositories\Contracts\OutsourceEmployeeRepositoryInterface;
 use App\Services\EmployeeDocumentArchiveService;
+use App\Services\WarningLetterSanctionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -28,11 +30,16 @@ class DocumentTrackingController extends Controller
 
     private const SORTS = ['issued_desc', 'issued_asc', 'nomor_asc', 'nomor_desc', 'name_asc', 'name_desc'];
 
+    private const WARNING_LETTER_SORTS = ['issued_desc', 'issued_asc', 'nomor_asc', 'nomor_desc', 'name_asc', 'name_desc'];
+
+    private const WARNING_LETTER_STATUSES = ['active', 'superseded', 'ended'];
+
     public function __construct(
         protected EmployeeDocumentRepositoryInterface $documentRepo,
         protected EmployeeRepositoryInterface $employeeRepo,
         protected EmployeeDocumentArchiveService $documentArchive,
         protected OutsourceEmployeeRepositoryInterface $outsourceRepo,
+        protected WarningLetterSanctionService $sanctions,
     ) {}
 
     /**
@@ -68,7 +75,9 @@ class DocumentTrackingController extends Controller
         $currentPage = max(1, (int) $request->query('page', 1));
         $now = now()->timezone('Asia/Jakarta');
 
-        $documents = $this->loadDocuments();
+        $documents = $this->loadDocuments()
+            ->reject(fn ($document) => $document->docCode === SkDocumentType::SURAT_PERINGATAN->value)
+            ->values();
 
         $stats = [
             'total' => $documents->count(),
@@ -83,7 +92,10 @@ class DocumentTrackingController extends Controller
 
         $searchFilter = trim((string) $request->query('search', ''));
         $typeFilter = strtoupper(trim((string) $request->query('type', '')));
-        $typeFilter = SkDocumentType::tryFrom($typeFilter) ? $typeFilter : '';
+        $typeFilter = SkDocumentType::tryFrom($typeFilter)
+            && $typeFilter !== SkDocumentType::SURAT_PERINGATAN->value
+                ? $typeFilter
+                : '';
         $entityFilter = strtoupper(trim((string) $request->query('entity', '')));
         $entityFilter = in_array($entityFilter, self::ENTITIES, true) ? $entityFilter : '';
         $periodFilter = (string) $request->query('period', '');
@@ -135,6 +147,7 @@ class DocumentTrackingController extends Controller
         $archiveSources = $this->documentArchive->archiveSources($rows->pluck('documentId')->all());
 
         $documentTypes = collect(SkDocumentType::cases())
+            ->reject(fn (SkDocumentType $type) => $type === SkDocumentType::SURAT_PERINGATAN)
             ->mapWithKeys(fn (SkDocumentType $type) => [$type->value => $type->label()])
             ->all();
         $entities = self::ENTITIES;
@@ -153,6 +166,131 @@ class DocumentTrackingController extends Controller
             'documentTypes',
             'entities',
             'archiveSources'
+        ));
+    }
+
+    public function warningLetters(Request $request): View
+    {
+        $perPage = in_array((int) $request->query('per_page', 10), [10, 25, 50], true)
+            ? (int) $request->query('per_page', 10)
+            : 10;
+        $currentPage = max(1, (int) $request->query('page', 1));
+        $searchFilter = trim((string) $request->query('search', ''));
+        $sortFilter = (string) $request->query('sort', 'issued_desc');
+        $sortFilter = in_array($sortFilter, self::WARNING_LETTER_SORTS, true) ? $sortFilter : 'issued_desc';
+        $statusFilter = (string) $request->query('status', '');
+        $statusFilter = in_array($statusFilter, self::WARNING_LETTER_STATUSES, true) ? $statusFilter : '';
+        $levelFilter = strtoupper(trim((string) $request->query('level', '')));
+        $levelFilter = WarningLetterLevel::tryFrom($levelFilter)?->value ?? '';
+        $now = now()->timezone('Asia/Jakarta');
+
+        $allWarningLetters = $this->loadDocuments()
+            ->filter(fn ($document) => $document->docCode === SkDocumentType::SURAT_PERINGATAN->value)
+            ->values();
+        $sanctionStates = $this->sanctions->statesFor($allWarningLetters
+            ->map(fn ($document) => [
+                'key' => $document->documentId !== '' ? $document->documentId : $document->employeeId.'|'.$document->nomor,
+                'employee_id' => $document->employeeId,
+                'reference' => $document->reference,
+                'notes' => $document->notes,
+                'doc_type' => $document->docType,
+                'nomor' => $document->nomor,
+                'issued_at' => $document->issuedAtParsed,
+            ])
+            ->all());
+        $allWarningLetters->each(function ($document) use ($sanctionStates) {
+            $key = $document->documentId !== '' ? $document->documentId : $document->employeeId.'|'.$document->nomor;
+            $state = $sanctionStates[$key];
+            $document->sanctionLevel = $state['level'];
+            $document->validUntilLabel = $state['valid_until_label'];
+            $document->sanctionActive = $state['active'];
+            $document->sanctionSuperseded = $state['superseded'];
+            $document->sanctionStatus = $state['superseded']
+                ? 'superseded'
+                : ($state['active'] ? 'active' : ($state['valid_until_label'] !== '' ? 'ended' : ''));
+            $document->levelCode = WarningLetterLevel::resolve(
+                $document->reference,
+                $document->docType,
+                $document->nomor
+            )?->value ?? '';
+        });
+        $activeEmployees = $this->sanctions->activeBadgesFromLetters($allWarningLetters
+            ->map(fn ($document) => [
+                'employee_id' => $document->employeeId,
+                'reference' => $document->reference,
+                'notes' => $document->notes,
+                'doc_type' => $document->docType,
+                'nomor' => $document->nomor,
+                'issued_at' => $document->issuedAtParsed,
+            ])
+            ->values()
+            ->all());
+        $stats = [
+            'total' => $allWarningLetters->count(),
+            'this_month' => $allWarningLetters->filter(
+                fn ($document) => $document->issuedAtParsed?->isSameMonth($now) ?? false
+            )->count(),
+            'employees' => $allWarningLetters->pluck('employeeId')->filter()->unique()->count(),
+            'active' => count($activeEmployees),
+        ];
+        $statusCounts = [
+            'active' => $allWarningLetters->where('sanctionStatus', 'active')->count(),
+            'superseded' => $allWarningLetters->where('sanctionStatus', 'superseded')->count(),
+            'ended' => $allWarningLetters->where('sanctionStatus', 'ended')->count(),
+        ];
+        $levelOptions = collect(WarningLetterLevel::cases())
+            ->map(fn (WarningLetterLevel $level) => [
+                'value' => $level->value,
+                'label' => $level->shortLabel(),
+                'count' => $allWarningLetters->where('levelCode', $level->value)->count(),
+            ])
+            ->all();
+        $documents = $allWarningLetters;
+
+        if ($statusFilter !== '') {
+            $documents = $documents->filter(fn ($document) => $document->sanctionStatus === $statusFilter);
+        }
+
+        if ($levelFilter !== '') {
+            $documents = $documents->filter(fn ($document) => $document->levelCode === $levelFilter);
+        }
+
+        if ($searchFilter !== '') {
+            $search = mb_strtolower($searchFilter);
+            $documents = $documents->filter(fn ($document) => str_contains(mb_strtolower($document->nomor), $search)
+                || str_contains(mb_strtolower($document->employeeId), $search)
+                || str_contains(mb_strtolower($document->employeeName), $search)
+                || str_contains(mb_strtolower($document->reference), $search));
+        }
+
+        $documents = $documents
+            ->when(
+                $sortFilter === 'issued_asc',
+                fn ($items) => $items->sortBy(fn ($document) => $document->issuedAtParsed?->timestamp ?? PHP_INT_MAX),
+                fn ($items) => match ($sortFilter) {
+                    'nomor_asc' => $items->sortBy(fn ($document) => strtolower($document->nomor)),
+                    'nomor_desc' => $items->sortByDesc(fn ($document) => strtolower($document->nomor)),
+                    'name_asc' => $items->sortBy(fn ($document) => strtolower($document->employeeName)),
+                    'name_desc' => $items->sortByDesc(fn ($document) => strtolower($document->employeeName)),
+                    default => $items->sortByDesc(fn ($document) => $document->issuedAtParsed?->timestamp ?? 0),
+                }
+            )
+            ->values();
+        $total = $documents->count();
+        $rows = $documents->slice(($currentPage - 1) * $perPage, $perPage)->values();
+
+        return view('hr.warning-letters.tracking', compact(
+            'rows',
+            'stats',
+            'total',
+            'currentPage',
+            'perPage',
+            'searchFilter',
+            'sortFilter',
+            'statusFilter',
+            'levelFilter',
+            'statusCounts',
+            'levelOptions'
         ));
     }
 
@@ -191,6 +329,7 @@ class DocumentTrackingController extends Controller
                     'issuedBy' => trim((string) ($row['Issued By'] ?? '')),
                     'reference' => trim((string) ($row['Reference'] ?? '')),
                     'notes' => trim((string) ($row['Notes'] ?? '')),
+                    'points' => max(0, (int) ($row['Points'] ?? 0)),
                 ];
             })
             ->values();

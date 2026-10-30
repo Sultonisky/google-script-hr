@@ -832,27 +832,26 @@
                             </tbody>
                         </table>
                     </div>
-                </div>
 
                 <div class="panel-footer">
                     <span>
                         @if ($total > 0)
-                            Menampilkan {{ ($currentPage - 1) * 10 + 1 }}–{{ min($currentPage * 10, $total) }} dari {{ $total }} data
+                            Menampilkan {{ ($currentPage - 1) * $perPage + 1 }}–{{ min($currentPage * $perPage, $total) }} dari {{ $total }} data
                         @else
                             Tidak ada data
                         @endif
                     </span>
-                    @if ($lastPage > 1)
-                        <x-pagination :currentPage="$currentPage" :total="$total" :perPage="10" :route="'hr.mpr.index'"
+                    @if ($total > $perPage)
+                        <x-pagination :currentPage="$currentPage" :total="$total" :perPage="$perPage" :route="'hr.mpr.index'"
                             :queryParams="[
                                 'search' => $search,
                                 'department' => $dept,
                                 'status' => $status,
                                 'submit_by' => $submitBy,
+                                'per_page' => $perPage,
                             ]" />
                     @endif
                 </div>
-
             </div>
 
             <!-- MODAL CREATE MPR (FOR HR MANAGER / SUPER ADMIN) -->

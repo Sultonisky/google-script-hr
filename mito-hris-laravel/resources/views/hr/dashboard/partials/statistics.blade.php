@@ -1,5 +1,9 @@
-<!-- partials/Statistics.html — STAT CARDS (Dashboard page) (1:1 from GAS) -->
-<div class="row g-3 mb-4">
+<section class="dashboard-section">
+  <div class="dashboard-section__header">
+    <h6>Ringkasan Rekrutmen</h6>
+    <p>Jumlah kandidat berdasarkan status.</p>
+  </div>
+<div class="row g-3">
   <div class="col-6 col-md-4 col-xl-2">
     <a href="{{ route('hr.recruitment.index') }}" class="stat-card text-decoration-none">
       <div class="stat-icon bg-blue"><i class="bi bi-people-fill"></i></div>
@@ -63,3 +67,4 @@
     </a>
   </div>
 </div>
+</section>

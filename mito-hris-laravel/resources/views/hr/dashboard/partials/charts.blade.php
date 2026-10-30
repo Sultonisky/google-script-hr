@@ -1,11 +1,15 @@
-<!-- partials/Charts.html — CHART CARDS (Dashboard page) (1:1 from GAS) -->
-<div class="row g-3 mb-4">
-  <div class="col-md-12">
-    <div class="chart-card">
-      <h6><i class="bi bi-graph-up me-1"></i> Pelamar per Bulan</h6>
-      <div class="chart-canvas-wrap">
-        <canvas id="chartMonthly"></canvas>
+<section class="dashboard-section">
+  <div class="dashboard-section__header">
+    <h6>Pelamar per Bulan</h6>
+    <p>Tren jumlah pelamar sepanjang tahun.</p>
+  </div>
+  <div class="row g-3">
+    <div class="col-md-12">
+      <div class="chart-card">
+        <div class="chart-canvas-wrap">
+          <canvas id="chartMonthly"></canvas>
+        </div>
       </div>
     </div>
   </div>
-</div>
+</section>

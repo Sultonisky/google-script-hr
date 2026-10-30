@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\SkDocumentType;
+use App\Enums\WarningLetterLevel;
 use App\Repositories\Contracts\EmployeeDocumentRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use Illuminate\Support\Carbon;
@@ -12,9 +13,11 @@ use RuntimeException;
 
 /**
  * Issues official HRIS document numbers with a fixed per-employee sequence.
+ * Surat Peringatan has its own sequence and encodes the level as SP-1, SP-2, SP-3, or SP-F.
+ * Each SP letter takes the next free SP number. The number is not kept for one employee.
  *
  * Format: {seq}/{CODE}/{ENTITY}/{ROMAN}/{YEAR}
- * Sequence is lifetime-stable per employee (001 sticks forever); only CODE changes.
+ * SK sequence is lifetime-stable per employee (001 sticks forever); only CODE changes.
  * Employee.Nomor SK always stores the latest issued number.
  * Full history lives in the Employee_Documents sheet.
  */
@@ -43,6 +46,7 @@ class SkNumberService
         ?Carbon $issuedAt = null,
         ?string $docTypeLabel = null,
         ?string $numberSuffix = null,
+        int $points = 0,
     ): array {
         if (!$type->isNumbered()) {
             throw new RuntimeException("{$type->label()} tidak memakai nomor; gunakan record().");
@@ -55,9 +59,14 @@ class SkNumberService
 
         $now = ($issuedAt ?? now())->timezone('Asia/Jakarta');
         $entity = $this->resolveEntityCode($branchName);
-        $sequence = $this->resolveFixedSequence($employeeId);
-        $nomor = $this->format($sequence, $type->value, $entity, $now, $numberSuffix);
-        $documentId = $this->appendHistory($employeeId, $type, $sequence, $nomor, $entity, $now, $issuedBy, $reference, $notes, $docTypeLabel);
+        $sequence = $type === SkDocumentType::SURAT_PERINGATAN
+            ? $this->resolveWarningLetterSequence()
+            : $this->resolveFixedSequence($employeeId);
+        $code = $type === SkDocumentType::SURAT_PERINGATAN
+            ? (WarningLetterLevel::tryFrom(trim($reference))?->numberCode() ?? $type->value)
+            : $type->value;
+        $nomor = $this->format($sequence, $code, $entity, $now, $numberSuffix);
+        $documentId = $this->appendHistory($employeeId, $type, $sequence, $nomor, $entity, $now, $issuedBy, $reference, $notes, $docTypeLabel, $points);
 
         if (!$type->updatesEmployeeNomorSk()) {
             return [
@@ -137,6 +146,7 @@ class SkNumberService
         string $reference,
         string $notes,
         ?string $docTypeLabel = null,
+        int $points = 0,
     ): string {
         $documentId = sprintf(
             'DOC-%s-%03d-%s',
@@ -157,6 +167,7 @@ class SkNumberService
             'Issued By' => $issuedBy ?: 'HR Administrator',
             'Reference' => $reference,
             'Notes' => $notes,
+            'Points' => (string) max(0, $points),
             'Created At' => $now->format('Y-m-d H:i:s'),
         ];
 
@@ -317,6 +328,33 @@ class SkNumberService
             }
 
             return max(1, $this->documents->maxSequence() + 1);
+        } finally {
+            optional($lock)->release();
+        }
+    }
+
+    /**
+     * Next free SP number across every letter. A second letter for the same
+     * employee, at any level, takes a new number instead of reusing theirs.
+     */
+    private function resolveWarningLetterSequence(): int
+    {
+        $lock = Cache::lock('lock_sp_seq_alloc', 15);
+        try {
+            $lock->block(15);
+
+            $used = $this->documents->getAll()
+                ->filter(fn (array $row) => strtoupper(trim((string) ($row['Doc Code'] ?? ''))) === SkDocumentType::SURAT_PERINGATAN->value)
+                ->map(fn (array $row) => (int) ($row['Sequence'] ?? 0))
+                ->filter(fn (int $sequence) => $sequence > 0)
+                ->flip();
+
+            $sequence = 1;
+            while ($used->has($sequence)) {
+                $sequence++;
+            }
+
+            return $sequence;
         } finally {
             optional($lock)->release();
         }

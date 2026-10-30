@@ -20,12 +20,14 @@ class EmployeeDocument extends Model
         'issued_by',
         'reference',
         'notes',
+        'violation_points',
     ];
 
     protected function casts(): array
     {
         return [
             'sequence' => 'integer',
+            'violation_points' => 'integer',
         ];
     }
 }

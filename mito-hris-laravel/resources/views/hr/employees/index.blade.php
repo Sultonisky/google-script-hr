@@ -160,6 +160,11 @@
                         <option value="other_active" {{ ($statusFilter ?? '') === 'other_active' ? 'selected' : '' }}>
                             Status Lainnya ({{ $stats['other_active'] ?? 0 }})
                         </option>
+                        @can('manage_warning_letters')
+                            <option value="warning_letter" {{ ($statusFilter ?? '') === 'warning_letter' ? 'selected' : '' }}>
+                                Surat Peringatan ({{ $stats['warning_letter'] ?? 0 }})
+                            </option>
+                        @endcan
                         <option value="Resigned" {{ ($statusFilter ?? '') === 'Resigned' ? 'selected' : '' }}>
                             Resigned ({{ $stats['resigned'] ?? 0 }})
                         </option>
@@ -294,6 +299,20 @@
                                     <div class="cand-name fw-bold text-primary text-decoration-underline">
                                         {{ $emp->fullName }}</div>
                                     <div class="cand-sub">{{ $emp->personalEmail ?? $emp->workingEmail }}</div>
+                                    @php
+                                        $sanctions = $activeSanctions[$emp->employeeId] ?? [];
+                                        $extraSanctions = max(0, ($sanctionCounts[$emp->employeeId] ?? count($sanctions)) - 1);
+                                    @endphp
+                                    @if ($sanctions !== [])
+                                        <div class="mt-1 d-inline-flex align-items-center gap-1">
+                                            <span class="badge-status blacklist sp-sanction" title="Sanksi Surat Peringatan masih berlaku">
+                                                {{ $sanctions[0]['level'] }} · s.d. {{ $sanctions[0]['valid_until_label'] }}
+                                            </span>
+                                            @if ($extraSanctions > 0)
+                                                <span class="sp-sanction-more fw-bold text-danger" title="Ada {{ $extraSanctions }} Surat Peringatan lain" aria-label="Ada {{ $extraSanctions }} Surat Peringatan lain">+{{ $extraSanctions }}</span>
+                                            @endif
+                                        </div>
+                                    @endif
                                 </td>
                                 <td class="id-mono">{{ $emp->nikNpwp ?? '-' }}</td>
                                 <td>{{ $emp->department ?? '-' }}</td>

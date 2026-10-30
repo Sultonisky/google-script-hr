@@ -14,9 +14,9 @@ interface EmployeeDocumentRepositoryInterface
 
     public function append(array $row): ?string;
 
-    /** Highest sequence number already used across all employees (0 if none). */
+    /** Highest SK-family sequence already used across all employees (0 if none). Surat Peringatan is excluded. */
     public function maxSequence(): int;
 
-    /** Fixed sequence for an employee if they already have any document (null if none). */
+    /** Fixed SK-family sequence for an employee (null if they have no non-SP document). */
     public function sequenceForEmployee(string $employeeId): ?int;
 }

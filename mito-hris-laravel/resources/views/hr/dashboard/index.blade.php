@@ -2,15 +2,18 @@
 
 @section('title', 'Dashboard - MITO HRIS')
 @section('page-title', 'Dashboard')
-@section('page-subtitle', 'Ringkasan rekrutmen & data kandidat')
+@section('page-subtitle', 'Ringkasan headcount karyawan & rekrutmen')
 
 @section('content')
 <section class="page-section active" id="pageDashboard">
+  @include('hr.dashboard.partials.headcount')
   @include('hr.dashboard.partials.statistics')
-  @include('hr.dashboard.partials.charts')
+  {{-- Grafik pelamar per bulan dinonaktifkan. Partial asli tetap di partials/charts.blade.php --}}
+  {{-- @include('hr.dashboard.partials.charts') --}}
 </section>
 @endsection
 
+{{--
 @section('scripts')
 <script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
@@ -49,3 +52,4 @@
   });
 </script>
 @endsection
+--}}

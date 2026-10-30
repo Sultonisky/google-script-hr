@@ -66,18 +66,25 @@ class EmployeeDocumentSheetsRepository implements EmployeeDocumentRepositoryInte
     public function maxSequence(): int
     {
         return (int) $this->getAll()
+            ->reject(fn (array $row) => $this->isWarningLetter($row))
             ->map(fn (array $row) => (int) ($row['Sequence'] ?? 0))
             ->max();
     }
 
     public function sequenceForEmployee(string $employeeId): ?int
     {
-        $row = $this->getByEmployeeId($employeeId)->first();
-        if (!$row) {
+        $row = $this->getByEmployeeId($employeeId)
+            ->first(fn (array $row) => ! $this->isWarningLetter($row) && (int) ($row['Sequence'] ?? 0) > 0);
+        if (! $row) {
             return null;
         }
-        $seq = (int) ($row['Sequence'] ?? 0);
-        return $seq > 0 ? $seq : null;
+
+        return (int) $row['Sequence'];
+    }
+
+    private function isWarningLetter(array $row): bool
+    {
+        return strtoupper(trim((string) ($row['Doc Code'] ?? ''))) === 'SP';
     }
 
     protected function ensureSheet(): void

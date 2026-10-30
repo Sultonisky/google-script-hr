@@ -57,12 +57,12 @@ class OutsourceIncentiveController extends Controller
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Outsource Incentive');
-        $headers = ['Outsource ID', 'Nama', 'Vendor', 'Incentive Pokok', 'Incentive', 'Total'];
+        $headers = ['Outsource ID', 'Nama', 'Vendor', 'Incentive Pokok', 'Incentive', 'Promotor & Product Race', 'Total'];
         foreach ($headers as $index => $header) {
             $column = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($index + 1);
             $sheet->setCellValue($column . '1', $header);
         }
-        $sheet->getStyle('A1:F1')->applyFromArray([
+        $sheet->getStyle('A1:G1')->applyFromArray([
             'font' => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF']],
             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF005BAC']],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
@@ -76,12 +76,13 @@ class OutsourceIncentiveController extends Controller
             $sheet->setCellValue('C' . $row, $incentive->vendor ?? '');
             $sheet->setCellValue('D' . $row, $incentive->incentive_pokok_amount === null ? null : (float) $incentive->incentive_pokok_amount);
             $sheet->setCellValue('E' . $row, (float) ($incentive->incentive_amount ?? 0));
-            $sheet->setCellValue('F' . $row, $incentive->total_amount === null ? null : (float) $incentive->total_amount);
+            $sheet->setCellValue('F' . $row, $incentive->promotor_product_race_amount === null ? null : (float) $incentive->promotor_product_race_amount);
+            $sheet->setCellValue('G' . $row, $incentive->total_amount === null ? null : (float) $incentive->total_amount);
         }
-        foreach (range('A', 'F') as $column) {
+        foreach (range('A', 'G') as $column) {
             $sheet->getColumnDimension($column)->setAutoSize(true);
         }
-        $sheet->getStyle('D2:F' . max(2, $incentives->count() + 1))->getNumberFormat()->setFormatCode('#,##0');
+        $sheet->getStyle('D2:G' . max(2, $incentives->count() + 1))->getNumberFormat()->setFormatCode('#,##0');
         $spreadsheet->getProperties()->setCreator('MITO HRIS')->setTitle('Outsource Incentive ' . $period);
 
         if (Gate::allows('view_reports')) {
