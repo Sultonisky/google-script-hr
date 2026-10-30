@@ -509,6 +509,9 @@
                             metaHtml += '<span>Surat Peringatan<strong>' + escapeDrawerHtml(warningLetter.label) +
                                 (extraSanctions > 0 ? ' +' + extraSanctions : '') + '</strong></span>';
                         }
+                        if (data.warningLetterPoints !== null && data.warningLetterPoints !== undefined) {
+                            metaHtml += '<span>Total Poin<strong>' + escapeDrawerHtml(data.warningLetterPoints) + '</strong></span>';
+                        }
                         metaEl.innerHTML = metaHtml;
                     }
 
