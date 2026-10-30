@@ -299,6 +299,12 @@
   font-size: 13px;
 }
 
+@media (max-width: 767.98px) {
+  .headcount-entity-name {
+    display: none;
+  }
+}
+
 @media (max-width: 575.98px) {
   .headcount-breakdown__list {
     padding: 12px;
