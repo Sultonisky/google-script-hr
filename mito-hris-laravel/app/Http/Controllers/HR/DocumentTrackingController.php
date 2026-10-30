@@ -329,6 +329,7 @@ class DocumentTrackingController extends Controller
                     'issuedBy' => trim((string) ($row['Issued By'] ?? '')),
                     'reference' => trim((string) ($row['Reference'] ?? '')),
                     'notes' => trim((string) ($row['Notes'] ?? '')),
+                    'points' => max(0, (int) ($row['Points'] ?? 0)),
                 ];
             })
             ->values();

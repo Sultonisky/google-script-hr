@@ -1002,6 +1002,9 @@ class EmployeeController extends Controller
             'warningLetter' => Gate::allows('manage_warning_letters')
                 ? $this->warningSanctions->drawerSummary((string) $employee->employeeId)
                 : null,
+            'warningLetterPoints' => Gate::allows('manage_warning_letters')
+                ? $this->warningSanctions->pointsTotal((string) $employee->employeeId)
+                : null,
         ]);
     }
 
