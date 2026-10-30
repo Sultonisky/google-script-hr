@@ -155,7 +155,7 @@
                             <i class="bi bi-exclamation-octagon me-1"></i>Pelanggaran
                         </p>
                         <div class="row g-3 mb-4">
-                            <div class="col-md-7" id="wlCategoryField">
+                            <div class="col-md-4" id="wlCategoryField">
                                 <label class="form-label fw-semibold" style="font-size:13px" for="wlCategory">Kategori Pelanggaran <span class="text-danger">*</span></label>
                                 <select class="form-select form-select-sm" name="violation_category" id="wlCategory" required>
                                     <option value="">— Pilih kategori —</option>
@@ -163,6 +163,12 @@
                                         <option value="{{ $wlCategory }}">{{ $wlCategory }}</option>
                                     @endforeach
                                 </select>
+                            </div>
+                            <div class="col-md-3" id="wlPointsField">
+                                <label class="form-label fw-semibold" style="font-size:13px" for="wlPoints">Poin <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control form-control-sm" name="points" id="wlPoints"
+                                    min="1" max="999" step="1" inputmode="numeric" required />
+                                <div class="form-text" style="font-size:11px">Poin untuk surat ini.</div>
                             </div>
                             <div class="col-md-5" id="wlIncidentDateField">
                                 <label class="form-label fw-semibold" style="font-size:13px" for="wlIncidentDate">Tanggal Kejadian <span class="text-muted fw-normal">(opsional)</span></label>
@@ -1206,6 +1212,7 @@
                 var missing = [];
                 if (!el('wlEmployeeId').value) missing.push('Pilih karyawan terlebih dahulu.');
                 if (!el('wlDocDate').value) missing.push('Tanggal surat wajib diisi.');
+                if (!/^[1-9]\d{0,2}$/.test(el('wlPoints').value.trim())) missing.push('Poin wajib diisi, berupa angka 1 sampai 999.');
                 violationRows().forEach(function(row, index) {
                     var position = index + 1;
                     if (row.querySelector('[data-violation-field="description"]').value.trim().length < 10) {
