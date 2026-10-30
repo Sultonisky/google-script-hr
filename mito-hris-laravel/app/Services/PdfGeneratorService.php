@@ -261,7 +261,35 @@ class PdfGeneratorService
     }
 
     /**
-     * Generate Surat Peringatan (SP-1 / SP-1 & Terakhir / SP-2 / SP-3) PDF.
+     * Exit clearance checklist. Print-only: does not change employee master data.
+     */
+    public function generateExitClearancePdf(array $extraData = []): \Barryvdh\DomPDF\PDF
+    {
+        $pdf = Pdf::loadView('pdf.exit-clearance', compact('extraData'))
+            ->setPaper('a4', 'portrait');
+
+        $pdf->getDomPDF()->setCallbacks([
+            [
+                'event' => 'end_document',
+                'f' => static function (int $pageNumber, int $pageCount, \Dompdf\Canvas $canvas): void {
+                    $inset = 22.0;
+                    $canvas->rectangle(
+                        $inset,
+                        $inset,
+                        $canvas->get_width() - ($inset * 2),
+                        $canvas->get_height() - ($inset * 2),
+                        [0.067, 0.094, 0.153],
+                        1.5
+                    );
+                },
+            ],
+        ]);
+
+        return $pdf;
+    }
+
+    /**
+     * Generate Surat Peringatan (SP-1 / SP-2 / SP-3) PDF.
      */
     public function generateWarningLetterPdf(EmployeeData $employee, array $extraData = []): \Barryvdh\DomPDF\PDF
     {
