@@ -170,6 +170,7 @@ class WarningLetterService
             notes: $violationReference.' — berlaku s.d. '.$validUntil->format('Y-m-d'),
             issuedAt: $issuedAt,
             docTypeLabel: $level->label(),
+            points: (int) $data['points'],
         );
         $nomor = $issued['nomor'];
 
@@ -221,6 +222,7 @@ class WarningLetterService
             'short_label' => $level->shortLabel(),
             'valid_until' => $validUntil->format('Y-m-d'),
             'valid_until_label' => $validUntil->format('d M Y'),
+            'points' => (int) $data['points'],
         ];
     }
 }

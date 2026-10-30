@@ -71,6 +71,29 @@ class WarningLetterSanctionService
     }
 
     /**
+     * Jumlah poin seluruh SP karyawan. Null bila belum pernah ada surat.
+     */
+    public function pointsTotal(string $employeeId): ?int
+    {
+        $employeeId = ltrim(trim($employeeId), "'");
+        if ($employeeId === '') {
+            return null;
+        }
+
+        $total = 0;
+        $found = false;
+        foreach ($this->warningLetters() as $letter) {
+            if ($letter['employee_id'] !== $employeeId) {
+                continue;
+            }
+            $found = true;
+            $total += $letter['points'];
+        }
+
+        return $found ? $total : null;
+    }
+
+    /**
      * Penanda sanksi yang masih berjalan, diindeks Employee ID.
      *
      * @return array<string, list<array{level: string, valid_until_label: string}>>
@@ -209,6 +232,7 @@ class WarningLetterSanctionService
                 'notes' => trim((string) ($row['Notes'] ?? '')),
                 'doc_type' => trim((string) ($row['Doc Type'] ?? '')),
                 'nomor' => trim((string) ($row['Nomor'] ?? '')),
+                'points' => max(0, (int) ($row['Points'] ?? 0)),
                 'issued_at' => $this->parseDate((string) ($row['Issued At'] ?? '')),
             ];
         }
