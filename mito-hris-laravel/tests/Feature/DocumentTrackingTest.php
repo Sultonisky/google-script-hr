@@ -141,6 +141,7 @@ class DocumentTrackingTest extends TestCase
             ->assertSee('Surat Peringatan Kedua')
             ->assertSee('Citra Lestari')
             ->assertSee('id="spTrackingSort"', false)
+            ->assertSee('id="spPoints"', false)
             ->assertSee('Reset Filter')
             ->assertDontSee('>Cari</button>', false)
             ->assertSee('class="export-btns"', false)
@@ -213,13 +214,14 @@ class DocumentTrackingTest extends TestCase
         $this->get('/hr/sp-tracking?status=active')
             ->assertOk()
             ->assertSee('004/SP-1/SPI/IX/2026')
+            ->assertSee('badge-status accepted">Aktif', false)
             ->assertDontSee('003/SP-1/MSI/VIII/2026')
             ->assertDontSee('001/SP/MSI/IX/2026');
 
         $this->get('/hr/sp-tracking?status=superseded')
             ->assertOk()
             ->assertSee('003/SP-1/MSI/VIII/2026')
-            ->assertSee('Hangus')
+            ->assertSee('badge-status blacklist">Hangus', false)
             ->assertDontSee('004/SP-1/SPI/IX/2026');
 
         $this->get('/hr/sp-tracking?level=SP2')

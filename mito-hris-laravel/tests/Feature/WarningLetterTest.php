@@ -75,6 +75,7 @@ class WarningLetterTest extends TestCase
             'regulation_reference' => 'Peraturan Perusahaan Pasal 12 ayat (3)',
             'superior_position' => 'Atasan Langsung',
             'corrective_actions' => "- Hadir tepat waktu sesuai jadwal kerja\n- Melapor ke atasan bila berhalangan",
+            'points' => 5,
         ], $overrides);
     }
 
@@ -103,7 +104,10 @@ class WarningLetterTest extends TestCase
             ->assertJsonPath('issued_at', '2026-09-29')
             ->assertJsonPath('short_label', 'SP-1')
             ->assertJsonPath('valid_until', '2027-03-28')
-            ->assertJsonPath('valid_until_label', '28 Mar 2027');
+            ->assertJsonPath('valid_until_label', '28 Mar 2027')
+            ->assertJsonPath('points', 5);
+
+        $this->assertSame(5, (int) EmployeeDocument::query()->where('doc_code', 'SP')->value('violation_points'));
 
         $document = EmployeeDocument::query()->where('employee_id', 'EMP-SP-1')->where('doc_code', 'SP')->firstOrFail();
         $this->assertSame('001/SP-1/MSI/IX/2026', $document->nomor);
@@ -166,7 +170,8 @@ class WarningLetterTest extends TestCase
         $this->getJson('/hr/employees/EMP-SP-1/json')
             ->assertOk()
             ->assertJsonPath('warningLetter.label', 'SP-1 · s.d. 14 Apr 2027')
-            ->assertJsonPath('warningLetter.extra', 1);
+            ->assertJsonPath('warningLetter.extra', 1)
+            ->assertJsonPath('warningLetterPoints', 10);
 
         $this->postJson('/hr/employees/EMP-SP-1/warning-letter', $this->payload([
             'level' => 'SP2',
@@ -174,6 +179,10 @@ class WarningLetterTest extends TestCase
         ]))
             ->assertCreated()
             ->assertJson(['nomor' => '003/SP-2/MSI/X/2026']);
+
+        $this->getJson('/hr/employees/EMP-SP-1/json')
+            ->assertOk()
+            ->assertJsonPath('warningLetterPoints', 15);
 
         $this->postJson('/hr/employees/EMP-SP-1/warning-letter', $this->payload([
             'level' => 'SP1T',
@@ -568,7 +577,8 @@ class WarningLetterTest extends TestCase
                 && count($extraData['violations']) === 2
                 && count($extraData['violations'][1]['references']) === 2
                 && $extraData['violations'][0]['references'][0]['article_text'] !== ''
-                && str_starts_with($extraData['violation_description'], 'Tidak melaksanakan perintah'))
+                && str_starts_with($extraData['violation_description'], 'Tidak melaksanakan perintah')
+                && !array_key_exists('points', $extraData))
             ->andReturn(Pdf::loadHTML('<p>SP-1 & Terakhir</p>'));
         $this->app->instance(PdfGeneratorService::class, $pdfService);
 
@@ -577,6 +587,7 @@ class WarningLetterTest extends TestCase
             'doc_date' => '2026-09-29',
             'violation_category' => '',
             'superior_position' => 'Branch Manager Jabo',
+            'points' => 5,
             'violations' => $this->finalViolationsPayload(),
         ])->assertCreated();
 
@@ -874,6 +885,7 @@ class WarningLetterTest extends TestCase
             'level' => 'SP1T',
             'doc_date' => '2026-09-29',
             'superior_position' => 'Branch Manager Jabo',
+            'points' => 5,
             'violations' => [[
                 'description' => 'Tidak mematuhi ketentuan perusahaan yang berlaku.',
                 'references' => [[
@@ -970,6 +982,7 @@ class WarningLetterTest extends TestCase
                 'doc_date' => '2026-09-29',
                 'superior_name' => 'Budi Santoso',
                 'superior_position' => 'Branch Manager',
+                'points' => 5,
                 'violations' => [[
                     'description' => 'Tidak mematuhi ketentuan perusahaan yang berlaku.',
                     'references' => [[
@@ -1029,6 +1042,7 @@ class WarningLetterTest extends TestCase
             'doc_date' => '2026-09-29',
             'superior_name' => 'Mardiansyah Matondang',
             'superior_position' => 'Branch Manager Jabo',
+            'points' => 5,
             'violations' => $this->finalViolationsPayload(),
         ])
             ->assertOk()
@@ -1319,6 +1333,12 @@ class WarningLetterTest extends TestCase
             ->assertStatus(422)
             ->assertJsonValidationErrors(['level', 'violation_category', 'violation_description', 'incident_date']);
 
+        $this->postJson('/hr/employees/EMP-SP-1/warning-letter', $this->payload([
+            'points' => 0,
+        ]))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['points']);
+
         $this->assertSame(0, EmployeeDocument::query()->where('doc_code', 'SP')->count());
     }
 
@@ -1556,7 +1576,13 @@ class WarningLetterTest extends TestCase
         $this->getJson('/hr/employees/EMP-SP-1/json')
             ->assertOk()
             ->assertJsonPath('warningLetter.label', 'SP-1 · s.d. 28 Mar 2027')
-            ->assertJsonPath('warningLetter.extra', 0);
+            ->assertJsonPath('warningLetter.extra', 0)
+            ->assertJsonPath('warningLetterPoints', 5);
+
+        $this->get('/hr/sp-tracking?search=EMP-SP-1')
+            ->assertOk()
+            ->assertSee('id="spPoints"', false)
+            ->assertSee('>5<', false);
 
         Employee::query()->create([
             'employee_id' => 'EMP-SP-CLEAR',
