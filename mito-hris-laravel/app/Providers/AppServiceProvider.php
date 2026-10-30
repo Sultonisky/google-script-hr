@@ -126,7 +126,16 @@ class AppServiceProvider extends ServiceProvider
 
         // Keyed by IP only so rotating phone/email values cannot bypass the limit to enumerate contacts.
         RateLimiter::for('outsource-apply', function (Request $request) {
-            return Limit::perMinute(20)->by('outsource-apply|' . $request->ip());
+            return Limit::perMinute(20)->by('outsource-apply|'.$request->ip());
+        });
+
+        RateLimiter::for('exit-clearance', function (Request $request) {
+            // Per-IP global limit — tidak ada per-employee key karena data diisi manual
+            return Limit::perMinute(10)->by('exit-clearance-ip|' . $request->ip());
+        });
+
+        RateLimiter::for('exit-clearance-show', function (Request $request) {
+            return Limit::perMinute(30)->by('exit-clearance-show|' . $request->ip());
         });
 
         // ==============================================================

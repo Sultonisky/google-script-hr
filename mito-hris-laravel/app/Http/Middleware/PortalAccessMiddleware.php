@@ -63,6 +63,8 @@ class PortalAccessMiddleware
             'login',
             'login.post',
             'logout',
+            'public.exit-clearance',
+            'public.exit-clearance.pdf',
             'mpr.auth.domain.root',
             'mpr.auth.portal',
             'mpr.auth.login',
