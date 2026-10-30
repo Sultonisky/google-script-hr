@@ -46,6 +46,7 @@ class SkNumberService
         ?Carbon $issuedAt = null,
         ?string $docTypeLabel = null,
         ?string $numberSuffix = null,
+        int $points = 0,
     ): array {
         if (!$type->isNumbered()) {
             throw new RuntimeException("{$type->label()} tidak memakai nomor; gunakan record().");
@@ -65,7 +66,7 @@ class SkNumberService
             ? (WarningLetterLevel::tryFrom(trim($reference))?->numberCode() ?? $type->value)
             : $type->value;
         $nomor = $this->format($sequence, $code, $entity, $now, $numberSuffix);
-        $documentId = $this->appendHistory($employeeId, $type, $sequence, $nomor, $entity, $now, $issuedBy, $reference, $notes, $docTypeLabel);
+        $documentId = $this->appendHistory($employeeId, $type, $sequence, $nomor, $entity, $now, $issuedBy, $reference, $notes, $docTypeLabel, $points);
 
         if (!$type->updatesEmployeeNomorSk()) {
             return [
@@ -145,6 +146,7 @@ class SkNumberService
         string $reference,
         string $notes,
         ?string $docTypeLabel = null,
+        int $points = 0,
     ): string {
         $documentId = sprintf(
             'DOC-%s-%03d-%s',
@@ -165,6 +167,7 @@ class SkNumberService
             'Issued By' => $issuedBy ?: 'HR Administrator',
             'Reference' => $reference,
             'Notes' => $notes,
+            'Points' => (string) max(0, $points),
             'Created At' => $now->format('Y-m-d H:i:s'),
         ];
 
