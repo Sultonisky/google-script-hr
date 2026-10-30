@@ -68,6 +68,7 @@ class EmployeeDocumentDatabaseRepository implements EmployeeDocumentRepositoryIn
             'issued_by' => (string) ($row['Issued By'] ?? ''),
             'reference' => (string) ($row['Reference'] ?? ''),
             'notes' => (string) ($row['Notes'] ?? ''),
+            'violation_points' => max(0, (int) ($row['Points'] ?? 0)),
         ];
 
         for ($attempt = 1; $attempt <= self::MAX_ID_ATTEMPTS; $attempt++) {
@@ -133,6 +134,7 @@ class EmployeeDocumentDatabaseRepository implements EmployeeDocumentRepositoryIn
             'Issued By' => (string) ($row->issued_by ?? ''),
             'Reference' => (string) ($row->reference ?? ''),
             'Notes' => (string) ($row->notes ?? ''),
+            'Points' => (string) ($row->violation_points ?? 0),
             'Created At' => optional($row->created_at)?->timezone('Asia/Jakarta')->format('Y-m-d H:i:s') ?? '',
         ];
     }
