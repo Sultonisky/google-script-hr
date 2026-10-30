@@ -240,6 +240,7 @@ class GenerateWarningLetterRequest extends FormRequest
             'superior_name' => ['nullable', 'string', 'max:150'],
             'superior_position' => ['required_if:level,SP1,SP1T,SP2,SP3', 'nullable', 'string', 'max:150'],
             'corrective_actions' => ['nullable', 'string', 'max:1500'],
+            'points' => ['required', 'integer', 'min:1', 'max:999'],
         ];
 
         if ($this->hasViolationInput) {
@@ -300,6 +301,10 @@ class GenerateWarningLetterRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'points.required' => 'Poin wajib diisi.',
+            'points.integer' => 'Poin harus berupa angka bulat.',
+            'points.min' => 'Poin minimal 1.',
+            'points.max' => 'Poin maksimal 999.',
             'level.required' => 'Tingkat Surat Peringatan wajib dipilih.',
             'level.enum' => 'Tingkat Surat Peringatan tidak valid.',
             'doc_date.required' => 'Tanggal surat wajib diisi.',
