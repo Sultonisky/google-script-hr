@@ -115,6 +115,7 @@
                             <th>Nomor SP</th>
                             <th>Tingkat</th>
                             <th>Masa Berlaku</th>
+                            <th id="spPoints">Poin</th>
                             <th>Karyawan</th>
                             <th>Posisi / Dept</th>
                             <th>Entitas</th>
@@ -144,9 +145,9 @@
                                             <div class="id-mono"><small>s.d. {{ $row->validUntilLabel }}</small></div>
                                         @endif
                                         @if ($row->sanctionSuperseded ?? false)
-                                            <span class="badge-status hold">Hangus</span>
+                                            <span class="badge-status blacklist">Hangus</span>
                                         @elseif ($row->sanctionActive)
-                                            <span class="badge-status blacklist">Aktif</span>
+                                            <span class="badge-status accepted">Aktif</span>
                                         @else
                                             <span class="badge-status hold">Berakhir</span>
                                         @endif
@@ -154,6 +155,7 @@
                                         -
                                     @endif
                                 </td>
+                                <td class="id-mono fw-semibold">{{ (int) ($row->points ?? 0) }}</td>
                                 <td>
                                     @if ($row->employeeId !== '')
                                         <a href="{{ route('hr.employees.index', ['search' => $row->employeeId]) }}"
@@ -193,7 +195,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="10">
+                                <td colspan="11">
                                     <div class="table-empty">
                                         <i class="bi bi-inbox"></i>
                                         <p>Belum ada Surat Peringatan karyawan yang sesuai.</p>
