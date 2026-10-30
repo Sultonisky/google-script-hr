@@ -12,7 +12,7 @@
         <div>
           <div class="stat-label">{{ $card['code'] }}</div>
           <div class="stat-value text-navy" id="headcount-{{ $card['code'] }}">{{ $card['count'] }}</div>
-          <div class="small text-muted">{{ $card['name'] }}</div>
+          <div class="small text-muted headcount-entity-name">{{ $card['name'] }}</div>
         </div>
       </div>
     </div>
